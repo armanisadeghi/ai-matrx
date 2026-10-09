@@ -29,7 +29,7 @@ import { AgentSelectorIsland } from "@ai-matrx/chat/agents/components/shared/Age
 import { AgentModeController } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
 import { AgentSaveStatus } from "../shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,

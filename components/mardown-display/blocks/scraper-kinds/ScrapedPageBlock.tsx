@@ -42,7 +42,7 @@ import {
   Timer,
   Type,
 } from "lucide-react";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { cn } from "@/lib/utils";
 import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import PageCleaningReportBlock from "./PageCleaningReportBlock";

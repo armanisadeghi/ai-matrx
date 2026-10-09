@@ -86,7 +86,6 @@ export async function runMatrixCells(
     body: body as never,
     stream: true,
     scopeOverrides: { organization_id: organizationId },
-    interactiveOrganization: false,
     consumeStream: async (response: Response) => {
       captured.text = await response.text();
     },
@@ -112,7 +111,6 @@ export async function cancelMatrixRun(
     pathParams: { set_id: setId } as never,
     body: {} as never,
     scopeOverrides: { organization_id: organizationId },
-    interactiveOrganization: false,
   };
   const result = await dispatch(callApi(config));
   if (result.error) {

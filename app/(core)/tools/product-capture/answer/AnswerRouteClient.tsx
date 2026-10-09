@@ -7,7 +7,7 @@
 
 import { TableProperties } from "lucide-react";
 
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AnswerQueue } from "@/features/product-capture/components/pipeline/AnswerQueue";
 

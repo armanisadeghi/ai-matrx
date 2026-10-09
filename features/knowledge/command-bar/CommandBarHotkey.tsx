@@ -14,6 +14,8 @@
  * A route can also CLAIM the key explicitly with `useClaimSearchKeys`
  * (features/shell/hooks); the bar then stays closed while it is mounted.
  * While the bar is open, the bar owns ⌘K (it opens a result's action panel).
+ * Inside an editor (Write, Source, a formatting textarea, any contenteditable)
+ * ⌘K is the editor's link chord: the bar never opens over the person's writing.
  */
 
 import { useEffect } from "react";
@@ -21,6 +23,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { isSearchKeyClaimed } from "@/features/shell/hooks/searchKeyClaim";
 import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
+import { editorOwnsKeyEvent } from "@ai-matrx/rich-editor/format/editor-keys";
 
 export function isCommandBarHotkey(e: KeyboardEvent): boolean {
   return (
@@ -39,6 +42,8 @@ export default function CommandBarHotkey() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isCommandBarHotkey(e) || e.defaultPrevented || e.repeat) return;
       if (isOpen) return;
+      // The editor the person is writing in owns ⌘K (its link prompt).
+      if (editorOwnsKeyEvent(e)) return;
       // A mounted route that claimed Cmd+K (useClaimSearchKeys) owns it.
       if (isSearchKeyClaimed("k")) return;
       e.preventDefault();

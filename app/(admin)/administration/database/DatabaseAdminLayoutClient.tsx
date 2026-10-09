@@ -35,7 +35,7 @@ export function DatabaseAdminLayoutClient({
   const isFullHeightDatabaseTool =
     currentPath === `${DATABASE_MODULE_HOME}/canonicalization` ||
     currentPath.startsWith(`${DATABASE_MODULE_HOME}/canonicalization/`) ||
-    ["sql-functions", "sql-queries", "workbench", "enums", "data-integrity", "store-tables"].some(
+    ["sql-functions", "sql-queries", "workbench", "enums", "data-integrity", "custom-tables"].some(
       (page) => currentPath === `${DATABASE_MODULE_HOME}/${page}`,
     );
 

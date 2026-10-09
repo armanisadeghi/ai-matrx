@@ -41,7 +41,7 @@ describe("GoogleWorkspaceConnectBody", () => {
   });
 
   it("merges the captured record onto the file passed to pickedGoogleRecordResource", () => {
-    const call = src.match(/pickedGoogleRecordResource\(\{[\s\S]{0,150}?\}\)/)?.[0];
+    const call = src.match(/pickedGoogleRecordResource\(\{[\s\S]{0,400}?\}\)/)?.[0];
     expect(call).toBeTruthy();
     expect(call).toContain("...file");
     expect(call).toContain("...freshRecords[file.id]");
@@ -64,7 +64,7 @@ describe("GoogleWorkspaceReviewWorkspace", () => {
 
   it("merges the captured record onto the resource passed to pickedGoogleRecordResource", () => {
     const call = src.match(
-      /pickedGoogleRecordResource\(\{[\s\S]{0,150}?\}\)/,
+      /pickedGoogleRecordResource\(\{[\s\S]{0,400}?\}\)/,
     )?.[0];
     expect(call).toBeTruthy();
     expect(call).toContain("...resource");

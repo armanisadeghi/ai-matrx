@@ -4,14 +4,14 @@
 // become new top-level pages (one per file); the last one opens.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Code2, FileDown, FileInput, FileText, Table } from "lucide-react";
+import { Archive, Code2, FileDown, FileInput, FileText, Link2, Table } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
 
 import { useMoveIn } from "../ai/MoveIn";
 import { IMPORT_ACCEPT, readImport, type ImportKind } from "../io/import";
+import { useNotionImportDoor } from "../io/NotionImport";
 import { useSpaces } from "../state/SpacesProvider";
 
 const KINDS: Array<{ kind: ImportKind; label: string; icon: ReactNode }> = [
@@ -27,6 +27,8 @@ export function ImportButton() {
   const input = useRef<HTMLInputElement>(null);
   const kindRef = useRef<ImportKind>("markdown");
   const moveIn = useMoveIn();
+  const notion = useNotionImportDoor();
+  const zip = useRef<HTMLInputElement>(null);
 
   const pick = (kind: ImportKind) => {
     kindRef.current = kind;
@@ -50,7 +52,6 @@ export function ImportButton() {
         made += 1;
         if (page.warnings.length) toast.warning(`${file.name}: ${page.warnings.length} part${page.warnings.length === 1 ? "" : "s"} imported as text`);
       } catch (err) {
-        if (isOrganizationSelectionCancelled(err)) break;
         toast.error(err instanceof Error ? err.message : `${file.name} could not be imported.`);
       }
     }
@@ -76,6 +77,18 @@ export function ImportButton() {
               <span className="flex-1 truncate text-left">{k.label}</span>
             </button>
           ))}
+          <button type="button" className="spaces-menu-row" onClick={() => (setOpen(false), zip.current && ((zip.current.value = ""), zip.current.click()))}>
+            <span className="spaces-menu-row-icon">
+              <Archive size={16} />
+            </span>
+            <span className="flex-1 truncate text-left">Notion export (.zip)</span>
+          </button>
+          <button type="button" className="spaces-menu-row" onClick={() => (setOpen(false), void notion.connect())}>
+            <span className="spaces-menu-row-icon">
+              <Link2 size={16} />
+            </span>
+            <span className="flex-1 truncate text-left">Connect Notion</span>
+          </button>
           {moveIn.wired ? (
             <button type="button" className="spaces-menu-row" onClick={() => (setOpen(false), moveIn.ask())}>
               <span className="spaces-menu-row-icon">
@@ -86,6 +99,17 @@ export function ImportButton() {
           ) : null}
         </PopoverContent>
       </Popover>
+      <input
+        ref={zip}
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        aria-hidden
+        onChange={(e) => {
+          const file = e.currentTarget.files?.[0];
+          if (file) void notion.fromZip(file);
+        }}
+      />
       <input
         ref={input}
         type="file"

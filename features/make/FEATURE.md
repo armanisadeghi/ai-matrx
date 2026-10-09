@@ -15,7 +15,7 @@ dialog on the page — no builder is forked.
 |---|---|
 | `tiles.ts` | The tile registry: one row per tile `{id, label, what (≤60), flow, kind, champion, asksForTable, href?}`. |
 | `MakeHome.tsx` | The page, `MakeMount` (RecordsMount + `useRecordsUiPorts` + `recordsUiHostFor` behind the store switch), `MakeFlowSheet` (step 1 "Which table, or make one?" on `PickOrAdd`, then the builder made NEW: `createOnMount` / `startNew`), Recent and templates. The only file here that imports `@ai-matrx/records*` (registered in `lib/knobs/unifiedDataCampaign.register.ts`). |
-| `recent.ts` | What "Recently changed" never shows: archived rows, test organizations (`settings.test_fixture`), app-kept tables. |
+| `recent.ts` | What "Recently changed" never shows: archived rows, test organizations (`settings.test_fixture`), platform-owned tables. |
 
 ## Rules
 

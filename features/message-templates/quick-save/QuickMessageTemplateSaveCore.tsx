@@ -32,10 +32,6 @@ import type {
   MessageTemplateDB,
 } from "@/features/message-templates/types/message-templates-db";
 import { readMessageTemplateMetadata } from "@/features/message-templates/types/message-templates-db";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -46,7 +42,8 @@ import {
   type TemplateSaveMode,
   type TemplateUpdateMethod,
 } from "./template-save";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface QuickMessageTemplateSaveCoreProps {
   initialContent: string;
@@ -147,7 +144,7 @@ export function QuickMessageTemplateSaveCore({
       let saved: MessageTemplateDB;
       if (mode === "create") {
         saved = await createTemplate({
-          organization_id: await ensureOrganizationContext(),
+          organization_id: await ensureOrgId(null),
           label: label.trim(),
           content: refine.workingContent.trim(),
           role,

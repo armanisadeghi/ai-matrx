@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import type { MatrxDrillMeasure } from "@ai-matrx/design-system/data-table";
 
 import { Button } from "@/components/ui/button";
-import { currentPointsRate } from "@/components/cost/pointsRate";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 
 import type { DrillHaving } from "./types";
 
@@ -29,7 +29,7 @@ const OPS: Array<{ op: Op; label: string }> = [
 ];
 
 /** The value a person typed, in the unit the cells print, as the door's number (money in dollars). */
-export function havingValue(typed: number, unit: string | undefined, money: "points" | "usd", rate: number | null = currentPointsRate()): number | null {
+export function havingValue(typed: number, unit: string | undefined, money: "points" | "usd", rate: number | null): number | null {
   if (!Number.isFinite(typed)) return null;
   if (unit !== "usd" || money === "usd") return typed;
   return rate && rate > 0 ? typed / rate : null;
@@ -58,8 +58,10 @@ export function DrillNumberFilter({
   const [measure, setMeasure] = useState<string>("");
   const [op, setOp] = useState<Op>(">=");
   const [typed, setTyped] = useState("");
+  // The SUBSCRIBED rate: the threshold converts the moment the knob lands.
+  const rate = usePointsRate();
   const pick = measure && choices.some((m) => m.key === measure) ? measure : choices[0]?.key ?? "";
-  const value = havingValue(Number(typed.replace(/,/g, "")), units[pick], money);
+  const value = havingValue(Number(typed.replace(/,/g, "")), units[pick], money, rate);
   const label = (h: DrillHaving) => {
     const op = h.op as Op;
     const m = measures.find((x) => x.key === h.measure);

@@ -25,7 +25,7 @@ import { getTopicProjectLinks } from "../service";
 import type { ResearchTemplate } from "../types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { AGENT_CONFIG_KEYS } from "./types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export interface ResearchTopicRow {
   id: string;

@@ -18,18 +18,24 @@ import { useRecordsClient } from "@ai-matrx/records/react";
 import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, Search, SlidersHorizontal, Square, Table2, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { ensureOrganizationForWrite } from "@/lib/organization/organization-gate";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import { FieldList, MenuRow, NewButton, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
+import { ENTITY_PAGE, entityDefaultGroup, entityRowsArgs, entityShownColumns, seededEntityFirst } from "./first-reads";
+import { BlockRecordsSeed, useBlockSeedAnswers } from "../page/space-seed-context";
+import { formatCount } from "@ai-matrx/kit/format";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { useStructureEdit } from "../page/structure";
+import { useParams } from "next/navigation";
+
+import { writeNewEntityRow } from "./entity-row-add";
 
 /** The layouts a built-in source draws today. */
 const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof Table2 }> = [
@@ -42,7 +48,7 @@ const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof T
 const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
 /** Rows per read: the first page, and each "Load more" asks only the NEXT page (offset = rows held). */
-const PAGE = 50;
+const PAGE = ENTITY_PAGE;
 /** How long a read may go unanswered before it is asked again (once), then named. */
 const STALL_MS = 15000;
 
@@ -62,6 +68,21 @@ function sentence(e: unknown, fallback: string): string {
   return fallback;
 }
 
+type EntityFirstRead = { def: unknown; page: { rows?: unknown[]; columns?: unknown[]; total?: unknown } };
+
+function entityStateOf(token: string, read: EntityFirstRead, question: string): EntityState {
+  const api = (read.def as { api?: { label?: string; columns?: EntityColumn[] }; label?: string }).api;
+  return {
+    label: api?.label ?? (read.def as { label?: string }).label ?? token,
+    columns: entityShownColumns(api?.columns ?? [], read.page.columns),
+    rows: (read.page.rows ?? []) as EntityRow[],
+    total: Number(read.page.total ?? 0),
+    loading: false,
+    error: null,
+    answered: question,
+  };
+}
+
 /**
  * One built-in source's presented columns and one page of rows for the view's question — the filter
  * and the sort are asked of the store (never applied to a page here), so a count and a page agree.
@@ -69,9 +90,19 @@ function sentence(e: unknown, fallback: string): string {
 function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
-  const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null, answered: "" });
   const where = JSON.stringify(view.filters ?? {});
   const sortKey = JSON.stringify(view.sorts?.[0] ?? null);
+  const question = `${token}|${where}|${sortKey}|${search}`;
+  // Round 36: the server's answers for this first question (this block's seed), drawn without asking again.
+  const answers = useBlockSeedAnswers();
+  const [seeded] = useState(() => {
+    const first = seededEntityFirst(answers, token, view.filters ?? {}, view.sorts?.[0] ?? null, search, PAGE);
+    return first ? (first as EntityFirstRead) : null;
+  });
+  const seededFor = useRef<string | null>(seeded ? question : null);
+  const [state, setState] = useState<EntityState>(() =>
+    seeded ? entityStateOf(token, seeded, question) : { label: null, columns: [], rows: [], total: 0, loading: true, error: null, answered: "" },
+  );
   // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
   // rows forever: past STALL_MS the read is asked once more, then the block says so with Try again.
   const [stalls, setStalls] = useState(0);
@@ -79,11 +110,13 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const held = useRef(PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
   const asked = useRef("");
-  const question = `${token}|${where}|${sortKey}|${search}`;
   useEffect(() => {
     // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
     if (asked.current !== question) held.current = PAGE;
     asked.current = question;
+    // The server already answered this question (the first one): nothing to ask until a re-read.
+    if (seededFor.current === question && tick === 0 && stalls === 0) return;
+    seededFor.current = null;
     let cancelled = false;
     let settled = false;
     const stall = setTimeout(() => {
@@ -94,33 +127,13 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
     const source = { kind: "entity" as const, token };
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
-    void Promise.all([
-      client.drillDescribe({ source }),
-      client.drillRows({
-        source,
-        ...(Object.keys(filters).length ? { where: filters } : {}),
-        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        ...(search ? { search } : {}),
-        limit: held.current,
-      }),
-    ]).then(
+    void Promise.all([client.drillDescribe({ source }), client.drillRows(entityRowsArgs(token, filters, sort, search, held.current))]).then(
       ([def, page]) => {
         settled = true;
         if (cancelled) return;
         if (!def.ok) return setState((s) => ({ ...s, loading: false, error: sentence(def.error, "This database could not be read.") }));
         if (!page.ok) return setState((s) => ({ ...s, loading: false, error: sentence(page.error, "This database’s rows could not be read.") }));
-        const api = (def.data as unknown as { api?: { label?: string; columns?: EntityColumn[] }; label?: string }).api;
-        const shown = new Set((page.data.columns ?? []).filter((c): c is string => typeof c === "string"));
-        const columns = (api?.columns ?? []).filter((c) => c.api_name !== "id" && (shown.size === 0 || shown.has(c.api_name) || shown.has(c.lookup?.via ?? "")));
-        setState({
-          label: api?.label ?? (def.data as unknown as { label?: string }).label ?? token,
-          columns,
-          rows: (page.data.rows ?? []) as EntityRow[],
-          total: Number(page.data.total ?? 0),
-          loading: false,
-          error: null,
-          answered: question,
-        });
+        setState(entityStateOf(token, { def: def.data, page: page.data as unknown as EntityFirstRead["page"] }, question));
       },
       (thrown: unknown) => {
         settled = true;
@@ -147,14 +160,7 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
     try {
-      const page = await client.drillRows({
-        source: { kind: "entity", token },
-        ...(Object.keys(filters).length ? { where: filters } : {}),
-        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        ...(search ? { search } : {}),
-        limit: PAGE,
-        offset: rows.length,
-      });
+      const page = await client.drillRows(entityRowsArgs(token, filters, sort, search, PAGE, rows.length));
       if (!page.ok) {
         toast.error(sentence(page.error, "More rows could not be read."));
         return;
@@ -191,7 +197,6 @@ function titleColumn(columns: EntityColumn[]): EntityColumn | undefined {
   return TITLE_KEYS.map((k) => columns.find((c) => c.api_name === k)).find(Boolean) ?? columns.find((c) => c.type === "text") ?? columns[0];
 }
 
-const isBareId = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 function isDateType(type: string): boolean {
   return /date|time/i.test(type);
@@ -212,7 +217,7 @@ function valueText(c: EntityColumn, v: unknown): string {
 
 function Cell({ c, v }: { c: EntityColumn; v: unknown }) {
   // A bare id is not something a person reads; the module names it through a lookup column (NEEDS.md).
-  if (isBareId(v)) return null;
+  if (isUuidShape(v)) return null;
   const text = valueText(c, v);
   if (!text) return null;
   if (c.type === "choice") return <span className="spaces-entity-pill">{text}</span>;
@@ -241,12 +246,17 @@ export function EntityDatabase(p: EntityDatabaseProps) {
   return (
     // org-filter: write-target a built-in source's writes go through the active organization
     <RecordsMount letTheStoreDecideRights config={p.published ?? config}>
-      <EntityFrame {...p} />
+      <BlockRecordsSeed>
+        <EntityFrame {...p} />
+      </BlockRecordsSeed>
     </RecordsMount>
   );
 }
 
 function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabaseProps) {
+  // Views, saved filters and settings are structure: Full access / Can edit only (page/structure.ts).
+  const structure = useStructureEdit();
+  const shape = editable && structure;
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
@@ -279,21 +289,21 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const client = useRecordsClient();
   // "New" (F7): one row added in place through the module's write door, then opened in the peek.
   // A new row is filed in the organization the person is working in (the write target, never a filter).
-  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  // org-filter: write-target a new row is filed in the organization the person works in
+  const spaceId = useParams<{ spaceId?: string }>().spaceId ?? null;
   const addRow = async () => {
-    let organization_id: string;
-    try {
-      // "New" is a click, always the person's act: the organization gate reads any press inside the page
-      // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
-      await whenOrgBootstrapResolved();
-      organization_id = await ensureOrganizationForWrite(activeOrganizationId, { interactive: true });
-    } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(sentence(err, "A row could not be added here."));
-      return;
-    }
+    // "New" is a click, always the person's act: the organization gate reads any press inside the page
+    // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
     // Notion's new row starts with an empty title ("Untitled" until named); a module's title is required.
     const title = titleColumn(entity.columns);
-    const res = await client.entityRowWrite({ token, record_id: null, organization_id, columns: title?.writable ? { [title.api_name]: "" } : {} });
+    let res;
+    try {
+      await whenOrgBootstrapResolved();
+      res = await writeNewEntityRow(client, { token, spaceId, titleColumn: title?.writable ? title.api_name : null });
+    } catch (err) {
+      toast.error(sentence(err, "A row could not be added here."));
+      return;
+    }
     if (!res.ok) {
       toast.error(sentence(res.error, "A row could not be added here."));
       return;
@@ -324,7 +334,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
                 view={v}
                 icon={<Icon size={14} strokeWidth={1.8} />}
                 active={v.id === active.id}
-                editable={editable}
+                editable={shape}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
                 onDuplicate={() => {
@@ -342,7 +352,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
               />
             );
           })}
-          {editable ? (
+          {shape ? (
             <Button
               variant="quiet"
               icon={<Plus size={14} />}
@@ -382,7 +392,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
             columns={entity.columns}
             choice={filterChoices[active.id]}
             onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-            canSave={editable}
+            canSave={shape}
             onSave={(filters) => saveView({ filters })}
           />
           <ViewerSortButton
@@ -390,12 +400,12 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
             fields={asFields(entity.columns.filter((c) => !c.lookup))}
             choice={sortChoices[active.id]}
             onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-            canSave={editable}
+            canSave={shape}
             onSave={(sorts) => saveView({ sorts })}
             icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
           />
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
-          <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
+          {shape ? <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={shape} /> : null}
           {editable ? <NewButton onNew={() => void addRow()} /> : null}
         </div>
       </div>
@@ -462,7 +472,7 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
   }
   // The default grouping is a choice the module names in words (a project's Status), never a lookup
   // the door answers as bare ids (Created by) — those drew a legend of uuids.
-  const choice = entity.columns.find((c) => c.type === "choice") ?? entity.columns.find((c) => c.lookup && c.lookup.replaces);
+  const choice = entityDefaultGroup(entity.columns);
   if (view.layout === "chart") {
     const by = view.chart?.groupBy ?? view.groupField ?? choice?.api_name;
     return (
@@ -533,7 +543,7 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
         </button>
       ) : null}
       <div className="spaces-entity-count type-secondary text-muted-foreground">
-        <span className="spaces-entity-total">{entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}</span>
+        <span className="spaces-entity-total">{entity.loading && !entity.rows.length ? "" : `${formatCount(entity.total)} ${entity.total === 1 ? "row" : "rows"}`}</span>
         {entity.hasMore ? (
           <Button variant="quiet" disabled={entity.loadingMore} onClick={() => void entity.loadMore()}>
             {entity.loadingMore ? "Loading…" : "Load more"}
@@ -727,7 +737,7 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
       <div className="spaces-entity-props">
         {entity.columns
           // A bare id is not a property a person reads (the module's lookup column carries its name).
-          .filter((c) => c !== title && !isBareId(row[c.api_name]))
+          .filter((c) => c !== title && !isUuidShape(row[c.api_name]))
           .map((c) => (
             <PropRow key={c.api_name} c={c} value={row[c.api_name]} editable={editable && c.writable === true && !c.lookup} onWrite={(v) => entity.write(rowId, c.api_name, v)} />
           ))}

@@ -6,6 +6,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { useSetting } from "../hooks/useSetting";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
+import { StartupOrganizationRow } from "@/features/organizations/components/StartupOrganizationRow";
 
 export default function OrganizationsTab() {
   // The one knob for "a link named an organization — obey it?". It is a
@@ -18,6 +19,14 @@ export default function OrganizationsTab() {
 
   return (
     <div className="p-4 md:p-6">
+      <SettingsSection title="When you sign in">
+        <StartupOrganizationRow
+          label="Start-up organization"
+          description="Opens when you have no last-used organization"
+          searchKeywords={["start-up", "startup", "organization", "open"]}
+          last
+        />
+      </SettingsSection>
       <PreferencesLoadGate what="your link setting">
         {/* Every link the platform sends names the organization its target is filed under. */}
         <SettingsSection title="Links from notifications and emails">

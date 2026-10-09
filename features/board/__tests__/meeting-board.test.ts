@@ -55,8 +55,8 @@ jest.mock("@/utils/supabase/projectsDb", () => ({
   }),
 }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "u1" }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: jest.fn(async ({ organizationId }: { organizationId: string | null }) => organizationId ?? "picked"),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(async (organizationId: string | null) => organizationId ?? "picked"),
 }));
 jest.mock("@/lib/organizations/orgBootstrapGate", () => ({ whenOrgBootstrapResolved: async () => undefined }));
 jest.mock("@/features/trash/service", () => ({ restoreFromTrash: jest.fn() }));

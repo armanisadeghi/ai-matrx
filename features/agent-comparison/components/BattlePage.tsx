@@ -24,6 +24,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_4 } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -100,7 +101,7 @@ export function BattlePage({ setId = null }: { setId?: string | null }) {
   }, [columns.length, dispatch, store]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_4),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {

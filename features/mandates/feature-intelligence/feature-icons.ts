@@ -78,7 +78,7 @@ import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 /** Registry Feature id → icon. */
 const FEATURE_ICONS: Readonly<Record<string, LucideIcon>> = {
   // Agents
-  "agent-apps": Puzzle,
+  "applets": Puzzle,
   "agent-memory": Archive,
   "agent-studio": Factory,
   "agent-tools": Wrench,

@@ -5,7 +5,7 @@ const markdownStreamSpy = jest.fn((_props: Record<string, unknown>) => (
   <div data-testid="markdown-stream" />
 ));
 
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => markdownStreamSpy(props),
 }));

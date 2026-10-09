@@ -62,7 +62,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The three switches, with the sentence that keeps them from being flipped together. */

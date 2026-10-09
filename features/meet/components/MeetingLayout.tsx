@@ -19,13 +19,17 @@
 // state); blocked storage just means the default — the package's room.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import {
-  MeetingRoom,
+  MeetAppPanels,
+  MeetRoot,
+  MeetingSkinRoot,
   useMeetSnapshot,
   type MeetingRecord,
   type RoomName,
 } from "@ai-matrx/meet/react";
 import { MeetingBoard } from "@/features/meet/components/board/MeetingBoard";
+import { MEET_APP_PANELS } from "@/features/meet/app-panels/registry";
 import {
   LayoutSwitch,
   type MeetingLayoutChoice,
@@ -117,8 +121,10 @@ export function MeetingLayout({
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
-  const phase = snapshot?.phase ?? "idle";
-  const inRoom = phase === "connected" || phase === "reconnecting";
+  // `?observe=1` joins as a SILENT OBSERVER (Meet MD-16); the server decides who may.
+  const observe = useSearchParams()?.get("observe") === "1";
+  const phase = snapshot?.phase ?? "resolving";
+  const inRoom = phase === "in_call";
   const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
 
   // Left means "was in the room, now is not": a fresh pre-join that starts
@@ -139,24 +145,33 @@ export function MeetingLayout({
   const phoneOffset = phoneSwitchOffset(barHeight);
 
   if (inRoom && layout === "board") {
+    // The Board is drawn here, not by `<MeetingRoom>`, so it carries the
+    // package's one observation root itself (S0).
     return (
-      <MeetingBoard
-        meeting={snapshot?.meeting ?? meeting}
-        onLayout={setLayout}
-        headerControls={headerControls}
-      />
+      <MeetAppPanels panels={MEET_APP_PANELS}>
+        <MeetRoot meeting={meeting}>
+          <MeetingBoard
+            meeting={snapshot?.meeting ?? meeting}
+            onLayout={setLayout}
+            headerControls={headerControls}
+          />
+        </MeetRoot>
+      </MeetAppPanels>
     );
   }
 
   return (
     <div ref={roomRef} className="relative h-full w-full">
-      <MeetingRoom
-        roomName={roomName}
-        meetingId={meetingId}
-        slug={slug}
-        meeting={meeting}
-        headerControls={headerControls}
-      />
+      <MeetAppPanels panels={MEET_APP_PANELS}>
+        <MeetingSkinRoot
+          roomName={roomName}
+          meetingId={meetingId}
+          slug={slug}
+          meeting={meeting}
+          headerControls={headerControls}
+          observe={observe}
+        />
+      </MeetAppPanels>
       {!inRoom && !ended && preJoinControls !== undefined ? (
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2 pt-[env(safe-area-inset-top)]">
           {preJoinControls}

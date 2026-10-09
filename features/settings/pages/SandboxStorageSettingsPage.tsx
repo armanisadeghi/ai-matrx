@@ -47,7 +47,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const TIER_DESCRIPTIONS: Record<SandboxTier, string> = {
   ec2: "Each EC2 sandbox keeps its own retained home directory. Manage that sandbox individually.",

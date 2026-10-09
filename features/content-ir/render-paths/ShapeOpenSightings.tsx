@@ -30,7 +30,7 @@ import {
   resolveKindIncident,
   type KindIncidentRecord,
 } from "@/features/content-ir/admin/incident-service";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface ShapeOpenSightingsProps {
   kind: string;

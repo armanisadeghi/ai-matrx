@@ -30,7 +30,7 @@
 //   Surface A's exclusive right — it emits via `onApplyActive` on each change.
 //
 //   ORG — always user-changeable (product decision 2026-06-10). Surfaces that
-//   "enforce" an org just pass `defaultOrganizationId`; the field defaults to
+//   "enforce" an org just pass `initialOrganizationId`; the field defaults to
 //   the active org, else the richest org.
 //
 //   LAYOUT — fixed section height; selection never resizes anything. Width is
@@ -57,7 +57,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -94,7 +94,7 @@ import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
 /** Sentinel org value: no org filter — show / span every organization.
- *  Default for assignment mode unless a `defaultOrganizationId` is passed. */
+ *  Default for assignment mode unless a `initialOrganizationId` is passed. */
 export const ALL_ORGS = "__all_orgs__";
 
 /* ── public contract ─────────────────────────────────────────────────────── */
@@ -214,7 +214,7 @@ export interface ContextAssignmentFieldProps {
    *  (platform.associations). "preview" console.logs everything. Default: "live". */
   writeMode?: "live" | "preview";
   /** Enforced-context default. User can ALWAYS change it afterwards. */
-  defaultOrganizationId?: string | null;
+  initialOrganizationId?: string | null;
   /** Pre-select on mount (e.g. a filter bar restoring state). */
   initialSelection?: Partial<ContextSelection>;
   /** Active mode only: called on every selection change — Surface A host dispatches. */
@@ -725,7 +725,7 @@ export function ContextAssignmentField({
   subject,
   mode = "assignment",
   writeMode = "live",
-  defaultOrganizationId,
+  initialOrganizationId,
   initialSelection,
   onApplyActive,
   onClearActive,
@@ -818,20 +818,20 @@ export function ContextAssignmentField({
   }, [dims.projects, dims.tasks, engagementAttempt]);
   const retryEngagement = () => setEngagementAttempt((n) => n + 1);
 
-  // Org: an explicitly-passed `defaultOrganizationId` wins; otherwise the
+  // Org: an explicitly-passed `initialOrganizationId` wins; otherwise the
   // default is "All organizations" (nothing filtered out). Always changeable.
   const [orgId, setOrgId] = useState<string | null>(
-    defaultOrganizationId ?? null,
+    initialOrganizationId ?? null,
   );
   useEffect(() => {
     if (orgId || organizations.length === 0) return;
     setOrgId(
-      defaultOrganizationId &&
-        organizations.some((o) => o.id === defaultOrganizationId)
-        ? defaultOrganizationId
+      initialOrganizationId &&
+        organizations.some((o) => o.id === initialOrganizationId)
+        ? initialOrganizationId
         : ALL_ORGS,
     );
-  }, [organizations, orgId, defaultOrganizationId]);
+  }, [organizations, orgId, initialOrganizationId]);
 
   // "All organizations" mode: no org-of-record, no org-based filtering.
   const isAllOrgs = orgId === ALL_ORGS;

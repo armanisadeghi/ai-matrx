@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { Table2, ExternalLink } from "lucide-react";
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+// Located first (lane INTEG-CLIENTS): a moved or custom table opens from its own store.
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
 import { parseDataset } from "./parseDataset";
 
 /**
  * Overlay renderer for the `dataset` tool — the real table rendered
- * with the canonical `UserTableViewer` (rows, sorting, filtering), self-loading
+ * with the store grid (`LocatedTableViewer`: rows, sorting, filtering), self-loading
  * by id. Falls back to a message when there's no usable id (e.g. a result
  * that carries an error in place of the table id).
  */

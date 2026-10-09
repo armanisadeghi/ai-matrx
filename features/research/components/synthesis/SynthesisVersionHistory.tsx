@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { ChevronDown, ChevronUp, History, Loader2 } from "lucide-react";
 
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { toast } from "@/lib/toast";
 
 import { getSynthesisVersions } from "../../service";

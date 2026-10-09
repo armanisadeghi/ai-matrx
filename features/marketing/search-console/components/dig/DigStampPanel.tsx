@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";

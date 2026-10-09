@@ -645,7 +645,7 @@ export function FeaturedIntegrationTile({
       type="button"
       data-integration-id={item.id}
       onClick={onOpen}
-      className="group flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-foreground/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[border-color,box-shadow,transform,translate] hover:-translate-y-px hover:border-foreground/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="flex items-start gap-3">
         <ConnectorTile connector={item.artwork} size="lg" />

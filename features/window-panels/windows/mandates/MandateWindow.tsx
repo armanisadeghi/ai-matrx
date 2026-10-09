@@ -47,10 +47,6 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { mandateRoute } from "@/features/mandates/browse/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import {
-  selectAgentLineageIndex,
-} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchMandateConsoleData,
   fetchMandateCodeTruthReport,
@@ -69,6 +65,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface MandateWindowProps {
   isOpen?: boolean;
@@ -99,7 +97,7 @@ function MandateWindowInner({
 }: MandateWindowProps) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const lineageIndex = useAgentLineageIndex();
 
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
@@ -144,7 +142,7 @@ function MandateWindowInner({
   useEffect(() => {
     load();
     // The pickers and the lineage index both read the canonical agent listing.
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [dispatch, load]);
 
   // Any mandate write anywhere refreshes this window — the same bus the route

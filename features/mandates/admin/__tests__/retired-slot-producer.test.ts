@@ -28,7 +28,8 @@ describe("retired Mandate producer contract", () => {
       // The tables are NAMED in one place now — the Phase 1W storage router —
       // and the services reach them through it. Both of the router's branches
       // are real compiled code, so this guard keeps holding across the cutover.
-      "lib/supabase/mandateStorage.ts",
+      // P27 (618a850bf1): lib/supabase/mandateStorage.ts is a shim; the code lives in the chat package source.
+      "../aidream/apps/shared/chat/src/ui/mandates-storage/mandateStorage.ts",
       "features/mandates/admin/service.ts",
       "../aidream/apps/shared/chat/src/mandates/service.ts",
       "features/mandates/service.server.ts",

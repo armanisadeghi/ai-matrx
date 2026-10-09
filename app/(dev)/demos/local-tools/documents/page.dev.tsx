@@ -41,7 +41,7 @@ import type {
   SyncStatus,
   DocConflict,
 } from "../_lib/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ---------------------------------------------------------------------------
 // Tab definitions

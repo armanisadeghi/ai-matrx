@@ -20,7 +20,7 @@
 // instead of watching a progress bar start at zero and guessing.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRouter } from "next/navigation";
 import {

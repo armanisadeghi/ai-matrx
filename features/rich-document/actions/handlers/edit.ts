@@ -30,6 +30,7 @@ import {
 import { openStructuredRawViewer } from "@ai-matrx/chat/agents/components/messages-display/message-options/openAssistantMessageEditor";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 import { updateMessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import { openEditInPlaceFromLastInteraction } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 
 registerAction({
   id: "edit",
@@ -39,7 +40,7 @@ registerAction({
       ? "View raw content"
       : "Edit content",
   icon: Edit,
-  iconColor: "text-emerald-500 dark:text-emerald-400",
+  // No colour of its own: every bar icon is the same muted glyph (Arman, 2026-10-08).
   category: "edit",
   supportedSources: "*",
   // The pencil sits in every bar AND in the Edit submenu.
@@ -105,6 +106,12 @@ registerAction({
           patch: { _editingInPlace: true },
         }),
       );
+      ctx.onClose();
+      return;
+    }
+    // EDIT IN PLACE first (a note's Read, a study guide…): the Edit icon or right-click "Edit"
+    // opens the editor in the content's own spot when that content sits in an edit-in-place zone.
+    if (openEditInPlaceFromLastInteraction()) {
       ctx.onClose();
       return;
     }

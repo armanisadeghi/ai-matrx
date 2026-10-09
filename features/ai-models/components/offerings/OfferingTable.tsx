@@ -1,12 +1,12 @@
 "use client";
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useState } from "react";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 import {
   ProviderPriceCell,
   type ProviderPriceField,

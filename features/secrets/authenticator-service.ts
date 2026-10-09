@@ -10,7 +10,6 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type {
   AuthenticatorCode,
   AuthenticatorEntry,
@@ -21,6 +20,7 @@ import {
   readMatrxJsonResponse,
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
@@ -36,7 +36,7 @@ async function authHeaders(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Enrolling or removing an
   // authenticator with no organization selected asks, then continues this
   // same request; the polled current-code read never opens a dialog.
-  const organizationId = await ensureOrganizationForRequest({ method });
+  const organizationId = await ensureOrgId(null);
   const supabase = createClient();
   const {
     data: { session },

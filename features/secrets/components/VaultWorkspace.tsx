@@ -12,8 +12,8 @@
 import {
   UntrustedCount,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+} from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -112,7 +112,7 @@ import { VaultItemDetail } from "./VaultItemDetail";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface VaultWorkspaceProps {
   principal: VaultPrincipal;

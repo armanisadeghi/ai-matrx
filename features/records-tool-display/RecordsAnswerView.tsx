@@ -45,6 +45,7 @@ import {
   type AnswerRow,
   type RecordsAnswer,
 } from "./readRecordsAnswer";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Rows before "Show more" inside a chat turn. */
 const ROWS_IN_A_TURN = 8;
@@ -152,7 +153,7 @@ function RowsCard({
       icon={<Database />}
       iconClassName="text-emerald-600 dark:text-emerald-400"
       records={{ count, singular: "record", plural: "records" }}
-      {...(answer.partial ? { facts: [`${answer.rows.length.toLocaleString()} shown`] } : {})}
+      {...(answer.partial ? { facts: [`${formatCount(answer.rows.length)} shown`] } : {})}
       open={{ href: tableHref(answer.tableId), label: "Open the table" }}
       headerActions={
         save ? (

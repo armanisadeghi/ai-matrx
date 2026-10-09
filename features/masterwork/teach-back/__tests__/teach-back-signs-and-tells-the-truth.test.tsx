@@ -97,8 +97,8 @@ jest.mock("@/components/official/ProTextarea", () => ({
 
 // The audio system mounts a whole lazy host; what this suite asserts is what
 // the SCREEN says, never what came out of the speakers.
-jest.mock("@/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
-jest.mock("@/features/audio/service/useSpeech", () => ({
+jest.mock("@ai-matrx/media/speech", () => ({ primeAudioOutput: () => {} }));
+jest.mock("@ai-matrx/media/react", () => ({
   useSpeech: () => ({
     speak: () => "id",
     status: null,

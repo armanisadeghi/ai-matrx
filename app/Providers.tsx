@@ -58,6 +58,7 @@ import { RealtimeHost } from "@/providers/RealtimeHost";
 // THE ONE `@ai-matrx/messaging` mount. Inside RealtimeHost on purpose — it
 // rides that provider's single manager. See providers/MessagingHost.tsx.
 import { MessagingHost } from "@/providers/MessagingHost";
+import { WarmupHost } from "@/providers/WarmupHost";
 // THE ONE `@ai-matrx/meet` mount. Inside RealtimeHost (it rides that single
 // manager) and OUTSIDE MessagingHost, because the two call/meeting invitation
 // handlers registered on <MessagingProvider actions> read this provider's
@@ -188,6 +189,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <RichContentHostProvider>
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
+        <WarmupHost>
         <CanvasHostProvider>
         <ChatHostAdapter>
         <ChatSurfaceRegistrations />
@@ -328,6 +330,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
         </AssociationsHost>
         </ChatHostAdapter>
         </CanvasHostProvider>
+        </WarmupHost>
       </StoreProvider>
     </ReactQueryProvider>
     </RichContentHostProvider>

@@ -10,6 +10,7 @@ import {
   type KnobRef,
   type KnobScope,
 } from "./effectiveKnobs";
+import { usePaintedOrganizationHeld } from "./paintedOrganization";
 import { useSignedIn } from "./useSignedIn";
 
 function scopeKeyOf(scopes: readonly KnobScope[] | undefined): string {
@@ -36,8 +37,9 @@ export function useEffectiveKnob(
     () => 0,
   );
   const signedIn = useSignedIn();
+  const painted = usePaintedOrganizationHeld(organizationId);
   useEffect(() => {
-    if (value !== undefined || !signedIn) return;
+    if (value !== undefined || !signedIn || painted) return;
     void ensureEffectiveKnob(organizationId ?? null, userId ?? null, ref, scopes).catch(
       (error: unknown) => {
         const address = knobAddress(ref);
@@ -50,6 +52,6 @@ export function useEffectiveKnob(
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn]);
+  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn, painted]);
   return value;
 }

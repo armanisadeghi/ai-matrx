@@ -1,7 +1,7 @@
 /**
  * GUARD — a preference save never overwrites a key it did not change.
  *
- * 2026-09-27, live: an agent set `organization.defaultOrganizationId` at
+ * 2026-09-27, live: an agent set an organization preference at
  * 23:28:56; at 23:29:11 the row held null again with nobody acting. A browser
  * whose cached record predated the agent's write saved a preference and the
  * policy wrote its WHOLE cached record (`update({ preferences: body })`),
@@ -92,7 +92,7 @@ const person: IdentityKey = { type: "auth", userId: USER, key: `auth:${USER}` };
 
 const RECORD = {
   display: { darkMode: false },
-  organization: { defaultOrganizationId: "org-ashford", switchWhenALinkAsks: true },
+  organization: { switchWhenALinkAsks: true },
   sandbox: { tier: "hosted", template: "aidream" },
 };
 
@@ -111,7 +111,7 @@ const tab = (edit: (p: typeof RECORD) => void) => {
 describe("two clients change different keys — both survive", () => {
   it("through the policy's remote.write", async () => {
     // Both tabs loaded the same record, then each changed ONE different key.
-    const a = tab((p) => (p.organization.defaultOrganizationId = "org-workspace"));
+    const a = tab((p) => (p.organization.switchWhenALinkAsks = false));
     const b = tab((p) => (p.display.darkMode = true));
 
     const signal = new AbortController().signal;
@@ -119,11 +119,10 @@ describe("two clients change different keys — both survive", () => {
     await write({ identity: person, signal, body: b.body as never, base: b.base as never });
 
     const saved = row.preferences as typeof RECORD;
-    expect(saved.organization.defaultOrganizationId).toBe("org-workspace");
+    expect(saved.organization.switchWhenALinkAsks).toBe(false);
     expect(saved.display.darkMode).toBe(true);
     // Untouched keys stay untouched.
     expect(saved.sandbox).toEqual(RECORD.sandbox);
-    expect(saved.organization.switchWhenALinkAsks).toBe(true);
   });
 
   it("through the whole sync engine: an agent's write survives a stale tab's save", async () => {
@@ -152,17 +151,15 @@ describe("two clients change different keys — both survive", () => {
       getIdentity: () => person,
       reason: "cold-boot",
     });
-    expect(store.getState().userPreferences.organization.defaultOrganizationId).toBe(
-      "org-ashford",
-    );
+    expect(store.getState().userPreferences.organization.switchWhenALinkAsks).toBe(true);
 
-    // …an agent changes the default organization directly in the row…
+    // …an agent changes a preference directly in the row…
     row = {
       ...row,
       version: row.version + 1,
       preferences: {
         ...row.preferences,
-        organization: { ...RECORD.organization, defaultOrganizationId: "org-workspace" },
+        organization: { ...RECORD.organization, switchWhenALinkAsks: false },
       },
     };
 
@@ -172,7 +169,7 @@ describe("two clients change different keys — both survive", () => {
 
     const saved = row.preferences as typeof RECORD;
     expect(saved.display.darkMode).toBe(true);
-    expect(saved.organization.defaultOrganizationId).toBe("org-workspace");
+    expect(saved.organization.switchWhenALinkAsks).toBe(false);
   });
 
   it("a save with nothing changed writes nothing", async () => {

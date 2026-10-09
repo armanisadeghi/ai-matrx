@@ -38,7 +38,7 @@ jest.mock("./sourceScoreDisplay", () => ({
   POST_READ_SCORE_LABEL: "Post-read",
   AUTH_SCORE_LABEL: "Authority",
 }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   ExternalLinkTapButton: () => null,
 }));
 

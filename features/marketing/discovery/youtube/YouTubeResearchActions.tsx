@@ -20,7 +20,7 @@ import {
   streamYouTubeVideoAnalysis,
 } from "./service";
 import type { YouTubeVideoLibraryRecord } from "./types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ANALYSIS_PHASE_LABELS: Record<string, string> = {

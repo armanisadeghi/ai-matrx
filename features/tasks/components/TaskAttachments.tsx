@@ -14,7 +14,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import * as taskService from "@/features/tasks/services/taskService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface TaskAttachmentsProps {

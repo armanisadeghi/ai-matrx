@@ -278,9 +278,3 @@ function simpleTypeOf(v: unknown): "number" | "string" | "boolean" | "date" {
   if (typeof v === "boolean") return "boolean";
   return "string";
 }
-
-/**
- * Threshold above which we recommend auto-routing (skip the confirm dialog).
- * Anything below this should surface the choice to the user.
- */
-export const AUTO_ROUTE_CONFIDENCE = 0.6;

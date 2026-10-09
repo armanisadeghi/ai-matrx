@@ -23,9 +23,9 @@ import {
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 
 /**

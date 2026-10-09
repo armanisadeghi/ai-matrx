@@ -58,8 +58,8 @@ import type {
   ItemMenuCommand,
   ItemMenuConfig,
   ItemMenuSection,
-} from "@/components/official/item/types";
-import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+} from "@ai-matrx/chat/ui/item-types";
+import { itemMenuConfigToExtraSections } from "@/features/context-menu-v3/item/itemMenuToV3";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 /** Every icon name the registry can hand out. Exhaustive: a new name fails typecheck here. */

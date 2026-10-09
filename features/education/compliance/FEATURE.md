@@ -260,6 +260,10 @@ education AI, and `/education/family` can set it.
 
 ## Change log
 
+- `2026-10-08` — claude (lane AL): the organization lookup that `setAgeBand` lets fail is no longer a bare `catch {}` — it is captured once (`captureError`, `level: "low"`, recoverable, not durable) and the write still proceeds.
+
+- `2026-10-08` — claude (lane AJ): `coppaService.setAgeBand` no longer aborts when the active organization is not resolved yet (fresh load) — the answer is written (the RPC asks for an organization only when no profile row exists), so an answered age prompt is never re-asked.
+
 - `2026-08-25` — `coppaService.getGate()` now checks the live Supabase session before
   invoking `edu_coppa_gate()`. A signed-out/expired tab with briefly stale Redux identity
   takes the canonical `no_subject` allow result without calling an authenticated-only RPC.

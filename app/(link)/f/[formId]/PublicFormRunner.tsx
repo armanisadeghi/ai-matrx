@@ -30,6 +30,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FormRunner,
   RecordsUiProvider,
+  endingsFromDocument,
+  hiddenFromLink,
+  themeFromDocument,
+  welcomeFromDocument,
   type FormSubmitOutcome,
   type RecordsUiHost,
 } from "@ai-matrx/records-ui";
@@ -57,7 +61,12 @@ const FORM_TEXT_HOST: RecordsUiHost = {
  * `onAnswersChange` by name, and hand `thankYou` over typed, so a rename is a build failure.
  */
 type PublicFormAsked =
-  | { ok: true; asks: ReadonlyArray<{ field: string; asked: boolean; said?: string | null }> }
+  | {
+      ok: true;
+      asks: ReadonlyArray<{ field: string; asked: boolean; said?: string | null }>;
+      ending?: string | null;
+      score?: number | null;
+    }
   | { ok: false; message: string };
 
 /** Where this browser keeps the secret to its saved place, per form. */
@@ -92,7 +101,45 @@ type Resumed =
   | { kind: "found"; answers: Record<string, unknown>; savedAt: string | null }
   | { kind: "gone"; message: string };
 
-export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?: Record<string, unknown> }) {
+/** A random key for THIS visit, held in memory only — never a cookie, never stored. */
+function newVisitKey(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function PublicFormRunner({
+  form,
+  prefill,
+  linkQuery,
+  autoAdvance,
+}: {
+  /** TYPEFORM-2: a single choice moves on when picked (the knob, resolved by the page). */
+  autoAdvance?: boolean;
+  form: PublicForm;
+  prefill?: Record<string, unknown>;
+  /** The link's query. TYPEFORM-DUP: the form's HIDDEN FIELDS (utm_source, ref, …) are read from it —
+   *  only the names the form declares — sent beside the answers and kept on the submission, never shown. */
+  linkQuery?: Record<string, string | string[] | undefined>;
+}) {
+  const hidden = hiddenFromLink(form.presentation?.hidden_fields ?? [], linkQuery ?? {});
+  // ── COUNTED HONESTLY (TYPEFORM-DUP): view, start, each question reached — through our own route.
+  const visitKey = useRef<string | null>(null);
+  const count = useCallback(
+    (event: "view" | "start" | "reach", field: string | null = null) => {
+      if (!visitKey.current) visitKey.current = newVisitKey();
+      void fetch(`/api/forms/${form.form_id}/visit`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ visit: visitKey.current, event, field }),
+        keepalive: true,
+      }).catch(() => undefined);
+    },
+    [form.form_id],
+  );
+  useEffect(() => {
+    count("view");
+  }, [count]);
   const { copyText } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
@@ -100,6 +147,9 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
   const [secret, setSecret] = useState<string | null>(null);
   const [resumed, setResumed] = useState<Resumed>({ kind: "none" });
   const [runKey, setRunKey] = useState(0);
+  // TYPEFORM-2: NO WELCOME FLASH BEFORE A SAVED PLACE OPENS. The runner is laid out (no shift) but
+  // not shown until this browser has said whether it holds a place, and the place has been read.
+  const [placeChecked, setPlaceChecked] = useState(false);
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
   const [sent, setSent] = useState(false);
   const [copied, setCopied] = useState<"idle" | "copied" | "manual">("idle");
@@ -124,7 +174,10 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
       replaceAddressWithoutNavigating(window.location.pathname + window.location.search);
     }
     const stored = fromLink ?? readStoredPlace(form.form_id);
-    if (!stored) return;
+    if (!stored) {
+      setPlaceChecked(true);
+      return;
+    }
     void (async () => {
       try {
         const response = await fetch(`/api/forms/${form.form_id}/draft/resume`, {
@@ -157,6 +210,8 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
         if (!cancelled && fromLink) {
           setResumed({ kind: "gone", message: "Your saved answers could not be opened just now. The form starts fresh." });
         }
+      } finally {
+        if (!cancelled) setPlaceChecked(true);
       }
     })();
     return () => {
@@ -248,7 +303,15 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
           headers: { "content-type": "application/json" },
           // THE SAVED PLACE'S SECRET IS THE CLIENT KEY: the store marks the place sent in the
           // same transaction, and a second press of Send writes nothing twice.
-          body: JSON.stringify({ values, clientKey: secretRef.current }),
+          body: JSON.stringify({
+            values: {
+              ...values,
+              ...(hidden && Object.keys(hidden).length > 0 ? { _hidden: hidden } : {}),
+              ...(visitKey.current ? { _visit: visitKey.current } : {}),
+              _time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            },
+            clientKey: secretRef.current,
+          }),
         });
         const body = (await response.json()) as {
           ok?: boolean;
@@ -298,7 +361,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
           body: JSON.stringify({ values }),
         });
         const body = (await response.json()) as
-          | { ok: true; asks: Array<{ field: string; asked: boolean; said?: string | null }> }
+          | { ok: true; asks: Array<{ field: string; asked: boolean; said?: string | null }>; ending?: string | null; score?: number | null }
           | { ok: false; message?: string | null };
         if (!response.ok || body.ok !== true) {
           return {
@@ -308,7 +371,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
               "This form could not work out which questions come next, so all of them are shown.",
           };
         }
-        return { ok: true, asks: body.asks };
+        return { ok: true, asks: body.asks, ending: body.ending ?? null, score: body.score ?? null };
       } catch {
         return {
           ok: false,
@@ -350,7 +413,15 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
   // THE PORTS 0.84.8 DOES NOT KNOW YET — see the note at the top of this file.
   // `resumed` opens a saved place on its first unanswered question; a link that only prefills opens
   // on question one, so she sees what the referral link already said for her.
-  const ports: Record<string, unknown> = { whichAsked, initialAnswers, onAnswersChange, resumed: resumed.kind === "found" };
+  const ports: Record<string, unknown> = {
+    whichAsked,
+    initialAnswers,
+    onAnswersChange,
+    resumed: resumed.kind === "found",
+    onStart: () => count("start"),
+    onQuestionShown: (field: string) => count("reach", field),
+    ...(typeof autoAdvance === "boolean" ? { autoAdvance } : {}),
+  };
   const spec: Record<string, unknown> = {
     name: form.title,
     subject: form.table_id,
@@ -361,9 +432,14 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
       help: q.help ?? null,
       required: q.required ?? null,
       showIf: (q.showIf as RuleExpression | null | undefined) ?? null,
+      jumps: q.jumps ?? null,
+      points: q.points ?? null,
     })),
+    welcome: welcomeFromDocument(form.presentation?.welcome),
+    endings: endingsFromDocument(form.presentation?.endings),
+    hiddenFields: form.presentation?.hidden_fields ?? [],
     flow: form.presentation?.flow ?? "one-at-a-time",
-    theme: form.presentation?.theme ?? null,
+    theme: themeFromDocument(form.presentation?.theme),
     thankYou: thankYou
       ? { title: thankYou.title ?? null, body: thankYou.body ?? null, redirectUrl: thankYou.redirect_url ?? null }
       : null,
@@ -389,6 +465,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
           through the one rich-content core — markdown and math, in the
           server HTML (records-ui `renderText` host port, 0.85.15). */}
       <RecordsUiProvider value={FORM_TEXT_HOST}>
+        <div className={placeChecked ? undefined : "invisible"} aria-busy={!placeChecked} data-form-place-checked={placeChecked ? "" : undefined}>
         <FormRunner
           key={runKey}
           form={spec as unknown as Parameters<typeof FormRunner>[0]["form"]}
@@ -397,6 +474,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
           onSubmit={submit}
           {...ports}
         />
+        </div>
       </RecordsUiProvider>
 
       {!sent && save.kind !== "idle" ? (

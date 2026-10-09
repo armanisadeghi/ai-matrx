@@ -50,6 +50,7 @@ export function readSourcePreviewData(data: unknown): SourcePreviewTarget | null
 
 export const SOURCE_PREVIEW_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   id: SOURCE_PREVIEW_KIND,
+  surface: "dom",
   label: "Source",
   icon: Quote,
   load: () => import("./SourcePreviewCanvasView"),

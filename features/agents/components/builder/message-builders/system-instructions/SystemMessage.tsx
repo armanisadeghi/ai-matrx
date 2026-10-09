@@ -38,7 +38,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentMessages,
-  selectAgentName,
   selectAgentSettings,
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
@@ -51,6 +50,7 @@ import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBui
 import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** Extract text from a TextBlock. Canonical field is `.text` — normalised at the Redux boundary. */
 function extractTextFromBlock(block: Record<string, unknown>): string {
@@ -117,7 +117,7 @@ export function SystemMessage({
     selectAgentSettings(state, agentId),
   );
 
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  const agentName = useAgentName(agentId);
 
   const variableDefinitions = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),

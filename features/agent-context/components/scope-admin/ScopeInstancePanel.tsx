@@ -33,8 +33,8 @@ import {
   selectScopeTypesLoading,
 } from "@/features/scopes/redux/selectors/admin";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
 

@@ -7,12 +7,12 @@
  * table" modal, a canvas table, a tool result's dataset overlay, the tables picker's preview —
  * mounts exactly what /data/<table> mounts: `useUnifiedTable` + `UnifiedTableBody` (the same pair
  * a Board tile renders). The table reads as its OWN organization; a table the person was not
- * given gets the canonical no-access page; the Sheet layout, the merged grid's agent surface, the
+ * given gets the canonical no-access page; the grid layout, the merged grid's agent surface, the
  * table's one action list (with this app's entries) all come with it. Only the route's chrome
  * (header, address, capture) stays on the route.
  *
  * Lane CHAIR-ONE-GRID (2026-10-04): this used to mount a second host binding of its own
- * (a records-ui mount with fewer ports); `pnpm check:one-store-grid` keeps every store-table host on this one.
+ * (a records-ui mount with fewer ports); `pnpm check:one-store-grid` keeps every custom-table host on this one.
  */
 
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";

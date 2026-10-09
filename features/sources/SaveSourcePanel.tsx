@@ -46,7 +46,6 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/utils/cn";
 import {
@@ -237,7 +236,6 @@ export function SaveSourcePanel({
       }
     } catch (error) {
       setBusy(false);
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(errorSentence(error));
       return;
     }

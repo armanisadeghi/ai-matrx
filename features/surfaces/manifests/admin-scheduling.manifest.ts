@@ -145,7 +145,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab",
     label: "Active tab",
     description:
-      'Which tab of the Scheduling admin console is showing: "overview", "tasks", "runs", "system_jobs", "orphan_leases", "cron_tester", "scanner_health", or "templates". Derived from the pathname under /administration/automation/scheduling. Always present.',
+      'Which tab of the Scheduling admin console is showing: "overview", "tasks", "runs", "costs", "triggers", "system_jobs", "orphan_leases", "cron_tester", "scanner_health", or "templates". Derived from the pathname under /administration/automation/scheduling. Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 15,
@@ -665,6 +665,8 @@ export type AdminSchedulingTab =
   | "overview"
   | "tasks"
   | "runs"
+  | "costs"
+  | "triggers"
   | "system_jobs"
   | "orphan_leases"
   | "cron_tester"

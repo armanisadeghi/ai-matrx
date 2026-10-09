@@ -3,8 +3,9 @@
  *
  * The Tier 2 default for any textarea that holds user text (comments,
  * descriptions, notes, bios, prompts, status updates, replies). Tier 1 is the
- * bare shadcn `Textarea` from `@/components/ui/textarea`, used only for raw
- * cases (admin diff inputs, debug consoles, etc.).
+ * bare `Textarea` (`@ai-matrx/design-system/controls`, `@/components/ui/textarea`),
+ * used only for raw values (code, JSON, admin diff inputs, debug consoles) and
+ * marked `// ui-exception: <reason>` — `pnpm check:writing-boxes` enforces it.
  *
  * ## Built-in features
  *
@@ -119,6 +120,7 @@ import React, {
   useRef,
   useEffect,
   useLayoutEffect,
+  useEffectEvent,
   useId,
   lazy,
   Suspense,
@@ -160,16 +162,14 @@ import { motion } from "motion/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
-import {
-  hasPendingOrganizationRequest,
-  isOrganizationGateInteraction,
-} from "@/lib/organization/organization-gate";
 import { Label } from "@/components/ui/label";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import {
   CheckTapButton,
+  MaximizeTapButton,
   MoreHorizontalTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverTrigger,
@@ -218,6 +218,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import type { MarkdownImageUpload } from "@ai-matrx/rich-editor/format/markdown-image-upload";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {
@@ -447,6 +448,12 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    */
   markdownFormatting?: boolean;
   /**
+   * Pasting or dropping an image uploads it and writes `![name](url)` at the
+   * caret (`useMarkdownImageUpload` from the rich editor). Only for a box whose
+   * text is markdown (notes); absent, images are left to the browser.
+   */
+  uploadImage?: MarkdownImageUpload;
+  /**
    * Host a different editor in place of the <textarea> (e.g. MergeFieldInput,
    * which draws {{merge fields}} as chips). The whole toolbar — mic, "…" menu,
    * agents, stats, right-click menu — reads and writes through `handle`.
@@ -454,6 +461,13 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * Contract: `./pro-textarea-editor.ts`.
    */
   editor?: ProTextareaEditorSlot;
+  /**
+   * When the text runs past the box, an Expand button shows in the control
+   * row (never over text) and opens the same field large, in a dialog — the
+   * phone gets it as a sheet. For boxes that hold long values in a small
+   * space (agent variables). Off by default.
+   */
+  expandable?: boolean;
 }
 
 export const ProTextarea = React.forwardRef<
@@ -511,6 +525,8 @@ export const ProTextarea = React.forwardRef<
       style,
       editor,
       markdownFormatting,
+      uploadImage,
+      expandable = false,
       ...props
     },
     ref,
@@ -519,6 +535,8 @@ export const ProTextarea = React.forwardRef<
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [expandOpen, setExpandOpen] = useState(false);
+    const [overflowing, setOverflowing] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
     // The element ref is ALWAYS our own, merged into the host's forwarded ref.
     // Reading `ref.current` directly broke every internal feature (apply an
@@ -549,7 +567,7 @@ export const ProTextarea = React.forwardRef<
       if (internalRef.current !== formatElement)
         setFormatElement(internalRef.current);
     });
-    useTextareaFormatting(formatElement, formattingOn);
+    useTextareaFormatting(formatElement, formattingOn, { uploadImage });
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the
@@ -709,6 +727,27 @@ export const ProTextarea = React.forwardRef<
       },
       [editor],
     );
+
+    // THE PRE-HYDRATION KEEP. A server-rendered box is on screen — and takes
+    // typing, a paste or dictation — before React hydrates it (11 s on
+    // /applets/build in production). Hydration records that text as the box's
+    // last value, so no change ever reaches the host and its next render writes
+    // the host's empty value back over it: what she typed vanished and the
+    // Build button bound to it stayed disabled (lane P, 2026-10-07). On mount,
+    // text the box holds that the host does not know is handed to the host
+    // through its own onChange, exactly as if she had typed it after hydration.
+    const keepPreHydrationText = useEffectEvent(() => {
+      const el = internalRef.current;
+      if (editor || !el || !onChange) return;
+      const typed = el.value;
+      if (!typed || typed === String(value ?? "")) return;
+      // Through React's value tracker, so the input event below reads as a change.
+      el.value = "";
+      pushToTextarea(typed);
+    });
+    useLayoutEffect(() => {
+      keepPreHydrationText();
+    }, []);
 
     // Voice-to-text now rides the ONE shared recorder (start-always-wins,
     // one-at-a-time, survives navigation) via the reusable `useMicField`
@@ -870,11 +909,6 @@ export const ProTextarea = React.forwardRef<
     // ── Menu + agent actions ───────────────────────────────────────────────
     const handleMenuOpenChange = useCallback(
       (open: boolean) => {
-        // HELD AND SET: an agent action that needs an organization opens the
-        // workspace picker, which takes focus. That focus move must not close
-        // this popover and reset the run — the action continues with the
-        // person's choice, right here (lib/organization/organization-gate.ts).
-        if (!open && hasPendingOrganizationRequest()) return;
         setMenuOpen(open);
         if (open && boundAgentsEnabled) {
           void refreshBoundAgents();
@@ -1195,6 +1229,18 @@ export const ProTextarea = React.forwardRef<
     const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
     const fillHeight = wantsFillHeight(className, wrapperClassName);
 
+    // Expand shows only when the text no longer fits the box.
+    useEffect(() => {
+      if (!expandable || editor) return;
+      const el = internalRef.current;
+      if (!el) return;
+      const measure = () => setOverflowing(el.scrollHeight > el.clientHeight + 2);
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [expandable, editor, value]);
+
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
     const labelFloated = isFocused || valueAsString.length > 0;
@@ -1315,6 +1361,27 @@ export const ProTextarea = React.forwardRef<
               />
             )}
 
+            {expandable && !editor ? (
+              <Dialog open={expandOpen} onOpenChange={setExpandOpen}>
+                <DialogContent className="flex max-h-[90dvh] w-[min(56rem,calc(100vw-2rem))] max-w-none flex-col gap-3 sm:max-w-none">
+                  <DialogTitle className="truncate">{auxiliaryControlsLabel ?? floatingLabel ?? "Text"}</DialogTitle>
+                  {/* The SAME field, large: one value, one onChange — what is
+                      typed here is what the small box holds. */}
+                  <ProTextarea
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    surfaceName={surfaceName}
+                    getApplicationScope={getApplicationScope}
+                    wrapperClassName="h-[min(70dvh,40rem)]"
+                    className="h-full text-sm"
+                    autoFocus
+                  />
+                </DialogContent>
+              </Dialog>
+            ) : null}
+
             {floatingLabel && inputId && (
               <Label
                 htmlFor={inputId}
@@ -1348,6 +1415,17 @@ export const ProTextarea = React.forwardRef<
                 editor?.singleLine && "top-1/2 bottom-auto -translate-y-1/2",
               )}
             >
+              {expandable && !editor && overflowing ? (
+                // Always shown (not on hover only): it says there is more text.
+                <MaximizeTapButton
+                  tabIndex={auxiliaryControlsTabIndex}
+                  variant="transparent"
+                  ariaLabel={auxiliaryControlsLabel ? `Expand ${auxiliaryControlsLabel}` : "Expand"}
+                  tooltip="Expand"
+                  onClick={() => setExpandOpen(true)}
+                  className="text-muted-foreground"
+                />
+              ) : null}
               {/* Mic + "…" fade in on pointer hover or keyboard focus-within,
             and stay while the menu popover is open. A GLASS PLANE
             (tap-target placement rule 1): it rides over the field's own
@@ -1404,14 +1482,6 @@ export const ProTextarea = React.forwardRef<
                     </PopoverTrigger>
                     <PopoverContent
                       /* sizing: fixed — fixed multi-mode menu (menu/stats/agent-action panels), not a single content-sized value */
-                      onInteractOutside={(event) => {
-                        if (isOrganizationGateInteraction(event))
-                          event.preventDefault();
-                      }}
-                      onFocusOutside={(event) => {
-                        if (isOrganizationGateInteraction(event))
-                          event.preventDefault();
-                      }}
                       align="end"
                       side="bottom"
                       sideOffset={6}

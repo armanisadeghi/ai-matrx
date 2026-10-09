@@ -16,7 +16,7 @@ import {
   type AssistProducerPolicy,
 } from "./service";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export function AssistProducerControl() {
   const [reason, setReason] = useState("");

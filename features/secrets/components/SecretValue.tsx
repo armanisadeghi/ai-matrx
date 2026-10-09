@@ -64,7 +64,7 @@ import {
   type VaultField,
   type VaultItem,
 } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

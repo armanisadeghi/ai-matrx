@@ -55,7 +55,7 @@ import { HrKnobExceptions } from "./HrKnobExceptions";
 import { isHrDenied } from "../../types";
 import type { HrPresentedKnob } from "../types";
 import { Textarea } from "@/components/ui/textarea";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { KnobHistoryPopover } from "@/lib/scoped-config/KnobHistoryPopover";
 

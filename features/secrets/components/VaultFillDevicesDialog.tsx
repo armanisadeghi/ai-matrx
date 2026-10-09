@@ -20,7 +20,7 @@ import {
   CredenzaHeader,
   CredenzaTitle,
 } from "@/components/ui/credenza-modal/credenza";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import {
   listVaultFillDevices,
   revokeVaultFillDevice,

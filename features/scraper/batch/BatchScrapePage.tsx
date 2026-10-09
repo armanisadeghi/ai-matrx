@@ -57,10 +57,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
-import {
   sourceHref,
   type LandedSource,
 } from "@/features/sources/api/sourcesApi";
@@ -113,6 +109,7 @@ import {
 import { sendUrlsToOwnBrowser } from "@/features/capture-ladder/sendToOwnBrowser";
 import { NEEDS_YOU_ROUTE } from "@/features/capture-ladder/route";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type RowStatus = "pending" | "success" | "failed";
 
@@ -423,7 +420,7 @@ export default function BatchScrapePage() {
   const handleSendToOwnBrowser = useCallback(async () => {
     setSendingToBrowser(true);
     try {
-      await ensureOrganizationContext({ organizationId });
+      await ensureOrgId(organizationId);
       // Throws rather than return a row the server did not send to rung 3 —
       // deliberately uncaught as a selection bug, caught here only so the
       // person sees the sentence instead of a blank button.
@@ -438,7 +435,6 @@ export default function BatchScrapePage() {
         toast.error(outcome.sentence);
       }
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(
         error instanceof Error && error.message
           ? error.message

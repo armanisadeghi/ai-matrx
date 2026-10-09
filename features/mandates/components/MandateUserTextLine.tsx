@@ -22,7 +22,7 @@ import { MessageSquareText } from "lucide-react";
 import {
   PropertyRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { useMandateInputSurface, userTextSentence } from "../input-surface";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 

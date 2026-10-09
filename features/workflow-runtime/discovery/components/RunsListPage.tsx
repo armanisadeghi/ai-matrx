@@ -17,14 +17,23 @@ import { BarChart3, ListOrdered } from "lucide-react";
 
 import AppLink from "@/components/navigation/AppLink";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { fetchWorkflowFacts } from "../service";
 import { RunsList } from "./RunsList";
 import { WaitingBadge } from "./WaitingBadge";
+import {
+  allWorkflowRunsHref,
+  analyzeWorkflowRunsHref,
+  useWorkflowsBasePath,
+  workflowRunHref,
+  workflowsListHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 export function RunsListPage({ definitionId }: { definitionId?: string }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const [name, setName] = useState<string | null>(null);
   // On the per-workflow door the WORKFLOW is the record: when it can't be read
   // (no row — deleted, someone else's, never existed — or the read failed) an
@@ -59,7 +68,7 @@ export function RunsListPage({ definitionId }: { definitionId?: string }) {
         left={
           <div className="flex min-w-0 items-center">
             <ChevronLeftTapButton
-              href={definitionId ? `/workflows/${definitionId}` : "/workflows/all"}
+              href={definitionId ? workflowRunHref(definitionId, workflowsBase) : workflowsListHref(workflowsBase)}
               ariaLabel={definitionId ? "Back to this workflow" : "Back to workflows"}
             />
             <ListOrdered className="ml-1 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -73,7 +82,7 @@ export function RunsListPage({ definitionId }: { definitionId?: string }) {
             {/* The runs you started as numbers (lane DRILL-CONVERSIONS); this list stays where runs open. */}
             {definitionId ? null : (
               <AppLink
-                href="/workflows/runs/analyze"
+                href={analyzeWorkflowRunsHref(workflowsBase)}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                 data-runs-analyze-link=""
               >
@@ -96,7 +105,7 @@ export function RunsListPage({ definitionId }: { definitionId?: string }) {
                 setUnavailable(null);
                 setAttempt((n) => n + 1);
               }}
-              fallbackHref="/workflows/runs"
+              fallbackHref={allWorkflowRunsHref(workflowsBase)}
               fallbackLabel="All your runs"
             />
           ) : (

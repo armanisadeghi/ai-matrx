@@ -22,6 +22,7 @@ import {
   transcriptSegmentCount,
   type SourceListRow,
 } from "@/features/sources/sourceRows";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const BATCH = 25;
 
@@ -87,23 +88,25 @@ export function useTranscriptEnds(
   return ends;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * The stored recording length (ms) of each transcript, where one is stored. A failed read
  * leaves the segment ends in place — the cell is never emptied by this read.
  */
 export async function readStoredLengthsMs(transcriptIds: string[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();
-  const ids = [...new Set(transcriptIds.filter((id) => UUID.test(id)))];
+  const ids = [...new Set(transcriptIds.filter((id) => isUuidShape(id)))];
+  // A JSON-path select literal sends the generated parser into TS2589; the column
+  // list is a plain string and `.returns<>()` states the row shape at the boundary.
+  const columns: string = "id,duration:metadata->duration";
   for (let i = 0; i < ids.length; i += 100) {
     const { data, error } = await supabase
       .schema("transcripts")
       .from("transcripts")
-      .select("id,duration:metadata->duration")
-      .in("id", ids.slice(i, i + 100));
+      .select(columns)
+      .in("id", ids.slice(i, i + 100))
+      .returns<{ id: string; duration: unknown }[]>();
     if (error) continue;
-    for (const row of (data ?? []) as unknown as { id: string; duration: unknown }[]) {
+    for (const row of data ?? []) {
       const n = typeof row.duration === "number" ? row.duration : Number(row.duration);
       if (Number.isFinite(n) && n > 0) out.set(row.id, n * 1000);
     }

@@ -25,7 +25,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListConfig, EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { makeScope } from "@/lib/list-scope/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";

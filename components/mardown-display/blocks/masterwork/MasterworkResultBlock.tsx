@@ -42,7 +42,7 @@
  *     WORDS, with an empty list reading as a sentence rather than as `[]`.
  */
 
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import {
   collectExtras,
   plainFieldLabel,

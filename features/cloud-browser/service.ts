@@ -3,7 +3,6 @@ import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { peekSelectedOrganizationId, waitForOrganizationAdmission } from "@/lib/api/organization-admission";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canViewAccess } from "@/utils/permissions/access-core";
@@ -42,6 +41,7 @@ import type {
 } from "./types";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 type ProfileRow = Database["browser"]["Tables"]["profile"]["Row"];
 type RunRow = Database["browser"]["Tables"]["run"]["Row"];
 type EventRow = Database["browser"]["Tables"]["action_event"]["Row"];
@@ -631,7 +631,7 @@ async function startRun(profileId?: string): Promise<string> {
       // organization selected it asks, then this same start continues.
       start = {
         activationKey: crypto.randomUUID(),
-        organizationId: await ensureOrganizationContext(),
+        organizationId: await ensureOrgId(null),
       };
       startRunAttempts.set(key, start);
     }
@@ -964,9 +964,7 @@ export async function mintStreamTicket(
   // with nothing behind it; a press of Take control / Reconnect (`takeover`)
   // is the person's act, so with no organization selected it asks, then
   // continues this same connect.
-  const organizationId = await ensureOrganizationContext({
-    interactive: takeover,
-  });
+  const organizationId = await ensureOrgId(null);
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/stream-ticket`,
     { mode, takeover },

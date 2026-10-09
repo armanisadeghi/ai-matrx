@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { AlertCircle, AlertTriangle, Info, Megaphone, Trash2, Calendar, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from "@/lib/toast";
-import { readOf } from '@/components/read-state/ReadGate';
+import { readOf } from '@ai-matrx/design-system';
 import {
     AlertDialog,
     AlertDialogAction,

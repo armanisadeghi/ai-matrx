@@ -5,6 +5,7 @@
 // read-model coherent. Member/config mutations apply optimistically and
 // reconcile from the server on error.
 
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -50,7 +51,7 @@ function hydrateMissingMemberAgents(
   members: OrchestraMember[],
 ): AppThunk<void> {
   return (dispatch, getState) => {
-    const loaded = getState().agentDefinition.agents;
+    const loaded = selectAllAgents(getState());
     const missing = members
       .map((m) => m.agentId)
       .filter((id) => id && !loaded[id] && !memberHydrationInFlight.has(id));

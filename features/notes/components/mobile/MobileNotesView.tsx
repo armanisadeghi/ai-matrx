@@ -21,7 +21,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchNoteContent } from "../../redux/thunks";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { cn } from "@/lib/utils";

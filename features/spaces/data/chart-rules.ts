@@ -26,7 +26,8 @@ export function passes(row: ReadRow, filter: ChartFilter): boolean {
 }
 
 /** The store's aggregate answers equality filters only; a view with an "is any of" is counted over its rows. */
-export const hasListFilter = (filter: ChartFilter) => Object.values(filter).some(Array.isArray);
+/** One definition, shared with the server's first reads (data/first-reads.ts). */
+export { hasListFilter } from "./first-reads";
 
 /**
  * Notion orders a chart's groups by the chart's own sort first; a manual chart follows its view's sort

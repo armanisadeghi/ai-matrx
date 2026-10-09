@@ -1,7 +1,7 @@
 // features/context-menu-v3/selection-provider.ts
 //
 // The context menu's one entry in the ONE selection toolbar
-// (components/selection-toolbar): "AI and more" — it opens the same Alchemy menu a
+// (components/selection-toolbar): "Ask AI" — it opens the same Alchemy menu a
 // right-click opens, over the selected text (the AI actions, the agent
 // libraries, copy / export / save), on desktop and as the sheet on a phone.
 // It replaces the old floating selection icon: the menu has one door on a
@@ -33,7 +33,7 @@ function menuOf(target: ClickTarget): ContextMenuSelectionHost | null {
 
 const ASK_AI: Action = {
   id: "selection:ai",
-  label: "AI and more",
+  label: "Ask AI",
   description: "AI actions, agents, copy and export for the selected text",
   icon: registerAlchemyIcon(AGENT_ICON),
   category: "ai",

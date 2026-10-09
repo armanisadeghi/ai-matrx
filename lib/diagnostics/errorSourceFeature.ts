@@ -39,7 +39,7 @@ export const UNMAPPED_CLIENT_SOURCE_FEATURE: SourceFeature = "client-unmapped";
  */
 const BY_FIRST_SEGMENT: Readonly<Record<string, SourceFeature>> = {
   administration: "admin",
-  "agent-apps": "agent-app",
+  applets: "agent-app", // server-declared SourceFeature token (@ai-matrx/agents source-attribution)
   "agent-connections": "agents-other",
   agents: "agents-other",
   chat: "chat",

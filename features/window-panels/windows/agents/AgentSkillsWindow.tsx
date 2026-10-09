@@ -18,7 +18,7 @@ import { Lightbulb } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentSkillConfig, selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectAgentSkillConfig, } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentSkillConfig,
 } from "@/features/agents/redux/agent-builder.slice";
@@ -30,6 +30,7 @@ import type { SkillConfig } from "@/features/skills/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentSkillsWindowProps {
   isOpen: boolean;
@@ -60,7 +61,7 @@ function AgentSkillsWindowInner({
   const skillConfig = useAppSelector((state) =>
     selectAgentSkillConfig(state, agentId),
   );
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId) ?? null);
+  const agentName = useAgentName(agentId) ?? null;
   const openAgentContentWindow = useOpenAgentContentWindow();
   const agentSection = buildAgentMenuSection({
     agentId,

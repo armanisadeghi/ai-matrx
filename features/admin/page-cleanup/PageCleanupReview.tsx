@@ -4,15 +4,15 @@
  * /review/page-cleanup — the owner walks every page nothing links to and says Delete / Keep /
  * Unsure, with a note. Each link opens the page in a new tab.
  *
- * LABELS vs STORED VALUES: the stored decision values stay `yes` / `no` / `maybe` (the app table's
+ * LABELS vs STORED VALUES: the stored decision values stay `yes` / `no` / `maybe` (the typed table's
  * select options and the browser copy both already hold them), so nothing saved before the
  * 2026-10-05 relabel is lost or needs migrating: yes = Delete, no = Keep, maybe = Unsure. Every
  * word the owner sees — the control, the legend and the copied text — comes from DECISION_LABEL.
  *
- * PERSISTENCE: the record store's app table `pageCleanupDecisions` first (read across every
+ * PERSISTENCE: the record store's typed table `pageCleanupDecisions` first (read across every
  * organization the person belongs to; each write carries the organization the person has
  * selected, asked through the platform's organization gate — never picked here). When the store
- * cannot answer (its app-table doors are not on that database yet: `door_absent`), the page says
+ * cannot answer (its typed-table doors are not on that database yet: `door_absent`), the page says
  * so in the header and keeps decisions in this browser. Every edit is ALSO mirrored to this
  * browser so a failed store write never loses what was typed.
  */
@@ -26,15 +26,11 @@ import {
   createRecordsClient,
   type RecordsClient,
 } from "@ai-matrx/records/core";
-import { listAppRows, upsertAppRow } from "@ai-matrx/records/app-table";
+import { listAppRows, upsertAppRow } from "@ai-matrx/records/typed-table";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { InfoHint } from "@/components/official/InfoHint";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
-import {
-  ensureOrganizationForWrite,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -50,7 +46,8 @@ import {
   pageCleanupDecisions,
   PAGE_CLEANUP_DECISIONS,
   type PageCleanupDecision,
-} from "./page-cleanup.app-table";
+} from "./page-cleanup.typed-table";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface Entry {
   decision: PageCleanupDecision | null;
@@ -172,7 +169,7 @@ export default function PageCleanupReview() {
     if (store.state !== "store") return;
     setSaves((s) => ({ ...s, [path]: "saving" }));
     try {
-      const organizationId = await ensureOrganizationForWrite();
+      const organizationId = await ensureOrgId(null);
       const written = await upsertAppRow(
         recordsClient(userId),
         pageCleanupDecisions,
@@ -183,7 +180,6 @@ export default function PageCleanupReview() {
       setSaves((s) => ({ ...s, [path]: "saved" }));
     } catch (error) {
       setSaves((s) => ({ ...s, [path]: "failed" }));
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error("Could not save this decision", {
         description: error instanceof Error ? error.message : String(error),
       });

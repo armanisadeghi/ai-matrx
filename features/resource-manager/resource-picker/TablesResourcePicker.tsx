@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+// Located first (lane INTEG-CLIENTS): a moved or custom table opens from its own store.
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
@@ -31,7 +31,7 @@ import {
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // Types
 type UserTable = UserTableListRow;
@@ -93,14 +93,14 @@ export function TablesResourcePicker({
   const [previewTableId, setPreviewTableId] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  // Load user tables
+  // Load custom tables
   useEffect(() => {
     let alive = true;
     async function loadTables() {
       try {
         setLoading(true);
         setError(null);
-        // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1/F7):
+        // Older tables AND the organization's custom Tables (lane INTEG-CLIENTS F1/F7):
         // the server's reference resolver follows a moved table by id (INTEG-SERVER A6).
         const listed = await listTablesEverywhere();
         if (!listed.success) throw new Error(listed.error);

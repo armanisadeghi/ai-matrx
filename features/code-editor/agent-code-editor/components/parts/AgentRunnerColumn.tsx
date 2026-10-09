@@ -12,10 +12,10 @@
 
 import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
 import { Hammer } from "lucide-react";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "../../constants";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentRunnerColumnProps {
   conversationId: string | null;
@@ -27,9 +27,7 @@ export function AgentRunnerColumn({
   conversationId,
   activeAgentId,
 }: AgentRunnerColumnProps) {
-  const agentName = useAppSelector((state) =>
-    activeAgentId ? selectAgentName(state, activeAgentId) : null,
-  );
+  const agentName = useAgentName(activeAgentId) ?? null;
 
   if (!conversationId) {
     return (

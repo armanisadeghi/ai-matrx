@@ -23,7 +23,7 @@
  * The broadcast on insert is the named follow-up in ./FEATURE.md.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
@@ -34,8 +34,12 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { usePendingApprovalCount } from "@/features/approvals/usePendingApprovalCount";
+import { bellBadge, markPlaces, sameMarks, type PlaceReading } from "./badge";
+import { useInboxMemory } from "./useInboxMemory";
 import {
+  clearInbox,
   fetchInbox,
+  fetchInboxKinds,
   fetchInboxOrganizations,
   fetchInboxSummary,
   fetchMyWorkWaiting,
@@ -93,55 +97,6 @@ export function useWorkWaiting(enabled: boolean) {
   });
 }
 
-// ── "seen" for sources that have none of their own ────────────────────────
-// One store for every mounted bell, sheet and inbox, so marking seen anywhere
-// clears the badge everywhere. Per viewer, in this browser (a convenience).
-const SEEN_SOURCES_KEY = "matrx:inbox:seen-source-counts";
-const EMPTY_SEEN: Readonly<Record<string, number>> = Object.freeze({});
-const seenListeners = new Set<() => void>();
-let seenSnapshot: { key: string; raw: string | null; value: Record<string, number> } | null = null;
-
-function seenKey(userId: string | null): string | null {
-  return userId ? `${SEEN_SOURCES_KEY}:${userId}` : null;
-}
-
-function readSeenSourceCounts(userId: string | null): Record<string, number> {
-  const key = seenKey(userId);
-  if (!key || typeof window === "undefined") return EMPTY_SEEN;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(key);
-  } catch {
-    return EMPTY_SEEN;
-  }
-  if (seenSnapshot && seenSnapshot.key === key && seenSnapshot.raw === raw) return seenSnapshot.value;
-  let value: Record<string, number> = EMPTY_SEEN;
-  try {
-    const parsed: unknown = raw ? JSON.parse(raw) : {};
-    if (typeof parsed === "object" && parsed !== null) value = parsed as Record<string, number>;
-  } catch {
-    value = EMPTY_SEEN;
-  }
-  seenSnapshot = { key, raw, value };
-  return value;
-}
-
-function writeSeenSourceCounts(userId: string | null, counts: Record<string, number>): void {
-  const key = seenKey(userId);
-  if (!key || typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(counts));
-  } catch {
-    // Storage blocked: the counts simply read as new again next time.
-  }
-  for (const listener of seenListeners) listener();
-}
-
-function subscribeSeen(listener: () => void): () => void {
-  seenListeners.add(listener);
-  return () => seenListeners.delete(listener);
-}
-
 export interface InboxCounts {
   summary: InboxSummary | null;
   /** False while the triage doors are not on this database. */
@@ -168,11 +123,7 @@ export function useInboxCounts(): InboxCounts {
   const queryClient = useQueryClient();
   const approvals = usePendingApprovalCount();
   const idleReady = useIdleReady();
-  const seenSources = useSyncExternalStore(
-    subscribeSeen,
-    () => readSeenSourceCounts(userId),
-    () => EMPTY_SEEN,
-  );
+  const memory = useInboxMemory();
 
   const workWaiting = useWorkWaiting(idleReady);
   const summary = useQuery({
@@ -194,32 +145,25 @@ export function useInboxCounts(): InboxCounts {
       : workWaiting.data.reduce((sum, o) => sum + o.waiting, 0);
   const workSnoozed = (workWaiting.data ?? []).reduce((sum, o) => sum + o.snoozed, 0);
   const s = summary.data?.summary ?? null;
-  // Items handled since they were seen lower the mark, so the next new one counts.
-  useEffect(() => {
-    const lowered: Record<string, number> = {};
-    if (approvalCount !== null && (seenSources.approvals ?? 0) > approvalCount) lowered.approvals = approvalCount;
-    if (work !== null && (seenSources.work ?? 0) > work) lowered.work = work;
-    if (Object.keys(lowered).length) writeSeenSourceCounts(userId, { ...seenSources, ...lowered });
-  }, [approvalCount, work, seenSources, userId]);
+  // Until the person's saved marks load, no place counts (empty marks would read all as new).
+  // Marks move only when the person opens the bell — never on a refetch (badge.ts).
+  const places: Record<string, PlaceReading> = memory.ready
+    ? { approvals: { count: approvalCount }, work: { count: work } }
+    : {};
 
-  const newSince = (key: string, count: number | null) =>
-    count === null ? 0 : Math.max(0, count - (seenSources[key] ?? 0));
-
-  const badge =
-    (s ? s.unseenNeedsYou + s.unseenDirect : 0) +
-    newSince("approvals", approvalCount) +
-    newSince("work", work);
+  const badge = bellBadge({
+    unseenNeedsYou: s?.unseenNeedsYou ?? 0,
+    unseenDirect: s?.unseenDirect ?? 0,
+    places,
+    seen: memory.seen,
+    hidden: memory.hiddenSources,
+  });
 
   const markSeen = () => {
-    const next = {
-      ...seenSources,
-      ...(approvalCount !== null ? { approvals: approvalCount } : {}),
-      ...(work !== null ? { work } : {}),
-    };
-    if (next.approvals !== seenSources.approvals || next.work !== seenSources.work) {
-      writeSeenSourceCounts(userId, next);
+    if (memory.ready) {
+      const next = markPlaces(memory.seen, places);
+      if (!sameMarks(next, memory.seen)) memory.saveSeen(next);
     }
-    // Without the triage doors there is no "seen": the badge is unread notices.
     if (!s || !summary.data?.triage || s.unseenNeedsYou + s.unseenDirect + s.unseenUpdates === 0) return;
     // Optimistic: the badge clears the moment the bell opens.
     queryClient.setQueryData(summaryKey(userId), (prev: typeof summary.data) =>
@@ -251,6 +195,17 @@ export function useInboxCounts(): InboxCounts {
     partial: summary.isError || workWaiting.isError,
     markSeen,
   };
+}
+
+/** Every kind in the Inbox with its count — the bell's "Clear a kind" list. */
+export function useInboxKinds(enabled: boolean) {
+  const userId = useAppSelector(selectUserId);
+  return useQuery({
+    queryKey: [...INBOX_QUERY_KEY, "kinds", userId] as const,
+    queryFn: fetchInboxKinds,
+    enabled: enabled && userId !== null,
+    staleTime: 15_000,
+  });
 }
 
 // ── THE FEED ──────────────────────────────────────────────────────────────
@@ -417,6 +372,11 @@ export interface InboxActions {
   undo: () => Promise<void>;
   canUndo: boolean;
   markAllRead: () => Promise<void>;
+  /**
+   * Done for EVERY Inbox notice of these kinds (null = all of them), every page, one call.
+   * Undoable: the toast's Undo puts exactly those notices back. Resolves to how many cleared.
+   */
+  clear: (eventKeys: readonly string[] | null, what?: string, onUndo?: () => void) => Promise<number>;
 }
 
 /** `triage`: whether the triage doors are on this database (unread, Done, snooze). */
@@ -533,5 +493,58 @@ export function useInboxActions(triage = true): InboxActions {
     }
   };
 
-  return { act, undo, canUndo, markAllRead };
+  const undoClear = async (ids: readonly string[]) => {
+    try {
+      for (let i = 0; i < ids.length; i += 500) {
+        await setNoticesState(ids.slice(i, i + 500), "undone");
+      }
+      toast(`Back in Inbox · ${ids.length}`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Undo didn't save.");
+    } finally {
+      await refresh();
+    }
+  };
+
+  const clear: InboxActions["clear"] = async (eventKeys, what = "Cleared", onUndo) => {
+    const keys = eventKeys ? new Set(eventKeys) : null;
+    // Optimistic: every loaded row of those kinds leaves the Inbox now.
+    queryClient.setQueriesData<InfiniteData<InboxPage, InboxCursor | null>>(
+      { queryKey: feedPrefix(userId) },
+      (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((page) => ({
+                ...page,
+                rows: page.rows.map((row) =>
+                  !keys || keys.has(row.event_key) ? patch(row, "done") : row,
+                ),
+              })),
+            }
+          : data,
+    );
+    try {
+      const ids = await clearInbox("done", eventKeys);
+      if (ids.length > 0 || onUndo) {
+        toast(ids.length > 0 ? `${what} · ${ids.length}` : what, {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              onUndo?.();
+              if (ids.length > 0) void undoClear(ids);
+            },
+          },
+        });
+      }
+      return ids.length;
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "That didn't save.");
+      return 0;
+    } finally {
+      await refresh();
+    }
+  };
+
+  return { act, undo, canUndo, markAllRead, clear };
 }

@@ -16,8 +16,6 @@
     "pkg:react-markdown :: components/mardown-display/MarkdownRenderer.tsx",
     "pkg:react-markdown :: components/mardown-display/markdown-classification/custom-views/common/MarkdownTextDisplay.tsx",
     "pkg:react-markdown :: components/mardown-display/markdown-classification/parts/CodeComponent.tsx",
-    "pkg:react-markdown :: components/message-display/MarkdownWithPlugins.tsx",
-    "pkg:react-markdown :: components/message-display/MessageContentDisplay.tsx",
     "pkg:react-markdown :: features/content-ir/sandbox/runtime/FrameMarkdown.tsx",
     "pkg:remark :: components/mardown-display/markdown-classification/markdown-processor-util.ts",
     "pkg:remark :: components/mardown-display/markdown-classification/usePrepareMarkdownForRendering.ts",

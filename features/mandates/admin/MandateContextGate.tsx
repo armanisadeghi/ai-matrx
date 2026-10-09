@@ -25,7 +25,7 @@
  */
 
 import { useState } from "react";
-import { StatusToken } from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@ai-matrx/design-system/controls";
 import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";

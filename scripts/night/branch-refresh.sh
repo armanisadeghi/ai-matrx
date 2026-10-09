@@ -1162,25 +1162,25 @@ fi
 # ── (2c) THE TEST IDENTITIES' OWN SEAT ───────────────────────────────────────
 # 🚨 lane BRANCH-REFRESH-3, 2026-09-23. The identities step keeps admin@admin.com and test@test.com
 # and synthesizes one organization per REAL-DATA use case — and gives the two test accounts NO
-# membership and NO default organization. Every suite that asks "which tenant does the admin write
+# membership and NO first organization. Every suite that asks "which tenant does the admin write
 # in" then fails on the branch and passes on the clone: doorsonly5_categories_doors_work_from_a_seat
-# and doorsonly5_rulebook_doors_work_from_a_seat ("admin@admin.com has no default organization"),
+# and doorsonly5_rulebook_doors_work_from_a_seat ("admin@admin.com has no first organization"),
 # and argsruled_green, whose fixture tenants Rincon Plumbing Co and Calder Approvals did not exist.
 #
 # THE RULE, BY VALUE, NOT BY NAME: an organization crosses when NO real person belongs to it — every
-# member is one of the two test accounts — or when it is a test account's own default organization
+# member is one of the two test accounts — or when it is a test account's own first organization
 # (the ORGANIZATION row only; its other members never cross). Their memberships in exactly those
-# organizations cross, and their users.user_preferences rows (the default organization). A customer
+# organizations cross, and their users.user_preferences rows (their start-up and last-active choices). A customer
 # organization always has a real member, so it cannot satisfy the rule: AI Matrx, our own CRM tenant,
 # does not cross, which is why acquisition_console_rls_seat cannot pass here by construction.
 # Insert-missing only: a row the branch already holds (by primary key) is left exactly as it is.
 if [ "$REHEARSE" != "1" ]; then
-  say "─── (2c) the test identities' own seat: organizations only they belong to, their memberships and default ───"
+  say "─── (2c) the test identities' own seat: organizations only they belong to, their memberships and first organization ───"
   TEST_IDS_SQL="select id from auth.users where email in ('admin@admin.com','test@test.com')"
   SEAT_ORGS_SQL="select o.id from iam.organizations o where not o.is_system and (
       (exists (select 1 from iam.memberships m where m.organization_id = o.id and m.user_id in ($TEST_IDS_SQL))
        and not exists (select 1 from iam.memberships m where m.organization_id = o.id and m.user_id is not null and m.user_id not in ($TEST_IDS_SQL)))
-      or o.id in (select iam.default_organization_id(u.id) from auth.users u where u.id in ($TEST_IDS_SQL)))"
+      or o.id in (select (select m.container_id from iam.memberships m join iam.organizations fo on fo.id = m.container_id where m.user_id = u.id and m.container_type = 'organization' and m.status = 'active' and m.deleted_at is null and fo.archived_at is null order by m.created_at, m.container_id limit 1) from auth.users u where u.id in ($TEST_IDS_SQL)))"
   # The source's ids for the two accounts, so a branch whose accounts were synthesized under other
   # ids still gets the right person on every copied row.
   IDMAP="$("$PSQL" "${SRC[@]}" -qAt -F'|' -c "select id, email from auth.users where email in ('admin@admin.com','test@test.com')" 2>/dev/null)"
@@ -1217,7 +1217,7 @@ if [ "$REHEARSE" != "1" ]; then
     fx="${fx#; }"
     say "  $t: $(wc -l < "$f" | tr -d ' ') row(s) on the source — $(seed_load "$t" "$f" "$fx" "" 0 "$cc")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) on the branch"
   done
-  say "  admin@admin.com's default organization on the branch: $("$PSQL" "$BRANCH_DSN" -qAt -c "select coalesce((select name from iam.organizations where id = iam.default_organization_id(u.id)), '(none)') from auth.users u where u.email = 'admin@admin.com'" 2>&1)"
+  say "  admin@admin.com's first organization on the branch: $("$PSQL" "$BRANCH_DSN" -qAt -c "select coalesce((select name from iam.organizations where id = (select m.container_id from iam.memberships m join iam.organizations fo on fo.id = m.container_id where m.user_id = u.id and m.container_type = 'organization' and m.status = 'active' and m.deleted_at is null and fo.archived_at is null order by m.created_at, m.container_id limit 1)), '(none)') from auth.users u where u.email = 'admin@admin.com'" 2>&1)"
 fi
 
 # ── (3c) WHAT A SCHEMA DUMP CANNOT CARRY: event triggers and role settings ───

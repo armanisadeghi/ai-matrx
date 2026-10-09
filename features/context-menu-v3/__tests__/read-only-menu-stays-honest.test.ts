@@ -163,7 +163,7 @@ describe("slow menu libraries", () => {
   });
 });
 
-// /agent-apps/[id]/run (page-pass 2026-09-27): Compare, Attach To and Share sat
+// /applets/manage/[id]/run (page-pass 2026-09-27): Compare, Attach To and Share sat
 // under "History". The section is its title. Break: any non-history row folded
 // under the History heading again → red.
 describe("the History section holds only history", () => {

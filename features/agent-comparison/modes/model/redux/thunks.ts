@@ -12,6 +12,8 @@
  * since the only varied piece is a single LLM param (`model`).
  */
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectModelColumnTitle } from "../columnTitle";
@@ -29,7 +31,7 @@ import {
 import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import { setOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
-import { fetchModelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
@@ -77,10 +79,10 @@ function resolveAgentModelLabel(
   state: RootState,
   agentId: string,
 ): string | null {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const modelId = agent?.modelId;
   if (!modelId) return null;
-  const row = state.modelRegistry?.entities?.[modelId];
+  const row = readModelRecords().entities[modelId];
   return row?.common_name ?? row?.name ?? modelId;
 }
 
@@ -250,10 +252,10 @@ export const addColumnToModelBattle = createAsyncThunk<
   const columnId = crypto.randomUUID();
   const conversationId = generateConversationId();
   const isFirstColumn = state.agentComparisonModel.columns.length === 0;
-  const agentModelId = state.agentDefinition.agents?.[agentId]?.modelId;
+  const agentModelId = selectAgentById(state, agentId)?.modelId;
   if (isFirstColumn && agentModelId) {
     try {
-      await dispatch(fetchModelById(agentModelId)).unwrap();
+      await getModelRecords().loadModel(agentModelId);
     } catch {
       // non-fatal — label falls back to id
     }

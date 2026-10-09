@@ -43,7 +43,7 @@ The Phase 0 ESLint pattern `@/features/files/api(/*)` is in place, but these vio
 
 | Importing file | Imported names | Recommendation |
 | --- | --- | --- |
-| `app/api/agent-apps/generate-favicon/route.ts` | `* as Api` (namespace) | REPLACE — server route. Move to a server-safe public entrypoint or use `@/features/files/api/server-client` directly with a documented exception (server-only). |
+| `app/api/applets/generate-favicon/route.ts` | `* as Api` (namespace) | REPLACE — server route. Move to a server-safe public entrypoint or use `@/features/files/api/server-client` directly with a documented exception (server-only). |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | `compressPdfMultipart`, `materializeAssetResult` from `api/assets` | REPLACE with `useFileUpload` / `fileHandler` (compress flow must move into the handler). |
 | `features/resource-manager/resource-picker/FilesResourcePicker.tsx` | `* as Api` | REPLACE with handler / public surface. |
 | `features/transcripts/service/audioStorageService.ts` | `* as Files` from `api/files` | REPLACE with `fileHandler`. |
@@ -106,7 +106,7 @@ Mostly `handler/hooks/useFileUpload` (19 occurrences), then `handler/types` (9),
 | `app/(authenticated)/(admin-auth)/administration/users/feedback/components/FeedbackDetailDialog.tsx` | `useFileUpload`, `imageViewUrl` from `handler/utils/python-base` | MIGRATE `useFileUpload` to public index. `imageViewUrl` needs to be re-exported (or replaced with `useFileSrc`). |
 | `features/pdf-demo/components/PdfSourcePicker.tsx` | `useFileUpload` | MIGRATE to public index. |
 | `packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
-| `features/agent-apps/components/inputs/AgentAppImageField.tsx` | `useFileUpload` | MIGRATE. |
+| `features/applets/components/inputs/AppletImageField.tsx` | `useFileUpload` | MIGRATE. |
 | `packages/chat/src/cx-conversation/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | `useFileUpload` | MIGRATE. |
 | `features/transcripts/components/TranscriptViewer.tsx` | `useFileSrc`, `FileSource` (type) | MIGRATE — both re-exported via public index. |
@@ -226,13 +226,13 @@ Direct imports of the single types file. Every symbol consumed (`AssetPreset`, `
 ### `features/files/utils/` (~49 statements across ~40 files)
 
 Two big sub-buckets:
-- **`utils/folder-conventions`** (22 importers) — `CloudFolders`, `folderForOrg`, `folderForTask`, `folderForPodcast`, `folderForAgentApp` — already re-exported from public index.
+- **`utils/folder-conventions`** (22 importers) — `CloudFolders`, `folderForOrg`, `folderForTask`, `folderForPodcast`, `folderForApplet` — already re-exported from public index.
 - **`utils/server-cookies` (10)** + **`utils/server-search-params` (9)** — only consumed by `app/(a)/files/**` server routes. Co-located with the Files feature; either KEEP via allowlist or re-export.
 - **`utils/file-types`** (6), **`utils/format`** (2) — formatting / mime helpers, not currently on public index.
 
 | Importing file | Imported names | Recommendation |
 | --- | --- | --- |
-| `app/api/agent-apps/generate-favicon/route.ts` | `folderForAgentApp` | MIGRATE — public index. |
+| `app/api/applets/generate-favicon/route.ts` | `folderForApplet` | MIGRATE — public index. |
 | `app/(a)/images/library/page.tsx` | `CloudFolders` | MIGRATE — public index. |
 | `app/(a)/images/edit/EditShellClient.tsx` | `CloudFolders` | MIGRATE. |
 | `app/(a)/files/[[...path]]/page.tsx` | `readSidebarModeCookie`, server-search-params | KEEP — allowlist `app/(a)/files/**`. |

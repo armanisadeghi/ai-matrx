@@ -24,7 +24,7 @@ import { ExternalLink, Repeat } from "lucide-react";
 import { Badge, Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import { outcomeChip } from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";

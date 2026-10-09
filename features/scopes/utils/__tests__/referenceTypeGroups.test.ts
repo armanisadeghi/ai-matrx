@@ -60,7 +60,7 @@ describe("reference type groups", () => {
 describe("the types a person is offered", () => {
   const seed = readFileSync(
     // The knob's CURRENT starting value (the newest seed of the row).
-    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
+    join(process.cwd(), "migrations/reference_picker_hidden_types_machinery_g11a.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -102,7 +102,7 @@ describe("the types a person is offered", () => {
  */
 describe("the words a person reads in All types", () => {
   const seed = readFileSync(
-    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
+    join(process.cwd(), "migrations/reference_picker_hidden_types_machinery_g11a.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -162,7 +162,7 @@ describe("the words a person reads in All types", () => {
  */
 describe("no visible group is a storage word", () => {
   const seed = readFileSync(
-    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
+    join(process.cwd(), "migrations/reference_picker_hidden_types_machinery_g11a.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -179,8 +179,9 @@ describe("no visible group is a storage word", () => {
   });
 
   it("scopes and rulebooks sit under the product's own words; taxonomy rows are hidden", () => {
-    expect(referenceTypeGroup("scope")).toBe("Scopes");
-    expect(referenceTypeGroup("rulebook")).toBe("Masterwork");
+    // G11A (2026-10-07): a group of one is folded into its neighbour.
+    expect(referenceTypeGroup("scope")).toBe(referenceTypeGroup("task"));
+    expect(referenceTypeGroup("rulebook")).toBe(referenceTypeGroup("agent"));
     expect(visible).toContain("scope");
     expect(visible).toContain("rulebook");
     expect(visible).not.toContain("category");

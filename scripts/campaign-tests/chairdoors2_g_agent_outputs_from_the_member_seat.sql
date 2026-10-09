@@ -171,7 +171,7 @@ begin
   exception when others then
     get stacked diagnostics m = message_text;
     insert into res values ('N-C3 member write to a platform field is refused',
-      m = '"Output state" is kept by the app, so it is not yours to change.', m);
+      m = '"Output state" is a platform table, so it is not yours to change.', m);
   end;
   begin
     perform custom.record_write(current_setting('t.cedar')::uuid, current_setting('t.deck_table')::uuid,
@@ -179,7 +179,7 @@ begin
     insert into res values ('N-C3 member cannot add a row that claims a chain', false, 'it was written');
   exception when others then
     get stacked diagnostics m = message_text;
-    insert into res values ('N-C3 member cannot add a row that claims a chain', m = '"Chain" is kept by the app, so it is not yours to change.', m);
+    insert into res values ('N-C3 member cannot add a row that claims a chain', m = '"Chain" is a platform table, so it is not yours to change.', m);
   end;
 end $$;
 reset role;
@@ -346,7 +346,7 @@ begin
     insert into res values ('N-C3 member may not un-keep by hand', false, 'it was written');
   exception when others then
     get stacked diagnostics m = message_text;
-    insert into res values ('N-C3 member may not un-keep by hand', m = '"Kept" is kept by the app, so it is not yours to change.', m);
+    insert into res values ('N-C3 member may not un-keep by hand', m = '"Kept" is a platform table, so it is not yours to change.', m);
   end;
 end $$;
 

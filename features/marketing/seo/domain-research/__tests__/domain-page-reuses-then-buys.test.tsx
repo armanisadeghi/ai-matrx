@@ -31,7 +31,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: ({ data }: { data: unknown[] }) => <div data-testid="table">{data.length} rows</div>,
 }));
 jest.mock("@/features/marketing/competitors/data", () => ({ listCompetitorSites: async () => [] }));
-jest.mock("@ai-matrx/data/db", () => ({ readAllRows: async () => [] }));
+jest.mock("@ai-matrx/data/db", () => ({ ...jest.requireActual("@ai-matrx/data/db"), readAllRows: async () => [] }));
 
 const LIVE_PARAMETERS = {
   $variants: {
@@ -60,6 +60,9 @@ jest.mock("@ai-matrx/chat/host/server/python-client", () => ({
 }));
 
 import { DomainResearchPage } from "../DomainResearchPage";
+
+// Platform cost reaches the screen in the viewer's unit (points); pin the rate.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 10000 }));
 
 type Call = { tool_name: string; arguments: Record<string, unknown> };
 const calls = (): Call[] => requestRaw.mock.calls.map((c) => JSON.parse((c[1] as { body: string }).body));
@@ -142,7 +145,7 @@ it("reuses a stored result first: the probe returns it free and no paid call is 
   expect(text()).toContain("United States");
   // Keywords had nothing stored: offered at the definition's price, not bought.
   expect(text()).toContain("No stored keywords to reuse");
-  expect(button("Run · $0.02")).toBeDefined();
+  expect(button("Run · 200 points")).toBeDefined();
   expect(definitionReads).toContain("seo_domain");
 });
 
@@ -156,17 +159,17 @@ it("offers the paid run at the definition's price and only a click spends", asyn
   await render();
 
   expect(text()).toContain("No stored stats to reuse");
-  expect(text()).toContain("$0.04 per run, then free for 7 days.");
+  expect(text()).toContain("400 points per run, then free for 7 days.");
   const before = calls().length;
   expect(calls().every((c) => c.arguments.max_cost_usd === 0.0001)).toBe(true);
 
-  await act(async () => { button("Run · $0.04")!.click(); });
+  await act(async () => { button("Run · 400 points")!.click(); });
   for (let i = 0; i < 5; i++) await act(async () => { await Promise.resolve(); });
 
   const paid = calls().slice(before);
   expect(paid).toHaveLength(1);
   expect(paid[0].arguments).toEqual({ action: "overview", target: "python.org" });
-  expect(text()).toContain("Bought Sep 28, 2026 · $0.0121");
+  expect(text()).toContain("Bought Sep 28, 2026 · 121 points");
   expect(text()).toContain("48k");
   expect(text()).toContain("Monthly estimate · Sep 28, 2026");
 });

@@ -73,6 +73,8 @@ function changeInput(input: HTMLInputElement, value: string) {
 const setting = (key: string, version: number): AiSetting => ({
   id: "setting-1",
   key,
+  family: null,
+  value_positions: null,
   version,
   value_type: "number",
   canonical_min: null,

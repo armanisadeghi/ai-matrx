@@ -44,7 +44,7 @@ import { useUserRole } from "@/features/organizations/hooks";
 import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { LIBRARY_CATALOG_PATH } from "@/features/knowledge/modulePaths";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {

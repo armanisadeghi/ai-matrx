@@ -13,7 +13,7 @@
  */
 
 import * as React from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {

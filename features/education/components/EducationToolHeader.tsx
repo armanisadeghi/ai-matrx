@@ -27,7 +27,7 @@
 // prints each one's name — so there they are handed over one by one.
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import LucideIcon from "@/features/shell/components/header/variants/shared/LucideIcon";

@@ -12,7 +12,7 @@ import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import MobileTasksList from "./MobileTasksList";
 import MobileTaskDetails from "./MobileTaskDetails";
 

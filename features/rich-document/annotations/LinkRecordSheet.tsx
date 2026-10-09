@@ -18,7 +18,7 @@ import { useSidecar } from "./AnnotationSidecar";
 import { PassageQuote } from "./PassageQuote";
 import { linkableKinds } from "./service";
 import type { TextAnchor } from "./anchor";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function LinkRecordSheet({
   open,

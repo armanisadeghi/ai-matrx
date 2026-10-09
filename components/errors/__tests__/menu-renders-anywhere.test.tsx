@@ -62,12 +62,18 @@ it("ErrorNotice's menu never takes a column of its own or a line of its own", as
   // it wrapped and grew it 16px. It sits under the ⋯ in the column that
   // button already owns; a bare one-line notice keeps it on the sentence.
   const { renderToStaticMarkup } = await import("react-dom/server");
-  const { ErrorNotice } = await import("@/components/errors/ErrorNotice");
-  const titled = renderToStaticMarkup(<ErrorNotice title="We could not check your organization" message="Something went wrong." />);
+  const { ErrorNotice } = await import("@ai-matrx/design-system");
+  // ErrorNotice lives in @ai-matrx/design-system; the app root (AlchemyHost) hands it the menu.
+  const { ErrorActionsProvider } = await import("@ai-matrx/design-system");
+  const { renderPackageErrorActions } = await import("@/components/errors/PackageErrorActions");
+  const hosted = (el: import("react").ReactElement) => (
+    <ErrorActionsProvider render={renderPackageErrorActions}>{el}</ErrorActionsProvider>
+  );
+  const titled = renderToStaticMarkup(hosted(<ErrorNotice title="We could not check your organization" message="Something went wrong." />));
   const corner = titled.slice(titled.indexOf('aria-label="') > -1 ? titled.lastIndexOf('<div class="flex shrink-0 flex-col items-center">') : 0);
   expect(titled).toContain('<div class="flex shrink-0 flex-col items-center">');
   expect(corner).toContain("data-error-alchemy-menu");
   expect(titled.split("data-error-alchemy-menu=").length - 1).toBe(1);
-  const bare = renderToStaticMarkup(<ErrorNotice size="compact" message="Could not save." />);
+  const bare = renderToStaticMarkup(hosted(<ErrorNotice size="compact" message="Could not save." />));
   expect(bare).toMatch(/Could not save\.(?:<!-- -->)?<span hidden="" data-error-alchemy-anchor=""><\/span><span data-error-alchemy-menu/);
 });

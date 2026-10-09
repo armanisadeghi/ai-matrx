@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";

@@ -40,7 +40,7 @@ import { RunControlShell } from "./RunControlShell";
 import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { WantedTopicsPanel } from "./WantedTopicsPanel";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

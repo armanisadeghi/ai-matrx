@@ -9,8 +9,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectAllAgentsArray } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { FeatureIntelligence } from "@/features/mandates/feature-intelligence/FeatureIntelligence";
 import type { RunOverride } from "@/features/mandates/feature-intelligence/IntelligenceJobCard";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -18,6 +16,8 @@ import { AGENT_CONFIG_KEYS } from "../../admin/types";
 import { getTopic, removeTopicAgentChoice } from "../../service";
 import { ROLE_MANDATE_KEYS } from "../agents/constants";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export default function TopicIntelligencePage() {
   const { topic, topicId, refresh } = useTopicContext();
@@ -25,13 +25,13 @@ export default function TopicIntelligencePage() {
   const focusParam = useSearchParams().get("mandate");
   const focus = focusParam ? storedMandateKey(focusParam) : null;
   const dispatch = useAppDispatch();
-  const agents = useAppSelector(selectAllAgentsArray);
+  const agents = useCatalogAgents();
   const [removedChoices, setRemovedChoices] = useState<Record<string, string>>({});
   const [topicAgents, setTopicAgents] = useState<Record<string, { name: string; available: boolean }>>({});
   const [agentLookupFailed, setAgentLookupFailed] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchAgentsListFull()).catch(() => {
+    ensureAgentCatalog().catch(() => {
       /* names degrade to "an agent of its own"; non-fatal */
     });
   }, [dispatch]);

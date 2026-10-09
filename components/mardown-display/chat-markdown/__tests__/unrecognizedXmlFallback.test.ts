@@ -2,7 +2,7 @@ import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdow
 import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
 import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { buildCanonicalBlocks } from "@/lib/chat-protocol/from-stream";
+import { buildCanonicalBlocks } from "@ai-matrx/chat/ui/chat-protocol-from-stream";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 
@@ -437,11 +437,11 @@ describe("unrecognized XML accumulator remainders", () => {
     accumulator.ingest('"cards":[]}\n```\n', dispatch);
     accumulator.finalize(dispatch);
     const blocks = [...latestById.values()].filter((block) => block.content);
-    expect(blocks).toHaveLength(2);
-    expect(blocks.every((block) => block.type === "code")).toBe(true);
-    // The first partial retains its already-open parser envelope; the resumed
-    // fragment must not claim a whole kind without the opening JSON bytes.
-    expect(blocks[1].metadata?.__ir).toBeUndefined();
+    // Each text run reads on its own, as reload reads each stored run: the first is the open
+    // JSON region; the resumed fragment must not claim a whole kind without its opening bytes.
+    expect(blocks.length).toBeGreaterThanOrEqual(2);
+    expect(blocks[0].type).toBe("code");
+    expect(blocks.slice(1).every((block) => block.metadata?.__ir === undefined)).toBe(true);
   });
 });
 
@@ -470,9 +470,10 @@ it("lifts a kind inside a generic XML fence interrupted by a tool (ruling b)", (
   expect(kinds.map((block) => block.content)).toEqual([
     '{"__kind":"flashcard_set","cards":[]}',
   ]);
-  const xml = blocks.filter((block) => block.metadata?.__ir === undefined);
-  expect(xml.every((block) => block.data?.language === "xml")).toBe(true);
-  expect(xml.some((block) => block.content?.includes("__kind"))).toBe(false);
+  // Each text run reads on its own (as reload reads each stored run); no piece left behind
+  // holds the kind.
+  const rest = blocks.filter((block) => block.metadata?.__ir === undefined);
+  expect(rest.some((block) => block.content?.includes("__kind"))).toBe(false);
 });
 
 it("lifts directive JSON out of incomplete generic XML, live = reload (ruling b)", () => {

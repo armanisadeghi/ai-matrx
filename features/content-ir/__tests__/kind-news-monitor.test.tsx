@@ -9,9 +9,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { envelopeFromCompleteValue, KIND_KEY } from "@ai-matrx/content-ir";
 
 import {
-  BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
 } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
+import { APP_BLOCK_DISPATCH_CLASSIFICATION } from "@/features/rich-content-host/domain-block-dispatch";
 import { NewsDigestView } from "@/features/marketing/news-monitor/kinds/NewsDigestView";
 import { NewsTriageView } from "@/features/marketing/news-monitor/kinds/NewsTriageView";
 import { readSetAside } from "@/features/marketing/news-monitor/run-document";
@@ -61,7 +61,7 @@ describe("news monitor kinds — registration", () => {
       expect(def?.legacyBlockType).toBe(NEWS_MONITOR_BLOCK_TYPE);
     }
     expect(resolveBlockDispatch(NEWS_MONITOR_BLOCK_TYPE)).not.toBeNull();
-    expect(BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(NEWS_MONITOR_BLOCK_TYPE);
+    expect(APP_BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(NEWS_MONITOR_BLOCK_TYPE);
   });
 
   it("bridges the value verbatim, marker included, and only for its own kind", () => {

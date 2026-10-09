@@ -10,7 +10,7 @@ import type {
   MatrxDataTableQueryState,
   MatrxDataTableToolbar,
 } from "@ai-matrx/design-system/data-table/types";
-import { ExternalLinkTapButton } from "@ai-matrx/tap-target/buttons";
+import { ExternalLinkTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { StatusBadge } from "../shared/StatusBadge";
@@ -38,7 +38,7 @@ import {
   formatYouTubeDuration,
 } from "@/features/marketing/discovery/youtube/formatters";
 import type { YouTubeVideoIdentity } from "../../service";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 function tierFromSource(source: ResearchSource): string | null {
   return authorityTier(source.authority_tier, source.authority_score);

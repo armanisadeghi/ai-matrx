@@ -59,12 +59,12 @@ const LIVE_CALL_SHAPES: ReadonlyArray<{
     reads: "This file's edit history was not saved",
   },
   {
-    where: "../aidream/apps/shared/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (register)",
+    where: "../aidream/apps/shared/chat/src/ui/html-preview/HtmlPreviewBridge.tsx (register)",
     options: { subject: "This page", act: "linked to the conversation" },
     reads: "This page was not linked to the conversation",
   },
   {
-    where: "../aidream/apps/shared/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (update)",
+    where: "../aidream/apps/shared/chat/src/ui/html-preview/HtmlPreviewBridge.tsx (update)",
     options: { subject: "This page's record", act: "updated" },
     reads: "This page's record was not updated",
   },

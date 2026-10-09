@@ -46,7 +46,7 @@ import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrHoliday, HrHolidayCalendar, HrJurisdiction } from "../types";
 import { federalHolidays, shiftYearForward } from "./federal-holidays";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function HrCalendarsPanel() {
   const { active } = useHrContext();

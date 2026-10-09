@@ -40,8 +40,9 @@
 // shrink (they wrap to a second line on a phone); the note row is chips with tooltips
 // (`DrillExplorerNotes`), never sentences.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
+import { Badge } from "@ai-matrx/design-system/controls";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
@@ -53,7 +54,10 @@ import {
   drillWindowLabel,
   addressHasDrill,
   parseDimensionRef,
+  drillFocus,
+  drillRequestKey,
   useDrillUrlState,
+  type MatrxDrillCross,
   type MatrxDrillDimension,
   type MatrxDrillMeasure,
   type MatrxDrillQuestion,
@@ -75,7 +79,7 @@ import { drillExplorerScope } from "./drillExplorerScope";
 import { useDrillAttributes } from "./useDrillAttributes";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
-import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
+import { drillAddressMisfit, drillSiblingDimensions, drillSiblingMeasures, drillSiblingQuestion, openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";
 import { DrillSavedViews, type DrillOpenView } from "./DrillSavedViews";
 import { drillSavedViewSurface, readDrillView } from "./savedViews";
@@ -134,6 +138,7 @@ function writeViewParam(ref: string | null) {
 export function DrillExplorer({
   source,
   lane,
+  acrossOrganizations,
   organizationId,
   title,
   rootLabel,
@@ -155,19 +160,41 @@ export function DrillExplorer({
   location,
   siblings,
   groupLabel,
-  pageWhere,
+  pageWhere: pageWhereProp,
+  pageWindow,
+  base,
   surfaceName,
 }: DrillExplorerProps) {
+  // THE FIXED BASE (lane DRILL-PRIMITIVE-3) narrows every ask like the page's own filters, and is said as crumbs.
+  const baseKey = JSON.stringify(base ?? []);
+  const pageWhere = useMemo(() => {
+    const fixed = JSON.parse(baseKey) as { key: string; value: unknown }[];
+    if (fixed.length === 0) return pageWhereProp;
+    return { ...(pageWhereProp ?? {}), ...Object.fromEntries(fixed.map((b) => [b.key, b.value])) };
+  }, [pageWhereProp, baseKey]);
+  const baseCrumbs = useMemo(() => (JSON.parse(baseKey) as { label: string; valueLabel: string }[]).map((b) => ({ label: b.label, value: b.valueLabel })), [baseKey]);
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
   const rate = usePointsRate();
 
   // The first screen: the host's, else the definition's own default (read once describe answers).
   const [definitionDefault, setDefinitionDefault] = useState<MatrxDrillQuestion | null>(null);
-  const { question: asked, setQuestion } = useDrillUrlState({ fallback: firstQuestion ?? definitionDefault ?? EMPTY_QUESTION });
+  // THE ADDRESS CARRIES THE LEVEL (lane DRILL-PRIMITIVE-2): `?by=conversation` with no `show` shows the
+  // conversation level's Measures, once describe has said what the levels are.
+  const [levelDims, setLevelDims] = useState<MatrxDrillDimension[] | undefined>(undefined);
+  const { question: asked, setQuestion } = useDrillUrlState({ fallback: firstQuestion ?? definitionDefault ?? EMPTY_QUESTION, dimensions: levelDims });
   // WHAT THE OPEN VIEW ASKS BEYOND THE ADDRESS (VERIFY-DRILL-WAVE1 F3): a declared view's list and
   // range filters, group limit and thresholds ride beside the address question — asked with every
   // request and said on screen — until another view opens or the person drops them.
+  // THE PAGE'S WINDOW IS FOLLOWED (lane DRILL-LIVE-FIX-2 #4): on mount and whenever the page's control moves it
+  const followedWindow = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (pageWindow === undefined || followedWindow.current === pageWindow) return;
+    followedWindow.current = pageWindow;
+    if ((asked.window ?? null) !== pageWindow) setQuestion({ ...asked, window: pageWindow });
+    // follows the page's window only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageWindow]);
   const [carried, setCarried] = useState<DrillCarried | null>(null);
   // WHICH VIEW IS OPEN (VERIFY-DRILL-WAVE2 W2-1): named in the address, so the link reopens the view
   // whole (what it carries included) and Explain this tells a model exactly what was answered.
@@ -195,7 +222,7 @@ export function DrillExplorer({
   // THE ONE NAME BOOK (lane DRILL-D1): every relation value on this screen — answer, chart, trail,
   // records, glance columns, findings, a sibling's findings — reads its words here (drillNames.ts).
   const nameBook = useDrillNameBook(resolvers);
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, book: nameBook, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, book: nameBook, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled, acrossOrganizations });
   const { def, answers: rawAnswers, whole: rawWhole, says, error, asOf, client } = drill;
   const names = useDrillNames(nameBook);
   // THE CALENDAR THE DOOR CUTS PERIODS IN (F8): the definition's own (`calendar.time_zone`, from the
@@ -203,6 +230,37 @@ export function DrillExplorer({
   const zone = (def as { calendar?: { time_zone?: string } } | null)?.calendar?.time_zone ?? timeZone;
   // the other grains' built-in views and findings, offered where the person already looks
   const siblingDefs = useDrillSiblings(client, siblings);
+  // A LEVEL'S BREAKOUT INTO A SIBLING (lane DRILL-PRIMITIVE-2): ai_usage's person offers "By conversation",
+  // which is ai_usage_executions'. The chip opens the sibling grouped by it, carrying the trail's filters
+  // the sibling has, the window, and that level's Measures (else the ones it shares with this screen).
+  const cross: MatrxDrillCross | null =
+    siblingDefs.length === 0
+      ? null
+      : {
+          label: (token, ref) =>
+            siblingDefs.find((s) => s.token === token)?.def.dimensions.find((d) => d.key === parseDimensionRef(ref).key)?.label ?? null,
+          open: (token, ref, q) => {
+            const sibling = siblingDefs.find((s) => s.token === token);
+            if (!sibling) return;
+            openDrillSibling(sibling, { question: drillSiblingQuestion(sibling, q, [ref]) });
+          },
+        };
+  // AN ADDRESS NAMING A SIBLING'S DIMENSION GOES THERE (lane DRILL-LIVE-FIX-2 #2); one nobody has is said.
+  const misfit = def ? drillAddressMisfit(def, siblingDefs, asked, siblingDefs.length === (siblings?.length ?? 0)) : null;
+  const misfitRoute = misfit && "route" in misfit ? misfit : null;
+  const misfitKey = misfitRoute ? JSON.stringify([misfitRoute.route.token, misfitRoute.question]) : "";
+  const routedFor = useRef("");
+  useEffect(() => {
+    if (!misfitRoute || routedFor.current === misfitKey) return;
+    routedFor.current = misfitKey;
+    openDrillSibling(misfitRoute.route, { question: misfitRoute.question });
+    // keyed by misfitKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [misfitKey]);
+  const shownError = misfit && "sentence" in misfit ? misfit.sentence : misfitRoute ? null : error;
+  if (def && !levelDims) {
+    setLevelDims(def.dimensions.map((d) => ({ key: d.key, label: d.label, kind: d.kind, ...(d.level ? { level: d.level } : {}) })));
+  }
   if (!firstQuestion && def && !definitionDefault) {
     const { question: q, door } = def.default ? splitExplorerQuestion(explorerQuestionOf(def.default)) : { question: EMPTY_QUESTION, door: null };
     setDefinitionDefault(q);
@@ -299,8 +357,33 @@ export function DrillExplorer({
   // (R2, while its grouping is on screen) and its stacked Measures (L3, while it shows them all).
   const openBuiltIn = openView?.ref.startsWith("builtin:") ? builtIn.find((v) => `builtin:${v.key}` === openView.ref) : undefined;
   const viewStack = openBuiltIn?.chart?.stack?.every((k) => question.show.includes(k)) ? openBuiltIn.chart.stack : undefined;
-  const viewAttributes = openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined;
+  // THE LEVEL (lane DRILL-LEVELS): grouping by a Dimension shows its declared attributes as columns
+  // (an open view's own win), and the drilled value's header says its attributes — both read through
+  // the same door, grouped by the Dimension and the attribute.
+  const levelOf = (ref: string | undefined) => (ref ? dimensions.find((d) => d.key === parseDimensionRef(ref).key)?.level : undefined);
+  const outerLevelAttributes = levelOf(question.by[0])?.attributes;
+  const viewAttributes =
+    (openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined) ??
+    (outerLevelAttributes ? [...outerLevelAttributes] : undefined);
   const glance = useDrillAttributes({ client, source, lane, question, dimensions, answers, attributes: viewAttributes, carried: asking, resolvers, book: nameBook, windowAlign });
+  const focus = drillFocus(question);
+  const focusLevelAttributes = focus && focus.value !== null ? levelOf(focus.dim)?.attributes : undefined;
+  const focusGlance = useDrillAttributes({
+    client,
+    source,
+    lane,
+    question: focus ? { ...question, by: [focus.dim], across: null, where: question.where.slice(0, -1) } : EMPTY_QUESTION,
+    dimensions,
+    answers: focus && focus.value !== null ? { [drillRequestKey([focus.dim])]: [{ groups: { [focus.dim]: focus.value }, measures: {}, row_count: 0 }] } : {},
+    attributes: focusLevelAttributes ? [...focusLevelAttributes] : undefined,
+    carried: asking,
+    resolvers,
+    book: nameBook,
+    windowAlign,
+  });
+  const focusAttributes = focus && focusGlance
+    ? focusGlance.map((a) => ({ key: a.key, label: a.label, value: a.read({ [focus.dim]: focus.value }), ...(a.error ? { error: a.error } : {}) }))
+    : undefined;
 
   // THE CHART above the answer: split = the first non-time grouping, bars at the auto grain.
   // the Measure stacked: the headline's (the screen's own number), else the first one shown
@@ -359,7 +442,6 @@ export function DrillExplorer({
           },
         ]
       : []),
-    ...(behind && asOf ? [{ key: "behind", tone: "warn" as const, attrs: { "data-drill-explorer-behind": "" }, label: "Behind", tip: `Counted through ${clockWords(asOf, zone)}${zone ? ` ${zone}` : ""}` }] : []),
     ...(unread.length > 0
       ? [
           {
@@ -412,9 +494,20 @@ export function DrillExplorer({
           ]}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2 type-secondary text-muted-foreground">
-          <span data-drill-explorer-freshness>
-            {freshness?.recounting ? "Recounting…" : countedThrough ? `Counted through ${clockWords(countedThrough, zone)}` : null}
-          </span>
+          {/* FRESHNESS IS ONE "As of" CHIP (owner ruling 2026-10-08): every number and the records behind
+              it are counted from the same stored facts at that moment; past the stale line it turns amber. */}
+          {freshness?.recounting ? (
+            <Badge data-drill-explorer-freshness>Recounting…</Badge>
+          ) : countedThrough ? (
+            <Badge
+              data-drill-explorer-freshness
+              {...(behind ? { "data-drill-explorer-behind": "" } : {})}
+              tone={behind ? "warning" : "neutral"}
+              title={`Counted through ${clockWords(countedThrough, zone)}${zone ? ` ${zone}` : ""}${behind ? "; the next count is late" : ""}`}
+            >
+              {`As of ${clockWords(countedThrough, zone)}`}
+            </Badge>
+          ) : null}
           {range && freshness?.recount ? (
             <Button
               icon={<RefreshCw />}
@@ -479,7 +572,7 @@ export function DrillExplorer({
       {/* ONE toolbar row: the trail, then the window, the Measures, the grouping and the findings. */}
       {/* F9: the controls never shrink — on a phone they wrap to their own line, the trail above them */}
       <div data-drill-explorer-toolbar className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-4 py-1.5">
-        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} className="min-w-0 max-sm:basis-full" />
+        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} measures={measures} answers={answers} focusAttributes={focusAttributes} rowNoun={rowNoun} cross={cross} {...(baseCrumbs.length > 0 ? { base: baseCrumbs } : {})} className="min-w-0 max-sm:basis-full" />
         <div data-drill-explorer-controls className="ml-auto flex flex-wrap items-center justify-end gap-0 [&>*]:shrink-0">
           <MatrxDrillWindowMenu question={question} onQuestionChange={setQuestion} dimensionLabel="When" />
           <MatrxDrillMeasurePicker measures={measures} question={question} onQuestionChange={setQuestion} />
@@ -576,12 +669,13 @@ export function DrillExplorer({
                 onQuestionChange={setQuestion}
                 answers={answers}
                 paths={paths}
-                error={error}
+                error={shownError}
                 rowNoun={rowNoun}
                 emptyLabel={emptyLabel}
                 exportTitle={title}
                 search
                 {...(glance ? { attributes: glance } : {})}
+                cross={cross}
                 {...(question.where.length > 0 && headlineKey ? { coverage: { whole: whole?.measures[headlineKey] ?? null, measure: headlineKey } } : {})}
                 {...(headlineKey && knobs.paretoSharePct !== null ? { pareto: { measure: headlineKey, sharePct: knobs.paretoSharePct } } : {})}
                 rowActions={{ label: `${title} group`, location: location ?? title, kind: "drill-group", selectable: true }}

@@ -4,6 +4,7 @@
 // "When a Referral's Status becomes Scheduled: create a Visit, then notify you."
 
 import type { BuilderAction, BuilderSpec } from "./builderSpec";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export interface SummaryNames {
   /** The trigger table's name. */
@@ -83,10 +84,7 @@ function actionWords(action: BuilderAction, names: SummaryNames): string {
     case "wait": {
       const seconds = Number(action["seconds"]);
       if (!Number.isFinite(seconds) || seconds <= 0) return "wait";
-      if (seconds % 86_400 === 0) return `wait ${seconds / 86_400} day${seconds === 86_400 ? "" : "s"}`;
-      if (seconds % 3_600 === 0) return `wait ${seconds / 3_600} hour${seconds === 3_600 ? "" : "s"}`;
-      if (seconds % 60 === 0) return `wait ${seconds / 60} min`;
-      return `wait ${seconds} sec`;
+      return `wait ${formatDurationSeconds(seconds, { style: "long", parts: 2 })}`;
     }
   }
 }

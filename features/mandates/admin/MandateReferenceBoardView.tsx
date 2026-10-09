@@ -22,7 +22,7 @@
  * reports what was measured, and names who has not been measured yet.
  */
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CircleCheck, CircleDot, Loader2, RefreshCw } from "lucide-react";
@@ -255,7 +255,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
  *    outage says so in red.
  */
 function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
-  const { unit, format: formatCostDisplay } = useCostDisplay();
+  const { unit, rate: costRate, format: formatCostDisplay } = useCostDisplay();
   return (
     <section className="space-y-2" aria-label="Scheduled patrol">
       <div className="flex flex-wrap items-center gap-3">
@@ -349,7 +349,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                 Total compute
               </th>
               <td className="px-3 py-1.5">
-                {costCell(patrol.cumulative_compute_cost_usd, unit)}
+                {costCell(patrol.cumulative_compute_cost_usd, costRate, unit)}
                 <span className="ml-1 text-muted-foreground">
                   ({patrol.cumulative_vcpu_seconds} vCPU-s)
                 </span>
@@ -438,7 +438,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                         .filter(Boolean)
                         .join(" · ")}
                     >
-                      {costCell(run.compute_cost_usd, unit)}
+                      {costCell(run.compute_cost_usd, costRate, unit)}
                     </td>
                     <td
                       className="whitespace-nowrap px-3 py-2 text-right"

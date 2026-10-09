@@ -55,7 +55,7 @@ describe("Use existing kinds", () => {
     const row = (id: string, name: string, mine: boolean, updated: string, kind = "table") => ({
       table_id: id, table_name: name, organization_id: "org-1", organization_name: "Harbor Logistics",
       member: true, visibility: "internal", updated_at: updated, mine, shared_with_me: false,
-      kept_by_the_app: false, kind,
+      platform_owned: false, kind,
     });
     (dataHomeTables as jest.Mock).mockResolvedValue({
       ok: true,

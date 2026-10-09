@@ -1,5 +1,5 @@
 /** A signed-out visitor never asks `platform.knob_snapshot` (anon is refused: 42501 rows). */
-const rpc = jest.fn(async () => ({ data: { resolved: { "a.b": 1 } }, error: null }));
+const rpc = jest.fn(async (fn: string) => ({ data: fn === "knob_defaults" ? { version: "v", unchanged: false, defaults: {} } : { etag: "e", defaults_version: "v", unchanged: false, overrides: { "a.b": 1 } }, error: null }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ schema: () => ({ rpc }) }),
 }));
@@ -20,6 +20,6 @@ describe("ensureEffectiveKnob", () => {
   it("control: signed in reads the snapshot", async () => {
     userId = "u-1";
     await expect(ensureEffectiveKnob(null, "u-1", { feature: "a", key: "b" })).resolves.toBe(1);
-    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 });

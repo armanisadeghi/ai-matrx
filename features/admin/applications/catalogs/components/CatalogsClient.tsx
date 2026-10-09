@@ -29,7 +29,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { AddFromLinkDialog } from "@/features/admin/applications/catalogs/components/AddFromLinkDialog";
 import { CatalogEntryEditor } from "@/features/admin/applications/catalogs/components/CatalogEntryEditor";

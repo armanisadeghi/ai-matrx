@@ -176,6 +176,11 @@ describe("PageHeader is server-rendered", () => {
     expect(ghostLayer!.textContent).toContain("Flashcard Studio");
     const serverNode = app.querySelector<HTMLElement>("[data-probe]");
     expect(serverNode).not.toBeNull();
+    // Exactly ONE header node carries the portal marker while the ghost is up
+    // (the ghost's clone wears `data-page-header-ghost-portal`): /applets/build
+    // read as a double header for the ~1-2s before hydration.
+    expect(document.querySelectorAll("[data-page-header-portal]")).toHaveLength(1);
+    expect(ghostLayer!.querySelector("[data-page-header-ghost-portal]")).not.toBeNull();
 
     // 4. Hydration: clean, the same node moves into the slot, ghost gone.
     const errors: unknown[] = [];
@@ -425,7 +430,6 @@ describe("PageHeader is server-rendered", () => {
 const CLIENT_ONLY_HEADER_BASELINE = new Set([
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioShell.tsx",
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioMobile.tsx",
-  "features/notes/components/NotesLayout.tsx -> features/notes/components/NotesHeaderPortal.tsx",
   "features/notes/components/NotesView.tsx -> features/notes/components/mobile/MobileNotesView.tsx",
   "features/war-room/components/thread/ThreadAudioTab.tsx -> features/transcription-cleanup/components/CleanupPad.tsx",
 ]);

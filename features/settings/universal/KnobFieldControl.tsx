@@ -25,6 +25,7 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
+import { useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -67,8 +68,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
 import { useModels } from "@/features/ai-models/hooks/useModels";
-import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   DECISION_DEFAULT_MODEL_KNOB,
   firstDecisionModelId,
@@ -457,7 +458,7 @@ function ModelField({
   // concrete model when the ladder's stored answer deliberately means
   // "platform default". The authoring key reads its generator's configured
   // model through the same read path that prepares the generator itself.
-  const platformTextModelId = useAppSelector(selectPlatformDefaultTextModelId);
+  const platformTextModelId = useModelRecords(selectPlatformDefaultTextModelId);
   const builderDefault = useAgentBuilderDefaultModel(
     isBuilderKey && !configuredValue,
   );
@@ -542,7 +543,7 @@ function ModelField({
         <ReadFailure
           error={decisionDefault.error}
           what="the model catalog"
-          onRetry={() => void dispatch(fetchModelOptions())}
+          onRetry={() => getModelRecords().loadOptions()}
           className="mt-2"
         />
       ) : null}

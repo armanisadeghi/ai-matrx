@@ -39,7 +39,7 @@ import { formatAbsoluteDate, formatFileSize } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 
 import { FilePreview } from "./FilePreview";
 import { crumbs, extensionOf, joinPath, parentPath, previewKind } from "./paths";

@@ -14,7 +14,7 @@ import type { ComponentType } from "react";
 import AgentPeek from "./kinds/AgentPeek";
 import FilePeek from "./kinds/FilePeek";
 import NotePeek from "./kinds/NotePeek";
-import AgentAppPeek from "./kinds/AgentAppPeek";
+import AppletPeek from "./kinds/AppletPeek";
 import SkillPeek from "./kinds/SkillPeek";
 import WorkflowPeek from "./kinds/WorkflowPeek";
 import MessageTemplatePeek from "./kinds/MessageTemplatePeek";
@@ -45,7 +45,7 @@ export const PEEK_REGISTRY: Record<
   agent: AgentPeek,
   file: FilePeek,
   note: NotePeek,
-  app: AgentAppPeek,
+  app: AppletPeek,
   skill: SkillPeek,
   workflow: WorkflowPeek,
   message_template: MessageTemplatePeek,

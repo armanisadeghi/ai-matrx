@@ -74,7 +74,7 @@ import {
   type BatchStatus,
 } from "../service/kgCostService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { readOf, type ReadOutcome } from "@ai-matrx/design-system";
 
 import { KgCostExplorer } from "./KgCostExplorer";
 

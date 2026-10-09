@@ -156,7 +156,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/agents/system-agents/lineage"),
           destination("/administration/agents/system-agents/agents/new"),
           destination("/administration/agents/system-agents/agents/new/manual"),
-          destination("/agent-apps/build"),
+          destination("/applets/build"),
           destination("/administration/agents/system-agents/shortcuts/all"),
         ],
       },
@@ -170,17 +170,17 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         ],
       },
       {
-        name: "Published Agent Apps",
+        name: "Published Applets",
         iconName: "Boxes",
         destinations: [
-          destination("/administration/agents/agent-apps"),
-          destination("/administration/agents/agent-apps/apps", [
-            "/administration/agents/agent-apps/edit/[id]",
+          destination("/administration/applets"),
+          destination("/administration/applets/all", [
+            "/administration/applets/edit/[id]",
           ]),
-          destination("/administration/agents/agent-apps/categories"),
-          destination("/administration/agents/agent-apps/executions"),
-          destination("/administration/agents/agent-apps/analytics"),
-          destination("/administration/agents/agent-apps/rate-limits"),
+          destination("/administration/applets/categories"),
+          destination("/administration/applets/executions"),
+          destination("/administration/applets/analytics"),
+          destination("/administration/applets/rate-limits"),
         ],
       },
       {
@@ -488,7 +488,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Unified Data",
         iconName: "ToggleLeft",
         destinations: [
-          destination("/administration/database/store-tables"),
+          destination("/administration/database/custom-tables"),
           destination("/administration/database/switch-presses"),
         ],
       },
@@ -614,6 +614,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [destination("/administration/billing/spend")],
       },
       {
+        name: "Approvals",
+        iconName: "BadgeCheck",
+        destinations: [destination("/administration/billing/approvals")],
+      },
+      {
         name: "Plans",
         iconName: "Tags",
         destinations: [destination("/administration/billing/plans")],
@@ -642,6 +647,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/users/limits"),
           destination("/administration/users/usage-limits"),
           destination("/administration/usage"),
+          destination("/administration/usage/agents", [
+            "/administration/usage/agents/detail",
+          ]),
         ],
       },
       {
@@ -847,6 +855,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/reporting/unwired"),
           destination("/administration/reporting/lint-debt"),
           destination("/administration/reporting/check-findings"),
+          destination("/administration/reporting/performance"),
           destination("/administration/reporting/grounding"),
           destination("/administration/reporting/producer-yield"),
           destination("/administration/reporting/tool-refetch"),

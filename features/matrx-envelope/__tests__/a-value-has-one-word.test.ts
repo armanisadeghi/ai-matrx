@@ -55,9 +55,13 @@ function enumOf(node: SchemaNode | undefined): string[] | null {
   return null;
 }
 
-const catalog = JSON.parse(
+const manifest = JSON.parse(
   readFileSync(resolve(__dirname, "../../../docs/protocol/kind_directives_catalog.generated.json"), "utf-8"),
-) as { nouns: CatalogNoun[] };
+) as { nouns: CatalogNoun[]; noun_schemas: Record<string, CatalogNoun["schemas"]> };
+// Each noun with its schemas from `noun_schemas` (what `GET /directives/catalog/{noun}` serves).
+const catalog = {
+  nouns: manifest.nouns.map((n) => ({ ...n, schemas: manifest.noun_schemas[n.noun] })),
+};
 
 const ENUMS: Array<{ noun: string; field: string; values: string[] }> = [];
 const PLAIN: Array<{ noun: string; field: string }> = [];

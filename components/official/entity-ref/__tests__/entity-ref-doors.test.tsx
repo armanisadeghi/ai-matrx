@@ -145,7 +145,7 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
   });
 
   it("passes an overridden destination to the Quick look host", () => {
-    const href = "/administration/agents/agent-apps/edit/app-9";
+    const href = "/administration/applets/edit/app-9";
     renderRef(
       <EntityRef token="app" id="app-9" name="Onboarding" href={href} />,
     );

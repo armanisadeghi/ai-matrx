@@ -6,7 +6,7 @@
  * decision board's own storage) each wrote "list every table, search the list for my slug, make it
  * if missing" by hand. Two tabs saving first made two tables. The store has the doors for this:
  * `client.tableFind({ slug, keptFor })` finds one table in one request, `ensureTable(client, spec)`
- * finds-or-makes it in one transaction, and `defineAppTable` + `useAppTable` carry a page's own table.
+ * finds-or-makes it in one transaction, and `defineTypedTable` + `useTypedTable` carry a page's own table.
  *
  * THE RULE. In non-test source, a `tableList(` call is not followed (within 25 lines) by a
  * `.find(` whose callback names `.slug` or `.name`. Finding by id (`x.id === id`) is fine.
@@ -91,7 +91,7 @@ function report(findings: Finding[], root: string): number {
   }
   console.log(`✗ check:hand-written-find-or-create — ${findings.length} hand-written find-or-create:\n`);
   for (const f of findings) console.log(`  ${f.file}:${f.line}  ${f.text}`);
-  console.log(`\nUse client.tableFind({ slug, keptFor }) to find, ensureTable(client, spec) to find-or-make, or defineAppTable + useAppTable (@ai-matrx/records).`);
+  console.log(`\nUse client.tableFind({ slug, keptFor }) to find, ensureTable(client, spec) to find-or-make, or defineTypedTable + useTypedTable (@ai-matrx/records).`);
   return 1;
 }
 

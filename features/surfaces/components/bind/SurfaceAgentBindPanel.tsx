@@ -33,7 +33,6 @@ import { BindingTargetPicker } from "@/features/scopes/components/active-context
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
-  selectAgentById,
   selectAgentExecutionPayload,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
@@ -67,6 +66,7 @@ import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 const PICKER_CONSUMER_ID = "surface-agent-bind-panel";
 
@@ -139,9 +139,7 @@ export function SurfaceAgentBindPanel({
     null,
   );
 
-  const agent = useAppSelector((s: RootState) =>
-    agentId ? selectAgentById(s, agentId) : undefined,
-  );
+  const agent = useAgentView(agentId);
   const executionPayload = useAppSelector((s: RootState) =>
     agentId
       ? selectAgentExecutionPayload(s, agentId)

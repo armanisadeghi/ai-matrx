@@ -44,7 +44,7 @@ Every lane: build → independent adversarial review agent (goal: REFUTE the cla
 
 ## Bigger-thinking items — WAIT for Arman + a heavyweight session (do not start casually)
 
-- **tool_ui subsumption** (the ratified endgame): migrating tool renderers onto kind components touches tool-call-visualization, workflow-emit, agent-apps, and the tool schema. Needs a design pass and Arman's sequencing call.
+- **tool_ui subsumption** (the ratified endgame): migrating tool renderers onto kind components touches tool-call-visualization, workflow-emit, applets, and the tool schema. Needs a design pass and Arman's sequencing call.
 - **Agent bulk-bind** (578 variable-carrying agents → kind contracts): gated on prod soak of the W3-A bridge + Arman's "system is 100%" bar — this IS the production-agent rollout he deliberately holds.
 - **Workflow launch + dynamic contract publisher (P9)** — gated on Arman's "nothing left to do" bar for workflow I/O.
 - **E1 — unified TurnAssembler / parallel-pipeline retirement** (`common-docs/systems/architecture/content-ir/projects/unified-content-pipeline/PLAN.md`): deliberately last, consumes stabilized contracts.

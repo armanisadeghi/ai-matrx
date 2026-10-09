@@ -92,13 +92,15 @@ import {
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectActiveAgentId } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
-import { selectOwnedAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { getSettingsStore } from "@ai-matrx/chat/agents/identity/settings-store";
+
+/** The agent the settings store has active (agent core B4), if any. */
+const selectActiveAgentId = (_state: unknown): string | null => getSettingsStore().getState().activeAgentId;
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
+import { readOwnedAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -146,7 +148,7 @@ export interface TileContext {
 function seedAgentId(ctx: TileContext): { agentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
+    selectActiveAgentId(state) ?? readOwnedAgents()[0]?.id ?? null;
   return id ? { agentId: id } : undefined;
 }
 
@@ -156,7 +158,7 @@ function seedInitialAgentId(
 ): { initialAgentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
+    selectActiveAgentId(state) ?? readOwnedAgents()[0]?.id ?? null;
   return id ? { initialAgentId: id } : undefined;
 }
 
@@ -171,8 +173,7 @@ async function seedDefaultChatWindowAgent(): Promise<{
   try {
     initialAgentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
   } catch (error) {
-    // Declined the organization question: the tile opens nothing.
-    if (isOrganizationSelectionCancelled(error)) throw error;
+    // Resolution failed (e.g. the organization question was dismissed): fall back to the picker.
     console.error(
       `[ToolsGrid] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
       error,
@@ -504,7 +505,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   },
   {
     id: "tile.agent-create-app",
-    label: "Create Agent App (new)",
+    label: "Create Applet (new)",
     icon: Clapperboard,
     category: "agents",
     overlayId: "agentCreateAppWindow",

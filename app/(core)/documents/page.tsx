@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { DocumentListCard } from "@/features/documents/components/DocumentListCard";
 import { DocumentsHubTable } from "@/features/documents/components/DocumentsHubTable";
 import { DocumentsHubToolbar } from "@/features/documents/components/DocumentsHubToolbar";
@@ -46,11 +46,8 @@ import {
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Style prefs for this hub (synced across devices via `userPreferences`).
@@ -104,13 +101,10 @@ export default function DocumentsLandingPage() {
     setCreating(true);
     let capturedOrganizationId: string;
     try {
-      capturedOrganizationId = await ensureOrganizationContext({
-        organizationId,
-      });
+      capturedOrganizationId = await ensureOrgId(organizationId);
     } catch (error) {
       setCreating(false);
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast({
+      toast({
           title: "Could not create document",
           description:
             error instanceof Error
@@ -118,7 +112,6 @@ export default function DocumentsLandingPage() {
               : "Select an organization before creating a document.",
           variant: "destructive",
         });
-      }
       return;
     }
     const res = await createDocument({

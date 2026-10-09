@@ -7,13 +7,13 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import {
   ChevronLeftTapButton,
   MaximizeTapButton,
   UndoTapButton,
   RedoTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Copy, Inbox, ListChecks, Plus, Search, Settings, Shapes, Share2 } from "lucide-react";
 import { HeaderSpecimen } from "@/features/shell/components/header/templates/HeaderSpecimen";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";

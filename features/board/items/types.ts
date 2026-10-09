@@ -49,6 +49,15 @@ export interface ItemBodyProps {
   onSource: (next: NodeSource, title?: string) => void;
 }
 
+/** What a type's `HeaderAction` receives: the tile's header button slot. */
+export interface HeaderActionProps {
+  tileId: string;
+  source: NodeSource;
+  /** The tile's width in board px. */
+  width: number;
+  onSource: (next: NodeSource, title?: string) => void;
+}
+
 export interface PickerProps {
   /** Put these on the board. */
   onPick: (items: PlacedItem[]) => void;
@@ -201,6 +210,8 @@ export interface BoardItemType {
    * the tile awake while it is replying.
    */
   Keep?: ComponentType<{ tileId: string; source: NodeSource }>;
+  /** A button in the tile's EXISTING header (never a new row): the chat's conversation-list toggle. */
+  HeaderAction?: ComponentType<HeaderActionProps>;
   /** The body reads `tier` (pauses media, paces streams). Others get a constant,
    * so a zoom across a tier boundary never re-renders their content. */
   usesTier?: boolean;

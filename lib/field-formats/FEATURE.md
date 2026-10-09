@@ -62,7 +62,7 @@ format can never end up on a boolean.
 
 ## Consumers
 
-**User data tables (`/data/[id]` and every mount of `UserTableViewer`).**
+**User data tables (`/data/[id]` and every mount of the custom table page).**
 Persisted on the record store's field (the Table's column) as `format = {id, options}`.
 
 - Write: `setFieldFormat()` in `features/data-tables/service.ts` → the data
@@ -71,7 +71,7 @@ Persisted on the record store's field (the Table's column) as `format = {id, opt
 - Read: `resolveFieldFormat(field.data_type, field.metadata)` — never read
   `metadata.format` by hand.
 - A column with no declared format takes the identity format for its storage
-  type, and `UserTableViewer` then renders it down its **original** code path.
+  type, and the grid then renders it down its plain path.
   Existing tables are byte-identically unchanged until someone picks a format.
 - Dense consumers use `layout="embedded"` plus `optionsClassName` to place
   format-specific controls on their own responsive rail. The default remains
@@ -258,5 +258,5 @@ unknown format id degrades to the plain storage type by design.
   a full responsive rail; the default stacked contract remains unchanged.
 - **2026-08-14** — Created. Extracted the formatting concepts scattered across
   `ContextValueDisplay.renderTyped`, six per-domain `format.ts` helpers, and
-  `UserTableViewer.formatCellValue` into one registry; wired data tables
+  the data tables' old cell formatter into one registry; wired data tables
   (picker, grid render, inline edit, row modals, column creation).

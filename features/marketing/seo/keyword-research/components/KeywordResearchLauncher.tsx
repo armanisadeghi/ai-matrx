@@ -30,7 +30,7 @@ import {
   savedKeywordResearchQueryKey,
   useSavedKeywordResearch,
 } from "../useSavedKeywordResearch";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
@@ -39,7 +39,7 @@ import {
   assertNoRunInFlight,
   parseStagedKeywordWrite,
 } from "../keyword-research-write";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface KeywordResearchLauncherProps {
   run: ResearchRunState;

@@ -3,7 +3,7 @@
  *
  *   pnpm tsx scripts/applets/applet-render-sweep.ts [--files <dir>] [report.json]
  *
- * Reads every live `app.definition` row and mounts it exactly as `/apps/<slug>` does —
+ * Reads every live `app.definition` row and mounts it exactly as `/applets/<slug>` does —
  * `definitionToRecord` → `mountApplet(record, host, scope)` from `@ai-matrx/applets/frame`, with the app's
  * stored-component scope modules — over a memory host (no network: the first paint and the job's idle
  * state, which is what a visitor sees before pressing anything). Then the code-runtime source gate runs on
@@ -12,10 +12,19 @@
  * `--files <dir>` swaps each row's entry file for `<dir>/<slug>.tsx` when present — the converter's output
  * checked BEFORE it is written to the row.
  *
- * Verdicts: ok · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
- * legacy_contract (still reads the old prop contract). Exit 1 on anything but ok.
+ * `--against-live` ALSO checks every row's @ai-matrx named imports against the versions the DEPLOYED site carries
+ * (commit from https://www.aimatrx.com/api/version → pnpm-lock.yaml at that commit → those exact tarballs from
+ * npm). A row may use a new package export only once the deployed site has it; run this before writing any row.
+ * Rows that would break on the live site get verdict `breaks_on_live`. See scripts/applets/against-live.mjs.
+ *
+ * Verdicts: ok · unbuilt (a build still in progress — not a failure) · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
+ * legacy_contract (still reads the old prop contract) · prop_contract (a component imported from a package is given props
+ * its type refuses — applet-prop-contract.ts; a first paint never reaches a page still loading its rows) · surface_missing (no live `ui.ui_surface` row `applets/<id>`: the
+ * running Applet's frame refuses `surface_not_found` on every visit — the trigger `app._applet_surface_follows_record`
+ * writes it on every insert/update, so a miss means a row the trigger never saw). Exit 1 on anything but ok.
  * Reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY; all reads, no writes.
  */
+import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@supabase/supabase-js";
 import { JSDOM } from "jsdom";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,9 +32,10 @@ import { resolve } from "node:path";
 import { createElement } from "react";
 
 const args = process.argv.slice(2);
+const AGAINST_LIVE = args.includes("--against-live");
 const filesDirAt = args.indexOf("--files");
 const FILES_DIR = filesDirAt >= 0 ? args[filesDirAt + 1] : null;
-const REPORT = args.filter((_, i) => filesDirAt < 0 || (i !== filesDirAt && i !== filesDirAt + 1))[0] ?? resolve(process.cwd(), ".applet-render-sweep.json");
+const REPORT = args.filter((a, i) => a !== "--against-live" && (filesDirAt < 0 || (i !== filesDirAt && i !== filesDirAt + 1)))[0] ?? resolve(process.cwd(), ".applet-render-sweep.json");
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
 const g = globalThis as unknown as Record<string, unknown>;
@@ -35,7 +45,7 @@ for (const key of ["window", "document", "navigator", "HTMLElement", "Node", "ge
 g.matchMedia ??= () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 g.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
-type Verdict = "ok" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract";
+type Verdict = "ok" | "surface_missing" | "prop_contract" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
 type Row = Record<string, unknown> & { id: string; slug: string; files: Record<string, string> | null; entry: string | null };
 
 const LEGACY_PROPS = /export\s+default\s+function\s+\w*\s*\(\s*\{[^}]*\b(onExecute|response|isStreaming|isExecuting|rateLimitInfo)\b/;
@@ -58,6 +68,17 @@ async function main() {
   const { data, error } = await sb.schema("app").from("definition").select(`${DEFINITION_COLUMNS}, published_to_web`).is("deleted_at", null).order("slug");
   if (error) throw new Error(`Could not read app.definition: ${error.message}`);
   const rows = (data ?? []) as unknown as Row[];
+  // Every live Applet owns a live surface `applets/<id>` — the frame mounts it on every visit (alchemy readSurfaceChain).
+  const surfaces = await readAllRows<{ name: string }>(
+    ({ from, to }) => sb.schema("ui").from("ui_surface").select("name", { count: "exact" }).like("name", "applets/%").is("deleted_at", null).order("name").range(from, to),
+    { label: "ui.ui_surface (applets/*)" },
+  );
+  const liveSurfaces = new Set(surfaces.map((s) => s.name));
+  const { propContractFindings } = await import("./applet-prop-contract");
+  const contract = new Map<string, string[]>();
+  for (const f of propContractFindings(rows.map((r) => ({ slug: r.slug, files: r.files })))) {
+    contract.set(f.slug, [...(contract.get(f.slug) ?? []), `${f.file}:${f.line} <${f.component}> ${f.message}`]);
+  }
   const results: { slug: string; id: string; public: boolean; verdict: Verdict; detail: string }[] = [];
   for (const row of rows) {
     const entry = row.entry ?? "App.tsx";
@@ -65,6 +86,16 @@ async function main() {
     const files = { ...(row.files ?? {}) };
     if (override && existsSync(override)) files[entry] = readFileSync(override, "utf8");
     const verdict = (v: Verdict, detail = "") => results.push({ slug: row.slug, id: row.id, public: row.published_to_web === true, verdict: v, detail });
+    if (!liveSurfaces.has(`applets/${row.id}`)) {
+      verdict("surface_missing", `no live ui.ui_surface "applets/${row.id}" — write it with ui.save_applet_surface`);
+      continue;
+    }
+    // A build is born as an empty draft the moment Build is pressed (features/applets-host/builder/build-session.ts):
+    // no entry, no files, until its first answer saves. That is a build in progress, not a broken Applet.
+    if (!row.entry && Object.keys(files).length === 0) {
+      verdict("unbuilt", "a build that has not saved an app yet (opens at /applets/build/<id>)");
+      continue;
+    }
     if (Object.values(files).some((src) => LEGACY_PROPS.test(src))) {
       verdict("legacy_contract", "the entry still takes the old prop contract");
       continue;
@@ -104,19 +135,68 @@ async function main() {
       const html = renderToStaticMarkup(createElement(mounted.Component));
       const standIns = [...html.matchAll(/data-unresolved-import="([^"]+)"/g)].map((m) => m[1]);
       const unresolved = (mounted as { unresolved?: string[] }).unresolved ?? standIns;
-      if (unresolved.length) verdict("unresolved", unresolved.join(", "));
-      else verdict("ok");
+      if (unresolved.length) {
+        verdict("unresolved", unresolved.join(", "));
+        continue;
+      }
     } catch (err) {
       verdict("render_threw", err instanceof Error ? err.message : String(err));
+      continue;
+    }
+    // Every OTHER page file paints too — the entry's first paint never reaches a page behind navigation, and a
+    // throw there (e.g. a control given the wrong prop) took the whole /applets/build route down (2026-10-08).
+    const pageThrows: string[] = [];
+    // Only the record's PAGES (`pages[].file`) — other files are components that take props a page never passes.
+    const pageFiles = new Set(((record as { pages?: { file?: string }[] }).pages ?? []).map((p) => p.file).filter((f): f is string => typeof f === "string"));
+    for (const file of pageFiles) {
+      if (file === record.entry || !(file in files)) continue;
+      const page = mountApplet({ ...record, entry: file }, createMemoryHost({ record, viewer: { guest: true, userId: null, organizationIds: [] } }) as never, HOST_SCOPE);
+      if (!page.ok) {
+        pageThrows.push(`${file}: ${page.error.message}`);
+        continue;
+      }
+      try {
+        renderToStaticMarkup(createElement(page.Component));
+      } catch (err) {
+        pageThrows.push(`${file}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    if (pageThrows.length) verdict("render_threw", pageThrows.join("; "));
+    else if (contract.has(row.slug) && !override) verdict("prop_contract", (contract.get(row.slug) ?? []).join("; "));
+    else verdict("ok");
+  }
+  if (AGAINST_LIVE) {
+    const { checkRowsAgainstLive, describeFinding } = await import("./against-live.mjs");
+    const effective = rows.map((row) => {
+      const entry = row.entry ?? "App.tsx";
+      const override = FILES_DIR ? resolve(FILES_DIR, `${row.slug}.tsx`) : null;
+      const files = { ...(row.files ?? {}) };
+      if (override && existsSync(override)) files[entry] = readFileSync(override, "utf8");
+      return { slug: row.slug, files };
+    });
+    const live = await checkRowsAgainstLive(effective);
+    const lines = Object.entries(live.versions as Record<string, string>).filter(([k]) => k.startsWith("@ai-matrx/")).map(([k, v]) => `${k.slice(10)}@${v}`);
+    console.log(`against live: deployed commit ${live.commit.slice(0, 10)}; ${lines.join(" ")}`);
+    const bySlug = new Map<string, string[]>();
+    for (const f of live.findings as { slug: string }[]) bySlug.set(f.slug, [...(bySlug.get(f.slug) ?? []), describeFinding(f)]);
+    for (const [slug, details] of bySlug) {
+      const res = results.filter((r) => r.slug === slug);
+      const detail = [...new Set(details)].join("; ");
+      if (res.length) {
+        for (const r of res) {
+          r.verdict = "breaks_on_live";
+          r.detail = detail;
+        }
+      } else results.push({ slug, id: "", public: false, verdict: "breaks_on_live", detail });
     }
   }
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
   const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
-  console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}`);
-  for (const v of ["ok", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
-  for (const r of results.filter((x) => x.verdict !== "ok")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
+  console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}${AGAINST_LIVE ? ", against the deployed site" : ""}`);
+  for (const v of ["ok", "surface_missing", "prop_contract", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
+  for (const r of results.filter((x) => x.verdict !== "ok" && x.verdict !== "unbuilt")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
   console.log(`report: ${REPORT}`);
-  if (results.some((r) => r.verdict !== "ok")) process.exitCode = 1;
+  if (results.some((r) => r.verdict !== "ok" && r.verdict !== "unbuilt")) process.exitCode = 1;
 }
 
 main().catch((err) => {

@@ -9,6 +9,8 @@ Enforce one rule: user-visible UI uses Lucide icons, never emoji or Unicode
 icon glyphs. Follow the Pattern Patrol constitution and keep each mutation
 batch to 15 files or fewer.
 
+**Scope: our own interface chrome only.** Emoji a person chooses for their own content (page and callout icons, text they type, imported emoji) are allowed — Arman 2026-10-08. Never remove or flag those, including `role="img"` emoji spans in `features/spaces`.
+
 ## Detect
 
 Run the registry detector over `.tsx` files:

@@ -27,7 +27,7 @@ import {
 import { loadDecision, runDecision } from "./decision-api";
 import type { DecisionResultView } from "./decision-result";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ALL_DECISIONS_REVIEW_HREF } from "@/features/agents/decision-review/service";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 

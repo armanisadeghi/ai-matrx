@@ -1,5 +1,6 @@
 "use client";
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import React, { useState } from "react";
 import type { TabDefinition } from "@/components/official/FullScreenOverlay";
 import type { RootState } from "@/lib/redux/store";
@@ -128,7 +129,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "messaging",
   "adminPreferences",
   "entitySystem",
-  "agentSettings",
   "modelRegistry",
   "mcp",
   "adminDebug",
@@ -588,22 +588,13 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "agentSettings",
-      label: "Agent Settings",
-      content: (
-        <GenericSliceViewer
-          sliceKey="agentSettings"
-          state={completeState.agentSettings}
-        />
-      ),
-    },
-    {
       id: "modelRegistry",
-      label: "Model Registry",
+      label: "Model Records",
       content: (
+        // Not a Redux slice since B3: the core model catalog's records (a snapshot at render).
         <GenericSliceViewer
-          sliceKey="modelRegistry"
-          state={completeState.modelRegistry}
+          sliceKey="modelRecords"
+          state={readModelRecords()}
         />
       ),
     },

@@ -718,7 +718,7 @@ const handler = createMcpHandler(
       "- You see a UX issue, accessibility gap, or design inconsistency",
       "- The user describes a problem — even conversationally — that should be tracked",
       "- You complete a task and realize related follow-up work is needed",
-      "- You encounter technical debt, deprecated patterns, or security concerns",
+      "- You encounter technical debt or deprecated patterns",
       "",
       "## Submit Early, Submit Often",
       "Do NOT wait for a single perfect issue. Break large observations into **multiple focused items**.",

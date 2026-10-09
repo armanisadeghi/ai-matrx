@@ -116,6 +116,15 @@ export const FINDING_CATALOG: Record<FindingCode, FindingCodeSpec> = {
     how: "Run pnpm check:shapes:components and fix what it names — route the value through PlatformRecordBlock, restore the table: prefix rule or the withControlKeyFields wrap, or retire the registry row.",
     measuredOnBoard: false,
   },
+  "derived-schema-rejects-example": {
+    code: "derived-schema-rejects-example",
+    label: "Derived schema rejects example",
+    severity: "red",
+    lane: "resolve-here",
+    what: "An active kind's JSON Schema accepts its example, but the field model the kind registry derives from that schema refuses it — every live instance renders through the generic fallback once the database schema loads.",
+    how: "Run pnpm check:shapes:components for the refusal, then fix the emitted schema (or the derivation in @ai-matrx/content-ir) until the derived model resolves the example.",
+    measuredOnBoard: true,
+  },
   "manual-data-only-flag": {
     code: "manual-data-only-flag",
     label: "Manual data-only flag returned",

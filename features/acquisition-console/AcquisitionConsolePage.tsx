@@ -34,7 +34,7 @@ import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
 import { loadConsole, type ConsoleData } from "./service";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 const EMPTY_ORGS: { id: string; name: string }[] = [];

@@ -41,20 +41,26 @@ async function readContentDocumentFormat(
   return data ?? null;
 }
 
-/** Replace `/documents/<id>` with the content-store door when the id is one. */
-export function useContentDocumentRedirect(id: string): string | null {
+/**
+ * Replace `/documents/<id>` with the content-store door when the id is one.
+ * `"checking"` until the lookup answers (the page renders nothing yet, so a
+ * content-store id never flashes the Univer editor's not-found), then the door
+ * being navigated to, or null for a Univer document.
+ */
+export function useContentDocumentRedirect(id: string): string | "checking" | null {
   const router = useRouter();
-  const [door, setDoor] = useState<string | null>(null);
+  const [door, setDoor] = useState<{ id: string; href: string | null } | null>(null);
   useEffect(() => {
     let live = true;
     void contentDocumentDoor(id).then((href) => {
-      if (!live || !href) return;
-      setDoor(href);
-      router.replace(href);
+      if (!live) return;
+      setDoor({ id, href });
+      if (href) router.replace(href);
     });
     return () => {
       live = false;
     };
   }, [id, router]);
-  return door;
+  if (!door || door.id !== id) return "checking";
+  return door.href;
 }

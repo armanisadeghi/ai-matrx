@@ -27,11 +27,11 @@ import {
 import {
   PencilTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Lock, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 function CompactRange({
   min,

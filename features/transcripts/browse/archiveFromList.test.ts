@@ -15,7 +15,7 @@ jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() 
 jest.mock("@/features/matrx-envelope/recordReference", () => ({ buildRecordReferenceFence: jest.fn() }));
 
 import type { EntityListController } from "@/lib/entity-list/config";
-import type { ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { archiveRecord } from "@/features/trash/service";
 import { useTranscriptRowActions } from "./useTranscriptRowActions";
 import type { TranscriptListRow } from "./types";

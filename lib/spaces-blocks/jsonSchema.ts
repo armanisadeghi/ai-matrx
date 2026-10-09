@@ -11,7 +11,7 @@
 // Regenerate the SQL function: `pnpm exec tsx scripts/spaces-snapshot-schema.mjs --print-sql`.
 
 import { BLOCK_SPECS } from "./schema";
-import { DATABASE_CHART_OPS, DATABASE_CHART_TYPES, DATABASE_OPEN_AS, DATABASE_VIEW_LAYOUTS, SPACE_COLORS } from "./types";
+import { BUTTON_ACTION_KINDS, DATABASE_CHART_OPS, DATABASE_CHART_TYPES, DATABASE_OPEN_AS, DATABASE_VIEW_LAYOUTS, PAGE_PROPERTY_TYPES, SPACE_COLORS } from "./types";
 
 type J = Record<string, unknown>;
 
@@ -41,7 +41,7 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
     required: true,
     schema: {
       required: ["level"],
-      properties: { level: { type: "number", enum: [1, 2, 3] }, toggleable: bool, ...alignment },
+      properties: { level: { type: "number", enum: [1, 2, 3, 4] }, toggleable: bool, ...alignment },
     },
   },
   bulleted: { schema: { properties: alignment } },
@@ -113,7 +113,20 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
   },
   tabs: { schema: { properties: { activeTab: { type: "string" } } } },
   tab: { schema: {} },
+  synced: { required: true, schema: { required: ["sourceId"], properties: { sourceId: nonEmptyStr } } },
+  button: {
+    required: true,
+    schema: {
+      required: ["label", "actions"],
+      properties: {
+        label: { type: "string" },
+        icon: { type: "string" },
+        actions: { type: "array", items: { type: "object", required: ["kind"], properties: { kind: { enum: [...BUTTON_ACTION_KINDS] } } } },
+      },
+    },
+  },
   slot: { required: true, schema: { required: ["label"], properties: { label: { type: "string" } } } },
+  ai: { required: true, schema: { required: ["prompt"], properties: { prompt: { type: "string" }, output: { type: "string" }, ranAt: { type: "string" } } } },
 };
 
 function databaseView(): J {
@@ -165,7 +178,7 @@ function mediaProps(): J {
 function mediaDef(allowOffset: boolean): J {
   return {
     type: "object",
-    oneOf: ["fileId", "url", "icon"].map((k) => ({ required: [k], properties: { [k]: nonEmptyStr } })),
+    oneOf: ["fileId", "url", "icon", "emoji"].map((k) => ({ required: [k], properties: { [k]: nonEmptyStr } })),
     ...(allowOffset ? { properties: { offsetY: { type: "number" } } } : {}),
   };
 }
@@ -213,6 +226,20 @@ export function buildSpaceSnapshotSchema(): J {
       },
       icon: { oneOf: [{ type: "null" }, mediaDef(false)] },
       cover: { oneOf: [{ type: "null" }, mediaDef(true)] },
+      properties: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["id", "name", "type"],
+          properties: {
+            id: nonEmptyStr,
+            name: { type: "string" },
+            type: { enum: [...PAGE_PROPERTY_TYPES] },
+            value: { type: ["string", "number", "null"] },
+            options: { type: "array", items: { type: "object", required: ["id", "name"], properties: { id: nonEmptyStr, name: { type: "string" }, color: ref("color") } } },
+          },
+        },
+      },
       // a tab sits only inside tabs
       blocks: { type: "array", items: { allOf: [ref("block"), { not: { type: "object", required: ["type"], properties: { type: { const: "tab" } } } }] } },
     },
@@ -234,6 +261,11 @@ export function buildSpaceSnapshotSchema(): J {
           background: ref("color"),
           link: nonEmptyStr,
           equation: { type: "string" },
+          suggestion: {
+            type: "object",
+            required: ["id", "kind", "by", "at"],
+            properties: { id: nonEmptyStr, kind: { enum: ["insert", "delete"] }, by: nonEmptyStr, at: nonEmptyStr },
+          },
           mention: {
             oneOf: [
               { type: "object", required: ["kind", "spaceId"], properties: { kind: { const: "space" }, spaceId: nonEmptyStr } },

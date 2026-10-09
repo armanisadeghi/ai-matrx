@@ -210,8 +210,9 @@ export type HeadlessRunTarget =
 
 export type HeadlessRunArgs = HeadlessRunTarget & {
   surfaceKey: string;
-  /** User-message text (some agents key entirely off runtime variables). */
-  userText: string;
+  /** What the person typed. Omit for variable-driven agents: the agent's own
+   *  authored user message carries the variables — code never writes a turn. */
+  userText?: string;
   /** Passed straight to the run as runtime variables (imageGrading pattern).
    *  Native JSON values — a provision's declared `integer` / `string_list`
    *  offers ride as numbers / arrays, never stringified. */
@@ -283,7 +284,9 @@ export async function runHeadlessAgent<T>(
     ).unwrap();
     conversationId = launch.conversationId;
 
-    dispatch(setUserInputText({ conversationId, text: args.userText }));
+    if (args.userText) {
+      dispatch(setUserInputText({ conversationId, text: args.userText }));
+    }
 
     const exec = await dispatch(executeInstance({ conversationId })).unwrap();
     const requestId = exec.requestId;
@@ -380,10 +383,6 @@ export function generatePageImage(args: GeneratePageImageArgs) {
         {
           agentId: args.agentId,
           surfaceKey: args.surfaceKey,
-          // Kick phrase only — matches the sibling paths' "Generate the
-          // image now." The actual spec rides as a variable (below), never
-          // as user_input.
-          userText: "Generate the image now.",
           variables: { intent_or_content: args.prompt },
           live: {
             instanceId: liveWindowId(args.surfaceKey, args.liveInstanceId),
@@ -467,7 +466,6 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
         {
           mandateKey: IMAGE_PROMPT_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
-          userText: "Write the image prompt now.",
           variables: {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",
@@ -505,7 +503,6 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
         {
           mandateKey: PAGE_IMAGE_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
-          userText: "Generate the image now.",
           variables: {
             image_description: imagePrompt,
             ...pageImageOfferValues(args.facts, args.spec, args.style),
@@ -561,7 +558,6 @@ export function generatePageImageAllInOne(args: GeneratePageImageAllInOneArgs) {
         {
           mandateKey: PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
-          userText: "Generate the image now.",
           variables: {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",

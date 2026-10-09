@@ -21,8 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@ai-matrx/design-system';
 import { fetchNews } from '@/actions/ai-actions/news-api';
 import NewsCard from './NewsCard';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
+import { ReadFailure } from '@ai-matrx/design-system';
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 interface Article {
     title: string;

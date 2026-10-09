@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { FolderTagPicker } from "../organize/FolderTagPicker";
@@ -44,7 +44,7 @@ import { toast } from "@/lib/toast";
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type {
   EntityListController,
@@ -105,10 +105,6 @@ export function useFlashcardSetRowActions(
       });
       list.refresh();
     } catch (e) {
-      if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {
-        toast.dismiss(pending);
-        return;
-      }
       toast.error(e instanceof Error ? e.message : "The deck was not copied.", {
         id: pending,
       });

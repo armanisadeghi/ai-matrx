@@ -627,6 +627,17 @@
   padding: 0.25rem 0.375rem;
 }
 
+/* An admin's footer is reserved at its last settled height before first paint (the inline script
+   beside it publishes --shell-admin-footer-h), so the admin block fills space already there
+   instead of growing the footer after auth resolves. Content stays bottom-aligned. */
+html[data-admin-footer] .shell-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-height: var(--shell-admin-footer-h);
+}
+
 /* ---------------------------------------------------------------------------
    9. Nav Items — Sidebar
    --------------------------------------------------------------------------- */
@@ -1600,7 +1611,9 @@ body[style*="pointer-events: none"] {
    workspace controls. Hide the fallback whenever that page header is present;
    portal effect order is not a reliable proxy for route depth. */
 .shell-header-center:has(> [data-page-header-portal="page"])
-  > [data-page-header-portal="fallback"] {
+  > [data-page-header-portal="fallback"],
+.shell-header-center:has(> [data-page-header-ghost-portal="page"])
+  > [data-page-header-ghost-portal="fallback"] {
   display: none;
 }
 
@@ -2024,26 +2037,16 @@ body[style*="pointer-events: none"] {
 }
 
 /* …AND A FULL-HEIGHT SCROLLER WHOSE CONTENT IS ITSELF FULL-HEIGHT IS A
-   VIEWPORT, NOT A PAGE (owner, 2026-10-04 — the notes editor). The notes root
-   is `h-full overflow-y-auto` around an `h-full` workspace: a runway AFTER it
-   only added scroll slack, so scrolling to where the page assistant appears
-   lifted the editor under the header and left an empty band under the box.
-   Such a surface clears what floats the only way that does not cover or slide
-   it: the floating chrome's height is PADDING at its foot, so the workspace
-   ends exactly above the box and nothing scrolls. Measured only — no box, no
-   padding. A route body that is an app viewport in EVERY layout (the notes
-   phone view has no h-full child) says so with `data-matrx-viewport-surface`. */
-.shell-main
-  > :is(
-    .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full),
-    [data-matrx-viewport-surface]
-  ):not([data-floating-clearance="off"]) {
-  box-sizing: border-box;
-  padding-block-end: max(
-    var(--matrx-floating-measured, 0px),
-    var(--shell-fixed-alert-clearance, 0px)
-  );
-}
+   VIEWPORT, NOT A PAGE (the notes editor). It takes NO runway and NO padding:
+   floating chrome HOVERS over it (owner, 2026-10-07 — "instead of hovering over
+   the page, it's actually pushing things up and cutting off the bottom"). The
+   2026-10-04 version padded its foot by the floating height, which shrank the
+   whole workspace — footer lifted, note cut short — every time the page
+   assistant appeared. The surface's own inner scroller ends clear instead
+   (the notes editor pads its end itself; any other takes
+   [data-matrx-page-scroll]). A route body that is an app viewport in EVERY
+   layout (the notes phone view has no h-full child) says so with
+   `data-matrx-viewport-surface`. */
 .shell-main
   > :is(.h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full), [data-matrx-viewport-surface])::after {
   content: none;

@@ -7,8 +7,8 @@ import {
   TrashTapButton,
   LoadingTapButton,
   type TapButtonProps,
-} from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 
 /**
  * The canonical action vocabulary shared across every scope/context page.

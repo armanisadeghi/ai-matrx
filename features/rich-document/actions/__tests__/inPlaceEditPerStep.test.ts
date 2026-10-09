@@ -8,7 +8,7 @@
  */
 import "../handlers";
 import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { buildChatMessageActions } from "../../chat/chatMessageActions";
+import { buildChatMessageActions } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chatMessageActions";
 import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 

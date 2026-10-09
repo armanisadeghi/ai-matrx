@@ -21,7 +21,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { MasterworkResultBlock } from "./MasterworkResultBlock";
 
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content?: string }) => (
     <div data-testid="markdown">{content}</div>

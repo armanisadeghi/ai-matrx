@@ -3,12 +3,12 @@
 // The words and numbers a run row prints. Pure — tested in __tests__.
 
 import { formatCost, type CostUnit, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import type { MandateRun, RunHistoryView, RunRung, RunStatus } from "./service";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 export const STATUS_WORDS: Record<RunStatus, string> = {
   succeeded: "Succeeded",
+  warned: "Warned",
   failed: "Failed",
   stopped: "Stopped",
   waiting: "Waiting",
@@ -18,6 +18,7 @@ export const STATUS_WORDS: Record<RunStatus, string> = {
 /** Dot colour per status — semantic tokens only. */
 export const STATUS_DOT: Record<RunStatus, string> = {
   succeeded: "bg-success",
+  warned: "bg-warning",
   failed: "bg-destructive",
   stopped: "bg-muted-foreground",
   waiting: "bg-warning",
@@ -38,8 +39,8 @@ export const RUNG_TITLES: Record<RunRung, string> = {
   run: "An explicit choice for this one run decided it (a test, or a choice made on the page itself).",
 };
 
-export const RUNG_NOT_RECORDED =
-  "Not recorded — this run happened before the level was stamped on every run (27 Sep 2026).";
+// Runs before 27 Sep 2026 carry no level stamp; the cell shows "—" with this on hover.
+export const RUNG_NOT_RECORDED = "Not recorded";
 
 export function rungWords(rung: RunRung | null): string {
   return rung ? RUNG_WORDS[rung] : "—";
@@ -71,8 +72,12 @@ export function absoluteWhen(iso: string): string {
 
 /** A run's cost in the viewer's unit ("538 points"; dollars only for a
  *  system admin who flipped the switch); "—" when not known. */
-export function costWords(cost: number | null, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(cost, { rate: currentPointsRate(), unit });
+export function costWords(
+  cost: number | null,
+  rate: number | null,
+  unit: CostUnit = currentCostUnit(),
+): string {
+  return formatCost(cost, { rate, unit });
 }
 
 /** "850ms" / "6.2s" / "11s" / "2m 05s"; "—" when not finished. */

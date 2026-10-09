@@ -43,6 +43,7 @@ import {
   humanizeAction,
   topicalMapActionOf,
 } from "./renderers/topical-map/topicalMapResult";
+import { formatCount } from "@ai-matrx/kit/format";
 
 function seoHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
   const variant = resolveSeoVariant(entry);
@@ -493,7 +494,7 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
         parts.push(
           pages.length === 1 ? `Page ${pages[0]}` : `${pages.length} pages`,
         );
-      if (tokens != null) parts.push(`${tokens.toLocaleString()} tokens`);
+      if (tokens != null) parts.push(`${formatCount(tokens)} tokens`);
       return parts.length ? parts.join(" · ") : null;
     },
   },

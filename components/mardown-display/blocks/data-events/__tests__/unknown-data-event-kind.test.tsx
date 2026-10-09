@@ -12,7 +12,7 @@ jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
   default: ({ kind }: { kind: string }) => <div data-kind-route={kind} />,
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: () => <div data-route="markdown" />,
 }));

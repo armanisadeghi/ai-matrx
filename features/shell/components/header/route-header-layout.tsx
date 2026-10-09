@@ -26,7 +26,7 @@ import {
   type ReactNode,
 } from "react";
 import { DropdownMenu } from "@ai-matrx/design-system";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Ellipsis, EllipsisVertical } from "lucide-react";
 
 /** Secondary actions fold before the title's text gets less than this. */

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 import { useMapTopicSearch } from "../hooks";
 import type { MapTopicRejectionPolicy } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export type RejectPolicyBase = "error" | "reject" | "parent" | "merge_into";
 

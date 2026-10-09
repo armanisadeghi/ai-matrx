@@ -15,6 +15,7 @@
 // the conversation opens in the Source Inspector window at its message range.
 
 import type { RecordCitationKind, SourceCitation } from "./types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const PART_RE = new RegExp(`^(${UUID}):(.+)$`, "i");
@@ -154,7 +155,7 @@ export function recordCitationHref(
       }
       const cells = cellsOfExcerpt(excerpt);
       // A row line carries its own row id: open that row's panel.
-      if (cells.id && new RegExp(`^${UUID}$`, "i").test(cells.id)) {
+      if (cells.id && isUuidShape(cells.id)) {
         return `${base}?record=${encodeURIComponent(cells.id)}`;
       }
       return Object.keys(cells).length
@@ -163,12 +164,12 @@ export function recordCitationHref(
     }
     case "saved_result":
       return part ? `/shapes/instances/${id}?field=${encodeURIComponent(part)}` : `/shapes/instances/${id}`;
-    // Two different documents, two different doors: `/documents/[id]` loads
-    // the CLOUD table (workbench.udt_documents); a markdown document
-    // (content.document) opens in the Markdown Studio. The entity registry
-    // carries the same two routes (guarded in record-citation.test.ts).
+    // One door for both kinds: `/documents/[id]` opens a cloud (Univer)
+    // document itself and sends a content-store document to its own editor by
+    // its format (`contentDocumentDoor` -> `documentHref`: markdown to the
+    // Markdown Studio, a Space to /spaces). The entity registry carries the same
+    // door (guarded in record-citation.test.ts).
     case "document":
-      return `/markdown-studio?source=document&id=${id}`;
     case "udt_document":
       return `/documents/${id}`;
   }

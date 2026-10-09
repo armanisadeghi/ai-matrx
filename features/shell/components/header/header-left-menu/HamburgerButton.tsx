@@ -1,4 +1,4 @@
-import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
+import { MenuTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 export default function HamburgerButton({ className }: { className?: string }) {
   return (

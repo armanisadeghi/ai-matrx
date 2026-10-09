@@ -26,16 +26,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Save, X } from "lucide-react";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;

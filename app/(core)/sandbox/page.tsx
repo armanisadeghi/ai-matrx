@@ -44,7 +44,7 @@ import { LIST_ACTIVE_STATUSES, getEffectiveStatus } from "@/lib/sandbox/status";
 import { CreateSandboxFormFields } from "@/features/code/views/sandboxes/CreateSandboxFormFields";
 import { SandboxInstancesTable } from "@/features/code/views/sandboxes/SandboxInstancesTable";
 import { useSandboxCreate } from "@/features/code/views/sandboxes/useSandboxCreate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
 export default function SandboxListPage() {

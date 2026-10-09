@@ -36,18 +36,18 @@ import { useNoteEditorMode, useSelectNoteMode } from "../hooks/usePreferredDefau
 
 /**
  * The note modes, in plain words, in the order a person meets them (Arman,
- * 2026-09-27). ONE list — the page header, this menu and the phone read it.
- *   Split  the quick plain text on the left, the formatted note live on the
- *          right (the desktop default)
+ * 2026-10-07: Write first, and the default everywhere). ONE list — the page
+ * header, this menu and the phone read it.
+ *   Write  the one editor, formatted (the default)
+ *   Split  the quick plain text on the left, the formatted note live on the right
  *   Plain  that text alone — nothing is ever formatted for you
- *   Write  the one editor, formatted
  *   Read   read-only, rendered
- * The phone has Plain (its default) and Write — `NOTE_PHONE_VIEW_MODES`.
+ * The phone has Write (its default) and Plain — `NOTE_PHONE_VIEW_MODES`.
  */
 export const NOTE_VIEW_MODES = [
+  { mode: "write", label: "Write", hint: "Edit the formatted note", icon: PenLine },
   { mode: "split", label: "Split", hint: "Plain text on the left, the formatted note live on the right", icon: SplitSquareHorizontal },
   { mode: "plain", label: "Plain", hint: "Quick, unformatted text — nothing is ever formatted for you", icon: Type },
-  { mode: "write", label: "Write", hint: "Edit the formatted note", icon: PenLine },
   { mode: "preview", label: "Read", hint: "Read the formatted note", icon: Eye },
 ] as const;
 

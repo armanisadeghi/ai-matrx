@@ -13,11 +13,23 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
-const SCAN = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks", "utils"];
-const OWNER = "features/content-ir/registry/kind-correctors.ts";
+// The renderers moved into @ai-matrx/rich-content (2026-10-06) together with the OWNER, so the
+// package's source is scanned too — a guard that stopped looking where the render paths live
+// would pass forever.
+const SCAN = [
+  "app",
+  "components",
+  "features",
+  "../aidream/apps/shared/chat/src",
+  "../aidream/apps/shared/rich-content/src",
+  "lib",
+  "hooks",
+  "utils",
+];
+const OWNER = "../aidream/apps/shared/rich-content/src/kinds/registry/kind-correctors.ts";
 // The chat package's bare-host stand-in for the `sessionEnvelope` slot (a host with NO correctors
 // takes the session's own envelope, reported once). Every real host registers `sessionEnvelope`
-// from OWNER (providers/chatContentIrRegistration.ts), so no render path in this app uses it.
+// from OWNER (@ai-matrx/chat imports it from @ai-matrx/rich-content directly), so no render path in this app uses it.
 const BARE_HOST_STAND_IN = "../aidream/apps/shared/chat/src/host/content-ir-slots.ts";
 
 function files(dir: string, out: string[] = []): string[] {
@@ -49,6 +61,10 @@ describe("every envelope goes through the kind-correction step", () => {
 
   it("scans the app", () => {
     expect(all.length).toBeGreaterThan(1000);
+  });
+
+  it("the OWNER exists where the guard says (a moved owner would exempt nothing and scan nothing)", () => {
+    expect(all.map((f) => relative(ROOT, f))).toContain(OWNER);
   });
 
   it("no host file imports a raw envelope constructor", () => {

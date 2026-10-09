@@ -39,6 +39,7 @@ import {
 import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import type { InboxNotification, NoticeBucket } from "./types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 const UPDATES_PREFIX =
   /^(records\.changed|news\.monitor\.|masterwork\.daily_drip|hr\.digest\.|knowledge\.saved_view_alert|pipeline\.stage_entered|personal_staff\.ack|print\.order_status_changed|hr\.recognition\.team_post|hr\.schedule\.(re)?published|hr\.announcement\.published|meet\.rsvp_received|custom\.form\.response|custom\.booking\.made|custom\.capture\.arrived|cms\.form_submission|esign\.signer_viewed)/;
@@ -130,21 +131,13 @@ export function noticeContext(row: InboxNotification): string {
 
 /** "now", "14m", "3h", "2d", then "Sep 3" / "Sep 3, 2025". */
 export function shortTime(iso: string, now: Date = new Date()): string {
-  const date = new Date(iso);
-  const ms = now.getTime() - date.getTime();
-  if (Number.isNaN(ms)) return "";
-  const min = Math.floor(ms / 60_000);
-  if (min < 1) return "now";
-  if (min < 60) return `${min}m`;
-  const hours = Math.floor(min / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  const sameYear = date.getFullYear() === now.getFullYear();
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
+  return formatRelativeTime(iso, {
+    suffix: false,
+    minUnit: "minute",
+    absoluteAfter: 7 * 86_400_000,
+    absolute: "monthDay",
+    now: now.getTime(),
+    fallback: "",
   });
 }
 

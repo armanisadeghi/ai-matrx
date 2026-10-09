@@ -24,6 +24,7 @@ import {
   detachCloudFilesRealtime,
 } from "@/features/files/redux/realtime-middleware";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
+import { whenPrimaryContentShown } from "@/lib/boot/primaryContent";
 import {
   invalidateAll as invalidateBlobCache,
   setBlobCacheIdentity,
@@ -61,13 +62,20 @@ export function CloudFilesRealtimeProvider({
       return undefined;
     }
 
-    dispatch(attachCloudFilesRealtime(userId));
-    // Hydrate the tree immediately. The middleware also fires a reconcile on
-    // SUBSCRIBED — calling both is intentional: client perception of "files
-    // are ready" must not wait for the realtime channel handshake.
-    void dispatch(loadUserFileTree({ userId }));
+    // Hydrate the tree — and attach its channel, whose SUBSCRIBED reconcile reads it too — as soon as the page's own content is on screen
+    // (`lib/boot/primaryContent`, lane PAGE-BUNDLE-2: ~1.2 s of database work
+    // that competed with a table page's rows; no page hold → at load). The
+    // middleware also fires a reconcile on SUBSCRIBED — calling both is
+    // intentional: "files are ready" must not wait for the channel handshake.
+    let live = true;
+    void whenPrimaryContentShown().then(() => {
+      if (!live) return;
+      dispatch(attachCloudFilesRealtime(userId));
+      void dispatch(loadUserFileTree({ userId }));
+    });
 
     return () => {
+      live = false;
       dispatch(detachCloudFilesRealtime());
     };
   }, [dispatch, userId]);

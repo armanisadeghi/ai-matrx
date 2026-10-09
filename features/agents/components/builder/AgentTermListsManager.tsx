@@ -26,7 +26,7 @@ import {
   type AttachedTermList,
 } from "@/features/agents/term-lists/service";
 import type { TermList } from "@/features/agents/term-lists/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const EDITOR_HREF = "/resources/term-lists";
 

@@ -17,7 +17,7 @@
  * "seo agency pricing" has no location is noise in every receipt on the site.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPinOff } from "lucide-react";
 import Link from "next/link";

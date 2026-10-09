@@ -1,0 +1,551 @@
+{"event":"phase","data":{"phase":"connected"},"stream_seq":1,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"info","data":{"code":"initial_message","system_message":"Initializing Matrx Agent...","user_message":"Initializing Matrx Agent...","metadata":{}},"stream_seq":2,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"data","data":{"type":"conversation_id","conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5"},"stream_seq":3,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_reserved","data":{"db_project":"matrx","table":"conversation","record_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","status":"pending","parent_refs":{},"metadata":{}},"stream_seq":4,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_reserved","data":{"db_project":"matrx","table":"user_request","record_id":"438921dc-c214-4411-98c8-87bdd041f5dc","status":"pending","parent_refs":{"conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5"},"metadata":{}},"stream_seq":5,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"phase","data":{"phase":"processing"},"stream_seq":6,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"init","data":{"operation":"user_request","operation_id":"89c190ab-913f-44aa-a03d-6832e51fe0e6","parent_operation_id":null,"metadata":{}},"stream_seq":7,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"data","data":{"type":"context_receipt","version":1,"surface":"matrx-user/canvas","cap":50000,"model_reads_context":true,"rows":[{"key":"active_scopes","label":"Active Scopes","surface_key":"_default","origin":"server","chars":110,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":110,"sha256":"e36264b79b2fc98fd5585c0073f402cc10e2b5d3a4ac31f9889c48fa1dbd2c6b"},"on_request":null},{"key":"client","label":"Client","surface_key":"_default","origin":"server","chars":123,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":192,"sha256":"7a9e36e47259001137cdeaf71f0d9f64523b83afcf45c5579fb93bcb955ed836"},"on_request":null},{"key":"conversation","label":"Conversation","surface_key":"_default","origin":"client","chars":50,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":131,"sha256":"2b596207c1844a172d9a8630e495e989faacba16a3720f2864f5bd3e9e952d9f"},"on_request":null},{"key":"organization","label":"Organization","surface_key":"_default","origin":"server","chars":85,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":488,"sha256":"c3f996c30bf0a3f62d4f13fb1a5cda501af90e03c5bd784b4f1f980701f9dcbe"},"on_request":null},{"key":"route_brief","label":"Route Brief","surface_key":"_default","origin":"client","chars":94,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":173,"sha256":"4e6b57da3929c56782419c495a2e8f18b11ceef32890b54a7a08bb9138d75e96"},"on_request":null},{"key":"user","label":"User","surface_key":"_default","origin":"server","chars":152,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":217,"sha256":"90780895bbbe13a67a712e1f1f90421a67989029d0c48d3b6ed77911ec8e3a0a"},"on_request":null},{"key":"content","label":"Primary content","surface_key":"matrx-user/canvas","origin":"client","chars":0,"include":true,"max_inline_chars":200,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"default"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":144,"sha256":"b91fabedf972c91e8b1d0a35715d5e0c79e56dbcb434aa8893baa39835f2d94d"},"on_request":null},{"key":"custom_fields","label":"Custom fields","surface_key":"matrx-user/canvas","origin":"client","chars":0,"include":true,"max_inline_chars":2000,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"page"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":415,"sha256":"04ce7eefa6089497f5ef31fbc63e559b4f1a4d69f928e3cebf6146908a9c71e0"},"on_request":null},{"key":"selection","label":"Current selection","surface_key":"matrx-user/canvas","origin":"client","chars":0,"include":true,"max_inline_chars":10000,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"page"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":272,"sha256":"562ffb591ae4a831189973f73b68e485e7dcf649b3a42dfdfa1ec5e3f65c76cb"},"on_request":null},{"key":"text_after","label":"Text after selection","surface_key":"matrx-user/canvas","origin":"client","chars":0,"include":true,"max_inline_chars":2500,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"page"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":291,"sha256":"e30f305c145803d645bf21071bc97bc0f0d2caedae0e8d84278c840a5d35d423"},"on_request":null},{"key":"text_before","label":"Text before selection","surface_key":"matrx-user/canvas","origin":"client","chars":0,"include":true,"max_inline_chars":2500,"delivery":"inline","decided_by":{"include":"default","max_inline_chars":"page"},"user_rule":null,"clamped":false,"client_sent_excluded":false,"blocked_by":null,"consumed_as":null,"consumed_into":[],"delivered":{"chars":295,"sha256":"e32e4cdcef00724a0dcf6abb72cb9db48d54dbf8b46ce1b9fd356a25055c3e17"},"on_request":null}],"rules_error":null,"blocks":[{"id":"organization_catalog","label":"Organizations","delivered":{"chars":3456,"sha256":"ab0e3e391d53db390aa407cdc4a77c0103dd329990713dd4790c3f207186723b"}},{"id":"active_context","label":"Current selection","delivered":{"chars":3254,"sha256":"d781e356644b522a937234be3c9f49a1fdd5626811e6a37590ad765ea994808a"}},{"id":"context_manifest","label":"Value list","delivered":{"chars":2285,"sha256":"e1663927b539e11c36a641942b595388f1a717e1ff1073932334a1937eeb64d2"}}],"room_view":null},"stream_seq":8,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_reserved","data":{"db_project":"matrx","table":"message","record_id":"fb463ee9-bee4-4448-81e5-17921d758589","status":"pending","parent_refs":{"conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","user_request_id":"438921dc-c214-4411-98c8-87bdd041f5dc"},"metadata":{"role":"user","position":0,"position_kind":"logical_index"}},"stream_seq":9,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_reserved","data":{"db_project":"matrx","table":"message","record_id":"01d3b6ec-fed2-4b37-b03e-8948348c0ddd","status":"pending","parent_refs":{"conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","user_request_id":"438921dc-c214-4411-98c8-87bdd041f5dc"},"metadata":{"role":"assistant","position":1,"position_kind":"logical_index"}},"stream_seq":10,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_reserved","data":{"db_project":"matrx","table":"request","record_id":"92167226-5eb4-4724-9dc4-f0c684212f1a","status":"pending","parent_refs":{"conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","user_request_id":"438921dc-c214-4411-98c8-87bdd041f5dc"},"metadata":{"iteration":1}},"stream_seq":11,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"data","data":{"type":"conversation_labeled","conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","title":"Favorite Movies List Applet","description":"User requested an applet to display a simple one-page list of their favorite movies with title and year.","keywords":["movies","favorite list","title","year","single page","applet","display","film list","movie catalog","user interface"]},"stream_seq":12,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"reasoning","data":{"state":"started"},"stream_seq":13,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407693.869546,"seq":1,"late_by_seconds":null},"stream_seq":14,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\n<reasoning>\n","stream_seq":15,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Since she's tracking movies with a title","stream_seq":16,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" and year, no existing table f","stream_seq":17,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"its this need, so I'll declare a","stream_seq":18,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" new table using \"text\" for","stream_seq":19,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" title","stream_seq":20,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" and \"range\" for the","stream_seq":21,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" numeric year, matching the","stream_seq":22,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" kind conventions used els","stream_seq":23,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ewhere in","stream_seq":24,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407698.8704417,"seq":2,"late_by_seconds":null},"stream_seq":25,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" the catalogue.\n\nFor the schema, I'll","stream_seq":26,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" fill in required","stream_seq":27,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" empty values for links_to, options","stream_seq":28,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", and unit, and pick one data","stream_seq":29,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" source — leaving un","stream_seq":30,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"used source","stream_seq":31,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" keys as","stream_seq":32,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" empty strings since","stream_seq":33,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" only","stream_seq":34,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" one should be active","stream_seq":35,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":". Then","stream_seq":36,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" I'm scaffolding","stream_seq":37,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" a","stream_seq":38,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" single Movies page with a tabs","stream_seq":39,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" layout, list","stream_seq":40,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" view, add/","stream_seq":41,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"edit/delete via","stream_seq":42,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" archive, sorting by title or","stream_seq":43,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" year, search, and a total","stream_seq":44,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" count, f","stream_seq":45,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"etching rows s","stream_seq":46,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"orted al","stream_seq":47,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"phabetically by title.\n\n","stream_seq":48,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Writing component","stream_seq":49,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" im","stream_seq":50,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ports and setup...","stream_seq":51,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407703.871164,"seq":3,"late_by_seconds":null},"stream_seq":52,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\n\nNow","stream_seq":53,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" I'm finalizing the page list with","stream_seq":54,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" just the single Movies route","stream_seq":55,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", no mandates needed, and pre","stream_seq":56,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"paring to output the final JS","stream_seq":57,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ON with the escaped source code","stream_seq":58,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", being careful with quote and new","stream_seq":59,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"line escaping.\n\n\n</reasoning>\n","stream_seq":60,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"reasoning","data":{"state":"stopped"},"stream_seq":61,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"{\"__kind\":\"applet_build_result\",\"appl","stream_seq":62,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"et\":{\"description\":\"A one-page list of fav","stream_seq":63,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ourite movies with title and year","stream_seq":64,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":": add, edit, remove, search","stream_seq":65,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" and sort.\",\"entry\":\"entry.ts","stream_seq":66,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"x\",\"files\":[{\"name\":\"entry.","stream_seq":67,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"tsx\",\"source\":\"import React from \\\"react\\\";\\","stream_seq":68,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"nimport { Pages } from \\\"@ai-mat","stream_seq":69,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"rx/applets/react\\\";\\n\\nexport default","stream_seq":70,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" function App() {\\n  return","stream_seq":71,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" <Pages layout=\\","stream_seq":72,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"tabs\\\" />;","stream_seq":73,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n}\\n\"},{","stream_seq":74,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"name\":\"movies.t","stream_seq":75,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"sx\",\"source\":\"import React","stream_seq":76,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", { useState } from \\\"","stream_seq":77,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"react\\\";\\nimport {","stream_seq":78,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" useRows } from \\\"@","stream_seq":79,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ai-matrx/appl","stream_seq":80,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ets/react\\\";\\nim","stream_seq":81,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"port { Button, Badge","stream_seq":82,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", Select, SearchField","stream_seq":83,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", EmptyState, R","stream_seq":84,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"egionSkeleton }","stream_seq":85,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" from \\\"@ai-mat","stream_seq":86,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"rx/design-system/contro","stream_seq":87,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ls\\\";\\nimport {","stream_seq":88,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" Plus, Pencil","stream_seq":89,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", Trash2, Check","stream_seq":90,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", X } from \\\"luc","stream_seq":91,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ide-react\\\";\\n\\","stream_seq":92,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"nconst SORTS =","stream_seq":93,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" {\\n  title_asc","stream_seq":94,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":": { column: \\\"title\\","stream_seq":95,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\", direction: \\\"asc","stream_seq":96,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\" },\\n  year_","stream_seq":97,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"desc: { column: \\\"","stream_seq":98,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"year\\\", direction: \\\"","stream_seq":99,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"desc\\\" },\\n  ","stream_seq":100,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"year_asc: { column:","stream_seq":101,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" \\\"year\\\", direction:","stream_seq":102,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" \\\"asc\\\" },\\","stream_seq":103,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n};\\n\\nconst","stream_seq":104,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" in","stream_seq":105,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"putClass = \\\"w","stream_seq":106,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-full rounded-md border","stream_seq":107,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" border-border bg-card px","stream_seq":108,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-3 py-2 text","stream_seq":109,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-sm text","stream_seq":110,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-foreground\\\";\\n","stream_seq":111,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407708.8731265,"seq":4,"late_by_seconds":null},"stream_seq":112,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\nexport default function Mo","stream_seq":113,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"viesPage() {\\n","stream_seq":114,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"  const [sortBy,","stream_seq":115,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" setSortBy] = use","stream_seq":116,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"State(\\\"title_asc","stream_seq":117,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\");\\n  const [search","stream_seq":118,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", setSearch] = use","stream_seq":119,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"State(\\\"\\\");\\n","stream_seq":120,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"  const [title, setTit","stream_seq":121,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"le] = useState(\\\"","stream_seq":122,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\");\\n  const [year","stream_seq":123,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", setYear] = useState","stream_seq":124,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(\\\"\\\");\\n  ","stream_seq":125,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"const [form","stream_seq":126,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Error, setFormError] =","stream_seq":127,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" useState(\\\"\\\");\\","stream_seq":128,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n  const [editingId,","stream_seq":129,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" setEditingId] = use","stream_seq":130,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"State(null);\\n  const","stream_seq":131,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" [editTitle, setE","stream_seq":132,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ditTitle] = useState","stream_seq":133,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(\\\"\\\");\\n  ","stream_seq":134,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"const [editYear, setE","stream_seq":135,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ditYear] = useState(","stream_seq":136,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"\\\");\\n  const","stream_seq":137,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" [editError, setEditError","stream_seq":138,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"] = useState(\\\"\\","stream_seq":139,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\");\\n\\n  const mov","stream_seq":140,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ies = useRows(\\\"","stream_seq":141,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"movies\\\", { sort:","stream_seq":142,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" [SORTS[sort","stream_seq":143,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"By]], pageSize","stream_seq":144,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":": 200 });\\n\\","stream_seq":145,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n  const q","stream_seq":146,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" = search.trim().","stream_seq":147,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"toLowerCase();\\","stream_seq":148,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n  const vis","stream_seq":149,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ible = movies.rows.","stream_seq":150,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"filter((row) => {\\","stream_seq":151,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    if (!q) return","stream_seq":152,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" true;\\n    const t =","stream_seq":153,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" String(row.title || \\\"","stream_seq":154,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\").toLowerCase","stream_seq":155,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"();\\n    const y = row","stream_seq":156,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".year == null ? \\\"","stream_seq":157,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\" : String(row.year","stream_seq":158,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":");\\n    return t.includ","stream_seq":159,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"es(q) || y.includ","stream_seq":160,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"es(q);\\n  });","stream_seq":161,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n\\n  const par","stream_seq":162,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"seYear = (value","stream_seq":163,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") => {\\n    const","stream_seq":164,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" n","stream_seq":165,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" = Number(String","stream_seq":166,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(value).trim());\\n","stream_seq":167,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    if (!Number.is","stream_seq":168,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Integer(n) || n","stream_seq":169,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" < 1880","stream_seq":170,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" || n > 2100","stream_seq":171,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") return null;\\n    return","stream_seq":172,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" n;\\n  };\\n","stream_seq":173,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n  const addMovie","stream_seq":174,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" = async (e) => {\\","stream_seq":175,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    e.preventDef","stream_seq":176,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ault();\\n    setForm","stream_seq":177,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Error(\\\"\\\");\\n","stream_seq":178,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    const t = title.trim","stream_seq":179,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"();\\n    if (!t","stream_seq":180,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") {","stream_seq":181,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" setFormError(\\\"","stream_seq":182,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Title is required\\\"); return;","stream_seq":183,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" }\\n    const y = par","stream_seq":184,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"seYear(year);\\n","stream_seq":185,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    if (y === null) {","stream_seq":186,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" setFormError(\\\"","stream_seq":187,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Year must be a four-digit","stream_seq":188,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" year\\\"); return; }\\","stream_seq":189,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    const answer = await mov","stream_seq":190,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ies.create({ title: t","stream_seq":191,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", year: y });\\n    ","stream_seq":192,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407713.8740568,"seq":5,"late_by_seconds":null},"stream_seq":193,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"if (!answer.ok","stream_seq":194,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") { setFormError(answ","stream_seq":195,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"er.error.message); return;","stream_seq":196,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" }\\n    setTitle","stream_seq":197,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(\\\"\\\");\\n    ","stream_seq":198,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"setYear(\\\"\\\");","stream_seq":199,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n  };\\n\\n","stream_seq":200,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"  const startEdit = (","stream_seq":201,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"row) => {\\n    set","stream_seq":202,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"EditingId(row._id","stream_seq":203,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":");\\n    setEditT","stream_seq":204,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"itle(row","stream_seq":205,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".title || \\\"\\\");\\","stream_seq":206,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    setEditYear(","stream_seq":207,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"row.year == null ? \\","stream_seq":208,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"\\\" : String(row.","stream_seq":209,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"year));\\n    setEdit","stream_seq":210,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Error(\\\"\\\");\\n","stream_seq":211,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"  };\\n\\n  const","stream_seq":212,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" cancelEdit = ()","stream_seq":213,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" => {\\n    setEdit","stream_seq":214,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ingId(null);\\n    ","stream_seq":215,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"setEditError(\\\"\\","stream_seq":216,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\");\\n  };\\n\\","stream_seq":217,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n  const saveEdit","stream_seq":218,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" = async (","stream_seq":219,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"row) => {\\n    set","stream_seq":220,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"EditError(\\\"\\\");","stream_seq":221,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n    const t = editT","stream_seq":222,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"itle.trim();\\n","stream_seq":223,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    if (!t) { set","stream_seq":224,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"EditError(\\\"Title","stream_seq":225,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" is required\\\"); return; }","stream_seq":226,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n    const y = parse","stream_seq":227,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Year(editYear);\\","stream_seq":228,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    if (y === null)","stream_seq":229,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" { setEditError(\\\"","stream_seq":230,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Year must be a four-dig","stream_seq":231,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"it year\\\"); return; }","stream_seq":232,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n    const answer = await","stream_seq":233,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" movies.update(row._id","stream_seq":234,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", { title: t, year:","stream_seq":235,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" y });\\n    if (!","stream_seq":236,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"answer.ok) { set","stream_seq":237,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"EditError(answer.error","stream_seq":238,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".message); return; }\\n","stream_seq":239,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    setEditingId(null","stream_seq":240,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":");\\n  };\\n\\","stream_seq":241,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n  const removeMovie","stream_seq":242,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" = async (row) => {\\","stream_seq":243,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n    const answer = await mov","stream_seq":244,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ies.archive(row._id","stream_seq":245,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":");\\n    if (!answ","stream_seq":246,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"er.ok) set","stream_seq":247,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"FormError(answer.error","stream_seq":248,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".message);\\n  };\\","stream_seq":249,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n\\n  return (\\n","stream_seq":250,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    <div className=\\\"m","stream_seq":251,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"x-auto max-w-","stream_seq":252,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"3xl space","stream_seq":253,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-y","stream_seq":254,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-6","stream_seq":255,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" p-4\\\">\\n","stream_seq":256,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"      <div className=\\\"fl","stream_seq":257,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ex fl","stream_seq":258,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ex-wrap items-center","stream_seq":259,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" justify-between gap-3","stream_seq":260,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">\\n        <h1","stream_seq":261,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"text-x","stream_seq":262,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"l font-semibold text-","stream_seq":263,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"foreground\\\">Favour","stream_seq":264,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ite movies</","stream_seq":265,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"h1>\\n        ","stream_seq":266,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<Badge tone=\\\"ne","stream_seq":267,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"utral\\\">{movies.","stream_seq":268,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"rows.length} movies</","stream_seq":269,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Badge>\\n      </","stream_seq":270,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"div>\\n\\n      ","stream_seq":271,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<form onSubmit={add","stream_seq":272,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Movie} className=\\\"","stream_seq":273,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407718.8747225,"seq":6,"late_by_seconds":null},"stream_seq":274,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"rounded-lg border border","stream_seq":275,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-border bg-card p-","stream_seq":276,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"4\\\">\\n        <div","stream_seq":277,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"grid grid","stream_seq":278,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-cols-1 gap","stream_seq":279,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-3","stream_seq":280,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" sm:grid-c","stream_seq":281,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ols-[1","stream_seq":282,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"fr_8","stream_seq":283,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"r","stream_seq":284,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"em_au","stream_seq":285,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"to]\\\">\\n          ","stream_seq":286,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<input","stream_seq":287,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n            className={","stream_seq":288,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"inputClass}\\n            ","stream_seq":289,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"placeholder=\\\"","stream_seq":290,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Title\\\"\\n            value={","stream_seq":291,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"title}\\n            onChange","stream_seq":292,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"={(e) => setTit","stream_seq":293,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"le(e.target.value)","stream_seq":294,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"}\\n          />\\n          ","stream_seq":295,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<input\\n            className={in","stream_seq":296,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"putClass}\\n            plac","stream_seq":297,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"eholder=\\\"Year","stream_seq":298,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"\\n            in","stream_seq":299,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"putMode=\\\"nume","stream_seq":300,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ric\\\"\\n            value={","stream_seq":301,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"year}\\n            onChange","stream_seq":302,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"={(e) => setYear","stream_seq":303,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(e.target.value)}","stream_seq":304,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n          />\\n          ","stream_seq":305,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<Button variant=\\\"prim","stream_seq":306,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ary\\\" type=\\\"subm","stream_seq":307,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"it\\\">\\n            ","stream_seq":308,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<Plus className=\\\"m","stream_seq":309,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"r-1 ","stream_seq":310,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"h-4 w-4\\","stream_seq":311,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\" />","stream_seq":312,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Add\\n          </Button>","stream_seq":313,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n        </div>\\n","stream_seq":314,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"        {formError ","stream_seq":315,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"? <p","stream_seq":316,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"mt-2","stream_seq":317,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" text-sm text-dest","stream_seq":318,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ructive\\\">{formError}","stream_seq":319,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</p> : null}\\n","stream_seq":320,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"      </form>\\n\\n","stream_seq":321,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"      <div className=\\\"gr","stream_seq":322,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"id grid-cols-1","stream_seq":323,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" gap-3 sm","stream_seq":324,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":":grid-cols-[","stream_seq":325,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"1fr_12rem]","stream_seq":326,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">\\n        <Sear","stream_seq":327,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"chField\\","stream_seq":328,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n          placeholder=\\","stream_seq":329,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"Search title or year\\\"","stream_seq":330,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n          value={search}\\","stream_seq":331,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n          onChange={(e","stream_seq":332,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") => setSearch(e","stream_seq":333,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".target.value)}\\n","stream_seq":334,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"        />\\n        <Select","stream_seq":335,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n          value={sortB","stream_seq":336,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"y}\\n          onValue","stream_seq":337,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Change={setSortBy","stream_seq":338,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"}\\n          options={[\\","stream_seq":339,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n            { value: \\\"title","stream_seq":340,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"_asc\\\", label: \\","stream_seq":341,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"Title A to Z\\","stream_seq":342,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\" },\\n            { value:","stream_seq":343,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" \\\"year_desc\\\",","stream_seq":344,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" label: \\\"Newest first","stream_seq":345,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\" },\\n            { value","stream_seq":346,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":": \\\"year_asc\\","stream_seq":347,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\", label: \\\"Old","stream_seq":348,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"est first\\\" },\\n          ","stream_seq":349,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"]}\\n        />\\","stream_seq":350,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n      </div>\\n\\","stream_seq":351,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n      {movies.status ===","stream_seq":352,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" \\\"loading\\\" ?","stream_seq":353,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" (","stream_seq":354,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407723.8749728,"seq":7,"late_by_seconds":null},"stream_seq":355,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n        <RegionS","stream_seq":356,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"keleton shape=\\","stream_seq":357,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"rows\\\" count={","stream_seq":358,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"5} />\\n      )","stream_seq":359,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" : movies.status === \\\"","stream_seq":360,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"error\\\" ? (\\n","stream_seq":361,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"        <p className=\\\"text","stream_seq":362,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-sm text-destructive","stream_seq":363,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">{movies.error &&","stream_seq":364,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" movies.error.message ","stream_seq":365,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"? movies.error.message :","stream_seq":366,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" \\\"Could not load movies","stream_seq":367,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"}</p>\\n","stream_seq":368,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"      ) : vis","stream_seq":369,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ible.length === 0 ","stream_seq":370,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"? (\\n        ","stream_seq":371,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<EmptyState title={","stream_seq":372,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"q ? \\\"No mat","stream_seq":373,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ches\\\" : \\\"No mov","stream_seq":374,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ies yet\\\"} line={","stream_seq":375,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"q ? \\\"Try another","stream_seq":376,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" search\\\" : \\\"Add","stream_seq":377,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" your first favourite above","stream_seq":378,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"} />\\n      ","stream_seq":379,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":") : (\\n        ","stream_seq":380,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<ul className=\\\"div","stream_seq":381,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ide-y divide-border r","stream_seq":382,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ounded-lg border border-","stream_seq":383,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"border bg-card\\\">\\","stream_seq":384,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n          {visible.map((","stream_seq":385,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"row) => (\\n            ","stream_seq":386,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<li key={row._id}","stream_seq":387,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"p-3\\","stream_seq":388,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\">\\n              {editingId","stream_seq":389,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" === row._id ? (\\","stream_seq":390,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n                <div className=\\\"","stream_seq":391,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"space-y-2","stream_seq":392,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">\\n                  <div","stream_seq":393,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"grid grid","stream_seq":394,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-cols-1 gap","stream_seq":395,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-2 sm:grid","stream_seq":396,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-cols-[1fr","stream_seq":397,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"_8rem_auto_","stream_seq":398,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"auto]\\\">\\n                ","stream_seq":399,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    <input\\n                      className","stream_seq":400,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"={inputClass}\\n","stream_seq":401,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"                      value={editTitle","stream_seq":402,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"}\\n                      onChange","stream_seq":403,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"={(e) => setEdit","stream_seq":404,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Title(e.target.","stream_seq":405,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"value)}\\n                    />","stream_seq":406,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n                    <input\\n","stream_seq":407,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"                      className={inputClass","stream_seq":408,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"}\\n                      inputM","stream_seq":409,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ode=\\\"numeric\\","stream_seq":410,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"\\n                      value={edit","stream_seq":411,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Year}\\n                      on","stream_seq":412,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Change={(e) => set","stream_seq":413,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"EditYear(e.target","stream_seq":414,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".value)}\\n                    ","stream_seq":415,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"/>\\n                    <Button","stream_seq":416,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" variant=\\\"primary\\","stream_seq":417,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\" onClick={() => sa","stream_seq":418,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"veEdit(row)}","stream_seq":419,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n                      <Check","stream_seq":420,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"h","stream_seq":421,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-4 w-4\\\"","stream_seq":422,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" />\\n                    </Button","stream_seq":423,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n                    <Button","stream_seq":424,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" variant=\\\"quiet","stream_seq":425,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\" onClick={canc","stream_seq":426,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"elEdit}>\\n","stream_seq":427,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"                      <X className=\\\"","stream_seq":428,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"h-4 w-4\\","stream_seq":429,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\" />\\n                    </","stream_seq":430,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Button>\\n                  </div","stream_seq":431,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n                  {editError","stream_seq":432,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" ? <p className=\\\"","stream_seq":433,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"text-sm text-destruct","stream_seq":434,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ive\\\">{editError}</","stream_seq":435,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407728.8760428,"seq":8,"late_by_seconds":null},"stream_seq":436,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"p> : null}\\n                ","stream_seq":437,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</div>\\n              )","stream_seq":438,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" : (\\n                <div className","stream_seq":439,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"=\\\"flex items-center","stream_seq":440,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" justify-between gap-3","stream_seq":441,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">\\n                  <div","stream_seq":442,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" className=\\\"min-w-","stream_seq":443,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"0\\","stream_seq":444,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\">\\n                    <div className","stream_seq":445,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"=\\\"truncate font","stream_seq":446,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"-medium text-foreground","stream_seq":447,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\">{row.title}","stream_seq":448,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</div>\\n                    ","stream_seq":449,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<div className=\\\"text-s","stream_seq":450,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"m text-muted-fore","stream_seq":451,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ground\\\">{row.year ==","stream_seq":452,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" null ? \\\"","stream_seq":453,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Year unknown\\\" : row","stream_seq":454,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":".year}</div>\\n","stream_seq":455,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"                  </div>\\n                ","stream_seq":456,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"  <div className=\\\"fl","stream_seq":457,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ex shrink-0 g","stream_seq":458,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ap-1\\\">\\n                ","stream_seq":459,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"    <Button variant=\\","stream_seq":460,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"quiet\\\" onCl","stream_seq":461,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ick={() => startEdit","stream_seq":462,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"(row)}>\\n                ","stream_seq":463,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"      <Pencil className=","stream_seq":464,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"h-4 w-","stream_seq":465,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"4\\\" />\\n                    ","stream_seq":466,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</Button>\\n                    ","stream_seq":467,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<Button variant=\\\"","stream_seq":468,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"danger\\\" onClick={","stream_seq":469,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"() => removeMovie(","stream_seq":470,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"row)}>\\n                      ","stream_seq":471,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"<Trash2 className=","stream_seq":472,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"h-4 w-","stream_seq":473,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"4\\\" />\\n                    ","stream_seq":474,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</Button>\\n                  ","stream_seq":475,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</div>\\n                </div","stream_seq":476,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n              )}\\n","stream_seq":477,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"            </li>\\n          ","stream_seq":478,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"))}\\n        </ul","stream_seq":479,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n      )}\\n","stream_seq":480,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n      {movies.h","stream_seq":481,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"asMore ? (\\n","stream_seq":482,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"        <div className=\\\"fl","stream_seq":483,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ex justify-center\\\">\\","stream_seq":484,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"n          <Button variant=","stream_seq":485,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\\"outline\\\" onCl","stream_seq":486,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ick={() => movies.lo","stream_seq":487,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"adMore()}>Load","stream_seq":488,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" more</Button>\\n        ","stream_seq":489,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"</div>\\n      )","stream_seq":490,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" : null}\\n    </div","stream_seq":491,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":">\\n  );\\n}","stream_seq":492,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\\n\"}],","stream_seq":493,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"mandates\":[],\"","stream_seq":494,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"name\":\"","stream_seq":495,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Favourite","stream_seq":496,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" Movies\",\"pages\":[{","stream_seq":497,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"file","stream_seq":498,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"movies.tsx","stream_seq":499,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\",\"parent\":\"\",\"path\":","stream_seq":500,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"/\",\"title\":\"Mov","stream_seq":501,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ies\"}],\"slug\":","stream_seq":502,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"favourite-movies\",\"","stream_seq":503,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"sources\":[{\"alias","stream_seq":504,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"movies\",\"entity\":","stream_seq":505,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"\",\"new_table\":{\"","stream_seq":506,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"fields\":[{\"key\":","stream_seq":507,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"title\",\"label\":\"Title","stream_seq":508,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\",\"links_to\":{\"al","stream_seq":509,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"ias\":\"\",\"entities\":[","stream_seq":510,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"],\"table_id\":\"\"},","stream_seq":511,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"multi\":false,\"options","stream_seq":512,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":[],\"required\":true,","stream_seq":513,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"type\":\"text\",\"unit","stream_seq":514,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"\"},{\"key\":\"","stream_seq":515,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"year\",\"label\":\"Year\",\"","stream_seq":516,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"heartbeat","data":{"timestamp":1791407733.8767302,"seq":9,"late_by_seconds":null},"stream_seq":517,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"links_to\":{\"alias","stream_seq":518,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"\",\"entities\":[],","stream_seq":519,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"table_id\":\"\"},\"","stream_seq":520,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"multi\":false,\"options\":","stream_seq":521,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"[],\"required\":false,\"","stream_seq":522,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"type\":\"number\",\"unit\":","stream_seq":523,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"\"}],\"label_singular","stream_seq":524,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"Movie\",\"name\":","stream_seq":525,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\"Favourite Movies","stream_seq":526,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\",\"title_field","stream_seq":527,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"\":\"title\"},\"","stream_seq":528,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"organization_id\":\"\",\"table","stream_seq":529,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"_id\":\"\"}]},\"","stream_seq":530,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"note\":\"","stream_seq":531,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"Built a one-page favourite","stream_seq":532,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" movies list with add, edit","stream_seq":533,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":", remove,","stream_seq":534,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" search and sort on a new","stream_seq":535,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":" Favourite Movies table.\"","stream_seq":536,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"e":"c","t":"}","stream_seq":537,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"phase","data":{"phase":"complete"},"stream_seq":538,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"info","data":{"code":"iteration_finalizing","system_message":"Final response received — no further tool calls; finalizing.","user_message":"","metadata":{"Iteration":1,"Retry Attempt":0,"Finish Action":"continue","Finish Reason":"stop","will_continue":false}},"stream_seq":539,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"conversation","record_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","status":"active","metadata":{}},"stream_seq":540,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"message","record_id":"fb463ee9-bee4-4448-81e5-17921d758589","status":"active","metadata":{}},"stream_seq":541,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"message","record_id":"01d3b6ec-fed2-4b37-b03e-8948348c0ddd","status":"active","metadata":{}},"stream_seq":542,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"request","record_id":"92167226-5eb4-4724-9dc4-f0c684212f1a","status":"active","metadata":{}},"stream_seq":543,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"phase","data":{"phase":"complete"},"stream_seq":544,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"info","data":{"code":"iteration_done","system_message":"No more tool calls — exiting execution loop.","user_message":"","metadata":{"iteration":1,"will_continue":false}},"stream_seq":545,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"conversation","record_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","status":"active","metadata":{}},"stream_seq":546,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"record_update","data":{"db_project":"matrx","table":"user_request","record_id":"438921dc-c214-4411-98c8-87bdd041f5dc","status":"completed","metadata":{}},"stream_seq":547,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"context_state","data":{"conversation_id":"d3f811df-7ef3-4794-8906-eb77b39e1db5","last_request_input_tokens":27306,"last_request_cached_tokens":0,"last_request_output_tokens":4824,"total_chars_visible_to_model":0,"message_count_visible":2,"cache_state":{},"measured_at":"2026-10-07T21:15:35.219854+00:00"},"stream_seq":548,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"structured_output","data":{"schema_name":null,"json_schema":{"properties":{"__kind":{"const":"applet_build_result","description":"Always \"applet_build_result\".","type":"string"},"applet":{"properties":{"description":{"type":"string"},"entry":{"type":"string"},"files":{"items":{"properties":{"name":{"type":"string"},"source":{"type":"string"}},"required":["name","source"],"type":"object"},"type":"array"},"mandates":{"items":{"properties":{"alias":{"type":"string"},"key":{"type":"string"}},"required":["alias","key"],"type":"object"},"type":"array"},"name":{"type":"string"},"pages":{"items":{"properties":{"file":{"type":"string"},"parent":{"type":"string"},"path":{"type":"string"},"title":{"type":"string"}},"required":["path","title","file"],"type":"object"},"type":"array"},"slug":{"type":"string"},"sources":{"items":{"description":"Exactly one of: table_id + organization_id (a catalogue table of catalogue.organization_id), entity (platform records), new_table (a table Use it makes).","properties":{"alias":{"type":"string"},"entity":{"type":"string"},"new_table":{"properties":{"fields":{"items":{"properties":{"key":{"type":"string"},"label":{"type":"string"},"links_to":{"properties":{"alias":{"type":"string"},"entities":{"items":{"type":"string"},"type":"array"},"table_id":{"type":"string"}},"type":"object"},"multi":{"type":"boolean"},"options":{"items":{"type":"string"},"type":"array"},"required":{"type":"boolean"},"type":{"description":"One of catalogue.new_tables.field_types.","type":"string"},"unit":{"type":"string"}},"required":["key","label","type"],"type":"object"},"type":"array"},"label_singular":{"type":"string"},"name":{"type":"string"},"title_field":{"type":"string"}},"required":["name","fields"],"type":"object"},"organization_id":{"type":"string"},"table_id":{"type":"string"}},"required":["alias"],"type":"object"},"type":"array"}},"required":["name","slug","description","entry","files","pages","sources","mandates"],"type":"object"},"note":{"description":"ONE plain sentence, at most 140 characters: what was built, naming the tables Use it will make.","type":"string"}},"required":["__kind","applet","note"],"type":"object"},"data":{"__kind":"applet_build_result","applet":{"description":"A one-page list of favourite movies with title and year: add, edit, remove, search and sort.","entry":"entry.tsx","files":[{"name":"entry.tsx","source":"import React from \"react\";\nimport { Pages } from \"@ai-matrx/applets/react\";\n\nexport default function App() {\n  return <Pages layout=\"tabs\" />;\n}\n"},{"name":"movies.tsx","source":"import React, { useState } from \"react\";\nimport { useRows } from \"@ai-matrx/applets/react\";\nimport { Button, Badge, Select, SearchField, EmptyState, RegionSkeleton } from \"@ai-matrx/design-system/controls\";\nimport { Plus, Pencil, Trash2, Check, X } from \"lucide-react\";\n\nconst SORTS = {\n  title_asc: { column: \"title\", direction: \"asc\" },\n  year_desc: { column: \"year\", direction: \"desc\" },\n  year_asc: { column: \"year\", direction: \"asc\" },\n};\n\nconst inputClass = \"w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground\";\n\nexport default function MoviesPage() {\n  const [sortBy, setSortBy] = useState(\"title_asc\");\n  const [search, setSearch] = useState(\"\");\n  const [title, setTitle] = useState(\"\");\n  const [year, setYear] = useState(\"\");\n  const [formError, setFormError] = useState(\"\");\n  const [editingId, setEditingId] = useState(null);\n  const [editTitle, setEditTitle] = useState(\"\");\n  const [editYear, setEditYear] = useState(\"\");\n  const [editError, setEditError] = useState(\"\");\n\n  const movies = useRows(\"movies\", { sort: [SORTS[sortBy]], pageSize: 200 });\n\n  const q = search.trim().toLowerCase();\n  const visible = movies.rows.filter((row) => {\n    if (!q) return true;\n    const t = String(row.title || \"\").toLowerCase();\n    const y = row.year == null ? \"\" : String(row.year);\n    return t.includes(q) || y.includes(q);\n  });\n\n  const parseYear = (value) => {\n    const n = Number(String(value).trim());\n    if (!Number.isInteger(n) || n < 1880 || n > 2100) return null;\n    return n;\n  };\n\n  const addMovie = async (e) => {\n    e.preventDefault();\n    setFormError(\"\");\n    const t = title.trim();\n    if (!t) { setFormError(\"Title is required\"); return; }\n    const y = parseYear(year);\n    if (y === null) { setFormError(\"Year must be a four-digit year\"); return; }\n    const answer = await movies.create({ title: t, year: y });\n    if (!answer.ok) { setFormError(answer.error.message); return; }\n    setTitle(\"\");\n    setYear(\"\");\n  };\n\n  const startEdit = (row) => {\n    setEditingId(row._id);\n    setEditTitle(row.title || \"\");\n    setEditYear(row.year == null ? \"\" : String(row.year));\n    setEditError(\"\");\n  };\n\n  const cancelEdit = () => {\n    setEditingId(null);\n    setEditError(\"\");\n  };\n\n  const saveEdit = async (row) => {\n    setEditError(\"\");\n    const t = editTitle.trim();\n    if (!t) { setEditError(\"Title is required\"); return; }\n    const y = parseYear(editYear);\n    if (y === null) { setEditError(\"Year must be a four-digit year\"); return; }\n    const answer = await movies.update(row._id, { title: t, year: y });\n    if (!answer.ok) { setEditError(answer.error.message); return; }\n    setEditingId(null);\n  };\n\n  const removeMovie = async (row) => {\n    const answer = await movies.archive(row._id);\n    if (!answer.ok) setFormError(answer.error.message);\n  };\n\n  return (\n    <div className=\"mx-auto max-w-3xl space-y-6 p-4\">\n      <div className=\"flex flex-wrap items-center justify-between gap-3\">\n        <h1 className=\"text-xl font-semibold text-foreground\">Favourite movies</h1>\n        <Badge tone=\"neutral\">{movies.rows.length} movies</Badge>\n      </div>\n\n      <form onSubmit={addMovie} className=\"rounded-lg border border-border bg-card p-4\">\n        <div className=\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_8rem_auto]\">\n          <input\n            className={inputClass}\n            placeholder=\"Title\"\n            value={title}\n            onChange={(e) => setTitle(e.target.value)}\n          />\n          <input\n            className={inputClass}\n            placeholder=\"Year\"\n            inputMode=\"numeric\"\n            value={year}\n            onChange={(e) => setYear(e.target.value)}\n          />\n          <Button variant=\"primary\" type=\"submit\">\n            <Plus className=\"mr-1 h-4 w-4\" />Add\n          </Button>\n        </div>\n        {formError ? <p className=\"mt-2 text-sm text-destructive\">{formError}</p> : null}\n      </form>\n\n      <div className=\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_12rem]\">\n        <SearchField\n          placeholder=\"Search title or year\"\n          value={search}\n          onChange={(e) => setSearch(e.target.value)}\n        />\n        <Select\n          value={sortBy}\n          onValueChange={setSortBy}\n          options={[\n            { value: \"title_asc\", label: \"Title A to Z\" },\n            { value: \"year_desc\", label: \"Newest first\" },\n            { value: \"year_asc\", label: \"Oldest first\" },\n          ]}\n        />\n      </div>\n\n      {movies.status === \"loading\" ? (\n        <RegionSkeleton shape=\"rows\" count={5} />\n      ) : movies.status === \"error\" ? (\n        <p className=\"text-sm text-destructive\">{movies.error && movies.error.message ? movies.error.message : \"Could not load movies\"}</p>\n      ) : visible.length === 0 ? (\n        <EmptyState title={q ? \"No matches\" : \"No movies yet\"} line={q ? \"Try another search\" : \"Add your first favourite above\"} />\n      ) : (\n        <ul className=\"divide-y divide-border rounded-lg border border-border bg-card\">\n          {visible.map((row) => (\n            <li key={row._id} className=\"p-3\">\n              {editingId === row._id ? (\n                <div className=\"space-y-2\">\n                  <div className=\"grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem_auto_auto]\">\n                    <input\n                      className={inputClass}\n                      value={editTitle}\n                      onChange={(e) => setEditTitle(e.target.value)}\n                    />\n                    <input\n                      className={inputClass}\n                      inputMode=\"numeric\"\n                      value={editYear}\n                      onChange={(e) => setEditYear(e.target.value)}\n                    />\n                    <Button variant=\"primary\" onClick={() => saveEdit(row)}>\n                      <Check className=\"h-4 w-4\" />\n                    </Button>\n                    <Button variant=\"quiet\" onClick={cancelEdit}>\n                      <X className=\"h-4 w-4\" />\n                    </Button>\n                  </div>\n                  {editError ? <p className=\"text-sm text-destructive\">{editError}</p> : null}\n                </div>\n              ) : (\n                <div className=\"flex items-center justify-between gap-3\">\n                  <div className=\"min-w-0\">\n                    <div className=\"truncate font-medium text-foreground\">{row.title}</div>\n                    <div className=\"text-sm text-muted-foreground\">{row.year == null ? \"Year unknown\" : row.year}</div>\n                  </div>\n                  <div className=\"flex shrink-0 gap-1\">\n                    <Button variant=\"quiet\" onClick={() => startEdit(row)}>\n                      <Pencil className=\"h-4 w-4\" />\n                    </Button>\n                    <Button variant=\"danger\" onClick={() => removeMovie(row)}>\n                      <Trash2 className=\"h-4 w-4\" />\n                    </Button>\n                  </div>\n                </div>\n              )}\n            </li>\n          ))}\n        </ul>\n      )}\n\n      {movies.hasMore ? (\n        <div className=\"flex justify-center\">\n          <Button variant=\"outline\" onClick={() => movies.loadMore()}>Load more</Button>\n        </div>\n      ) : null}\n    </div>\n  );\n}\n"}],"mandates":[],"name":"Favourite Movies","pages":[{"file":"movies.tsx","parent":"","path":"/","title":"Movies"}],"slug":"favourite-movies","sources":[{"alias":"movies","entity":"","new_table":{"fields":[{"key":"title","label":"Title","links_to":{"alias":"","entities":[],"table_id":""},"multi":false,"options":[],"required":true,"type":"text","unit":""},{"key":"year","label":"Year","links_to":{"alias":"","entities":[],"table_id":""},"multi":false,"options":[],"required":false,"type":"number","unit":""}],"label_singular":"Movie","name":"Favourite Movies","title_field":"title"},"organization_id":"","table_id":""}]},"note":"Built a one-page favourite movies list with add, edit, remove, search and sort on a new Favourite Movies table."},"success":true,"reason":"","match_count":1,"agent_name":"a3a97963-05d8-4383-985f-a9654e4bdef4","operation_id":"89c190ab-913f-44aa-a03d-6832e51fe0e6","kind":null,"kind_version":null,"kind_checked":false,"kind_errors":[]},"stream_seq":549,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"completion","data":{"operation":"user_request","operation_id":"89c190ab-913f-44aa-a03d-6832e51fe0e6","status":"success","result":{"status":"complete","output":"{\"__kind\":\"applet_build_result\",\"applet\":{\"description\":\"A one-page list of favourite movies with title and year: add, edit, remove, search and sort.\",\"entry\":\"entry.tsx\",\"files\":[{\"name\":\"entry.tsx\",\"source\":\"import React from \\\"react\\\";\\nimport { Pages } from \\\"@ai-matrx/applets/react\\\";\\n\\nexport default function App() {\\n  return <Pages layout=\\\"tabs\\\" />;\\n}\\n\"},{\"name\":\"movies.tsx\",\"source\":\"import React, { useState } from \\\"react\\\";\\nimport { useRows } from \\\"@ai-matrx/applets/react\\\";\\nimport { Button, Badge, Select, SearchField, EmptyState, RegionSkeleton } from \\\"@ai-matrx/design-system/controls\\\";\\nimport { Plus, Pencil, Trash2, Check, X } from \\\"lucide-react\\\";\\n\\nconst SORTS = {\\n  title_asc: { column: \\\"title\\\", direction: \\\"asc\\\" },\\n  year_desc: { column: \\\"year\\\", direction: \\\"desc\\\" },\\n  year_asc: { column: \\\"year\\\", direction: \\\"asc\\\" },\\n};\\n\\nconst inputClass = \\\"w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground\\\";\\n\\nexport default function MoviesPage() {\\n  const [sortBy, setSortBy] = useState(\\\"title_asc\\\");\\n  const [search, setSearch] = useState(\\\"\\\");\\n  const [title, setTitle] = useState(\\\"\\\");\\n  const [year, setYear] = useState(\\\"\\\");\\n  const [formError, setFormError] = useState(\\\"\\\");\\n  const [editingId, setEditingId] = useState(null);\\n  const [editTitle, setEditTitle] = useState(\\\"\\\");\\n  const [editYear, setEditYear] = useState(\\\"\\\");\\n  const [editError, setEditError] = useState(\\\"\\\");\\n\\n  const movies = useRows(\\\"movies\\\", { sort: [SORTS[sortBy]], pageSize: 200 });\\n\\n  const q = search.trim().toLowerCase();\\n  const visible = movies.rows.filter((row) => {\\n    if (!q) return true;\\n    const t = String(row.title || \\\"\\\").toLowerCase();\\n    const y = row.year == null ? \\\"\\\" : String(row.year);\\n    return t.includes(q) || y.includes(q);\\n  });\\n\\n  const parseYear = (value) => {\\n    const n = Number(String(value).trim());\\n    if (!Number.isInteger(n) || n < 1880 || n > 2100) return null;\\n    return n;\\n  };\\n\\n  const addMovie = async (e) => {\\n    e.preventDefault();\\n    setFormError(\\\"\\\");\\n    const t = title.trim();\\n    if (!t) { setFormError(\\\"Title is required\\\"); return; }\\n    const y = parseYear(year);\\n    if (y === null) { setFormError(\\\"Year must be a four-digit year\\\"); return; }\\n    const answer = await movies.create({ title: t, year: y });\\n    if (!answer.ok) { setFormError(answer.error.message); return; }\\n    setTitle(\\\"\\\");\\n    setYear(\\\"\\\");\\n  };\\n\\n  const startEdit = (row) => {\\n    setEditingId(row._id);\\n    setEditTitle(row.title || \\\"\\\");\\n    setEditYear(row.year == null ? \\\"\\\" : String(row.year));\\n    setEditError(\\\"\\\");\\n  };\\n\\n  const cancelEdit = () => {\\n    setEditingId(null);\\n    setEditError(\\\"\\\");\\n  };\\n\\n  const saveEdit = async (row) => {\\n    setEditError(\\\"\\\");\\n    const t = editTitle.trim();\\n    if (!t) { setEditError(\\\"Title is required\\\"); return; }\\n    const y = parseYear(editYear);\\n    if (y === null) { setEditError(\\\"Year must be a four-digit year\\\"); return; }\\n    const answer = await movies.update(row._id, { title: t, year: y });\\n    if (!answer.ok) { setEditError(answer.error.message); return; }\\n    setEditingId(null);\\n  };\\n\\n  const removeMovie = async (row) => {\\n    const answer = await movies.archive(row._id);\\n    if (!answer.ok) setFormError(answer.error.message);\\n  };\\n\\n  return (\\n    <div className=\\\"mx-auto max-w-3xl space-y-6 p-4\\\">\\n      <div className=\\\"flex flex-wrap items-center justify-between gap-3\\\">\\n        <h1 className=\\\"text-xl font-semibold text-foreground\\\">Favourite movies</h1>\\n        <Badge tone=\\\"neutral\\\">{movies.rows.length} movies</Badge>\\n      </div>\\n\\n      <form onSubmit={addMovie} className=\\\"rounded-lg border border-border bg-card p-4\\\">\\n        <div className=\\\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_8rem_auto]\\\">\\n          <input\\n            className={inputClass}\\n            placeholder=\\\"Title\\\"\\n            value={title}\\n            onChange={(e) => setTitle(e.target.value)}\\n          />\\n          <input\\n            className={inputClass}\\n            placeholder=\\\"Year\\\"\\n            inputMode=\\\"numeric\\\"\\n            value={year}\\n            onChange={(e) => setYear(e.target.value)}\\n          />\\n          <Button variant=\\\"primary\\\" type=\\\"submit\\\">\\n            <Plus className=\\\"mr-1 h-4 w-4\\\" />Add\\n          </Button>\\n        </div>\\n        {formError ? <p className=\\\"mt-2 text-sm text-destructive\\\">{formError}</p> : null}\\n      </form>\\n\\n      <div className=\\\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_12rem]\\\">\\n        <SearchField\\n          placeholder=\\\"Search title or year\\\"\\n          value={search}\\n          onChange={(e) => setSearch(e.target.value)}\\n        />\\n        <Select\\n          value={sortBy}\\n          onValueChange={setSortBy}\\n          options={[\\n            { value: \\\"title_asc\\\", label: \\\"Title A to Z\\\" },\\n            { value: \\\"year_desc\\\", label: \\\"Newest first\\\" },\\n            { value: \\\"year_asc\\\", label: \\\"Oldest first\\\" },\\n          ]}\\n        />\\n      </div>\\n\\n      {movies.status === \\\"loading\\\" ? (\\n        <RegionSkeleton shape=\\\"rows\\\" count={5} />\\n      ) : movies.status === \\\"error\\\" ? (\\n        <p className=\\\"text-sm text-destructive\\\">{movies.error && movies.error.message ? movies.error.message : \\\"Could not load movies\\\"}</p>\\n      ) : visible.length === 0 ? (\\n        <EmptyState title={q ? \\\"No matches\\\" : \\\"No movies yet\\\"} line={q ? \\\"Try another search\\\" : \\\"Add your first favourite above\\\"} />\\n      ) : (\\n        <ul className=\\\"divide-y divide-border rounded-lg border border-border bg-card\\\">\\n          {visible.map((row) => (\\n            <li key={row._id} className=\\\"p-3\\\">\\n              {editingId === row._id ? (\\n                <div className=\\\"space-y-2\\\">\\n                  <div className=\\\"grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem_auto_auto]\\\">\\n                    <input\\n                      className={inputClass}\\n                      value={editTitle}\\n                      onChange={(e) => setEditTitle(e.target.value)}\\n                    />\\n                    <input\\n                      className={inputClass}\\n                      inputMode=\\\"numeric\\\"\\n                      value={editYear}\\n                      onChange={(e) => setEditYear(e.target.value)}\\n                    />\\n                    <Button variant=\\\"primary\\\" onClick={() => saveEdit(row)}>\\n                      <Check className=\\\"h-4 w-4\\\" />\\n                    </Button>\\n                    <Button variant=\\\"quiet\\\" onClick={cancelEdit}>\\n                      <X className=\\\"h-4 w-4\\\" />\\n                    </Button>\\n                  </div>\\n                  {editError ? <p className=\\\"text-sm text-destructive\\\">{editError}</p> : null}\\n                </div>\\n              ) : (\\n                <div className=\\\"flex items-center justify-between gap-3\\\">\\n                  <div className=\\\"min-w-0\\\">\\n                    <div className=\\\"truncate font-medium text-foreground\\\">{row.title}</div>\\n                    <div className=\\\"text-sm text-muted-foreground\\\">{row.year == null ? \\\"Year unknown\\\" : row.year}</div>\\n                  </div>\\n                  <div className=\\\"flex shrink-0 gap-1\\\">\\n                    <Button variant=\\\"quiet\\\" onClick={() => startEdit(row)}>\\n                      <Pencil className=\\\"h-4 w-4\\\" />\\n                    </Button>\\n                    <Button variant=\\\"danger\\\" onClick={() => removeMovie(row)}>\\n                      <Trash2 className=\\\"h-4 w-4\\\" />\\n                    </Button>\\n                  </div>\\n                </div>\\n              )}\\n            </li>\\n          ))}\\n        </ul>\\n      )}\\n\\n      {movies.hasMore ? (\\n        <div className=\\\"flex justify-center\\\">\\n          <Button variant=\\\"outline\\\" onClick={() => movies.loadMore()}>Load more</Button>\\n        </div>\\n      ) : null}\\n    </div>\\n  );\\n}\\n\"}],\"mandates\":[],\"name\":\"Favourite Movies\",\"pages\":[{\"file\":\"movies.tsx\",\"parent\":\"\",\"path\":\"/\",\"title\":\"Movies\"}],\"slug\":\"favourite-movies\",\"sources\":[{\"alias\":\"movies\",\"entity\":\"\",\"new_table\":{\"fields\":[{\"key\":\"title\",\"label\":\"Title\",\"links_to\":{\"alias\":\"\",\"entities\":[],\"table_id\":\"\"},\"multi\":false,\"options\":[],\"required\":true,\"type\":\"text\",\"unit\":\"\"},{\"key\":\"year\",\"label\":\"Year\",\"links_to\":{\"alias\":\"\",\"entities\":[],\"table_id\":\"\"},\"multi\":false,\"options\":[],\"required\":false,\"type\":\"number\",\"unit\":\"\"}],\"label_singular\":\"Movie\",\"name\":\"Favourite Movies\",\"title_field\":\"title\"},\"organization_id\":\"\",\"table_id\":\"\"}]},\"note\":\"Built a one-page favourite movies list with add, edit, remove, search and sort on a new Favourite Movies table.\"}","iterations":1,"total_usage":{"by_model":{"claude-fable-5-1":{"input_tokens":27306,"output_tokens":4824,"cached_input_tokens":0,"total_tokens":32130,"api":"anthropic","request_count":1,"cost":0.582515}},"total":{"input_tokens":27306,"output_tokens":4824,"cached_input_tokens":0,"total_tokens":32130,"total_requests":1,"unique_models":1,"total_cost":0.582515,"known_cost_subtotal":0.582515,"provider_reported_requests":0,"catalog_priced_requests":1,"unknown_cost_requests":0}},"timing_stats":{"total_duration":45.96207284927368,"sum_duration":45.96207284927368,"api_duration":45.936867237091064,"tool_duration":2.384185791015625e-6,"processing_duration":0.025203227996826172,"iterations":1,"avg_iteration_duration":45.96207284927368,"first_token_seconds":4.815},"tool_call_stats":{"total_tool_calls":0,"iterations_with_tools":0,"by_tool":{}},"finish_reason":"stop","metadata":{"finish_reason":"stop","response_id":"msg_011CfoZwyzHnz9279EB39eGK","matrx_model_name":"claude-fable-5-1","provider_model_name":"claude-fable-5-1","ttft_ms":4815}}},"stream_seq":550,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}
+{"event":"end","data":{"reason":"complete"},"stream_seq":551,"stream_id":"2f49e53e-5200-4714-8f4c-9c74534cd144"}

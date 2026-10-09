@@ -4,28 +4,20 @@
 // whole suite failed to run ("Cannot access 'supabase_auth_1' before initialization") — zero
 // tests, silently, rather than a red assertion. Found and fixed by lane DEAD-KEYS, 2026-09-22.
 import { withClaims } from "@/test-utils/supabase-auth";
-
-const fetchMandatePins = jest.fn(async () => ({
-  "podcast.producer": {
-    mandateKey: "podcast.producer",
-    agentId: "agent-1",
-    versionId: null,
-    useLatest: true,
-    isEnabled: true,
-  },
-}));
-
-jest.mock("@ai-matrx/chat/mandates/service", () => ({ fetchMandatePins }));
+import { installChatHostDb } from "@/test-utils/chat-host-db";
 
 let userId: string | null = null;
 /** Every `schema.table` this bundle actually asks PostgREST for, in order. */
 let tablesAddressed: string[] = [];
+/** How many times the real mandate-pin read asked the database for definitions. */
+let mandateDefinitionReads = 0;
 
 function query(data: unknown[]) {
   const result = { data, error: null };
   const chain = {
     select: () => chain,
     eq: () => chain,
+    in: () => chain,
     is: () => chain,
     order: () => chain,
     then: (resolve: (value: typeof result) => unknown) =>
@@ -63,22 +55,35 @@ const client = {
           },
         ]);
       }
+      if (schema === "mandate" && table === "definition") {
+        // The real fetchMandatePins reads this table; carry both holder column spellings.
+        mandateDefinitionReads += 1;
+        return query([
+          {
+            mandate_key: "podcast.producer",
+            default_agent_id: "agent-1",
+            default_agent_version_id: null,
+            use_latest: true,
+            default_holder_type: "agent",
+            default_holder_id: "agent-1",
+            default_holder_version_id: null,
+            is_enabled: true,
+          },
+        ]);
+      }
       return query([]);
     },
   }),
 };
 
-jest.mock("@ai-matrx/chat/host/db", () => ({
-  ...jest.requireActual("@ai-matrx/chat/host/db"),
-  createClient: () => client,
-}));
+installChatHostDb(client);
 
 import { fetchSurfaceConfigBundle } from "@ai-matrx/chat/surfaces/services/surface-config.service";
 
 beforeEach(() => {
   userId = null;
   tablesAddressed = [];
-  fetchMandatePins.mockClear();
+  mandateDefinitionReads = 0;
   client.auth.getUser.mockClear();
 });
 
@@ -87,7 +92,7 @@ describe("surface config mandate authentication boundary", () => {
     const bundle = await fetchSurfaceConfigBundle("matrx-user/podcast");
 
     expect(client.auth.getUser).toHaveBeenCalledTimes(1);
-    expect(fetchMandatePins).not.toHaveBeenCalled();
+    expect(mandateDefinitionReads).toBe(0);
     expect(bundle.dbRoles[0]?.mandateAgentId).toBeNull();
   });
 
@@ -96,7 +101,7 @@ describe("surface config mandate authentication boundary", () => {
 
     const bundle = await fetchSurfaceConfigBundle("matrx-user/podcast");
 
-    expect(fetchMandatePins).toHaveBeenCalledWith(["podcast.producer"]);
+    expect(mandateDefinitionReads).toBe(1);
     expect(bundle.dbRoles[0]?.mandateAgentId).toBe("agent-1");
   });
 

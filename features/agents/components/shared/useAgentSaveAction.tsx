@@ -70,10 +70,10 @@ export function useAgentSaveAction(
   const [showModelWarning, setShowModelWarning] = useState(false);
   const [readOnlySavePromptOpen, setReadOnlySavePromptOpen] = useState(false);
   const {
-    startDuplicate,
+    openDuplicate,
     dialog: duplicateDialog,
     isDuplicating,
-  } = useAgentDuplicateFlow(agentId);
+  } = useAgentDuplicateFlow();
 
   // Agent Change Impact (I6): after a save lands, which jobs does it reach?
   // Non-blocking — the read runs after the save has succeeded and never
@@ -160,7 +160,7 @@ export function useAgentSaveAction(
 
   const handleReadOnlyDuplicate = async () => {
     setReadOnlySavePromptOpen(false);
-    await startDuplicate();
+    await openDuplicate({ agentId });
   };
 
   const readOnlySavePrompt = (

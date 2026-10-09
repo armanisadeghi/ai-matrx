@@ -4,7 +4,7 @@
  * SlugAccessGate — the canonical access gate for a SLUG-addressed page.
  *
  * `<AccessGate>` is keyed on the record's uuid, but pages like `/shapes/[kind]`,
- * `/education/learn/[...slug]`, `/podcast/[slug]` and `/p/[slug]` address their
+ * `/education/learn/[...slug]`, `/podcast/[slug]` and `/applets/[slug]` address their
  * item by slug. When their read comes back empty they cannot know the uuid —
  * RLS hid the very row that would say it. `access_gate_resolve_slug` (signed-in
  * only, existence-level disclosure; see migrations/access_gate_slug_resolver.sql)
@@ -29,6 +29,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Link2Off } from "lucide-react";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
@@ -88,6 +89,12 @@ export function SlugAccessGate({
           return;
         }
       }
+      // An id-shaped address names the record directly: the full gate (with
+      // its request-access door) answers it, never "doesn't match".
+      if (active && list.length && isUuidShape(slug)) {
+        setResolved({ key, token: list[0], id: slug, readable: false });
+        return;
+      }
       if (active) setResolved({ key, token: null, id: null, readable: false });
     })();
     return () => {
@@ -124,7 +131,7 @@ export function SlugAccessGate({
 
   return (
     <Notice
-      title={`This address doesn't match a ${noun} you can open`}
+      title={`This address doesn't match ${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun} you can open`}
       body="Check the link, or sign in with the account it was shared with."
       fallbackHref={fallbackHref}
       fallbackLabel={fallbackLabel}

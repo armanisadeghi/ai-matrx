@@ -39,7 +39,7 @@ import { Button } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { formatTokens } from "@ai-matrx/kit/tokens";
 import {
   DndContext,
@@ -50,10 +50,10 @@ import {
   closestCenter,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_4, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -387,10 +387,8 @@ function ScoreCriteria({
   validVariables: string[];
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_4),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
   const ids = levels.map((_, i) => `${questionKey}-level-${i}`);
   const handleDragEnd = (event: DragEndEvent) => {
@@ -790,10 +788,8 @@ export function DecisionQuestionsEditor({
   const refused = compatibility?.verdict === "refused";
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_4),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
   const ids = questions.map((_, i) => `dq-${i}`);
 

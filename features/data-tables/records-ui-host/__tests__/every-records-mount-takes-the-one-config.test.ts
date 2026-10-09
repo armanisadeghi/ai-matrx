@@ -17,7 +17,6 @@ const ROOT = path.resolve(__dirname, "../../../..");
 const ALLOWED = [
   "features/data-tables/records-ui-host/recordsUiHost.tsx",
   "features/content-ir/registry/table-kind-source.ts",
-  "features/data-tables/hooks/useRecordStoreTableRealtime.ts",
 ];
 const ALLOWED_PREFIX = ["features/spaces/"];
 

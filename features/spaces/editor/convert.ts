@@ -29,7 +29,7 @@ const TO_ENGINE: Record<string, string> = {
 const FROM_ENGINE: Record<string, string> = Object.fromEntries(Object.entries(TO_ENGINE).map(([k, v]) => [v, k]));
 
 /** Stored types drawn by a block of the same name whose stored props ride verbatim in `props.data`. */
-export const DATA_BLOCKS = new Set(["equation", "image", "video", "audio", "file", "pdf", "bookmark", "embed", "tableOfContents", "breadcrumb", "database"]);
+export const DATA_BLOCKS = new Set(["equation", "image", "video", "audio", "file", "pdf", "bookmark", "embed", "tableOfContents", "breadcrumb", "database", "synced", "button", "ai"]);
 
 /** Every engine block type the Spaces schema knows (editor/schema.tsx). Anything else is `unknownBlock`. */
 const ENGINE_TYPES = new Set([
@@ -93,6 +93,7 @@ function spanToEngineStyles(s: RichSpan): Styles {
   if (s.code) styles.code = true;
   if (isColor(s.color)) styles.textColor = s.color;
   if (isColor(s.background)) styles.backgroundColor = s.background;
+  if (s.suggestion) styles.suggestion = JSON.stringify(s.suggestion);
   return styles;
 }
 
@@ -127,6 +128,13 @@ function engineTextToSpan(t: EngineText, link?: string): RichSpan {
   if (isColor(st.textColor)) s.color = st.textColor;
   if (isColor(st.backgroundColor)) s.background = st.backgroundColor;
   if (link) s.link = link;
+  if (typeof st.suggestion === "string" && st.suggestion) {
+    try {
+      s.suggestion = JSON.parse(st.suggestion) as RichSpan["suggestion"];
+    } catch {
+      // a broken mark is dropped, never stored
+    }
+  }
   return s;
 }
 
@@ -298,6 +306,8 @@ function fromEngineTree(blocks: EngineBlock[]): SpaceBlock[] {
     const { textColor, backgroundColor, isToggleable, textAlignment, ...rest } = block.props ?? {};
     const props: Record<string, unknown> = { ...rest };
     if (isToggleable) props.toggleable = true;
+    // Notion has four heading levels; BlockNote's "#####" / "######" shortcuts land as Heading 4.
+    if (block.type === "heading") props.level = Math.min(4, Math.max(1, Number(props.level ?? 1)));
     if (block.type === "codeBlock") {
       let caption: unknown = null;
       try {

@@ -288,6 +288,7 @@ export const WEBSITE_LOGIN_DEFINITION_KEY = "website_login";
  *  cannot browser-match until the URL is promoted into plaintext `login_urls`
  *  — an explicit, warned declassification the user performs. */
 export const PROMOTABLE_URL_FIELD_KEYS = [
+  "account_url",
   "site_url",
   "panel_url",
   "portal_url",

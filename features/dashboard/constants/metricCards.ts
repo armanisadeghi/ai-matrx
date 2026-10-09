@@ -63,7 +63,7 @@ export const METRIC_CARDS: MetricCardConfig[] = [
     singular: "app",
     iconName: "Puzzle",
     color: "emerald",
-    href: "/agent-apps",
+    href: "/applets",
     featured: true,
     emptyHint: "Publish your first app",
   },

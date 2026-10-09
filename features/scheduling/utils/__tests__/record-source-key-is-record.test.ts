@@ -1,5 +1,5 @@
 /**
- * A RECORD-STORE TABLE'S CHANGES ARE `record:<table id>` EVENTS (lane SOURCE-KEY, closed
+ * A CUSTOM TABLE'S CHANGES ARE `record:<table id>` EVENTS (lane SOURCE-KEY, closed
  * 2026-09-25). Harbor Point Plumbing's "Service calls" table: a schedule on it is saved under
  * `record:<id>`. The retired `custom_record:<id>` key is no longer recognized at all — the store
  * refuses it on write (23514) and no live row carries it, so the client's last acceptance of it
@@ -14,7 +14,7 @@ it("writes record:<table id>", () => {
   expect(recordSourceKey(SERVICE_CALLS)).toBe(`record:${SERVICE_CALLS}`);
 });
 
-it("reads record:<table id>, and nothing else, as a record-store table", () => {
+it("reads record:<table id>, and nothing else, as a custom table", () => {
   expect(recordSourceTable(`record:${SERVICE_CALLS}`)).toBe(SERVICE_CALLS);
   expect(recordSourceTable(`custom_record:${SERVICE_CALLS}`)).toBe(null);
   expect(isRecordSourceKey("user_table_row")).toBe(false);

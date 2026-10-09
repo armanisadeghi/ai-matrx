@@ -28,7 +28,7 @@ const ORIGIN = process.env.ORIGIN ?? "http://data-v2-basics-2.localhost:3001";
 const PHASE = process.env.PHASE ?? "owner";
 const SHOTS =
   process.env.SHOTS ??
-  "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-27/data-v2-basics-2/certification";
+  "/tmp/matrx-evidence/2026-09-27/data-v2-basics-2/certification";
 mkdirSync(SHOTS, { recursive: true });
 const T = {
   plans: "377b783a-f18a-40c3-bf2b-7617691d0091",
@@ -998,7 +998,7 @@ try {
     await page.goto(`${ORIGIN}/organizations/cedar-ridge-physical-therapy/tables`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await sleep(12000);
     await shot("h04-org-tables");
-    step("org tables", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 30) });
+    step("custom tables", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 30) });
   }
 
   if (PHASE === "look-switch") {

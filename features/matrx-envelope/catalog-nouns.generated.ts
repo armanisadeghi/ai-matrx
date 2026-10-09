@@ -41,10 +41,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "chat.agent_memory",
   "title_column": "key"
  },
- "working_document": {
-  "table": "workbench.working_documents",
-  "title_column": "title"
- },
  "document": {
   "table": "content.document",
   "title_column": "title"
@@ -200,10 +196,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "fc_set": {
   "table": "education.fc_set",
   "title_column": "name"
- },
- "flexible_data": {
-  "table": "platform.flexible_data",
-  "title_column": "label"
  },
  "game_result": {
   "table": "education.game_result",
@@ -599,23 +591,23 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "app": {
   "label": "App",
-  "family": "Apps"
+  "family": "Agents"
  },
  "app_definition_version": {
   "label": "App Definition Version",
-  "family": "Apps"
+  "family": "Agents"
  },
  "app_error": {
   "label": "App Error",
-  "family": "Apps"
+  "family": "Agents"
  },
  "app_execution": {
   "label": "App Execution",
-  "family": "Apps"
+  "family": "Agents"
  },
  "app_rate_limit": {
   "label": "App Rate Limit",
-  "family": "Apps"
+  "family": "Agents"
  },
  "crm_party_research": {
   "label": "Private contact research",
@@ -623,123 +615,119 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "cx_agent_memory": {
   "label": "Agent Memory",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_agent_plan": {
   "label": "Agent Plan",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_agent_task": {
   "label": "Agent Task",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_code_edit": {
   "label": "Code Edit",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_code_message_file": {
   "label": "Code Message File",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_media": {
   "label": "Media",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_observational_memory": {
   "label": "Observational Memory",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_observational_memory_event": {
   "label": "Observational Memory Event",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_pending_injection": {
   "label": "Pending Injection",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_request": {
   "label": "Conversation Request",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_request_snapshot": {
   "label": "Request Snapshot",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_tool_trace": {
   "label": "Tool Trace",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_user_request": {
   "label": "User Request",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "cx_user_todo": {
   "label": "User Todo",
-  "family": "Chat"
- },
- "working_document": {
-  "label": "Working Document",
   "family": "Workspace"
  },
  "anon_form": {
   "label": "Public form",
-  "family": "Custom"
+  "family": "Communication"
  },
  "anon_hit": {
   "label": "Anonymous rate window",
-  "family": "Custom"
+  "family": "Communication"
  },
  "anon_inbound": {
   "label": "Inbound address",
-  "family": "Custom"
+  "family": "Communication"
  },
  "anon_replay": {
   "label": "Offline capture ledger",
-  "family": "Custom"
+  "family": "Communication"
  },
  "anon_submission": {
   "label": "Quarantined submission",
-  "family": "Custom"
+  "family": "Communication"
  },
  "anon_token": {
   "label": "Embed token",
-  "family": "Custom"
+  "family": "Communication"
  },
  "doc_render": {
   "label": "Rendered Document",
-  "family": "Custom"
+  "family": "Communication"
  },
  "doc_signature": {
   "label": "Document Signature",
-  "family": "Custom"
+  "family": "Communication"
  },
  "external_link": {
   "label": "External Link",
-  "family": "Custom"
+  "family": "Communication"
  },
  "external_source": {
   "label": "External Source",
-  "family": "Custom"
+  "family": "Communication"
  },
  "io_comment": {
   "label": "Record comment",
-  "family": "Custom"
+  "family": "Communication"
  },
  "io_import": {
   "label": "Import run",
-  "family": "Custom"
+  "family": "Communication"
  },
  "io_outbox": {
   "label": "Record change outbox",
-  "family": "Custom"
+  "family": "Communication"
  },
  "merge_field_provenance": {
   "label": "Merge Field Provenance",
-  "family": "Custom"
+  "family": "Communication"
  },
  "record": {
   "label": "Record",
-  "family": "Custom"
+  "family": "Communication"
  },
  "document": {
   "label": "Markdown document",
@@ -747,19 +735,23 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "document_version": {
   "label": "Document Version",
-  "family": "Content"
+  "family": "Workspace"
  },
  "message_template_detail": {
   "label": "Message Template Detail",
   "family": "Agents"
  },
+ "space_payload": {
+  "label": "Space Payload",
+  "family": "Workspace"
+ },
  "univer_payload": {
   "label": "Univer Payload",
-  "family": "Content"
+  "family": "Workspace"
  },
  "rulebook": {
   "label": "Rulebook",
-  "family": "Masterwork"
+  "family": "Agents"
  },
  "masterwork_run": {
   "label": "Masterwork Run",
@@ -771,19 +763,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "conversation": {
   "label": "Conversation",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "skill": {
   "label": "Skill",
-  "family": "Skills"
+  "family": "Agents"
  },
  "skill_detail": {
   "label": "Skill Detail",
-  "family": "Skills"
+  "family": "Agents"
  },
  "skill_render_definition": {
   "label": "Skill Render Definition",
-  "family": "Skills"
+  "family": "Agents"
  },
  "file": {
   "label": "File",
@@ -811,31 +803,31 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "tool": {
   "label": "Tool",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_bundle": {
   "label": "Tool Bundle",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_definition_version": {
   "label": "Tool Definition Version",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_test_sample": {
   "label": "Tool Test Sample",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_ui": {
   "label": "Tool UI",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_ui_incident": {
   "label": "Tool UI Incident",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_ui_version": {
   "label": "Tool UI Version",
-  "family": "Tools"
+  "family": "Agents"
  },
  "project": {
   "label": "Project",
@@ -867,135 +859,135 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "seo_ai_visibility_citation": {
   "label": "AI Visibility Citation",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_ai_visibility_claim": {
   "label": "AI Visibility Claim",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_ai_visibility_response": {
   "label": "AI Visibility Response",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_ai_visibility_signal": {
   "label": "AI Visibility Signal",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_backlink": {
   "label": "SEO Backlink",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_backlink_dimension_snapshot": {
   "label": "Backlink Dimension Snapshot",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_backlink_observation": {
   "label": "Backlink Observation",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_backlink_snapshot": {
   "label": "Backlink Snapshot",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_change_assessment": {
   "label": "SEO Change Assessment",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_change_event": {
   "label": "SEO Change Event",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_change_item": {
   "label": "SEO Change Item",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_change_metric": {
   "label": "SEO Change Metric",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_change_theory": {
   "label": "SEO Change Theory",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_competitor": {
   "label": "SEO Competitor",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_competitor_observation": {
   "label": "Competitor Observation",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_competitor_opportunity": {
   "label": "Competitor Opportunity",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_gsc_dig_rule": {
   "label": "GSC Dig Rule",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_class_rule": {
   "label": "Keyword Class Rule",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_market_observation": {
   "label": "Keyword Market Observation",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_landscape_brief": {
   "label": "Competitive Landscape Brief",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_link_gap_domain": {
   "label": "Link Gap Domain",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_link_gap_match": {
   "label": "Link Gap Match",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_page_performance": {
   "label": "Page Performance",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_provider_call": {
   "label": "SEO Provider Call",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_provider_task": {
   "label": "SEO Provider Task",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_rank_observation": {
   "label": "Rank Observation",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_raw_payload": {
   "label": "SEO Raw Payload",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_referring_domain_profile": {
   "label": "Referring Domain Profile",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_reputation_case": {
   "label": "Reputation Case",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_search_performance_daily": {
   "label": "Search Performance Daily",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_serp_result": {
   "label": "SERP Result",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_serp_snapshot": {
   "label": "SERP Snapshot",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_web_analytics_daily": {
   "label": "Web Analytics Daily",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "assist": {
   "label": "Assist",
@@ -1007,59 +999,59 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "seo_change_set": {
   "label": "SEO Change",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_collection_run": {
   "label": "SEO Collection Run",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword": {
   "label": "SEO Keyword",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_edge": {
   "label": "Keyword Edge",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_market": {
   "label": "Keyword Market Data",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_topic": {
   "label": "Keyword Topic Assignment",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_map_facet": {
   "label": "Topical map facet",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_map_facet_value": {
   "label": "Topical map facet value",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_map_topic": {
   "label": "Topical map topic",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_rank_target": {
   "label": "SEO Rank Target",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_keyword_value": {
   "label": "Site Keyword Value",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_topic_value": {
   "label": "Site Topic Value",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_topic": {
   "label": "SEO Topic",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_topical_map": {
   "label": "Topical map",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "access_delta_probe": {
   "label": "Access Delta Probe",
@@ -1072,6 +1064,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "account_addon": {
   "label": "Account Addon",
   "family": "Billing"
+ },
+ "account_closure": {
+  "label": "Account closure",
+  "family": "Access & Identity"
  },
  "acquisition_block": {
   "label": "Acquisition Block",
@@ -1119,19 +1115,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "agent_run": {
   "label": "Agent Run",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "agent_run_stage": {
   "label": "Agent Run Stage",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "agent_schedule": {
   "label": "Agent Schedule",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "agent_schedule_claim": {
   "label": "Agent Schedule Claim",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "ai_api": {
   "label": "AI API",
@@ -1180,6 +1176,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "analysis_result": {
   "label": "Analysis Result",
   "family": "Files"
+ },
+ "anon_form_visit": {
+  "label": "Form visit",
+  "family": "Communication"
  },
  "anon_function_birth_grandfather": {
   "label": "Anon Function Birth Grandfather",
@@ -1231,7 +1231,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "artifact": {
   "label": "Artifact",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "assessment": {
   "label": "Assessment",
@@ -1333,8 +1333,20 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Billing connect account",
   "family": "Billing"
  },
+ "billing_coupon": {
+  "label": "Coupon",
+  "family": "Billing"
+ },
+ "billing_coupon_redemption": {
+  "label": "Coupon redemption",
+  "family": "Billing"
+ },
  "billing_customer": {
   "label": "Billing customer",
+  "family": "Billing"
+ },
+ "billing_free_period_grant": {
+  "label": "Free period grant",
   "family": "Billing"
  },
  "billing_plan": {
@@ -1375,15 +1387,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "billing_usage_reset": {
   "label": "Usage reset",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_user_plan": {
   "label": "User plan",
   "family": "Billing"
  },
+ "block_state": {
+  "label": "Block State",
+  "family": "Platform"
+ },
  "board": {
   "label": "Board",
-  "family": "Other"
+  "family": "Workspace"
  },
  "browser_account_binding": {
   "label": "Browser Account Binding",
@@ -1495,7 +1511,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "carrying_rule": {
   "label": "Carrying Rule",
-  "family": "Custom"
+  "family": "Communication"
  },
  "catalog_entries_history": {
   "label": "Catalog Entries History",
@@ -1515,7 +1531,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "chat_user_usage_summary": {
   "label": "Chat usage summary",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "citations": {
   "label": "Citations",
@@ -1527,7 +1543,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "classifier_revision_ledger": {
   "label": "Classifier Revision Ledger",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "client_callable_door": {
   "label": "Client Callable Door",
@@ -1563,11 +1579,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "coding_session": {
   "label": "Coding Session",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "coding_session_entry": {
   "label": "Coding Session Entry",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "comment": {
   "label": "Comment",
@@ -1859,7 +1875,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "conversation_value": {
   "label": "Conversation Value",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "courts": {
   "label": "Courts",
@@ -1867,15 +1883,15 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "credential_attachment": {
   "label": "Credential attachment",
-  "family": "Users"
+  "family": "Communication"
  },
  "credential_item": {
   "label": "Credential item",
-  "family": "Users"
+  "family": "Communication"
  },
  "credential_mutation_receipt": {
   "label": "Credential Mutation Receipt",
-  "family": "Users"
+  "family": "Communication"
  },
  "crm_address": {
   "label": "Address",
@@ -1953,13 +1969,13 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Sending Policy",
   "family": "CRM"
  },
+ "custom_agent_table_trust": {
+  "label": "Agent table trust",
+  "family": "Communication"
+ },
  "custom_agg_digest_checked": {
   "label": "Aggregate digest checked",
-  "family": "Custom"
- },
- "custom_entity_definition": {
-  "label": "Custom Object",
-  "family": "Platform"
+  "family": "Communication"
  },
  "custom_field_definition": {
   "label": "Custom Field",
@@ -1971,27 +1987,23 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "custom_io_outbox_consumer": {
   "label": "Outbox consumer",
-  "family": "Custom"
+  "family": "Communication"
  },
  "custom_io_outbox_consumption": {
   "label": "Outbox consumption",
-  "family": "Custom"
- },
- "custom_record": {
-  "label": "Custom Record",
-  "family": "Platform"
+  "family": "Communication"
  },
  "custom_share_tails_mine_repair": {
   "label": "Share tails repair",
-  "family": "Custom"
+  "family": "Communication"
  },
  "custom_template": {
   "label": "Template",
-  "family": "Custom"
+  "family": "Communication"
  },
  "custom_template_install": {
   "label": "Template install",
-  "family": "Custom"
+  "family": "Communication"
  },
  "data_rights_event": {
   "label": "Data rights event",
@@ -2115,11 +2127,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "engine_owner_task": {
   "label": "Engine Owner Task",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "entity_grant": {
   "label": "Entity grant",
   "family": "Platform"
+ },
+ "entity_protected_value": {
+  "label": "Protected field value",
+  "family": "Communication"
+ },
+ "entity_protected_value_version": {
+  "label": "Protected field value version",
+  "family": "Communication"
  },
  "entity_relationship": {
   "label": "Entity relationship",
@@ -2207,11 +2227,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "feedback_comments": {
   "label": "Feedback Comments",
-  "family": "Users"
+  "family": "Communication"
  },
  "feedback_user_messages": {
   "label": "Feedback User Messages",
-  "family": "Users"
+  "family": "Communication"
  },
  "file_analysis": {
   "label": "File Analysis",
@@ -2252,10 +2272,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "files_user_account": {
   "label": "File account",
   "family": "Files"
- },
- "flexible_data": {
-  "label": "Flexible Data",
-  "family": "Platform"
  },
  "function_contract": {
   "label": "Function Contract",
@@ -2315,15 +2331,15 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "guest_conversion_audit": {
   "label": "Guest conversion audit",
-  "family": "Users"
+  "family": "Communication"
  },
  "guest_execution_log": {
   "label": "Guest Execution Log",
-  "family": "Users"
+  "family": "Communication"
  },
  "guest_executions": {
   "label": "Guest Executions",
-  "family": "Users"
+  "family": "Communication"
  },
  "guided_checklist_run": {
   "label": "Guided Checklist Run",
@@ -2923,11 +2939,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "integration_connection": {
   "label": "Integration connection",
-  "family": "Users"
+  "family": "Communication"
  },
  "integration_connection_resource": {
   "label": "Integration connection resource",
-  "family": "Users"
+  "family": "Communication"
  },
  "interview_decision_interview": {
   "label": "Decision Interview",
@@ -2963,11 +2979,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "invitation_code": {
   "label": "Invitation Code",
-  "family": "Users"
+  "family": "Communication"
  },
  "invitation_request": {
   "label": "Invitation Request",
-  "family": "Users"
+  "family": "Communication"
  },
  "io_contract": {
   "label": "Io Contract",
@@ -2991,7 +3007,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "keyword_classification_queue": {
   "label": "Keyword Classification Queue",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "kg_alert": {
   "label": "KG Alert",
@@ -3107,7 +3123,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "location": {
   "label": "Location",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "mandate": {
   "label": "Mandate",
@@ -3183,15 +3199,15 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "mcp_config": {
   "label": "MCP config",
-  "family": "Tools"
+  "family": "Agents"
  },
  "mcp_server": {
   "label": "MCP server",
-  "family": "Tools"
+  "family": "Agents"
  },
  "mcp_user_conn": {
   "label": "MCP user connection",
-  "family": "Tools"
+  "family": "Agents"
  },
  "media_capture_handoff": {
   "label": "Capture Handoff",
@@ -3263,7 +3279,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "message": {
   "label": "Message",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "message_template": {
   "label": "Message Template",
@@ -3341,6 +3357,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Opinions",
   "family": "Legal"
  },
+ "ops_auth_lock_watchdog_log": {
+  "label": "Auth lock watchdog log",
+  "family": "OPS"
+ },
  "ops_check_item": {
   "label": "Check Item",
   "family": "OPS"
@@ -3411,7 +3431,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "organization_visibility_version": {
   "label": "Organization Visibility Version",
-  "family": "Custom"
+  "family": "Communication"
  },
  "output_feedback": {
   "label": "Output Feedback",
@@ -3439,11 +3459,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "page_intent_queue": {
   "label": "Page Intent Queue",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "page_mapping_queue": {
   "label": "Page Mapping Queue",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "part_config": {
   "label": "Part Config",
@@ -3454,7 +3474,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Partman"
  },
  "party": {
-  "label": "Entity",
+  "label": "Contact",
   "family": "CRM"
  },
  "party_contact_point": {
@@ -3463,7 +3483,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "passkey_credential": {
   "label": "Passkey credential",
-  "family": "Users"
+  "family": "Communication"
  },
  "pc_article": {
   "label": "Podcast Article",
@@ -3499,6 +3519,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "permission_grant": {
   "label": "Permission grant",
+  "family": "Access & Identity"
+ },
+ "personal_data_column": {
+  "label": "Personal data column",
   "family": "Access & Identity"
  },
  "plan_entity": {
@@ -3649,6 +3673,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Podcast Race Episode",
   "family": "Podcasts"
  },
+ "position": {
+  "label": "Position",
+  "family": "Agents"
+ },
  "processed_document": {
   "label": "Source",
   "family": "Document Processing"
@@ -3725,6 +3753,22 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Provision Vocabulary",
   "family": "Platform"
  },
+ "public_compat_wrapper": {
+  "label": "Public compat wrapper",
+  "family": "Platform"
+ },
+ "public_placement_baseline": {
+  "label": "Public placement baseline",
+  "family": "Platform"
+ },
+ "public_placement_domain": {
+  "label": "Public placement domain",
+  "family": "Platform"
+ },
+ "public_restore_permit": {
+  "label": "Public restore permit",
+  "family": "Platform"
+ },
  "purpose": {
   "label": "Purpose",
   "family": "Platform"
@@ -3755,7 +3799,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "record_alias": {
   "label": "Record Alias",
-  "family": "Custom"
+  "family": "Communication"
  },
  "redaction_mapping": {
   "label": "Redaction Mapping",
@@ -3839,19 +3883,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "sch_agent_task": {
   "label": "Agent Task Config",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "sch_run": {
   "label": "Task Run",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "sch_task": {
   "label": "Scheduled Task",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "sch_trigger": {
   "label": "Task Trigger",
-  "family": "Scheduling"
+  "family": "Workflows"
  },
  "schema_client_exposure": {
   "label": "Schema Client Exposure",
@@ -3875,7 +3919,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "scope": {
   "label": "Scope",
-  "family": "Scopes"
+  "family": "Workspace"
  },
  "scope_association_suggestion": {
   "label": "Scope Association Suggestion",
@@ -3935,107 +3979,107 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "seo_ai_capability": {
   "label": "SEO AI capability",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_ai_visibility_panel": {
   "label": "AI Visibility Panel",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_backlink_change_event": {
   "label": "Backlink Change Event",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_coverage_mention": {
   "label": "Coverage Mention",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_coverage_tracker": {
   "label": "Coverage Tracker",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_dimension_value_matcher": {
   "label": "Dimension Value Matcher",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_engine_schedule": {
   "label": "SEO Engine Schedule",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_geo_place": {
   "label": "Geo Place",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_facet": {
   "label": "Keyword Facet",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_place": {
   "label": "Keyword Place",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_keyword_saved_view": {
   "label": "Keyword Saved View",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_page_measurement_health": {
   "label": "Page Measurement Health",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_pr_moment": {
   "label": "PR Moment",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_serp_mention": {
   "label": "SERP Prospect Mention",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_serp_opportunity": {
   "label": "SERP Prospect Opportunity",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_geo_area": {
   "label": "Site Geo Area",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_keyword_offering": {
   "label": "Site Keyword Offering",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_offering_value": {
   "label": "Site Offering Value",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_value_combo": {
   "label": "Site Value Combination",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_value_worth": {
   "label": "Site Value Worth",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_site_vocabulary": {
   "label": "Site Vocabulary",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_source_request": {
   "label": "SEO Source Request",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_starter_pack": {
   "label": "SEO Industry Starter Pack",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_starter_pack_item": {
   "label": "SEO Starter Pack Item",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_story_angle": {
   "label": "SEO Story Angle",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "seo_tracker_story": {
   "label": "Monitor Story",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "shareable_resource_registry": {
   "label": "Shareable resource registry",
@@ -4211,7 +4255,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "system_announcement": {
   "label": "System announcement",
-  "family": "Users"
+  "family": "Communication"
  },
  "system_context_item": {
   "label": "System Context Item",
@@ -4240,6 +4284,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "t13_row_column_events": {
   "label": "T-13 row column events",
   "family": "OPS"
+ },
+ "tag": {
+  "label": "Tag",
+  "family": "Platform"
  },
  "task_user_state": {
   "label": "Task user state",
@@ -4275,35 +4323,27 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "tool_binding": {
   "label": "Tool binding",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_call": {
   "label": "Tool Call",
-  "family": "Chat"
+  "family": "Workspace"
  },
  "tool_executor": {
   "label": "Tool executor",
-  "family": "Tools"
+  "family": "Agents"
  },
  "tool_surface_defaults": {
   "label": "Tool surface defaults",
-  "family": "Tools"
+  "family": "Agents"
  },
  "topic_placement_queue": {
   "label": "Topic Placement Queue",
-  "family": "SEO"
+  "family": "Marketing & Web"
  },
  "trigger_event": {
   "label": "Trigger Event",
   "family": "Workflows"
- },
- "udt_dataset_template": {
-  "label": "Dataset template",
-  "family": "Workspace"
- },
- "udt_dataset_template_fields": {
-  "label": "Udt Dataset Template Fields",
-  "family": "Workspace"
  },
  "udt_document": {
   "label": "Cloud document",
@@ -4319,6 +4359,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "ui_client": {
   "label": "UI client",
+  "family": "UI"
+ },
+ "ui_surface_action": {
+  "label": "Surface Action",
   "family": "UI"
  },
  "ui_surface_agent_pref": {
@@ -4363,7 +4407,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_achievement": {
   "label": "User Achievement",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_active_context": {
   "label": "Active context",
@@ -4371,11 +4415,11 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_analysis_preference": {
   "label": "User Analysis Preference",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_email_preference": {
   "label": "User Email Preference",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_entity_state": {
   "label": "User entity state",
@@ -4383,47 +4427,47 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_feedback": {
   "label": "User Feedback",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_follows": {
   "label": "User Follows",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_form_profile": {
   "label": "User Form Profile",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_markdown_sample": {
   "label": "User Markdown Sample",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_memory": {
   "label": "User Memory",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_preference": {
   "label": "User Preference",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_profile": {
   "label": "User Profile",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_secret": {
   "label": "User secret",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_secret_audit": {
   "label": "Secret audit",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_secret_grant": {
   "label": "Secret grant",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_stat": {
   "label": "User Stats",
-  "family": "Users"
+  "family": "Communication"
  },
  "user_storage_usage": {
   "label": "Storage usage",
@@ -4431,27 +4475,27 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "user_surface_state": {
   "label": "User Surface State",
-  "family": "Users"
+  "family": "Communication"
  },
  "vault_fill_approvals": {
   "label": "Vault fill approvals",
-  "family": "Users"
+  "family": "Communication"
  },
  "vault_fill_devices": {
   "label": "Vault fill devices",
-  "family": "Users"
+  "family": "Communication"
  },
  "vault_fill_nonces": {
   "label": "Vault fill nonces",
-  "family": "Users"
+  "family": "Communication"
  },
  "visibility_cache": {
   "label": "Visibility Cache",
-  "family": "Custom"
+  "family": "Communication"
  },
  "visibility_epoch": {
   "label": "Visibility Epoch",
-  "family": "Custom"
+  "family": "Communication"
  },
  "voice": {
   "label": "Voice",
@@ -4789,16 +4833,16 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "YouTube Video",
   "family": "Research"
  },
- "structured_list": {
-  "label": "Structured List",
+ "pick_list": {
+  "label": "Pick List",
   "family": "Derived shapes"
  },
- "structured_list_group": {
-  "label": "Structured List Group",
+ "pick_list_group": {
+  "label": "Pick List Group",
   "family": "Derived shapes"
  },
- "structured_list_item": {
-  "label": "Structured List Item",
+ "pick_list_item": {
+  "label": "Pick List Item",
   "family": "Derived shapes"
  },
  "table_column": {
@@ -4871,12 +4915,15 @@ export const CATALOG_ALIASES: Record<string, string> = {
  "dataset_cell": "table_cell",
  "document": "udt_document",
  "media": "file",
- "picklist": "structured_list",
- "picklist_group": "structured_list_group",
- "picklist_item": "structured_list_item",
+ "picklist": "pick_list",
+ "picklist_group": "pick_list_group",
+ "picklist_item": "pick_list_item",
  "podcast_episode": "pc_episode",
  "podcast_show": "pc_show",
  "sandbox": "sandbox_instance",
+ "structured_list": "pick_list",
+ "structured_list_group": "pick_list_group",
+ "structured_list_item": "pick_list_item",
  "table": "dataset",
  "transcript_session": "studio_session",
  "war_room_thread": "thread"

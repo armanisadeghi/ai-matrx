@@ -17,7 +17,7 @@ import { resolveStaffSeed } from "@/features/personal-staff/service.server";
  * `require_organization_context`. In this repo the active organization exists
  * only in the browser — `getActiveOrgId` reads Redux and nothing else may
  * stand in for it (`ensureOrgIdServer` REFUSES rather than choosing; CLAUDE.md
- * § "A 'default organization' is at most a per-client DISPLAY preference").
+ * § "A 'preselected organization' is at most a per-client DISPLAY preference").
  * So the door is asked from `StaffRoom`, one hop after hydration, with the
  * organization the person actually selected. No Server Component in this repo
  * calls aidream with that header, and this one does not become the first.

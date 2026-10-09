@@ -5,7 +5,6 @@ import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
-  selectAgentById,
   selectAgentDefinition,
   selectAgentMessages,
   selectAgentVariableDefinitions,
@@ -28,9 +27,9 @@ import {
   resetAgentToSource,
 } from "@/features/agents/redux/builder-tier.thunks";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { selectCategoryById } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
-import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "@ai-matrx/chat/host/db";
@@ -70,15 +69,15 @@ import {
 import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
-import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   AiModelRef,
   AiToolRef,
-} from "@/components/official/entity-ref/AiIdentityRef";
+} from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { agentDefinitionSummary } from "@ai-matrx/chat/agents/format";
@@ -88,6 +87,7 @@ import { useAgentAddressViewer } from "@ai-matrx/chat/agents/addressing/useAgent
 import { asClause } from "@ai-matrx/kit/text";
 import { selectIsSuperAdmin } from "@ai-matrx/chat/host/identity";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -291,10 +291,10 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
   useEffect(() => {
     setMounted(true);
-    dispatch(fetchModelOptions());
+    getModelRecords().loadOptions();
   }, [dispatch]);
 
-  const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  const agent = useAgentView(agentId);
   // A builtin's own page is reached by members too; its ID link must not
   // send them into the admin tree.
   const addressViewer = useAgentAddressViewer();

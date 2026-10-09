@@ -60,7 +60,7 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function normalizeProjectIdForCreate(projectId: string | null): string | null {
   if (!projectId || projectId === UNASSIGNED_PROJECT_ID) return null;

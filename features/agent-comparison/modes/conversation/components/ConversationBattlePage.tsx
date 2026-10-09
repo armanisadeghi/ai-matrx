@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";

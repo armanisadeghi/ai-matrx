@@ -21,7 +21,7 @@
  * studio file whose code names a job must be named by a place for that job.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { DECLARED_FEATURES, featurePrefixes } from "../registry";
@@ -74,7 +74,18 @@ function walk(dir: string, out: string[] = [], exts: readonly string[] = [".tsx"
   return out;
 }
 
-const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
+// P27 (618a850bf1): the chat package source lives in the aidream checkout. Its place maps name
+// their files by their aidream path (`apps/shared/chat/src/...`); resolve those to the sibling checkout.
+const CHAT_SRC = "apps/shared/chat/src/";
+const resolveSource = (file: string) =>
+  file.startsWith(CHAT_SRC)
+    ? join(ROOT, "..", "aidream", ...CHAT_SRC.split("/").filter(Boolean), file.slice(CHAT_SRC.length))
+    : join(ROOT, file);
+const CHAT_CHECKOUT = ["..", "aidream", ...CHAT_SRC.split("/").filter(Boolean)].join("/") + "/";
+/** A walked file under the aidream checkout, named the way the place maps name it. */
+const toSource = (file: string) =>
+  file.split(sep).join("/").startsWith(CHAT_CHECKOUT) ? CHAT_SRC + file.split(sep).join("/").slice(CHAT_CHECKOUT.length) : file;
+const read = (file: string) => readFileSync(resolveSource(file), "utf8");
 const features = DECLARED_FEATURES.filter((entry) => !OWN_GUARD.has(entry.feature)).map(
   (entry) => ({ ...entry, places: entry.places.filter((place) => !place.app) }),
 );
@@ -103,7 +114,7 @@ describe("declared intelligence places", () => {
         // call in the client source and the job in the aidream `server` files.
         const serverRun = Boolean(place.calls);
         for (const source of place.sources) {
-          expect({ source, exists: existsSync(join(ROOT, source)) }).toEqual({ source, exists: true });
+          expect({ source, exists: existsSync(resolveSource(source)) }).toEqual({ source, exists: true });
           const code = read(source);
           if (serverRun) {
             expect({ source, calls: place.calls, found: code.includes(place.calls!) }).toEqual({
@@ -144,7 +155,7 @@ describe("declared intelligence places", () => {
     );
 
     const components = (feature.roots ?? []).flatMap((root) =>
-      walk(join(ROOT, root)).map((file) => relative(ROOT, file)),
+      walk(resolveSource(root)).map((file) => toSource(relative(ROOT, file))),
     );
     const running = components
       .map((file) => ({ file, keys: keysNamedIn(read(file), feature) }))

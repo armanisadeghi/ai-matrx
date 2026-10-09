@@ -49,6 +49,23 @@ describe("DevWalkMonitor", () => {
     nestedScrollArea.remove();
   });
 
+  it("announces itself before it leaves: the console and the document say the preview was paused, not that the app failed", () => {
+    // FIRST-PAGE-ABORT (2026-10-08): a walker whose host the cap evicted mid-load saw only React's
+    // "Transition was aborted because of invalid state" and a skeleton with no rows, and read it as a
+    // table-page fault. Eviction is the cause; the page must say so before it unloads.
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const park = jest.fn();
+    const stop = installDevWalkMonitor({ window, EventSource: FakeEventSource as unknown as typeof EventSource, fetch: jest.fn(), park });
+    FakeEventSource.instance?.emit("evicted");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("[walk-cap]"));
+    expect(warn.mock.calls.flat().join(" ")).toMatch(/paused|evicted/i);
+    expect(document.documentElement.getAttribute("data-matrx-walk-parked")).toBe("evicted");
+    expect(park).toHaveBeenCalled();
+    stop();
+    warn.mockRestore();
+    document.documentElement.removeAttribute("data-matrx-walk-parked");
+  });
+
   it("stays inert on clone configuration", async () => {
     jest.replaceProperty(process, "env", { ...originalEnv, NODE_ENV: "development", NEXT_PUBLIC_SUPABASE_URL: "https://clone.example" });
     await act(async () => root.render(<DevWalkMonitor />));

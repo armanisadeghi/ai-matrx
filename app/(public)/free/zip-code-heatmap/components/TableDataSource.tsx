@@ -25,7 +25,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 type PaginatedRow = { data: Record<string, unknown> };
 
@@ -66,7 +66,7 @@ export default function TableDataSource({
   const [countColumn, setCountColumn] = useState<string>("");
   const [loadingData, setLoadingData] = useState(false);
 
-  // Load user tables
+  // Load custom tables
   useEffect(() => {
     fetchTables();
   }, []);

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface Preferences {

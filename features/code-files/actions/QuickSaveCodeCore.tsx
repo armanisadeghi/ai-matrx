@@ -5,7 +5,7 @@
 // does not own its own dialog/overlay/popover wrapper — callers render it
 // inside whatever shell they need.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import React, { useCallback } from "react";
 import {
   AlertTriangle,

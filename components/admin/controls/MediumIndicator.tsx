@@ -1,5 +1,5 @@
 // components/admin/controls/MediumIndicator.tsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   ChevronRight,
@@ -152,8 +152,8 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showServerDropdown]);
 
-  // Position dropdown below the button
-  useEffect(() => {
+  // Position dropdown below the button (before paint, so no top-left flash)
+  useLayoutEffect(() => {
     if (
       showServerDropdown &&
       serverButtonRef.current &&

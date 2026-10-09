@@ -24,6 +24,7 @@ import {
   type TagWriteResult,
 } from "../tags";
 import { AssignTargetHeadline, type AssignTarget } from "./AssignPanel";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export function TagAssignPanel({
   siteId,
@@ -203,7 +204,7 @@ export function TagAssignPanel({
           disabled={pending !== null || chosen.length === 0}
           onClick={() => void run(false)}
         >
-          Add to {target.keywordIds.length.toLocaleString()}
+          Add to {formatCount(target.keywordIds.length)}
         </Button>
       </div>
     </div>

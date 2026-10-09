@@ -41,9 +41,12 @@ import {
   Share2,
   LayoutDashboard,
   Database,
+  Copy,
+  Download,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import {
   defineCanvasKind,
   registerCanvasKinds,
@@ -55,14 +58,20 @@ import type { CanvasJson } from "@ai-matrx/canvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
+import { copyHtmlSource, downloadHtmlSource, resolveShownHtml } from "@/features/html-pages/output/htmlSourceOutput";
+import { extractTitleFromHTML } from "@/features/html-pages/utils/html-preview-utils";
 import {
   getDefaultTitle,
   isPersistableCanvasType,
+  type CanvasContent,
   titleToString,
   type CanvasContentType,
 } from "@/features/canvas/canvasContent";
 import { canvasContentHasSource } from "@/features/canvas/core/canvasSource";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { artifactPrinterFor } from "@/features/canvas/output/canvasOutputPorts";
+import { artifactOutputDef } from "@/features/canvas/artifact-types/artifact-output";
+import { iframeBlockUrl } from "@/features/canvas/output/framePrinters";
 import { artifactKey, contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
 import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
 
@@ -171,10 +180,64 @@ async function saveToCloud(props: CanvasKindProps, data: ArtifactItemData) {
   toast.success(outcome.result.wasCreated ? "Saved to the cloud" : "Already saved");
 }
 
+/** Copy HTML / Download .html for an html tab — the card's own path (htmlSourceOutput), the chain's latest version. */
+function htmlSourceEntries(content: CanvasContent, data: ArtifactItemData): CanvasMenuItem[] {
+  const held = typeof content.data === "string" ? content.data : ((content.data as { html?: string } | null)?.html ?? "");
+  const canvasItemId = content.metadata?.canvasItemId ?? data.savedItemId ?? null;
+  const title = (html: string) => extractTitleFromHTML(html) || titleToString(content.metadata?.title) || "Web page";
+  const failed = (error: unknown) => {
+    console.error("[canvas] the page's HTML could not be read", error);
+    toast.error("The page's HTML could not be read.");
+  };
+  const shown = () => resolveShownHtml({ canvasItemId, version: "latest", held });
+  return [
+    {
+      id: "html:copy",
+      label: "Copy HTML",
+      icon: <Copy />,
+      onSelect: () => void shown().then(copyHtmlSource).catch(failed),
+    },
+    {
+      id: "html:download",
+      label: "Download .html",
+      icon: <Download />,
+      onSelect: () => void shown().then((html) => downloadHtmlSource(title(html), html)).catch(failed),
+    },
+  ];
+}
+
+/** The type's other print variants (a quiz: with answers, answer key) beside the pane's standard Print. */
+function printVariantEntries(props: CanvasKindProps): CanvasMenuItem[] {
+  const registered = artifactPrinterFor({ item: props.item });
+  if (!registered) return [];
+  const { printer, data } = registered;
+  return (printer.variants ?? []).slice(1).map((variant) => ({
+    id: `output:print:${variant.id}`,
+    label: `Print — ${variant.label}`,
+    onSelect: () => void printer.print(data, variant.id),
+  }));
+}
+
 function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
   const data = readArtifactItemData(props.item.data);
   if (!data) return [];
   const content = contentOf(data);
+  return [
+    ...printVariantEntries(props),
+    ...(content.type === "html" ? htmlSourceEntries(content, data) : []),
+    ...(content.type === "iframe" ? embeddedSiteEntries(content) : []),
+    ...persistEntries(props, data, content),
+  ];
+}
+
+/** An embedded site cannot be printed or captured here (another origin) — the way to it is opening it. */
+function embeddedSiteEntries(content: CanvasContent): CanvasMenuItem[] {
+  const url = iframeBlockUrl(content.data);
+  if (!url) return [];
+  return [{ id: "open-site", label: "Open site", icon: <ExternalLink />, onSelect: () => window.open(url, "_blank", "noopener") }];
+}
+
+function persistEntries(props: CanvasKindProps, data: ArtifactItemData, content: CanvasContent): CanvasMenuItem[] {
   if (!isPersistableCanvasType(content.type)) return [];
   const savedId = content.metadata?.canvasItemId ?? data.savedItemId;
   const saved = isMaterializedArtifactId(savedId);
@@ -197,6 +260,8 @@ function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
 export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICONS) as CanvasContentType[]).map((type) =>
   defineCanvasKind<CanvasJson>({
     id: type,
+    // What its body is and how it prints / captures — on the artifact TYPE (artifact-output.ts).
+    ...artifactOutputDef(type),
     label: getDefaultTitle(type),
     icon: ICONS[type],
     load: loadView,
@@ -217,6 +282,9 @@ export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICON
  */
 export const SAVED_ITEMS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<null>({
   id: "saved-items",
+  surface: "dom",
+  // A launcher grid (virtualized, with menus): its items print from their own tabs (kindOutputDecisions.ts).
+  print: false,
   label: "Saved",
   icon: LayoutDashboard,
   load: () =>

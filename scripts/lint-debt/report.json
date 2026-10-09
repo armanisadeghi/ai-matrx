@@ -448,7 +448,7 @@
       "real": 20
     },
     {
-      "key": "features/agent-apps",
+      "key": "features/applets",
       "count": 19,
       "real": 19
     },
@@ -485,79 +485,79 @@
   ],
   "findings": [
     {
-      "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
+      "file": "app/(admin)/administration/applets/analytics/page.tsx",
       "line": 76,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/analytics",
+      "route": "/administration/applets/analytics",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/apps/page.tsx",
+      "file": "app/(admin)/administration/applets/all/page.tsx",
       "line": 187,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/apps",
+      "route": "/administration/applets/all",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/categories/page.tsx",
+      "file": "app/(admin)/administration/applets/categories/page.tsx",
       "line": 143,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/categories",
+      "route": "/administration/applets/categories",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/categories/page.tsx",
+      "file": "app/(admin)/administration/applets/categories/page.tsx",
       "line": 160,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/categories",
+      "route": "/administration/applets/categories",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx",
+      "file": "app/(admin)/administration/applets/edit/[id]/page.tsx",
       "line": 128,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/edit/[id]",
+      "route": "/administration/applets/edit/[id]",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
+      "file": "app/(admin)/administration/applets/executions/page.tsx",
       "line": 218,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/executions",
+      "route": "/administration/applets/executions",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
+      "file": "app/(admin)/administration/applets/executions/page.tsx",
       "line": 526,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps/executions",
+      "route": "/administration/applets/executions",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 98,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
-      "route": "/administration/agents/agent-apps",
+      "route": "/administration/applets",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
+      "file": "app/(admin)/administration/applets/rate-limits/RateLimitsClient.tsx",
       "line": 154,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -7136,173 +7136,173 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/AgentAppPublicRendererImpl.tsx",
+      "file": "features/applets/components/AppletPublicRendererImpl.tsx",
       "line": 776,
       "column": 26,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 282,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 290,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 321,
       "column": 10,
       "rule": "react-hooks/immutability",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access variable before it is declared `handleAutoCreate` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/…"
     },
     {
-      "file": "features/agent-apps/components/builder/SlotOverrideEditor.tsx",
+      "file": "features/applets/components/builder/SlotOverrideEditor.tsx",
       "line": 146,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx",
+      "file": "features/applets/components/inputs/AppletCategoryPicker.tsx",
       "line": 65,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/inputs/AgentVersionCompact.tsx",
+      "file": "features/applets/components/inputs/AgentVersionCompact.tsx",
       "line": 59,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 122,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 130,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 476,
       "column": 36,
       "rule": "react-hooks/preserve-manual-memoization",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually spec…"
     },
     {
-      "file": "features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx",
+      "file": "features/applets/components/shells/AppletFullyCustomShell.tsx",
       "line": 323,
       "column": 24,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/agent-apps/components/TemplatePreviewRendererImpl.tsx",
+      "file": "features/applets/components/TemplatePreviewRendererImpl.tsx",
       "line": 181,
       "column": 8,
       "rule": "react-hooks/static-components",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/agent-apps/components…"
+      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/applets/components…"
     },
     {
-      "file": "features/agent-apps/hooks/useAutoCreateApp.ts",
+      "file": "features/applets/hooks/useAutoCreateApp.ts",
       "line": 219,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/agent-apps/hooks/useAutoCreateApp.ts",
+      "file": "features/applets/hooks/useAutoCreateApp.ts",
       "line": 220,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/agent-apps/route/AgentAppSettingsContent.tsx",
+      "file": "features/applets/route/AppletSettingsContent.tsx",
       "line": 132,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/route/AgentAppSurfaceRuntime.tsx",
+      "file": "features/applets/route/AppletSurfaceRuntime.tsx",
       "line": 79,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/flashcard-generator.tsx",
+      "file": "features/applets/sample-code/apps/flashcard-generator.tsx",
       "line": 33,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "line": 52,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-apps/tracking/useAgentAppTracker.ts",
+      "file": "features/applets/tracking/useAppletTracker.ts",
       "line": 46,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "features/agent-apps",
+      "feature": "features/applets",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },

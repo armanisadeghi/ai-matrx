@@ -20,15 +20,12 @@ const asked: Array<Record<string, unknown>> = [];
 const client = {
   drillAsk: async ({ question }: { question: { by: string[]; where: Record<string, unknown> } }) => {
     asked.push(question);
-    const attr = question.by[1]!;
-    const rows =
-      attr === "person"
-        ? [{ kind: "group", groups: { request: R1, person: P1 } }, { kind: "group", groups: { request: R2, person: P1 } }]
-        : [
-            { kind: "group", groups: { request: R1, model: "claude-sonnet-4-5" } },
-            { kind: "group", groups: { request: R2, model: "claude-sonnet-4-5" } },
-            { kind: "group", groups: { request: R2, model: "gpt-5" } },
-          ];
+    // ONE ask for every glance column (lane DRILL-LIVE-FIX-2 #3): grouped by request, person and model
+    const rows = [
+      { kind: "group", groups: { request: R1, person: P1, model: "claude-sonnet-4-5" } },
+      { kind: "group", groups: { request: R2, person: P1, model: "claude-sonnet-4-5" } },
+      { kind: "group", groups: { request: R2, person: P1, model: "gpt-5" } },
+    ];
     return { ok: true, data: { rows, says: [], total: null, as_of: null } };
   },
 };
@@ -59,7 +56,7 @@ it("reads each request's person and model through the same door, narrowed to the
   const root = createRoot(host);
   await act(async () => root.render(<Probe />));
   await act(async () => new Promise((r) => setTimeout(r, 20)));
-  expect(asked.map((q) => q.by)).toEqual([["request", "person"], ["request", "model"]]);
+  expect(asked.map((q) => q.by)).toEqual([["request", "person", "model"]]);
   expect((asked[0]!.where as Record<string, unknown>).request).toEqual([R1, R2]);
   const person = got!.find((a) => a.key === "person")!;
   const model = got!.find((a) => a.key === "model")!;

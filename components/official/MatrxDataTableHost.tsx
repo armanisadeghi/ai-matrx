@@ -29,8 +29,8 @@ import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
 import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useTableCustomFieldColumns } from "@/features/unified-data/standard-field-columns/useTableCustomFieldColumns";
 
 export type TableDensity = MatrxDataTableDensity;

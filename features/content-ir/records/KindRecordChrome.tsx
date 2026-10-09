@@ -42,7 +42,7 @@ import {
   shapeInstancePermalink,
   shapeRecordsTableHref,
 } from "@/features/content-ir/studio/constants";
-import { tableHref as storeTableHref } from "@/features/records-tool-display/readRecordsAnswer";
+import { tableHref as customTableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { ConfirmationBadge } from "./ConfirmationBadge";
 import { resolveKindRecordDisposition } from "./kind-record-registry";
 import "./record-kinds";
@@ -260,12 +260,12 @@ export function KindRecordChrome({
 
   const countHref =
     landing?.store === "record" && landing.tableId
-      ? storeTableHref(landing.tableId)
+      ? customTableHref(landing.tableId)
       : shapeRecordsTableHref(kind);
   const recordHref =
     landing?.store === "record"
       ? landing.tableId
-        ? storeTableHref(landing.tableId, landing.recordId)
+        ? customTableHref(landing.tableId, landing.recordId)
         : null
       : landing
         ? shapeInstancePermalink(landing.recordId)

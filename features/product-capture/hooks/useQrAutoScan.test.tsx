@@ -2,7 +2,7 @@ import { renderHook } from "@/test-utils/renderHook";
 
 const mockDecodeQrFromElement = jest.fn();
 
-jest.mock("@ai-matrx/kit/qr", () => ({
+jest.mock("@ai-matrx/capture/qr", () => ({
   decodeQrFromElement: (...args: unknown[]) => mockDecodeQrFromElement(...args),
 }));
 

@@ -36,8 +36,8 @@ import {
   selectFullContextError,
   selectFullContextStatus,
 } from "@/features/agent-context/redux/hierarchySlice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 

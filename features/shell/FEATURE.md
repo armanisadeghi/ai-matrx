@@ -124,6 +124,8 @@ the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and 
 
 ## Change log
 
+- `2026-10-08` — claude (lane AF): **Shell eager set shrinks.** The chat package's preview hook slot is `useHtmlPreviewStateOnDemand` (loads the real hook — and `@ai-matrx/print/markdown` — when a preview first opens; it suspends into the overlay's loading state), and `lib/organizations/linkOrganizationSession.ts` dropped `"use client"` so `appContextSlice`'s `import()` of it is an on-demand chunk, not a client reference. KaTeX stays eager only through the `convertMarkdownToHtml` slot until `@ai-matrx/chat` 0.5.2 (awaits it) is served. Guard: `pnpm check:shell-eager-graph`.
+
 - `2026-10-05` — claude: **One chat.** The shell chat (`ShellChatDock`) now shows on the Board, signed-in Education and the canvas demos too — they no longer draw their own chat column; it stands aside only on /chat and /code. The shell header hides by `visibility` in canvas chrome so `ShellChatToggle` stays at its pixel (the canvas header pads for it, `.canvas-workspace-header`); full screen hides the chat button. AppShell reads the chat cookie for the page's HOME (`shellChatHome`: each board, Education, else the family) and stamps `data-shell-chat-available` at SSR. Mechanics: `../aidream/apps/shared/chat/src/canvas/workspace/FEATURE.md`.
 
 - `2026-10-05` — claude: **`RecordPageHeader` has a top-level form.** `backHref` is optional (and on `EntityModeHeader`): omit it on a module-home, queue or inbox page that has no parent and the line is just the name (no back chevron, `parents` empty). A trailing action is a declarative `actions` entry (`primary: true`, `href`), never a free-form slot — `CasesListClient`'s New case moved onto it. A page's `MandateDoorLink` icon variant renders nothing and only registers the door, so it sits beside the header, not inside. ~85 raw `PageHeader` page tops (commerce, CRM, marketing, notifications, boards, maps, reports, HR, dashboard, launchpad…) moved onto the template; `check:page-top` baseline 495 → 433. Still on a raw `PageHeader` and named gaps: `AdminModuleHeader` (admin route-tree crumbs + module menu + injected items), `ScopesRouteHeader` / `ScopeBreadcrumb` (org-level drawer, "see all" links, confirm-delete actions), the header-variant family (`HeaderToggle`, `HeaderTabs`, `StudyDeckHeader`), and header-with-live-control pages (`ShapesListHeader`).
@@ -185,3 +187,9 @@ the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and 
   `ElevatedShellUserMenu.tsx` + store, the canvas/elevated menu CSS, the
   `:root[data-canvas-open]` avatar hide, `NotificationsMenuItem.tsx`,
   `MessagesMenuItem.tsx`, `ApprovalsMenuItem.tsx`.
+
+- **2026-10-07** — The header ghost's clone no longer carries
+  `data-page-header-portal` (it wears `data-page-header-ghost-portal`; the
+  fallback-hide rule in `styles/shell.css` covers both). A page had two
+  `[data-page-header-portal]` nodes from first paint to hydration (~1-2s) — the
+  real one plus the ghost's clone. Guard: `page-header-ssr.test.tsx` counts one.

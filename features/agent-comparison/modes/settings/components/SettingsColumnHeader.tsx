@@ -33,11 +33,9 @@ import {
 } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import {
-  selectModelClassName,
-  selectModelLabelWithClass,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
-import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
+import { selectModelClassName, selectModelLabelWithClass } from "@ai-matrx/agents/models";
+import { readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
+import { useModelClassLabels } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { effectiveOfferingPin } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { cn } from "@/lib/utils";
 import { renameSettingsColumn } from "../redux/slice";
@@ -79,13 +77,13 @@ export function SettingsColumnHeader({ column, onToggleCollapse }: Props) {
   // A model offered in several classes is named with the class it runs on.
   useModelClassLabels();
   const runPin = effectiveOfferingPin(overrideState);
-  const modelLabel = useAppSelector((s) =>
+  const modelLabel = useModelRecords((s) =>
     modelOverrideId
       ? selectModelLabelWithClass(s, modelOverrideId, runPin)
       : undefined,
   );
   const baseModelRaw = overrideState?.baseSettings?.model;
-  const classOnlyName = useAppSelector((s) =>
+  const classOnlyName = useModelRecords((s) =>
     !modelOverrideId && "offering_id" in overrides && typeof baseModelRaw === "string"
       ? selectModelClassName(s, baseModelRaw, runPin)
       : undefined,

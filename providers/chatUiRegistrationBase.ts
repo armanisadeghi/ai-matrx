@@ -6,12 +6,10 @@
 
 import dynamic from "next/dynamic";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
@@ -24,31 +22,14 @@ import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEveryw
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ConnectorMark } from "@/features/connectors/ConnectorMark";
 import { connectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
-import { InPlaceEditor } from "@ai-matrx/rich-editor/in-place/InPlaceEditor";
-import {
-  EditInPlace,
-  useInPlaceTrigger,
-} from "@ai-matrx/rich-editor/in-place/EditInPlace";
-import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  copyRichContent,
-  copyContent,
-} from "@ai-matrx/rich-content/copy/copy-commands";
-import {
-  selectAllSkills,
-  selectSkillsStatus,
-} from "@/features/skills/redux/skillsSelectors";
-import { registerChatModelClassHooks } from "@ai-matrx/chat/host/model-class";
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
-import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { registerChatUsageGate } from "@ai-matrx/chat/host/usage-gate";
 import * as usageGate from "@/features/entitlements/usage-gate/usageGate";
-import { registerKindValueMarkdown } from "@ai-matrx/chat/utils/content-ir/kinds/kind-value-markdown";
+import { registerKindValueMarkdown } from "@ai-matrx/content-ir/surfaces";
 import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";
@@ -74,12 +55,10 @@ import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStr
 import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
-import { TextCopySplit as CopySplit } from "@/components/agent-copy/TextCopySplit";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import {
   traceWarRoomRenderPath,
   isWarRoomThreadAgentSurface,
@@ -90,7 +69,6 @@ import {
 } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { SystemInstructionModal } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
 import { flattenResourcePickerItems } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { useRunControlCounts } from "@/features/resource-manager/resource-picker/useRunControlCounts";
 import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
@@ -199,7 +177,6 @@ registerChatUi({
   NotePickerPopover: asSlot(NotePickerPopover),
   SmartInputMessageTemplatePicker: asSlot(SmartInputMessageTemplatePicker),
   flattenResourcePickerItems,
-  useRunControlCounts,
   useAttachResourcePicker,
   usePopoutContainer,
   useUrlSync,
@@ -207,7 +184,6 @@ registerChatUi({
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
   SystemInstructionModal,
-  RichDocument,
   traceWarRoomRenderPath,
   isWarRoomThreadAgentSurface,
   useOpenCloudBrowserCanvas,
@@ -216,18 +192,15 @@ registerChatUi({
   RulebookNudge,
   NegativeVerdictFollowUp,
   SpeakerButton,
-  CopySplit,
   GmailReviewCard,
   ShareButton,
   ShareModal,
   ReviewAnswersLink,
   RecordChangeApprovalCard,
-  RichContent,
   CopyButtons,
   InfoHint,
   AnswerValueView,
   ErrorAlchemyMenu,
-  ErrorNotice,
   EntityRef,
   AdvancedMenu,
   AuthGateDialog,
@@ -238,16 +211,10 @@ registerChatUi({
   TableChooser,
   FileResourceChip,
   ConnectorMark,
-  InPlaceEditor,
-  EditInPlace,
   confirm,
-  copyRichContent,
-  copyContent,
   useTablesEverywhere,
-  useTextareaFormatting,
   useClipboardPaste,
   useCenterControlFit,
-  useInPlaceTrigger,
   connectorDefinitionFromMcp,
   useKnowledgeAttachSearch,
   useConversationAttachments,
@@ -270,10 +237,6 @@ registerChatUi({
       : db.from("tasks").select("organization_id").eq("id", id).maybeSingle();
   },
   summarizeContextCell,
-  loadedSkills: (state: Parameters<typeof selectSkillsStatus>[0]) => ({
-    status: selectSkillsStatus(state),
-    skills: selectAllSkills(state),
-  }),
   useEntityTitles,
   notesCreate: (input: Parameters<typeof NotesAPI.create>[0]) =>
     NotesAPI.create(input),
@@ -281,4 +244,3 @@ registerChatUi({
 
 registerKindValueMarkdown(kindValueToMarkdown);
 registerChatUsageGate(usageGate);
-registerChatModelClassHooks({ useModelClassControls, useModelClassLabels });

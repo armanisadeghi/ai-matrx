@@ -16,8 +16,8 @@ import {
   selectAllProjects,
   selectProjectsError,
 } from "@/features/agent-context/redux/projectsSlice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 

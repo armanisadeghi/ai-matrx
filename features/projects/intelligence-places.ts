@@ -23,7 +23,8 @@ export const PROJECTS_PLACES: FeaturePlaces = {
       mandateKeys: [K.projects__creation_guide],
       sources: [
         "features/projects/components/ProjectCreatePanel.tsx",
-        "features/projects/debug/projectCreateAiDebug.ts",
+        // The app path is a shim since P27 (618a850bf1); the job constant lives in the chat package.
+        "apps/shared/chat/src/ui/projectCreateAiDebug.ts",
       ],
     },
   ],

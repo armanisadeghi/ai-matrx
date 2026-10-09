@@ -6,7 +6,7 @@
  * mode) work by giving each column its own synthetic copy of the agent
  * record in `state.agentDefinition.agents`. The column's manual instance
  * is then keyed to that synthetic id so when the manual-execute thunk
- * reads `state.agentDefinition.agents[sourceId]` it sees the per-column
+ * reads `selectAgentById(state, sourceId)` it sees the per-column
  * edits.
  *
  * Synthetic ids carry a `cmp-` prefix so the save-agent paths are easy
@@ -20,6 +20,7 @@
  * fresh anyway); a future cleanup could prune them.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { upsertAgent } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { SYNTHETIC_AGENT_ID_PREFIX } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
@@ -67,7 +68,7 @@ export function forkAgentForVariant(
   state: RootState,
   sourceAgentId: string,
 ): string | null {
-  const source = state.agentDefinition.agents?.[sourceAgentId];
+  const source = selectAgentById(state, sourceAgentId);
   if (!source) return null;
   const syntheticId = newSyntheticAgentId();
   dispatch(upsertAgent(cloneAgent(source, syntheticId)));
@@ -83,5 +84,5 @@ export function selectAgentDefinitionById(
   state: RootState,
   agentId: string,
 ): AgentDefinition | undefined {
-  return state.agentDefinition.agents?.[agentId];
+  return selectAgentById(state, agentId);
 }

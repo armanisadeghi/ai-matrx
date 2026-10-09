@@ -627,7 +627,7 @@ const INDUSTRY_NAV_CHILDREN: ShellNavChild[] = [
     color: "emerald",
     children: [
       ...educationNavChildren(),
-      { label: "Create a Study Kit", href: "/education/start", iconName: "Plus", group: "More" },
+      { label: "Create a Study Kit", href: "/education/kits/new", iconName: "Plus", group: "More" },
       { label: "Overview", href: "/education/overview", iconName: "LayoutDashboard", group: "More", guestHidden: true },
       { label: "Learn", href: "/education/learn", iconName: "BookOpen", group: "More" },
       { label: "Library", href: "/education/library", iconName: "BookOpen", exact: true, group: "More", guestHidden: true },
@@ -913,9 +913,9 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    // applets (> agent-apps): what customers build with agents, own UI and landing.
+    // applets (> applets): what customers build with agents, own UI and landing.
     label: "Applets",
-    href: "/agent-apps",
+    href: "/applets",
     iconName: "Puzzle",
     section: "primary",
     profileMenu: false,
@@ -925,7 +925,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "All Applets",
-        href: "/agent-apps",
+        href: "/applets",
         iconName: "Puzzle",
         exact: true,
         description: "Browse and run interactive applets built from agents",
@@ -933,7 +933,7 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      { label: "Applet Templates", href: "/templates/apps", iconName: "LayoutTemplate", guestHidden: true },
+      { label: "Applet Templates", href: "/templates/applets", iconName: "LayoutTemplate", guestHidden: true },
     ],
   },
   {
@@ -1208,9 +1208,21 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Notes, documents, workbooks, maps and signatures",
+    description: "Pages, notes, documents, workbooks, maps and signatures",
     color: "amber",
     children: [
+      {
+        // Spaces (Notion-style pages) heads Content in the domain tree (content: spaces +, Arman 2026-10-05).
+        label: "Spaces",
+        href: "/spaces",
+        iconName: "NotebookTabs",
+        description: "Pages, databases and templates in one workspace",
+        guestHidden: true,
+        color: "amber",
+        profileMenu: false,
+        dashboard: true,
+        group: "Write",
+      },
       {
         label: "Notes",
         href: "/notes",
@@ -1252,6 +1264,7 @@ export const primaryNavItems: ShellNavItem[] = [
         group: "Write",
       },
       { label: "E-Signatures", href: "/esign", iconName: "FileSignature", guestHidden: true, group: "Write" },
+      { label: "E-Sign Templates", href: "/esign/templates", iconName: "FileSignature", guestHidden: true, group: "Write" },
       {
         label: "Markdown Studio",
         href: "/markdown-studio",
@@ -1624,7 +1637,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
         guestHidden: true,
       },
-      { label: "Meetings", href: "/meetings", iconName: "Video", guestHidden: true },
+      {
+        label: "Meetings",
+        href: "/meetings",
+        iconName: "Video",
+        description: "Start or schedule a video meeting",
+        color: "pink",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
       { label: "Notifications", href: "/notifications", iconName: "Inbox", guestHidden: true },
       { label: "Message Templates", href: "/chat/message-templates", iconName: "MessageSquareQuote", guestHidden: true },
       { label: "Your Staff", href: "/staff", iconName: "Users", guestHidden: true },

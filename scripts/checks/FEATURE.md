@@ -12,6 +12,16 @@ times in a row. Not a failed check, not a failed migration, not a dirty
 checkout, not a diverged branch, not an unmerged local commit. Every one of
 those is a finding — an ERROR or WARNING row with a remedy — never a stop.
 
+**The one exception: a lockfile no package manager can read** (2026-10-08). A
+stop exists to protect shipping; this one IS shipping — Vercel refuses such a
+file before it installs anything, so pushing it guarantees a failed build on
+every project and ships nothing. Step 7 reads every `pnpm-lock.yaml` /
+`package-lock.json` in the release tree (`scripts/check-lockfile-keys.py`,
+offline, ~0.1 s): byte-identical duplicate blocks are dropped inside the release
+commit (WARNING); anything else (blocks that differ under one key, a conflict
+marker, JSON that does not parse) stops the release before the push (ERROR).
+`scripts/sync-main.py` runs the same guard before every push to `main`.
+
 ## The ship path (`scripts/release.sh`, `RELEASE_PHASE=ship`)
 
 Does ONLY what makes the build, in this order:
@@ -37,7 +47,7 @@ Does ONLY what makes the build, in this order:
    ERROR finding naming the commit left behind. A checkout parked on another
    branch contributes nothing (WARNING).
 6. Wait for the migrations.
-7. Bump `package.json` in a temporary index (`GIT_INDEX_FILE` + `read-tree` +
+7. THE LOCKFILE GUARD (`ship_guard_lockfiles`, see the exception above), then bump `package.json` in a temporary index (`GIT_INDEX_FILE` + `read-tree` +
    `hash-object`; skipping any tag already taken locally or on origin),
    `commit-tree` it with the Vercel prefix (`release:` / `release-admin:` /
    `release-demos:` / `release-all:`), push `<sha>:refs/heads/main`. A rejected
@@ -58,8 +68,10 @@ READY is the after phase's first question.
 
 ## The after phase (`RELEASE_PHASE=after`, detached, never on the terminal)
 
-Relaunched by the ship path with `nohup`, output appended to the same dated
-log, holding its own lock (`--with-checks` runs it in the foreground instead;
+Relaunched by the ship path with `nohup` in its OWN session (`os.setsid` via python3 — macOS
+has no setsid(1)), so a caller that kills its process group when its command returns (an agent's
+shell tool) cannot take the checks and the rollout watch down with it — that is how v0.4.2990 and
+v0.4.2991 lost theirs. Output is appended to the same dated log; it holds its own lock (`--with-checks` runs it in the foreground instead;
 `--no-gates` skips it entirely):
 
 - **Rollout watch** — `scripts/release-outcome.sh` (THE RELEASE-BANNER TRUTH
@@ -151,6 +163,15 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md`;
   `test:release-fail-forward` fails if a release calls the dispatcher again.
 
+## Private diagnostic build inputs
+
+`check:private-diagnostics` runs before every build variant and Next compilation.
+The two diagnostic producers also call the shared guard before writing: reports
+live only in ignored `.matrx/diagnostics/`, never `public/`. Type-error capture
+uses the existing compiler queue and retains compiler failure/unavailability in
+its atomic report and exit code; it never constructs a second compiler program.
+Keep the producer/refusal checks in `scripts/lib/__tests__/private-diagnostics.test.ts`.
+
 ## Commands
 
 | Command | What |
@@ -200,6 +221,25 @@ Shrink-only census (ALC-20) of raw clipboard, hand-built downloads, direct forma
 
 ## Change log
 
+- 2026-10-08 — `check:matrx-api-usage` (+ `:self-test`), an ERROR row after the push. v0.4.2990/2991
+  shipped `providers/WarmupHost.tsx` calling `warmup.currentScope()` (@ai-matrx/agents 0.58.0) while
+  the lockfile pinned an older agents: every page crashed. `check:matrx-imports` sees named imports
+  only; `type-check` saw it as one WARNING row inside a ~100-error backlog, against whatever the
+  shared checkout had INSTALLED. The new row type-checks the files changed since the previous
+  release tag that import `@ai-matrx/*`, resolving every package to the exact LOCKED tarball (cached
+  in `node_modules/.cache/matrx-api-usage/`), and reports only package-API diagnostics. Self-test
+  replays the incident: RED on 349d36738d, GREEN on af5b5a1e62; it also catches the v0.4.2990 build
+  failure (`@ai-matrx/kit/json-extract` absent from the locked kit). ~2 min. Never blocks. Same day:
+  the after phase now runs in its own session (see "The after phase").
+- 2026-10-08 — THE LOCKFILE GUARD. v0.4.3013 failed on all four Vercel projects with
+  `ERR_PNPM_BROKEN_LOCKFILE ... duplicated mapping key (1372:3)`: merge 406bfce877 kept two identical
+  `'@ai-matrx/records@0.84.4':` blocks. `scripts/check-lockfile-keys.py` (`pnpm check:lockfile-keys`,
+  `:self-test`) finds duplicate mapping keys / conflict markers / bad JSON and repairs only the identical
+  case (its repair of the 406bfce877 lockfile is byte-identical to the hand fix aece035bad). `release.sh`
+  repairs inside the release tree or refuses the push (the one exception to "never a stop");
+  `sync-main.py` `guard_lockfiles()` repairs + commits or refuses the push. Tests:
+  `test-release-ship-path.sh` releases 5–6 (red against the previous release.sh, green now) and
+  `test_sync_main_lockfile_guard.py`.
 - 2026-10-06 — added `check:alchemy-doors` (+ `:self-test`), advisory row in `run-release-gates.sh`.
 - 2026-10-03 — Arman: checks and tests run on live as `admin@admin.com`; the clone is only for destructive-migration rehearsal. The clone checks leg, `--db-only --target clone` and the heavy-checks-default-to-clone rule are retired (docs only; code lane removes the code).
 - 2026-09-30 — `run.mjs --db-only --target clone` + `clone-target-guard.cjs` (checks-run-in-the-app P3, the

@@ -9,7 +9,7 @@
  * ONLY through `features/data-tables/service.ts` — which dispatches by where the table lives —
  * so a moved table's agent writes land in the record store, never its archived older copy. And
  * the words an agent reads (the surface intro and the write-target descriptions) must not name
- * an older door, or an agent on a record-store table is told to use a door that no longer holds
+ * an older door, or an agent on a custom table is told to use a door that no longer holds
  * its table.
  *
  * Self-test first: the scanner must flag a planted direct RPC, a planted Supabase client and a

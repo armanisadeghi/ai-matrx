@@ -17,16 +17,16 @@ import { Plus, Wand2, X } from "lucide-react";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { MANDATE_KEYS, type AnyMandateKey } from "@ai-matrx/agents/mandates";
-import { Button, Field, Textarea } from "@ai-matrx/design-system/controls";
+import { Button, Field } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createSoftMandate } from "@/features/mandates/authoring-level/service";
 import { keyFromName, softMandateNamespace } from "@/features/mandates/authoring-level/soft-key";
 import { BackendApiError } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { updateOrgPosition, loadSeatJobs } from "@/features/agents/redux/orchestras/orgChartThunks";
 import type { OrgPosition } from "../positionsService";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /** What the chart knows around the seat, for the suggester. */
 export interface SeatContext {
   /** The box above: its name and kind ("Head of Marketing (Agent)"). */
@@ -158,7 +158,6 @@ function Body({
       await dispatch(loadSeatJobs([made.mandateId]));
       onDefined({ mandateKey: made.mandateKey, mandateId: made.mandateId });
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) return;
       setError(e instanceof Error ? e.message : "The job could not be created.");
     } finally {
       setSaving(false);
@@ -180,7 +179,7 @@ function Body({
         </div>
         <label className="flex flex-col gap-1.5">
           <span className="type-secondary font-medium text-foreground">Goal</span>
-          <Textarea
+          <ProTextarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             placeholder="What this seat is for, and what a great result looks like"

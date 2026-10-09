@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 interface CleanupOutputProps {
   label: string;

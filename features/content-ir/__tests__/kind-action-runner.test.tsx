@@ -10,6 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createActionRegistry, type ActionRegistry } from "@ai-matrx/alchemy/actions";
 import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
 import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
+import type { FloatingRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 
 const mockToastError = jest.fn();
 const mockCapture = jest.fn();
@@ -24,8 +25,21 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "user-1",
   useAppStore: () => ({ getState: () => ({}) }),
 }));
+// The mock run window implements the WHOLE FloatingRun contract (typed with `satisfies`), so a
+// member the package adds is a type error here instead of a runtime "x is not a function".
+const mockSettle = jest.fn();
 jest.mock("@ai-matrx/chat/agents/hooks/useFloatingAgentRun", () => ({
-  useFloatingRunWindow: () => ({ start: () => ({ bind: jest.fn(), bindRequest: jest.fn(), close: jest.fn() }), close: jest.fn() }),
+  useFloatingRunWindow: () => ({
+    start: () =>
+      ({
+        bind: jest.fn(),
+        bindRequest: jest.fn(),
+        close: jest.fn(),
+        fail: jest.fn(),
+        settle: (reason: string) => mockSettle(reason),
+      }) satisfies FloatingRun,
+    close: jest.fn(),
+  }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
@@ -190,5 +204,7 @@ describe("useKindActionRunner on the one registry", () => {
     const image = { file_id: "f9", mime_type: "image/png", width: 8, height: 10, organization_id: "org-9" };
     expect(res).toEqual({ ok: true, result: { data: image, saved: true } });
     expect(saved).toEqual({ idea_2_image: image });
+    // The launch returned, so the window is told — once — how to end if no stream bound it.
+    expect(mockSettle).toHaveBeenCalledTimes(1);
   });
 });

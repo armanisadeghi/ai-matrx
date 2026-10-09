@@ -13,7 +13,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import {
   addVaultAttachment,
   addVaultField,
@@ -63,6 +62,7 @@ import type {
   VaultScope,
   VaultTransferResponse,
 } from "./types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ── Where one credential lives (ACCESS IS PERSONAL) ─────────────────────
 
@@ -317,7 +317,7 @@ export function useVault(
         if (isOrganizationRequiredError(e)) {
           // Declining rethrows OrganizationSelectionCancelled, which callers
           // treat as "nothing happened" — no toast, no error banner.
-          await ensureOrganizationContext();
+          await ensureOrgId(null);
           const retried = await op();
           if (success) toast.success(success);
           await refresh();

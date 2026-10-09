@@ -65,6 +65,16 @@ begin
     update platform.feature_knob set value = '1000000000'
      where feature like 'drill.finding.ai_usage%' and key in ('context_heavy_tokens', 'iteration_heavy', 'spike_multiplier', 'repeat_burst');
     update platform.feature_knob set value = '100' where feature = 'drill.finding.ai_usage_executions.hogs' and key = 'hog_share_pct';
+  elsif current_setting('dc.plant') = 'nohasrequest' and to_regclass('runtime._ai_usage_calls_live') is not null then
+    -- lane DRILL-FACTS: the rules live in runtime._ai_usage_calls_live and runtime._ai_usage_calls reads
+    -- the facts stored from them, so the plant rewrites the rules and stores the window again
+    if position('(ur.id IS NOT NULL) AS has_request' in pg_get_viewdef('runtime._ai_usage_calls_live'::regclass, false)) = 0 then
+      raise exception 'plant nohasrequest did not apply';
+    end if;
+    execute 'create or replace view runtime._ai_usage_calls_live with (security_invoker = true) as '
+         || replace(pg_get_viewdef('runtime._ai_usage_calls_live'::regclass, false), '(ur.id IS NOT NULL) AS has_request', 'true AS has_request');
+    perform runtime.ai_usage_execution_facts_store((select w0 from pg_temp.dcw) - interval '1 day', (select w1 from pg_temp.dcw),
+                                                   (select covered_to from runtime._ai_usage_hourly_watermark where singleton));
   elsif current_setting('dc.plant') = 'nohasrequest' then
     if position('(ur.id IS NOT NULL) AS has_request' in pg_get_viewdef('runtime._ai_usage_calls'::regclass, false)) = 0 then
       raise exception 'plant nohasrequest did not apply';

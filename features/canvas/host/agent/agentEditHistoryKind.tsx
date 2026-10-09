@@ -26,6 +26,7 @@ export function agentEditHistoryInput({ agentId }: { agentId: string }): ToolOpe
 
 export const AGENT_EDIT_HISTORY_CANVAS_KIND = defineCanvasKind<CanvasJson>({
   id: AGENT_EDIT_HISTORY_KIND,
+  surface: "dom",
   label: LABEL,
   icon: History,
   load: () => import("./AgentEditHistoryCanvasView"),

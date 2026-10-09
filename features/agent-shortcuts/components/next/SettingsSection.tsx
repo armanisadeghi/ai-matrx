@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@ai-matrx/design-system/controls";
-import { FieldHelp } from "@/components/official/ConfigurationFields";
+import { FieldHelp } from "@ai-matrx/design-system/controls";
 import styles from "./SettingsSection.module.css";
 import { Switch } from "@/components/ui/switch";
 import {

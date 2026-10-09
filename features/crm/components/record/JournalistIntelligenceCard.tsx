@@ -35,10 +35,10 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
-import { Textarea } from "@/components/ui/textarea";
 import { RecipientFitBadge } from "@/features/crm/pre-send-check/RecipientFitBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 interface Props {
   partyId: string;
   /** The organization that owns this party; every write names it. */
@@ -341,7 +341,7 @@ export function JournalistIntelligenceCard({ partyId, organizationId, storedActi
           </div>
           {pitchOpen && (
             <>
-              <Textarea
+              <ProTextarea
                 value={pitch}
                 onChange={(e) => setPitch(e.target.value)}
                 placeholder="Paste the pitch: subject and body"

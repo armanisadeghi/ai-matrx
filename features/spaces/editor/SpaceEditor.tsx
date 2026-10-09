@@ -7,21 +7,15 @@
 // SpaceBlock — the engine never reaches the store.
 
 import { createExtension } from "@blocknote/core";
+import { getDefaultEmojiPickerItems } from "@blocknote/core/extensions";
 import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
   AddBlockButton,
-  BasicTextStyleButton,
-  BlockTypeSelect,
-  ColorStyleButton,
-  CreateLinkButton,
   DragHandleButton,
-  FormattingToolbar,
-  FormattingToolbarController,
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
-  useComponentsContext,
   useCreateBlockNote,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -31,9 +25,12 @@ import type * as Y from "yjs";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
+import { outsideAriaMarksPlugin } from "./aria-hidden-marks";
 import { applyMarkdownKey } from "./markdown-keys";
 import { openMissedSlash } from "./slash-guard";
-import { CalendarDays, MessageSquare } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import { PASSAGE_ACTIONS_HOST_KEY } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 
 import { spaceCommentSource } from "../collab/comments";
 import { PersonAvatar } from "../collab/CommentsPanel";
@@ -46,7 +43,13 @@ import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
-import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { PasteUrlMenu, pastedAnchor, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { MediaPickerHost } from "./media-insert";
+import { notionNumbering } from "./numbering";
+import { codeHighlighting } from "./code-highlight";
+import { spacePanel, spaceSelectionActions } from "./selection-format";
+import { SYNCED_CLIP } from "./synced-block";
+import { SuggestionCard, suggestMode } from "./suggest";
 import { useRubberBand } from "./rubber-band";
 import { CalloutIconHost } from "./callout-block";
 import { dateChoices } from "./date-mention";
@@ -56,6 +59,7 @@ import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
 import { rankSlashItems } from "./slash-rank";
 import { planColumnHeal, type HealBlock } from "./column-heal";
 import { columnDropper } from "./column-drop";
+import { usePersonTimeZone } from "@/hooks/usePersonTimeZone";
 
 const PLACEHOLDERS = {
   ...en.placeholders,
@@ -69,6 +73,9 @@ const PLACEHOLDERS = {
 };
 
 /** Notion keys BlockNote does not ship: Cmd+D duplicate, `>` toggle, `"` quote (Cmd+Opt+4…8: see NOTION_TURN_INTO). */
+/** A modal's `aria-hidden` marks on the page's blocks are never edits (aria-hidden-marks.ts). */
+const outsideAriaMarks = createExtension(() => ({ key: "spacesOutsideAriaMarks", prosemirrorPlugins: [outsideAriaMarksPlugin()] }));
+
 const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
   return {
     key: "spacesNotionKeys",
@@ -122,7 +129,7 @@ function flashBlock(id: string) {
   }, 1700);
 }
 
-function useDarkMode(): boolean {
+export function useDarkMode(): boolean {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     const root = document.documentElement;
@@ -133,24 +140,6 @@ function useDarkMode(): boolean {
     return () => obs.disconnect();
   }, []);
   return dark;
-}
-
-function AskAiButton({ onClick }: { onClick: () => void }) {
-  const C = useComponentsContext()!;
-  return (
-    <C.FormattingToolbar.Button mainTooltip="Ask AI" icon={<AGENT_ICON size={16} />} onClick={onClick} label="Ask AI">
-      Ask AI
-    </C.FormattingToolbar.Button>
-  );
-}
-
-function CommentButton({ onClick }: { onClick: () => void }) {
-  const C = useComponentsContext()!;
-  return (
-    <C.FormattingToolbar.Button mainTooltip="Comment" icon={<MessageSquare size={16} />} onClick={onClick} label="Comment">
-      Comment
-    </C.FormattingToolbar.Button>
-  );
 }
 
 export interface SpaceEditorProps {
@@ -180,12 +169,15 @@ export function growOf(width: number): number {
   return Math.round(width * 1000 * 1000) / 1000;
 }
 
+/** An id inside a quoted attribute selector: only the quote and backslash need escaping (same on the server). */
+const attrValue = (id: string) => id.replace(/["\\]/g, "\\$&");
+
 /** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
-function columnCss(blocks: EngineBlock[]): string {
+export function columnCss(blocks: EngineBlock[]): string {
   const rules: string[] = [];
   const walk = (list: EngineBlock[]) => {
     for (const b of list) {
-      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(b.id)}"]{flex-grow:${growOf(Number(b.props?.width ?? 0.5))} !important}`);
+      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${attrValue(b.id)}"]{flex-grow:${growOf(Number(b.props?.width ?? 0.5))} !important}`);
       if (b.children?.length) walk(b.children);
     }
   };
@@ -195,7 +187,9 @@ function columnCss(blocks: EngineBlock[]): string {
 
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
   const dark = useDarkMode();
-  const { byId } = useSpaces();
+  const { store } = useSpaces();
+  // "@today" / "@tomorrow" are the person's own days (their saved time zone), never the device's.
+  const zone = usePersonTimeZone();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
   // H3: with a room, BlockNote's own Yjs binding drives the body (sync, cursors, Yjs undo) — exactly what
   // @blocknote/core/yjs `withCollaboration` adds: the extension, ProseMirror history off, and its fixed-id
@@ -210,6 +204,16 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       // B12: a lone URL goes in as a link and the Link / Mention / Bookmark / Embed choice opens beside
       // it; anything else (Markdown, HTML, blocks) takes BlockNote's own conversion.
       pasteHandler: ({ event, editor: ed, defaultPasteHandler }) => {
+        // C18: "Copy and sync" put a synced block on the clipboard — paste a linked copy of it.
+        const clip = event.clipboardData?.getData("text/plain")?.trim().match(SYNCED_CLIP);
+        if (clip) {
+          const at = ed.getTextCursorPosition().block;
+          const block = { type: "synced", props: { data: JSON.stringify({ props: { sourceId: clip[1] } }) } } as never;
+          const empty = Array.isArray(at.content) && at.content.length === 0;
+          if (empty) ed.replaceBlocks([at], [block]);
+          else ed.insertBlocks([block], at, "after");
+          return true;
+        }
         const url = pastedUrl(event);
         const where = ed.getTextCursorPosition().block;
         if (!url || where.type === "codeBlock") return defaultPasteHandler();
@@ -217,8 +221,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         const block = ed.getTextCursorPosition().block;
         const content = (Array.isArray(block.content) ? block.content : []) as Array<{ type: string; text?: string }>;
         const alone = content.length === 1 && content[0].type === "link";
-        const rect = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
-        setPasted({ url, blockId: block.id, alone, at: { left: rect?.left ?? 0, top: (rect?.bottom ?? 0) + 6 } });
+        setPasted({ url, blockId: block.id, alone, at: pastedAnchor() });
         return true;
       },
       tables: { headers: true, splitCells: false, cellBackgroundColor: true, cellTextColor: true },
@@ -227,7 +230,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       disableExtensions: room ? ["history"] : undefined,
       // Notion names the no-colour choice "Default" (a callout on Default draws a bordered box).
       dictionary: { ...en, placeholders: PLACEHOLDERS, color_picker: { ...en.color_picker, colors: { ...en.color_picker.colors, default: "Default" } } },
-      extensions: room ? [notionKeys(), room] : [notionKeys()],
+      extensions: room ? [notionKeys(), suggestMode(), outsideAriaMarks(), notionNumbering(), codeHighlighting(), room] : [notionKeys(), suggestMode(), outsideAriaMarks(), notionNumbering(), codeHighlighting()],
       tabBehavior: "prefer-indent",
       dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
@@ -272,6 +275,17 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
 
   useRubberBand(editor, editable);
 
+  // THE ONE SELECTION TOOLBAR (components/selection-toolbar) serves this editor: Copy first (the common pair),
+  // then these registered actions — the inline styles, Ask AI and Comment. BlockNote's own formatting bubble is
+  // gone (two bubbles over one selection); the toolbar's mode table decides what shows while editing.
+  const [zoneElement, setZoneElement] = useState<HTMLElement | null>(null);
+  const passageActions = spaceSelectionActions({ editor, editable, hasComment: Boolean(onComment), askAi: menu.askAi, comment: () => commentOnSelection() });
+  useSelectionZone(zoneElement, {
+    editable,
+    host: { [PASSAGE_ACTIONS_HOST_KEY]: passageActions },
+    renderPanel: (panel, ui) => spacePanel(editor, panel, ui),
+  });
+
   // Deep link to a block (#block-<id>): scroll to it and flash it (E2). Polls until the block renders.
   useEffect(() => {
     let timer = 0;
@@ -300,11 +314,15 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
 
   return (
     <div
+      ref={setZoneElement}
       className="contents"
+      data-space-selection-zone=""
       onKeyDownCapture={(e) => {
         // A KEY PRESSED IN A DATABASE BLOCK IS THE TABLE'S (stored-blocks `insideDatabaseBlock`): Enter,
         // Space and Escape there must never write into a toggle, open Ask AI or move the page's caret.
         if (insideDatabaseBlock(e.nativeEvent)) return;
+        // A field inside a block (a media caption, a picker) owns its keys: Space there is a space.
+        if (e.target instanceof HTMLElement && e.target.closest("input, textarea, select")) return;
         turnIntoKey(editor, e);
         // Notion's Markdown shortcuts BlockNote lacks: ``` (code block), " + space (quote).
         if ((e.key === "`" || e.key === " ") && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && applyMarkdownKey(editor, e.key)) {
@@ -402,11 +420,15 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
                 " ",
               ] as never),
           }));
-          const hits = [...byId.values()]
-            .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
-            .slice(0, 8);
+          // Pages come from the server's search door (round 35: the sidebar never holds the whole tree).
+          const hits = (
+            await store.search(query.trim(), 9).catch((err: unknown) => {
+              console.error("[spaces] page search for @ failed", err);
+              return [];
+            })
+          ).filter((p) => p.id !== spaceId).slice(0, 8);
           // N2 — "@today", "@tomorrow", "@yesterday", "@oct 12": a date mention (Notion's Date group).
-          const dateItems = dateChoices(query, new Date()).map((c) => ({
+          const dateItems = dateChoices(query, new Date(), zone).map((c) => ({
             title: c.title,
             group: "Date",
             icon: <CalendarDays size={16} />,
@@ -430,6 +452,19 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           return q ? [...dateItems, ...personItems, ...pageItems] : [...personItems, ...pageItems, ...dateItems];
         }}
       />
+      {/* N14 — ":" then a name offers emoji inline (Notion). Text a person types, so it is theirs. */}
+      <SuggestionMenuController
+        triggerCharacter=":"
+        minQueryLength={2}
+        floatingUIOptions={SLASH_MENU}
+        getItems={async (query) =>
+          (await getDefaultEmojiPickerItems(editor as never, query)).slice(0, 12).map((e) => ({
+            title: e.id,
+            icon: <span aria-hidden>{e.id}</span>,
+            onItemClick: () => e.onItemClick(),
+          }))
+        }
+      />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => rankSlashItems(slashItems(editor, slash), query)} />
       {editable ? (
       <SideMenuController
@@ -446,33 +481,10 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         )}
       />
       ) : null}
-      {editable ? (
-      <FormattingToolbarController
-        floatingUIOptions={INSTANT_CLOSE}
-        formattingToolbar={() =>
-          // BlockNote re-evaluates the toolbar on every document change without asking for focus, so the
-          // room's first sync over a page that starts with columns left a block (node) selection on the
-          // first column and drew "Ask AI | Comment" over the title with nothing selected. A block
-          // selection nobody made in a focused editor shows no toolbar (Notion).
-          (editor.prosemirrorState.selection as { node?: unknown }).node && !editor.isFocused() ? null : (
-          <FormattingToolbar>
-            <AskAiButton onClick={menu.askAi} />
-            <BlockTypeSelect key="blockTypeSelect" />
-            <CreateLinkButton key="createLinkButton" />
-            <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
-            <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
-            <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
-            <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
-            <BasicTextStyleButton basicTextStyle="code" key="codeStyleButton" />
-            <ColorStyleButton key="colorStyleButton" />
-            {onComment ? <CommentButton onClick={commentOnSelection} /> : null}
-          </FormattingToolbar>
-          )
-        }
-      />
-      ) : null}
     </BlockNoteView>
     {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
+    {editable ? <MediaPickerHost /> : null}
+    <SuggestionCard getView={() => editor.prosemirrorView ?? null} canResolve={editable} />
     </div>
   );
 }

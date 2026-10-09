@@ -14,6 +14,7 @@
  * `cmp-` id prefix gates save thunks from ever uploading these.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -101,7 +102,7 @@ function extractTuningSnapshot(
   state: RootState,
   agentId: string,
 ): TuningSnapshot {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   return {
     modelId: agent?.modelId ?? null,
     settings: agent?.settings ?? {},

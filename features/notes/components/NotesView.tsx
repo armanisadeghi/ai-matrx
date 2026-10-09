@@ -48,8 +48,10 @@ import {
   ListTapButton,
   RetryTapButton,
   LoadingTapButton,
-} from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+  MoreHorizontalTapButton,
+} from "@ai-matrx/design-system/tap-target/buttons";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import {
@@ -116,6 +118,12 @@ import {
 
 /** Below this width of its own container, the list and the note take turns. */
 const NARROW_NOTES_PX = 520;
+/**
+ * Below this pane width (a chat panel open beside notes at 1280px) the header
+ * tightens so the formatting toolbar keeps Bold, Italic, text style and the
+ * lists in view: icon-only mode switch, and the right-hand tools in one menu.
+ */
+const COMPACT_HEADER_PX = 1100;
 
 export interface NotesViewConfig {
   /** Show the sidebar with folder tree (default: true) */
@@ -175,6 +183,8 @@ export function NotesView({
   const [paneWidth, setPaneWidth] = useState<number | null>(null);
   const narrowLayout =
     !isMobile && paneWidth !== null && paneWidth > 0 && paneWidth < NARROW_NOTES_PX;
+  const compactHeader =
+    !isMobile && paneWidth !== null && paneWidth > 0 && paneWidth < COMPACT_HEADER_PX;
   // The note the person stepped back to the list from; opening any note clears it.
   const [listShownFrom, setListShownFrom] = useState<{ noteId: string | null } | null>(null);
 
@@ -748,23 +758,27 @@ export function NotesView({
                 type="button"
                 title={hint}
                 aria-pressed={editorMode === mode}
-                className={cn(modeBtnClass(mode), "justify-center font-medium")}
+                className={cn(modeBtnClass(mode), "justify-center font-medium", (narrowLayout || compactHeader) && "px-2")}
                 onClick={() => setMode(mode)}
               >
                 <Icon />
-                {narrowLayout ? <span className="sr-only">{label}</span> : label}
+                {narrowLayout || compactHeader ? <span className="sr-only">{label}</span> : label}
               </button>
             ))}
           </div>
         )}
-        {/* Plain and Split are plain text: their format buttons sit in THIS row,
-            acting on the note's text field (the one command layer). */}
-        {headerNoteId && !narrowShowsList && (editorMode === "plain" || editorMode === "split") && (
+        {/* THE formatting toolbar, in every editing mode (Write, Split, Plain) —
+            never in Read. It sits in THIS row, in the space beside the mode
+            switch, acting on the editor the person is in (the one command
+            layer); what does not fit folds into its More menu. */}
+        {headerNoteId && !narrowShowsList && editorMode !== "preview" && (
           <FormatButtons
-            className="ml-2 hidden md:flex"
+            className="ml-1 hidden flex-1 md:flex"
             resolve={() => formatTargetWithin(typeof document === "undefined" ? null : document.getElementById("notes-main"))}
           />
         )}
+        {/* Read keeps the switch exactly where the editing modes put it. */}
+        {headerNoteId && !narrowShowsList && editorMode === "preview" && <div aria-hidden className="hidden flex-1 md:block" />}
       </div>
 
       {hidePageHeader ? (
@@ -850,6 +864,28 @@ export function NotesView({
                     no deploy. Deep-linked to the `notes` domain: the bare list
                     is 331 mandates across 47 domains. */}
                 <MandateDoorLink feature="notes" label="Notes agents" />
+                {compactHeader ? (
+                  // Tight row: the tools fold into ONE menu so the toolbar keeps its marks and lists.
+                  <TapTargetButtonGroup>
+                    {headerNoteId && <NoteCleanupButton noteId={headerNoteId} asTapGroup />}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <span className="inline-flex" data-notes-tools-menu="">
+                          <MoreHorizontalTapButton variant="group" ariaLabel="Note tools" tooltip="Outline, versions, refresh" />
+                        </span>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        {headerNoteId && (
+                          <>
+                            <DropdownMenuItem onSelect={toggleOutline}>Document outline</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={history.toggle}>Version history</DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuItem disabled={isRefreshing} onSelect={() => void handleRefresh()}>Refresh notes</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TapTargetButtonGroup>
+                ) : (
                 <TapTargetButtonGroup>
                   {headerNoteId && (
                     <>
@@ -885,6 +921,7 @@ export function NotesView({
                     />
                   )}
                 </TapTargetButtonGroup>
+                )}
               </PageHeaderRightPortal>
             </>
           )}

@@ -6,7 +6,7 @@ import { Archive, BookA, ChevronLeft, Loader2, Plus, Save } from "lucide-react";
 import { Skeleton, Textarea, ToggleGroup, ToggleGroupItem, cn } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -32,7 +32,7 @@ import {
 import { TermEntriesTable } from "./TermEntriesTable";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const EMPTY_ORGS: { id: string; name: string }[] = [];
 

@@ -24,7 +24,6 @@ import type { PlanSiteStats } from "./data/service";
 import type { RealityVerdict } from "./lib/page-reality";
 import type { PlanEntityRow, PlanNodeRow } from "./types";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The workspace's leading metric strip, as data. */
@@ -181,9 +180,10 @@ export function driftItemCsvRow(item: DriftItem): Record<string, unknown> {
 /** One recorded AI run, as the runs view renders it. */
 export function planAiRunSummary(
   run: PlanAiRunSummary,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): string {
-  const cost = run.totalCost ? formatCost(run.totalCost, { rate: currentPointsRate(), unit }) : "";
+  const cost = run.totalCost ? formatCost(run.totalCost, { rate, unit }) : "";
   return [
     `${run.kindLabel} — ${run.status || "unknown"}`,
     run.nodeRoute || null,

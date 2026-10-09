@@ -9,7 +9,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import {

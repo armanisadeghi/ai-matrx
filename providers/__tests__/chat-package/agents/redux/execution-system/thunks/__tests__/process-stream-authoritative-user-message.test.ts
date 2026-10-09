@@ -23,6 +23,13 @@ beforeAll(() => {
 });
 
 
+// A signed-in person: the single-message read refuses a signed-out visitor (chat 0.3.13, 39a99f057a),
+// and no host identity is configured here.
+jest.mock("@ai-matrx/chat/host/identity", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/identity"),
+  isSignedOutVisitor: async () => false,
+}));
+
 jest.mock("@ai-matrx/chat/host/db", () => {
   const mockQuery = {
     eq: jest.fn(),

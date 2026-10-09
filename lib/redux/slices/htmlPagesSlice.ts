@@ -3,7 +3,7 @@
 // HTML editor session state and page catalog.
 //
 // Responsibilities:
-//   - Maintains the list of a user's published HTML pages fetched from /api/html-pages
+//   - Maintains the list of a user's published HTML pages fetched from the server /cms/html-pages
 //   - Tracks the currently active page ID (open in the editor overlay)
 //   - Per-page operation status for optimistic UI feedback
 //

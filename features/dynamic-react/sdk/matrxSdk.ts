@@ -1,6 +1,6 @@
 /**
  * Matrx Data SDK — the curated, RLS-safe data surface exposed to generated
- * React (inline code blocks, tool UIs, agent apps). Generated code calls
+ * React (inline code blocks, tool UIs, Applets). Generated code calls
  * `matrx.<namespace>.<method>()` to read/write the user's own data so users can
  * build custom UIs over their tasks, projects, notes, documents, etc.
  *

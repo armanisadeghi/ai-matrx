@@ -58,7 +58,6 @@ import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import {
   organizationRefusalMessage,
   presentOrganizationRefusal,
@@ -548,7 +547,6 @@ export function CreateDeckPage({
       );
     } catch (e) {
       // "Not now" at the organization picker: nothing happened, nothing to say.
-      if (isOrganizationSelectionCancelled(e)) return;
       // A deck is filed in an organization; with none selected, say so with the remedy.
       if (presentOrganizationRefusal(e, { subject: "The deck", act: "made" })) {
         setRunError(organizationRefusalMessage({ subject: "The deck", act: "made" }));

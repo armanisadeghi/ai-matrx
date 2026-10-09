@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useAiTasks } from "@/features/ai-runs/hooks/useAiTasks";
+import { useExecutions } from "@/features/ai-runs/hooks/useExecutions";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { format } from "date-fns";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef, MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table/types";
-import type { AiTask } from "@/features/ai-runs/types/aiRunTypes";
-import { readOf } from "@/components/read-state/ReadGate";
+import type { ExecutionRecord } from "@/features/ai-runs/types/executionTypes";
+import { readOf } from "@ai-matrx/design-system";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai/ai-tasks)";
 
@@ -22,26 +23,27 @@ function formatDate(dateString: string | null | undefined) {
   }
 }
 
-const taskCopy: MatrxDataTableCopyConfig<AiTask> = {
-  label: "AI task",
-  listLabel: "AI tasks (loaded view)",
+const executionCopy: MatrxDataTableCopyConfig<ExecutionRecord> = {
+  label: "AI run",
+  listLabel: "AI runs (loaded view)",
   location: PAGE_LOCATION,
-  rowKind: "ai-task",
-  listKind: "ai-tasks",
-  rowDescription: "A single AI task row.",
-  listDescription: "The currently loaded first source window of AI tasks.",
-  humanRow: (task) => [
-    `ID: ${task.id}`,
-    `Name: ${task.task_name || "—"}`,
-    `Status: ${task.status}`,
-    `Created: ${formatDate(task.created_at)}`,
-    `Updated: ${formatDate(task.updated_at)}`,
+  rowKind: "ai-run",
+  listKind: "ai-runs",
+  rowDescription: "A single execution record (runtime.global_execution).",
+  listDescription: "The most recent window of executions across every account.",
+  humanRow: (run) => [
+    `ID: ${run.id}`,
+    `Type: ${run.type || "—"}`,
+    `Source: ${run.link_kind || "—"}`,
+    `Status: ${run.status}`,
+    `Created: ${formatDate(run.created_at)}`,
+    `Ended: ${formatDate(run.ended_at)}`,
   ].join("\n"),
-  rowAttributes: (task) => ({ id: task.id, status: task.status }),
+  rowAttributes: (run) => ({ id: run.id, status: run.status }),
 };
 
 export default function AiTasksPage() {
-  const { tasks, isLoading, error, total, refresh } = useAiTasks({
+  const { executions, isLoading, error, total, refresh } = useExecutions({
     limit: 50,
     order_by: "created_at",
     order_direction: "desc",
@@ -51,12 +53,10 @@ export default function AiTasksPage() {
     switch (status) {
       case "completed":
         return "default";
-      case "pending":
-        return "secondary";
-      case "streaming":
-        return "outline";
       case "failed":
         return "destructive";
+      case "running":
+      case "streaming":
       case "cancelled":
         return "outline";
       default:
@@ -64,20 +64,21 @@ export default function AiTasksPage() {
     }
   };
 
-  const columns = useMemo<MatrxColumnDef<AiTask>[]>(() => [
+  const columns = useMemo<MatrxColumnDef<ExecutionRecord>[]>(() => [
     {
       id: "id",
       accessorKey: "id",
       header: "ID",
       filter: false,
       width: 110,
-      cell: (task) => <EntityRef token="task" id={task.id} name={task.id} showIcon={false}>{task.id.slice(0, 8)}...</EntityRef>,
+      cell: (run) => <EntityRef token="global_execution" id={run.id} name={run.id} showIcon={false}>{run.id.slice(0, 8)}...</EntityRef>,
     },
-    { id: "name", accessorKey: "task_name", header: "Name", width: 220, cell: (task) => <span className="font-medium">{task.task_name || "-"}</span> },
-    { id: "description", accessorKey: "response_text", header: "Description", width: 360, mobileHidden: true, cell: (task) => <span className="block truncate text-sm text-muted-foreground">{task.response_text ? `${task.response_text.slice(0, 100)}...` : "-"}</span> },
-    { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 130, cell: (task) => <Badge variant={getStatusBadgeVariant(task.status)}>{task.status}</Badge> },
-    { id: "created", accessorKey: "created_at", header: "Created at", filter: "date", width: 180, mobileHidden: true, cell: (task) => formatDate(task.created_at) },
-    { id: "updated", accessorKey: "updated_at", header: "Updated at", filter: "date", width: 180, mobileHidden: true, cell: (task) => formatDate(task.updated_at) },
+    { id: "type", accessorKey: "type", header: "Type", filter: "select", width: 140, cell: (run) => <span className="font-medium">{run.type || "-"}</span> },
+    { id: "source", accessorKey: "link_kind", header: "Source", filter: "select", width: 160, mobileHidden: true, cell: (run) => <span className="text-sm text-muted-foreground">{run.link_kind || "-"}</span> },
+    { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 130, cell: (run) => <Badge variant={getStatusBadgeVariant(run.status)}>{run.status}</Badge> },
+    { id: "cost", accessorKey: "cost", header: "Cost", width: 100, mobileHidden: true, cell: (run) => <span className="tabular-nums">{formatAdminUsd(run.cost)}</span> },
+    { id: "created", accessorKey: "created_at", header: "Created at", filter: "date", width: 180, mobileHidden: true, cell: (run) => formatDate(run.created_at) },
+    { id: "ended", accessorKey: "ended_at", header: "Ended at", filter: "date", width: 180, mobileHidden: true, cell: (run) => formatDate(run.ended_at) },
   ], []);
 
   return (
@@ -88,7 +89,7 @@ export default function AiTasksPage() {
             <Alert variant="destructive" className="mb-4">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>
-                {error.message || "Failed to load AI tasks"}
+                {error.message || "Failed to load AI runs"}
               </AlertDescription>
             </Alert>
           )}
@@ -98,20 +99,20 @@ export default function AiTasksPage() {
                   Keep that behavior rather than adding a loader that the 10-second
                   poll would discard; the table labels this as a loaded local window. */}
               <MatrxDataTable
-                data={tasks}
+                data={executions}
                 columns={columns}
-                getRowId={(task) => task.id}
-                isLoading={isLoading && tasks.length === 0}
-                isFetching={isLoading && tasks.length > 0}
+                getRowId={(run) => run.id}
+                isLoading={isLoading && executions.length === 0}
+                isFetching={isLoading && executions.length > 0}
                 pageSize={0}
                 viewTabs={false}
-                copy={{ ...taskCopy, listAttributes: (visible) => ({ count: visible.length, total }) }}
+                copy={{ ...executionCopy, listAttributes: (visible) => ({ count: visible.length, total }) }}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
-                coverage={{ total, cap: 50, answeredBy: "client", noun: "task" }}
-                read={readOf({ isLoading, error }, { what: "AI tasks", onRetry: () => void refresh() })}
-                emptyState={{ title: "No tasks found", description: "There are no AI tasks to display." }}
-                toolbar={{ title: "AI tasks", search: false, refresh: { onRefresh: refresh } }}
+                coverage={{ total, cap: 50, answeredBy: "client", noun: "run" }}
+                read={readOf({ isLoading, error }, { what: "AI runs", onRetry: () => void refresh() })}
+                emptyState={{ title: "No runs found", description: "There are no executions to display." }}
+                toolbar={{ title: "AI runs", search: false, refresh: { onRefresh: refresh } }}
               />
           </>
         </div>

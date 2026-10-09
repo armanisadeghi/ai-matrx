@@ -3,7 +3,7 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useCallback, useEffect, useState } from "react";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {

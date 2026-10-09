@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -42,6 +41,7 @@ import {
 } from "./data";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 const REASON_LABEL: Record<StoryDismissReason, string> = {
   off_beat: "Not our beat",
   not_news: "Not really news",
@@ -164,7 +164,7 @@ export function StoryActions({
                 ))}
               </SelectContent>
             </Select>
-            <Textarea minHeight={64}
+            <ProTextarea minHeight={64}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Anything else the monitor should know (optional)"

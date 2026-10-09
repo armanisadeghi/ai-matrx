@@ -2,15 +2,23 @@
 
 import { publishedToWebLabel } from "@/lib/row-access";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { readOf } from "@ai-matrx/design-system";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
 import DeprecatedModelsAudit from "./DeprecatedModelsAudit";
-import { useTabUrlState } from "../hooks/useTabUrlState";
+import { DEFAULT_AI_MODEL_FILTERS, useTabUrlState } from "../hooks/useTabUrlState";
+import {
+  TIER_VIEWS,
+  TIER_VIEW_LABELS,
+  TIER_VIEW_TITLES,
+  matchesTierView,
+  type TierView,
+} from "../maxTier";
 import { aiModelService } from "../service";
 import type { AiModel, AiProvider } from "../types";
 import { applyFiltersForCount } from "@/features/ai-models/utils/filterUtils";
@@ -18,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, BookOpen, Maximize2, Minimize2 } from "lucide-react";
 import ProviderReferenceModal from "./ProviderReferenceModal";
+import TopTierAccessButton from "./TopTierAccessButton";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -135,6 +144,25 @@ export default function AiModelsContainer() {
     }
     return counts;
   }, [models, tabStates]);
+
+  const tierCounts = useMemo(
+    () => ({
+      max: models.filter((m) => matchesTierView(m, "max")).length,
+      mismatch: models.filter((m) => matchesTierView(m, "mismatch")).length,
+      held: models.filter((m) => matchesTierView(m, "held")).length,
+    }),
+    [models],
+  );
+  const toggleTierView = (view: TierView) => {
+    const on = activeTab?.filters.tier === view;
+    updateTabState(activeTabId, {
+      page: 1,
+      // A tier view shows every model of that tier, retired ones included.
+      filters: on
+        ? { tier: undefined, is_deprecated: DEFAULT_AI_MODEL_FILTERS.is_deprecated }
+        : { tier: view, is_deprecated: undefined },
+    });
+  };
 
   const deprecatedCount = useMemo(
     () => models.filter((m) => m.is_deprecated).length,
@@ -338,6 +366,20 @@ export default function AiModelsContainer() {
             />
           </div>
           <div className="shrink-0 px-2 border-l flex items-center gap-1">
+            {/* Always rendered, counts included, so nothing pops in after load. The count slot is two digits wide at 0. */}
+            <SegmentedControl<TierView>
+              aria-label="Tier views"
+              value={activeTab?.filters.tier ?? null}
+              onValueChange={toggleTierView}
+              className="[&_.matrx-control-count]:inline-block [&_.matrx-control-count]:min-w-[2ch] [&_.matrx-control-count]:text-center"
+              data={TIER_VIEWS.map((view) => ({
+                value: view,
+                label: TIER_VIEW_LABELS[view],
+                count: tierCounts[view],
+                title: TIER_VIEW_TITLES[view],
+              }))}
+            />
+            <TopTierAccessButton />
             <Button
               icon={<BookOpen />}
               variant={referenceOpen ? "outline" : "quiet"}
@@ -346,26 +388,24 @@ export default function AiModelsContainer() {
             >
               Provider Ref
             </Button>
-            {deprecatedCount > 0 && (
-              <Button
-                icon={<AlertTriangle className="text-amber-500" />}
-                variant={auditOpen ? "outline" : "quiet"}
-                onClick={() => setAuditOpen((v) => !v)}
-                title="View and fix deprecated model references"
+            <Button
+              icon={<AlertTriangle className="text-amber-500" />}
+              variant={auditOpen ? "outline" : "quiet"}
+              onClick={() => setAuditOpen((v) => !v)}
+              title="View and fix deprecated model references"
+            >
+              Deprecated Audit
+              <Badge
+                variant="outline"
+                className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
               >
-                Deprecated Audit
-                <Badge
-                  variant="outline"
-                  className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
-                >
-                  <UntrustedCount
-                    read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 })}
-                    label="Deprecated references"
-                    value={deprecatedCount}
-                  />
-                </Badge>
-              </Button>
-            )}
+                <UntrustedCount
+                  read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 })}
+                  label="Deprecated references"
+                  value={deprecatedCount}
+                />
+              </Badge>
+            </Button>
           </div>
         </div>
 

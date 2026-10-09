@@ -138,7 +138,7 @@ function useProjectContextField(
       icon: FolderKanban,
     },
     dimensions: PROJECT_CONTEXT_DIMENSIONS,
-    defaultOrganizationId: project.organizationId ?? undefined,
+    initialOrganizationId: project.organizationId ?? undefined,
     hideSubject: true,
     onSaved,
   };

@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -30,7 +30,7 @@ import {
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface ScribeSessionsListProps {
   onOpenSession: (sessionId: string) => void;

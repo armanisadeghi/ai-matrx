@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CxRequestsDrill } from "@/features/cx-dashboard/explorer/CxRequestsDrill";
 import { fetchUserRequests } from "@/features/cx-dashboard/service";
 import { filtersFromSearchParams } from "@/features/cx-dashboard/utils/filters";
 import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
@@ -32,5 +33,9 @@ async function RequestsData({ searchParams }: Props) {
     return <CxErrorPanel what="user requests" message={result.error} />;
   }
 
-  return <RequestsContent result={result.data} />;
+  return (
+    <CxRequestsDrill page="requests">
+      <RequestsContent result={result.data} />
+    </CxRequestsDrill>
+  );
 }

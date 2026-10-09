@@ -20,7 +20,7 @@ import {
 } from "@/features/hr/tasks/task-step-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 import { HrEmployerLabel, useHrEmployerNames } from "@/features/hr/shared/hrScope";
 
 /**

@@ -9,7 +9,7 @@ import { readPublicCatalogue } from '@/features/make/gallery/publicCatalogue.ser
 import { industryHref, jobHref, PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
 import { facetValues } from '@/features/make/gallery/catalogue'
 import { readPublicApplets } from '@/features/marketing/applets/publicApplets.server'
-import { APPLET_TEMPLATES_PATH, appletIntroHref } from '@/features/marketing/applets/types'
+import { APPLET_TEMPLATES_PATH, appletHref } from '@/features/marketing/applets/types'
 
 /**
  * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
@@ -18,12 +18,11 @@ import { APPLET_TEMPLATES_PATH, appletIntroHref } from '@/features/marketing/app
  * leaves the sitemap on the next read. Anyone-link and secure-link pages never appear.
  */
 async function getIndexedRecordUrls(baseUrl: string) {
-  const [episodes, shows, articles, apps, canvases, flashcards, notes, templates] =
+  const [episodes, shows, articles, canvases, flashcards, notes, templates] =
     await Promise.all([
       listSearchEngineIndexedRecords('pc_episode'),
       listSearchEngineIndexedRecords('pc_show'),
       listSearchEngineIndexedRecords('pc_article'),
-      listSearchEngineIndexedRecords('app'),
       listSearchEngineIndexedRecords('shared_canvas_item'),
       listSearchEngineIndexedRecords('fc_set'),
       listSearchEngineIndexedRecords('note'),
@@ -58,7 +57,6 @@ async function getIndexedRecordUrls(baseUrl: string) {
       }
     }
   }
-  for (const r of apps) out.push({ loc: `${baseUrl}/p/${encodeURIComponent(r.slug ?? r.id)}`, changefreq: 'monthly', priority: '0.5' })
   for (const r of canvases) out.push({ loc: `${baseUrl}/canvas/shared/${r.id}`, changefreq: 'monthly', priority: '0.5' })
   for (const [type, rows] of [['fc_set', flashcards], ['note', notes], ['message_template', templates]] as const) {
     for (const r of rows) out.push({ loc: `${baseUrl}/p/e/${type}/${r.id}`, changefreq: 'monthly', priority: '0.4' })
@@ -163,7 +161,7 @@ export async function GET() {
     { loc: `${baseUrl}${APPLET_TEMPLATES_PATH}`, changefreq: 'weekly', priority: '0.8' },
     ...publishedApplets
       .filter((a) => a.is_template || indexedAppIds.has(a.id))
-      .map((a) => ({ loc: `${baseUrl}${appletIntroHref(a.slug)}`, changefreq: 'weekly', priority: a.is_template ? '0.7' : '0.5' })),
+      .map((a) => ({ loc: `${baseUrl}${appletHref(a.slug)}`, changefreq: 'weekly', priority: a.is_template ? '0.7' : '0.5' })),
   ]
 
   const urls = [

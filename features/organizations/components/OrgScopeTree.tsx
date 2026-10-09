@@ -24,7 +24,7 @@ import {
   SCOPE_ICON_SURFACE,
 } from "@/features/scopes/constants/scope-colors";
 import type { ScopeTypeNode as ScopeTypeRow } from "@/features/scopes/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
   const dispatch = useAppDispatch();

@@ -2,8 +2,8 @@
 
 // Shared interactive surface for the retained demo and organization route.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { useRef, useState } from "react";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { captureElementsToPDF } from "@ai-matrx/print/pdf";
+import { captureDocumentPdf } from "@ai-matrx/alchemy/operate/capture";
+import { downloadFile } from "@ai-matrx/kit/download";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -75,7 +76,7 @@ import {
   isRatingValue,
   ratingKey,
 } from "@/features/employee-performance-reviews/schema";
-import { useReviews } from "@/features/employee-performance-reviews/use-reviews";
+import { useReviews, type ReviewPersistence } from "@/features/employee-performance-reviews/use-reviews";
 import {
   SectionCard,
   Field,
@@ -97,6 +98,11 @@ export interface PerformanceReviewOrganizationContext {
 
 export interface PerformanceReviewAppProps {
   storageKey?: string;
+  /**
+   * ONE review persisted somewhere other than this browser (a 360 review track): no review list,
+   * no new/duplicate, and `toolbarEnd` (e.g. Submit) sits at the end of the top bar.
+   */
+  single?: { persistence: ReviewPersistence; toolbarEnd?: ReactNode; readOnly?: boolean };
   organization?: PerformanceReviewOrganizationContext;
   showHero?: boolean;
 }
@@ -105,10 +111,16 @@ export default function PerformanceReviewApp({
   storageKey,
   organization,
   showHero = true,
+  single,
 }: PerformanceReviewAppProps) {
-  const store = useReviews(storageKey);
+  const store = useReviews(storageKey, single?.persistence);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"edit" | "report">("edit");
+  const readOnly = single?.readOnly === true;
+  const [viewMode, setViewMode] = useState<"edit" | "report">(readOnly ? "report" : "edit");
+  // A half that was just submitted turns read-only in place: the report, no Edit.
+  useEffect(() => {
+    if (readOnly) setViewMode("report");
+  }, [readOnly]);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reportCaptureRef = useRef<HTMLDivElement>(null);
@@ -300,8 +312,7 @@ export default function PerformanceReviewApp({
       const pages = Array.from(
         reportHost.querySelectorAll<HTMLElement>("[data-review-report-page]"),
       );
-      await captureElementsToPDF(pages, {
-        filename: reviewReportFilename(r),
+      const pdf = await captureDocumentPdf(pages, {
         paperSize: "letter",
         orientation: "portrait",
         scale: 2,
@@ -310,6 +321,7 @@ export default function PerformanceReviewApp({
         imageFormat: "jpeg",
         imageQuality: 0.94,
       });
+      downloadFile(`${reviewReportFilename(r)}.pdf`, pdf, "application/pdf");
       toast.success("PDF downloaded");
     } catch (error) {
       console.error("Performance review PDF export failed", error);
@@ -335,6 +347,7 @@ export default function PerformanceReviewApp({
     >
       <div className="matrx-touch-targets flex h-full overflow-hidden bg-textured">
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+        {single ? null : (
         <aside className="hidden w-72 flex-none flex-col border-r border-border bg-card/60 print:hidden lg:flex">
           <div className="flex items-center gap-2 border-b border-border p-4">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">
@@ -438,9 +451,11 @@ export default function PerformanceReviewApp({
             />
           </div>
         </aside>
+        )}
 
         {/* ── Main ────────────────────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col">
+          {single ? null : (
           <div className="flex flex-none items-center gap-2 border-b border-border bg-card px-3 py-2 lg:hidden">
             <Select
               value={store.activeId ?? undefined}
@@ -464,6 +479,7 @@ export default function PerformanceReviewApp({
               aria-label="New review"
             />
           </div>
+          )}
 
           {/* Top bar */}
           <div className="flex flex-none flex-wrap items-center gap-2 border-b border-border bg-card/70 px-3 py-2 backdrop-blur print:hidden sm:px-6 sm:py-3">
@@ -491,6 +507,7 @@ export default function PerformanceReviewApp({
               </span>
             </div>
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
+            {readOnly ? null : (
             <Button
               icon={<PenLine />}
               variant={viewMode === "edit" ? "outline" : "quiet"}
@@ -498,6 +515,7 @@ export default function PerformanceReviewApp({
             >
               Edit
             </Button>
+            )}
             <Button
               icon={<FileText />}
               variant={viewMode === "report" ? "outline" : "quiet"}
@@ -505,6 +523,8 @@ export default function PerformanceReviewApp({
             >
               Preview
             </Button>
+            {single?.toolbarEnd}
+            {single ? null : (
             <Button
               icon={<Copy />}
               className="hidden lg:inline-flex"
@@ -513,6 +533,7 @@ export default function PerformanceReviewApp({
             >
               Duplicate
             </Button>
+            )}
             <CopyButtons
               size="sm"
               label="Active performance review"
@@ -874,8 +895,7 @@ export default function PerformanceReviewApp({
                 </SectionCard>
 
                 <p className="pt-1 text-center text-xs text-muted-foreground print:hidden">
-                  Everything saves automatically to this browser. Preview the
-                  report before printing or downloading the final PDF.
+                  {single ? "Saves as you type" : "Saved in this browser"}
                 </p>
               </div>
             )}

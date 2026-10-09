@@ -307,6 +307,10 @@ export type AiModel = Omit<AiModelRow, "capabilities"> & {
   preferred_pricing?: ModelPriceSummary | null;
 };
 
+/** One row of the MAX-tier change log (ai.model_cost_rating_history). */
+export type CostRatingChange =
+  Database["ai"]["Functions"]["model_cost_rating_history"]["Returns"][number];
+
 export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
   provider_models_cache: ProviderModelsCache | null;
 };

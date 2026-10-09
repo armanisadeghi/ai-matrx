@@ -1,5 +1,27 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Note tile: the Write editor keeps the caret across sleep and remount
+
+- Root cause: the Split textarea's caret was kept per note (`useKeptTextSelection`), the one editor's (Write / Source) was not — a tile waking or remounting put the caret at the document start (work was kept). `@ai-matrx/rich-editor` 0.5.43 adds `getCaret` / `restoreCaret(carry, { focus })` to its controller; `lib/working-copy/useKeptRichCaret.ts` tracks the caret while the editor is up, keeps it per note under the working-copy key (`workingCopies.richCarets`), and puts it back on wake/mount without taking focus (never over a field the person types in elsewhere).
+- Guard: remount-safety `note:write caret` (red with the hook off: caret at 2,2 and no text; green with it).
+
+## 2026-10-09 — Chat tile sidebar: empty state, title-first rows, header follows the conversation
+
+- Empty list: a board with no chats shows "No chats on this board yet" (the sidebar's `emptyState`) instead of a blank column.
+- Row titles: the tile's list uses the new `titleFirst` rows (`@ai-matrx/chat` 0.7.3) — no agent chip or origin badge, star only on a favorite (add one from the row menu); time stays. Other hosts keep the default rows. Guard: `conversation-history/__tests__/title-first-rows.test.tsx` (package).
+- Header title: after "New conversation" the unsent chat resets the tile title to "Chat" (`chatTitleToSave`), and adopts the server's title after the first turn. It kept the previous conversation's title before. Guard: `items/__tests__/chat-source.test.ts`.
+
+## 2026-10-09 — Board chat list: package target, remount law green, organization contract
+
+- `board` is an association target: `@ai-matrx/associations` 0.13.201 lists it in `ASSOCIATION_TARGET_TYPES`; `items/board-chats.tsx` drops its cast. `board` was already a registry token (vocabulary check unchanged).
+- Remount law, chat / agent-form / chat tile + list (root cause, not a board defect): the harness answered the old `knob_snapshot`, but the app reads `knob_defaults` + `knob_snapshot_delta` (KNOB-SNAPSHOT), and the chat composer's agent pill (`chat.cx_default` mandate, `agx_search` for an agent missing from the catalog) and the working-document type ids (`platform.categories`) were never seeded. Each is kept once per tab when it ANSWERS (defaults cache, mandate cache, type-id promise, catalog) and never kept when it fails, so an unseeded first read repeated on every wake. The three fixtures now seed those legitimate first reads (`remount-safety/platform-fixtures.ts`, `fixtures-work.ts`); wake and remount still read nothing. The chat list's `id in (board ids)` read is asserted by `chat-board-list.test.tsx` (passes).
+- Organization contract (2784f4f05a removed the hold; `ensureOrgId` never prompts): the new-document tile shows the refusal's own reason instead of "No workspace chosen"; `useSavedBoard`'s retry test uses an `ensureOrgId` refusal. Tests updated to match.
+- Still red, not this lane: remount cases `note` and `task` (the note's Write mode is a rich editor now; the case types into a textarea that no longer renders; the task description field likewise).
+
+## 2026-10-08 — The chat tile's conversation list (board-scoped)
+
+- A chat tile has its own conversation list (the /chat list component) limited to the conversations filed on THIS board: New conversation, collapse, switch in place, ⋯ Remove from this board (edge only). Membership = `conversation -> board` association edge (pair registered `container_side none`), filed when a chat tile's / the shell chat's conversation exists on the server. Collapse saved per tile (`meta.list`), header toggle, none at overview, no list read on wake (`@ai-matrx/chat` 0.6.x `keepLoaded`, `onlyConversationIds`, `removeFromList`). Guards: `items/__tests__/chat-list.test.ts`, `board-chats.test.tsx`. Existing conversations are not backfilled.
+
 ## 2026-10-06 — Agent form tile
 
 - New item `agent-form`: pick an agent, fill its inputs (form style, one Run), the reply renders as its shape (no chat). Inputs-layout switch per tile; Run again carries values; reopens the saved run after reload. Menu row, agent add list, remount case (passing). Live walk on test@test.com: Flashcard Topic Deck Composer streamed a `flashcard_set` into the tile and came back after reload.

@@ -58,8 +58,10 @@ export function useNoticeHandlers(
     },
     onMuteType: (group) => {
       const row = group.lead;
+      // Ignore all of this kind: no more of them, and the ones already here leave the Inbox
+      // (Done, recoverable, undoable from the toast).
       void setNotificationPreference(row.event_key, "in_app", false, row.organization_id)
-        .then(() => toast(`Turned off: ${noticeTitle({ ...row, subject: null })}`))
+        .then(() => actions.clear([row.event_key], `Turned off: ${noticeTitle({ ...row, subject: null })}`))
         .catch((error: unknown) =>
           toast.error(error instanceof Error ? error.message : "That type couldn't be turned off."),
         );

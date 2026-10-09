@@ -26,7 +26,7 @@
 
 import { Cost } from "@/components/cost/Cost";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   CircleCheck,
   CircleX,

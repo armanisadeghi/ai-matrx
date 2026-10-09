@@ -55,7 +55,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { PANEL_MOTION_CLASS } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectFileName } from "@/features/files/redux/selectors";

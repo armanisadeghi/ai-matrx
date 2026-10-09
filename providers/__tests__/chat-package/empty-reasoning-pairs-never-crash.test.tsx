@@ -89,7 +89,7 @@ jest.mock("next/dynamic", () => ({
     }
     if (String(loader).includes("MarkdownStreamImpl")) {
       const Impl = (
-        jest.requireActual("@/components/MarkdownStreamImpl") as {
+        jest.requireActual("@ai-matrx/chat/ui/markdown-stream/MarkdownStreamImpl") as {
           default: React.ComponentType<Record<string, unknown>>;
         }
       ).default;

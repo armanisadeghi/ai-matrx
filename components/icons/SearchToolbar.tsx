@@ -193,7 +193,7 @@ export function SearchGroupTrigger({ id }: { id: string }) {
       className="stb-group-trigger flex h-11 w-11 items-center justify-center bg-transparent outline-none cursor-pointer"
       aria-label="Search"
     >
-      <div className="flex h-6 w-6 items-center justify-center rounded-full matrx-glass-thin-border transition-[background,transform] active:scale-95">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full matrx-glass-thin-border transition-[background,transform,scale] active:scale-95">
         <SearchIcon className="w-4 h-4 text-foreground" />
       </div>
     </label>

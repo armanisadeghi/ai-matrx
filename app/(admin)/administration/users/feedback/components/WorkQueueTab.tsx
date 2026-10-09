@@ -28,10 +28,10 @@ import {
     Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { readOf } from '@/components/read-state/ReadGate';
-import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
-import { UntrustedCount } from '@/components/official/stale-data/UntrustedCount';
+import { ReadFailure } from '@ai-matrx/design-system';
+import { readOf } from '@ai-matrx/design-system';
+import { StaleDataNotice } from "@ai-matrx/design-system";
+import { UntrustedCount } from '@ai-matrx/design-system';
 import { ErrorAlchemyMenu } from '@/components/errors/ErrorAlchemyMenu';
 import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';

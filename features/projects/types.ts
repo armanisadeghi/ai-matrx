@@ -16,11 +16,7 @@ import type { Json } from "@/types/database.types";
 export type ProjectRole = "owner" | "admin" | "member";
 
 export type ProjectStatus =
-  | "planning"
-  | "active"
-  | "paused"
-  | "completed"
-  | "archived";
+  "planning" | "active" | "paused" | "completed" | "archived";
 
 export type ProjectPriority = "low" | "medium" | "high";
 
@@ -41,7 +37,11 @@ export interface Project {
 }
 
 export interface ProjectWithRole extends Project {
-  role: ProjectRole;
+  /**
+   * Direct project membership only. A readable project can inherit access
+   * through its organization without a project membership.
+   */
+  role: ProjectRole | null;
   memberCount?: number;
 }
 

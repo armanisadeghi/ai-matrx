@@ -208,6 +208,8 @@ export interface DrillExplorerProps {
   lane: "mine" | "organization" | "platform";
   /** The organization whose calendar cuts the periods (the platform organization in admin). */
   organizationId: string | null;
+  /** Ask with no lane: every organization she is in, her own row rules deciding each row. For a member page whose organization is a visible control (default All organizations), never the active organization. */
+  acrossOrganizations?: boolean | undefined;
   /** The trail's first crumb and the header's name ("AI usage"). */
   title: string;
   rootLabel: string;
@@ -273,6 +275,18 @@ export interface DrillExplorerProps {
    */
   pageWhere?: Record<string, unknown> | undefined;
   /**
+   * THE PAGE'S WINDOW (lane DRILL-LIVE-FIX-2 #4): a page whose own control picks the window (the tool
+   * re-fetch table's 7 / 30 / 90 days / All) hands it here, and the explorer follows it — on mount and
+   * whenever it changes. The explorer's own window control still moves it until the page's changes
+   * again. `null` = all time; absent = the explorer keeps its own.
+   */
+  pageWindow?: string | null | undefined;
+  /**
+   * THE HOST'S FIXED FILTERS (lane DRILL-PRIMITIVE-3): one site's id, applied to every ask like
+   * `pageWhere`, and said first in the trail as a crumb no click removes.
+   */
+  base?: readonly DrillExplorerBase[] | undefined;
+  /**
    * THE PAGE'S SURFACE (lane DRILL-FLIP-FIXES L4): given, the explorer registers it and hands it the
    * question and its answer at read time (`drillExplorerScope.ts`), as the old Spend Explorer did.
    */
@@ -281,4 +295,14 @@ export interface DrillExplorerProps {
   headerExtras?: ReactNode;
   /** A data attribute on the root, so a host's walk can find its mount. */
   dataAttributes?: Record<string, string> | undefined;
+}
+
+/** One fixed filter of the explorer: its Dimension key and value, and the crumb's words. */
+export interface DrillExplorerBase {
+  key: string;
+  value: string | number | boolean | null;
+  /** The crumb's name ("Site"). */
+  label: string;
+  /** The value's words ("Acme Dental"). */
+  valueLabel: string;
 }

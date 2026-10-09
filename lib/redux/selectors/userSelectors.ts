@@ -10,8 +10,6 @@
 // shape via `createSelector` for whole-slice consumers — memoized, so
 // referential identity is stable across unchanged inputs.
 
-"use client";
-
 import type { RootState } from "@/lib/redux/store";
 import { createSelector } from "reselect";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
@@ -184,6 +182,11 @@ export const selectIsAuthenticated = (state: RootState): boolean =>
 export const selectUserAppMetadata = createSelector(
   [selectUserAuth],
   (auth) => auth.appMetadata,
+);
+/** Top-tier models (cost rating 6) — the per-person permission a super admin turns on. Default off. */
+export const selectCanUseTopTierModels = createSelector(
+  [selectUserAppMetadata],
+  (appMetadata) => (appMetadata.permissions ?? []).includes("models.top_tier"),
 );
 export const selectUserProvider = createSelector(
   [selectUserAppMetadata],

@@ -66,7 +66,7 @@ const RoomAgentWindow = dynamic(() => import("./RoomAgentWindow"), {
 // closed. Reused as-is from the master surface (the slice is shared; the layer
 // is just a renderer).
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   return (

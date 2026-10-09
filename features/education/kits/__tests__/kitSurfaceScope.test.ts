@@ -21,7 +21,7 @@ function artifact(
 }
 
 const kit: StudyKit = {
-  sourceType: "file",
+  sourceType: "file", sources: [],
   sourceId: "11111111-1111-4111-8111-111111111111",
   title: "Cell Biology",
   createdAt: "2026-09-20T00:00:00Z",

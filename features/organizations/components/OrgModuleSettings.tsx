@@ -40,6 +40,10 @@ import {
   type OrgModuleSetting,
   type PermissionLevel,
 } from "../orgModuleSettings";
+import {
+  PERMISSION_LEVEL_HINTS,
+  PERMISSION_LEVEL_SHORT_LABELS,
+} from "@/utils/permissions/levels";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
@@ -262,6 +266,11 @@ export function OrgModuleSettings({
                                     `Constants` on 2026-09-18 (30e05dbd80). A level the database
                                     accepts and no picker offers is a capability nobody can grant. */}
                                 <SelectItem value="commenter">Commenter</SelectItem>
+                                {/* `edit_content` — Notion's "Can edit content": rows and page content, never structure or sharing.
+                                    Label and tooltip come from the one ladder (utils/permissions/levels.ts). */}
+                                <SelectItem value="edit_content" title={PERMISSION_LEVEL_HINTS.edit_content}>
+                                  {PERMISSION_LEVEL_SHORT_LABELS.edit_content}
+                                </SelectItem>
                                 <SelectItem value="editor">Editor</SelectItem>
                                 <SelectItem value="admin">Admin</SelectItem>
                               </SelectContent>

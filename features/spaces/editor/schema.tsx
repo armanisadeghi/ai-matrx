@@ -6,7 +6,7 @@
 // (a marked place where a phase-2 block will sit). Callout bodies and columns hold their content as
 // ordinary block children; spaces.css draws the callout box around them and lays columns side by side.
 
-import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from "@blocknote/core";
+import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps, defaultStyleSpecs } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
@@ -14,12 +14,17 @@ import { useEffect, useRef } from "react";
 
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
+import { useSeededLink } from "../page/space-links";
 import { IconPicker } from "../page/IconPicker";
 import { notionCodeBlock } from "./code-block";
 import { equationInline, mentionInline } from "./inline";
 import { storedBlockSpecs } from "./stored-blocks";
 import { CalloutBlock } from "./callout-block";
 import { TabBlock, TabsBlock } from "./tabs-block";
+import { SyncedBlock } from "./synced-block";
+import { ButtonBlock } from "./button-block";
+import { AiBlock } from "./ai-block";
+import { SuggestionStyle } from "./suggest";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
 const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
@@ -52,16 +57,20 @@ const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
   },
 }));
 
-function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
+export function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
   const { byId, archived, linkTarget, requestLink, ready, open, pageHref, missingPageLabel } = useSpaces();
   // The tree first; a page it does not hold (shared from another organization) is read by id — never
   // "in Trash" unless it is.
-  const page = byId.get(spaceId) ?? linkTarget?.(spaceId) ?? undefined;
-  const trashed = archived.some((a) => a.id === spaceId);
+  // Round 40: the route read every linked page in one call (`useSeededLink`); only a link it did not know
+  // (added after load) asks, batched with every other unknown link of the same moment.
+  const seeded = useSeededLink(spaceId);
+  const page = byId.get(spaceId) ?? (seeded && !seeded.isArchived ? seeded : undefined) ?? linkTarget?.(spaceId) ?? undefined;
+  const trashed = !!seeded?.isArchived || archived.some((a) => a.id === spaceId);
+  const known = seeded !== undefined;
   useEffect(() => {
-    if (!page && !trashed) requestLink?.(spaceId);
-  }, [page, trashed, requestLink, spaceId, ready]);
-  const reading = !page && !trashed && (!ready || (!!requestLink && linkTarget?.(spaceId) === undefined));
+    if (!page && !trashed && !known) requestLink?.(spaceId);
+  }, [page, trashed, known, requestLink, spaceId, ready]);
+  const reading = !page && !trashed && !known && (!ready || (!!requestLink && linkTarget?.(spaceId) === undefined));
   const title = page
     ? page.title || "Untitled"
     : reading
@@ -224,6 +233,9 @@ export const spacesSchema = BlockNoteSchema.create({
     slot: SlotBlock(),
     tabs: TabsBlock(),
     tab: TabBlock(),
+    synced: SyncedBlock(),
+    button: ButtonBlock(),
+    ai: AiBlock(),
     table: defaultBlockSpecs.table,
     image: storedBlockSpecs.image(),
     video: storedBlockSpecs.video(),
@@ -239,6 +251,8 @@ export const spacesSchema = BlockNoteSchema.create({
     unknownBlock: storedBlockSpecs.unknownBlock(),
     unsupportedText: storedBlockSpecs.unsupportedText(),
   },
+  // N3: a suggested edit is a string style (the stored span's `suggestion`, as JSON).
+  styleSpecs: { ...defaultStyleSpecs, suggestion: SuggestionStyle },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
     inlineMention: mentionInline,

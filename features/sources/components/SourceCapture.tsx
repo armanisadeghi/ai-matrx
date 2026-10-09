@@ -21,9 +21,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardType, FileAudio, Link2, Loader2, Plus, Upload } from "lucide-react";
-import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -51,6 +50,7 @@ import { addFailureSentence } from "@/features/sources/addFailure";
 import { SaveSourcePanel, type SaveSourceItem } from "@/features/sources/SaveSourcePanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface SaveTarget {
   items: SaveSourceItem[];
   notices: LandingNotice[];
@@ -166,7 +166,7 @@ export function SourceAddMenu({
     setAddError(null);
     try {
       // Name the organization first: the scraper refuses without one.
-      await ensureOrgId(activeOrgId);
+      await ensureOrgId(null);
       const result = await scrapeUrl(/^https?:\/\//i.test(url) ? url : `https://${url}`);
       if (!result) return; // the hook's `failure` is rendered in the dialog
       if (!result.processedDocumentId) {
@@ -201,7 +201,7 @@ export function SourceAddMenu({
     setAdding(true);
     setAddError(null);
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       const body = await buildPastedTextLanding({ text: textInput, name: textName, organizationId, userId });
       const landed = await landSource(body);
       setAddMode(null);
@@ -299,7 +299,7 @@ export function SourceAddMenu({
           </DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Name (optional — the first line is used)" value={textName} onChange={(e) => setTextName(e.target.value)} />
-            <Textarea autoFocus rows={10} placeholder="Paste the text here" value={textInput} onChange={(e) => setTextInput(e.target.value)} />
+            <ProTextarea autoFocus rows={10} placeholder="Paste the text here" value={textInput} onChange={(e) => setTextInput(e.target.value)} />
             {addError && !adding ? (
               <p role="alert" className="text-sm text-destructive">
                 {addError}

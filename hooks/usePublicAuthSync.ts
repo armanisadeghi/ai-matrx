@@ -16,6 +16,7 @@ import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 import { rememberValidatedAccount } from "@/utils/auth/remembered-account";
+import { readAppPermissions } from "@/utils/userDataMapper";
 
 type AuthValidationError = {
   name?: unknown;
@@ -162,6 +163,7 @@ export function usePublicAuthSync() {
               appMetadata: {
                 provider: user.app_metadata?.provider || null,
                 providers: user.app_metadata?.providers || [],
+                permissions: readAppPermissions(user.app_metadata),
               },
               userMetadata,
               identities:

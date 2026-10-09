@@ -33,7 +33,7 @@ import { TopicCounts } from "../../ui/TopicCounts";
 import { TopicLabelEditor } from "../../ui/TopicLabelEditor";
 import { TopicPath } from "../../ui/TopicPath";
 import { TopicStatusMark } from "../../ui/TopicStatusMark";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 /**
  * The statuses a person may SET from the panel. `rejected` is never one —

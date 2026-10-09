@@ -534,9 +534,9 @@ select pg_temp.chk('F1 workflow._run_cost is one row per run and its cost = the 
   where to_regclass('workflow._run_cost') is not null;
 
 -- ════════════════════════════════════════════════════════════════════════════════════════════
--- L. A COST THAT LANDS AFTER THE COUNT (VERIFY-DRILL-LEDGER-RECORDS F1 / attack A7): the number and
---    its records are equal as of the count, and any difference is SAID — then a rebuild brings them
---    back equal.
+-- L. A COST THAT LANDS AFTER THE COUNT (VERIFY-DRILL-LEDGER-RECORDS F1 / attack A7; lane DRILL-FACTS):
+--    the number and its records are the same stored facts, equal as of the count; the next refresh
+--    brings the late cost into both at once.
 -- ════════════════════════════════════════════════════════════════════════════════════════════
 create temp table dll (step text, page jsonb, ask numeric) on commit drop;
 grant all on dll to authenticated;
@@ -576,23 +576,21 @@ begin
   select page into v_before from pg_temp.dll where step = 'before';
   select page into v_after from pg_temp.dll where step = 'late';
   select page into v_healed from pg_temp.dll where step = 'recounted';
-  perform pg_temp.chk('L1 before a late cost the records page carries the number''s own sums (counted) = the records'' sums = the answer, and says nothing',
-    (v_before -> 'counted' ->> 'cost')::numeric = (v_before -> 'measures' ->> 'cost')::numeric
-    and (v_before -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'before')
-    and not (v_before ? 'settling') and not (v_before ? 'says'),
-    format('counted %s records %s', v_before -> 'counted' ->> 'cost', v_before -> 'measures' ->> 'cost'));
-  perform pg_temp.chk('L2 a cost that lands after the count: the number still = counted, the records = the ledger now, and the page SAYS the difference ("$1.23 more has landed since the count at HH:MI UTC")',
-    (v_after -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'late')
-    and (v_after -> 'measures' ->> 'cost')::numeric - (v_after -> 'counted' ->> 'cost')::numeric = 1.2345
-    and (v_after -> 'settling' -> 'cost' ->> 'difference')::numeric = 1.2345
-    and v_after ->> 'says' ~ '^\$1\.23 more has landed since the count at [0-9]{2}:[0-9]{2} UTC\.',
-    v_after ->> 'says');
-  perform pg_temp.chk('L3 the next rebuild brings them back equal: nothing to say, counted = records = the answer, and the answer took the late cost',
-    (v_healed -> 'counted' ->> 'cost')::numeric = (v_healed -> 'measures' ->> 'cost')::numeric
-    and (v_healed -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'recounted')
-    and (select ask from pg_temp.dll where step = 'recounted') - (select ask from pg_temp.dll where step = 'before') = 1.2345
-    and not (v_healed ? 'settling'),
-    format('before %s after the recount %s', (select ask from pg_temp.dll where step = 'before'), (select ask from pg_temp.dll where step = 'recounted')));
+  -- (lane DRILL-FACTS, owner ruling 2026-10-08, option c: the records are the stored facts the number
+  -- was counted from, so a late cost reaches both at the next refresh and nothing "settles" between
+  -- them. The old L2 — "$1.23 more has landed since the count" — is retired with the door's settling.)
+  perform pg_temp.chk('L1 the records page adds up to the answer and carries no second count (no counted, no settling)',
+    (v_before -> 'measures' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'before')
+    and not (v_before ? 'counted') and not (v_before ? 'settling') and not (v_before ? 'says'),
+    format('records %s answer %s', v_before -> 'measures' ->> 'cost', (select ask from pg_temp.dll where step = 'before')));
+  perform pg_temp.chk('L3 a cost that lands after the count moves neither the number nor its records until the next refresh, which moves both by it',
+    (v_after -> 'measures' ->> 'cost')::numeric = (v_before -> 'measures' ->> 'cost')::numeric
+    and (select ask from pg_temp.dll where step = 'late') = (select ask from pg_temp.dll where step = 'before')
+    and not (v_after ? 'settling')
+    and (v_healed -> 'measures' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'recounted')
+    and (select ask from pg_temp.dll where step = 'recounted') - (select ask from pg_temp.dll where step = 'before') = 1.2345,
+    format('before %s, late %s, after the refresh %s', (select ask from pg_temp.dll where step = 'before'),
+           (select ask from pg_temp.dll where step = 'late'), (select ask from pg_temp.dll where step = 'recounted')));
 end $$;
 
 -- L4. A lagging count is SAID: fresh, the answer says nothing about it; with the watermark three

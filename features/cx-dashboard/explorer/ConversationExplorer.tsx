@@ -8,14 +8,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GitBranch, MessageSquare } from "lucide-react";
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type {
-  MatrxColumnDef,
-  MatrxDataTableQueryState,
-} from "@ai-matrx/design-system/data-table/types";
+import { MatrxDataTable, useTableUrlState } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { useOpenAgentFromChatWindow } from "@/features/overlays/openers/agentFromChatWindow";
 import { formatRelativeTime } from "@/features/cx-dashboard/utils/format";
+import { buildCxSourcePageExportConfig } from "@/features/cx-dashboard/utils/export";
+import { useCxRowMenu, type CxMenuTarget } from "@/features/cx-dashboard/components/cx-row-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 import {
   EMPTY_FACETS,
   exploreConversationFacets,
@@ -24,17 +29,10 @@ import {
   type ExplorerFacets,
   type FacetOption,
 } from "./service";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 
 const detailHref = (id: string) => `/administration/chat/cx-dashboard/conversations/${id}`;
 
-const INITIAL_STATE: MatrxDataTableQueryState = {
-  page: 1,
-  pageSize: 50,
-  search: "",
-  anyOf: "",
-  columnFilters: {},
-  sort: { id: "updated_at", direction: "desc" },
-};
 
 function options(list: FacetOption[]) {
   return list.map((o) => ({
@@ -43,10 +41,9 @@ function options(list: FacetOption[]) {
   }));
 }
 
-const money = (n: number) =>
-  n === 0 ? "—" : n < 0.01 ? "<$0.01" : `$${n.toFixed(n < 1 ? 3 : 2)}`;
-const compact = (n: number) =>
-  n === 0 ? "—" : new Intl.NumberFormat(undefined, { notation: "compact" }).format(n);
+// Admin surface: dollars, at the price voice so a sub-cent conversation reads its real cost.
+const money = (n: number) => (n === 0 ? "—" : formatUsd(n, { digits: "trim" }));
+const compact = (n: number) => (n === 0 ? "—" : formatCount(n, { style: "compact" }));
 
 function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation>[] {
   return [
@@ -180,7 +177,17 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
       filter: "select",
       filterOptions: options(facets.statuses),
       width: 95,
+    },
+    {
+      id: "parent_conversation_id",
+      accessorKey: "parent_conversation_id",
+      header: "Parent",
+      cellKind: "fk",
+      filter: false,
+      sortable: false,
+      width: 110,
       hidden: true,
+      fk: { href: (id) => detailHref(id) },
     },
     {
       id: "created_at",
@@ -220,9 +227,57 @@ function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation
   ];
 }
 
+/** The right-click menu's record: Copy, Copy for AI, Attach To and Open all act on this conversation. */
+function menuTarget(r: ExplorerConversation): CxMenuTarget {
+  return {
+    kind: "conversation",
+    id: r.id,
+    title: r.title?.trim() || "Untitled conversation",
+    href: detailHref(r.id),
+    lines: [
+      `Person: ${r.owner_label ?? "—"}${r.owner_email ? ` <${r.owner_email}>` : ""}`,
+      r.organization_name ? `Organization: ${r.organization_name}` : "",
+      r.agent_name ? `Agent: ${r.agent_name}` : "",
+      `Messages: ${r.message_count} · Requests: ${r.request_count}`,
+      `Tokens: ${formatCount(r.total_tokens)} · Cost: ${formatUsd(r.total_cost, { digits: "trim" })}`,
+      r.model_names.length ? `Models: ${r.model_names.join(", ")}` : "",
+      r.status ? `Status: ${r.status}` : "",
+    ],
+  };
+}
+
+const exportRows = (rows: ExplorerConversation[]) =>
+  rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    person: r.owner_label,
+    email: r.owner_email,
+    organization: r.organization_name,
+    agent: r.agent_name,
+    models: r.model_names.join(", "),
+    messages: r.message_count,
+    requests: r.request_count,
+    tokens: r.total_tokens,
+    cost_usd: r.total_cost,
+    app: r.source_app,
+    feature: r.source_feature,
+    origin: r.origin_class,
+    status: r.status,
+    parent_id: r.parent_conversation_id,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  }));
+
 export function ConversationExplorer() {
   const openMakeAgent = useOpenAgentFromChatWindow();
-  const [query, setQuery] = useState<MatrxDataTableQueryState>(INITIAL_STATE);
+  // Search, filters, sort and page live in the address: a reload or a shared link reopens this exact view.
+  const table = useTableUrlState({
+    tableId: "cx-conversations",
+    defaultSort: { id: "updated_at", direction: "desc" },
+    defaultPageSize: 50,
+  });
+  // The hook rebuilds its state object on every render; the fetch keys on what the query SAYS.
+  const queryKey = JSON.stringify(table.queryState);
   const [rows, setRows] = useState<ExplorerConversation[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -231,6 +286,7 @@ export function ConversationExplorer() {
   const [reload, setReload] = useState(0);
   // Only the newest query's answer may land: a slow broad query must never overwrite a fast narrow one.
   const latest = useRef(0);
+  const rowMenu = useCxRowMenu({ rows: () => rows, toTarget: menuTarget });
 
   useEffect(() => {
     void exploreConversationFacets()
@@ -241,7 +297,7 @@ export function ConversationExplorer() {
   useEffect(() => {
     const ticket = ++latest.current;
     setLoading(true);
-    exploreConversations(query, false)
+    exploreConversations(JSON.parse(queryKey) as typeof table.queryState, false)
       .then((answer) => {
         if (ticket !== latest.current) return;
         setRows(answer.rows);
@@ -255,67 +311,91 @@ export function ConversationExplorer() {
       .finally(() => {
         if (ticket === latest.current) setLoading(false);
       });
-  }, [query, reload]);
+  }, [queryKey, reload]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={rows}
-          columns={columnsFor(facets)}
-          getRowId={(r) => r.id}
-          isLoading={loading && rows.length === 0}
-          isFetching={loading && rows.length > 0}
-          read={{
-            status: error ? "error" : loading && rows.length === 0 ? "loading" : "ready",
-            error: error ?? undefined,
-            onRetry: () => setReload((n) => n + 1),
-            what: "conversations",
-          }}
-          emptyState={{ title: "No conversations match" }}
-          query={{
-            mode: "controlled",
-            state: query,
-            totalItems: total,
-            onStateChange: setQuery,
-            sourceProcessing: { search: "source", columnFilters: "source", sort: "source", sourceTotal: total },
-          }}
-          toolbar={{
-            title: "Conversations",
-            refresh: { onRefresh: () => setReload((n) => n + 1) },
-            search: true,
-            searchPlaceholder: "Search people, emails, organizations, agents, titles or an id…",
-          }}
-          rowActions={(r) => [
-            {
-              id: "make-agent",
-              icon: AGENT_ICON,
-              label: "Make an agent",
-              tooltip: "Build an agent from this chat for its owner",
-              onClick: () => openMakeAgent({ conversationId: r.id, conversationTitle: r.title }),
-            },
-          ]}
-          copy={{
-            label: "Conversation",
-            listLabel: "Conversations (this view)",
-            location: "/administration/chat/cx-dashboard/conversations",
-            rowKind: "cx-conversation",
-            listKind: "cx-conversations",
-            humanRow: (r) =>
-              [
-                `Title: ${r.title ?? "Untitled"}`,
-                `Person: ${r.owner_label ?? "—"}${r.owner_email ? ` <${r.owner_email}>` : ""}`,
-                `Organization: ${r.organization_name ?? "—"}`,
-                `Agent: ${r.agent_name ?? "—"}`,
-                `Models: ${r.model_names.join(", ") || "—"}`,
-                `Messages: ${r.message_count} · Requests: ${r.request_count}`,
-                `Tokens: ${r.total_tokens} · Cost: $${r.total_cost}`,
-                `Created: ${r.created_at}`,
-              ].join("\n"),
-            rowAttributes: (r) => ({ id: r.id }),
-          }}
-        />
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "conversations",
+          conversation_list_results: rows.map((r) => ({
+            id: r.id,
+            title: r.title,
+            status: r.status ?? "",
+            message_count: r.message_count,
+            model_name: r.last_model_name,
+            provider: null,
+            parent_conversation_id: r.parent_conversation_id,
+            created_at: r.created_at,
+          })),
+          conversation_list_total: total,
+        })
+      }
+      isEditable={false}
+    >
+      <div className="flex h-full min-h-0 flex-col p-4">
+        <div className="min-h-0 flex-1">
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+            extraSections={rowMenu.sections}
+          >
+            <MatrxDataTable
+              data={rows}
+              columns={columnsFor(facets)}
+              getRowId={(r) => r.id}
+              isLoading={loading && rows.length === 0}
+              isFetching={loading && rows.length > 0}
+              read={{
+                status: error ? "error" : loading && rows.length === 0 ? "loading" : "ready",
+                error: error ?? undefined,
+                onRetry: () => setReload((n) => n + 1),
+                what: "conversations",
+              }}
+              emptyState={{ title: "No conversations match" }}
+              query={{
+                mode: "controlled",
+                state: table.state,
+                totalItems: total,
+                onStateChange: table.onStateChange,
+                sourceProcessing: { search: "source", columnFilters: "source", sort: "source", sourceTotal: total },
+              }}
+              toolbar={{
+                title: "Conversations",
+                refresh: { onRefresh: () => setReload((n) => n + 1) },
+                search: true,
+                searchPlaceholder: "Search people, emails, organizations, agents, titles or an id…",
+              }}
+              rowActions={(r) => [
+                {
+                  id: "make-agent",
+                  icon: AGENT_ICON,
+                  label: "Make an agent",
+                  tooltip: "Build an agent from this chat for its owner",
+                  onClick: () => openMakeAgent({ conversationId: r.id, conversationTitle: r.title }),
+                },
+              ]}
+              copy={{
+                label: "Conversation",
+                listLabel: "Conversations (this view)",
+                location: "/administration/chat/cx-dashboard/conversations",
+                rowKind: "cx-conversation",
+                listKind: "cx-conversations",
+                humanRow: (r) => [menuTarget(r).title, ...menuTarget(r).lines.filter(Boolean), `Created: ${r.created_at}`].join("\n"),
+                rowAttributes: (r) => ({ id: r.id, status: r.status ?? "" }),
+                export: () => buildCxSourcePageExportConfig(exportRows(rows), "conversations"),
+              }}
+              detail={{
+                title: (r) => r.title ?? "Untitled conversation",
+                description: (r) => [r.owner_label, r.organization_name, r.agent_name].filter(Boolean).join(" · ") || undefined,
+              }}
+            />
+          </NonEditableContextMenu>
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

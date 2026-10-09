@@ -32,14 +32,15 @@ import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
+import { appletState, appletVersionLabel } from "@/features/applets/lib/applet-state";
 
 const TAB_ID_PREFIX = "aga-app:";
 
-const COLUMNS = "id,name,slug,files,entry,updated_at,status,description,version";
+const COLUMNS = "id,name,slug,files,entry,updated_at,status,published_to_web,description,content_version";
 
 type AgaAppRow = Pick<
   Database["app"]["Tables"]["definition"]["Row"],
-  "id" | "name" | "slug" | "files" | "entry" | "updated_at" | "status" | "description" | "version"
+  "id" | "name" | "slug" | "files" | "entry" | "updated_at" | "status" | "published_to_web" | "description" | "content_version"
 >;
 
 type FilesMap = Record<string, string>;
@@ -73,7 +74,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     multiField: false,
   },
   dnd: { acceptsOwn: false },
-  pathPrefix: "/Agent Apps",
+  pathPrefix: "/Applets",
 
   makeTabId(id) {
     return `${TAB_ID_PREFIX}${id}`;
@@ -109,12 +110,8 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       language: "typescript",
       mimeType: "text/typescript",
       hasContent: !!filesOf(row.files)[entryName(row)],
-      badge:
-        row.status && row.status !== "published"
-          ? row.status
-          : row.version && row.version > 1
-            ? `v${row.version}`
-            : undefined,
+      // THE state's word while not published, else the saved content version.
+      badge: appletState(row).kind !== "published" ? appletState(row).label : (appletVersionLabel(row.content_version) ?? undefined),
     }));
   },
 
@@ -126,14 +123,14 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       .eq("id", id)
       .maybeSingle();
     if (error) {
-      throw new Error("We couldn't open this agent app. Please try again.");
+      throw new Error("We couldn't open this Applet. Please try again.");
     }
     // Zero rows is denied / deleted / stale-id and this adapter cannot tell
     // which — the canonical honest throw says both and screams into the
     // Error Inspector.
     if (!data) {
       throw recordUnavailable({
-        entity: "agent app",
+        entity: "Applet",
         reason: "unknown",
         recordId: id,
         relation: "app.definition",
@@ -161,7 +158,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
         `This code still contains a patch marker ("${residue.text}", line ${residue.line}), so it was not saved. Remove it and save again.`,
       );
     }
-    type Row = Pick<AgaAppRow, "id" | "version" | "files" | "entry" | "updated_at">;
+    type Row = Pick<Database["app"]["Tables"]["definition"]["Row"], "id" | "version" | "files" | "entry" | "updated_at">;
     const columns = "id,version,files,entry,updated_at";
     const fetchCurrent = () =>
       supabase.schema("app").from("definition").select(columns).eq("id", args.id).is("deleted_at", null).maybeSingle();
@@ -205,22 +202,23 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     const { data, error } = await query.select("updated_at").maybeSingle();
     if (error || !data) {
       throw new Error(
-        "We couldn't rename this agent app. You may not be allowed to change it.",
+        "We couldn't rename this Applet. You may not be allowed to change it.",
       );
     }
     return { updatedAt: (data as { updated_at: string }).updated_at };
   },
 
   async delete(supabase, userId, id) {
-    // Soft-delete via status column when available; otherwise hard-delete.
+    // Archive = the soft delete (`deleted_at`) — the ONE archive mechanism the /applets
+    // Archived filter, its Restore and /trash read. Only its maker may (as on /applets).
     await writeOne(
       supabase
         .schema("app").from("definition")
-        .update({ status: "archived", updated_at: new Date().toISOString() })
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .select("id"),
-      { action: "archive", noun: "agent app" },
+      { action: "archive", noun: "Applet" },
     );
   },
 

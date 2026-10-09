@@ -23,7 +23,7 @@ import {
 } from "@/features/context-menu-v3/regroup/RegroupContext";
 import { PROPOSED_MENU_GROUPING } from "@/features/context-menu-v3/regroup/proposed-grouping";
 import { auditRegroup, type RegroupAudit } from "@/features/context-menu-v3/regroup/grouping";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { NotesDemoPanel } from "../context-menu/_components/NotesDemoPanel";
 import { QuizListPanel } from "./_components/QuizListPanel";
 import { WhereTable } from "./_components/WhereTable";

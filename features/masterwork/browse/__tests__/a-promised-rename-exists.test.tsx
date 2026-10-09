@@ -46,7 +46,8 @@ jest.mock("@/features/sharing/components/ShareModal", () => ({
 jest.mock("@/components/ui/confirm-dialog", () => ({
   ConfirmDialog: () => null,
 }));
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   TextInputDialog: ({
     title,
     defaultValue,
@@ -76,7 +77,7 @@ jest.mock("../../service", () => ({
 import { useRulebookRowActions } from "../useRulebookRowActions";
 import type { RulebookListRow } from "../../types";
 import type { EntityListController } from "@/lib/entity-list/config";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 
 function row(id: string, createdBy: string): RulebookListRow {
   return {

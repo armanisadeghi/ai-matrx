@@ -205,9 +205,10 @@ export default function AssistsDock() {
           onClick={() => setOpen(true)}
           aria-label={`Open ${visible.length} assist${visible.length === 1 ? "" : "s"}`}
           data-assists-dock=""
+          data-assist-dock-pending=""
           data-matrx-floating-bottom=""
           data-matrx-floating-follows-page=""
-          className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
+          className="data-[assist-dock-pending]:invisible fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
           style={mobileLauncherStyle}
         >
           <Lightbulb className="h-5 w-5 text-primary" />
@@ -292,6 +293,9 @@ export default function AssistsDock() {
         // clicks (D225 — the record page's Log button). The panel and the pill
         // re-enable their own events below.
         "pointer-events-none fixed z-40 hidden flex-col items-end gap-1.5 pb-safe md:flex",
+        // The container is the box that moves, so it is the box that must be hidden while the pill
+        // is pending (assistClearance.ts PENDING_ATTR) — a visible container still scores the shift.
+        "has-[[data-assist-dock-pending]]:invisible",
         // Docked in the header: the pill stays in the bar and the panel opens DOWN, never off-screen.
         "[:root[data-assist-dock-slot=header]_&]:flex-col-reverse [:root[data-assist-dock-slot=header]_&]:pb-0",
         dragging && "select-none",
@@ -322,10 +326,11 @@ export default function AssistsDock() {
           It rests above a list's pager (--page-bottom-dock-h): a page-end surface must not pad for it. */}
       <div
         data-assists-dock=""
+        data-assist-dock-pending=""
         data-matrx-floating-bottom=""
         data-matrx-floating-follows-page=""
         className={cn(
-          "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30",
+          "data-[assist-dock-pending]:invisible pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30",
           dragging && "ring-1 ring-primary/40",
         )}
       >

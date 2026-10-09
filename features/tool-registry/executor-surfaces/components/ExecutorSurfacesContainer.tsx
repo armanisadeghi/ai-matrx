@@ -19,8 +19,8 @@ import {
   type ExecutorWithStats,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 type KindFilter = "all" | "mcp" | "non-mcp";
 

@@ -23,6 +23,7 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
+import { installChatHostDb } from "@/test-utils/chat-host-db";
 import { OpenGoogleDocumentRecordButton, type PickedGoogleRecordResource } from "../openRecord";
 import type { postGoogleBackend as postGoogleBackendReal } from "@/features/marketing/google/service";
 
@@ -84,8 +85,12 @@ jest.mock("@/features/marketing/google/service", () => ({
 jest.mock("@/lib/redux/store-singleton", () => ({
   // The organization gate (lib/organization/organization-gate.ts) reads
   // `state.appContext.organization_id` itself, so the store answers in that shape.
+  // `orgBootstrapResolved: true` = the load ladder has answered (ensureOrgId waits on it
+  // before it reads the active organization (a65cee7607, 2026-10-07).
   getStoreSingleton: () => ({
-    getState: () => ({ appContext: { organization_id: activeOrganizationId } }),
+    getState: () => ({
+      appContext: { organization_id: activeOrganizationId, orgBootstrapResolved: true },
+    }),
   }),
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
@@ -98,6 +103,14 @@ jest.mock("@ai-matrx/detail/react", () => ({
 }));
 
 const toasts = { success: jest.fn(), error: jest.fn() };
+// The honest organization refusal is raised by @ai-matrx/chat through the chat HOST's notify
+// port (presentOrganizationRefusal), not through the app's own toast -- so observe it there.
+installChatHostDb({}, {
+  notify: new Proxy(
+    {},
+    { get: (_t, key) => (key === "error" ? (...a: unknown[]) => toasts.error(...a) : () => undefined) },
+  ) as never,
+});
 jest.mock("@/lib/toast", () => ({
   toast: {
     success: (...a: unknown[]) => toasts.success(...a),

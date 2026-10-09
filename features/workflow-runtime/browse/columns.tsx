@@ -29,6 +29,7 @@ import { usageColumns } from "@/lib/entity-list/usageColumns";
 import { RunStatusChip, runStatusLabel } from "../run-status";
 import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { WorkflowBrowseRow } from "./types";
+import { currentWorkflowsBasePath, workflowRunPermalinkHref } from "./workflowActionRegistry";
 
 /**
  * A count column's finite value set is "how many". Buckets keep Steps and Runs
@@ -212,23 +213,23 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
     runsDoor: (row) => {
       const n = Number(row.run_count ?? 0);
       return {
-        href: `/workflows/${row.id}/runs`,
+        href: `${currentWorkflowsBasePath()}/${row.id}/runs`,
         title: `See all ${n} ${n === 1 ? "run" : "runs"} of this workflow`,
       };
     },
     lastUsedDoor: (row) =>
       row.last_run_id && row.last_run_at
         ? {
-            href: `/workflows/runs/${row.last_run_id}`,
+            href: workflowRunPermalinkHref(row.last_run_id, currentWorkflowsBasePath()),
             title: `Open the run from ${new Date(row.last_run_at).toLocaleString()}`,
           }
         : null,
-     // Check warnings since the last edit (workflow.run_log via entity_usage);
+    // Check warnings since the last edit (workflow.run_log via entity_usage);
     // the count opens the runs that raised them.
     warnings: {
       read: (row) => Number(row.warning_count ?? 0),
       door: (row) => ({
-        href: `/workflows/${row.id}/runs`,
+        href: `${currentWorkflowsBasePath()}/${row.id}/runs`,
         title: "See the runs behind these warnings",
       }),
     },

@@ -37,8 +37,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";

@@ -53,7 +53,7 @@ import { TemplateCard } from "./TemplateCard";
 import { TemplateActionDrawer } from "./TemplateActionDrawer";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 type ActiveTab = "my" | "public";
 type SortOption =

@@ -2,7 +2,7 @@
 --
 -- Cedar Ridge Physical Therapy (a fresh fixture organization each run; rolled back). Dr. Ana Whitfield
 -- (admin@admin.com) is the clinic director and the manager; Marisol Vega (test@test.com) is a physical
--- therapist, the employee. Performance reviews are a Confidential store Table (the HR employee record of
+-- therapist, the employee. Performance reviews are a Confidential custom table (the HR employee record of
 -- the access ladder) whose readers are the Employee and the Manager fields; the Table belongs to the
 -- organization (maker_is_reader). Ana writes a review of Elena Park (a Person with no account) that names
 -- Ana as manager; Marisol is neither its owner nor named on it. Both Ana's review and Marisol's own

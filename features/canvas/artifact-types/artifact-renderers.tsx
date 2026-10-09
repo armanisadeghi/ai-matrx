@@ -54,6 +54,7 @@ import KindValueArtifact from "./renderers/KindValueArtifact";
 import { kindServerDataFromStoredValue } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { storedKindValue } from "./storedKindValue";
 import type { ArtifactRendererProps } from "./types";
+import { ArtifactBlockAttach } from "@/features/canvas/output/ArtifactBlockAttach";
 
 type ArtifactRendererComponent = React.ComponentType<ArtifactRendererProps>;
 
@@ -108,6 +109,26 @@ export function hasArtifactRenderer(
  * Render a unified artifact. Returns null if the type has no unified renderer
  * yet (caller then falls through to its legacy switch).
  */
+/**
+ * A finished artifact block in a chat message offers "Attach to chat"
+ * (rendered-output P2 WP4). Not in the canvas (its pane menu has it), not while
+ * streaming, not on a public page; HTML carries its own page attach.
+ */
+function attachable(canvasType: string, props: ArtifactRendererProps): boolean {
+  return (
+    props.mode !== "canvas" &&
+    Boolean(props.conversationId) &&
+    !props.isStreamActive &&
+    !props.isPublic &&
+    canvasType !== "html"
+  );
+}
+
+function artifactTitle(canvasType: string, metadata: Record<string, unknown> | undefined): string {
+  const title = metadata?.title;
+  return typeof title === "string" && title.trim() ? title.trim() : canvasType.replace(/[_-]+/g, " ");
+}
+
 export function ArtifactRender({
   canvasType,
   ...props
@@ -147,9 +168,25 @@ export function ArtifactRender({
       content={finalProps.serverData ?? finalProps.data ?? finalProps.raw}
       streaming={!!finalProps.isStreamActive}
     >
-      <Suspense fallback={<MatrxMiniLoader />}>
-        <R {...finalProps} />
-      </Suspense>
+      {attachable(canvasType, finalProps) ? (
+        <ArtifactBlockAttach
+          type={canvasType}
+          data={finalProps.serverData ?? finalProps.data ?? finalProps.raw}
+          title={artifactTitle(canvasType, finalProps.metadata)}
+          conversationId={finalProps.conversationId!}
+          messageId={finalProps.messageId}
+          blockIndex={finalProps.blockIndex}
+          artifactId={finalProps.artifactId}
+        >
+          <Suspense fallback={<MatrxMiniLoader />}>
+            <R {...finalProps} />
+          </Suspense>
+        </ArtifactBlockAttach>
+      ) : (
+        <Suspense fallback={<MatrxMiniLoader />}>
+          <R {...finalProps} />
+        </Suspense>
+      )}
     </BlockStateHost>
   );
 }

@@ -141,7 +141,10 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 - The header asks its own headline Measure on the total whatever the open view shows.
 - Records: the count's noun is the records' grain (a definer's records relation that is another
   definition is described for its grain); the door's first-page `measures` are the header row's sums;
-  `settling` is a chip; the table is `controlled-append`, so its pager reads the door's total.
+  their moment is one "As of" chip (the records are the number's own counted rows, so nothing
+  settles); the table is `controlled-append`, so its pager reads the door's total.
+- Freshness: the header states it as ONE "As of" chip (amber, `data-drill-explorer-behind`, past the
+  stale line); there is no separate "Behind" note and no "Counted through" sentence.
 
 ## Tests
 
@@ -190,6 +193,9 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   `hideGrains`, the local moment-window reader and the newest-first pivot reorder removed; the open
   Saved view named in the address and handed to Explain this; the reconciliation line; the unit
   switch says "Points"; saved views paged; records open through `openRecord`; package contract types.
+- `2026-10-08` — Lane DRILL-FACTS (owner ruling, option c): the records' "Settling" badge and the door's
+  `counted`/`settling` are gone (records and number are the same stored facts); freshness is one "As of"
+  chip in the header and in the records row.
 - `2026-09-30` — Lane DRILL-LIVE-FIXES (VERIFY-DRILL-LIVE): one knob reader (`drillKnob.ts`, the door's
   address rule, effective values); records in their own noun with sums, settling and a source-paged
   pager; moments formatted, ids short; findings show the true count past the cap; the header asks its
@@ -202,3 +208,10 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 - `2026-10-01` — Lane DRILL-D1: one name book for every surface (Findings rows on
   ai_usage_executions read "Reading the name…" forever — their ids never reached the names door);
   the records' noun never describes a raw fact token (`workflow_run_facts` 403).
+- `2026-10-07` — Lane DRILL-PRIMITIVE-2: a level breakout naming a sibling definition's Dimension
+  (`ai_usage_executions:conversation` on ai_usage's person) is offered through the design-system
+  `cross` door built from the mount's siblings — the chip opens the sibling grouped by it, carrying the
+  trail's filters it has, the window, and that level's `show`; an address grouping by a Dimension with
+  no `show` shows its level's (`useDrillUrlState({ dimensions })`); a failed attribute read carries
+  `error` (said in the package's ErrorBox) and every failed ask is said in words (`drillFailureWords`),
+  never the database's text. Test: `__tests__/drill-primitive-2.test.tsx`.

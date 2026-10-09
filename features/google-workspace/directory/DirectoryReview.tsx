@@ -6,7 +6,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";

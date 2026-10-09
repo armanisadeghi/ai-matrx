@@ -102,8 +102,8 @@ import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates"
 import { listParentFilterOptions } from "@ai-matrx/chat/surfaces/utils/surface-hierarchy";
 import { surfaceCheckState } from "@ai-matrx/chat/surfaces/utils/surface-check-ledger";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 export function SurfacesContainer() {
   const router = useRouter();

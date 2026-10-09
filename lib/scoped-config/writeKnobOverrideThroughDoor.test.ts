@@ -21,6 +21,7 @@
 // call it receives.
 
 import {
+  setKnobOverride,
   writeKnobOverrideThroughDoor,
   type KnobWriteDoor,
 } from "./service";
@@ -137,4 +138,72 @@ it("refuses a declared door it cannot call, by name — never a quiet fall back"
     }),
   ).rejects.toThrow(/esign\.knob_set/);
   expect(calls).toHaveLength(0);
+});
+
+// Meet duplicates S2: every `meet.*` key is written through
+// `communication.meet_policy_set` (host authority on the meeting rung, the
+// steward test elsewhere). Live: `knob_override_set` answers `wrong_door`
+// naming that door for any meet key.
+const MEET_DOOR: KnobWriteDoor = {
+  key: "meet.profile.zoom.knock_timeout_minutes",
+  featurePrefix: "meet.",
+  setDoor: "communication.meet_policy_set",
+  clearDoor: "communication.meet_policy_set",
+  authorityKind: "meet_host",
+  mayWrite: true,
+  authorityDetail: "You are an owner or admin of this organization.",
+  reason: "Meeting rules.",
+};
+
+it("sets a meet. rule through communication.meet_policy_set", async () => {
+  const calls = recordingClient();
+  await writeKnobOverrideThroughDoor({
+    door: MEET_DOOR,
+    feature: "meet",
+    key: "profile.zoom.knock_timeout_minutes",
+    scopeKind: "organization",
+    scopeId: ORG,
+    organizationId: ORG,
+    value: 10,
+  });
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toMatchObject({ schema: "communication", fn: "meet_policy_set" });
+  expect(calls[0].args).toMatchObject({ p_feature: "meet", p_scope_kind: "organization", p_value: 10 });
+});
+
+it("setKnobOverride follows the door a wrong_door refusal names, and only then", async () => {
+  const calls: { schema: string | null; fn: string }[] = [];
+  jest.mocked(createClient).mockReturnValue({
+    schema: (name: string) => ({
+      rpc: (fn: string) => {
+        calls.push({ schema: name, fn });
+        if (fn === "knob_override_set") {
+          return Promise.resolve({
+            data: {
+              ok: false,
+              reason: "wrong_door",
+              set_door: "communication.meet_policy_set",
+              clear_door: "communication.meet_policy_set",
+            },
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: { ok: true }, error: null });
+      },
+    }),
+  } as unknown as ReturnType<typeof createClient>);
+
+  const result = await setKnobOverride({
+    feature: "meet",
+    key: "personal_templates",
+    scopeKind: "user",
+    scopeId: PAY_GROUP,
+    organizationId: ORG,
+    value: [],
+  });
+  expect(calls.map((c) => `${c.schema}.${c.fn}`)).toEqual([
+    "platform.knob_override_set",
+    "communication.meet_policy_set",
+  ]);
+  expect(result).toEqual({ ok: true });
 });

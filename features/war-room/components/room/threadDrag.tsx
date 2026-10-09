@@ -23,11 +23,11 @@ import {
   type DraggableAttributes,
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_5, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
   type SortingStrategy,
@@ -61,10 +61,8 @@ export function ThreadSortable({
 }) {
   const sensors = useSensors(
     // A small distance threshold so a click-to-stage isn't read as a drag.
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_5),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
 
   const sortStrategy: SortingStrategy =

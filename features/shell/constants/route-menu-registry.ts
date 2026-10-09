@@ -5,7 +5,8 @@
 //   - pathPattern:      regex tested against window.location.pathname
 //   - iconName:         Lucide icon name shown on the switch button
 //   - label:            accessible label for the switch button
-//   - importFn:         dynamic import → route menu body component
+//   - importFn:         loader → route menu body component (its import() lives in the
+//                       "use client" route-menu-loaders.ts: this file is read on the server too)
 //   - headerImportFn:   optional dynamic import → route header component
 //                       replaces sidebar brand area content when active
 //
@@ -20,6 +21,17 @@ import { RESEARCH_TOPIC_PATH_PATTERN } from "@/features/research/components/shel
 import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import { CANVAS_WORKSPACE_MENU_PATTERN } from "./canvas-chrome-routes";
+import {
+  loadAdminRouteSidebarMenu,
+  loadAgentRunSidebarMenu,
+  loadChatSidebarMenu,
+  loadCodeSidebarMenu,
+  loadImagesSidebarMenu,
+  loadMarketingSidebarMenu,
+  loadResearchTopicSidebarMenu,
+  loadSettingsRouteMenu,
+  loadStaffSidebarMenu,
+} from "./route-menu-loaders";
 
 export interface RouteMenuEntry {
   pathPattern: RegExp;
@@ -66,21 +78,20 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "Settings",
     label: "Settings",
     layout: "panel",
-    importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),
+    importFn: loadSettingsRouteMenu,
   },
   {
     pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",
     layout: "panel",
-    importFn: () =>
-      import("@ai-matrx/chat/agents/components/shell/AgentRunSidebarMenu"),
+    importFn: loadAgentRunSidebarMenu,
   },
   {
     pathPattern: /^\/administration(?:\/|$)/,
     iconName: "ShieldCheck",
     label: "Administration",
-    importFn: () => import("@/features/admin/components/AdminRouteSidebarMenu"),
+    importFn: loadAdminRouteSidebarMenu,
   },
   {
     // Pages that carry their own chat panel (the Board, signed-in Education):
@@ -90,52 +101,48 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "MessageCircle",
     label: "Chats",
     defaultView: "main",
-    importFn: () => import("@ai-matrx/chat/agents/components/chat/ChatSidebarMenu"),
+    importFn: loadChatSidebarMenu,
   },
   {
     pathPattern: /^\/chat(?:\/|$)/,
     iconName: "MessageCircle",
     label: "Chats",
     layout: "panel",
-    importFn: () => import("@ai-matrx/chat/agents/components/chat/ChatSidebarMenu"),
+    importFn: loadChatSidebarMenu,
   },
   {
     pathPattern: /^\/staff(?:\/|$)/,
     iconName: "Users",
     label: "Your staff",
     layout: "panel",
-    importFn: () =>
-      import("@/features/personal-staff/components/StaffSidebarMenu"),
+    importFn: loadStaffSidebarMenu,
   },
   {
     pathPattern: /^\/code(?:\/|$)/,
     iconName: "Code2",
     label: "Code Workspace",
     layout: "panel",
-    importFn: () => import("@/features/code/shell/CodeSidebarMenu"),
+    importFn: loadCodeSidebarMenu,
   },
   {
     pathPattern: /^\/marketing(?:\/|$)/,
     iconName: "TrendingUp",
     label: "Marketing",
     layout: "panel",
-    importFn: () =>
-      import("@/features/marketing/components/shell/MarketingSidebarMenu"),
+    importFn: loadMarketingSidebarMenu,
   },
   {
     pathPattern: RESEARCH_TOPIC_PATH_PATTERN,
     iconName: "FlaskConical",
     label: "Research Topic",
     layout: "panel",
-    importFn: () =>
-      import("@/features/research/components/shell/ResearchTopicSidebarMenu"),
+    importFn: loadResearchTopicSidebarMenu,
   },
   {
     pathPattern: /^\/images(?:\/|$)/,
     iconName: "Images",
     label: "Images",
     layout: "panel",
-    importFn: () =>
-      import("@/features/image-manager/components/ImagesSidebarMenu"),
+    importFn: loadImagesSidebarMenu,
   },
 ];

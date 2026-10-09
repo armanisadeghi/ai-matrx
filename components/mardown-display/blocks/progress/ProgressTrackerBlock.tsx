@@ -87,13 +87,12 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        tracker.title.replace(/\s+/g, "-").toLowerCase() || "progress",
-        "portrait",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = tracker.title.replace(/\s+/g, "-").toLowerCase() || "progress";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "portrait" }), "application/pdf");
     } catch (err) {
       console.error("[ProgressTrackerBlock] Print failed:", err);
     } finally {

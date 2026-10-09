@@ -13,7 +13,6 @@
 // p_org whenever the caller passed none, and fetchEntitlementSnapshot called the
 // no-argument entitlement_snapshot — both answered from billing.user_plan.
 
-import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { checkEntitlement, fetchEntitlementSnapshot } from "../service";
 
 const rpc = jest.fn();
@@ -77,15 +76,6 @@ describe("a tier belongs to an organization", () => {
     expect(rpc.mock.calls[0][1]).toEqual({ p_capability: ENFORCED, p_org: RINCON_PLUMBING });
   });
 
-  it("closing the organization picker means the action does not run and the resolver is never asked", async () => {
-    ensureOrgId.mockRejectedValue(new OrganizationSelectionCancelled());
-
-    const verdict = await checkEntitlement(ENFORCED);
-
-    expect(rpc).not.toHaveBeenCalled();
-    expect(verdict.allowed).toBe(false);
-    expect(verdict.reason).toBe("organization_required");
-  });
 
   it("the boot snapshot hydrates nothing until an organization is resolved — never a personal plan", async () => {
     awaitEffectiveOrganizationId.mockResolvedValue({

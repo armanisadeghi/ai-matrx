@@ -47,22 +47,19 @@ import React, { useMemo, useState } from "react";
 import {
   FieldHelp,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateInputSurface } from "../input-surface";
 import { planInvocation, type KnownValues } from "@ai-matrx/chat/mandates/invoke/supplied-values";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 /** The one line shown when the only thing missing is a chosen workspace. */
 export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
 
@@ -224,8 +221,7 @@ export function AutomationButton({
           icon={<BrainCircuit />}
           variant="outline"
           onClick={() => {
-            void ensureOrganizationContext().catch((err: unknown) => {
-              if (isOrganizationSelectionCancelled(err)) return;
+            void ensureOrgId(null).catch((err: unknown) => {
               toast.error(extractErrorMessage(err));
             });
           }}
@@ -314,7 +310,7 @@ export function AutomationButton({
                   An inline one-line question is not an authoring surface; the
                   primitive with no machinery between the keystroke and the
                   state is the right component, and it cannot lose characters. */}
-              <Textarea
+              <ProTextarea
                 id={`ask-${mandateKey}-${ask.name}`}
                 value={answers[ask.name] ?? ""}
                 onChange={(e) =>

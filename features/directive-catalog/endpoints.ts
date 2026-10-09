@@ -9,6 +9,9 @@
 export const ENDPOINTS_DIRECTIVES = {
   /** GET — the live noun × verb directive catalog (Public, non-sensitive). */
   catalog: "/directives/catalog" as const,
+  /** GET — ONE noun's write item schemas, fetched when a form opens (Public). */
+  nounSchemas: (noun: string) =>
+    `/directives/catalog/${encodeURIComponent(noun)}` as const,
   /** POST — run ONE `verb:noun` Directive as the user (authed; RLS). */
   execute: "/directives/execute" as const,
   /** POST — apply a directive the agent proposed under `ask`, on user accept (authed). */

@@ -114,6 +114,7 @@ export function ShareMenu({ spaceId, title, onCopyLink }: { spaceId: string; tit
           resourceName={title || "Untitled"}
           resourceNoun="Page"
           organizationId={orgId}
+          levelWording="notion"
         />
       ) : null}
     </>

@@ -10,8 +10,12 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
+  CalendarClock,
+  Timer,
+  Coins,
   HardDrive,
   Loader2,
+  BadgeCheck,
   ScrollText,
   UserPlus,
   Users,
@@ -27,7 +31,11 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberRosterTable } from "./MemberRosterTable";
 import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
+import { AutomationCostTable } from "@/features/scheduling/components/costs/AutomationCostTable";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { orgAgentSpendPath } from "@/features/admin/agent-spend/agentSpend";
+import { orgSpendApprovalsPath } from "@/features/admin/spend-approvals/spendApprovals";
+import { WaitingApprovalsCount } from "@/features/admin/spend-approvals/WaitingApprovalsCount";
 
 function StatTile({
   icon: Icon,
@@ -57,7 +65,7 @@ function StatTile({
 }
 
 function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       <StatTile icon={Users} label="Members" value={overview.totalMembers} hint={`${overview.admins} admins`} />
@@ -84,7 +92,7 @@ function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
       <StatTile
         icon={Activity}
         label="Spend 24h"
-        value={formatMcents(overview.cost24hMcents, unit)}
+        value={formatMcents(overview.cost24hMcents, costRate, unit)}
         hint={`${overview.requests24h} requests`}
       />
     </div>
@@ -101,6 +109,7 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
   const { members, overview, loading, error } = useOrgRoster(orgId);
   const [showInvite, setShowInvite] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
+  const [showAutomations, setShowAutomations] = useState(false);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-6">
@@ -119,6 +128,22 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button icon={<Coins />} variant="outline" asChild>
+            <Link href={orgAgentSpendPath(organization.slug)}>AI spend</Link>
+          </Button>
+          <Button icon={<BadgeCheck />} variant="outline" asChild>
+            <Link href={orgSpendApprovalsPath(organization.slug)}>
+              Spend approvals <WaitingApprovalsCount orgId={organization.id} />
+            </Link>
+          </Button>
+          <Button icon={<CalendarClock />} variant="outline" onClick={() => setShowAutomations((s) => !s)}>
+            Automations
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/organizations/${organization.slug}/admin/triggers`}>
+              <Timer className="h-4 w-4" /> Triggers
+            </Link>
+          </Button>
           <Button icon={<ScrollText />} variant="outline" onClick={() => setShowAudit((s) => !s)}>
             Audit log
           </Button>
@@ -132,6 +157,12 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
         <Card className="border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
+        </Card>
+      )}
+
+      {showAutomations && (
+        <Card className="h-[32rem] p-3">
+          <AutomationCostTable orgId={orgId} seat="org" orgSlug={organization.slug} />
         </Card>
       )}
 

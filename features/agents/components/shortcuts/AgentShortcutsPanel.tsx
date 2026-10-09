@@ -57,14 +57,14 @@ import {
   type AgentShortcutPanelRow,
   type AgentShortcutsPanelKpis,
 } from "@/features/agent-shortcuts/format";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import {
   UntrustedCount,
   countReadState,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 
 interface AgentShortcutsPanelProps {
   agentId: string;

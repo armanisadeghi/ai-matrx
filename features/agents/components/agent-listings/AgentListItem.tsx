@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import type { RootState } from "@/lib/redux/store";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
@@ -40,6 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentListItemProps {
   id: string;
@@ -69,7 +69,7 @@ export function AgentListItem({
   basePath = "/agents",
 }: AgentListItemProps) {
   const dispatch = useAppDispatch();
-  const record = useAppSelector((state) => selectAgentById(state, id));
+  const record = useAgentView(id);
   const name = record?.name ?? "Untitled Agent";
   const isArchived = record?.isArchived ?? false;
 

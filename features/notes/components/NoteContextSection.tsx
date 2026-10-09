@@ -87,7 +87,7 @@ export function NoteContextSection({
           title: noteDisplayLabel(note),
           icon: StickyNote,
         }}
-        defaultOrganizationId={note.organization_id ?? undefined}
+        initialOrganizationId={note.organization_id ?? undefined}
         sectionHeight={embedded ? 380 : 260}
         onSaved={onSaved}
       />

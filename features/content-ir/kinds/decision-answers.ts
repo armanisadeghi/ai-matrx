@@ -21,7 +21,7 @@
 import type { KindDefinition, KindSchema } from "@ai-matrx/content-ir";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
-import { DECISION_ANSWERS_BLOCK_TYPE, DECISION_ANSWERS_KIND } from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
+import { DECISION_ANSWERS_BLOCK_TYPE, DECISION_ANSWERS_KIND } from "@ai-matrx/content-ir/surfaces";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import { joinBlocks } from "./kind-markdown-utils";
 import {

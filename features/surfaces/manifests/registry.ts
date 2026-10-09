@@ -170,7 +170,7 @@ import { educationLibraryManifest } from "./education-library.manifest";
 import { educationLibraryCommunityManifest } from "./education-library-community.manifest";
 import { educationLibrarySuggestionsManifest } from "./education-library-suggestions.manifest";
 import { settingsManifest } from "./settings.manifest";
-import { agentAppsManifest } from "./agent-apps.manifest";
+import { appletsManifest } from "./applets.manifest";
 import { barcodePreviewManifest } from "./barcode-preview.manifest";
 import { markdownPdfManifest } from "./markdown-pdf.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -250,7 +250,7 @@ import { adminApplicationsManifest } from "./admin-applications.manifest";
 import { adminSyncFleetManifest } from "./admin-sync-fleet.manifest";
 import { adminProofRunsManifest } from "./admin-proof-runs.manifest";
 import { adminSchedulingManifest } from "./admin-scheduling.manifest";
-import { adminAgentAppsManifest } from "./admin-agent-apps.manifest";
+import { adminAppletsManifest } from "./admin-applets.manifest";
 import { adminBundlesManifest } from "./admin-bundles.manifest";
 import { adminMcpServersManifest } from "./admin-mcp-servers.manifest";
 import { adminLookupsManifest } from "./admin-lookups.manifest";
@@ -441,7 +441,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationLibraryCommunityManifest,
   educationLibrarySuggestionsManifest,
   settingsManifest,
-  agentAppsManifest,
+  appletsManifest,
   agentConnectionsManifest,
   connectionsSkillsManifest,
   keywordResearchManifest,
@@ -519,7 +519,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminOfficialComponentsManifest,
   adminApplicationsManifest,
   adminSchedulingManifest,
-  adminAgentAppsManifest,
+  adminAppletsManifest,
   adminBundlesManifest,
   adminSyncFleetManifest,
   adminProofRunsManifest,

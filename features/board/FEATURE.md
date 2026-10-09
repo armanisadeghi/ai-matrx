@@ -31,7 +31,7 @@ Closed 2026-10-04 (details in CHANGELOG.md): Board as its own menu item with eve
 1. **The agent reaches for knowledge_search first when a tile is live.** Live two-turn run 2026-10-04 (test@test.com): with a table tile live, turn 1 went `knowledge_search → knowledge_open → apply_surface_write` and landed the right value after approval; with nothing live, turn 2 went through `board_open_item → board_item_act`. The request now leads with the Board's items (`hostLead`, `surface-chain.ts`) and says "never knowledge_search", and the model still prefers its knowledge tools. Next lever: which tools the agent is given while on the Board (agent definition / surface defaults — agents never edit agent definitions; raise with the agent-tools owners).
 2. **Camera overshoot on table checkboxes.** On the "Grid Parity Fixture" table, Tab onto a row checkbox past the grid's own scroll edge panned 411 px where the rule predicts about 53 px.
 3. **Caret following** is not built for plain `<textarea>`/`<input>` or Monaco.
-4. **Item leftovers.** Study kit: a person adds saved aids in the tile only through the link to `/education/kits/new?source=` (the picker is inline in `ManualKitCreator`); the agent sees the 25 most recent candidates, not a search. Scope: no `sleeps` opt-in yet; the new-scope type chooser does not show the organization. Projects carry no archived flag, so the Project picker has no archive reveal. Not agent-writable on a deck, as on its editor: visibility, class, delete, reorder.
+4. **Item leftovers.** Study kit: the agent sees the 25 most recent candidates, not a search. Scope: no `sleeps` opt-in yet; the new-scope type chooser does not show the organization. Projects carry no archived flag, so the Project picker has no archive reveal. Not agent-writable on a deck, as on its editor: visibility, class, delete, reorder.
 5. **Next batch of interactions.** Arman: "There are a lot more things like that" — ask him. A phone swipe from the left edge pans the Board in the browser emulator; a real iOS edge swipe is untested.
 6. **Small:** Files has no mobile host for `/files/f`; Page tiles show an embedded page's surface to agents by title only; only the data-tables, notes-editor and documents briefs were chosen with their features in mind.
 7. **Composer-chrome leftovers** (UNVERIFIED): the store reachable outside the viewport (Layers as a Properties tab), an insets callback for fit-to-view.
@@ -325,6 +325,19 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface
   chain) and can send into it. A saved tile reopens through the canonical resume sequence, so a turn that
   was mid-run at reload reattaches. Add menu: "Chat" and "Chat with an agent" (the one agent picker).
+- **A chat tile carries the board's conversation list** (Arman, 2026-10-08): `ConversationHistorySidebar`
+  (the list /chat uses) beside the chat, limited to THIS board's conversations — `New conversation`,
+  collapse, rows switch the tile in place (`chat.openExisting`; an unsent conversation is still never
+  saved by id), ⋯ → "Remove from this board". Board membership is a `conversation → board` edge in
+  `platform.associations` (pair registered non-conveying), written/read only through `associationsService`
+  (`items/board-chats.tsx`): filed when the server has a chat tile's conversation (started in the tile,
+  brought in, or added by an agent — each mounts a tile) and for the board's own shell-chat conversation
+  (`BoardHomeChatFiler`). Removing a tile keeps the edge; only the row action deletes it (never the
+  conversation). Read once per opened board; the list passes `keepLoaded`, so a sleeping tile reads nothing
+  on wake. Open/closed is `meta.list` on the tile's saved source (`chatListOpen`: the choice, else open
+  at >= 560 px); the toggle is a header button (`BoardItemType.HeaderAction`, no new row); no list at the
+  overview tier (`usesTier`). Existing conversations are NOT backfilled: a board's list starts with
+  what was filed since this shipped.
 - **An agent form tile runs an agent with no chat display** (`items/AgentFormItemBody.tsx`, Arman
   2026-10-06): the agent's inputs in the composer's FORM style (`showFreeformInput` off — variables and one
   Run; an agent with no inputs keeps its text box), then the reply through `AgentAssistantMessage`, so a

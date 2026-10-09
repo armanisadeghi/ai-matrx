@@ -13,7 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
@@ -30,7 +30,7 @@ import {
 } from "@/features/marketing/discovery/youtube/service";
 import type { YouTubeVideoLibraryRecord } from "@/features/marketing/discovery/youtube/types";
 import { useTopicId } from "../../context/ResearchContext";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 export default function ResearchYouTubePage() {
   const dispatch = useAppDispatch();

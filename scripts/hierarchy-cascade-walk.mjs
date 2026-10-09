@@ -1,6 +1,6 @@
 // LANE HIERARCHY-CASCADE — headless proof on the shared preview that the retired bespoke pickers'
 // call sites now run the canonical scope selection family:
-//   1. an agent app's settings (EntityEngagementPicker): pick project → task, tag a scope, reload,
+//   1. an Applet's settings (EntityEngagementPicker): pick project → task, tag a scope, reload,
 //      see it persist, undo (admin@admin.com's own app "Smart City Discovery Guide");
 //   2. the research start form (EngagementPicker inline, Surface A): org → project, tag, reload, undo;
 //   3. a surface binding's target (BindingTargetPicker, admin's agent batch editor): one organization,
@@ -20,8 +20,8 @@ const env = Object.fromEntries(
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://hierarchy-cascade.localhost:3001";
 const OUT = process.argv[2] ?? "/tmp";
 mkdirSync(OUT, { recursive: true });
-// WALK_SITES=agent-app,research,shortcut (default all) re-runs only the named sites.
-const SITES = new Set((process.env.WALK_SITES ?? "agent-app,research,shortcut").split(","));
+// WALK_SITES=applet,research,shortcut (default all) re-runs only the named sites.
+const SITES = new Set((process.env.WALK_SITES ?? "applet,research,shortcut").split(","));
 const APP_ID = "d9c30db7-dcce-46c3-a00e-9498342692a9";
 const ORG = "admin's Workspace";
 const PROJECT = "Mobile Note App";
@@ -106,15 +106,15 @@ try {
     }
   }
 
-  // ── 1. Agent app settings ──
-  where = "agent-app";
-  if (SITES.has("agent-app")) {
-  const appUrl = `${ORIGIN}/agent-apps/${APP_ID}/settings`;
+  // ── 1. Applet settings ──
+  where = "applet";
+  if (SITES.has("applet")) {
+  const appUrl = `${ORIGIN}/applets/manage/${APP_ID}/settings`;
   await page.goto(appUrl, { waitUntil: "domcontentloaded", timeout: 240000 });
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   await dismissBanners();
-  step({ site: "agent-app", before: await settledFieldText() });
+  step({ site: "applet", before: await settledFieldText() });
   await page.locator('[data-engagement-picker="field"]').click();
   await page.waitForSelector('[data-miller-rungs="engagements"]', { timeout: 60000 });
   await pick(PROJECT, true);
@@ -124,13 +124,13 @@ try {
   await focusType(TYPE);
   await pick(SCOPE, true);
   await sleep(2000);
-  step({ site: "agent-app", picked: true, shot: await shot("agent-app-picked") });
+  step({ site: "applet", picked: true, shot: await shot("applet-picked") });
   await page.keyboard.press("Escape");
   await page.reload({ waitUntil: "domcontentloaded" });
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   const afterReload = await settledFieldText();
-  step({ site: "agent-app", afterReload, persisted: afterReload.includes(PROJECT) && afterReload.includes(TASK), shot: await shot("agent-app-after-reload") });
+  step({ site: "applet", afterReload, persisted: afterReload.includes(PROJECT) && afterReload.includes(TASK), shot: await shot("applet-after-reload") });
   // undo
   await page.locator('[data-engagement-picker="field"]').click();
   await page.waitForSelector('[data-miller-rungs="engagements"]', { timeout: 60000 });
@@ -146,7 +146,7 @@ try {
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   const undone = await settledFieldText();
-  step({ site: "agent-app", undone, clean: !undone.includes(PROJECT), shot: await shot("agent-app-undone") });
+  step({ site: "applet", undone, clean: !undone.includes(PROJECT), shot: await shot("applet-undone") });
   }
 
   // ── 2. Research start form (inline, Surface A) ──

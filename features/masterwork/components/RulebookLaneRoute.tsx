@@ -41,7 +41,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { toast } from "@/lib/toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

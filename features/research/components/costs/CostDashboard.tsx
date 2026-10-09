@@ -9,20 +9,22 @@
  * dollar figure here.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Brain, Coins, Gauge, FileText, Layers, Loader2, Snowflake, Tags, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableLocalDrillConfig,
+} from "@ai-matrx/design-system/data-table/types";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useTopicCosts } from "../../hooks/useTopicCosts";
 import {
   COST_PHASE_LABELS,
   type CostLedgerEntry,
   type CostPhase,
-  type PhaseRollup,
 } from "../../costs";
 import type { NormalizedUsageModel } from "@/lib/token-usage/normalize";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -90,99 +92,6 @@ function StatTile({
     </div>
   );
 }
-
-const PHASE_COLUMNS: MatrxColumnDef<PhaseRollup>[] = [
-  {
-    id: "phase",
-    header: "Phase",
-    label: "Phase",
-    accessorKey: "label",
-    filter: "select",
-    frozen: true,
-    width: 220,
-    cell: (phase) => {
-      const Icon = PHASE_ICON[phase.phase];
-      return (
-        <div className="flex items-center gap-2">
-          {phase.label !== "All phases · unfiltered" && (
-            <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-          )}
-          <span className="font-medium">{phase.label}</span>
-          {phase.failed_calls > 0 && (
-            <span className="type-meta text-destructive/80">
-              {phase.failed_calls} failed
-              <ErrorAlchemyMenu />
-            </span>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "calls",
-    header: "Calls",
-    filter: "number",
-    align: "right",
-    width: 84,
-    cell: (phase) => <span className="tabular-nums">{phase.calls}</span>,
-  },
-  {
-    accessorKey: "input_tokens",
-    header: "In",
-    label: "Input tokens",
-    filter: "number",
-    align: "right",
-    width: 108,
-    cell: (phase) => (
-      <span className="tabular-nums">
-        {phase.input_tokens.toLocaleString()}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "cached_input_tokens",
-    header: "Cached",
-    label: "Cached input tokens",
-    filter: "number",
-    align: "right",
-    width: 120,
-    cell: (phase) => (
-      <span className="tabular-nums text-muted-foreground">
-        {phase.cached_input_tokens > 0
-          ? phase.cached_input_tokens.toLocaleString()
-          : "—"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "output_tokens",
-    header: "Out",
-    label: "Output tokens",
-    filter: "number",
-    align: "right",
-    width: 108,
-    cell: (phase) => (
-      <span className="tabular-nums">
-        {phase.output_tokens.toLocaleString()}
-      </span>
-    ),
-  },
-  {
-    id: "cost",
-    header: "Cost",
-    accessorFn: (phase) => phase.estimated_cost_usd,
-    filter: "number",
-    align: "right",
-    width: 112,
-    cell: (phase) => (
-      <Cost
-        usd={phase.estimated_cost_usd}
-        short
-        muted={phase.calls === 0}
-      />
-    ),
-  },
-];
 
 const MODEL_COLUMNS: MatrxColumnDef<NormalizedUsageModel>[] = [
   {
@@ -261,7 +170,82 @@ const MODEL_COLUMNS: MatrxColumnDef<NormalizedUsageModel>[] = [
   },
 ];
 
-const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
+/**
+ * One AI call as the drill reads it. The billed* fields carry exactly what the page's
+ * headline tiles count: a failed call is not billed (it is counted as `failed`), and an
+ * unpriced call adds 0 to cost (the banner above says so) — so a group's numbers add up
+ * to the tiles instead of quietly disagreeing with them.
+ */
+export type LedgerRow = CostLedgerEntry & {
+  billedCalls: number;
+  failed: number;
+  billedRequests: number;
+  billedIn: number;
+  billedCached: number;
+  billedOut: number;
+  billedCost: number;
+};
+
+export function toLedgerRow(entry: CostLedgerEntry): LedgerRow {
+  const ok = entry.succeeded;
+  return {
+    ...entry,
+    billedCalls: ok ? 1 : 0,
+    failed: ok ? 0 : 1,
+    billedRequests: ok ? entry.requests : 0,
+    billedIn: ok ? entry.inputTokens : 0,
+    billedCached: ok ? entry.cachedInputTokens : 0,
+    billedOut: ok ? entry.outputTokens : 0,
+    billedCost: ok ? (entry.costUsd ?? 0) : 0,
+  };
+}
+
+const COST_SHOW = [
+  "sum_billedCalls",
+  "sum_failed",
+  "sum_billedIn",
+  "sum_billedCached",
+  "sum_billedOut",
+  "sum_billedCost",
+];
+
+/**
+ * LEVELS: drilling into a phase lands on that phase's calls by agent type and model; a model,
+ * on the phases and agent types that used it; an agent type, on its phases and models. Time
+ * comes last. Provider is a fact about one model, so it describes a model rather than being
+ * another column to read down.
+ */
+export function ledgerDrill(
+  format: (usd: number) => string,
+): MatrxDataTableLocalDrillConfig {
+  return {
+    local: true,
+    countLabel: "Calls tried",
+    dimensions: ["phaseLabel", "agentType", "models", "status", "created-at"],
+    measures: ["count", ...COST_SHOW, "sum_billedRequests"],
+    extraMeasures: [
+      { key: "sum_billedCalls", label: "Calls", additive: true, op: "sum", of: "billedCalls" },
+      { key: "sum_failed", label: "Failed", additive: true, op: "sum", of: "failed", lowerIsBetter: true },
+      { key: "sum_billedRequests", label: "Requests", additive: true, op: "sum", of: "billedRequests" },
+      { key: "sum_billedIn", label: "Input tokens", additive: true, op: "sum", of: "billedIn" },
+      { key: "sum_billedCached", label: "Cached input", additive: true, op: "sum", of: "billedCached" },
+      { key: "sum_billedOut", label: "Output tokens", additive: true, op: "sum", of: "billedOut" },
+      { key: "sum_billedCost", label: "Cost", additive: true, op: "sum", of: "billedCost", lowerIsBetter: true, format: (v) => (v === null ? "—" : format(v)) },
+    ],
+    levels: {
+      phaseLabel: { breakouts: ["agentType", "models", "status", "created-at:day"], show: COST_SHOW },
+      models: {
+        breakouts: ["phaseLabel", "agentType", "status", "created-at:day"],
+        attributes: ["providers"],
+        show: [...COST_SHOW, "sum_billedRequests"],
+      },
+      agentType: { breakouts: ["phaseLabel", "models", "status", "created-at:day"], show: COST_SHOW },
+      status: { breakouts: ["phaseLabel", "agentType", "models", "created-at:day"], show: COST_SHOW },
+    },
+  };
+}
+
+export const LEDGER_COLUMNS: MatrxColumnDef<LedgerRow>[] = [
   {
     id: "created-at",
     header: "When",
@@ -321,7 +305,7 @@ const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
   {
     id: "models",
     header: "Model",
-    accessorFn: (entry) => entry.models.join(" "),
+    accessorFn: (entry) => entry.models.join(" + "),
     filter: "text",
     width: 180,
     mobileHidden: true,
@@ -334,7 +318,7 @@ const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
   {
     id: "providers",
     header: "Provider",
-    accessorFn: (entry) => entry.providers.join(" "),
+    accessorFn: (entry) => entry.providers.join(" + "),
     filter: "text",
     width: 150,
     mobileHidden: true,
@@ -441,7 +425,17 @@ export default function CostDashboard() {
   const [showFailed, setShowFailed] = useState(true);
   const { topicId } = useTopicContext();
   const { ledger, isLoading, error } = useTopicCosts(topicId);
-  const { format: unitsLabel } = useCostDisplay();
+  const { format: unitsLabel, unit, rate } = useCostDisplay();
+  const entries = ledger?.entries;
+  const ledgerRows = useMemo(
+    () => (entries ?? []).filter((e) => showFailed || e.succeeded).map(toLedgerRow),
+    [entries, showFailed],
+  );
+  const drill = useMemo(
+    () => ledgerDrill((usd) => unitsLabel(usd, { short: true })),
+    // The cost's words change with the unit and the rate; the table remounts on them below.
+    [unit, rate],
+  );
 
   if (isLoading && !ledger) {
     return (
@@ -491,10 +485,10 @@ export default function CostDashboard() {
     );
   }
 
-  const { totals, phases, models } = ledger;
-  const visibleEntries = showFailed
-    ? ledger.entries
-    : ledger.entries.filter((entry) => entry.succeeded);
+  const { totals, models } = ledger;
+  // The drill reads a call's models as one value; a call that used several lands under "a + b".
+  // Only then is the per-model rollup (which splits such a call's tokens) still worth its own table.
+  const hasMultiModelCalls = ledger.entries.some((e) => e.models.length > 1);
   const cacheRate =
     totals.inputTokens > 0
       ? (totals.cachedInputTokens / totals.inputTokens) * 100
@@ -555,49 +549,8 @@ export default function CostDashboard() {
         </div>
       )}
 
-      <section>
-        <MatrxDataTable<PhaseRollup>
-          tableId="research/topic-costs/by-phase"
-          data={phases}
-          columns={PHASE_COLUMNS}
-          getRowId={(phase) => phase.phase}
-          density="condensed"
-          pageSize={0}
-          viewTabs={false}
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          toolbar={{ title: "By pipeline phase", search: false }}
-          coverage={{
-            noun: "pipeline phase",
-            loaded: phases.length,
-            total: phases.length,
-            answeredBy: "client",
-          }}
-          footerRows={[
-            {
-              phase: "page_analyses",
-              label: "All phases · unfiltered",
-              calls: totals.calls,
-              input_tokens: totals.inputTokens,
-              cached_input_tokens: totals.cachedInputTokens,
-              output_tokens: totals.outputTokens,
-              estimated_cost_usd: totals.costUsd,
-              failed_calls: totals.failedCalls,
-              cost_is_complete: totals.costIsComplete,
-            },
-          ]}
-          rowClassName={(phase) =>
-            phase.calls === 0 ? "opacity-50" : undefined
-          }
-          emptyState={{
-            title: "No pipeline phases",
-            description: "Costs will appear here as this topic runs.",
-          }}
-        />
-      </section>
-
-      {/* ── By model ───────────────────────────────────────────────────── */}
-      {models.length > 0 && (
+      {/* ── By model: only when a call used several models ───────────────── */}
+      {hasMultiModelCalls && models.length > 0 && (
         <MatrxDataTable<NormalizedUsageModel>
           tableId="research/topic-costs/by-model"
           data={models}
@@ -619,9 +572,11 @@ export default function CostDashboard() {
       )}
 
       {/* ── Every call ─────────────────────────────────────────────────── */}
-      <MatrxDataTable<CostLedgerEntry>
+      <MatrxDataTable<LedgerRow>
+        key={`${unit}:${rate}`}
         tableId="research/topic-costs/every-call"
-        data={visibleEntries}
+        data={ledgerRows}
+        drill={drill}
         columns={LEDGER_COLUMNS}
         getRowId={(entry) => entry.id}
         density="condensed"
@@ -656,8 +611,8 @@ export default function CostDashboard() {
         }}
         coverage={{
           noun: "AI call",
-          loaded: ledger.entries.length,
-          total: ledger.entries.length,
+          loaded: ledgerRows.length,
+          total: ledgerRows.length,
           answeredBy: "client",
         }}
         rowClassName={(entry) =>

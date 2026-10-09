@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useState } from "react";
 import { ChevronDown, Loader2, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";

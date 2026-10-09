@@ -1,7 +1,7 @@
 /**
  * Pure TEXT-level extraction of the shape doctor's code-derived inputs —
  * detector tokens from the FROZEN literals (stream-block-accumulator /
- * content-splitter-v2) and compiled render paths (system-kinds bridges,
+ * content-splitter-core) and compiled render paths (system-kinds bridges,
  * artifact-type-registry `kinds:` facades).
  *
  * Why text, not imports: system-kinds.ts TDZ-crashes when the module graph is
@@ -22,10 +22,56 @@ export interface DetectorExtractFailure {
   file: string;
 }
 
+/**
+ * THE ONE place the shape doctor's package source files are named (repo-relative to the
+ * matrx-frontend root). Every reader — the CLI census (check-shapes), the admin
+ * board (shape-doctor-server), the crosswalk generator and the frozen-literal
+ * doctrine scan — resolves through this map, so a move is ONE edit here and a
+ * missing file is reported by NAME (`missingShapeSourceMessage`), never a
+ * bare ENOENT. All three now live in aidream's shared packages (the splitter and
+ * block-dispatch moved into `@ai-matrx/rich-content` on 2026-10-06; the
+ * splitter literals sit in content-splitter-core.ts), so every path reaches
+ * the sibling checkout.
+ */
+export const SHAPE_SOURCE_FILES = {
+  accumulator: {
+    path: "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+    label: "stream-block-accumulator.ts",
+  },
+  splitter: {
+    path: "../aidream/apps/shared/rich-content/src/display/markdown-classification/processors/utils/content-splitter-core.ts",
+    label: "content-splitter-core.ts",
+  },
+  /** The engine's half of the dispatch tables (generic entries). */
+  blockDispatch: {
+    path: "../aidream/apps/shared/rich-content/src/display/chat-markdown/block-registry/block-dispatch.tsx",
+    label: "block-dispatch.tsx",
+  },
+  /** This app's half — domain kinds registered via `registerBlockDispatch`. */
+  domainBlockDispatch: {
+    path: "features/rich-content-host/domain-block-dispatch.tsx",
+    label: "domain-block-dispatch.tsx",
+  },
+} as const;
+
+/** Both dispatch halves, in the order `resolveBlockDispatch` consults them. */
+export const DISPATCH_SOURCE_KEYS = ["domainBlockDispatch", "blockDispatch"] as const;
+
+export type ShapeSourceKey = keyof typeof SHAPE_SOURCE_FILES;
+
+/** The named failure for a shape source that is not where the map says. */
+export function missingShapeSourceMessage(key: ShapeSourceKey, absPath: string): string {
+  const { path } = SHAPE_SOURCE_FILES[key];
+  return `shape source "${key}" not found at ${path} (resolved ${absPath}) — it moved or the aidream sibling checkout is absent; update SHAPE_SOURCE_FILES in features/content-ir/registry/shape-doctor-extract.ts`;
+}
+
+const ACC = SHAPE_SOURCE_FILES.accumulator.label;
+const SPL = SHAPE_SOURCE_FILES.splitter.label;
+
 export interface DetectorSourceTexts {
-  /** features/agents/redux/execution-system/utils/stream-block-accumulator.ts */
+  /** SHAPE_SOURCE_FILES.accumulator */
   accumulatorText: string;
-  /** components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts */
+  /** SHAPE_SOURCE_FILES.splitter */
   splitterText: string;
 }
 
@@ -68,26 +114,26 @@ export function extractDetectorTokensFromTexts({
   setLiteral(
     accumulatorText,
     "SIMPLE_XML_TAGS",
-    "stream-block-accumulator.ts",
+    ACC,
     "xml_tag",
   );
   setLiteral(
     accumulatorText,
     "ATTR_XML_TAGS",
-    "stream-block-accumulator.ts",
+    ACC,
     "xml_tag",
   );
 
   const attrBlocks = /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(splitterText);
   const attrItems = attrBlocks ? extractQuotedStrings(attrBlocks[1]) : [];
   if (attrItems.length === 0) {
-    failures.push({ literal: "ATTRIBUTE_XML_BLOCKS", file: "content-splitter-v2.ts" });
+    failures.push({ literal: "ATTRIBUTE_XML_BLOCKS", file: SPL });
   } else {
     for (const token of attrItems) {
       tokens.push({
         token,
         surfaceType: "xml_tag",
-        source: "content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS",
+        source: `${SPL}#ATTRIBUTE_XML_BLOCKS`,
       });
     }
   }
@@ -99,13 +145,13 @@ export function extractDetectorTokensFromTexts({
     ? [...jsonPatterns[1].matchAll(/^\s{2}([a-z_][a-z0-9_]*):\s*\{/gm)].map((m) => m[1])
     : [];
   if (jsonKeys.length === 0) {
-    failures.push({ literal: "JSON_BLOCK_PATTERNS", file: "content-splitter-v2.ts" });
+    failures.push({ literal: "JSON_BLOCK_PATTERNS", file: SPL });
   } else {
     for (const token of jsonKeys) {
       tokens.push({
         token,
         surfaceType: "json_root",
-        source: "content-splitter-v2.ts#JSON_BLOCK_PATTERNS",
+        source: `${SPL}#JSON_BLOCK_PATTERNS`,
       });
     }
   }
@@ -167,21 +213,21 @@ export function extractHostSurfaceTokensFromTexts({
   collectSet(
     accumulatorText,
     "SIMPLE_XML_TAGS",
-    "stream-block-accumulator.ts",
+    ACC,
     tokens.xml_tag,
     /const SIMPLE_XML_TAGS = new Set\(\[([\s\S]*?)\]\)/,
   );
   collectSet(
     accumulatorText,
     "ATTR_XML_TAGS",
-    "stream-block-accumulator.ts",
+    ACC,
     tokens.xml_tag,
     /const ATTR_XML_TAGS = new Set\(\[([\s\S]*?)\]\)/,
   );
   collectSet(
     splitterText,
     "ATTRIBUTE_XML_BLOCKS",
-    "content-splitter-v2.ts",
+    SPL,
     tokens.xml_tag,
     /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/,
   );
@@ -190,7 +236,7 @@ export function extractHostSurfaceTokensFromTexts({
   const xmlTagBlocks = /const XML_TAG_BLOCKS = \{([\s\S]*?)\} as const;/.exec(splitterText);
   const tagStrings = xmlTagBlocks ? extractQuotedStrings(xmlTagBlocks[1]) : [];
   if (tagStrings.length === 0) {
-    failures.push({ literal: "XML_TAG_BLOCKS", file: "content-splitter-v2.ts" });
+    failures.push({ literal: "XML_TAG_BLOCKS", file: SPL });
   } else {
     for (const raw of tagStrings) {
       const m = /^<([a-z0-9_-]+)>$/i.exec(raw);
@@ -201,7 +247,7 @@ export function extractHostSurfaceTokensFromTexts({
   collectSet(
     splitterText,
     "SPECIAL_CODE_LANGUAGES",
-    "content-splitter-v2.ts",
+    SPL,
     tokens.fence_lang,
     /const SPECIAL_CODE_LANGUAGES = \[([\s\S]*?)\]/,
   );
@@ -212,7 +258,7 @@ export function extractHostSurfaceTokensFromTexts({
     ? [...aliases[1].matchAll(/^\s*([a-z0-9_]+):/gm)].map((m) => m[1])
     : [];
   if (aliasKeys.length === 0) {
-    failures.push({ literal: "CODE_LANGUAGE_ALIASES", file: "content-splitter-v2.ts" });
+    failures.push({ literal: "CODE_LANGUAGE_ALIASES", file: SPL });
   } else {
     for (const key of aliasKeys) tokens.fence_lang.add(key.toLowerCase());
   }
@@ -222,7 +268,7 @@ export function extractHostSurfaceTokensFromTexts({
     ? [...jsonPatterns[1].matchAll(/rootKey: "([^"]+)"/g)].map((m) => m[1])
     : [];
   if (rootKeys.length === 0) {
-    failures.push({ literal: "JSON_BLOCK_PATTERNS.rootKey", file: "content-splitter-v2.ts" });
+    failures.push({ literal: "JSON_BLOCK_PATTERNS.rootKey", file: SPL });
   } else {
     for (const key of rootKeys) tokens.json_root_key.add(key.toLowerCase());
   }
@@ -288,9 +334,12 @@ export function artifactKindSlugsFromText(registryText: string): string[] {
 // ─── Render-block dispatch keys (the render leg's LAST mile) ────────────────
 
 /**
- * The four classification tables that make up `BLOCK_DISPATCH`
- * (components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx).
- * Each opens `const <NAME> = {` and closes `\n} satisfies` at column 0.
+ * The four classification tables. The dispatch is SPLIT across two files since
+ * the rich-content switch (2026-10-06): the engine's generic half
+ * (SHAPE_SOURCE_FILES.blockDispatch) and this app's domain half
+ * (SHAPE_SOURCE_FILES.domainBlockDispatch, registered at load through
+ * `registerBlockDispatch`). Both declare all four tables; each opens
+ * `const <NAME> = {` and closes `\n} satisfies` at column 0.
  */
 const DISPATCH_TABLE_NAMES = [
   "PROTOCOL_BLOCK_DISPATCH",
@@ -304,12 +353,18 @@ export interface DispatchKeyExtraction {
   failures: DetectorExtractFailure[];
 }
 
+/** One dispatch half's source text and the file it was read from. */
+export interface DispatchSourceText {
+  text: string;
+  file: string;
+}
+
 /**
- * Every block type `resolveBlockDispatch` can answer, from block-dispatch.tsx
- * TEXT — the code side of the dangling-`component_key` check.
+ * Every block type `resolveBlockDispatch` can answer, from the TEXT of every
+ * dispatch half — the code side of the dangling-`component_key` check.
  *
- * Why it matters: a `content_ir.kind_component` row naming a key this table
- * does NOT hold is invisible at runtime for every kind carrying a
+ * Why it matters: a `content_ir.kind_component` row naming a key these tables
+ * do NOT hold is invisible at runtime for every kind carrying a
  * `legacyBlockType` facet, because `applyIrKindRoute` routes those through the
  * compiled bridge regardless of the row. The block still renders, and the
  * registry keeps advertising a component that does not exist (proven
@@ -318,45 +373,54 @@ export interface DispatchKeyExtraction {
  * Text, not import, for the reason the rest of this module is: the dispatch
  * table pulls the whole lazy React component tree behind it.
  *
- * Computed keys (`[DB_KIND_COMPONENT_KEY]:`) are resolved through
+ * A table missing from ANY half is a failure (a rename there would silently
+ * drop that half's keys). A table empty in one half is fine (the engine's
+ * OPAQUE table is empty by design); a table empty across EVERY half is a
+ * failure. Computed keys (`[DB_KIND_COMPONENT_KEY]:`) are resolved through
  * `computedKeyValues` — the caller passes the imported constants, so a rename
  * cannot silently shrink the key set. An unresolved identifier is a FAILURE,
  * never a dropped key.
  */
-export function extractDispatchKeysFromText(
-  dispatchText: string,
+export function extractDispatchKeysFromTexts(
+  sources: readonly DispatchSourceText[],
   computedKeyValues: Readonly<Record<string, string>>,
 ): DispatchKeyExtraction {
   const keys = new Set<string>();
   const failures: DetectorExtractFailure[] = [];
-  const file =
-    "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx";
+  if (sources.length === 0) {
+    failures.push({ literal: "BLOCK_DISPATCH (no source texts)", file: "-" });
+    return { keys: [], failures };
+  }
 
   for (const name of DISPATCH_TABLE_NAMES) {
-    const start = dispatchText.indexOf(`const ${name} = {`);
-    const end = start < 0 ? -1 : dispatchText.indexOf("\n} satisfies", start);
-    if (start < 0 || end < 0) {
-      failures.push({ literal: name, file });
-      continue;
-    }
-    const body = dispatchText.slice(start, end);
     let found = 0;
-    // Top-level entries only: exactly two spaces of indent (entry bodies are
-    // indented four or more).
-    for (const m of body.matchAll(/\n {2}"?([A-Za-z_][A-Za-z0-9_]*)"?:/g)) {
-      keys.add(m[1]);
-      found += 1;
-    }
-    for (const m of body.matchAll(/\n {2}\[([A-Za-z_][A-Za-z0-9_]*)\]:/g)) {
-      const value = computedKeyValues[m[1]];
-      if (!value) {
-        failures.push({ literal: `${name}[${m[1]}]`, file });
+    for (const { text, file } of sources) {
+      const start = text.indexOf(`const ${name} = {`);
+      const end = start < 0 ? -1 : text.indexOf("\n} satisfies", start);
+      if (start < 0 || end < 0) {
+        failures.push({ literal: name, file });
         continue;
       }
-      keys.add(value);
-      found += 1;
+      const body = text.slice(start, end);
+      // Top-level entries only: exactly two spaces of indent (entry bodies are
+      // indented four or more).
+      for (const m of body.matchAll(/\n {2}"?([A-Za-z_][A-Za-z0-9_]*)"?:/g)) {
+        keys.add(m[1]);
+        found += 1;
+      }
+      for (const m of body.matchAll(/\n {2}\[([A-Za-z_][A-Za-z0-9_]*)\]:/g)) {
+        const value = computedKeyValues[m[1]];
+        if (!value) {
+          failures.push({ literal: `${name}[${m[1]}]`, file });
+          continue;
+        }
+        keys.add(value);
+        found += 1;
+      }
     }
-    if (found === 0) failures.push({ literal: name, file });
+    if (found === 0) {
+      failures.push({ literal: name, file: sources.map((s) => s.file).join(" + ") });
+    }
   }
 
   return { keys: [...keys].sort(), failures };

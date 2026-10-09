@@ -40,8 +40,9 @@ import {
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatAbsoluteDate, formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { listCompetitorSites } from "@/features/marketing/competitors/data";
@@ -71,8 +72,11 @@ export function parseTab(value: string | null): DomainTab {
   return value === "competitors" || value === "gap" ? value : "keywords";
 }
 
-export function priceLabel(price: ActionPrice | undefined): string {
-  return price?.costUsd != null ? formatUsd(price.costUsd, { digits: "trim" }) : "cost unknown";
+export function priceLabel(
+  price: ActionPrice | undefined,
+  format: (usd: number | null | undefined) => string,
+): string {
+  return price?.costUsd != null ? format(price.costUsd) : "cost unknown";
 }
 
 export function shortDate(value: string | null): string {
@@ -428,11 +432,12 @@ export function SourceLine<T>({
   busy: boolean;
   children?: ReactNode;
 }) {
+  const { format } = useCostDisplay();
   if (state.kind !== "ready") return null;
   const source = state.reused
     ? `Reused from ${shortDate(state.observedAt)}`
     : `Bought ${shortDate(state.observedAt)}${
-        state.chargedUsd != null ? ` · ${formatUsd(state.chargedUsd, { digits: "trim" })}` : ""
+        state.chargedUsd != null ? ` · ${format(state.chargedUsd)}` : ""
       }`;
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -447,7 +452,7 @@ export function SourceLine<T>({
         onClick={onRefresh}
         title={`Buy a fresh read of ${what.toLowerCase()}`}
       >
-        Refresh · {priceLabel(price)}
+        Refresh · {priceLabel(price, format)}
       </Button>
       {state.partial && state.notice ? (
         <Badge tone="warning" title={state.notice}>
@@ -478,6 +483,7 @@ export function SectionGate<T>({
   onRetry: () => void;
   children: ReactNode;
 }) {
+  const { format } = useCostDisplay();
   switch (state.kind) {
     case "idle":
       return null;
@@ -497,12 +503,12 @@ export function SectionGate<T>({
           line={
             state.note ??
             (price?.reuseDays != null
-              ? `${priceLabel(price)} per run, then free for ${price.reuseDays} days.`
-              : `${priceLabel(price)} per run.`)
+              ? `${priceLabel(price, format)} per run, then free for ${price.reuseDays} days.`
+              : `${priceLabel(price, format)} per run.`)
           }
           action={
             <Button variant="primary" onClick={onBuy}>
-              Run · {priceLabel(price)}
+              Run · {priceLabel(price, format)}
             </Button>
           }
         />

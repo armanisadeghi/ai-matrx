@@ -143,8 +143,35 @@ describe("same-named records in the record search", () => {
     ]);
     const rows = await renderPicker("conversation");
     expect(new Set(rows).size).toBe(3);
-    // One organization: it is not repeated on every row.
-    for (const r of rows) expect(r).not.toContain("Harbor Dental");
+    // A member of two organizations sees each row's organization — in every
+    // search, however few organizations the results happen to span (G18).
+    for (const r of rows) expect(r).toContain("Harbor Dental");
+  });
+
+  it("a search narrowed to one result still names its organization (one rule for every action)", async () => {
+    // G18 review: the Update search named a Workbook's organization and the
+    // Delete search, narrowed to one row, did not.
+    items.current = [{ id: id(31), title: "G17 workbook", updatedAt: "2026-10-02T11:49:00Z" }];
+    facts.current = new Map([[id(31), { organizationId: ORG_A, fact: null }]]);
+    const rows = await renderPicker("note");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toContain("Harbor Dental");
+  });
+
+  it("a member of one organization never sees it repeated", () => {
+    const rows = [
+      { id: id(41), title: "A", updatedAt: null },
+      { id: id(42), title: "B", updatedAt: null },
+    ];
+    const out = recordRows(
+      rows,
+      new Map(rows.map((r) => [r.id, { organizationId: ORG_A, fact: null }])),
+      () => "Harbor Dental",
+      NOW,
+      null,
+      false,
+    );
+    for (const r of out) expect(r.secondary ?? "").not.toContain("Harbor Dental");
   });
 
   it("the line never passes its 60-character slot", () => {
@@ -162,7 +189,7 @@ describe("same-named records in the record search", () => {
       NOW,
     );
     for (const row of out) expect(row.secondary!.length).toBeLessThanOrEqual(60);
-    expect(out[1]!.secondary).toBe("Northwind · In progress · Edited 1 h ago");
+    expect(out[1]!.secondary).toBe("Northwind · In progress · Edited 1 hour ago");
   });
 
   it("a note's first words never repeat its title or print a fence", () => {

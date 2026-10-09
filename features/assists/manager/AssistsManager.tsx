@@ -16,8 +16,8 @@
  * triage, restore), never a second way to act.
  */
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useMemo, useState } from "react";
 import {
   Clock,
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -146,6 +147,7 @@ export function AssistsManager() {
     stats,
     sourceSuppressions,
     loading,
+    loaded,
     error,
     refresh,
     restore,
@@ -172,26 +174,40 @@ export function AssistsManager() {
    * value the manifest declares, so a menu-launched agent doesn't hit v3's
    * VALUE MAPPING GAP scream.
    */
-  const getScope = () =>
-    createAssistsScope({
+  const getScope = () => {
+    const flags = {
+      include_snoozed: includeSnoozed,
+      starred_only: starredOnly,
+      unseen_only: unseenOnly,
+      show_silenced: showSilenced,
+    };
+    return createAssistsScope({
       assist_status_tab: tab,
-      assist_view_flags: {
-        include_snoozed: includeSnoozed,
-        starred_only: starredOnly,
-        unseen_only: unseenOnly,
-        show_silenced: showSilenced,
-      },
-      assist_total_count: total,
-      visible_assists_summary: rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        urgency: urgencyFromPriority(row.priority),
-        status: row.status,
-        source: row.sourceKey,
-      })),
-      silenced_sources: sourceSuppressions.map((s) => s.sourceKey),
+      assist_view_flags: flags,
+      assist_include_snoozed: includeSnoozed,
+      assist_starred_only: starredOnly,
+      assist_unseen_only: unseenOnly,
+      assist_show_silenced: showSilenced,
       assist_urgency_filter: urgency ?? undefined,
+      assist_table_query: table.queryState,
+      assist_load_state: error ? "failed" : loaded ? "ready" : "loading",
+      assist_load_error: error ?? undefined,
+      assist_quiet: assistsQuiet,
+      assist_quiet_until: assistsQuietUntil ?? undefined,
+      assist_bulk_busy: bulkBusy,
+      assist_dismiss_dialog_open: confirmDismissAll,
+      assist_view: { tab, urgency, ...flags, query: table.queryState, quiet: assistsQuiet, quiet_until: assistsQuietUntil },
+      ...(loaded ? {
+        assist_total_count: total,
+        visible_assists_summary: rows.map((row) => ({ id: row.id, title: row.title, urgency: urgencyFromPriority(row.priority), status: row.status, source: row.sourceKey })),
+        loaded_assists: rows,
+        assist_status_counts: stats,
+        source_suppressions: sourceSuppressions,
+        silenced_sources: sourceSuppressions.map((source) => source.sourceKey),
+        content: rows.map(humanAssistRow).join("\n\n"),
+      } : {}),
     });
+  };
 
   const columns: MatrxColumnDef<Assist>[] = useMemo(
     () => [
@@ -482,6 +498,7 @@ export function AssistsManager() {
   })();
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ASSISTS_SURFACE_NAME} getScope={getScope}>
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         {STATUS_TABS.map((entry) => {
@@ -696,6 +713,7 @@ export function AssistsManager() {
       <div className="min-h-0 flex-1 p-2 sm:p-3">
         <NonEditableContextMenu
           sourceFeature="admin"
+          menuVersion={2}
           surfaceName={ASSISTS_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: "Assists manager" }}
@@ -803,5 +821,6 @@ export function AssistsManager() {
         }}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

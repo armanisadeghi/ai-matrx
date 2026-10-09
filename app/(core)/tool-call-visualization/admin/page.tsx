@@ -84,7 +84,7 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "DB renderer runtime (db-renderer/)",
       filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/db-renderer/DbToolRenderer.tsx",
-      description: "Fetches a tool's agent-written code from tool_ui (surface matrx-default/default) and compiles it at runtime via the Agent Apps Babel sandbox; cache + meta (label/subtitle/displayMode) via useDbToolMeta.",
+      description: "Fetches a tool's agent-written code from tool_ui (surface matrx-default/default) and compiles it at runtime via the Applets Babel sandbox; cache + meta (label/subtitle/displayMode) via useDbToolMeta.",
       status: "Live",
     },
     {
@@ -128,7 +128,7 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
       description: "The live transcript that hosts tool calls (AgentConversationDisplay → EnhancedChatMarkdown → InlineToolCard/DbToolCard → this shell).",
     },
     {
-      name: "Agent Apps",
+      name: "Applets",
       description: "Hosts the app scope for @ai-matrx/code-runtime, the compiler that runs agent-written code.",
     },
   ],

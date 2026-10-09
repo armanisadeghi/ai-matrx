@@ -12,9 +12,13 @@ import {
   callApi,
   callBatchDeleteMessages,
   callCompactTurns,
+  callConversationDelete,
   callConversationFork,
   callConversationForkAndRun,
   callConversationMemoryCost,
+  callConversationSandboxBind,
+  callConversationSandboxUnbind,
+  callConversationUpdate,
   callHideMessages,
   callReplaceMessages,
   callRestoreCompaction,
@@ -26,13 +30,17 @@ import {
   type CallScope,
   type CompactTurnsResult,
   type ConversationForkAndRunBody,
+  type ConversationDeleteResult,
   type ConversationForkBody,
+  type ConversationSettingsBody,
+  type ConversationSettingsResult,
   type HideMessagesResult,
   type LLMParamsBody,
   type MemoryCostSummary,
   type MessageSelector,
   type ReplaceMessagesResult,
   type RestoreCompactionResult,
+  type SandboxBindBody,
 } from "@/lib/api/call-api";
 import {
   cancelAgentRunRequest,
@@ -92,6 +100,10 @@ export const appChatServerApi = {
   callHideMessages,
   callRestoreCompaction,
   callCompactTurns,
+  callConversationUpdate,
+  callConversationDelete,
+  callConversationSandboxBind,
+  callConversationSandboxUnbind,
   // matrx-transport
   createMatrxTransport,
   createMatrxTransportFromTarget,
@@ -159,6 +171,10 @@ export interface AppChatServerTypes {
   CompactTurnsResult: CompactTurnsResult;
   ConversationForkBody: ConversationForkBody;
   ConversationForkAndRunBody: ConversationForkAndRunBody;
+  ConversationSettingsBody: ConversationSettingsBody;
+  ConversationSettingsResult: ConversationSettingsResult;
+  ConversationDeleteResult: ConversationDeleteResult;
+  SandboxBindBody: SandboxBindBody;
   MatrxTransportOptions: MatrxTransportOptions;
   OrganizationAdmission: OrganizationAdmission;
 }

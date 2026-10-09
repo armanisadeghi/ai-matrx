@@ -19,9 +19,8 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast as copyToast } from "@ai-matrx/chat/host/notify";
 import { useState, useEffect, useCallback } from "react";
-import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/content-ir/surfaces";
 import { useAppSelector } from "@ai-matrx/chat/store/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { EntityDoorControls } from "@ai-matrx/chat/host/ui-slots";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
@@ -56,6 +55,7 @@ import type { VariablesPanelStyle } from "@ai-matrx/chat/agents/types/instance.t
 import type { ApiEndpointMode } from "@ai-matrx/chat/agents/types/instance.types";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;
@@ -278,7 +278,8 @@ export function InlineTestMode({
         },
         runtime: {
           surfaceName: null,
-          userInput: userInput || `Process this text: "${selectedText}"`,
+          // The selection already rides as the `selection` variable above.
+          ...(userInput ? { userInput } : {}),
         },
       });
       setConversationId(result.conversationId);
@@ -567,7 +568,7 @@ function BackgroundTestMode({
  * runs in its own component rather than re-rendering the whole modal shell.
  */
 function AgentUnderTest({ agentId }: { agentId: string }) {
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  const agentName = useAgentName(agentId);
   // `createManualInstanceNoAgent` sets `agentId: ""`. An empty id resolves to
   // `/agents/`, so the door would silently open the agents LIST while labelled
   // as this agent — a wrong door wearing a right label.

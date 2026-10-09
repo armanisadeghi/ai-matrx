@@ -28,8 +28,8 @@ import {
 import type { ConceptItem, ConceptKind } from "../../types";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableConceptRow } from "./EditableConceptRow";
 import { SegmentWrapper } from "./SegmentWrapper";

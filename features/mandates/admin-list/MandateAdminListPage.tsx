@@ -23,7 +23,11 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrainCircuit, Loader2 } from "lucide-react";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, Select } from "@ai-matrx/design-system/controls";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
+import { useListSearchParams } from "@/lib/entity-list/useListSearchParams";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { AdminPoints } from "@/components/cost/AdminCost";
 import {
   ADMIN_MANDATES_HOME,
   adminMandateRecordHref,
@@ -47,7 +51,6 @@ import {
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { AdvanceResultsCard, ImpactLegend } from "@/features/mandates/admin/impact-cells";
-import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
@@ -64,7 +67,6 @@ import {
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig, supportMandateListConfig } from "./listConfig";
 import type { MandateAdminLane } from "./rpc";
 import { MandateAdminPagesNav } from "./MandateAdminPagesNav";
@@ -72,11 +74,23 @@ import {
   MandateAdminListActionsContext,
   useMandateAdminListState,
 } from "./context";
-import { invalidateMandateAdminList, retryMandateAdminFailures } from "./store";
+import {
+  ensureMandateSpend,
+  invalidateMandateAdminList,
+  retryMandateAdminFailures,
+} from "./store";
+import {
+  DEFAULT_SPEND_PERIOD,
+  SPEND_PERIODS,
+  SPEND_PERIOD_PARAM,
+  parseSpendPeriod,
+} from "./spend";
 import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceFailures";
 import { createMandateAdminService } from "./service";
 import { healthSummaryOf, toMandateSummary } from "./surface-scope";
 import type { MandateAdminRow } from "./types";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** What each secondary read feeds, in the words of the columns it fills. */
 const SOURCE_LABEL: Record<string, string> = {
@@ -88,6 +102,7 @@ const SOURCE_LABEL: Record<string, string> = {
   workflowImpact: "Workflow grades",
   inputs: "Inputs",
   sources: "Where each mandate is declared and called",
+  spend: "Cost",
 };
 
 export function MandateAdminListPage({
@@ -99,7 +114,7 @@ export function MandateAdminListPage({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const systemAgentCount = useAppSelector(selectBuiltinAgents).length;
+  const systemAgentCount = useBuiltinAgents().length;
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
   const organizationId = useServerOrganizationId();
@@ -113,12 +128,21 @@ export function MandateAdminListPage({
   }, [organizationId]);
   const listState = useMandateAdminListState();
 
+  // THE COST PERIOD lives in the address (`?period=7d`), default the last 30
+  // days; the management page reads the period's spend once per period.
+  const period = parseSpendPeriod(useListSearchParams().get(SPEND_PERIOD_PARAM));
+  const support = lane === "support";
+  useEffect(() => {
+    if (support || !userId) return;
+    ensureMandateSpend(period, userId);
+  }, [support, period, userId]);
+
   // Any mandate write anywhere (the Enabled switch included) re-asks the list.
   useEffect(() => onMandateCacheInvalidated(() => invalidateMandateAdminList()), []);
 
   // The Health cell's twin fixes read the agent lineage index.
   useEffect(() => {
-    if (accessToken) dispatch(fetchAgentsListFull());
+    if (accessToken) ensureAgentCatalog();
   }, [accessToken, dispatch]);
 
   const verdictByRung = new Map<string, ImpactVerdict>();
@@ -242,7 +266,6 @@ export function MandateAdminListPage({
   // that cannot run says so in the notice below — the rows never wait for it.
   const ready = authReady && Boolean(accessToken);
   const baseService = createMandateAdminService(dispatch, lane);
-  const support = lane === "support";
 
   // THE AGENT SURFACE (`matrx-admin/mandates`): the page on screen, read at
   // Run time. The last answered page is kept in a ref the service writes, so
@@ -363,6 +386,12 @@ export function MandateAdminListPage({
             <MandateSupportLookupLabel />
           ) : (
             <>
+              <MandateSpendHeader
+                period={period}
+                totalUsd={listState.spend.total}
+                pending={!listState.spend.settled}
+                folded={listState.spend.folded}
+              />
               {safeDefaults.length > 0 ? (
                 <ControlButton variant="outline"
                   disabled={writes.busy !== null}
@@ -395,6 +424,49 @@ export function MandateAdminListPage({
     >
       {list}
     </SurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * The cost period and the total of every mandate the filters match — in the
+ * list's own header bar, never a row of its own.
+ */
+function MandateSpendHeader({
+  period,
+  totalUsd,
+  pending,
+  folded,
+}: {
+  period: string;
+  totalUsd: number | null;
+  pending: boolean;
+  folded: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Select
+        aria-label="Cost period"
+        value={period}
+        options={SPEND_PERIODS.map((preset) => ({ value: preset.key, label: preset.label }))}
+        onValueChange={(next) =>
+          commitUrlParams({ [SPEND_PERIOD_PARAM]: next === DEFAULT_SPEND_PERIOD ? null : next }, "replace")
+        }
+      />
+      {pending ? (
+        <span className="type-secondary text-muted-foreground animate-pulse">Totalling…</span>
+      ) : totalUsd !== null ? (
+        <span
+          className="type-secondary tabular-nums whitespace-nowrap"
+          title={
+            folded
+              ? "Total of the mandates shown; some usage was grouped as Other"
+              : "Total of every mandate the filters match"
+          }
+        >
+          {formatAdminUsd(totalUsd)} · <AdminPoints usd={totalUsd} />
+        </span>
+      ) : null}
+    </div>
   );
 }
 

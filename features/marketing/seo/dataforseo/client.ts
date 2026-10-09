@@ -32,7 +32,7 @@ import {
   parseMatrxNdjsonResponse,
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Organization admission rides with auth: the server's AuthMiddleware
@@ -51,7 +51,7 @@ async function organizationContextHeaders(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel. A run the person starts
   // with no organization selected asks, then continues this same request; a
   // background read keeps the fail-closed refusal.
-  const organizationId = await ensureOrganizationForRequest({ method });
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(base, organizationId);
 }
 

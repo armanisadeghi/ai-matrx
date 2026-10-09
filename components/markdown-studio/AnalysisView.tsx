@@ -51,7 +51,7 @@ import {
   type DiffReport,
 } from "@/components/admin/markdown-tester/utils/diff-blocks";
 import { buildDriftReportXml } from "@/components/admin/markdown-tester/utils/drift-report";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { OptionCombobox } from "@ai-matrx/design-system/controls";
 import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-service";
 import type { UserMarkdownSample } from "./user-samples-service";
 import { STUDIO_TEMPLATES } from "./templates";

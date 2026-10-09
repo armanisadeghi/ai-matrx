@@ -40,7 +40,7 @@ import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
-import { PropertyRow, CONFIGURATION_CHOICE_SIZE } from "@/components/official/ConfigurationFields";
+import { PropertyRow, CONFIGURATION_CHOICE_SIZE } from "@ai-matrx/design-system/controls";
 import { ServerNotes } from "@/components/official/ServerNotes";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";

@@ -58,11 +58,11 @@ import { groupNotices, idsOf, type NoticeGroup } from "../grouping";
 import { categoryFor, noticeContext, noticeTitle, plainPreview, snoozeChoices } from "../presentation";
 import { useInboxActions, useInboxCounts, useInboxFeed } from "../useInbox";
 import { useNoticeHandlers } from "../useNoticeHandlers";
-import { visibleSources } from "../sources/registry";
+import { usePlaceStates, visibleSources } from "../sources/registry";
 import type { InboxState } from "../types";
 import { NoticeRow } from "./NoticeRow";
 import { NoticeDetail } from "./NoticeDetail";
-import { SourceItem } from "./PlacesStrip";
+import { NO_STATE, SourceItem } from "./PlacesStrip";
 import { HiddenElsewhere } from "./HiddenElsewhere";
 
 export type InboxTab = "inbox" | "needs_you" | "updates" | "snoozed" | "done";
@@ -128,6 +128,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
   const [helpOpen, setHelpOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const isAdmin = useAppSelector(selectIsAdminPerson);
+  const placeStates = usePlaceStates();
 
   const counts = useInboxCounts();
   const feed = useInboxFeed({ state: TAB_STATE[tab], orgId: orgFilter, unreadOnly });
@@ -461,7 +462,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
           Places
         </div>
         {visibleSources(Boolean(isAdmin)).map((source) => (
-          <SourceItem key={source.key} source={source} layout="rail" />
+          <SourceItem key={source.key} source={source} state={placeStates[source.key] ?? NO_STATE} layout="rail" />
         ))}
       </nav>
 

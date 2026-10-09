@@ -184,3 +184,21 @@ export function usageNoticeKey(
   const periodStart = isRollingPeriod(bindingPeriod) ? "" : (resetsAt ?? "");
   return `${level}:${period}:${periodStart}`;
 }
+
+/** Which limit a reset belongs to, for the notice's one line ("Weekly limit resets …"). */
+export function resetSubject(period: string | null | undefined): string {
+  switch (period) {
+    case "day":
+      return "Daily limit";
+    case "week":
+      return "Weekly limit";
+    case "month":
+      return "Monthly limit";
+    case "rolling_1h":
+      return "Hourly limit";
+    case "rolling_5h":
+      return "5-hour limit";
+    default:
+      return "Limit";
+  }
+}

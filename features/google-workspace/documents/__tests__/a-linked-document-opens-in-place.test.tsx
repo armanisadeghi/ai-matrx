@@ -18,6 +18,7 @@
 
 import * as React from "react";
 import { act } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -110,8 +111,15 @@ jest.mock("@/features/marketing/google/service", () => ({
   postGoogleBackend: jest.fn(async () => ({ json: async () => ({}) })),
 }));
 
+// ProTextarea (voice recording, device preferences) reads these two slices; every other slice stays absent.
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({
+      recordings: { isRecording: false, isFinalizing: false, context: null },
+      userPreferences: jest.requireActual("@/lib/redux/preferences/defaultUserPreferences").defaultUserPreferences,
+    }),
+  useAppDispatch: () => () => {},
+  useAppStore: () => ({ getState: () => ({}), dispatch: () => {} }),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
@@ -207,7 +215,9 @@ async function mount(which: (typeof PRESENTATIONS)[number]) {
   const root = createRoot(container);
   await act(async () => {
     root.render(
-      <DetailHostProvider ports={ports(which.shells)}>{which.node}</DetailHostProvider>,
+      <TooltipProvider>
+        <DetailHostProvider ports={ports(which.shells)}>{which.node}</DetailHostProvider>
+      </TooltipProvider>,
     );
   });
   for (let i = 0; i < 8; i += 1) {

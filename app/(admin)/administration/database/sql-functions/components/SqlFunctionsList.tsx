@@ -7,7 +7,7 @@ import { MatrxDataTable } from '@ai-matrx/design-system/data-table';
 import type { MatrxColumnDef } from '@ai-matrx/design-system/data-table/types';
 import { getSqlFunctionKey } from '../utils/functionIdentity';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 interface SqlFunctionsListProps { functions: SqlFunction[]; loading: boolean; /** The list read's outcome (RC-B12 r13). */ read?: ReadOutcome; selectedFunctionKey?: string | null; onViewDetails: (func: SqlFunction) => void; onEditFunction: (func: SqlFunction) => void; onDeleteFunction: (schema: string, name: string, argumentTypes: string) => Promise<boolean>; onSortChange: (field: SqlFunctionSort['field']) => void; sortField: SqlFunctionSort['field']; sortDirection: SqlFunctionSort['direction']; }
 export default function SqlFunctionsList({ functions, loading, read, selectedFunctionKey, onViewDetails, onEditFunction, onDeleteFunction }: SqlFunctionsListProps) {
   const columns = useMemo((): MatrxColumnDef<SqlFunction>[] => [

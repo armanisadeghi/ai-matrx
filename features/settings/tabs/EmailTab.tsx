@@ -8,7 +8,6 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 
 /**
@@ -110,7 +109,6 @@ export default function EmailTab() {
       // The person closed the organization picker: an answer meaning "not
       // now". Nothing was saved and nothing is claimed — the form stays dirty
       // and they can press Save again whenever they like.
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error("Your email preferences were not saved", {
         description:
           error instanceof Error

@@ -1,18 +1,13 @@
-import { createRouteMetadata } from "@/utils/route-metadata";
-import { StartHero } from "@/features/education/onboard/components/StartHero";
+// /education/start — retired address of the study-kit create page. It forwards
+// to the ONE create route (/education/kits/new), carrying ?source= / ?from= so a
+// passed source still pre-picks.
+import { redirect } from "next/navigation";
+import { newKitHref } from "@/features/education/onboard/startRoutes";
 
-export const metadata = createRouteMetadata("/education/start", {
-  title: "Create a study kit",
-  description:
-    "Drop a PDF, paste your notes, or link a page — get flashcards, a grounded summary, and a mind map in one flow. Every card cited back to your own material.",
-  letter: "Ed",
-  canonicalPath: "/education/start",
-});
-
-export default function EducationStartPage() {
-  return (
-    <div className="scroll-page-end-space h-full overflow-y-auto pb-safe">
-      <StartHero />
-    </div>
-  );
+export default async function EducationStartPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  redirect(newKitHref(await searchParams));
 }

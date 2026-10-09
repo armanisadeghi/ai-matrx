@@ -14,6 +14,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import { invalidateEffectiveKnob } from "../effectiveKnobs";
 import { useEffectiveKnob } from "../effectiveKnobs.client";
+import { legacyWire } from "./legacyWire";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/client-directives/directiveRegistry", () => ({
@@ -36,7 +37,7 @@ function serve() {
   };
   jest.mocked(createClient).mockReturnValue({
     rpc,
-    schema: () => ({ rpc }),
+    schema: () => ({ rpc: legacyWire(rpc) }),
   } as unknown as ReturnType<typeof createClient>);
 }
 

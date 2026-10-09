@@ -26,6 +26,8 @@ import {
 import { cn } from "@/lib/utils";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
 import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
@@ -111,6 +113,7 @@ export function ContentEditor({
   // THE ONE EDITOR (components/rich-editor) serves Write ("wysiwyg") and
   // Source ("markdown"); Toast UI is gone from the app.
   const richEditorRef = useRef<RichEditorController | null>(null);
+  const editorRootRef = useRef<HTMLDivElement>(null);
   const plainTextareaRef = useRef<HTMLTextAreaElement>(null);
   // Plain is raw text, but the ONE formatting layer (chords + the selection
   // toolbar's buttons) still inserts markdown on request.
@@ -263,6 +266,7 @@ export function ContentEditor({
 
   return (
     <div
+      ref={editorRootRef}
       className={cn(
         "flex flex-col bg-textured border-border rounded-lg overflow-hidden",
         className,
@@ -335,8 +339,15 @@ export function ContentEditor({
               </div>
             )}
 
-            {/* Spacer */}
-            <div className="flex-1" />
+            {/* THE formatting toolbar in every editable mode (Plain, Write, Source, Split) —
+                in this header row, taking its free width; never in Preview. */}
+            {currentMode !== "preview" && !isCollapsed ? (
+              <div className="flex min-w-0 flex-1" onClick={(e) => e.stopPropagation()}>
+                <FormatButtons size="xs" className="flex-1" resolve={() => formatTargetWithin(editorRootRef.current)} />
+              </div>
+            ) : (
+              <div className="flex-1" />
+            )}
 
             {/* Header Actions */}
             {headerActions.length > 0 && (

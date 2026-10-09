@@ -46,7 +46,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
 import {
   MoreHorizontalTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { toast } from "@/lib/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";

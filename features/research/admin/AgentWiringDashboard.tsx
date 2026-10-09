@@ -18,7 +18,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import MatrxMiniLoader from '@/components/loaders/MatrxMiniLoader';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import type { ResearchTemplate } from '../types';
 import type { PromptBuiltinRef, AgentConfigKey } from './types';
 import {
@@ -31,11 +31,13 @@ import {
     fetchTemplates, updateTemplateAgentConfig, resolveBuiltinNames,
 } from './service';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { selectBuiltinAgents } from '@ai-matrx/chat/agents/redux/agent-definition/selectors';
-import { fetchAgentsListFull } from '@ai-matrx/chat/agents/redux/agent-definition/thunks';
+import { } from '@ai-matrx/chat/agents/redux/agent-definition/selectors';
+import { } from '@ai-matrx/chat/agents/redux/agent-definition/thunks';
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const SYSTEM_AGENT_TAB = ['system'] as const;
 
@@ -58,7 +60,7 @@ export function AgentWiringDashboard() {
 
     // Canonical agent listing (THE CANONICAL-SELECTION LAW): builtins come from
     // the agent-definition slice, never a raw agent.definition query.
-    const builtinAgents = useAppSelector(selectBuiltinAgents);
+    const builtinAgents = useBuiltinAgents();
     const builtins = useMemo<PromptBuiltinRef[]>(
         () =>
             builtinAgents
@@ -67,7 +69,7 @@ export function AgentWiringDashboard() {
                 .sort((a, b) => a.name.localeCompare(b.name)),
         [builtinAgents],
     );
-    useEffect(() => { dispatch(fetchAgentsListFull()); }, [dispatch]);
+    useEffect(() => { ensureAgentCatalog(); }, [dispatch]);
 
     const loadData = useCallback(async () => {
         try {

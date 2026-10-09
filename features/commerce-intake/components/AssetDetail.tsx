@@ -11,7 +11,7 @@
  * capture surface makes — the transition IS the contract (§2 policy 3).
  */
 
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, QrCode, RotateCw } from "lucide-react";
@@ -39,7 +39,7 @@ import {
 } from "../service";
 import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface AttributeRow {

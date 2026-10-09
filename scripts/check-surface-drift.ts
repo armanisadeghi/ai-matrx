@@ -118,10 +118,10 @@ async function main() {
     resolve(__dirname, "..", "features/surfaces/manifests/registry")
   );
   const declare = await import(
-    resolve(__dirname, "..", "../aidream/apps/shared/chat/src/surfaces/declare/surface-declare")
+    "@ai-matrx/chat/surfaces/declare/surface-declare"
   );
   const nsMod = await import(
-    resolve(__dirname, "..", "../aidream/apps/shared/chat/src/surfaces/config/namespace-registry")
+    "@ai-matrx/chat/surfaces/config/namespace-registry"
   );
   const listUncontracted =
     process.argv.includes("--list-uncontracted") ||

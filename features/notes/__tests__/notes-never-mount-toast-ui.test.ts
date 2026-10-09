@@ -80,32 +80,36 @@ describe("notes never mount Toast UI", () => {
       expect(canonicalNoteEditorMode(live)).toBe(live);
     }
     expect(canonicalNoteEditorMode("rich")).toBeNull();
-    // A default is a writing mode: a stored Read default opens Split.
-    expect(defaultDesktopMode("preview")).toBe("split");
+    // A default is a writing mode: a stored Read default opens the platform default, Write.
+    expect(defaultDesktopMode("preview")).toBe("write");
     expect(defaultDesktopMode("wysiwyg")).toBe("write");
-    expect(defaultDesktopMode(undefined)).toBe("split");
+    expect(defaultDesktopMode("split")).toBe("split");
+    expect(defaultDesktopMode(undefined)).toBe("write");
     // The phone has Plain and Write only.
     expect(phoneNoteMode("wysiwyg")).toBe("write");
     expect(phoneNoteMode("split")).toBe("plain");
     expect(phoneNoteMode("preview")).toBe("plain");
   });
 
-  it("the default mode knobs are Split (desktop) and Plain (phone) in both preference sources", () => {
-    expect(defaultUserPreferences.notes.defaultEditorMode).toBe("split");
-    expect(initializeUserPreferencesState().notes.defaultEditorMode).toBe("split");
-    expect(defaultUserPreferences.notes.defaultPhoneEditorMode).toBe("plain");
-    expect(initializeUserPreferencesState().notes.defaultPhoneEditorMode).toBe("plain");
+  it("the default mode knobs are Write on desktop and phone in both preference sources (Arman, 2026-10-07)", () => {
+    expect(defaultUserPreferences.notes.defaultEditorMode).toBe("write");
+    expect(initializeUserPreferencesState().notes.defaultEditorMode).toBe("write");
+    expect(defaultUserPreferences.notes.defaultPhoneEditorMode).toBe("write");
+    expect(initializeUserPreferencesState().notes.defaultPhoneEditorMode).toBe("write");
   });
 });
 
 describe("the mode a note opens in", () => {
-  const desktop = { device: "desktop" as const, preferredDefault: "split" as const };
-  const phone = { device: "phone" as const, preferredDefault: "plain" as const };
+  const desktop = { device: "desktop" as const, preferredDefault: "write" as const };
+  const phone = { device: "phone" as const, preferredDefault: "write" as const };
   const fresh = { sessionMode: null, sessionModeSource: "uninitialized" as const, rememberedMode: undefined };
 
-  it("with nothing remembered: Split on a desktop, Plain on a phone", () => {
-    expect(resolveNoteEditorMode({ ...desktop, ...fresh })).toBe("split");
-    expect(resolveNoteEditorMode({ ...phone, ...fresh })).toBe("plain");
+  it("with nothing remembered: Write on every device", () => {
+    expect(resolveNoteEditorMode({ ...desktop, ...fresh })).toBe("write");
+    expect(resolveNoteEditorMode({ ...phone, ...fresh })).toBe("write");
+    // A person who chose another default on the settings page keeps it.
+    expect(resolveNoteEditorMode({ ...desktop, ...fresh, preferredDefault: "split" })).toBe("split");
+    expect(resolveNoteEditorMode({ ...phone, ...fresh, preferredDefault: "plain" })).toBe("plain");
   });
 
   it("a note last edited in Write reopens in Write on every device", () => {

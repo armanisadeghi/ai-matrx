@@ -57,10 +57,14 @@ export interface AppletBuildPage {
 
 export interface AppletBuildSource {
   alias: string;
-  /** "table" for one of her tables, "entity" for a platform record type. */
-  type: "table" | "entity";
+  /** "table" for one of her tables, "entity" for a platform record type, "new" for a table "Use it" makes. */
+  type: "table" | "entity" | "new";
   /** The entity token when `type` is "entity". */
   entity: string | null;
+  /** The table's id when `type` is "table" — the card reads its real name and organization by it. */
+  tableId: string | null;
+  /** A new table's name and its column labels (applets 0.9.0 `new_table`). */
+  newTable?: { name: string; fields: string[] };
 }
 
 /** What `AppletBuildResultBlock` receives — read once, here. */
@@ -99,9 +103,20 @@ export function readAppletBuildResult(
     sources: list(applet.sources).flatMap((s) =>
       typeof s.alias === "string"
         ? [
-            typeof s.entity === "string" && s.entity
-              ? { alias: s.alias, type: "entity" as const, entity: s.entity }
-              : { alias: s.alias, type: "table" as const, entity: null },
+            isRecord(s.new_table) && text(s.new_table.name).trim()
+              ? {
+                  alias: s.alias,
+                  type: "new" as const,
+                  entity: null,
+                  tableId: null,
+                  newTable: {
+                    name: text(s.new_table.name) || s.alias,
+                    fields: list(s.new_table.fields).map((f) => text(f.label) || text(f.key)).filter(Boolean),
+                  },
+                }
+              : typeof s.entity === "string" && s.entity
+                ? { alias: s.alias, type: "entity" as const, entity: s.entity, tableId: null }
+                : { alias: s.alias, type: "table" as const, entity: null, tableId: text(s.table_id) || null },
           ]
         : [],
     ),
@@ -123,7 +138,10 @@ export const appletBuildResultServerDataFromEnvelope =
       const data = readAppletBuildResult(value, envelope.root.status === "complete");
       // Nothing to show yet (or an answer with no app at all): decline — the skeleton stays up
       // while streaming, and a complete answer with no app falls to the readable fallback.
-      if (!data.name && data.pages.length === 0) return undefined;
+      // A description or a file being written IS something to show: a provider that orders keys
+      // alphabetically (Gemini) sends name and pages LAST, after every file, and declining until
+      // then held the window on a spinner for the whole build (lane P, 2026-10-07).
+      if (!data.name && data.pages.length === 0 && !data.description && data.files.length === 0) return undefined;
       return data;
     },
     { provisional: true },

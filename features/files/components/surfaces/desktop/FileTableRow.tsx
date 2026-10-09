@@ -34,7 +34,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Copy, MoreHorizontal, Share2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -95,15 +95,53 @@ export interface FileTableRowProps {
   parentPath?: string | null;
 }
 
-export function FileTableRow(props: FileTableRowProps) {
+/**
+ * The table's row commands, addressed by id. The table hands ONE stable object
+ * to every row and routes each call to its latest logic, so a table render
+ * never gives a row a new function.
+ */
+export interface FileTableRowCommands {
+  toggleSelected: (id: string) => void;
+  activate: (id: string) => void;
+  openShare: (id: string, kind: "file" | "folder") => void;
+}
+
+type FileTableRowOuterProps = Omit<FileTableRowProps, "onToggleSelected" | "onActivate" | "onOpenShare"> & {
+  commands: FileTableRowCommands;
+};
+
+/**
+ * A row redraws only when what it shows changed: its record, its own flags, the
+ * column set or its sharing facts. `granteeIds` and `visibleColumnIds` are
+ * compared by value — the table rebuilds both arrays on every render.
+ */
+function sameRowProps(a: FileTableRowOuterProps, b: FileTableRowOuterProps): boolean {
+  for (const key of Object.keys(b) as (keyof FileTableRowOuterProps)[]) {
+    if (key === "granteeIds" || key === "visibleColumnIds") continue;
+    if (!Object.is(a[key], b[key])) return false;
+  }
+  if (Object.keys(a).length !== Object.keys(b).length) return false;
+  const sameList = (x: readonly string[], y: readonly string[]) =>
+    x.length === y.length && x.every((v, i) => v === y[i]);
+  return sameList(a.granteeIds, b.granteeIds) && sameList(a.visibleColumnIds, b.visibleColumnIds);
+}
+
+export const FileTableRow = memo(function FileTableRow({ commands, ...props }: FileTableRowOuterProps) {
+  const id = props.kind === "file" ? props.file?.id : props.folder?.id;
+  if (!id) return null;
+  const handlers = {
+    onToggleSelected: () => commands.toggleSelected(id),
+    onActivate: () => commands.activate(id),
+    onOpenShare: () => commands.openShare(id, props.kind),
+  };
   if (props.kind === "file" && props.file) {
-    return <FileRow {...props} file={props.file} />;
+    return <FileRow {...props} {...handlers} file={props.file} />;
   }
   if (props.kind === "folder" && props.folder) {
-    return <FolderRow {...props} folder={props.folder} />;
+    return <FolderRow {...props} {...handlers} folder={props.folder} />;
   }
   return null;
-}
+}, sameRowProps);
 
 // Trailing cell for the Column-Settings gear column. Empty in body rows so
 // the gear stays anchored to the header. Width matches the header's gear

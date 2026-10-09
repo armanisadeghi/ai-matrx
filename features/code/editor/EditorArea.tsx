@@ -9,7 +9,7 @@ import { codeFilesActions } from "@/features/code-files/redux/slice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { selectActiveTab, updateTabContent } from "../redux/tabsSlice";
 import { isPreviewTab } from "../types";

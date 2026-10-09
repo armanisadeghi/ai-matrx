@@ -42,6 +42,7 @@ export function useNoteHistoryTab(noteId: string | null): { isVisible: boolean; 
 
 export const NOTE_HISTORY_CANVAS_KIND = defineCanvasKind<CanvasJson>({
   id: NOTE_HISTORY_KIND,
+  surface: "dom",
   label: LABEL,
   icon: History,
   load: () => import("./NoteHistoryCanvasView"),

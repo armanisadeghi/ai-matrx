@@ -23,6 +23,10 @@ import Link from "next/link";
 import type { TriggerFire } from "../types";
 import { formatInZone } from "./RecurrenceEditor";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  useWorkflowsBasePath,
+  workflowRunPermalinkHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 export function TriggerFireHistory({
   triggerId,
@@ -34,6 +38,8 @@ export function TriggerFireHistory({
   lastRunId: string | null;
   load: (triggerId: string) => Promise<TriggerFire[] | null>;
 }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const [fires, setFires] = useState<TriggerFire[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -63,7 +69,7 @@ export function TriggerFireHistory({
         </p>
         {lastRunId ? (
           <Link
-            href={`/workflows/runs/${lastRunId}`}
+            href={workflowRunPermalinkHref(lastRunId, workflowsBase)}
             className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
           >
             Open the last run
@@ -111,14 +117,14 @@ export function TriggerFireHistory({
           ) : fire.runId ? (
             <>
               <Link
-                href={`/workflows/runs/${fire.runId}`}
+                href={workflowRunPermalinkHref(fire.runId, workflowsBase)}
                 className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
               >
                 Open this run
                 <ArrowUpRight className="h-3 w-3" />
               </Link>
               <a
-                href={`/workflows/runs/${fire.runId}`}
+                href={workflowRunPermalinkHref(fire.runId, workflowsBase)}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Open this run in a new tab"

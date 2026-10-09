@@ -23,7 +23,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { duplicateWorkflow, duplicateWorkflowVersion } from "@/features/workflow-runtime/browse/service";
 import {
   putMandateBinding,
@@ -193,7 +192,6 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
       if (active) reportToast(report, `Your copy now runs this job ${where}. Opening it to edit.`);
       router.push(destination);
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(copyId
         ? `The copy was created, but this page could not confirm it runs the job: ${extractErrorMessage(error)}`
         : `Could not duplicate: ${extractErrorMessage(error)}`);

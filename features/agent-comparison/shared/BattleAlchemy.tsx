@@ -24,8 +24,9 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import { useEffect, type Ref } from "react";
 import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { fetchModelIdentityById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
+import { useCatalogBoundSelector } from "./useCatalogBoundSelector";
 import {
   battleMarkdown,
   battleMarkdownForPeople,
@@ -43,14 +44,14 @@ export function BattleAlchemy({
 } = {}) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
 
   // Load the names of the models this battle compares, so every copy names
   // them. The thunk skips ids it already has or is already fetching.
   const modelIdsKey = useAppSelector((state) => battleModelIds(state).join(","));
   useEffect(() => {
     for (const id of modelIdsKey ? modelIdsKey.split(",") : []) {
-      void dispatch(fetchModelIdentityById(id));
+      getModelRecords().loadIdentity(id);
     }
   }, [modelIdsKey, dispatch]);
 

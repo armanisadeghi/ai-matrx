@@ -82,30 +82,3 @@ export async function reportBrowserProviderFailureFromStore(
     undefined,
   );
 }
-
-/**
- * A provider session failure carrying the server's verdict: `message` is the
- * sentence to show (the provider's raw text when the report failed), and
- * `retryable` says whether reconnecting can help.
- */
-export class ProviderSessionError extends Error {
-  override readonly name = "ProviderSessionError";
-  readonly provider: ProviderSessionFailure["provider"];
-  readonly retryable: boolean;
-  readonly errorType: string | null;
-  readonly reported: boolean;
-
-  constructor(
-    failure: ProviderSessionFailure,
-    verdict: ProviderSessionFailureVerdict | null,
-    fallbackMessage: string,
-    options?: { cause?: unknown },
-  ) {
-    super(verdict?.user_message || fallbackMessage, options);
-    this.provider = failure.provider;
-    // An unreported failure keeps the caller's existing retry behavior.
-    this.retryable = verdict ? verdict.retryable : true;
-    this.errorType = verdict?.error_type ?? failure.error_type ?? null;
-    this.reported = verdict !== null;
-  }
-}

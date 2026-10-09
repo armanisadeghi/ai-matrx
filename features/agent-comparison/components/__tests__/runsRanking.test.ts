@@ -5,6 +5,7 @@
  */
 import type { ColumnStats, MetricRow, MetricSection } from "../runsComparisonData";
 import { computeRanking, ordinal, rankRow, rowHighlights } from "../runsRanking";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const col = (columnId: string, cost: number | null, tokens: number | null, score: number | null) =>
   ({ columnId, agentName: columnId.toUpperCase(), cost, tokensTotal: tokens, fbOverall: score }) as unknown as ColumnStats;
@@ -49,7 +50,7 @@ describe("ties are what a person sees", () => {
   const secondsRow: MetricRow = {
     ...costRow,
     label: "Total client",
-    format: (v) => (v == null ? "—" : `${Math.round(v / 1000)}s`),
+    format: (v) => formatDurationMs(v, { style: "compact" }),
   };
 
   it("values that read the same share a place, even when the raw numbers differ", () => {

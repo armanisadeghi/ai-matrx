@@ -18,6 +18,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { OUTSIDE_DATABASE_PROVIDER, refreshSyncedTable } from "./service";
 import { SyncedBadge } from "./SyncedBadge";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** A table refreshed this recently is not refreshed again just for being opened. */
 const OPEN_REFRESH_AFTER_MS = 60_000;
@@ -34,14 +35,8 @@ function syncSourceOf(table: unknown): SyncSource | null {
 
 function agoText(iso: string | null | undefined): string {
   if (!iso) return "Never refreshed";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (!Number.isFinite(ms)) return "Never refreshed";
-  const min = Math.round(ms / 60_000);
-  if (min < 1) return "Refreshed just now";
-  if (min < 60) return `Refreshed ${min} min ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `Refreshed ${h} h ago`;
-  return `Refreshed ${new Date(iso).toLocaleDateString()}`;
+  if (!Number.isFinite(new Date(iso).getTime())) return "Never refreshed";
+  return `Refreshed ${formatRelativeTime(iso, { style: "intl" })}`;
 }
 
 export function SyncedTableBar({ tableId, organizationId }: { tableId: string; organizationId: string | null }) {

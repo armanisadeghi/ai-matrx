@@ -26,7 +26,7 @@
  *   unsupported-codec, storage-quota, and lock-takeover for recordings.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,

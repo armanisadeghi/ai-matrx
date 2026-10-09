@@ -55,6 +55,9 @@ import {
   STUDY_TOOL_BUTTON_ACTIVE,
 } from "@/features/education/study/components/studyToolbar";
 import { Button } from "@/components/ui/button";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
@@ -146,6 +149,12 @@ const FC_CARD_ITEM_TYPE = "fc_card";
 /** Below this many graded cards, an end-of-session AI review is more noise
  *  than signal (nothing systematic to say about 1-2 cards) — skip it. */
 const MIN_CARDS_FOR_REVIEW = 3;
+
+
+/** One card as markdown, front then back — what the card's Copy / Plain / Export carry. */
+function studyCardMarkdown(card: { front: string; back?: string | null }): string {
+  return `**Front**\n\n${card.front}\n\n**Back**\n\n${card.back ?? ""}`;
+}
 
 export interface StudyDeckProgress {
   done: number;
@@ -986,6 +995,15 @@ export function StudyDeck(props: StudyDeckProps) {
           </Button>
         )}
 
+        {/* The content action set (Copy, Plain, Export, Print, Transform): this card, front then back. */}
+        <RichCopySplit
+          size="xs"
+          label="card"
+          exportTitle={`Flashcard ${currentIndex + 1}`}
+          viewKey={`fc-card-${card.id}`}
+          human={() => studyCardMarkdown(card)}
+        />
+
         {renderOptionsMenu()}
       </div>
     );
@@ -1377,6 +1395,9 @@ export function StudyDeck(props: StudyDeckProps) {
             />
           ) : (
             <>
+              {/* The card face is a selection surface: dragging across its text gets the one selection toolbar (Copy first). */}
+              <ContentView viewKey={`fc-card-${current.id}`} text={() => studyCardMarkdown(current)} className="max-h-[clamp(15rem,46dvh,32rem)] overflow-auto">
+              <NonEditableContextMenu sourceFeature="system">
               <FlashcardItem
                 key={`fc-card-${current.id}`}
                 front={cardFaces.front}
@@ -1391,6 +1412,8 @@ export function StudyDeck(props: StudyDeckProps) {
                 backImage={getCardImages(current).back}
                 heightClassName="h-[clamp(15rem,46dvh,32rem)]"
               />
+              </NonEditableContextMenu>
+              </ContentView>
 
               {/* P0 Trust — once the answer is revealed, show where it came
                   from. Renders nothing for hand-made cards. */}

@@ -143,7 +143,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
@@ -1404,26 +1404,59 @@ interface ChunkPlayout {
 /**
  * What the real `knowledge_search` tool returns beside the passages: the typed sections
  * (notes, files, chats withheld …), their failures, and the text the model reads for them.
- * The server sends these since the simulation runs the registered tool itself; the committed
- * generated types predate them, so they are declared here until `pnpm sync-types` carries them.
+ * The generated contract types `sections` / `section_errors` as open dicts, so each entry is
+ * narrowed here at read time; an entry missing its `section` name is dropped.
  */
-interface AgentToolSections {
-  sections?: {
-    section: string;
-    count?: number;
-    items?: { entity?: string; id?: string; title?: string }[];
-    withheld?: string | null;
-    note?: string | null;
-    has_more?: boolean;
-  }[];
-  section_errors?: { section: string; message: string }[];
-  sections_text?: string | null;
-  relevance_note?: string | null;
+interface AgentToolSection {
+  section: string;
+  count: number | null;
+  items: { entity: string; id: string; title: string }[];
+  withheld: string | null;
+  note: string | null;
+  has_more: boolean;
 }
 
-function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & AgentToolSections }) {
-  const sections = result.sections ?? [];
-  const errors = result.section_errors ?? [];
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function strField(o: Record<string, unknown>, k: string): string | null {
+  const v = o[k];
+  return typeof v === "string" ? v : null;
+}
+
+function readSections(raw: AgentToolSearchOne["sections"]): AgentToolSection[] {
+  return (raw ?? []).flatMap((o) => {
+    const section = strField(o, "section");
+    if (!section) return [];
+    const items = Array.isArray(o.items) ? o.items : [];
+    return [
+      {
+        section,
+        count: typeof o.count === "number" ? o.count : null,
+        items: items.flatMap((it: unknown) =>
+          isRecord(it)
+            ? [{ entity: strField(it, "entity") ?? "", id: strField(it, "id") ?? "", title: strField(it, "title") ?? "" }]
+            : [],
+        ),
+        withheld: strField(o, "withheld"),
+        note: strField(o, "note"),
+        has_more: o.has_more === true,
+      },
+    ];
+  });
+}
+
+function readSectionErrors(raw: AgentToolSearchOne["section_errors"]): { section: string; message: string }[] {
+  return (raw ?? []).flatMap((o) => {
+    const section = strField(o, "section");
+    return section ? [{ section, message: strField(o, "message") ?? "" }] : [];
+  });
+}
+
+function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne }) {
+  const sections = readSections(result.sections);
+  const errors = readSectionErrors(result.section_errors);
   if (!sections.length && !errors.length && !result.relevance_note) return null;
   return (
     <div className="px-3 py-2 border-t space-y-1.5" data-testid="agent-sim-sections">
@@ -1437,12 +1470,12 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & Agent
           <span className="text-muted-foreground tabular-nums">
             {sec.withheld
               ? `withheld — ${sec.withheld}`
-              : `${sec.count ?? sec.items?.length ?? 0}${sec.has_more ? "+" : ""}`}
+              : `${sec.count ?? sec.items.length}${sec.has_more ? "+" : ""}`}
           </span>
           {sec.note ? <span className="text-muted-foreground"> · {sec.note}</span> : null}
-          {(sec.items ?? []).length ? (
+          {sec.items.length ? (
             <ul className="ml-4 list-disc type-meta text-foreground/80">
-              {(sec.items ?? []).slice(0, 5).map((it) => (
+              {sec.items.slice(0, 5).map((it) => (
                 <li key={`${it.entity}-${it.id}`}>
                   {it.title || "Untitled"} <span className="text-muted-foreground">{it.entity}</span>
                 </li>
@@ -1653,7 +1686,7 @@ function AgentToolResultBlock({
         })}
       </div>
 
-      <AgentToolSectionsBlock result={result as AgentToolSearchOne & AgentToolSections} />
+      <AgentToolSectionsBlock result={result} />
 
       <div className="px-3 py-2 border-t">
         <button
@@ -1668,8 +1701,8 @@ function AgentToolResultBlock({
         {rawOpen && (
           <pre className="mt-2 max-h-72 overflow-auto rounded bg-muted/40 p-2 type-meta font-mono whitespace-pre-wrap break-all">
             {result.tool_result_text}
-            {(result as AgentToolSearchOne & AgentToolSections).sections_text
-              ? `\n\n--- the model also reads ---\n${(result as AgentToolSearchOne & AgentToolSections).sections_text}`
+            {result.sections_text
+              ? `\n\n--- the model also reads ---\n${result.sections_text}`
               : ""}
           </pre>
         )}

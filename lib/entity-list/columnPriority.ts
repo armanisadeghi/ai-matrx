@@ -77,10 +77,19 @@ export function columnsWithoutRoom<TRow>(
   return roomRule(items, available, reserve);
 }
 
-/** Attribute the pre-hydration script puts on the header and cells of a column with no room. */
+/**
+ * Attribute the pre-hydration script puts on `<html>` (never on the table: React hydrates the
+ * table and logs a mismatch for any attribute it did not render). Its value is the space-separated
+ * 1-based column positions that have no room; `<html>` carries `suppressHydrationWarning`.
+ */
 export const NO_ROOM_ATTR = "data-matrx-no-room-pre";
-/** CSS that makes the marked cells take no room; ship once, next to the table. */
-export const NO_ROOM_CSS = `[${NO_ROOM_ATTR}]{display:none!important}`;
+const NO_ROOM_MAX_COLUMNS = 40;
+/** CSS that makes the marked column positions take no room; ship once, next to the table. */
+export const NO_ROOM_CSS = Array.from(
+  { length: NO_ROOM_MAX_COLUMNS },
+  (_, i) =>
+    `html[${NO_ROOM_ATTR}~="${i + 1}"] table:has(>thead th[data-matrx-table-column-id]) :is(th,td):nth-child(${i + 1}){display:none!important}`,
+).join("");
 
 /**
  * FIRST PAINT = SETTLED PAINT. The server paints every column; React only learns the list's width
@@ -88,9 +97,9 @@ export const NO_ROOM_CSS = `[${NO_ROOM_ATTR}]{display:none!important}`;
  * visibly jumped (CLS 0.09 on /data). Linear and Notion avoid it by deciding at layout time; here
  * this one-line script sits right after the table while the HTML is still being parsed, measures
  * its parent (the list body), runs the SAME rule (`roomRule`) over the columns present in the
- * header, and marks the header + cells of those that have no room. `NO_ROOM_CSS` hides the marks.
- * React's own first render matches the server (nothing hidden), so there is no hydration mismatch;
- * `clearNoRoomMarks` removes the marks once React has applied the real hidden set.
+ * header, and records their positions on `<html>`. `NO_ROOM_CSS` hides those positions. The table's own
+ * markup is untouched, so React's hydration matches the server; `clearNoRoomMarks` removes the
+ * mark once React has applied the real hidden set.
  */
 export function noRoomScript(specs: readonly EntityColumnSpec<never>[], reserve: number = ROW_ACTIONS_WIDTH): string {
   const info: Record<string, RoomItem> = {};
@@ -113,13 +122,12 @@ var cs=getComputedStyle(body);
 var inner=body.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
 var gone=rule(items,Math.floor(inner/8)*8,${reserve});
 if(!gone.length)return;
-ths.forEach(function(th,i){if(gone.indexOf(th.getAttribute("data-matrx-table-column-id"))<0)return;
-th.setAttribute("${NO_ROOM_ATTR}","");
-table.querySelectorAll("tbody tr").forEach(function(tr){var td=tr.children[i];if(td)td.setAttribute("${NO_ROOM_ATTR}","")})});
+var pos=[];ths.forEach(function(th,i){if(gone.indexOf(th.getAttribute("data-matrx-table-column-id"))>=0)pos.push(i+1)});
+if(pos.length)document.documentElement.setAttribute("${NO_ROOM_ATTR}",pos.join(" "));
 }catch(_){}})()`;
 }
 
-/** Remove the pre-hydration marks inside `root` (React now owns which columns exist). */
-export function clearNoRoomMarks(root: ParentNode): void {
-  root.querySelectorAll(`[${NO_ROOM_ATTR}]`).forEach((el) => el.removeAttribute(NO_ROOM_ATTR));
+/** Remove the pre-hydration mark (React now owns which columns exist). */
+export function clearNoRoomMarks(_root?: ParentNode): void {
+  document.documentElement.removeAttribute(NO_ROOM_ATTR);
 }

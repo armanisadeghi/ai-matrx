@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
-import { FilterTapButton, ArrowDownUpTapButton, MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
+import { FilterTapButton, ArrowDownUpTapButton, MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MeasuredBare } from "../../_components/one-control";

@@ -24,12 +24,12 @@ function AppCopyButtons(props: KindKitCopyProps) {
 }
 
 function AppReadEmpty(props: KindKitReadEmptyProps) {
-  const { ReadEmpty } = require("@/components/read-state/ReadGate") as typeof import("@/components/read-state/ReadGate");
+  const { ReadEmpty } = require("@ai-matrx/design-system") as typeof import("@ai-matrx/design-system");
   return createElement(ReadEmpty, props);
 }
 
 function AppReadStaleNotice(props: KindKitReadStaleNoticeProps) {
-  const { ReadStaleNotice } = require("@/components/read-state/ReadGate") as typeof import("@/components/read-state/ReadGate");
+  const { ReadStaleNotice } = require("@ai-matrx/design-system") as typeof import("@ai-matrx/design-system");
   return createElement(ReadStaleNotice, props);
 }
 

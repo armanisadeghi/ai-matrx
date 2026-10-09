@@ -8,9 +8,18 @@
 //   3. the record is written to `app.definition` as her, with its organization explicit. A new Applet is
 //      born a draft (preview with held-back writes); every later save is a new version
 //      (`app.definition_version`, the snapshot trigger) and "Use it" publishes.
+//   4. TABLES SHE DOES NOT HAVE are part of the answer (`new_table` sources, applets 0.9.1): checked with
+//      `checkAppletSources` before saving, previewed empty, and made by `makeNewTables` (the store's own
+//      `ensureTable`, as her, in the Applet's organization) when she presses "Use it" — never an
+//      unrelated table, never "make a table and come back".
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { makeNewTables, type MadeTable } from "@ai-matrx/applets/platform";
+import type { AppletSource, NewTableDeclaration } from "@ai-matrx/applets";
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
+import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
+import { appletPublicationPatch } from "@/features/applets/lib/publication";
+
 
 type Client = SupabaseClient<Database>;
 
@@ -27,8 +36,33 @@ export interface BuilderApplet {
   entry: string;
   files: BuilderFile[];
   pages: { path: string; title: string; file: string; parent?: string }[];
-  sources: { alias: string; table_id?: string; organization_id?: string; entity?: string }[];
+  sources: BuilderSource[];
   mandates: { alias: string; key: string }[];
+}
+
+/** One source as the builder writes it: her table, a platform record type, or a table to make. */
+export type BuilderSource =
+  | { alias: string; table_id: string; organization_id: string }
+  | { alias: string; entity: string; organization_id?: string }
+  | { alias: string; new_table: NewTableDeclaration };
+
+/**
+ * Platform-record sources read and save in the Applet's own organization (CONTRACTS v2.11): the builder
+ * writes it on every save, so an Applet never lists another organization's records (bug desk 2026-10-08:
+ * a client's contacts page showed platform test contacts). A source scope, not the person's list filter.
+ */
+export function scopeEntitySources(sources: readonly BuilderSource[], organizationId: string): BuilderSource[] {
+  return sources.map((s) => ("entity" in s ? { alias: s.alias, entity: s.entity, organization_id: organizationId } : s));
+}
+
+/** The tables an answer reads that already exist, by id — the card names them in words. */
+export function boundTableIds(applet: Pick<BuilderApplet, "sources">): string[] {
+  return applet.sources.flatMap((s) => ("table_id" in s && s.table_id ? [s.table_id] : []));
+}
+
+/** The tables an answer will make, for the person to see before she presses "Use it". */
+export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[] }[] {
+  return applet.sources.flatMap((s) => ("new_table" in s ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label) }] : []));
 }
 
 export interface BuildAnswer {
@@ -36,12 +70,21 @@ export interface BuildAnswer {
   note: string;
 }
 
+/** The saved Applet as the builder shows it: THE state's fields (`appletState`) + the shown version. */
 export interface SavedApplet {
   id: string;
   slug: string;
-  version: number;
+  name: string;
+  /** What the Applet IS, as the build wrote it — never a run's note ("Fixed import locations…"). */
+  description: string | null;
   status: string;
+  published_to_web: boolean;
+  deleted_at: string | null;
+  /** The saved content version (never `version`, the row's write counter). */
+  content_version: number;
 }
+
+export const SAVED_APPLET_COLUMNS = "id, slug, name, description, status, published_to_web, deleted_at, content_version";
 
 const UNCHANGED = /^\(unchanged/i;
 
@@ -65,12 +108,17 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
       ? [{ path: p.path, title: str(p.title) || p.path, file: p.file, ...(typeof p.parent === "string" && p.parent ? { parent: p.parent } : {}) }]
       : [],
   );
-  const sources = (Array.isArray(a.sources) ? a.sources : []).flatMap((s) =>
+  const sources = (Array.isArray(a.sources) ? a.sources : []).flatMap((s): BuilderSource[] =>
     isRecord(s) && typeof s.alias === "string"
       ? [
-          typeof s.entity === "string" && s.entity
-            ? { alias: s.alias, entity: s.entity }
-            : { alias: s.alias, table_id: str(s.table_id), organization_id: str(s.organization_id) },
+          // Only a NAMED declaration is a table to make: a strict provider wire fills every optional arm,
+          // so a bound source arrives with `new_table: { name: "", fields: [] }` (and a declaration with
+          // `table_id: ""`). The arm with content decides.
+          isRecord(s.new_table) && str(s.new_table.name).trim()
+            ? { alias: s.alias, new_table: s.new_table as unknown as NewTableDeclaration }
+            : typeof s.entity === "string" && s.entity
+              ? { alias: s.alias, entity: s.entity, ...(typeof s.organization_id === "string" && s.organization_id ? { organization_id: s.organization_id } : {}) }
+              : { alias: s.alias, table_id: str(s.table_id), organization_id: str(s.organization_id) },
         ]
       : [],
   );
@@ -78,7 +126,7 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
     isRecord(m) && typeof m.alias === "string" && typeof m.key === "string" ? [{ alias: m.alias, key: m.key }] : [],
   );
   const applet: BuilderApplet = {
-    name: str(a.name) || "My app",
+    name: str(a.name) || "My Applet",
     slug: str(a.slug),
     description: str(a.description),
     entry: str(a.entry) || "App.tsx",
@@ -87,8 +135,8 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
     sources,
     mandates,
   };
-  if (!files.some((f) => f.name === applet.entry)) throw new Error(`The builder's app has no ${applet.entry} file.`);
-  if (pages.length === 0) throw new Error("The builder's app has no pages.");
+  if (!files.some((f) => f.name === applet.entry)) throw new Error(`The builder's Applet has no ${applet.entry} file.`);
+  if (pages.length === 0) throw new Error("The builder's Applet has no pages.");
   return { applet, note: str(value.note) };
 }
 
@@ -102,59 +150,130 @@ export class BuildRefused extends Error {
   }
 }
 
-const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
-const RUNS_JOB = /\buseJob\(\s*["'`]([^"'`$]+)["'`]/g;
+/**
+ * Does this refusal go to the automatic fix round? Every refusal of a request SHE made (never one of a fix
+ * round itself, which would loop) — however the answer arrived (a live run, a run rejoined after a refresh).
+ */
+export function repairs(entry: { fix: unknown }, err: unknown): err is BuildRefused {
+  return err instanceof BuildRefused && !entry.fix;
+}
 
-function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
-  const out = new Set<string>();
-  for (const f of files) for (const m of f.source.matchAll(pattern)) if (m[1]) out.add(m[1]);
-  return out;
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** The opening tag starting at `start` (`<Button …>`), braces and quotes respected. */
+function openingTag(source: string, start: number): string {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = start + 1; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === quote && source[i - 1] !== "\\") quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") quote = ch;
+    else if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    else if (ch === ">" && depth === 0) return source.slice(start, i + 1);
+  }
+  return source.slice(start);
+}
+
+/** A JSX string attribute holding an escaped newline: `placeholder="a\nb"` shows a literal "\n". */
+const ESCAPED_NEWLINE_ATTR = /\s([A-Za-z][\w-]*)="[^"\n]*\\n[^"\n]*"/g;
+
+/** Every JSX attribute whose plain string shows a literal "\n" on screen (social planner placeholder, 2026-10-08). */
+export function literalNewlineAttributes(file: BuilderFile): string[] {
+  return [...new Set([...file.source.matchAll(ESCAPED_NEWLINE_ATTR)].map((m) => m[1]!))];
 }
 
 /**
- * NOTHING THE BUILDER WROTE IS DROPPED SILENTLY. A source or job the coercion could not
- * read, a table source without its ids, or code that reads an alias the record never
- * declares refuses the whole answer — the app would otherwise open on
- * `no data source called "tasks"` (2026-10-07). Run on a fresh builder answer only.
+ * "USE IT" NEVER PUBLISHES A BROKEN APPLET. While the preview (or the last check) reports an error,
+ * publishing is refused with the reason, and Fix it is the action — the social planner was published
+ * with "Missing in this Applet: useNavigate" in red beside an enabled "Use it" (2026-10-08).
  */
-export function checkBuildAnswer(raw: unknown, answer: BuildAnswer): BuildAnswer {
-  const { applet } = answer;
-  const rawApplet = isRecord(raw) && isRecord(raw.applet) ? raw.applet : {};
-  const problems: string[] = [];
-  const rawSources = Array.isArray(rawApplet.sources) ? rawApplet.sources.length : 0;
-  if (rawSources !== applet.sources.length) problems.push(`${rawSources - applet.sources.length} of its sources had no alias`);
-  const rawMandates = Array.isArray(rawApplet.mandates) ? rawApplet.mandates.length : 0;
-  if (rawMandates !== applet.mandates.length) problems.push(`${rawMandates - applet.mandates.length} of its jobs had no alias or key`);
+export function publishBlockedBy(lastError: { message: string } | null): string | null {
+  return lastError ? `Fix this before using it: ${lastError.message}` : null;
+}
+
+/** Every new-table field of one of these types, by key. */
+function newTableFieldsOfType(applet: Pick<BuilderApplet, "sources">, types: ReadonlySet<string>): { alias: string; key: string; options: string[] }[] {
+  return applet.sources.flatMap((s) =>
+    "new_table" in s && Array.isArray(s.new_table.fields)
+      ? s.new_table.fields.filter((f) => types.has(f.type)).map((f) => ({ alias: s.alias, key: f.key, options: Array.isArray(f.options) ? f.options : [] }))
+      : [],
+  );
+}
+
+const DATE_TYPES: ReadonlySet<string> = new Set(["date", "datetime"]);
+
+/**
+ * A DATE IS NEVER A TEXT BOX. A plain `<Field>` bound to a date field showed "YYYY-MM-DD" as text to type
+ * (social planner, v0.4.3010). `<RecordField>` picks the date picker by itself; `<DateField>` is the control.
+ */
+export function dateFieldsAsText(applet: Pick<BuilderApplet, "files" | "sources">): string[] {
+  const dates = newTableFieldsOfType(applet, DATE_TYPES).map((f) => f.key);
+  const out = new Set<string>();
+  for (const f of applet.files) {
+    for (const m of f.source.matchAll(/<(Field|input)\b/g)) {
+      const tag = openingTag(f.source, m.index ?? 0);
+      if (/\btype\s*=\s*["'{]\s*["']?(date|datetime-local)/.test(tag)) continue;
+      for (const key of dates) if (new RegExp(`\\b${escapeRe(key)}\\b`).test(tag)) out.add(key);
+    }
+  }
+  return [...out];
+}
+
+/** The code names `key` — literally, or built in a template (`${p}_views` names `tt_views`). */
+function namesField(all: string, key: string): boolean {
+  if (new RegExp(`\\b${escapeRe(key)}\\b`).test(all)) return true;
+  const parts = key.split("_");
+  for (let i = 1; i < parts.length; i++) {
+    const head = escapeRe(parts.slice(0, i).join("_"));
+    const tail = escapeRe(parts.slice(i).join("_"));
+    if (new RegExp(`\\}_${tail}\\b`).test(all) || new RegExp(`\\b${head}_\\$\\{`).test(all)) return true;
+  }
+  return false;
+}
+
+/**
+ * EVERY TABLE THE APP MAKES CAN BE FILLED, AND EVERY FIELD IT DECLARES IS ON SCREEN. A new table with
+ * no create path leaves her an app she can never add a row to; a declared field the code never names
+ * is a thing she asked to track that the app does not show.
+ */
+export function newTableGaps(applet: Pick<BuilderApplet, "files" | "sources">): string[] {
+  const out: string[] = [];
+  const all = applet.files.map((f) => f.source).join("\n");
   for (const s of applet.sources) {
-    if (!s.entity && (!s.table_id || !s.organization_id)) problems.push(`source "${s.alias}" names no table_id and organization_id (or entity)`);
+    if (!("new_table" in s)) continue;
+    const fields = Array.isArray(s.new_table.fields) ? s.new_table.fields : [];
+    const unseen = fields.map((f) => f.key).filter((key) => key && !namesField(all, key));
+    if (unseen.length) out.push(`the table "${s.alias}" declares ${unseen.map((k) => `"${k}"`).join(", ")} but no page shows or edits ${unseen.length === 1 ? "it" : "them"}`);
+    const vars = [...all.matchAll(new RegExp(`(?:const|let)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*useRows\\(\\s*["'\`]${escapeRe(s.alias)}["'\`]`, "g"))].map((m) => m[1]!);
+    const reads = vars.length > 0 || new RegExp(`useRows\\(\\s*["'\`]${escapeRe(s.alias)}["'\`]`).test(all);
+    if (!reads) continue;
+    const creates =
+      vars.some((v) => new RegExp(`\\b${escapeRe(v)}\\.create\\(`).test(all)) ||
+      (vars.some((v) => new RegExp(`=\\{\\s*${escapeRe(v)}\\s*\\}`).test(all)) && /\.create\(/.test(all));
+    if (!creates) out.push(`nothing in the app adds a row to "${s.alias}" — give her a way to create one`);
   }
-  const declared = new Set(applet.sources.map((s) => s.alias));
-  for (const alias of namesIn(applet.files, READS_SOURCE)) {
-    if (!declared.has(alias)) problems.push(`the code reads "${alias}" but sources declares no "${alias}"`);
-  }
-  const jobs = new Set(applet.mandates.map((m) => m.alias));
-  for (const alias of namesIn(applet.files, RUNS_JOB)) {
-    if (!jobs.has(alias)) problems.push(`the code runs job "${alias}" but mandates declares no "${alias}"`);
-  }
-  if (problems.length > 0) {
-    throw new BuildRefused(`Not saved: ${problems.join("; ")}.`, applet);
-  }
-  return answer;
+  return out;
 }
 
 /** What the builder is shown for a change: the stored record, files as a list. */
-export async function readBuilderApplet(client: Client, appletId: string): Promise<{ applet: BuilderApplet; organizationId: string; slug: string; version: number }> {
+export async function readBuilderApplet(client: Client, appletId: string): Promise<{ applet: BuilderApplet; organizationId: string; slug: string }> {
   const { data, error } = await client
     .schema("app")
     .from("definition")
-    .select("id, organization_id, slug, name, description, entry, files, pages, sources, mandates, version")
+    .select("id, organization_id, slug, name, description, entry, files, pages, sources, mandates")
     .eq("id", appletId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("That app is not there, or it has not been shared with you.");
+  if (!data) throw new Error("That Applet is not there, or it has not been shared with you.");
   const files = isRecord(data.files) ? Object.entries(data.files).flatMap(([name, source]) => (typeof source === "string" ? [{ name, source }] : [])) : [];
   const answer = coerceBuildAnswer({ applet: { ...data, files }, note: "" });
-  return { applet: answer.applet, organizationId: data.organization_id, slug: data.slug, version: data.version };
+  return { applet: answer.applet, organizationId: data.organization_id, slug: data.slug };
 }
 
 /** A file the builder answered "(unchanged…)" keeps its stored source. */
@@ -178,7 +297,8 @@ function slugOf(raw: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 48);
-  return SLUG.test(s) ? s : `app-${Date.now().toString(36)}`;
+  if (!SLUG.test(s)) return `applet-${Date.now().toString(36)}`;
+  return isReservedAppletSlug(s) ? `${s}-applet` : s;
 }
 
 /** Write the answer as her: a new draft Applet, or a new version of the one she is changing. */
@@ -186,24 +306,43 @@ export async function saveBuiltApplet(
   client: Client,
   input: { organizationId: string; appletId: string | null; current: BuilderApplet | null; answer: BuildAnswer; request: string; conversationId: string | null },
 ): Promise<SavedApplet> {
-  const { applet, note } = input.answer;
+  const { applet } = input.answer;
   const content = {
     name: applet.name,
-    description: applet.description || null,
+    // What the Applet IS: a round that answers without one (a repair) keeps the description it had.
+    description: applet.description || input.current?.description || null,
     entry: applet.entry,
     files: mergeFiles(applet.files, input.current?.files ?? null),
     pages: applet.pages,
-    sources: applet.sources,
+    sources: scopeEntitySources(applet.sources, input.organizationId),
     mandates: applet.mandates,
-    metadata: { built_by: "applets.build", build_note: note, request: input.request, builder_conversation_id: input.conversationId },
   };
+  // The request, its run and the note live in the build's request history (metadata.build, written by
+  // ./build-session.ts) — never overwrite `metadata` here. A draft born empty at Build (no stored app
+  // yet, so no `current`) takes the address the builder chose on its first save.
+  if (input.appletId && !input.current) {
+    const base = slugOf(applet.slug || applet.name);
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const slug = attempt === 0 ? base : `${base.slice(0, 42)}-${Math.random().toString(36).slice(2, 6)}`;
+      const { data, error } = await client
+        .schema("app")
+        .from("definition")
+        .update({ ...content, slug })
+        .eq("id", input.appletId)
+        .select(SAVED_APPLET_COLUMNS)
+        .single();
+      if (!error) return data;
+      if (error.code !== "23505") throw new Error(error.message);
+    }
+    throw new Error(`Every address near "/applets/${base}" is taken.`);
+  }
   if (input.appletId) {
     const { data, error } = await client
       .schema("app")
       .from("definition")
       .update(content)
       .eq("id", input.appletId)
-      .select("id, slug, version, status")
+      .select(SAVED_APPLET_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
     return data;
@@ -215,16 +354,35 @@ export async function saveBuiltApplet(
       .schema("app")
       .from("definition")
       .insert({ ...content, organization_id: input.organizationId, slug, status: "draft" })
-      .select("id, slug, version, status")
+      .select(SAVED_APPLET_COLUMNS)
       .single();
     if (!error) return data;
     if (error.code !== "23505") throw new Error(error.message);
   }
-  throw new Error(`Every address near "/apps/${base}" is taken.`);
+  throw new Error(`Every address near "/applets/${base}" is taken.`);
 }
 
-/** "Use it": the draft goes live at /apps/<slug>. */
-export async function publishApplet(client: Client, appletId: string): Promise<void> {
-  const { error } = await client.schema("app").from("definition").update({ status: "published" }).eq("id", appletId);
+/**
+ * "Use it": first the tables the app asked for are made (as her, in the Applet's organization) and the
+ * record is bound to them; then the draft goes live at /applets/<slug>. A refusal while making tables
+ * publishes nothing and names the table; what was made stays, and the next "Use it" finds it.
+ */
+export async function publishApplet(client: Client, appletId: string, userId: string): Promise<{ made: MadeTable[] }> {
+  const { data, error: readError } = await client.schema("app").from("definition").select("organization_id, sources").eq("id", appletId).maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!data) throw new Error("That app is not there, or it has not been shared with you.");
+  const sources = (Array.isArray(data.sources) ? data.sources : []) as unknown as AppletSource[];
+  let made: MadeTable[] = [];
+  if (sources.some((s) => "new_table" in s)) {
+    const answer = await makeNewTables({ supabase: client, userId, organizationId: data.organization_id, sources });
+    made = answer.made;
+    if (!answer.ok) throw new Error(answer.message);
+    const bound = await client.schema("app").from("definition").update({ sources: answer.sources as unknown as Json }).eq("id", appletId);
+    if (bound.error) throw new Error(bound.error.message);
+  }
+  // THE publication transition — status AND published_to_web together, the same write the manage
+  // header's Publish makes, so every surface reads the Applet as Published (never half of it).
+  const { error } = await client.schema("app").from("definition").update(appletPublicationPatch(true, new Date().toISOString(), userId)).eq("id", appletId);
   if (error) throw new Error(error.message);
+  return { made };
 }

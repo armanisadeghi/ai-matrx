@@ -25,7 +25,7 @@ import {
   LoadingTapButton,
   PlusTapButton,
   RefreshCwTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 

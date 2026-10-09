@@ -45,7 +45,7 @@ export const REASONS = {
   /** The store already reaches it through its own column kind. */
   REACHED_ANOTHER_WAY:
     "The record store reaches it through its own column: a File column, a Person column, or a " +
-    "relation to a store Table. An entity reference to it would be a second way to say one thing.",
+    "relation to a custom table. An entity reference to it would be a second way to say one thing.",
   /** Not a registered entity type, so no door can name, check or label it. */
   NOT_REGISTERED:
     "Stored in a table platform.entity_types does not register, so the reference doors cannot " +

@@ -66,7 +66,7 @@ import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import { STUDIO_SOURCES } from "@/components/markdown-studio/lab/content-sources";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { RichDocumentActionProvider } from "@ai-matrx/rich-content/rich-document/RichDocumentActionProvider";
-import { buildChatMessageActions } from "../chat/chatMessageActions";
+import { buildChatMessageActions } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chatMessageActions";
 import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { getActionSurfacesState } from "@ai-matrx/rich-content/rich-document/runtime/actionSurfacesStore";
 import { hydrateMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";

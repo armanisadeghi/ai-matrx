@@ -1,0 +1,231 @@
+"use client";
+
+/**
+ * AppletCategoryPicker
+ *
+ * Searchable category picker for `aga_apps.category`. Pulls system options
+ * from `aga_categories` (a flat list today) and lets the user pick one or
+ * type their own custom value. The selected text is what lands in the row.
+ *
+ * Future-friendly: when `aga_categories` gains a `parent_id` column the
+ * dropdown will expand into a tree view here without callsite changes.
+ *
+ * Behavior:
+ *   - Click trigger → searchable popover with system options.
+ *   - Type a query that doesn't match any option → "Create '<query>'" entry
+ *     at the bottom commits a custom category as plain text.
+ *   - Clear button on the trigger removes the value entirely (null in DB).
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { Check, ChevronDown, Folder, Plus, X } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import {
+  fetchAppletCategories,
+  type AppletCategoryRow,
+} from "@/lib/services/applets-admin-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+interface AppletCategoryPickerProps {
+  value: string | null;
+  onChange: (next: string | null) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+export function AppletCategoryPicker({
+  value,
+  onChange,
+  disabled = false,
+  placeholder = "Pick or create a category",
+}: AppletCategoryPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [systemOptions, setSystemOptions] = useState<AppletCategoryRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load system categories the first time the popover opens.
+  useEffect(() => {
+    if (!open || systemOptions.length > 0 || loading) return;
+    setLoading(true);
+    setError(null);
+    fetchAppletCategories()
+      .then((rows) => setSystemOptions(rows))
+      .catch((e) => setError(e instanceof Error ? e.message : "Load failed"))
+      .finally(() => setLoading(false));
+  }, [open, systemOptions.length, loading]);
+
+  // Did the user's current value match a system entry?
+  const matchedSystem = useMemo(
+    () =>
+      value
+        ? systemOptions.find(
+            (o) => o.name.toLowerCase() === value.toLowerCase(),
+          )
+        : undefined,
+    [value, systemOptions],
+  );
+
+  const filteredSystem = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return systemOptions;
+    return systemOptions.filter(
+      (o) =>
+        o.name.toLowerCase().includes(q) ||
+        (o.description ?? "").toLowerCase().includes(q),
+    );
+  }, [query, systemOptions]);
+
+  const showCreate =
+    query.trim().length > 0 &&
+    !systemOptions.some(
+      (o) => o.name.toLowerCase() === query.trim().toLowerCase(),
+    );
+
+  const handleSelect = (next: string) => {
+    onChange(next);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(null);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      {/* The clear control sits BESIDE the trigger, never inside it: a button
+          inside a button is invalid HTML and a hydration error. */}
+      <div className="relative">
+      <PopoverTrigger asChild disabled={disabled}>
+        <button
+          type="button"
+          className={cn(
+            "h-9 w-full flex items-center gap-2 px-3 rounded-md border border-input bg-background hover:bg-muted/50 transition-colors text-left",
+            value && !disabled && "pr-8",
+            disabled && "opacity-60 cursor-not-allowed",
+          )}
+        >
+          <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span
+            className={cn(
+              "flex-1 truncate text-sm",
+              !value && "text-muted-foreground",
+            )}
+          >
+            {value ?? placeholder}
+          </span>
+          {!matchedSystem && value && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+              custom
+            </span>
+          )}
+          {!(value && !disabled) && (
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          )}
+        </button>
+      </PopoverTrigger>
+      {value && !disabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+          aria-label="Clear category"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
+      </div>
+      <PopoverContent
+        sizing="content"
+        align="start"
+        className="p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Search system options or type your own…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {loading && (
+              <div className="px-3 py-4 text-sm text-muted-foreground">
+                <SuspenseLoader
+                  centered={false}
+                  message="Loading Applet categories…"
+                />
+              </div>
+            )}
+            {error && (
+              <div className="px-3 py-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
+            )}
+            {!loading && !error && filteredSystem.length === 0 && !showCreate && (
+              <CommandEmpty>
+                Type a name and press Enter to create your own.
+              </CommandEmpty>
+            )}
+            {filteredSystem.length > 0 && (
+              <CommandGroup heading="System categories">
+                {filteredSystem.map((opt) => {
+                  const isActive =
+                    value && opt.name.toLowerCase() === value.toLowerCase();
+                  return (
+                    <CommandItem
+                      key={opt.id}
+                      value={opt.name}
+                      onSelect={() => handleSelect(opt.name)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isActive ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="flex-1">{opt.name}</span>
+                      {opt.description && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {opt.description}
+                        </span>
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
+            {showCreate && (
+              <>
+                {filteredSystem.length > 0 && <CommandSeparator />}
+                <CommandGroup heading="Custom">
+                  <CommandItem
+                    value={`__create:${query.trim()}`}
+                    onSelect={() => handleSelect(query.trim())}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Use &ldquo;{query.trim()}&rdquo; as custom category
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

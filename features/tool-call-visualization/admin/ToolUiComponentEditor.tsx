@@ -48,7 +48,7 @@ import type { ToolUiComponentRow } from "./types";
 import { listScopeEntries } from "@ai-matrx/code-runtime/scope";
 import { defaultToolRendererScopeEntries } from "@/lib/code-runtime/defaults";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ---------------------------------------------------------------------------
 // Types

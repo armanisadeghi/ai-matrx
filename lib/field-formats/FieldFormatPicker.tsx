@@ -107,10 +107,8 @@ export type FieldFormatPickerProps = {
    * It is a PREDICATE and not a list because this picker is a platform
    * primitive that knows nothing about organizations, and the caller — a
    * data-table column editor, which holds the table and therefore the
-   * organization — is the one place that does. The first user is
-   * `data_tables.relation.relation_columns_enabled` (OLD-TABLES-CUTOVER rev 2,
-   * W6): a column that points at another table is an organization's own
-   * decision, default off.
+   * organization — is the one place that does. An organization may
+   * decide a format is not offered, for example a column that points at another table.
    *
    * A format the predicate refuses is ABSENT, never present-and-disabled: a
    * control that is there and dead is exactly what "a screen never lies"

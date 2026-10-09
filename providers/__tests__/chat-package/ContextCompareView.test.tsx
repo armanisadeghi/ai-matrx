@@ -36,7 +36,7 @@ jest.mock(
   }),
 );
 // THE markdown renderer a chat answer goes through, stood in so the test can see what it is handed.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
 }));
@@ -72,7 +72,12 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   ),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAllAgents: () => ({ [INTAKE_AGENT]: { name: "Client Intake Reviewer" } }),
+}));
+jest.mock("@ai-matrx/chat/agents/identity/agent-identity", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/identity/agent-identity"),
+  useAgentName: (id: string | null | undefined) => (id === INTAKE_AGENT ? "Client Intake Reviewer" : undefined),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsList: () => ({ type: "agents/list" }),

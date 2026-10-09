@@ -5,6 +5,8 @@ export const defaultUserPreferences: UserPreferences = {
     items: [],
   },
   display: {
+    timeZone: "",
+    timeZoneFollowsDevice: true,
     darkMode: true,
     theme: "default",
     dashboardLayout: "default",
@@ -48,6 +50,7 @@ export const defaultUserPreferences: UserPreferences = {
     preferredProvider: "default",
     preferredModel: "default",
     directiveApplyPolicy: "default",
+    showCreatorPanel: false,
   },
   email: {
     primaryEmail: "",
@@ -222,10 +225,8 @@ export const defaultUserPreferences: UserPreferences = {
     videoInputDeviceLabel: "",
     preferredFacingMode: "",
   },
-  // null = no default org chosen → header reminder nudges the user. Keep in
-  // sync with the in-slice defaults at userPreferencesSlice.ts.
+  // Keep in sync with the in-slice defaults at userPreferencesSlice.ts.
   organization: {
-    defaultOrganizationId: null,
     // Default ON: a link that names an organization is obeyed. The defect this
     // answers is a notification deep link landing a person on "Select an
     // organization first" instead of the thing the link named.
@@ -239,8 +240,8 @@ export const defaultUserPreferences: UserPreferences = {
   // right) and Plain on a phone, unless the person chose another mode; a note
   // last edited in Write reopens in Write (noteModes).
   notes: {
-    defaultEditorMode: "split",
-    defaultPhoneEditorMode: "plain",
+    defaultEditorMode: "write",
+    defaultPhoneEditorMode: "write",
     noteModes: {},
   },
   siteWorkbench: {
@@ -266,4 +267,6 @@ export const defaultUserPreferences: UserPreferences = {
   // THE REVERSIBLE ACTION (lib/reversible): nothing done yet, so the first one teaches.
   // Keep in sync with userPreferencesSlice.ts.
   reversible: { verbs: {}, pairs: {} },
+  // The bell's source memory (features/notifications). Keep in sync with userPreferencesSlice.ts.
+  inbox: { sourcesSeen: {}, sourcesSeenIds: {}, sourcesCleared: {}, sourcesClearedIds: {}, hiddenSources: [] },
 };

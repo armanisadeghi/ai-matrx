@@ -6,7 +6,8 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: ({ title, message, error }: { title?: string; message?: string; error?: unknown }) => (
     <div data-error-notice="">
       {title} {message ?? String((error as Error)?.message ?? error)}
@@ -14,9 +15,9 @@ jest.mock("@/components/errors/ErrorNotice", () => ({
   ),
 }));
 
-import { ReadEmpty, ReadGate, ReadStaleNotice, readOf, readStatusOf } from "@/components/read-state/ReadGate";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount, countReadState, countIsStale } from "@/components/official/stale-data/UntrustedCount";
+import { ReadEmpty, ReadGate, ReadStaleNotice, readOf, readStatusOf } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount, countReadState, countIsStale } from "@ai-matrx/design-system";
 
 const empty = <p>Your vault is empty</p>;
 const list = <ul><li>row</li></ul>;

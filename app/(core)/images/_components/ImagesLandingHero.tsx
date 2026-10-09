@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,6 +18,10 @@ import {
   Wrench,
   type LucideIcon
 } from "lucide-react";
+
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { createImageManagerScope } from "@/features/surfaces/manifests/image-manager.manifest";
 
 interface Tile {
   href: string;
@@ -151,8 +157,22 @@ const STUDIO_TILES: Tile[] = [
 ];
 
 export function ImagesLandingHero() {
+  const sections = [
+    { title: "Manager", landing: "/images/manager", links: MANAGER_TILES.map(({ href, label, description }) => ({ href, label, description })) },
+    { title: "Studio", landing: "/images/studio", links: STUDIO_TILES.map(({ href, label, description }) => ({ href, label, description })) },
+  ];
+  const links = sections.flatMap((section) => section.links);
+  const getScope = () => createImageManagerScope({
+    image_hub_tab: "home",
+    image_hub_sections: sections,
+    image_hub_links: links,
+    image_hub_link_count: links.length,
+    content: sections.map((section) => `${section.title}\n${section.links.map((link) => `${link.label}: ${link.description} (${link.href})`).join("\n")}`).join("\n\n"),
+  });
   return (
-    <div className="h-full overflow-y-auto overscroll-contain pb-20">
+    <SurfaceRuntimeProvider surfaceName="matrx-user/image-manager" getScope={getScope}>
+    <NonEditableContextMenu sourceFeature="image-studio" surfaceName="matrx-user/image-manager" menuVersion={1} getApplicationScope={getScope} contentSource={{ type: "raw" }}>
+    <div data-surface-value="image_hub_sections" className="h-full overflow-y-auto overscroll-contain pb-20">
       <div className="space-y-3 px-3 pb-3 pt-3 md:hidden">
         <MobileTileSection
           title="Manager"
@@ -171,6 +191,8 @@ export function ImagesLandingHero() {
         <TileSection title="Studio" landing="/images/studio" tiles={STUDIO_TILES} />
       </div>
     </div>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }
 

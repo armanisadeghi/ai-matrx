@@ -10,7 +10,7 @@ import {
 import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
 import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import { FlashcardGoDeeperTrigger } from "./FlashcardGoDeeperTrigger";
-import { WrenchTapButton } from "@ai-matrx/tap-target/buttons";
+import { WrenchTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   FlashcardFaceImage,
   hasFaceImage,
@@ -146,7 +146,17 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
     }
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Dragging across the face to select its text ends in a click: that is a selection, not a flip.
+    const selection = typeof window !== "undefined" ? window.getSelection() : null;
+    if (
+      selection &&
+      !selection.isCollapsed &&
+      selection.toString().trim() &&
+      e.currentTarget.contains(selection.anchorNode)
+    ) {
+      return;
+    }
     toggleFlip();
   };
 

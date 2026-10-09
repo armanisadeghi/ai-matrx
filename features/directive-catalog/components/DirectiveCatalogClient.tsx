@@ -21,6 +21,7 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import { describeServerTarget } from "@/lib/api/server-identity";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
+import { loadNounSchemas } from "@/features/directive-catalog/catalogCache";
 import { DirectiveCatalogGrid } from "@/features/directive-catalog/components/DirectiveCatalogGrid";
 import {
   DirectiveBuilderPanel,
@@ -63,7 +64,23 @@ export function DirectiveCatalogClient() {
   });
   const canvas = useOptionalCanvas();
   const inspect = (selection: DirectiveShapeSelection) => {
-    openCanvasItem(canvas, directiveShapeOpenInput(selection));
+    if (selection.kind === "custom_action") {
+      openCanvasItem(canvas, directiveShapeOpenInput(selection));
+      return;
+    }
+    if (!baseUrl) return;
+    // ONE noun's schemas, on demand — the summary carries none (G12).
+    loadNounSchemas(baseUrl, selection.noun.noun).then(
+      (found) =>
+        openCanvasItem(
+          canvas,
+          directiveShapeOpenInput(selection, found.schemas?.[selection.verb]),
+        ),
+      (err: unknown) =>
+        toast.error(
+          `Couldn't load the ${selection.verb}:${selection.noun.noun} shape (${err instanceof Error ? err.message : "unknown error"}).`,
+        ),
+    );
   };
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
   const builderRef = useRef<HTMLDivElement>(null);
@@ -154,10 +171,13 @@ export function DirectiveCatalogClient() {
           height, then the other actions, then the builder. Splitting a 375px
           height between them left the table ~0px tall and the builder in a
           strip under the floating chips. From lg up the panes sit side by
-          side and each scrolls itself. */}
+          side and each scrolls itself. As the page's scroll owner it takes
+          the shell's floating-clearance runway (`data-matrx-page-scroll`), so
+          the builder's last line ends clear of the floating chips. */}
       <div
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:overflow-hidden"
         data-directive-catalog-body=""
+        data-matrx-page-scroll=""
       >
         {isLoading && !catalog ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -202,7 +222,13 @@ export function DirectiveCatalogClient() {
                 }}
               />
             </div>
-            <div ref={builderRef} className="lg:min-h-0" data-directive-builder-pane="">
+            {/* Phone: the builder comes FIRST (G18 review: under the 50-row
+                table and the other actions it was hard to find). */}
+            <div
+              ref={builderRef}
+              className="order-first border-b border-border lg:order-none lg:min-h-0 lg:border-b-0"
+              data-directive-builder-pane=""
+            >
               <DirectiveBuilderPanel catalog={catalog} pick={builderPick} />
             </div>
           </div>

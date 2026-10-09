@@ -7,16 +7,20 @@
 // Such a read is not hers to make, so it is not asked for. Null when her memberships could not
 // be read — the caller then asks as before and lets the door answer.
 
-import { membershipsService } from "@/features/organizations/service/membershipsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
 
 let mine: Promise<Set<string> | null> | null = null;
 
+// AN ARCHIVED ORGANIZATION IS NOT ONE SHE IS IN (2026-10-08). Her membership rows
+// are kept when an organization is archived (so a restore gives everything back),
+// but `iam.has_org_access_for` closes it — every member-only door refuses it with
+// 403. Counting those rows made /education/kits ask `context_tree_types` once per
+// archived organization: 100 refusals per load for the test admin. Only an
+// organization whose row she can read AND that is not archived counts.
 export function organizationsIAmIn(): Promise<Set<string> | null> {
   if (!mine) {
-    mine = membershipsService
-      .forUser("organization")
-      .then((r) => (isScopesRpcErr(r) ? null : new Set(r.data.memberships.map((m) => m.containerId))))
+    mine = readMemberOrganizationRows()
+      .then((r) => (r.ok ? new Set(r.rows.filter((row) => !row.archived_at).map((row) => row.id)) : null))
       .catch(() => null);
   }
   return mine;

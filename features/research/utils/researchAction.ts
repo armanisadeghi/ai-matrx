@@ -18,7 +18,6 @@
  * Returns the action's result, or `null` when it did not run or failed.
  */
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { toast } from "@/lib/toast";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
@@ -31,7 +30,6 @@ export async function runResearchAction<T>(
     await ensureOrgId(null);
     return await action();
   } catch (error) {
-    if (isOrganizationSelectionCancelled(error)) return null;
     // The platform's one refusal sentence, with the remedy — for the client
     // kernel's refusal AND the server's `organization_required`.
     if (presentOrganizationRefusal(error, { act: "saved" })) return null;

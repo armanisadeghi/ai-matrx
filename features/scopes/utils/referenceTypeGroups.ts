@@ -5,8 +5,9 @@
  *
  *   1. an admin-assigned chooser bucket (`platform.entity_types.reference_category`,
  *      shown by `platform.reference_categories`) wins when it is active;
- *   1b. else a vocabulary word for a type whose schema is machinery
- *      (`PERSON_GROUP_TYPE` below);
+ *   1b. else the person's group for a type whose schema is machinery
+ *      (`PERSON_GROUP_TYPE` below), or for a schema folded into a neighbour
+ *      (`PERSON_GROUP_SCHEMA`);
  *   2. else the type's schema, by the schema's display name
  *      (`platform.schemas`, generated as `SCHEMA_DISPLAY`);
  *   3. else the schema name itself, Title Cased (a short one is an acronym:
@@ -45,26 +46,48 @@ const ACRONYM_MAX = 3;
  *   - `workbench` → `workspace`: a Note sat under "Workbench" while its Task
  *     sat under "Workspace";
  *   - `marketing` → `web`: "Marketing" and "Marketing & Web" were two groups.
+ *
+ * A group of ONE is not a group (G11A review, 2026-10-07: "Custom" held only
+ * Public Form; Chat, Content, Apps, SEO… each stood alone). Each lone schema
+ * joins the neighbour a person would look in:
+ *   - `chat`, `content` → Workspace (`projects`): a Chat and a document sit
+ *     beside the Notes, Tasks and Documents they are worked on with;
+ *   - `app`, `skill`, `tool` → Agents: an app runs an agent, skills and tools
+ *     are what an agent uses;
+ *   - `custom` (Public Form), `users` (a teammate) → Communication;
+ *   - `seo` → Marketing & Web; `scheduler` (Scheduled Task) → Workflows.
+ * Guard: `reference-picker/__tests__/one-name-per-type-no-group-of-one.test.ts`.
  * An admin-assigned chooser bucket (`reference_category`) still wins over this.
  */
 const PERSON_GROUP_SCHEMA: Readonly<Record<string, string>> = {
   workbench: "workspace",
   marketing: "web",
+  chat: "projects",
+  content: "projects",
+  app: "agent",
+  skill: "agent",
+  tool: "agent",
+  custom: "communication",
+  users: "communication",
+  seo: "web",
+  scheduler: "workflow",
 };
 
 /**
  * Types whose STORAGE schema is not a group a person knows, placed under the
- * product's own word. Every word here is a vocabulary ruling, never taste
- * (common-docs/systems/platform/vocabulary/FEATURE.md; G6B review, 2026-10-02):
- *   - `scope` → "Scopes": its schema prints "Context", and a scope is not
- *     context (§ "The word Context", Arman, 2026-10-02 — on screen: Scopes);
- *   - `rulebook` → "Masterwork": its schema prints "Platform"; a Rulebook is
- *     Masterwork's noun (§ Settled — Masterwork).
+ * group a person looks in. Their schema's own name is never shown
+ * (vocabulary: common-docs/systems/platform/vocabulary/FEATURE.md):
+ *   - `scope` → Workspace: its schema prints "Context", and a scope is not
+ *     context (§ "The word Context", Arman, 2026-10-02); a Scope is what you
+ *     work on, so it sits with the work;
+ *   - `rulebook` → Agents: its schema prints "Platform"; a Rulebook is the
+ *     captured judgment an agent runs on (§ Masterwork). It stood alone under
+ *     "Masterwork" until G11A folded every group of one.
  * An admin-assigned chooser bucket (`reference_category`) still wins over this.
  */
 const PERSON_GROUP_TYPE: Readonly<Record<string, string>> = {
-  scope: "Scopes",
-  rulebook: "Masterwork",
+  scope: "projects",
+  rulebook: "agent",
 };
 
 /** The five entities a registry label can carry; a label is text, never HTML. */
@@ -103,21 +126,23 @@ export function titleCaseGroupLabel(raw: string): string {
 
 /** The stable key of a type's group (use it to bucket). */
 export function referenceTypeGroupKey(token: string): string {
+  // A web link sits with Files, the other things a person attaches — alone
+  // under "Links" it was a group of one (G11A, 2026-10-07).
+  if (token === "url") return referenceTypeGroupKey("file");
   if (!isEntityTypeToken(token)) return BASICS_GROUP;
   const meta = ENTITY_TYPE_METADATA[token];
   const category = meta.referenceCategory;
   if (category && REFERENCE_CATEGORY_DISPLAY[category]?.isActive) {
     return `cat:${category}`;
   }
-  const personGroup = PERSON_GROUP_TYPE[token];
-  if (personGroup) return `word:${personGroup}`;
+  const personSchema = PERSON_GROUP_TYPE[token];
+  if (personSchema) return `schema:${personSchema}`;
   return `schema:${PERSON_GROUP_SCHEMA[meta.schema] ?? meta.schema}`;
 }
 
 /** The human label of a group key, always Title Case. */
 export function referenceTypeGroupLabel(key: string): string {
   if (key === BASICS_GROUP) return "Links";
-  if (key.startsWith("word:")) return key.slice("word:".length);
   if (key.startsWith("cat:")) {
     const slug = key.slice("cat:".length);
     return titleCaseGroupLabel(REFERENCE_CATEGORY_DISPLAY[slug]?.label ?? slug);

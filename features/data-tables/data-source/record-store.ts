@@ -37,7 +37,6 @@ import type {
   Field,
   ReadRow,
   RecordPageSort,
-  RecordHistoryEntry,
   RecordsError,
   RowAction as StoreRowAction,
 } from "@ai-matrx/records";
@@ -65,9 +64,7 @@ import {
   migrateRetype,
   readRecordsInViewOrder,
   viewRecordOrderSet,
-  choiceNudgeDoor,
   recordUpdateAddingChoices,
-  type ChoiceNudge,
 } from "./record-store-grid";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
@@ -102,9 +99,6 @@ const READ_PAGE = 1_000;
  * this is only the backstop for a browser that is not listening.
  */
 const META_TTL_MS = 5 * 60_000;
-/** The store's history page ceiling (PAGE-1 — custom.page_contract answers 500). */
-const HISTORY_PAGE = 500;
-
 // ─── the client ──────────────────────────────────────────────────────────────
 
 const clients = new Map<string, RecordsClient>();
@@ -117,33 +111,6 @@ function clientFor(home: RecordStoreHome): RecordsClient {
       dataSource: recordsDataSource(createClient()),
       actor: personActor(home.userId),
       organizationId: home.organizationId,
-    });
-    clients.set(key, client);
-  }
-  return client;
-}
-
-/**
- * THE CLIENT THAT READS ACROSS EVERY ORGANIZATION THE PERSON BELONGS TO (active-org law: the
- * organization a grid was opened in is where it writes, never what a list shows). The ids come
- * from the canonical membership read (`mbr_for_user`), never a fixed list; the client is keyed by
- * them so a membership change builds a fresh one. A failed membership read is thrown, never
- * papered over with a one-organization list.
- */
-async function spanningClientFor(home: RecordStoreHome): Promise<RecordsClient> {
-  // Loaded on use: only the switcher list needs membership, every other call stays light.
-  const { membershipsService } = await import("@/features/organizations/service/membershipsService");
-  const read = await membershipsService.forUser("organization");
-  if (!read.ok) throw new Error(`Could not read your organizations: ${read.error.message}`);
-  const organizationIds = [...new Set(read.data.memberships.map((m) => m.containerId))].sort();
-  const key = `${home.organizationId}:${home.userId ?? ""}:span:${organizationIds.join(",")}`;
-  let client = clients.get(key);
-  if (!client) {
-    client = createRecordsClient({
-      dataSource: recordsDataSource(createClient()),
-      actor: personActor(home.userId),
-      organizationId: home.organizationId,
-      organizationIds,
     });
     clients.set(key, client);
   }
@@ -672,40 +639,6 @@ export async function hasEditorAccess(home: RecordStoreHome, args: { tableId: st
   return level === "editor" || level === "admin";
 }
 
-/** The tables the header's switcher lists: the record-store Tables of EVERY organization the person belongs to. */
-export async function listTables(
-  home: RecordStoreHome,
-): Promise<ServiceResult<Array<{ id: string; table_name: string; description: string | null; organization_id: string; row_count: number; field_count: number }>>> {
-  const answer = await (await spanningClientFor(home)).tableList();
-  if (!answer.ok) return refused(answer.error);
-  const tables = answer.data.filter((t) => !t.is_kernel);
-  // A REAL COUNT, never a zero (lane INTEG-CLIENTS). Every picker prints "N rows" and the
-  // save-into dialog's Replace confirm says "permanently deletes all N rows": a store table
-  // listed as 0 made that sentence a lie. `custom.table_capacity` counts a Table's live
-  // records for a reader who may know the table. One call per Table — the store has no
-  // "tables with their counts" door yet (named for GRID-PRIMITIVES).
-  // Each count is asked in the table's OWN organization (the list now spans several).
-  const counts = await Promise.all(
-    tables.map((t) => clientFor({ ...home, organizationId: t.organization_id }).tableCapacity({ table_id: t.id })),
-  );
-  const failed = counts.find((c) => !c.ok);
-  if (failed && !failed.ok) return refused(failed.error);
-  return {
-    success: true,
-    data: tables.map((t, i) => {
-      const count = counts[i];
-      return {
-        id: t.id,
-        table_name: t.name,
-        description: null,
-        organization_id: t.organization_id,
-        row_count: count && count.ok ? count.data.records : 0,
-        field_count: Array.isArray(t.fields) ? t.fields.length : 0,
-      };
-    }),
-  };
-}
-
 /** Distinct values of one column over EVERY row this person may see — never a page. */
 export async function getColumnFacets(
   home: RecordStoreHome,
@@ -889,20 +822,6 @@ export async function addChoicesToColumn(
   return { success: true, data: { field_id: args.fieldId } };
 }
 
-/** What a choice cell does with a typed word that is none of its choices (`custom/choice_nudge`). */
-export async function choiceNudgeOf(home: RecordStoreHome): Promise<ChoiceNudge> {
-  const cached = nudges.get(home.organizationId);
-  if (cached) return cached;
-  const answer = await choiceNudgeDoor(home);
-  // A door this page cannot reach yet answers the platform default, and says so in the console.
-  const value: ChoiceNudge =
-    answer.ok && (answer.data === "always_add" || answer.data === "never_add" || answer.data === "ask") ? answer.data : "ask";
-  if (!answer.ok) console.warn(`[data-tables] custom.choice_nudge did not answer (${answer.error.message}); asking, the platform default.`);
-  nudges.set(home.organizationId, value);
-  return value;
-}
-const nudges = new Map<string, ChoiceNudge>();
-
 /** Every declared column absent from `data` goes out as null, so an update REPLACES as the older door did. */
 function replacing(columns: DatasetField[], data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...data };
@@ -956,7 +875,7 @@ export async function deleteRow(
 }
 
 /**
- * Archive a whole record-store Table (lane SWITCH-AFTERMATH: /data's home lists a switched
+ * Archive a whole custom Table (lane SWITCH-AFTERMATH: /data's home lists a switched
  * organization's tables where they now live, with the same Delete). `record_delete` is soft: the
  * Table goes to Trash and Restore brings it back under its own id.
  */
@@ -1194,7 +1113,7 @@ export async function setTableRowLabel(
 ): Promise<ServiceResult<{ row_label: unknown }>> {
   if (args.rowLabel && args.rowLabel.kind !== "field") {
     return plainFailure(
-      "A record-store table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
+      "A custom table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
     );
   }
   if (args.rowLabel?.field) {
@@ -1206,7 +1125,7 @@ export async function setTableRowLabel(
     const picked = fields.data.find((f) => f.key === args.rowLabel!.field);
     if (picked && String(picked.type) === "formula") {
       return plainFailure(
-        `"${picked.label || picked.key}" is worked out by the table, and a record-store table names its rows by a column that holds its own words. Pick a column people fill in. Nothing was changed.`,
+        `"${picked.label || picked.key}" is worked out by the table, and a custom table names its rows by a column that holds its own words. Pick a column people fill in. Nothing was changed.`,
       );
     }
   }
@@ -1226,7 +1145,7 @@ export async function updateTableMetadata(
 ): Promise<ServiceResult<{ id: string; table_name: string; description: string | null; version: number | null; is_public: boolean | null; updated_at: string }>> {
   if (args.isPublic !== undefined) {
     return plainFailure(
-      "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed.",
+      "A custom table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed.",
     );
   }
   const patch: Record<string, unknown> = {};
@@ -1610,67 +1529,6 @@ export async function rowsById(
 // what the store recorded. Nothing is guessed: a key the store never recorded
 // is absent from the snapshot, as it was absent from the record.
 
-export type StoreRowVersion = {
-  id: number;
-  row_id: string;
-  table_id: string;
-  change_kind: "insert" | "update" | "delete";
-  changed_at: string;
-  changed_by: string | null;
-  data: Record<string, unknown> | null;
-  prior_data: Record<string, unknown> | null;
-  reason: string | null;
-  custom_fields: Record<string, unknown>;
-};
-
-function changeKindOf(operation: string): StoreRowVersion["change_kind"] {
-  const word = operation.toLowerCase();
-  if (word === "insert" || word === "create" || word === "created") return "insert";
-  if (word.includes("archive") || word.includes("delete")) return "delete";
-  return "update";
-}
-
-export async function rowHistory(
-  home: RecordStoreHome,
-  args: { tableId: string; rowId: string; limit: number },
-): Promise<ServiceResult<StoreRowVersion[]>> {
-  const columns = await columnsOf(home, args.tableId);
-  if (!columns.success) return columns;
-  // Every version, so each snapshot can be rebuilt from the first; `limit` is
-  // applied to what is shown, newest first.
-  const entries: RecordHistoryEntry[] = [];
-  for (let offset = 0; offset < 5000; offset += HISTORY_PAGE) {
-    const read = await clientFor(home).recordHistory({ record_id: args.rowId, limit: HISTORY_PAGE, offset });
-    if (!read.ok) return refused(read.error);
-    entries.push(...read.data);
-    if (read.data.length < HISTORY_PAGE) break;
-  }
-  const oldestFirst = [...entries].sort((a, b) => a.version - b.version);
-  let current: Record<string, unknown> = {};
-  const out: StoreRowVersion[] = [];
-  for (const entry of oldestFirst) {
-    const prior = { ...current };
-    const kind = changeKindOf(entry.operation);
-    for (const change of entry.changes) {
-      if (change.after === null || change.after === undefined) delete current[change.key];
-      else current[change.key] = change.after;
-    }
-    out.push({
-      id: entry.version,
-      row_id: args.rowId,
-      table_id: args.tableId,
-      change_kind: kind,
-      changed_at: entry.occurred_at,
-      changed_by: entry.actor?.user_id ?? null,
-      data: kind === "delete" ? null : gridRowData({ ...current }, columns.data),
-      prior_data: kind === "insert" ? null : gridRowData(prior, columns.data),
-      reason: entry.operation_label ?? null,
-      custom_fields: {},
-    });
-  }
-  return { success: true, data: out.reverse().slice(0, args.limit) };
-}
-
 /** The store's own verb: the whole record back to a version, as a NEW version. */
 export async function restoreRowVersion(
   home: RecordStoreHome,
@@ -1732,7 +1590,7 @@ export async function updateTableConfig(
   if (tableUnknown.length) {
     return plainFailure(
       tableUnknown.includes("is_public")
-        ? "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed."
+        ? "A custom table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed."
         : `The record store has nowhere to keep this table's ${tableUnknown.map((k) => `"${k}"`).join(" or ")} setting. Nothing was changed.`,
     );
   }
@@ -1960,7 +1818,7 @@ export async function createTable(
   const asked = args.fields.filter((f) => f.is_required).map((f) => f.display_name || f.field_name);
   if (asked.length) {
     warnings.push(
-      `${asked.map((n) => `"${n}"`).join(", ")} ${asked.length === 1 ? "was" : "were"} made optional: a new record-store table demands no column until someone marks it required in the column's settings.`,
+      `${asked.map((n) => `"${n}"`).join(", ")} ${asked.length === 1 ? "was" : "were"} made optional: a new custom table demands no column until someone marks it required in the column's settings.`,
     );
   }
   if (args.description && args.description.trim()) {
@@ -1983,19 +1841,4 @@ export async function tableDetails(
     table: { id: tableId, name: snap.data.table.table_name, description: snap.data.table.description ?? "", is_public: false },
     fields: snap.data.columns,
   };
-}
-
-/**
- * The layout a record-store table's grid opens with (G1): the platform's value,
- * then the organization's `custom/grid_layout` knob — the store's twin of the
- * older `extensibility/user_tables.*` knobs, answered by `custom.grid_layout`.
- */
-export async function gridLayoutDefaults(
-  home: RecordStoreHome,
-  tableId: string,
-): Promise<{ layout: string; fitMaxColumns: number; rowHeight: string } | null> {
-  const answer = await clientFor(home).gridLayout({ table_id: tableId });
-  if (!answer.ok) return null;
-  const l = answer.data.layout;
-  return { layout: l.mode, fitMaxColumns: l.fit_max_columns, rowHeight: l.row_height };
 }

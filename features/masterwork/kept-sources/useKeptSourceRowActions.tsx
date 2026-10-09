@@ -12,7 +12,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, ExternalLink, FileText } from "lucide-react";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type {
   EntityListController,
   EntityRowActionsResult,

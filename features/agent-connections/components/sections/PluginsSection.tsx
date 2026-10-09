@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import React, { useState } from "react";
 import {
   ArrowLeft,
@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

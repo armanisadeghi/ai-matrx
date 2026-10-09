@@ -40,7 +40,7 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { usePathname } from "next/navigation";

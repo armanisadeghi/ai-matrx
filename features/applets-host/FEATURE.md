@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The web host for Applets: `aimatrx.com/apps/<slug>` opens an Applet that lives only in the database
+The web host for Applets: `aimatrx.com/applets/<slug>` opens an Applet that lives only in the database
 (`app.definition`) and renders it full-bleed through `@ai-matrx/applets`. No Applet code lives in this repo.
 
 Cross-repo system of record: `common-docs/projects/applets/` (PLAN AP-0, CONTRACTS v2.2 §1, §2, §8).
@@ -19,36 +19,49 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 ## Entry points
 
 **Routes**
-- `app/(link)/apps/[app]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves), so it is never
+- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet whenever `resolveAppletView` says run, so it is never
   remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
   re-read everything on every page change and on browser Back).
-- `app/(link)/apps/[app]/[[...path]]/page.tsx` — renders nothing; signed-in only (signed-out →
-  `/login?redirectTo=…`); resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
+- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — the Applet's ONE address. `resolveAppletView`
+  (`resolve-applet-route.ts`, shared with the layout): a template → its introductory page; signed in → the running
+  Applet; signed out + published public Applet (`get_aga_public_data`) → the running Applet on the guest lane plus
+  the `MadeWithAiMatrx` row (`?embed=widget` drops it); signed out otherwise → the introductory page when the owner
+  published one, else `/login?redirectTo=…`. An id-shaped address redirects to the slug. `/p/<slug>` was folded in
+  and deleted. `build`/`manage`/`new` can never be a slug (`features/applets/reserved-slugs.ts`). Resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
-- `app/(core)/agent-apps/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
-  `builder/AppletBuilder.tsx`.
+- `app/(core)/applets/build/page.tsx` — **build by talking**; pressing Build moves the address to
+  `app/(core)/applets/build/[id]/page.tsx` — ONE build at its own URL (`?applet=<id>` forwards there):
+  `builder/AppletBuilder.tsx`. **A build is a record that survives a refresh** (`builder/build-session.ts` +
+  `builder/useAppletBuildSession.ts`): the draft Applet row is born the moment Build is pressed, every request
+  (text, run conversation id, outcome) is appended to `metadata.build.requests` through `mergeJsonColumn`, a
+  reopen rejoins a still-open run through `loadConversation` + `reconnectServerOperation` and saves its answer
+  from the conversation's committed text, and THE CLAIM (`claimBuildEntry`) saves each answer exactly once
+  across tabs. The Applets list shows a running build as "building" and opens it at its build URL.
 
 **Components**
 - `AppletHostMount.tsx` — builds ONE `createPlatformHost` per Applet and renders
   `mountAppletAsync(record, host, HOST_SCOPE, { renderKind, renderRun, openRun })`.
 - `AppletHostMount` props: `basePath`, `preview` (held writes, in-memory pages), `files` (unsaved buffers laid over
   the saved files — the code workspace's preview), `embedded` (a Space block: pages navigate in place, writes live;
-  `features/agent-apps/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/agent-apps/embed/DataPage.tsx`
+  `features/applets/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/applets/embed/DataPage.tsx`
   (`<DataPage id>` inside an Applet), and declares the record's `mandates` in the top Agents menu
-  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/apps/<slug>` and `/p/<slug>` both mount it.
+  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/applets/<slug>` mounts it.
 - `AppletForeignKind.tsx` — `renderKind` (`AppletKind`): a kind the app's registry routes renders through
   `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
   viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`
   and renders it with `data={value}`; a build failure is captured (`foreign_kind_unbuilt`) and the shared floor shows.
+- `AppletWritingBox.tsx` — `renderWritingBox`: every Applet box a person writes in is ProTextarea.
 - `AppletRunOutput.tsx` — `renderRun`: a job run through `LiveRunDisplay` (→ `MarkdownStream` → kind
   registry) keyed on the run's requestId; before/without an adopted request, the run's settled kind or error.
 
 - `builder/AppletBuilder.tsx` + `builder/build-applet.ts` — one sentence → `readAppletCatalogue` (as the
-  viewer) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
+  viewer; the Applet organization's tables only) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
   in the floating `LiveRunWindow` → the record saved as a draft (a change = UPDATE = new version) → preview
   through `AppletHostMount preview` (live reads, writes held by `holdWrites`, errors → Fix it) → "Use it"
-  publishes.
+  publishes. `builder/check-build-answer.ts` (`checkBuildAnswer`) + `builder/applet-code-checks.ts` are the
+  refusal checks, loaded on demand with the frame: the code checks read the `@babel/parser` syntax tree, never
+  regexes over the source.
 
 ---
 
@@ -60,10 +73,11 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | `agents` | `createIntelligencePort({ transport })` over `createMatrxTransport(store.getState)`, wrapped by `adoptAppletRunStreams`: every `POST /ai/mandates/*` and conversation turn `POST /ai/conversations/<id>` (`useConversation`) body is teed — one branch to the agents port (`useJob` state), one to `adoptForeignStream` under the server's `X-Request-ID` (the execution system, so the run renders canonically) |
 | `activeOrganizationId` | `selectActiveOrganizationId` at mount — reported to the frame; never narrows a read. The host is NOT rebuilt when it changes (a running job would die) |
 | job organization | `@ai-matrx/applets` 0.3.0 decides for EVERY run (direct and Action): a member of the Applet's organization runs there; anyone else is answered by `resolveOrganization` (`ensureOrganizationContext` — the gate asks), null refuses `organization_required`. No wrapper around `host.intelligence.run` |
-| `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners. `hrefFor` gives every `<Link>` its real URL (`<basePath><to>`) |
+| `nav` | `go(to)` → `history.pushState` to `/applets/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners. `hrefFor` gives every `<Link>` its real URL (`<basePath><to>`) |
 | `reportError` | `captureError({ source: "applet" })` |
 | `renderKind` | `AppletKind`: `KindInstanceRender` (the one kind pipeline, `variant="bare"`) for routable kinds; the Applet organization's own kinds through `host.kinds` + code-runtime |
 | `renderRun` | `AppletRunOutput` — `<JobOutput job>` inline (CONTRACTS amendment 2.4) |
+| `renderWritingBox` | `AppletWritingBox` — the platform's ProTextarea (dictation, read-aloud, "…" actions) on the Applet's surface, for `<WritingBox>` and `<ConversationComposer>` (amendment 2.9) |
 | `openRun` | `openLiveRunWindowAction` — the floating `LiveRunWindow`, one instance per (Applet, mandate) |
 
 Scope: `react`, `lucide-react`, `@ai-matrx/design-system/controls`, `@ai-matrx/applets/react`, plus the
@@ -84,8 +98,92 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   to `liveValues`, so `surface.getValue` answers an unset name from the page's live capture.
 
 ---
+- A stored Applet row may use a package export only once the DEPLOYED site has it. The deployed build carries the
+  `@ai-matrx/*` versions locked at its `/api/version` commit, not the ones installed locally (2026-10-07: `WritingBox`,
+  applets 0.8.0, broke 7 live Applets while live served 0.7.7). Before writing any row run
+  `pnpm -s tsx scripts/applets/applet-render-sweep.ts --against-live`; it names every row that would break and exits 1.
+  Self-test: `node scripts/applets/against-live.mjs --self-test`.
 
 ## Change Log
+
+- 2026-10-08 — Lane AQ: `checkBuildAnswer` refuses a form copied from a `useRow` row on every change
+  (`useEffect(…set…, [row])` — a failed save rolled her typing back) and a confirm that says Delete / remove before
+  `archive()` (an archive can be restored); both read the syntax tree (`formsReseededFromRow`, `archiveCalledDelete`),
+  tested on the live social-planner page. Pairs with `@ai-matrx/applets` 0.14.0 (`useRow` hands out the stored row).
+
+- 2026-10-08 — Lane AO: the builder card shows the Applet's description (what it IS, `SAVED_APPLET_COLUMNS` carries
+  it) and a run's note only when that run was not a repair — a fix note ("Fixed import locations…") never stands
+  in for the description; a repair answered without a description keeps the one the Applet had
+  (`build-applet.description.test.ts`). The /applets list's About falls back to the description when no tagline
+  was written. Adopts `@ai-matrx/applets` 0.13.0 (a refused save throws, so a generated form stays open) and
+  `@ai-matrx/records` 0.87.14 (a blank email/url/phone saves as empty); the host's unhandled-rejection capture
+  skips an already-announced refusal.
+- 2026-10-08 — Lane AM: the build page's header re-reads the Applet's name after the first save (`router.refresh()`,
+  was "Untitled Applet" until a reload); the preview line is one story — `previewLine(version)` "Preview of v2 · what
+  you add here is held, never saved" (Draft/Published is the card's word only); `confirm()` waits up to 30 s for a
+  mounted `<ConfirmDialogHost />` whose dynamic body is still loading (the first "Use it" press failed after 5 s).
+  Record-form inputs (one vs many, link picker, long text) are fixed in `@ai-matrx/applets` 0.12.0.
+- 2026-10-08 — Lane AL (refusals never block a valid Applet): the code checks moved to
+  `builder/applet-code-checks.ts` and read the syntax tree (`@babel/parser`, now a dependency, ^8): a browser
+  dialog is a real call of the global (`window.confirm(…)`, a bare `alert(…)` the file never imports or defines),
+  never a word in a string, JSX text or a comment; a misspelled choice is a literal COMPARED with, WRITTEN to or
+  an option VALUE of the field, never display text; a button is live under an `asChild` wrapper, in a form with
+  `onSubmit`, as `type="submit"`, in a `<Link>`, or handed to a component as a prop; a hand-built table is
+  refused only as a sortable record LIST (rows mapped one per `<tr>` under sortable-looking headers — a calendar
+  grid or pivot passes); a field with no input counts only when written to the store. A file that does not
+  parse is refused by name. `checkBuildAnswer` moved to `builder/check-build-answer.ts`, loaded on demand
+  (never in the builder's first chunk). THE FIX CLAIM (`claimFixRound`, `fix_entry_id` on the refused entry):
+  exactly one tab starts a refusal's automatic fix round, every other tab follows that run
+  (`session.beginFix` / `session.follow`); reopening starts it only for a fresh, unclaimed refusal
+  (`reopenOutcome`, `FIX_ROUND_FRESH_MS`) — an old one shows "Fix it" and spends nothing. Tests are behaviour
+  pairs (`applet-code-checks.test.ts`, `build-session.test.ts`), no source-reading regexes.
+- 2026-10-08 — Lane AI (the builder repairs its own output): EVERY refusal of her request goes to the ONE
+  automatic fix round (`repairs`/`repairRefusal`) — a live run, a run rejoined after a refresh (the planner's
+  first build sat on "Fix it" for five minutes there), and one found refused on reopen; only a refused fix
+  round is shown. The fix button reads "Fix it to use it" on a draft (`fixLabel`), one button only. History
+  reads a refused request saved by its fix round as "Fixed · Saved vN" (`requestOutcome`); the preview header
+  no longer says "not saved" (`previewLine`). `checkBuildAnswer` refuses a hand-built `<table>` of rows (use
+  `RecordTable`, applets 0.11.0 — headers sort and filter, links by label), a date bound to a plain text box
+  (use `RecordField`/`DateField`), and a choice spelled in another case than the table's ("Assets Ready").
+
+- 2026-10-08 — Lane AB (never publish broken, part 1): `checkBuildAnswer` refuses a browser dialog
+  (`window.confirm`/`alert`/`prompt` → `confirmAction`) and a JSX string attribute carrying a literal `\n`;
+  "Use it" is held while the preview reports any error (`publishBlockedBy`) and becomes "Fix it to use it".
+  Tests: `builder/build-applet.never-broken.test.ts`. Part 2 (import check against the real exports via
+  `appletImportProblems`, refused saves toasted via `announceRefusal`) lands with `@ai-matrx/applets` 0.10.0.
+
+- 2026-10-08 — Lane AD (/applets/build hydration): the builder loads `AppletHostMount` (host + frame + Babel compiler)
+  through ONE `next/dynamic` edge gated on a saved version, so the first screen no longer carries it (builder's own
+  static graph 12.2 MB → 8.9 MB minified, esbuild metafile). Until the page hydrates, Build renders as a disabled
+  "Getting ready" button with a spinner (never silently disabled); after, an empty box gives it a "Say what you want
+  first" tooltip. Measured live: every (core) route loads ~270 scripts / ~24.5 MB decoded JS from the shell's merged
+  client chunk group (Babel included); /applets/build added only 3 chunks / 653 KB of its own — the shell is the
+  dominant hydration cost.
+
+- 2026-10-08 — `AppletHostMount`: an open still pending after `OPENING_SLOW_MS` (20 s) shows "This Applet is slow to open" with
+  Try again (a late answer still mounts; captured as `applet_open_slow`); a failed open renders through `ErrorNotice` with
+  Try again. A gateway that never answered the definition read used to leave the skeleton up forever.
+- 2026-10-08 — Lane AA: `checkBuildAnswer` also refuses a saved field no input sets (`fieldsWithNoInput` — the
+  social planner's "Brand Requirements & Guidance" box wrote Guidance and Requirements stayed empty), a button that
+  does nothing (`deadButtons`; inside a `<Link>` is fine), a declared new-table field no page shows and a new table
+  nothing adds a row to (`newTableGaps`). A refused Build/Change gets ONE automatic `applets.fix` round before it is
+  shown; a refused fix keeps "Fix it". The preview names the build's step and its seconds (`BuildStep`) from the
+  moment Build is pressed — reading her tables and starting the run sat ~45 s on a bare placeholder.
+- 2026-10-07 — Lane P: a claim whose tab died while saving is released after `STALE_CLAIM_MS` (90 s) and the next opener
+  rejoins and saves (`claimed_at`, `isStaleClaim`, `releaseStaleClaim`); an unbuilt draft opens as its build from EVERY
+  owner page (`manage/[id]/layout.tsx`, one redirect; `getApplet` is `cache`d per request); `appletSources` keeps
+  `new_table` sources, so Settings never saves a draft without its pending tables; text typed into the builder's box before
+  hydration reaches Build (ProTextarea/ProInput pre-hydration keep). Choices read back in the order declared
+  (`custom.field_options` ORDER BY `option_position`). The builder runs on Gemini 3.8 Flash at low reasoning; the server's
+  completed-turn replay no longer takes ~90 s on a 56 KB answer (aidream `kind_records`).
+- 2026-10-07 — A build is a record with its own URL (lane G): `/applets/build/<id>` (the draft Applet, born at Build), request history in `metadata.build.requests` (`BuildHistory`), refresh/later visit rejoins the live run or saves the finished answer once (claim), the held-for-organization Build resumes with the pick (`ensureOrganizationForWrite`), the preview says "Saved vN", the list card shows "building". `saveBuiltApplet` no longer overwrites `metadata`; an empty draft claims the builder's slug on its first save.
+- 2026-10-07 — THE BUILDER MAKES THE TABLES IT NEEDS (lane F, applets 0.9.1, CONTRACTS v2.10). An answer may declare
+  `new_table` sources; `checkBuildAnswer` runs `checkAppletSources` (refuses a table of another organization than the
+  Applet's, a broken declaration, or a new table repeating one she has) before saving; the card lists the tables "Use it"
+  makes, the bound tables by name and organization (`features/applets/hooks/useSourceTableNames.ts`, linked to
+  `/data/<id>`); the preview answers new tables empty with held writes; "Use it" (`publishApplet`) makes them through
+  `makeNewTables` (records `ensureTable`, as her, in the Applet's organization), binds the record, then publishes.
+  The catalogue offers only the Applet organization's tables. Overview names each source's real table, not its alias.
 
 - 2026-10-07 — The builder's answer is the kind `applet_build_result` (aidream `aidream/kinds/applets.py`; `applets.build` / `applets.fix` declare it): the "Building your app" window renders it through `AppletBuildResultBlock` (name + pages as they stream, the finished app in words, code behind "Show the code"). `coerceBuildAnswer` ignores `__kind`; Open stays on the builder card (the slug exists only after save). Conversation Applet rows use `<ConversationComposer>` (applets 0.7.6).
 - 2026-10-07 — `files`, `embedded` and `renderDataPage`; the Applet's jobs are disclosed in the Agents menu; adopts applets 0.7.1, records 0.76.8, agents 0.48.0 (AP-0 lane A).
@@ -100,5 +198,9 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 - 2026-10-06 — Adopted `@ai-matrx/applets` 0.3.0 `resolveOrganization`; deleted the hand-made `host.intelligence.run` wrapper.
 - 2026-10-06 — `@ai-matrx/applets` 0.4.0: job runs stream through the one live-run pipeline (`renderRun` /
   `openRun`, mandate streams adopted into the execution system).
-- 2026-10-07 — Build by talking (AP-0 lane D, G5): `/agent-apps/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/apps/<slug>`).
+- 2026-10-07 — Build by talking (AP-0 lane D, G5): `/applets/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/applets/<slug>`).
 - 2026-10-07 — Adopted `@ai-matrx/applets` 0.7.3: `hrefFor` on every Link; the code preview overlays the open unsaved file (`files`); the record's `scope` replaces `allowed_imports`/`component_code` (writers and DB readers rewritten).
+- 2026-10-07 — Adopted `@ai-matrx/applets` 0.8.0: `renderWritingBox` → `AppletWritingBox` (ProTextarea), so `<WritingBox>` and `<ConversationComposer>` carry dictation and read-aloud.
+- 2026-10-07 — "agent app" retired (lane A): the Applet runs at `/applets/<slug>` (was `/apps/<slug>`), the old
+  `(public)/applets/[slug]` intro folded into the same route; owner tools at `/applets/manage/<id>/…`.
+- 2026-10-07 — `applet-render-sweep.ts --against-live` (lane N): checks every row's `@ai-matrx` imports against the versions the deployed site's lockfile carries; self-tested red/green.

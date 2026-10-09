@@ -5,7 +5,7 @@
 export {
   CloudFolderDescriptions,
   CloudFolders,
-  folderForAgentApp,
+  folderForAgentApp, // package name (@ai-matrx/media); its cloud folder is still "Agent Apps/<id>"
   folderForAgentBlock,
   folderForCaptures,
   folderForConversation,

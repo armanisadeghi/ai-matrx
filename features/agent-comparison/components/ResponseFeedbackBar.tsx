@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useCatalogBoundSelector } from "../shared/useCatalogBoundSelector";
 import type { RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -77,6 +78,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem } from "@/components/agent-copy/export";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { gridMarkdown, gridObjects, type Grid } from "../shared/tableGrid";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface Props {
   conversationId: string;
@@ -106,7 +108,7 @@ const ANSWER_AI_CONTEXT =
  * is the DB unique index + the auto-clear thunk).
  */
 function useOtherColumnRanks(currentConversationId: string): Record<string, number> {
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   return useAppSelector((state: RootState) => {
     const out: Record<string, number> = {};
     for (const col of columns) {
@@ -166,7 +168,7 @@ function ResponseFeedbackBarInner({
   const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectMountedBattleSetId);
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   const blindActive = useAppSelector(selectBlindActive);
 
   const otherRanks = useOtherColumnRanks(conversationId);
@@ -822,11 +824,8 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
   );
 }
 
-/** "73K in", "1.4K out": short enough to sit side by side in a narrow tile. */
-const compactNumber = new Intl.NumberFormat(undefined, {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
+/** "73k in", "1.4k out": short enough to sit side by side in a narrow tile. */
+const compactNumber = (n: number) => formatCount(n, { style: "compact" });
 
 type TokenStats = {
   tokensInput: number | null;
@@ -836,9 +835,9 @@ type TokenStats = {
 
 function tokenBreakdown(stats: TokenStats): string[] | undefined {
   const parts: string[] = [];
-  if (stats.tokensInput) parts.push(`${compactNumber.format(stats.tokensInput)} in`);
-  if (stats.tokensCached) parts.push(`${compactNumber.format(stats.tokensCached)} cached`);
-  if (stats.tokensOutput) parts.push(`${compactNumber.format(stats.tokensOutput)} out`);
+  if (stats.tokensInput) parts.push(`${compactNumber(stats.tokensInput)} in`);
+  if (stats.tokensCached) parts.push(`${compactNumber(stats.tokensCached)} cached`);
+  if (stats.tokensOutput) parts.push(`${compactNumber(stats.tokensOutput)} out`);
   return parts.length > 0 ? parts : undefined;
 }
 

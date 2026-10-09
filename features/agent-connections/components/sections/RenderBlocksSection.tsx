@@ -1,19 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
-  Blocks,
-  Loader2,
-  Folder,
-  FolderOpen,
-  ChevronRight,
-  ChevronDown,
   ArrowLeft,
+  Component,
+  FileCode2,
+  FileText,
+  Folder,
+  Loader2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  TopicTree,
+  type TopicTreeRow,
+} from "@/components/official/topic-tree/TopicTree";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import { useRenderBlocks } from "../../hooks/useRenderBlocks";
@@ -56,33 +60,278 @@ function ClassificationBadges({
   );
 }
 
+/**
+ * The list is a Finder list view on the canonical TopicTree: one 16px step per
+ * level, a reserved disclosure slot so a block's icon lines up under its sibling
+ * folders, a type icon on every row (filled folder vs. a per-format document)
+ * and a fixed "Kind" column. Folders sit above blocks, as Finder and VS Code
+ * sort them. Selecting a block opens it in the preview pane beside the list.
+ */
+const FOLDER_PREFIX = "folder:";
+const UNCATEGORIZED_ID = `${FOLDER_PREFIX}__uncategorized`;
+const KIND_COLUMN = "block w-24 shrink-0";
+/** Shown only while the list has the whole pane (no block open). */
+const DESCRIPTION_COLUMN = "hidden md:block w-56 xl:w-80 shrink-0 pr-4";
+
+const BLOCK_KIND: Record<
+  SklRenderDefinition["blockType"],
+  { label: string; icon: React.ReactNode }
+> = {
+  markdown: {
+    label: "Markdown",
+    icon: <FileText className="h-4 w-4 text-muted-foreground" />,
+  },
+  xml: {
+    label: "XML",
+    icon: <FileCode2 className="h-4 w-4 text-orange-500" />,
+  },
+  render_kind: {
+    label: "Component",
+    icon: <Component className="h-4 w-4 text-violet-500" />,
+  },
+};
+
+const folderIcon = (
+  <Folder className="h-4 w-4 fill-sky-400/80 text-sky-500" strokeWidth={1.5} />
+);
+
+function metaCells(
+  kind: string,
+  description: string | null | undefined,
+  wide: boolean,
+) {
+  return (
+    <>
+      {wide && (
+        <span className={cn(DESCRIPTION_COLUMN, "truncate")}>
+          {description}
+        </span>
+      )}
+      <span className={cn(KIND_COLUMN, "truncate")}>{kind}</span>
+    </>
+  );
+}
+
+function blockRow(
+  def: SklRenderDefinition,
+  depth: number,
+  parentId: string | null,
+  selectedItemId: string | null,
+  wide: boolean,
+): TopicTreeRow {
+  const kind = BLOCK_KIND[def.blockType] ?? BLOCK_KIND.markdown;
+  return {
+    id: def.id,
+    parentId,
+    depth,
+    label: def.label,
+    description: def.description,
+    hasChildren: false,
+    expanded: false,
+    selected: def.id === selectedItemId,
+    icon: kind.icon,
+    meta: metaCells(kind.label, def.description, wide),
+    trailing: !def.isActive ? (
+      <span className="type-meta text-muted-foreground">Inactive</span>
+    ) : undefined,
+  };
+}
+
+/** True when the folder, or any folder under it, holds a matching block. */
+function branchHasMatch(
+  node: CategoryTreeNode,
+  byCategoryId: Record<string, SklRenderDefinition[]>,
+  matches: (d: SklRenderDefinition) => boolean,
+): boolean {
+  if ((byCategoryId[node.category.id] ?? []).some(matches)) return true;
+  return node.children.some((c) => branchHasMatch(c, byCategoryId, matches));
+}
+
+function countBlocks(
+  node: CategoryTreeNode,
+  byCategoryId: Record<string, SklRenderDefinition[]>,
+  matches: (d: SklRenderDefinition) => boolean,
+): number {
+  return (
+    (byCategoryId[node.category.id] ?? []).filter(matches).length +
+    node.children.reduce((n, c) => n + countBlocks(c, byCategoryId, matches), 0)
+  );
+}
+
+function flattenTree({
+  categoryTree,
+  byCategoryId,
+  matches,
+  isExpanded,
+  selectedItemId,
+  wide,
+}: {
+  wide: boolean;
+  categoryTree: CategoryTreeNode[];
+  byCategoryId: Record<string, SklRenderDefinition[]>;
+  matches: (d: SklRenderDefinition) => boolean;
+  isExpanded: (folderId: string) => boolean;
+  selectedItemId: string | null;
+}): TopicTreeRow[] {
+  const rows: TopicTreeRow[] = [];
+
+  const pushFolder = (
+    id: string,
+    label: string,
+    depth: number,
+    parentId: string | null,
+    count: number,
+  ) => {
+    const expanded = isExpanded(id);
+    rows.push({
+      id,
+      parentId,
+      depth,
+      label,
+      hasChildren: true,
+      expanded,
+      selected: false,
+      icon: folderIcon,
+      meta: metaCells(`${count} ${count === 1 ? "item" : "items"}`, null, wide),
+    });
+    return expanded;
+  };
+
+  const walk = (
+    node: CategoryTreeNode,
+    depth: number,
+    parentId: string | null,
+  ) => {
+    if (!branchHasMatch(node, byCategoryId, matches)) return;
+    const id = FOLDER_PREFIX + node.category.id;
+    const open = pushFolder(
+      id,
+      node.category.label,
+      depth,
+      parentId,
+      countBlocks(node, byCategoryId, matches),
+    );
+    if (!open) return;
+    for (const child of node.children) walk(child, depth + 1, id);
+    for (const def of (byCategoryId[node.category.id] ?? []).filter(matches)) {
+      rows.push(blockRow(def, depth + 1, id, selectedItemId, wide));
+    }
+  };
+
+  for (const node of categoryTree) walk(node, 0, null);
+
+  const loose = (byCategoryId.__uncategorized ?? []).filter(matches);
+  if (loose.length > 0) {
+    const open = pushFolder(
+      UNCATEGORIZED_ID,
+      "Uncategorized",
+      0,
+      null,
+      loose.length,
+    );
+    if (open) {
+      for (const def of loose) {
+        rows.push(blockRow(def, 1, UNCATEGORIZED_ID, selectedItemId, wide));
+      }
+    }
+  }
+  return rows;
+}
+
 export function RenderBlocksSection() {
   const dispatch = useAppDispatch();
   const selectedItemId = useAppSelector(selectSelectedItemId);
   const [search, setSearch] = useState("");
+  // Folders the person opened or closed; anything absent falls back to the
+  // default (top level open). A search opens every folder holding a match.
+  // A click on a folder row opens/closes it; arrowing onto one must not.
+  // TopicTree reports both as `onSelect`, so the last input kind decides.
+  const pointerInput = useRef(false);
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const { definitions, byCategoryId, categoryTree, loading, error } =
     useRenderBlocks();
 
   const lowerSearch = search.trim().toLowerCase();
-  const matchesSearch = (d: SklRenderDefinition) =>
+  const matches = (d: SklRenderDefinition) =>
     !lowerSearch ||
     d.label.toLowerCase().includes(lowerSearch) ||
     d.blockId.toLowerCase().includes(lowerSearch) ||
     (d.description ?? "").toLowerCase().includes(lowerSearch) ||
     idMatchesQuery(d, lowerSearch);
 
+  const topLevel = new Set(
+    categoryTree.map((n) => FOLDER_PREFIX + n.category.id),
+  );
+  const isExpanded = (id: string) =>
+    lowerSearch.length > 0 || (toggled[id] ?? topLevel.has(id));
+
   const selected = selectedItemId
     ? (definitions.find((d) => d.id === selectedItemId) ?? null)
     : null;
 
-  if (selected) {
-    return (
-      <RenderBlockDetail
-        def={selected}
-        onBack={() => dispatch(setSelectedItemId(null))}
-      />
+  const rows = flattenTree({
+    wide: !selected,
+    categoryTree,
+    byCategoryId,
+    matches,
+    isExpanded,
+    selectedItemId,
+  });
+
+  const toggleFolder = (id: string) =>
+    setToggled((t) => ({ ...t, [id]: !isExpanded(id) }));
+
+  const close = () => dispatch(setSelectedItemId(null));
+
+  const list =
+    loading && definitions.length === 0 ? (
+      <div className="flex items-center justify-center py-10 text-muted-foreground type-body gap-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading render blocks…
+      </div>
+    ) : error ? (
+      <div className="px-4 py-10 text-center type-body text-destructive">
+        {error}
+        <ErrorAlchemyMenu error={error} />
+      </div>
+    ) : (
+      <div className="flex h-full min-h-0 flex-col">
+        <div
+          aria-hidden="true"
+          className="flex h-7 shrink-0 items-center border-b border-border/60 pl-12 pr-2 type-meta font-medium text-muted-foreground"
+        >
+          <span className="flex-1">Name</span>
+          {!selected && <span className={DESCRIPTION_COLUMN}>Description</span>}
+          <span className={KIND_COLUMN}>Kind</span>
+        </div>
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          onPointerDownCapture={() => {
+            pointerInput.current = true;
+          }}
+          onKeyDownCapture={() => {
+            pointerInput.current = false;
+          }}
+        >
+          <TopicTree
+            rows={rows}
+            ariaLabel="Render blocks"
+            onToggleExpand={toggleFolder}
+            onSelect={(id) => {
+              if (!id.startsWith(FOLDER_PREFIX))
+                dispatch(setSelectedItemId(id));
+              else if (pointerInput.current) toggleFolder(id);
+            }}
+            onActivate={(id) => {
+              if (id.startsWith(FOLDER_PREFIX)) toggleFolder(id);
+            }}
+            emptyState={
+              lowerSearch ? "No matching render blocks" : "No render blocks yet"
+            }
+          />
+        </div>
+      </div>
     );
-  }
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -91,250 +340,47 @@ export function RenderBlocksSection() {
         onSearchChange={setSearch}
         searchPlaceholder="Search render blocks…"
       />
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        <div className="w-full min-w-0">
-          {loading && definitions.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground type-body gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading render blocks…
-            </div>
-          ) : error ? (
-            <div className="px-4 py-10 text-center type-body text-destructive">
-              {error}
-              <ErrorAlchemyMenu error={error} />
-            </div>
-          ) : (
-            <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin">
-              <div className="p-2">
-                {categoryTree.length === 0 ? (
-                  <div className="px-4 py-10 text-center type-body text-muted-foreground">
-                    No categories yet.
-                  </div>
-                ) : (
-                  categoryTree.map((node) => (
-                    <CategoryTreeBranch
-                      key={node.category.id}
-                      node={node}
-                      depth={0}
-                      byCategoryId={byCategoryId}
-                      selectedItemId={selectedItemId}
-                      onPickItem={(id) => dispatch(setSelectedItemId(id))}
-                      matchesSearch={matchesSearch}
-                      forceOpen={lowerSearch.length > 0}
-                    />
-                  ))
-                )}
-                {(byCategoryId.__uncategorized?.length ?? 0) > 0 && (
-                  <UncategorizedBranch
-                    items={byCategoryId.__uncategorized!.filter(matchesSearch)}
-                    selectedItemId={selectedItemId}
-                    onPickItem={(id) => dispatch(setSelectedItemId(id))}
-                  />
-                )}
-              </div>
-            </div>
+      <div className="flex-1 min-h-0 flex overflow-hidden border-t border-border/60">
+        {/* Nothing open: the list owns the pane. A block open: list + preview
+            side by side (Finder's preview pane); narrow screens show one. */}
+        <div
+          className={cn(
+            "min-w-0 min-h-0",
+            selected
+              ? "hidden lg:block lg:w-[40%] lg:shrink-0 lg:border-r lg:border-border/60"
+              : "w-full",
           )}
+        >
+          {list}
         </div>
+        {selected && (
+          <div className="min-w-0 min-h-0 flex-1">
+            <RenderBlockDetail def={selected} onClose={close} />
+          </div>
+        )}
       </div>
-      <SectionFooter
-        description="Templates that turn AI output into live components."
-        learnMoreLabel="Learn more about render blocks"
-        learnMoreHref="#"
-      />
-    </div>
-  );
-}
-
-function RenderBlockRow({
-  def,
-  indent,
-  selected,
-  onPick,
-}: {
-  def: SklRenderDefinition;
-  indent: number;
-  selected: boolean;
-  onPick: (id: string) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onPick(def.id)}
-      style={{ paddingLeft: indent }}
-      className={cn(
-        "w-full flex items-start gap-2 py-1.5 pr-2 text-left rounded-md transition-colors",
-        selected ? "bg-accent text-foreground" : "hover:bg-muted/50",
-      )}
-    >
-      <Blocks className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-      <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 min-w-0">
-          <span className="type-body text-foreground truncate">{def.label}</span>
-          <ClassificationBadges def={def} />
-          {!def.isActive && (
-            <span className="type-meta text-muted-foreground shrink-0">
-              inactive
-            </span>
-          )}
-        </span>
-        {def.description && (
-          <span className="block type-secondary text-muted-foreground truncate">
-            {def.description}
-          </span>
-        )}
-      </span>
-      <span className="hidden md:block max-w-[14rem] truncate type-meta font-mono text-muted-foreground/70 pt-0.5">
-        {def.blockId}
-      </span>
-    </button>
-  );
-}
-
-/** A folder shows only when it, or a folder beneath it, holds a matching block. */
-function branchHasMatch(
-  node: CategoryTreeNode,
-  byCategoryId: Record<string, SklRenderDefinition[]>,
-  matchesSearch: (d: SklRenderDefinition) => boolean,
-): boolean {
-  if ((byCategoryId[node.category.id] ?? []).some(matchesSearch)) return true;
-  return node.children.some((c) =>
-    branchHasMatch(c, byCategoryId, matchesSearch),
-  );
-}
-
-function CategoryTreeBranch({
-  node,
-  depth,
-  byCategoryId,
-  selectedItemId,
-  onPickItem,
-  matchesSearch,
-  forceOpen,
-}: {
-  node: CategoryTreeNode;
-  depth: number;
-  byCategoryId: Record<string, SklRenderDefinition[]>;
-  selectedItemId: string | null;
-  onPickItem: (id: string) => void;
-  matchesSearch: (d: SklRenderDefinition) => boolean;
-  forceOpen: boolean;
-}) {
-  const [openState, setOpen] = useState(depth < 1);
-  const open = forceOpen || openState;
-  const items = (byCategoryId[node.category.id] ?? []).filter(matchesSearch);
-  const hasItems = items.length > 0;
-  if (!branchHasMatch(node, byCategoryId, matchesSearch)) return null;
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        style={{ paddingLeft: depth * 12 + 4 }}
-        className={cn(
-          "w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-left",
-          "hover:bg-muted/50 text-foreground/90 transition-colors",
-        )}
-      >
-        {open ? (
-          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-        )}
-        {open ? (
-          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        ) : (
-          <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        )}
-        <span className="truncate flex-1">{node.category.label}</span>
-        {hasItems && (
-          <span className="type-meta text-muted-foreground tabular-nums">
-            {items.length}
-          </span>
-        )}
-      </button>
-      {open && (
-        <>
-          {items.map((d) => (
-            <RenderBlockRow
-              key={d.id}
-              def={d}
-              indent={(depth + 1) * 12 + 4}
-              selected={d.id === selectedItemId}
-              onPick={onPickItem}
-            />
-          ))}
-          {node.children.map((child) => (
-            <CategoryTreeBranch
-              key={child.category.id}
-              node={child}
-              depth={depth + 1}
-              byCategoryId={byCategoryId}
-              selectedItemId={selectedItemId}
-              onPickItem={onPickItem}
-              matchesSearch={matchesSearch}
-              forceOpen={forceOpen}
-            />
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
-
-function UncategorizedBranch({
-  items,
-  selectedItemId,
-  onPickItem,
-}: {
-  items: SklRenderDefinition[];
-  selectedItemId: string | null;
-  onPickItem: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  if (items.length === 0) return null;
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-1 px-2 py-1 rounded-md text-xs text-left hover:bg-muted/50 text-foreground/90 transition-colors"
-      >
-        {open ? (
-          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-        )}
-        <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span className="truncate flex-1">Uncategorized</span>
-        <span className="type-meta text-muted-foreground tabular-nums">
-          {items.length}
-        </span>
-      </button>
-      {open &&
-        items.map((d) => (
-          <RenderBlockRow
-            key={d.id}
-            def={d}
-            indent={16}
-            selected={d.id === selectedItemId}
-            onPick={onPickItem}
-          />
-        ))}
+      <SectionFooter description="Templates that turn AI output into live components." />
     </div>
   );
 }
 
 function RenderBlockDetail({
   def,
-  onBack,
+  onClose,
 }: {
   def: SklRenderDefinition;
-  onBack: () => void;
+  onClose: () => void;
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-border/40">
-        <Button variant="quiet" icon={<ArrowLeft />} onClick={onBack} aria-label="Back" />
+        <Button
+          variant="quiet"
+          icon={<ArrowLeft />}
+          onClick={onClose}
+          aria-label="Back"
+          className="lg:hidden"
+        />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="type-title text-foreground truncate">
@@ -346,6 +392,13 @@ function RenderBlockDetail({
             {def.blockId}
           </div>
         </div>
+        <Button
+          variant="quiet"
+          icon={<X />}
+          onClick={onClose}
+          aria-label="Close"
+          className="hidden lg:inline-flex"
+        />
       </div>
       <Tabs
         defaultValue="preview"

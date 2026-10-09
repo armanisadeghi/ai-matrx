@@ -1,0 +1,123 @@
+// Load performance (round 34): how fast a Spaces page and its inline tables appear. Read-only (never types).
+// Per load: when the page's first block text paints, when each database block shows its first row, every
+// browser data read (requests to the database's REST doors, by name and start time), CLS, and hydration
+// warnings from the console.
+//   node features/spaces/__tests__/walk/load-perf.walk.mjs <pageId> [loads]
+//   MEMBER=1 signs in as test@test.com. WAIT=ms per load (default 15000). VERBOSE=1 lists every read
+//   (BODIES=1 adds each read's body or query). Every row ends with `spacesReads`: the Spaces reads by name
+//   (content schema + the platform associations a page asks), the round-40 budget being <= 6 per load.
+import { open, originOf } from "./lib.mjs";
+
+const id = process.argv[2] ?? "ba289103-9ef2-433a-ae94-0cd9a963ae29";
+const loads = Number(process.argv[3] ?? 2);
+const { browser, context, page } = await open({ member: !!process.env.MEMBER, width: 1440, height: 1000 });
+await context.addInitScript(() => {
+  window.__cls = 0;
+  window.__textAt = null;
+  window.__titleAt = null;
+  window.__rowsAt = {};
+  new PerformanceObserver((list) => {
+    for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+  }).observe({ type: "layout-shift", buffered: true });
+  const visible = (el) => {
+    const r = el.getBoundingClientRect();
+    return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== "hidden";
+  };
+  const look = () => {
+    const now = Math.round(performance.now());
+    if (window.__titleAt === null) {
+      const t = document.querySelector(".spaces-title");
+      if (t && t.textContent?.trim() && visible(t)) window.__titleAt = now;
+    }
+    if (window.__textAt === null) {
+      for (const el of document.querySelectorAll(".spaces-content .bn-inline-content")) {
+        if (el.textContent?.trim() && visible(el)) {
+          window.__textAt = now;
+          break;
+        }
+      }
+    }
+    document.querySelectorAll('.spaces-content [data-content-type="database"]').forEach((db, i) => {
+      if (window.__rowsAt[i] !== undefined) return;
+      // A table's first row, or a chart's drawn ring/bars (its data has landed). Never a Lucide icon: the
+      // frame's own glyphs (view tab, title arrow) are svg paths too and paint before any data (round 36).
+      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row'], svg:not(.lucide) path[d], svg:not(.lucide) circle[stroke-dasharray]");
+      if (row && visible(row) && (row.tagName.toLowerCase() !== "tr" || row.textContent?.trim())) window.__rowsAt[i] = now;
+    });
+    requestAnimationFrame(look);
+  };
+  requestAnimationFrame(look);
+});
+const warnings = [];
+page.on("console", (m) => {
+  const t = m.text();
+  if (/hydration|did not match|server rendered HTML|Text content does not match/i.test(t)) warnings.push(t.slice(0, 240));
+});
+let reads = [];
+let navStart = 0;
+page.on("request", (r) => {
+  const u = r.url();
+  if (!/\/rest\/v1\//.test(u)) return;
+  const name = u.replace(/^.*\/rest\/v1\//, "").split("?")[0];
+  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "", body: process.env.BODIES ? (r.postData() ?? decodeURIComponent(u.split("?")[1] ?? "")).slice(0, 300) : "" });
+});
+const out = [];
+for (let i = 0; i < loads; i++) {
+  reads = [];
+  warnings.length = 0;
+  navStart = Date.now();
+  const res = await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded", timeout: 240_000 });
+  const html = await res?.text().catch(() => "");
+  await page.waitForTimeout(Number(process.env.WAIT ?? 15000));
+  const r = await page.evaluate(() => ({
+    cls: window.__cls,
+    titleAt: window.__titleAt,
+    textAt: window.__textAt,
+    rowsAt: window.__rowsAt,
+    dbBlocks: document.querySelectorAll('.spaces-content [data-content-type="database"]').length,
+    ttfb: Math.round(performance.getEntriesByType("navigation")[0]?.responseStart ?? 0),
+  }));
+  const rowReads = reads.filter((x) => /record|row|drill|table_page|entit|aggregate|view/i.test(x.name));
+  // Round 40: the page's own Spaces reads — anything in `content`, the associations / categories a page
+  // asks in `platform`, and the grid's reverse-link reads. Budget <= 6 per load (was ~125 on the admin sample).
+  const spacesReads = {};
+  for (const x of reads) {
+    const isSpaces = x.schema === "content" || (x.schema === "platform" && /^(associations|categories)$/.test(x.name)) || x.name === "rpc/reverse_links_many";
+    if (isSpaces) spacesReads[x.name] = (spacesReads[x.name] ?? 0) + 1;
+  }
+  const row = {
+    load: i + 1,
+    ttfbMs: r.ttfb,
+    titleMs: r.titleAt,
+    textMs: r.textAt,
+    dbBlocks: r.dbBlocks,
+    rowsMs: r.rowsAt,
+    htmlHasBlockText: /bn-inline-content/.test(html ?? ""),
+    dataReads: reads.length,
+    rowishReads: rowReads.length,
+    cls: +r.cls.toFixed(4),
+    hydrationWarnings: warnings.length,
+    spacesReadCount: Object.values(spacesReads).reduce((a, b) => a + b, 0),
+    spacesReads,
+  };
+  out.push(row);
+  console.log(JSON.stringify(row));
+  if (process.env.VERBOSE) for (const x of reads) console.log("   read", x.at, x.schema, x.name, x.body);
+  else console.log("   rowish", JSON.stringify(rowReads.map((x) => `${x.at}:${x.name}`)));
+  for (const w of warnings.slice(0, 3)) console.log("   warn", w);
+}
+if (process.env.DUMP) {
+  const dump = await page.evaluate(() => {
+    const seen = {};
+    for (const el of document.querySelectorAll(".spaces-content .bn-block-outer")) {
+      const ct = el.querySelector(":scope > .bn-block > .bn-block-content, :scope > .bn-block > .react-renderer > .bn-block-content")?.getAttribute("data-content-type");
+      if (!ct || seen[ct]) continue;
+      seen[ct] = el.outerHTML.slice(0, ct === "database" ? 1500 : 3000);
+    }
+    const root = document.querySelector(".spaces-content .bn-editor");
+    return { root: root?.parentElement?.outerHTML.slice(0, 300), editor: root?.outerHTML.slice(0, 300), blocks: seen };
+  });
+  (await import("node:fs")).writeFileSync(process.env.DUMP, JSON.stringify(dump, null, 1));
+}
+if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT, fullPage: false });
+await browser.close();

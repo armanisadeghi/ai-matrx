@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import { ResetTapButton } from "@ai-matrx/tap-target/buttons";
+import { ResetTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { SearchInput } from "@/components/official/SearchInput";
 import { cn } from "@/lib/utils";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
@@ -45,7 +45,7 @@ import {
   personFacingEventDescription,
 } from "../notification-display";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // The canonical Notification System preferences tab: every event the platform
 // can tell you about, with your per-channel choice. Absence of a choice means

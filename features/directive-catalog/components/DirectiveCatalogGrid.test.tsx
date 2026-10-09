@@ -19,6 +19,8 @@ import type {
 let tableProps: MatrxDataTableProps<NounDirectives> | null = null;
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  // records-ui reads COLOR_RULE_OPS at import time: keep every real export, stub only the table.
+  ...jest.requireActual("@ai-matrx/design-system/data-table"),
   MatrxDataTable: (props: MatrxDataTableProps<NounDirectives>) => {
     tableProps = props;
     return <div>{props.toolbar?.leading}</div>;
@@ -99,7 +101,9 @@ describe("DirectiveCatalogGrid", () => {
       groupableColumnIds: ["family"],
       order: "value-asc",
     });
-    expect(tableProps.pageSize).toBe(0);
+    // Paged: "show all" rendered ~69,000 nodes and made every dialog open late (G10B).
+    expect(tableProps.pageSize).toBeGreaterThan(0);
+    expect(tableProps.pageSize).toBeLessThanOrEqual(100);
     expect(tableProps.hidePagination).toBeUndefined();
     expect(tableProps.paginationLabelFormat?.(1, 2, 2)).toBe("1–2 of 2 nouns");
     expect(tableProps.paginationLabelFormat?.(1, 1, 1)).toBe("1–1 of 1 matching · 2 nouns");

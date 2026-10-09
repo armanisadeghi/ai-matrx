@@ -27,7 +27,7 @@ import {
 } from "../redux/slice";
 import { createNewNote, fetchNoteContent } from "../redux/thunks";
 import { selectInstanceTabs, selectNotesMap } from "../redux/selectors";
-import { isOrganizationSelectionCancelled, requestOrganizationContextChoice } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
 import {
   getDraftsVersion,
@@ -136,7 +136,7 @@ export function NotesDraftRecoveryList({
   const handleRecoverAsNew = async (draft: LocalDraft) => {
     setBusyKey(draft.key);
     try {
-      const capturedOrganizationId = await requestOrganizationContextChoice();
+      const capturedOrganizationId = await ensureOrgId(null);
       const created = await dispatch(
         createNewNote({
           label: draft.label || "Recovered note",
@@ -150,7 +150,6 @@ export function NotesDraftRecoveryList({
       dispatch(setInstanceActiveTab({ instanceId, noteId: created.id }));
       toast.success("Recovered as a new note.");
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(
         error instanceof Error
           ? `Could not recover this note: ${error.message}`

@@ -33,7 +33,8 @@ export function SpacesHome() {
       last = null;
     }
     const target = last && byId.has(last) ? last : first;
-    if (target) router.replace(`/spaces/${target}`);
+    // Keep the address's query (e.g. ?org=) so a link that names an organization still names it after the hop.
+    if (target) router.replace(`/spaces/${target}${window.location.search}`);
   }, [ready, first, byId, router]);
   if (!ready || first) return <div className="spaces-page" aria-busy="true" />;
   if (access || loadError)

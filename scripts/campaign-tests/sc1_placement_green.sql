@@ -5,7 +5,7 @@
 -- laptops and drives from its clients, wipes or shreds them, and certifies the destruction. Its
 -- context system has the shape of the owner's Titanium organization — Clients, Departments and
 -- Team Members — and lane SC-2 will copy each scope type into the record store as its own Table,
--- the way the scopes mover plans it (kept by the app for the context system, offered as context).
+-- the way the scopes mover plans it (platform-owned for the context system, offered as context).
 -- Beside them sit the company's own spreadsheets: the Pickup schedule, whose "Pickup status"
 -- choice column is born with a choices Table of its own. The office manager, Renata Oduya, is
 -- admin@admin.com; the dispatcher, Colm Achterberg, is test@test.com. Every name is synthesized;
@@ -133,7 +133,7 @@ begin
   -- ══ P1 · the doors say who keeps what they make, on the way in ═══════════════════════════════
   select data into v_doc from custom.record where organization_id = v_org and id = v_opts;
   if v_doc ->> 'kept_by_the_app' is distinct from 'true' or v_doc ? 'offered_as_context' then
-    raise exception 'P1a: the "Pickup status" choices Table is not flagged kept by the app (or claims a context offer): %',
+    raise exception 'P1a: the "Pickup status" choices Table is not flagged platform-owned (or claims a context offer): %',
       v_doc - 'fields' - 'default_sort';
   end if;
   -- G11's own `scope_binding` is the placement: kept, for the context system, bound to that scope.

@@ -39,13 +39,13 @@ export interface WorkspaceLayoutProps {
   className?: string;
   /** Override for the default side-panel width (percent of body width).
    *  Use to de-emphasise the file tree on focused-edit surfaces (e.g. the
-   *  agent-app editor wants ~12% instead of the full /code 22%). */
+   *  applet editor wants ~12% instead of the full /code 22%). */
   defaultSideSize?: number;
   /**
    * When false, omit the 48px ActivityBar icon rail. On `/code` the shell
    * Large-Route menu owns those icons (`CodeSidebarMenu`); the resizable
    * side panel (file tree) still renders here. Defaults to true so floating
-   * windows / agent-app editor keep the embedded rail.
+   * windows / applet editor keep the embedded rail.
    */
   showActivityBar?: boolean;
 }

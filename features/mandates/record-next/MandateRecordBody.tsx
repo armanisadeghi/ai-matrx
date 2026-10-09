@@ -64,7 +64,7 @@ import {
   FieldHelp,
   StatusToken,
   PropertyRow,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Section } from "@/features/mandates/workspace/Section";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -115,6 +115,7 @@ import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateW
 import { RecordAdminPanels } from "./RecordAdminPanels";
 import { useMandateSystemSeat } from "@/features/mandates/admin/useMandateSystemSeat";
 import { MandateTryPanel } from "./MandateTryPanel";
+import { MandateRunsTab } from "@/features/mandates/runs/MandateRunsTab";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
 import { MandateCandidatesPanel } from "./MandateCandidatesPanel";
 import {
@@ -631,7 +632,25 @@ function OneMandateRecordBody({
           sees the organization's; a member who does not manage it sees their
           own runs in it. The admin route shows the platform-wide history in
           its Health tab instead. */}
-      {perspective !== "system" ? (
+      {perspective === "system" ? (
+        // THE ADMIN ROUTE: every run on the platform, and the split that replays one or tries
+        // its exact values on another agent, version or workflow (features/mandates/runs).
+        <div
+          role="tabpanel"
+          id="mandate-panel-runs"
+          hidden={activeTab !== "runs"}
+          className={activeTab === "runs" ? "space-y-3" : "hidden"}
+        >
+          {activeTab === "runs" ? (
+            <MandateRunsTab
+              mandateKey={storedMandateKey(data.mandate.mandate_key)}
+              outputKind={data.mandate.output_kind ?? null}
+              view="platform"
+              audience="admin"
+            />
+          ) : null}
+        </div>
+      ) : (
         <div
           role="tabpanel"
           id="mandate-panel-runs"
@@ -646,7 +665,7 @@ function OneMandateRecordBody({
             />
           ) : null}
         </div>
-      ) : null}
+      )}
       {/* THE CANDIDATES TAB (every seat) — beside the ten, never inside one
           (Mandate Candidates, PLAN §2.6). The seat decides the default rung:
           the admin route tries for Everyone, an organization page for that

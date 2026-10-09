@@ -37,8 +37,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import { PencilTapButton, PlayTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
+import { PencilTapButton, PlayTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +64,12 @@ import { recordToast, toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  AUTOMATION_LEAD_COLUMNS,
+  automationCostColumns,
+} from "@/features/scheduling/components/costs/AutomationCostColumns";
+import { useAutomationCosts } from "@/features/scheduling/components/costs/AutomationCostTable";
+import { automationCostDetailHref } from "@/features/scheduling/service/automationCosts";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   listDbJobs,
@@ -94,9 +100,9 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
 // as a plain string on this wire (defensive contract), so an unknown value
@@ -158,6 +164,11 @@ export default function SystemJobsPage() {
   const { organizationId, canLoad, organizationRequired, organizationState } =
     useOrganizationRequired();
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
+  // What each job costs and how it behaves — the shared automation rollup
+  // (scheduler.automation_cost_rollup), keyed by the job's sch_task id.
+  const { rows: costRows, error: costError } = useAutomationCosts(null);
+  const costById = new Map(costRows.map((c) => [c.automation_id, c]));
+  const jobCostColumns = automationCostColumns<SystemTaskResponse>((r) => costById.get(r.id), "admin");
   const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
     [],
   );
@@ -341,17 +352,25 @@ export default function SystemJobsPage() {
       header: "Job",
       width: 240,
       cell: (r) => (
-        <div className="min-w-0">
-          <div className="font-medium truncate">{r.title}</div>
-          {r.description && (
-            <div
-              className="type-secondary text-muted-foreground line-clamp-1"
-              title={r.description}
-            >
-              {r.description}
-            </div>
-          )}
-        </div>
+        <Link
+          href={automationCostDetailHref("scheduled_task", r.id)}
+          className="block truncate font-medium text-primary hover:underline"
+          title={r.title}
+        >
+          {r.title}
+        </Link>
+      ),
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      width: 260,
+      hidden: true,
+      cell: (r) => (
+        <span className="block truncate type-secondary text-muted-foreground" title={r.description ?? undefined}>
+          {r.description ?? "—"}
+        </span>
       ),
     },
     {
@@ -400,36 +419,35 @@ export default function SystemJobsPage() {
       header: "State",
       accessorFn: (r) => (r.enabled ? "Enabled" : "Disabled"),
       filter: "select",
-      width: 150,
+      width: 90,
       cell: (r) => (
-        <span className="flex flex-wrap items-center gap-1">
-          <Badge
-            variant={r.enabled ? "secondary" : "outline"}
-            className="text-[10px]"
-          >
-            {r.enabled ? "Enabled" : "Disabled"}
-          </Badge>
-          {r.handler_registered === false && (
-            <Badge
-              variant="destructive"
-              className="gap-0.5 text-[10px]"
-              title="No handler is registered on the server for this tool — enabling will be refused."
-            >
-              <AlertTriangle className="h-2.5 w-2.5" />
-              handler missing
-            </Badge>
-          )}
-          {r.handler_gate_pending && (
-            <Badge
-              variant="outline"
-              className="border-warning/60 text-[10px]"
-              title="The handler is registered but waiting on a pending approval gate."
-            >
-              gate pending
-            </Badge>
-          )}
+        <span className={`type-secondary ${r.enabled ? "" : "text-muted-foreground"}`}>
+          {r.enabled ? "Enabled" : "Disabled"}
         </span>
       ),
+    },
+    {
+      id: "handler",
+      header: "Handler",
+      accessorFn: (r) =>
+        r.handler_registered === false ? "Missing" : r.handler_gate_pending ? "Gate pending" : "Registered",
+      filter: "select",
+      width: 120,
+      cell: (r) =>
+        r.handler_registered === false ? (
+          <span
+            className="inline-flex items-center gap-1 whitespace-nowrap type-secondary text-destructive"
+            title="No handler is registered on the server for this tool; enabling will be refused."
+          >
+            <AlertTriangle className="h-3 w-3" /> Missing
+          </span>
+        ) : r.handler_gate_pending ? (
+          <span className="whitespace-nowrap type-secondary text-warning" title="Registered, waiting on a pending approval gate.">
+            Gate pending
+          </span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">Registered</span>
+        ),
     },
     {
       id: "cadence",
@@ -450,7 +468,7 @@ export default function SystemJobsPage() {
           return (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="type-secondary line-clamp-2" tabIndex={0}>
+                <span className="block truncate type-secondary" tabIndex={0}>
                   {cadenceText(r)}
                   {trig.enabled === false ? " (trigger off)" : ""}
                 </span>
@@ -462,7 +480,7 @@ export default function SystemJobsPage() {
           );
         }
         return (
-          <span className="type-secondary">
+          <span className="block truncate type-secondary">
             {cadenceText(r)}
             {trig.enabled === false && (
               <span className="ml-1 text-muted-foreground">(trigger off)</span>
@@ -486,74 +504,42 @@ export default function SystemJobsPage() {
     },
     {
       id: "last_run",
-      header: "Last run",
+      header: "Last run status",
       accessorFn: (r) => r.last_run?.status ?? "",
-      width: 170,
+      filter: "select",
+      width: 130,
       cell: (r) => {
         const run = r.last_run;
-        if (!run?.status) {
-          return <span className="type-secondary text-muted-foreground">Never</span>;
-        }
-        const when = run.finished_at ?? run.started_at;
+        if (!run?.status) return <span className="type-secondary text-muted-foreground">Never</span>;
+        const tone = lastRunTone(run.status);
         return (
-          <span
-            className="flex items-center gap-1.5"
-            title={run.error_message ?? undefined}
-          >
-            <Badge variant={lastRunTone(run.status)} className="text-[10px]">
-              {run.status}
-            </Badge>
-            <span className="type-secondary text-muted-foreground">
-              {when ? humanizeRelative(when) : ""}
-            </span>
-            {run.error_message && (
-              <>
-                <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
-                <ErrorAlchemyMenu error={run.error_message} />
-              </>
-            )}
+          <span className="flex items-center gap-1.5 whitespace-nowrap" title={run.error_message ?? undefined}>
+            <span
+              aria-hidden
+              className={`size-1.5 shrink-0 rounded-full ${tone === "destructive" ? "bg-destructive" : tone === "secondary" ? "bg-success" : "bg-muted-foreground/60"}`}
+            />
+            <span className="type-secondary">{run.status}</span>
+            {run.error_message && <ErrorAlchemyMenu error={run.error_message} />}
           </span>
         );
       },
     },
+    {
+      id: "last_run_at",
+      header: "Last run at",
+      accessorFn: (r) => r.last_run?.finished_at ?? r.last_run?.started_at ?? "",
+      filter: "date",
+      width: 110,
+      cell: (r) => {
+        const when = r.last_run?.finished_at ?? r.last_run?.started_at;
+        return when ? (
+          <span className="type-secondary" title={when}>{humanizeRelative(when)}</span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">—</span>
+        );
+      },
+    },
   ];
-
-  // Rendered in the table's own trailing Actions column (`rowActions`) — a
-  // second hand-made actions column would duplicate the header the table
-  // already owns.
-  const renderRowActions = (r: SystemTaskResponse) => {
-    const isBusy = busy.has(r.id);
-    return (
-      <>
-        <TapTargetButtonTransparent
-          ariaLabel={
-            isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"
-          }
-          disabled={isBusy}
-          onClick={() => void toggleEnabled(r)}
-        >
-          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
-        </TapTargetButtonTransparent>
-        <PencilTapButton
-          variant="transparent"
-          ariaLabel="Edit job"
-          disabled={isBusy}
-          onClick={() => setEditing(r)}
-        />
-        <PlayTapButton
-          variant="transparent"
-          ariaLabel="Run job now"
-          disabled={isBusy || r.handler_registered === false}
-          tooltip={
-            r.handler_registered === false
-              ? "No handler registered — nothing would run."
-              : "Run job now"
-          }
-          onClick={() => void runNow(r)}
-        />
-      </>
-    );
-  };
 
   // Right-click menu for the system-jobs pane — page-local identity (a
   // scheduling.system-jobs job is not shown anywhere else), so the section is
@@ -677,7 +663,7 @@ export default function SystemJobsPage() {
       id: "jobname",
       accessorFn: (r) => r.jobname ?? String(r.jobid),
       header: "Job",
-      width: 240,
+      width: 220,
       cell: (r) => (
         <span className="font-medium truncate" title={r.jobname ?? undefined}>
           {r.jobname ?? `job ${r.jobid}`}
@@ -929,7 +915,13 @@ export default function SystemJobsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {costError && (
+          <span className="text-xs text-destructive">
+            Costs unavailable: {costError}
+            <ErrorAlchemyMenu error={costError} />
+          </span>
+        )}
         <PageCaptureButton />
       </div>
       <div
@@ -947,8 +939,36 @@ export default function SystemJobsPage() {
           <MatrxDataTable
             urlState={{ id: "scheduling-system-jobs" }}
             data={rows}
-            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) }]}
+            columns={[
+              ...columns.slice(0, 1),
+              ...jobCostColumns.slice(0, AUTOMATION_LEAD_COLUMNS),
+              ...columns.slice(1),
+              ...jobCostColumns.slice(AUTOMATION_LEAD_COLUMNS),
+            ]}
             getRowId={(r) => r.id}
+            rowActions={(r) => {
+              const isBusy = busy.has(r.id);
+              return [
+                {
+                  id: "toggle",
+                  icon: Power,
+                  label: r.enabled ? "Disable job" : "Enable job",
+                  tooltip: r.enabled ? "Disable job" : "Enable job",
+                  loading: isBusy,
+                  disabled: isBusy,
+                  onClick: () => void toggleEnabled(r),
+                },
+                { id: "edit", icon: Pencil, label: "Edit job", tooltip: "Edit job", disabled: isBusy, onClick: () => setEditing(r) },
+                {
+                  id: "run",
+                  icon: Play,
+                  label: "Run job now",
+                  tooltip: r.handler_registered === false ? "No handler registered — nothing would run." : "Run job now",
+                  disabled: isBusy || r.handler_registered === false,
+                  onClick: () => void runNow(r),
+                },
+              ];
+            }}
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}
@@ -1327,7 +1347,9 @@ function DbJobEditDialog({
   onSave: (body: DbJobPatchRequest) => void;
 }) {
   const [schedule, setSchedule] = useState(job.schedule);
-  const [taxonomyNodeId, setTaxonomyNodeId] = useState(job.taxonomy_node_id);
+  // An unclassified job has no node (null on the wire); the Select shows its placeholder.
+  const savedNodeId = job.taxonomy_node_id ?? undefined;
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(savedNodeId);
   const [formError, setFormError] = useState<string | null>(null);
 
   const hint = cronHint(schedule);
@@ -1344,13 +1366,13 @@ function DbJobEditDialog({
       setFormError("Choose a Domain, Feature, or Sub-feature.");
       return;
     }
-    if (next === job.schedule && taxonomyNodeId === job.taxonomy_node_id) {
+    if (next === job.schedule && taxonomyNodeId === savedNodeId) {
       onClose();
       return;
     }
     onSave({
       ...(next !== job.schedule ? { schedule: next } : {}),
-      ...(taxonomyNodeId !== job.taxonomy_node_id
+      ...(taxonomyNodeId !== savedNodeId
         ? { taxonomy_node_id: taxonomyNodeId }
         : {}),
     });

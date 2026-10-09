@@ -59,10 +59,20 @@ import { AccountSettings } from "./AccountSettings";
 import { ShareControl } from "./ShareControl";
 import { DeletionFlow } from "./DeletionFlow";
 import { Walkthrough } from "./Walkthrough";
-import { CredentialCaptureCard } from "./CredentialCaptureCard";
+import { CredentialCaptureCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/CredentialCaptureCard";
+import { cloudBrowserCapturePorts } from "../credential-capture-ports";
 import { LoginCapturePanel } from "./LoginCapturePanel";
 import { AuthenticatorPanel } from "./AuthenticatorPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useArtifactBodyOutput } from "@/features/canvas/output/bodyOutput";
+import { printCapturedImage } from "@/features/canvas/output/printCapture";
+
+/** A screenshot frame's bytes (a data URL or a signed image URL). */
+async function screenshotBlob(url: string): Promise<Blob> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`the screenshot could not be read (${response.status})`);
+  return response.blob();
+}
 
 type FaceTab = "written" | "screenshots" | "takeover";
 
@@ -114,6 +124,21 @@ export function CloudBrowserBody({
   // event-driven (browser tool activity) with a slow idle heartbeat.
   const [rapidShots, setRapidShots] = useState(false);
   const shots = useScreenshotSession(cb.run?.id ?? null, rapidShots);
+  // In a canvas tab, Print / Copy image use the latest screenshot — the live
+  // stream is another origin's frame no DOM copy can read.
+  const latestShot = shots.frames[0] ?? null;
+  useArtifactBodyOutput(
+    latestShot
+      ? {
+          capture: () => screenshotBlob(latestShot.previewUrl),
+          print: () =>
+            printCapturedImage(
+              () => screenshotBlob(latestShot.previewUrl),
+              `Cloud browser · ${new Date(latestShot.capturedAt).toLocaleTimeString()}`,
+            ),
+        }
+      : { unavailable: { print: "turn on Screenshots first", capture: "turn on Screenshots first" } },
+  );
 
   const [busy, setBusy] = useState(false);
   const [ticket, setTicket] = useState<StreamTicketEnvelope | null>(null);
@@ -490,10 +515,12 @@ export function CloudBrowserBody({
             {captureRequest && cb.run ? (
               <CredentialCaptureCard
                 key={captureRequest.handoffId}
-                runId={cb.run.id}
-                profileId={cb.run.profileId}
-                request={captureRequest}
-                onSettled={() => void cb.reload()}
+                {...cloudBrowserCapturePorts({
+                  runId: cb.run.id,
+                  profileId: cb.run.profileId,
+                  request: captureRequest,
+                  onSettled: () => void cb.reload(),
+                })}
               />
             ) : isMeDriving &&
               cb.handoff?.reason === "credentials_missing" &&

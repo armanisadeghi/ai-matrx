@@ -10,7 +10,7 @@
  * fidelity check; everything else works for every diagram type.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,

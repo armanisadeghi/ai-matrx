@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useRead } from '@/components/read-state/useRead';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { UntrustedCount } from '@/components/official/stale-data/UntrustedCount';
+import { useRead } from "@ai-matrx/design-system";
+import { ReadFailure } from '@ai-matrx/design-system';
+import { UntrustedCount } from '@ai-matrx/design-system';
 import { ExternalLink, Plus, Loader2, Link2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

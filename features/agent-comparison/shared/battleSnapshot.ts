@@ -1,3 +1,5 @@
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * battleSnapshot — the whole battle on screen, as data.
@@ -117,7 +119,7 @@ export interface BattleSnapshot {
 
 function agentName(state: RootState, id: string | null | undefined): string {
   if (!id) return "No agent";
-  return state.agentDefinition.agents?.[id]?.name ?? "Unknown agent";
+  return selectAgentById(state, id)?.name ?? "Unknown agent";
 }
 
 function versionLabel(v: "current" | number | null | undefined): string {
@@ -128,8 +130,8 @@ function versionLabel(v: "current" | number | null | undefined): string {
 function modelLabel(state: RootState, modelId: unknown): string | null {
   if (typeof modelId !== "string" || !modelId) return null;
   const row =
-    state.modelRegistry?.entities?.[modelId] ??
-    state.modelRegistry?.identityById?.[modelId];
+    readModelRecords().entities[modelId] ??
+    readModelRecords().identityById[modelId];
   return row?.common_name || row?.name || modelId;
 }
 
@@ -159,14 +161,14 @@ export function battleModelIds(state: RootState): string[] {
             ? state.agentComparisonVariations.columns
             : [];
   for (const c of synthetic) {
-    const id = state.agentDefinition.agents?.[c.syntheticAgentId]?.modelId;
+    const id = selectAgentById(state, c.syntheticAgentId)?.modelId;
     if (id) ids.add(id);
   }
   return [...ids];
 }
 
 function systemText(state: RootState, agentId: string): string {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const sys = agent?.messages?.find((m) => m.role === "system");
   const block = (sys?.content as Array<{ type?: string; text?: string }> | undefined)?.find(
     (b) => b?.type === "text",
@@ -231,7 +233,7 @@ function describeVariant(
               : state.agentComparisonVariations;
       const column = slice.columns.find((c) => c.columnId === col.columnId);
       const synthetic = column
-        ? state.agentDefinition.agents?.[column.syntheticAgentId]
+        ? selectAgentById(state, column.syntheticAgentId)
         : undefined;
       if (!column || !synthetic) return undefined;
       if (mode === "system-prompt") {

@@ -32,7 +32,7 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -52,6 +52,8 @@ import type {
   ProofScenario,
 } from "@/features/proof-runs/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import { ADMIN_PROOF_RUNS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -91,6 +93,7 @@ function ExpectationRow({
   markers,
   onChange,
   onRemove,
+  getApplicationScope,
 }: {
   expectation: Expectation;
   index: number;
@@ -98,6 +101,7 @@ function ExpectationRow({
   markers: string[];
   onChange: (next: Expectation) => void;
   onRemove: () => void;
+  getApplicationScope: () => SurfaceScopePayload;
 }) {
   const [open, setOpen] = useState(!expectation.id);
   const needs = ruleNeeds(expectation.rule, rules);
@@ -199,7 +203,8 @@ function ExpectationRow({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Id</Label>
-              <Input mono
+              <Input
+                mono
                 value={expectation.id}
                 onChange={(e) =>
                   set({
@@ -228,6 +233,9 @@ function ExpectationRow({
               Proves — why passing this means the work was done
             </Label>
             <ProTextarea
+              surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+              sourceFeature="admin"
+              getApplicationScope={getApplicationScope}
               value={expectation.proves ?? ""}
               onChange={(e) => set({ proves: e.target.value })}
               placeholder="The route universe is closed, so any other route is invention."
@@ -269,7 +277,8 @@ function ExpectationRow({
                 <Label className="text-xs">
                   Path {needs.pathRequired ? "" : "(optional)"}
                 </Label>
-                <Input mono
+                <Input
+                  mono
                   value={expectation.path ?? ""}
                   onChange={(e) => set({ path: e.target.value })}
                   placeholder="covers"
@@ -282,7 +291,8 @@ function ExpectationRow({
                 <Label className="text-xs">
                   {expectation.rule === "matches" ? "Pattern" : "Value"}
                 </Label>
-                <Input mono
+                <Input
+                  mono
                   value={String(expectation.value ?? "")}
                   onChange={(e) => set({ value: e.target.value })}
                 />
@@ -307,6 +317,9 @@ function ExpectationRow({
                 Rubric — the question the judge answers
               </Label>
               <ProTextarea
+                surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+                sourceFeature="admin"
+                getApplicationScope={getApplicationScope}
                 value={expectation.rubric ?? ""}
                 onChange={(e) => set({ rubric: e.target.value })}
                 placeholder="PASS if the differentiator names a specific subject and contrasts it with a sibling's territory. FAIL if it is generic filler."
@@ -334,12 +347,16 @@ export function ScenarioEditor({
   rules,
   onSaved,
   onCancel,
+  getApplicationScope,
+  registerScopeReader,
 }: {
   scenario: ProofScenario;
   mandates: ProofMandateOption[];
   rules: ExpectationRuleHelp[];
   onSaved: (scenario: ProofScenario) => void;
   onCancel: () => void;
+  getApplicationScope: () => SurfaceScopePayload;
+  registerScopeReader: (reader: (() => SurfaceScopePayload) | null) => void;
 }) {
   const [scenario, setScenario] = useState<ProofScenario>(initial);
   const [variablesText, setVariablesText] = useState(() =>
@@ -348,16 +365,45 @@ export function ScenarioEditor({
   const [variablesError, setVariablesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setScenario(initial);
-    setVariablesText(JSON.stringify(initial.variables ?? {}, null, 2));
-    setVariablesError(null);
-  }, [initial]);
-
   const markers = useMemo(
     () => plantedMarkers({ ...scenario, variables: scenario.variables }),
     [scenario],
   );
+  useEffect(() => {
+    registerScopeReader(() => ({
+      scenario_draft: scenario,
+      scenario_editor_state: {
+        variables_text: variablesText,
+        variables_error: variablesError ?? undefined,
+        saving,
+        planted_markers: markers,
+      },
+      scenario_slug: scenario.slug,
+      scenario_label: scenario.label,
+      scenario_description: scenario.description,
+      scenario_mandate_key: scenario.mandate_key,
+      scenario_user_input: scenario.user_input ?? undefined,
+      scenario_variables: scenario.variables,
+      scenario_allowed_routes: scenario.allowed_routes,
+      scenario_expectations: scenario.expectations,
+      scenario_is_active: scenario.is_active,
+      scenario_live_every_seconds: scenario.live_every_seconds,
+      scenario_max_cost_usd: scenario.max_cost_usd,
+      scenario_check_slug: scenario.check_slug,
+      scenario_variables_text: variablesText,
+      scenario_variables_error: variablesError ?? undefined,
+      scenario_saving: saving,
+      scenario_planted_markers: markers,
+    }));
+    return () => registerScopeReader(null);
+  }, [
+    scenario,
+    variablesText,
+    variablesError,
+    saving,
+    markers,
+    registerScopeReader,
+  ]);
   const mandate = mandates.find((m) => m.mandate_key === scenario.mandate_key);
 
   const onVariablesChange = useCallback((text: string) => {
@@ -437,7 +483,12 @@ export function ScenarioEditor({
           <Button icon={<X />} variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button icon={<Save />} variant="primary" onClick={() => void save()} disabled={saving}>
+          <Button
+            icon={<Save />}
+            variant="primary"
+            onClick={() => void save()}
+            disabled={saving}
+          >
             {saving ? "Saving…" : "Save scenario"}
           </Button>
         </div>
@@ -446,7 +497,8 @@ export function ScenarioEditor({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label className="text-xs">Slug — its permanent id</Label>
-          <Input mono
+          <Input
+            mono
             value={scenario.slug}
             onChange={(e) =>
               setScenario((s) => ({
@@ -474,6 +526,9 @@ export function ScenarioEditor({
       <div className="space-y-1">
         <Label className="text-xs">What this scenario traps</Label>
         <ProTextarea
+          surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+          sourceFeature="admin"
+          getApplicationScope={getApplicationScope}
           value={scenario.description}
           onChange={(e) =>
             setScenario((s) => ({ ...s, description: e.target.value }))
@@ -579,7 +634,11 @@ export function ScenarioEditor({
           a marker comes back in the answer, the agent READ it — it cannot be
           guessed or remembered.
         </p>
-        <Textarea mono minHeight={220}
+        <ProTextarea
+          surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+          sourceFeature="admin"
+          getApplicationScope={getApplicationScope}
+          className="min-h-[220px] font-mono"
           value={variablesText}
           onChange={(e) => onVariablesChange(e.target.value)}
           spellCheck={false}
@@ -610,11 +669,7 @@ export function ScenarioEditor({
           <Label className="text-xs">
             The closed universe — every route that EXISTS in this scenario
           </Label>
-          <Button
-            icon={<Plus />}
-            variant="outline"
-            onClick={addRoute}
-          >
+          <Button icon={<Plus />} variant="outline" onClick={addRoute}>
             Add route
           </Button>
         </div>
@@ -625,7 +680,8 @@ export function ScenarioEditor({
         <div className="space-y-1">
           {scenario.allowed_routes.map((route, i) => (
             <div key={i} className="flex items-center gap-1">
-              <Input mono
+              <Input
+                mono
                 value={route}
                 onChange={(e) =>
                   setScenario((s) => {
@@ -657,11 +713,7 @@ export function ScenarioEditor({
           <Label className="text-xs">
             What a correct answer must look like
           </Label>
-          <Button
-            icon={<Plus />}
-            variant="outline"
-            onClick={addExpectation}
-          >
+          <Button icon={<Plus />} variant="outline" onClick={addExpectation}>
             Add rule
           </Button>
         </div>
@@ -674,6 +726,7 @@ export function ScenarioEditor({
             <ExpectationRow
               key={index}
               expectation={expectation}
+              getApplicationScope={getApplicationScope}
               index={index}
               rules={rules}
               markers={markers}

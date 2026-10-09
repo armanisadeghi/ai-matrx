@@ -10,8 +10,8 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
-import { connectCartesiaTts } from '@/lib/cartesia/connection';
+import { SinkAwarePlayer } from '@ai-matrx/media/speech';
+import { connectCartesiaTts } from '@ai-matrx/media/speech';
 import { useAppSelector } from '@/lib/redux/hooks';
 import {
   selectListeningEmotion,
@@ -19,7 +19,7 @@ import {
   selectListeningSpeed,
   useListeningVoice,
 } from '@/features/audio/service/listeningConfig';
-import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import {
   buildGenerationConfig,
   resolveVoiceId,

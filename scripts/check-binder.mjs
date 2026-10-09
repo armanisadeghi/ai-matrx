@@ -43,6 +43,7 @@ import { availableParallelism } from "node:os";
 import ts from "typescript";
 
 import { emitItem, endItems } from "./checks/items.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ARGS = process.argv.slice(2);
@@ -461,8 +462,8 @@ async function main() {
   }
   if (!partial) endItems();
 
-  const secs = ((Date.now() - started) / 1000).toFixed(1);
-  const summary = `${files.length} file(s), ${checked} named import(s) verified against their target, ${unknown} import(s) UNKNOWN (unresolvable or opaque re-export — never a finding), ${secs}s`;
+  const elapsed = formatDurationMs(Date.now() - started, { style: "compact" });
+  const summary = `${files.length} file(s), ${checked} named import(s) verified against their target, ${unknown} import(s) UNKNOWN (unresolvable or opaque re-export — never a finding), ${elapsed}`;
   if (findings.length === 0) {
     console.log(`[binder] OK — no binder errors. ${summary}.`);
     return;

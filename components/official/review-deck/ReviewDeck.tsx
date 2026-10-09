@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@ai-matrx/design-system";
 
 export type ReviewMode = "one_by_one" | "accept_all" | "reject_all" | "batch";
 

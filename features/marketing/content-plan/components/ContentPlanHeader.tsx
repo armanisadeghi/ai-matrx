@@ -23,7 +23,7 @@ import {
   Compass,
 } from "lucide-react";
 
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {

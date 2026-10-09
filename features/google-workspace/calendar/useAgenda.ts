@@ -164,7 +164,12 @@ export function useAgenda(options?: {
   // This is derived during render, not set from the effect, so changing Day →
   // Week (or moving to a past day) immediately hides the prior window's rows.
   // An effect-only loading flag leaves one committed stale frame before it runs.
-  const readWindowKey = `${options?.windowStart?.getTime() ?? "agenda"}:${options?.windowDays ?? days}:${generation}`;
+  // `windowIdentity` is WHICH window is shown; `readWindowKey` adds the reload generation so the
+  // read re-runs. Only a change of window hides the rows -- a reload of the SAME window (a note
+  // was just created on a row) keeps them mounted, or the row's own "Open the note" door, held in
+  // that row's state, would vanish with it (N10).
+  const windowIdentity = `${options?.windowStart?.getTime() ?? "agenda"}:${options?.windowDays ?? days}`;
+  const readWindowKey = `${windowIdentity}:${generation}`;
 
   // ── The window read ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -210,7 +215,7 @@ export function useAgenda(options?: {
       if (cancelled) return;
       setPeopleByEvent(people);
       setProblems(found);
-      setLoadedWindowKey(readWindowKey);
+      setLoadedWindowKey(windowIdentity);
     })();
     return () => {
       cancelled = true;
@@ -284,7 +289,7 @@ export function useAgenda(options?: {
     // which is the same law-4 defect pointing the other way. `resolving` ends
     // either way: boot either lands on a selection or on "none".
     isLoading:
-      loadedWindowKey !== readWindowKey ||
+      loadedWindowKey !== windowIdentity ||
       (events === null && Boolean(userId)),
     isRefreshing,
     days,

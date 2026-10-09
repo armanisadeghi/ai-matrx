@@ -15,6 +15,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   useSortable,
@@ -55,7 +56,7 @@ import {
 } from "../redux/skillsThunks";
 import type { ResourceRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface SkillResourcesPanelProps {
@@ -96,7 +97,7 @@ export function SkillResourcesPanel({
   }, [dispatch, skillId, status]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
 
   const onDragEnd = useCallback(

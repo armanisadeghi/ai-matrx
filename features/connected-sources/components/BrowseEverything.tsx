@@ -34,7 +34,7 @@ import {
   SelectTriggerLegacy as SelectTrigger,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";

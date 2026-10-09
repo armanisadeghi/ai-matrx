@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 161,
+    "repo-only": 171,
     "live-db": 65
   },
   "rows": {
@@ -22,10 +22,6 @@
       "cmd": "pnpm check:organization-context",
       "reason": "reaches code that can open the live database",
       "evidence": [
-        {
-          "file": "scripts/check-no-default-organization-sql.ts",
-          "signal": "direct-db loader (loadDbEnv)"
-        },
         {
           "file": "scripts/check-no-private-iam-rpc.ts",
           "signal": "admin Supabase client (createAdminClient)"
@@ -181,7 +177,28 @@
       "label": "Every @ai-matrx import exists in the installed package",
       "class": "repo-only",
       "cmd": "pnpm check:matrx-imports",
+      "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
+    "every-ai-matrx-import-resolves-in-the-installed-packages-fas": {
+      "label": "Every @ai-matrx import resolves in the installed packages (fast)",
+      "class": "repo-only",
+      "cmd": "pnpm check:package-imports-resolve",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "code-using-ai-matrx-packages-type-checks-against-the-locked-": {
+      "label": "Code using @ai-matrx packages type-checks against the locked versions",
+      "class": "repo-only",
+      "cmd": "pnpm check:matrx-api-usage",
       "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "sync-sweep-holds-unbuildable-files-refuses-breaking-package-": {
+      "label": "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests",
+      "class": "repo-only",
+      "cmd": "pnpm check:sweep-resolves:self-test && pnpm test:sync-main-packages",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "every-ai-matrx-version-in-the-lockfile-is-served-by-npm": {
@@ -310,7 +327,7 @@
       "label": "Hidden failure announcements (an error only a screen reader can perceive is a dead button)",
       "class": "repo-only",
       "cmd": "pnpm check:hidden-alerts",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "hidden-primary-actions-a-page-s-main-job-only-behind-a-drawe": {
@@ -558,7 +575,7 @@
       "label": "Doctrine check",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-doctrine.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "doc-claims-vs-live-config": {
@@ -593,14 +610,42 @@
       "label": "Worker reaches the module that starts it (Turbopack hang)",
       "class": "repo-only",
       "cmd": "pnpm check:worker-cycles",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "worker-cycle-guard-self-test": {
       "label": "Worker-cycle guard self-test",
       "class": "repo-only",
       "cmd": "pnpm check:worker-cycles:self-test",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
+    "static-import-cycle-through-the-content-ir-host": {
+      "label": "Static import cycle through the content-ir host",
+      "class": "repo-only",
+      "cmd": "pnpm check:host-cycles",
+      "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
+    "host-cycle-guard-self-test": {
+      "label": "Host-cycle guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:host-cycles:self-test",
+      "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
+    "heavy-module-in-the-shell-s-eager-client-set": {
+      "label": "Heavy module in the shell's eager client set",
+      "class": "repo-only",
+      "cmd": "pnpm check:shell-eager-graph",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "shell-eager-graph-guard-self-test": {
+      "label": "Shell-eager-graph guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:shell-eager-graph:self-test",
+      "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
     "server-only-module-calls-a-use-client-export": {
@@ -621,14 +666,14 @@
       "label": "Browser dialogs (window.confirm/alert/prompt)",
       "class": "repo-only",
       "cmd": "pnpm check:browser-dialogs:strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "record-naming-toasts-carry-their-record": {
       "label": "Record-naming toasts carry their record",
       "class": "repo-only",
       "cmd": "pnpm check:record-toasts:strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "ui-primitives-check": {
@@ -649,14 +694,14 @@
       "label": "One version of each canonical piece",
       "class": "repo-only",
       "cmd": "pnpm check:one-version",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "one-version-guard-proves-it-can-fail": {
       "label": "One-version guard proves it can fail",
       "class": "repo-only",
       "cmd": "pnpm check:one-version:self-test",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "archived-items-law-every-list-has-an-archive-control": {
@@ -712,7 +757,7 @@
       "label": "A run never fetches the agent definition (run tier)",
       "class": "repo-only",
       "cmd": "pnpm check:agent-run-tier",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "one-door-for-an-agent-request-s-context": {
@@ -811,6 +856,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:page-top:self-test",
       "reason": "no database access in 3 file(s) reached",
+      "evidence": []
+    },
+    "writing-boxes": {
+      "label": "Writing boxes",
+      "class": "repo-only",
+      "cmd": "pnpm check:writing-boxes:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "writing-boxes-self-test": {
+      "label": "Writing boxes — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:writing-boxes:self-test",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "ui-drift-self-test": {
@@ -1428,7 +1487,7 @@
       "label": "Surface manifest drift",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-surface-drift.ts",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 11 file(s) reached",
       "evidence": []
     },
     "surface-mirror-matches-the-code-values-roles-write-targets-t": {
@@ -1837,21 +1896,21 @@
       "label": "No new component the React Compiler silently skips (shrink-only baseline)",
       "class": "repo-only",
       "cmd": "pnpm check:compiler-skips",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "no-new-selector-that-mints-a-fresh-array-object-per-dispatch": {
       "label": "No new selector that mints a fresh array/object per dispatch (shrink-only baseline)",
       "class": "repo-only",
       "cmd": "pnpm check:unstable-selectors",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "the-kind-marker-law-no-stripping": {
       "label": "The __kind marker law (no stripping)",
       "class": "repo-only",
       "cmd": "pnpm check:kind-marker-law",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "menu-section-naming-law-use-hooks-build-pure-no-bare-menusec": {
@@ -1886,7 +1945,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 223 file(s) reached",
+      "reason": "no database access in 229 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -2033,6 +2092,13 @@
       "label": "Reserved icon used outside its domain (BrainCircuit = Intelligence)",
       "class": "repo-only",
       "cmd": "pnpm check:reserved-icons",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "retired-product-name-in-a-route-or-visible-string-platform-l": {
+      "label": "Retired product name in a route or visible string (platform lexicon)",
+      "class": "repo-only",
+      "cmd": "pnpm check:lexicon",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -2379,10 +2445,10 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
-    "declared-app-tables-missing-archived-drifted-size": {
-      "label": "Declared app tables (missing / archived / drifted / size)",
+    "declared-typed-tables-missing-archived-drifted-size": {
+      "label": "Declared typed tables (missing / archived / drifted / size)",
       "class": "live-db",
-      "cmd": "pnpm check:app-tables",
+      "cmd": "pnpm check:typed-tables",
       "reason": "reaches code that can open the live database",
       "evidence": [
         {

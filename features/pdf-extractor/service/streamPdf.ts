@@ -145,6 +145,11 @@ export interface StreamPdfCleanCallbacks {
    * per-page runs instead of surfacing a fatal error.
    */
   onCleanStarted?: (info: { mode: string; totalPages: number | null }) => void;
+  /**
+   * The server's `X-Request-ID` for this run, the moment the response opens —
+   * the id a refreshed page reconnects to (`usePdfDocRun`).
+   */
+  onRequestId?: (requestId: string) => void;
 }
 
 export interface StreamPdfCleanResult {
@@ -171,6 +176,8 @@ export async function streamPdfClean(opts: {
     { method: "POST" },
     { signal },
   );
+  const requestId = response.headers.get("X-Request-ID");
+  if (requestId) callbacks.onRequestId?.(requestId);
 
   let cleanContent: string | null = null;
   let serverConfirmedUpdate = false;

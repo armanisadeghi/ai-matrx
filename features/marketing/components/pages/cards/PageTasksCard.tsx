@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { CalendarClock, ListTodo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchTasksForEntity,

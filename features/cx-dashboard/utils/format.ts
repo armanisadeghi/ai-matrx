@@ -5,7 +5,6 @@ import { parseTimestamp } from "@/utils/datetime";
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { formatCount, formatDurationMs, formatCost as formatCostInUnit, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
@@ -21,9 +20,10 @@ export { formatRelativeTime } from "@ai-matrx/kit/format";
  */
 export function formatCost(
   cost: number | null | undefined,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): string {
-  return formatCostInUnit(cost, { rate: currentPointsRate(), unit });
+  return formatCostInUnit(cost, { rate, unit });
 }
 
 export function formatTokens(tokens: number | null | undefined): string {

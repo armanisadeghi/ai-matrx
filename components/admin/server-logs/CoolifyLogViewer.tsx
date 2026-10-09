@@ -67,7 +67,7 @@ import {
 } from "@/features/server-logs/log-rules";
 import { replaceAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 // ─── App registry ─────────────────────────────────────────────────────────────

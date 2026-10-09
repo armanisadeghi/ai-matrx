@@ -5,9 +5,10 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
-import { envelopeHref, statusLabel, type EnvelopeListRow } from "./types";
+import { envelopeHref, SIGNER_STATUS_LABEL, statusLabel, type EnvelopeListRow } from "./types";
 
 const STATUS_TONE: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  draft: "outline",
   completed: "default",
   sent: "secondary",
   in_progress: "secondary",
@@ -72,12 +73,46 @@ export const ENVELOPE_COLUMNS: EntityColumnSpec<EnvelopeListRow>[] = [
   {
     id: "signer_names",
     label: "Signers",
+    defaultHidden: true,
     column: {
       id: "signer_names",
       accessorKey: "signer_names",
       header: "Signers",
       filter: "text",
       cell: (row) => (row.signer_names ? <span className="line-clamp-1">{row.signer_names}</span> : <Muted>—</Muted>),
+    },
+  },
+  {
+    id: "recipients",
+    label: "Each recipient",
+    column: {
+      id: "recipients",
+      accessorKey: "signers",
+      header: "Each recipient",
+      filter: false,
+      cell: (row) =>
+        row.signers && row.signers.length > 0 ? (
+          <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
+            {row.signers.map((s, i) => (
+              <span key={`${s.name}-${i}`} className="whitespace-nowrap text-muted-foreground">
+                {s.name}: <span className="text-foreground">{SIGNER_STATUS_LABEL[s.status] ?? s.status}</span>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <Muted>{row.status === "draft" ? "Not sent" : "—"}</Muted>
+        ),
+    },
+  },
+  {
+    id: "created_at",
+    label: "Created",
+    column: {
+      id: "created_at",
+      accessorKey: "created_at",
+      header: "Created",
+      filter: false,
+      cell: (row) => timeCell(row.created_at),
     },
   },
   {

@@ -18,19 +18,12 @@ import { toast } from "@/lib/toast";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
-import type { MapMarker } from "./MapCanvas";
-import { soleFence } from "@/lib/markdown/code-ranges";
+import { parseMap } from "./parseMap";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { mapPlacesList } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
-interface MapSpec {
-  title?: string;
-  center?: [number, number];
-  zoom?: number;
-  markers: MapMarker[];
-}
 
 const MapCanvas = dynamic(() => import("./MapCanvas"), {
   ssr: false,
@@ -43,83 +36,6 @@ export interface MapBlockProps {
   className?: string;
 }
 
-function num(v: unknown): number | undefined {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
-  return Number.isFinite(n) ? n : undefined;
-}
-
-function parseMap(raw: string): MapSpec | { error: string } {
-  let s = raw.trim();
-  // A wrapping fence by THE one code-range rule.
-  const fenced = soleFence(s);
-  if (fenced && ["", "json", "map"].includes(fenced.lang.toLowerCase()))
-    s = fenced.body.trim();
-  let obj: unknown;
-  try {
-    obj = JSON.parse(s);
-  } catch {
-    try {
-      obj = JSON.parse(s.replace(/,(\s*[}\]])/g, "$1"));
-    } catch {
-      return { error: "Map needs a JSON object with a `markers` array." };
-    }
-  }
-  const o = (Array.isArray(obj) ? { markers: obj } : obj) as Record<
-    string,
-    unknown
-  >;
-  const rawMarkers = Array.isArray(o.markers)
-    ? o.markers
-    : Array.isArray(o.places)
-      ? o.places
-      : [];
-  const markers: MapMarker[] = (rawMarkers as Record<string, unknown>[])
-    .map((m): MapMarker | null => {
-      const lat = num(
-        m?.lat ??
-          m?.latitude ??
-          (Array.isArray(m?.coordinates) ? m.coordinates[0] : undefined) ??
-          (Array.isArray(m?.coords) ? m.coords[0] : undefined),
-      );
-      const lng = num(
-        m?.lng ??
-          m?.lon ??
-          m?.longitude ??
-          (Array.isArray(m?.coordinates) ? m.coordinates[1] : undefined) ??
-          (Array.isArray(m?.coords) ? m.coords[1] : undefined),
-      );
-      if (lat == null || lng == null) return null;
-      return {
-        lat,
-        lng,
-        label:
-          m?.label != null
-            ? String(m.label ?? m.name)
-            : m?.name != null
-              ? String(m.name)
-              : undefined,
-        description: m?.description != null ? String(m.description) : undefined,
-      };
-    })
-    .filter((m): m is MapMarker => m != null);
-  if (markers.length === 0)
-    return { error: "Map `markers` need at least one {lat, lng} point." };
-  const c = o.center as unknown;
-  let center: [number, number] | undefined;
-  if (Array.isArray(c)) {
-    const centerLat = num(c[0]);
-    const centerLng = num(c[1]);
-    if (centerLat != null && centerLng != null) {
-      center = [centerLat, centerLng];
-    }
-  }
-  return {
-    title: typeof o.title === "string" ? o.title : undefined,
-    center,
-    zoom: num(o.zoom),
-    markers,
-  };
-}
 
 export const MapBlock: React.FC<MapBlockProps> = ({
   content = "",
@@ -211,6 +127,9 @@ export const MapBlock: React.FC<MapBlockProps> = ({
             )}
           >
             <div
+              // Full Print draws this map through the host's tile-aware capture.
+              data-matrx-print-picture=""
+              aria-label={spec.title ?? "Map"}
               className={cn(
                 "w-full min-w-0 overflow-hidden rounded-md border border-border",
                 placesList === "side" && "flex-1",

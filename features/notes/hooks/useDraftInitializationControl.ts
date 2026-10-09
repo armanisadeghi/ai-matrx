@@ -1,6 +1,5 @@
 "use client";
 
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useCallback, useRef, useState } from "react";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
@@ -60,7 +59,6 @@ export function useDraftInitializationControl(
     } catch (cause) {
       // Closing the organization picker is an answer ("not now"), never a
       // failure: no error line, no toast — the person is back where they were.
-      if (isOrganizationSelectionCancelled(cause)) throw cause;
       const message = noteCreateErrorMessage(cause);
       const needsOrganization = isOrganizationRequiredError(cause);
       setError(message);

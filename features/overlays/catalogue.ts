@@ -1063,7 +1063,7 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   userTableWindow: {
-    label: "User Table Window",
+    label: "Custom Table Window",
     instanceMode: "singleton",
     isWindow: true,
   },

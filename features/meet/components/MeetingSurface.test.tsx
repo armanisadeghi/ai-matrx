@@ -13,33 +13,57 @@ let mockMeetHost: object | null = { participant: { identity: "member-1" } };
 let mockActiveOrganizationId: string | null = null;
 let mockOrganizations: Record<string, object> = {};
 let mockStoredPasses: Record<string, string> = {};
+let mockMeetingBySlugError: object | null = null;
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
   meetBaseUrl: () => "https://www.aimatrx.com",
 }));
+jest.mock("@/features/meet/app-panels/registry", () => ({ MEET_APP_PANELS: {} }));
 jest.mock("@ai-matrx/meet/react", () => ({
   createMeetRepository: () => ({
-    meetingBySlug: async () => ({
+    meetingBySlug: async () => {
+      if (mockMeetingBySlugError !== null) throw mockMeetingBySlugError;
+      return {
       id: "meeting-1",
       roomName: "room-1",
       slug: "meeting-1",
       title: "Weekly review",
       organizationId: "org-meeting",
       endedAt: "2026-09-12T00:00:00.000Z",
-    }),
+      };
+    },
   }),
   MeetProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="guest-provider">{children}</div>
   ),
-  MeetingRoom: () => <div data-testid="member-room" />,
+  MeetingSkinRoot: () => <div data-testid="member-room" />,
+  MeetRoot: ({
+    children,
+    phase,
+    reason,
+  }: {
+    children?: React.ReactNode;
+    phase?: string;
+    reason?: string | null;
+  }) => (
+    <div data-meet-phase={phase} data-meet-reason={reason ?? undefined}>
+      {children}
+    </div>
+  ),
+  isJoinRefusalReason: (value: unknown) =>
+    typeof value === "string" &&
+    ["not_found", "cancelled", "ended", "locked", "removed"].includes(value),
+  MeetAppPanels: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,
-  createWebRoomTokenStorage: () => ({
-    read: (room: string) => mockStoredPasses[room] ?? null,
-    write: () => undefined,
-    remove: () => undefined,
-  }),
+  MEETING_PASS_HEADER: "x-meet-pass",
+  rememberedMeetingPass: (room: string) => {
+    const raw = mockStoredPasses[room];
+    if (raw === undefined) return null;
+    const parsed = JSON.parse(raw) as { standing?: string; meetingPass?: string };
+    return parsed.standing === "guest" ? (parsed.meetingPass ?? null) : null;
+  },
 }));
 jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
   MeetingBoard: () => <div data-testid="meeting-board" />,
@@ -217,7 +241,7 @@ describe("MeetingSurface authentication hydration", () => {
     mockActiveOrganizationId = "org-mine";
     mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
     mockStoredPasses = {
-      "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:d3v1c3" }),
+      "room-1": JSON.stringify({ token: "livekit.jwt", meetingPass: "a.guest.pass", standing: "guest" }),
     };
     window.history.replaceState(null, "", "/meet/meeting-1?claim=1");
     const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
@@ -229,7 +253,7 @@ describe("MeetingSurface authentication hydration", () => {
     const call = (request.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     expect(call.path).toBe("/api/v1/meet/claim");
     expect(call.requireAuth).toBe(true);
-    expect(call.headers).toEqual({ "x-meet-room-token": "a.guest.pass" });
+    expect(call.headers).toEqual({ "x-meet-pass": "a.guest.pass" });
     expect(call.body).toEqual({ meeting_id: "meeting-1" });
     expect(window.location.search).toBe("");
     surface.unmount();
@@ -240,11 +264,42 @@ describe("MeetingSurface authentication hydration", () => {
     const request = jest.fn();
     mockActiveOrganizationId = "org-mine";
     mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
-    mockStoredPasses = { "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:x" }) };
+    mockStoredPasses = { "room-1": JSON.stringify({ meetingPass: "a.guest.pass", standing: "guest" }) };
     window.history.replaceState(null, "", "/meet/meeting-1");
     const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
     expect(request).not.toHaveBeenCalled();
     surface.unmount();
     mockStoredPasses = {};
+  });
+
+  it("a link that names no meeting shows the not-found screen decided by the reason CODE, whatever the words say", async () => {
+    mockMeetingBySlugError = Object.assign(new Error("something reworded entirely"), {
+      code: "not-found",
+      reason: "not_found",
+      remedy: "retry in a moment",
+    });
+    try {
+      const surface = await renderSurface(false);
+      const root = surface.container.querySelector("[data-meet-phase]");
+      expect(root?.getAttribute("data-meet-phase")).toBe("refused:not_found");
+      expect(root?.getAttribute("data-meet-reason")).toBe("not_found");
+      expect(surface.container.textContent).toContain("No meeting matches that link.");
+      expect(surface.container.textContent).not.toContain("retry in a moment");
+      surface.unmount();
+    } finally {
+      mockMeetingBySlugError = null;
+    }
+  });
+
+  it("the old message-text match no longer decides anything: the words alone are NOT a not-found screen", async () => {
+    mockMeetingBySlugError = new Error("meet_meeting_by_slug: no meeting for that link");
+    try {
+      const surface = await renderSurface(false);
+      const root = surface.container.querySelector("[data-meet-phase]");
+      expect(root?.getAttribute("data-meet-phase")).toBe("disconnected");
+      surface.unmount();
+    } finally {
+      mockMeetingBySlugError = null;
+    }
   });
 });

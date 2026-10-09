@@ -11,6 +11,7 @@
 // when the contract carries them — built-in views, findings, records) is `platform.drill_describe`.
 // Id-valued Dimensions read their words from the door's own labels, then the host's name resolvers.
 
+import { drillFailureWords } from "./explorerWords";
 import { useEffect, useRef, useState } from "react";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import type { DrillAnswer, DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
@@ -33,13 +34,34 @@ import { carriedAsk, type DrillCarried } from "./questionParts";
 import { drillDoorLabels } from "./dimensionWords";
 
 const clients = new Map<string, RecordsClient>();
+
+/**
+ * A MEMBER ACROSS ALL HER ORGANIZATIONS (lane DRILL-WAVE3): the door counts an unasked standard source over
+ * every organization she is in (her own row rules decide each row), and an `organization` lane over just the
+ * one named. A page whose organization is a visible control (default All organizations) asks the first way:
+ * the questions go out with no lane. The active organization stays only the client's own (its calendar).
+ */
+export function acrossOrganizations(source: ReturnType<typeof recordsDataSource>): ReturnType<typeof recordsDataSource> {
+  return {
+    ...source,
+    rpc: ((fn: string, args: Record<string, unknown>, options: unknown) => {
+      const question = args?.p_question;
+      if ((fn === "drill_ask" || fn === "drill_rows") && question && typeof question === "object") {
+        const { lane: _lane, ...rest } = question as Record<string, unknown>;
+        return (source.rpc as (f: string, a: unknown, o: unknown) => unknown)(fn, { ...args, p_question: rest }, options);
+      }
+      return (source.rpc as (f: string, a: unknown, o: unknown) => unknown)(fn, args, options);
+    }) as typeof source.rpc,
+  };
+}
+
 /** One records client per organization and person (the door needs both). */
-export function drillClientFor(organizationId: string, userId: string | null): RecordsClient {
-  const key = `${organizationId}:${userId ?? ""}`;
+export function drillClientFor(organizationId: string, userId: string | null, across = false): RecordsClient {
+  const key = `${organizationId}:${userId ?? ""}:${across ? "all" : "one"}`;
   let client = clients.get(key);
   if (!client) {
     client = createRecordsClient({
-      dataSource: recordsDataSource(supabase),
+      dataSource: across ? acrossOrganizations(recordsDataSource(supabase)) : recordsDataSource(supabase),
       actor: personActor(userId),
       organizationId,
     });
@@ -64,16 +86,20 @@ export function drillValueNumber(v: number | string): number | null {
 export function drillRowOf(
   r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups" | "kind">>,
   countMeasure?: string,
+  spans?: ReadonlySet<string>,
 ): MatrxDrillAnswerRow & { kind?: "group" | "other" | "total" } {
   const groups: Record<string, string | null> = {};
   // A group that only the PRIOR window had (a compare) arrives with groups null and its values in
   // prior_groups; reading groups alone turned every such group into the same empty key.
   for (const [k, v] of Object.entries(r.groups ?? r.prior_groups ?? {})) groups[k] = v === null || v === undefined ? null : String(v);
+  // A SPAN ON THE EMPTY GROUP IS A STATE, NOT A NUMBER (lane DRILL-LIVE-FIX-2 #5): "No conversation"
+  // gathers unrelated rows, so first-to-last across them ("719h 59m") measures nothing — it reads "—".
+  const emptyGroup = r.kind !== "total" && r.kind !== "other" && Object.values(groups).some((v) => v === null);
   const num = (m: Record<string, number | string | null> | null | undefined) => {
     const out: Record<string, number | null> = {};
     // a moment (unit time, "Last active") arrives as ISO text: it is carried as epoch ms so it sorts
     // and formats like every other value (measureFormat's "time"); any other text is a number
-    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined ? null : drillValueNumber(v);
+    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined || (emptyGroup && spans?.has(k)) ? null : drillValueNumber(v);
     return out;
   };
   return {
@@ -89,12 +115,31 @@ export function drillRowOf(
   };
 }
 
-/** The window of an address question in the door's words (and the comparison with it). */
-export function doorWindow(question: MatrxDrillQuestion, align?: "hour"): Pick<DrillQuestion, "window" | "compare"> {
-  const range = explorerWindowRange(question.window ?? null, align);
+/**
+ * THE TIME DIMENSION A WINDOW RUNS ALONG, FROM THE DEFINITION (lane DRILL-LIVE-FIX-2 #1): the question's
+ * own declared key (`carried.windowKey`) first, else the definition's "at" when it has one, else its
+ * first time Dimension. Never a hard-coded "at": user_acquisition's time is `created_at`, and every
+ * ask that sent "at" there was refused (400). A definition with no time Dimension has no window (null).
+ */
+export function drillWindowKey(
+  dimensions: readonly { key: string; kind?: string | undefined }[] | null | undefined,
+  carried?: { windowKey?: string | undefined } | null,
+): string | null {
+  if (carried?.windowKey) return carried.windowKey;
+  const times = (dimensions ?? []).filter((d) => d.kind === "time");
+  return (times.find((d) => d.key === "at") ?? times[0])?.key ?? null;
+}
+
+/**
+ * The window of an address question in the door's words (and the comparison with it), along the
+ * definition's own time Dimension (`drillWindowKey`) — required, so no caller can fall back to "at".
+ */
+export function doorWindow(question: MatrxDrillQuestion, along: { key: string | null; align?: "hour" | undefined }): Pick<DrillQuestion, "window" | "compare"> {
+  if (!along.key) return {};
+  const range = explorerWindowRange(question.window ?? null, along.align);
   if (!range) return {};
   return {
-    window: { key: "at", from: range.from, to: range.to },
+    window: { key: along.key, from: range.from, to: range.to },
     ...(question.compare ? { compare: { against: question.compare, from: range.from, to: range.to } } : {}),
   };
 }
@@ -172,9 +217,11 @@ export function useDrillExplorer(args: {
   grainLines?: DrillGrainLines | null | undefined;
   /** False while the settings are still being read: nothing is asked until the grain is known. */
   ready?: boolean | undefined;
+  /** Ask with no lane: every organization she is in, her row rules deciding each row (a member page whose organization is a page control). */
+  acrossOrganizations?: boolean | undefined;
 }): DrillExplorerData {
   const { source, lane, organizationId, userId, question, names: resolvers, book: hostBook, version = 0, countMeasure, windowAlign, carried, headlineAlso, headlineMeasure = null, grainLines = null, ready = true } = args;
-  const client = organizationId ? drillClientFor(organizationId, userId) : null;
+  const client = organizationId ? drillClientFor(organizationId, userId, args.acrossOrganizations === true) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
   // THE ANSWERS BELONG TO ONE QUESTION: while a new window or trail is being counted the screen
@@ -195,7 +242,7 @@ export function useDrillExplorer(args: {
     void client.drillDescribe({ source: JSON.parse(sourceKey) as DrillSource }).then((got) => {
       if (cancelled) return;
       if (got.ok) setDef(got.data ?? null);
-      else setError(got.error.message || "The definition could not be read.");
+      else setError(drillFailureWords(got.error.message, "The definition could not be read."));
     });
     return () => {
       cancelled = true;
@@ -213,8 +260,7 @@ export function useDrillExplorer(args: {
     const parsed = JSON.parse(askKey) as MatrxDrillQuestion & { carried: DrillCarried | null; lines: DrillGrainLines | null };
     const door = parsed.carried;
     const asked = withAutoGrain(def, parsed, parsed.lines);
-    const windowPart = doorWindow(asked, windowAlign);
-    if (windowPart.window && door?.windowKey) windowPart.window = { ...windowPart.window, key: door.windowKey };
+    const windowPart = doorWindow(asked, { key: drillWindowKey(def.dimensions, door), align: windowAlign });
     // A RUN RATE NEEDS A WINDOW WITH A START (the door refuses one without, 22023): with "all time" it is
     // left out of the ask and said, never a failed answer (lane DRILL-GAPS)
     const rates = new Set(def.measures.filter((m) => (m.op as string) === "rate").map((m) => m.key));
@@ -232,6 +278,7 @@ export function useDrillExplorer(args: {
     let cancelled = false;
     setError(null);
     const timeKeys = new Set(def.dimensions.filter((d) => d.kind === "time").map((d) => d.key));
+    const spans = new Set(def.measures.filter((m) => (m.op as string) === "span").map((m) => m.key));
     const sortFor = (by: string[]) => doorSort(by, asked.sort ?? null, sortKey, timeKeys);
     // THRESHOLDS ARE ON GROUPS (lane DRILL-FLIP-FIXES L1): the total (no grouping) is asked without them,
     // and a grouped ask also shows every Measure a threshold reads (the door judges a number it shows)
@@ -260,7 +307,7 @@ export function useDrillExplorer(args: {
       if (cancelled) return;
       const failed = results.find((r) => !r.got.ok);
       if (failed && !failed.got.ok) {
-        setError(failed.got.error.message || "The answer could not be counted.");
+        setError(drillFailureWords(failed.got.error.message, "The answer could not be counted."));
         return;
       }
       const out: Record<string, MatrxDrillAnswerRow[]> = {};
@@ -290,7 +337,7 @@ export function useDrillExplorer(args: {
         const kind = r.by.length === 0 ? "total" : "group";
         const rows = answer.rows
           .filter((row) => row.kind === kind && (kind === "group" || !row.groups || Object.keys(row.groups).length === 0))
-          .map((row) => drillRowOf(row, countMeasure));
+          .map((row) => drillRowOf(row, countMeasure, spans));
         out[r.key] = rows;
         for (const [key, map] of Object.entries(drillDoorLabels(answer.rows))) doorLabels[key] = { ...(doorLabels[key] ?? {}), ...map };
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);

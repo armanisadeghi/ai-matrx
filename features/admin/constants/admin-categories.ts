@@ -305,6 +305,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Spend Approvals",
+        description:
+          "Agents, mandates and automations whose single run cost more than $1 — approve or reject before they run again.",
+        iconName: "BadgeCheck",
+        link: "/administration/billing/approvals",
+        isNew: true,
+      },
+      {
         title: "Plans & Pricing",
         description:
           "Every plan's name, prices, tagline, badge and listing, plus its allowances — what the pricing page and upgrade dialogs show.",
@@ -464,7 +472,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Agents Dashboard",
         description:
-          "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system agent apps.",
+          "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system Applets.",
         iconName: "Zap",
         link: "/administration/agents/system-agents",
         isNew: true,
@@ -520,7 +528,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Agents Apps",
         description:
-          "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
+          "Global-scope Applets available to every user. Distinct from moderation of user-published apps.",
         iconName: "Bot",
         link: "/administration/agents/system-agents/apps",
         isNew: true,
@@ -551,9 +559,9 @@ export const adminCategoriesData: AdminCategory[] = [
       },
       {
         title: "New App",
-        description: "Create a new global-scope system agent app.",
+        description: "Create a new global-scope system Applet.",
         iconName: "Plus",
-        link: "/agent-apps/build",
+        link: "/applets/build",
         isNew: true,
       },
       {
@@ -567,53 +575,53 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Agent Apps",
-    landingPath: "/administration/agents/agent-apps",
+    name: "Applets",
+    landingPath: "/administration/applets",
     iconName: "Boxes",
     iconColor: "text-indigo-600",
     features: [
       {
-        title: "Agent Apps Dashboard",
+        title: "Applets Dashboard",
         description:
-          "Hub for moderating user-published agent apps: featured picks, verification, and quick stats.",
+          "Hub for moderating user-published Applets: featured picks, verification, and quick stats.",
         iconName: "LayoutDashboard",
-        link: "/administration/agents/agent-apps",
+        link: "/administration/applets",
         isNew: true,
       },
       {
-        title: "All Agent Apps",
+        title: "All Applets",
         description:
-          "Every agent app across the platform — filter, feature, verify, and moderate.",
+          "Every Applet across the platform — filter, feature, verify, and moderate.",
         iconName: "Boxes",
-        link: "/administration/agents/agent-apps/apps",
+        link: "/administration/applets/all",
       },
       {
-        title: "Agent App Categories",
+        title: "Applet Categories",
         description:
-          "Manage the static category list shown in public agent-app browsing.",
+          "Manage the static category list shown in public applet browsing.",
         iconName: "Folder",
-        link: "/administration/agents/agent-apps/categories",
+        link: "/administration/applets/categories",
       },
       {
-        title: "Agent App Executions",
+        title: "Applet Executions",
         description:
-          "Recent runs and errors across every agent app. Resolve incidents and inspect usage.",
+          "Recent runs and errors across every Applet. Resolve incidents and inspect usage.",
         iconName: "LineChart",
-        link: "/administration/agents/agent-apps/executions",
+        link: "/administration/applets/executions",
       },
       {
-        title: "Agent App Analytics",
+        title: "Applet Analytics",
         description:
-          "Usage and performance analytics across published agent apps.",
+          "Usage and performance analytics across published Applets.",
         iconName: "BarChart3",
-        link: "/administration/agents/agent-apps/analytics",
+        link: "/administration/applets/analytics",
       },
       {
-        title: "Agent App Rate Limits",
+        title: "Applet Rate Limits",
         description:
-          "Configure and audit rate limits for agent app invocations.",
+          "Configure and audit rate limits for Applet invocations.",
         iconName: "Shield",
-        link: "/administration/agents/agent-apps/rate-limits",
+        link: "/administration/applets/rate-limits",
       },
     ],
   },
@@ -1124,6 +1132,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "AI spend health",
+        description:
+          "Every agent and mandate by cost: premium models, runaway turns, huge contexts, unsaved runs and who paid.",
+        iconName: "Activity",
+        link: "/administration/usage/agents",
+        isNew: true,
+      },
+      {
         title: "Email Users",
         description:
           "Send emails to users directly from the admin portal using custom or template-based messages.",
@@ -1433,10 +1449,10 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Store Tables",
+        title: "Custom Tables",
         description: "Every organization's tables; archive many at once",
         iconName: "Table",
-        link: "/administration/database/store-tables",
+        link: "/administration/database/custom-tables",
         isNew: true,
       },
       {
@@ -1638,6 +1654,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Every check's last run, verdict, scan completeness, open findings and the oldest one's age — live from the checks store. Drill into a check to see its findings by work unit, and mark a false alarm OK once, with a reason, so it never raises again.",
         iconName: "ListChecks",
         link: "/administration/reporting/check-findings",
+        isNew: true,
+      },
+      {
+        title: "Performance",
+        description:
+          "Every performance watch: newest number against its budget, state, 7-day trend, baseline and last alert. Drill into one watch's history and samples.",
+        iconName: "Gauge",
+        link: "/administration/reporting/performance",
         isNew: true,
       },
       {

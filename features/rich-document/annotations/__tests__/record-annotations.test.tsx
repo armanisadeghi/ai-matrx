@@ -280,7 +280,7 @@ it("5 — Highlight and Private note are absent on a kind with no annotates pair
   window.getSelection()!.addRange(range);
   const target = { kind: "selection", host: { [ANNOTATION_HOST_KEY]: host } } as never;
   const actions = await annotationSelectionProvider.actions(target);
-  const highlight = actions.find((a) => a.id === "selection:highlight-yellow")!;
+  const highlight = actions.find((a) => a.id === "selection:highlight")!;
   expect(highlight.eligible?.(target)).toEqual({ status: "absent" });
 });
 

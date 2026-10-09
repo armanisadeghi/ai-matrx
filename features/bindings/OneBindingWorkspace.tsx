@@ -35,7 +35,7 @@ import {
   ConfigurationTableRow,
   StatusToken,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -52,10 +52,7 @@ import { resolveAgentVersionId, fetchAgentVersionSnapshot } from "@/features/age
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,
-  selectAgentDescription,
   selectAgentExecutionPayload,
-  selectAgentName,
-  selectBuiltinAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
@@ -171,6 +168,8 @@ import { bindingAccessTarget } from "./access-target";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { useAgentDescription, useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -1099,7 +1098,7 @@ function BindingDraft({
   // function the bar's alert uses, so the screen's warning and the thing that
   // actually stops the write can never disagree. Silent until the system
   // catalogue is read (see `systemRungHolderIsPersonal`).
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const systemHolderIsPersonal =
     holder.kind === "agent" &&
     systemRungHolderIsPersonal(
@@ -1856,12 +1855,8 @@ function BindingDraft({
   // placeholder makes worse proposals. `useHolderInputs` has already fetched
   // this agent's execution record, so the name is in hand — the workspace's own
   // `agentsById` is the mandate console's roster and does not always hold it.
-  const holderName = useAppSelector((state) =>
-    agentId ? selectAgentName(state, agentId) : undefined,
-  );
-  const holderDescription = useAppSelector((state) =>
-    agentId ? selectAgentDescription(state, agentId) : null,
-  );
+  const holderName = useAgentName(agentId);
+  const holderDescription = useAgentDescription(agentId) ?? null;
   /**
    * 🚨 F4 — THE AI MAP CAN PROPOSE WRITE ACCESS, on the jobs that have it.
    *

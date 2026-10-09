@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { Loader2, Maximize2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -15,11 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import type { TaskWithProject } from "@/features/tasks/types";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { toast } from "@/lib/toast";
 
 export default function TaskDetails({ task }: { task: TaskWithProject }) {
   const dispatch = useAppDispatch();
+  // The nav tree stores a task thin (no description): upgrade it before the box opens, or the
+  // debounced save below would write the blank stand-in over the stored text.
+  const { isFullData } = useEnsureTaskLoaded(task.id);
 
   // Local state for editing
   const [description, setDescription] = useState(task.description || "");
@@ -35,9 +40,10 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
   useEffect(() => {
     setDescription(task.description || "");
     setDueDate(task.dueDate || "");
-  }, [task.id]); // Only reset when task changes
+  }, [task.id, isFullData]); // Reset when the task changes or its full text arrives
 
   useEffect(() => {
+    if (!isFullData) return;
     if (debouncedDescription !== task.description) {
       setIsSaving(true);
       dispatch(
@@ -53,7 +59,7 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         })
         .finally(() => setIsSaving(false));
     }
-  }, [debouncedDescription, task.id, task.description, dispatch]);
+  }, [debouncedDescription, task.id, task.description, isFullData, dispatch]);
 
   useEffect(() => {
     if (debouncedDueDate !== task.dueDate) {
@@ -116,15 +122,17 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         {/* The person's own stored text, edited as written (ruling b, round 6). */}
         <div
           data-kind-source="explicit"
-          className={`${fullScreenMode ? "max-h-96" : "max-h-48"} overflow-y-auto`}
+          className="w-full"
         >
-          <ProTextarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add details about this task..."
-            className="text-sm resize-y"
-            rows={fullScreenMode ? 12 : 8}
-          />
+          {isFullData ? (
+            <TaskDescriptionEditor
+              value={description}
+              onChange={setDescription}
+              bodyClassName={fullScreenMode ? "h-96" : "h-64"}
+            />
+          ) : (
+            <RegionSkeleton className={fullScreenMode ? "h-96" : "h-64"} />
+          )}
         </div>
       </div>
 

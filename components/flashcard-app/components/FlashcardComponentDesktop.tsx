@@ -5,7 +5,7 @@ import FlashcardDisplay from "@/components/flashcard-app/flashcard-display/flash
 import PerformanceChart from "@/components/flashcard-app/performance/performance-chart";
 import EditFlashcardDialog from "./EditFlashcardDialog";
 import { Progress } from "@/components/ui/progress";
-import AiAssistModal from "@/components/ai/AiAssistModal";
+import AiAssistModal from "@/app/(transitional)/_flash-cards/ai/AiAssistModal";
 import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
 import MatrxTable from "@/app/(dev)/demos/tests/matrx-table/components/MatrxTable";
 import {

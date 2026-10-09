@@ -1,5 +1,5 @@
 /**
- * THE SHEET READS A RECORD-STORE TABLE THE WAY THE GRID DOES (lane POST-PUBLISH-FE).
+ * THE SHEET READS A CUSTOM TABLE THE WAY THE GRID DOES (lane POST-PUBLISH-FE).
  *
  * THE USE CASE: the Birchwood Avenue Renovation's Rooms table. Its colours are the
  * organization's decorations (colour rows by Status; one rule, "Status is On Hold -> Red"),

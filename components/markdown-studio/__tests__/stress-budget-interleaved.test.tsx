@@ -40,10 +40,10 @@ jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBl
   },
 }));
 jest.mock("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor", () => ({ __esModule: true, default: () => null }));
-jest.mock("@/components/mardown-display/blocks/json/useBoundAgentOutputSchema", () => ({ useBoundAgentOutputSchema: () => null }));
+jest.mock("@ai-matrx/chat/ui/markdown-stream/useBoundAgentOutputSchema", () => ({ useBoundAgentOutputSchema: () => null }));
 jest.mock("@ai-matrx/chat/agents/components/shared/transcript-audience", () => ({ useMachineFramesVisible: () => true }));
 
-import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

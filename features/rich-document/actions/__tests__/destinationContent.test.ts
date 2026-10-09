@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import "../handlers";
 import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { contentForDestination } from "../utils";
+import { contentForDestination, contentForPrint } from "../utils";
 import { chatContext } from "../../test-utils/chatContext";
 
 const ENVELOPED =
@@ -90,5 +90,13 @@ describe("a __kind answer reaches every destination as readable markdown", () =>
   it("kindless content is unchanged", () => {
     const text = "Plain **answer** with ```json\n{\"a\":1}\n```";
     expect(contentForDestination({ ...chatContext("assistant"), content: text })).toBe(text);
+  });
+});
+
+describe("a print keeps the artifact envelopes (each block prints through its own adapter)", () => {
+  it("contentForPrint keeps <artifact>, contentForDestination unwraps it", () => {
+    const ctx = { ...chatContext("assistant"), content: ENVELOPED };
+    expect(contentForPrint(ctx)).toContain('<artifact type="table"');
+    expect(contentForDestination(ctx)).not.toContain("<artifact");
   });
 });

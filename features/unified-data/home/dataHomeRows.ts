@@ -67,9 +67,9 @@ export interface DataHomeRow {
    * A table the app keeps for itself rather than one a person made — above all the List a choice
    * column keeps its choices in ("Status choices"). Decided by THE ONE RULE (`isKeptTable` from
    * `@ai-matrx/records-ui`) over the door's own facts; false for every non-table row. The home
-   * lists these only under "Show app tables" (lane 10 item 7).
+   * lists these only under "Show platform tables" (lane 10 item 7).
    */
-  keptByTheApp: boolean;
+  platformOwned: boolean;
   /**
    * Lane 10 FD: the table is Foundation — part of the business's day-one data. Listed first, with
    * a badge, and the Foundation filter keeps only these. False for every non-table row.
@@ -128,7 +128,7 @@ export function archivedTableRow(table: ArchivedEverywhereRow, me: string | null
     publicHref: null,
     publicLabel: null,
     trouble: null,
-    keptByTheApp: false,
+    platformOwned: false,
     foundation: false,
     syncedFrom: null,
     archived: true,
@@ -217,7 +217,7 @@ function syncedFromOf(table: DataHomeTableRow): string | null {
 }
 
 export function keptTableRow(table: DataHomeTableRow): boolean {
-  return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, kept_by_the_app: table.kept_by_the_app });
+  return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, platform_owned: table.platform_owned });
 }
 
 function toRow(
@@ -257,7 +257,7 @@ function toRow(
     publicLabel: item.publicLabel ?? null,
     trouble: item.trouble ?? null,
     // Only the Tables listing's own row is the table; a form or dashboard ON a kept table is not kept.
-    keptByTheApp: fromTablesListing && table !== undefined && item.id === table.table_id && keptTableRow(table),
+    platformOwned: fromTablesListing && table !== undefined && item.id === table.table_id && keptTableRow(table),
     foundation: fromTablesListing && table !== undefined && item.id === table.table_id && table.foundation === true,
     syncedFrom:
       fromTablesListing && table !== undefined && item.id === table.table_id ? syncedFromOf(table) : null,

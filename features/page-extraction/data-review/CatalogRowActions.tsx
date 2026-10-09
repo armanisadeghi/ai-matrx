@@ -8,10 +8,6 @@
 import { useState } from "react";
 import { Download, Loader2, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +35,7 @@ import {
   OpenDestinationDialog,
   type WindowOverlayDescriptor,
 } from "./OpenDestinationDialog";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type LoadedView = {
   name: string;
@@ -111,7 +108,7 @@ export function CatalogRowActions({
     try {
       const organizationId =
         target === "workbook"
-          ? await ensureOrganizationContext()
+          ? await ensureOrgId(null)
           : undefined;
       const view = await ensureView();
       if (!view) return;
@@ -137,11 +134,9 @@ export function CatalogRowActions({
         note: res.error,
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error("Could not create workbook", {
+      toast.error("Could not create workbook", {
           description: error instanceof Error ? error.message : String(error),
         });
-      }
     } finally {
       setBusy(false);
     }

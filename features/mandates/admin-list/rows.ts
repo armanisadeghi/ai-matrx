@@ -112,7 +112,7 @@ export function featureLabelOf(
 ): string {
   const { feature } = splitMandateKey(mandateKey);
   if (feature === "shortcut") return "Shortcuts";
-  if (feature === "app") return "Agent apps";
+  if (feature === "app") return "Applets";
   const top = prettySegment(feature);
   if (!sourceModule) return top;
   const parts = sourceModule.split(".");
@@ -356,6 +356,10 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       sources: null,
       sourcesPending: false,
       sourcesFailed: false,
+      // Filled from the page answer and the spend read (./service.ts).
+      models: null,
+      spendUsd: null,
+      spendPending: false,
     };
   });
 }

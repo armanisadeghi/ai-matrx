@@ -22,7 +22,8 @@ jest.mock("@/features/education/components/EducationToolHeader", () => ({
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: ({ title, message }: { title?: string; message?: string }) => (
     <div role="alert">
       {title} — {message}

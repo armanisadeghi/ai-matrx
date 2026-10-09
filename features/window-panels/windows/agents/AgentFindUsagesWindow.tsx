@@ -17,7 +17,6 @@ import { Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
@@ -26,6 +25,7 @@ import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsag
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentFindUsagesWindowProps {
   isOpen: boolean;
@@ -37,9 +37,7 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
   const [selectedId, setSelectedId] = useState<string | null>(agentId ?? null);
   const effectiveId = selectedId ?? agentId ?? null;
 
-  const agentName = useAppSelector((s: RootState) =>
-    effectiveId ? (selectAgentName(s, effectiveId) ?? null) : null,
-  );
+  const agentName = useAgentName(effectiveId) ?? null;
   const dispatch = useAppDispatch();
   const openAgentContentWindow = useOpenAgentContentWindow();
   const agentSection = buildAgentMenuSection({

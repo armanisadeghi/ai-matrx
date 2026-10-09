@@ -60,7 +60,7 @@ import type {
   MapTopicsRejectResult,
   MapTopicsRetireResult,
 } from "../../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export type TopicChangeKind = "retire" | "reject" | "move" | "merge" | "split";
 

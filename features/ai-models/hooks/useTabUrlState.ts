@@ -12,12 +12,15 @@ export type AiModelFilters = {
   is_deprecated?: boolean;
   is_primary?: boolean;
   is_premium?: boolean;
+  /** One-click views of the MAX cost tier (cost_rating 6, "5+"); URL `<tab>.tier`. */
+  tier?: TierView;
   context_window_min?: number;
   context_window_max?: number;
   max_tokens_min?: number;
   max_tokens_max?: number;
 };
 
+import { parseTierView, type TierView } from "../maxTier";
 import {
   parseModelQueryExtras,
   type ModelQueryExtras,
@@ -75,8 +78,13 @@ function parseNumberParam(val: string | null): number | undefined {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
-function parseDeprecatedFilterParam(raw: string | null): boolean | undefined {
-  if (raw === null) return DEFAULT_AI_MODEL_FILTERS.is_deprecated;
+function parseDeprecatedFilterParam(
+  raw: string | null,
+  tier?: TierView,
+): boolean | undefined {
+  // A tier view shows every model of that tier, retired included (the button writes
+  // is_deprecated=all); a hand-typed `<tab>.tier=max` must read the same way.
+  if (raw === null) return tier ? undefined : DEFAULT_AI_MODEL_FILTERS.is_deprecated;
   if (raw === "all") return undefined;
   return parseBoolean(raw);
 }
@@ -85,8 +93,14 @@ function serializeDeprecatedFilterParam(
   params: URLSearchParams,
   tabId: string,
   value: boolean | undefined,
+  tier?: TierView,
 ) {
   const key = `${tabId}.is_deprecated`;
+  // Under a tier view the absent key means "all", so the Active default must be written out.
+  if (tier && value === DEFAULT_AI_MODEL_FILTERS.is_deprecated) {
+    params.set(key, String(value));
+    return;
+  }
   if (value === DEFAULT_AI_MODEL_FILTERS.is_deprecated) {
     params.delete(key);
     return;
@@ -124,13 +138,15 @@ function serializeTabState(params: URLSearchParams, tab: TabState) {
   if (tab.filters.output_capability)
     params.set(`${p}.output`, tab.filters.output_capability);
   else params.delete(`${p}.output`);
-  serializeDeprecatedFilterParam(params, p, tab.filters.is_deprecated);
+  serializeDeprecatedFilterParam(params, p, tab.filters.is_deprecated, tab.filters.tier);
   if (tab.filters.is_primary !== undefined)
     params.set(`${p}.is_primary`, String(tab.filters.is_primary));
   else params.delete(`${p}.is_primary`);
   if (tab.filters.is_premium !== undefined)
     params.set(`${p}.is_premium`, String(tab.filters.is_premium));
   else params.delete(`${p}.is_premium`);
+  if (tab.filters.tier) params.set(`${p}.tier`, tab.filters.tier);
+  else params.delete(`${p}.tier`);
   if (tab.filters.context_window_min !== undefined)
     params.set(`${p}.cw_min`, String(tab.filters.context_window_min));
   else params.delete(`${p}.cw_min`);
@@ -147,6 +163,7 @@ function serializeTabState(params: URLSearchParams, tab: TabState) {
 
 function deserializeTabState(params: URLSearchParams, id: string): TabState {
   const p = id;
+  const tier = parseTierView(params.get(`${p}.tier`));
   return {
     id,
     tableQuery: parseModelQueryExtras(params.get(`${p}.tableQuery`)),
@@ -162,9 +179,11 @@ function deserializeTabState(params: URLSearchParams, id: string): TabState {
       output_capability: parseContentType(params.get(`${p}.output`)),
       is_deprecated: parseDeprecatedFilterParam(
         params.get(`${p}.is_deprecated`),
+        tier,
       ),
       is_primary: parseBoolean(params.get(`${p}.is_primary`)),
       is_premium: parseBoolean(params.get(`${p}.is_premium`)),
+      tier,
       context_window_min: parseNumberParam(params.get(`${p}.cw_min`)),
       context_window_max: parseNumberParam(params.get(`${p}.cw_max`)),
       max_tokens_min: parseNumberParam(params.get(`${p}.mt_min`)),
@@ -259,12 +278,15 @@ export function useTabUrlState() {
             params,
             newId,
             initialFilters.is_deprecated,
+            initialFilters.tier,
           );
         }
         if (initialFilters?.is_primary !== undefined)
           params.set(`${newId}.is_primary`, String(initialFilters.is_primary));
         if (initialFilters?.is_premium !== undefined)
           params.set(`${newId}.is_premium`, String(initialFilters.is_premium));
+        if (initialFilters?.tier)
+          params.set(`${newId}.tier`, initialFilters.tier);
         if (initialFilters?.context_window_min !== undefined)
           params.set(
             `${newId}.cw_min`,

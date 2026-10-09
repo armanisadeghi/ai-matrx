@@ -91,6 +91,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  */
 const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
   {
+    name: "kernel_follows_its_record",
+    why: "when a read-kernel function is created or replaced, re-records the kernel fingerprint in the same transaction (0 lost / 0 gained) or refuses the DDL by name",
+  },
+  {
+    name: "kernel_follows_its_drop",
+    why: "the same rule when a read-kernel function is dropped",
+  },
+  {
     name: "ddl_guard",
     why: "blocks reserved `visibility` column type, new project_id FKs, _mirror_fk_to_assoc, and (since 2026-08-21) hand-rolled entity tables",
   },
@@ -786,6 +794,31 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  // ── KERNEL FINGERPRINT LIVENESS (GRADUATE-1, 2026-10-07) ─────────────────────
+  // A stale recorded access-kernel fingerprint refuses every new entity table days after the
+  // change that moved it. The DDL guard (kernel_follows_its_record) normally re-records it in the
+  // same transaction; a mismatch here means that guard was bypassed or removed. Red within the hour.
+  let kernelStale = 0;
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: "select platform.kernel_fingerprint_status()::text as s",
+    });
+    if (error) throw new Error(error.message);
+    const row = unwrapRows(data)[0] as { s?: string } | undefined;
+    const status = JSON.parse(row?.s ?? "{}") as { matches?: boolean; live?: string; recorded?: string };
+    console.log("");
+    if (status.matches === true) {
+      console.log(`${TAG.ok}Access-kernel fingerprint matches live ${C.dim}(${status.live})${C.reset}`);
+    } else {
+      kernelStale = 1;
+      console.log(
+        `${TAG.fail}Access-kernel fingerprint is STALE — live ${status.live}, recorded ${status.recorded}. create_entity_table refuses until it is re-recorded (aidream scripts/check_db_guards.py names the moved member; scripts/_verify_entity_read_equivalence.py proves it).`,
+      );
+    }
+  } catch (err) {
+    console.log(`${TAG.warn}Access-kernel fingerprint: could not be read — ${String(err)}`);
+  }
+
   if (!missing.length && !disabled.length && !definerTriggers.length) {
     console.log("");
     console.log(
@@ -793,6 +826,7 @@ async function main(): Promise<number> {
     );
     if (trapUnmeasured.length) return 2;
     return (traps > 0 ||
+      kernelStale > 0 ||
       undeclaredExposures > 0 ||
       unprotected > 0 ||
       birthFindings > 0) &&

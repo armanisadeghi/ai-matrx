@@ -13,13 +13,16 @@ import { entityStore, memoryDataSource, stableId, type MemoryField, type MemoryO
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { PublishedDatabase, PublishedEntity } from "./published-databases";
+import { dayKeyInZone } from "@/lib/time/personTimeZone";
 
 function emptyWorld(organizationId: string): MemoryWorld {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   return {
     organization_id: organizationId,
     user_id: stableId("spaces-published-reader"),
-    timezone: "UTC",
-    today: new Date().toISOString().slice(0, 10),
+    // A signed-out visitor has no saved zone: their own device's day, never the UTC day.
+    timezone: zone,
+    today: dayKeyInZone(zone, new Date()),
     businessName: "",
     tables: [],
     tableById: new Map(),

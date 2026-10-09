@@ -45,6 +45,8 @@ jest.mock("@ai-matrx/records-ui", () => {
   return {
     RecordsMount: ({ children }: { children: React.ReactNode }) => R.createElement(R.Fragment, null, children),
     TablePage: () => null,
+    TablePageSkeleton: () => null,
+    skeletonLayoutFor: () => "grid",
     WhereItLives: () => null,
     personActor: () => ({ actor: "user" }),
     recordsDataSource: () => dataSource,

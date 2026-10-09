@@ -50,7 +50,7 @@ import {
   type VaultBackupRestorePreview,
   type VaultBackupRestoreResult,
 } from "../vault-backup-service";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { asClause } from "@ai-matrx/kit/text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { downloadFile } from "@ai-matrx/kit/download";

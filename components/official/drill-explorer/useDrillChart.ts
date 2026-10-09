@@ -10,6 +10,7 @@
 // the bars always add up to the total. Every ask carries the same lane, window and open view's
 // filters as the answer table's, so the chart and the table never disagree.
 
+import { drillFailureWords } from "./explorerWords";
 import { useEffect, useState } from "react";
 import type { DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
@@ -24,7 +25,7 @@ import {
   type MatrxDrillQuestion,
 } from "@ai-matrx/design-system/data-table";
 
-import { doorWindow, drillRowOf } from "./useDrillExplorer";
+import { doorWindow, drillRowOf, drillWindowKey } from "./useDrillExplorer";
 import type { DrillNameBook } from "./drillNames";
 import type { DrillCarried } from "./questionParts";
 
@@ -68,8 +69,7 @@ export function useDrillChart(args: {
     if (!client || !plan || plan.refused || plan.first.length === 0) return;
     let cancelled = false;
     const ask = async (request: MatrxDrillChartRequest): Promise<{ ok: true; rows: MatrxDrillChartRow[] } | { ok: false; message: string }> => {
-      const windowPart = doorWindow({ by: [], show: [], where: [], window: request.window }, windowAlign);
-      if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
+      const windowPart = doorWindow({ by: [], show: [], where: [], window: request.window }, { key: drillWindowKey(dimensions, carried), align: windowAlign });
       // THE VIEW'S THRESHOLDS PICK THE SPLIT'S SERIES (they are on groups — lane DRILL-FLIP-FIXES L1): asked on
       // the `series` request only, which also shows each Measure a threshold reads; the periods keep their
       // whole totals, so the groups a threshold leaves out are drawn in Other
@@ -87,7 +87,7 @@ export function useDrillChart(args: {
           ...(request.limit !== null ? { limit: request.limit } : {}),
         },
       });
-      if (!got.ok) return { ok: false, message: got.error.message || "The chart could not be counted." };
+      if (!got.ok) return { ok: false, message: drillFailureWords(got.error.message, "The chart could not be counted.") };
       // a series the answer does not list (a period's own top N) is named by the same book
       void book?.readRows(got.data!.rows.filter((row) => row.kind === "group"));
       return { ok: true, rows: got.data!.rows.map((row) => drillRowOf(row, countMeasure)) };

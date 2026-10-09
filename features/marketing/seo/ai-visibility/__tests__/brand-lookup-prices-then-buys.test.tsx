@@ -74,6 +74,9 @@ jest.mock("@ai-matrx/chat/host/server/python-client", () => ({
 import { BrandLookupView } from "../brand-lookup/BrandLookupView";
 import type { MarketingSite } from "@/features/marketing/types";
 
+// Platform cost reaches the screen in the viewer's unit (points); pin the rate.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 10000 }));
+
 const SITE = { id: "site-1", domain: "allgreenrecycling.com", organization_id: "org-1" } as MarketingSite;
 
 type Call = { tool_name: string; arguments: Record<string, unknown> };
@@ -176,8 +179,8 @@ it("opens with free probes that send only what differs from the site's defaults,
   );
   expect(sent.every((c) => c.tool_name === "seo_ai_visibility" && c.arguments.max_cost_usd === 0.0001)).toBe(true);
   expect(text()).toContain("No stored AI mentions to reuse");
-  expect(button("Run · $0.804")).toBeDefined();
-  expect(button("Run · $0.202")).toBeDefined();
+  expect(button("Run · 8,040 points")).toBeDefined();
+  expect(button("Run · 2,020 points")).toBeDefined();
 });
 
 it("renders a stored result free: counts per platform, No data for null, share of voice as counts with no %", async () => {
@@ -236,7 +239,7 @@ it("sends an edited competitor list explicitly, and only Run makes a paid call",
   });
   expect(calls().some((c) => c.arguments.max_cost_usd === undefined)).toBe(false);
 
-  await act(async () => { button("Run · $0.804")!.click(); });
+  await act(async () => { button("Run · 8,040 points")!.click(); });
   await settle();
   const paid = calls().filter((c) => c.arguments.max_cost_usd === undefined);
   expect(paid.map((c) => c.arguments)).toEqual([{ action: "brand_mentions", site_id: "site-1" }]);

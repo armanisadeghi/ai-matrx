@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";

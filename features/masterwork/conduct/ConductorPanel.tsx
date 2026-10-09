@@ -314,7 +314,7 @@ function ConductorColumn({
   // start." There are no variables below — the Rulebook rides in as named
   // variables the Expert never sees — so the one instruction on the page
   // pointed at something that does not exist, and nothing on the screen said
-  // what this conversation is FOR. Same mechanism the agent apps use.
+  // what this conversation is FOR. Same mechanism the Applets use.
   // No wait for the instance row: the slice keeps a write that arrives before
   // the row and replays it when the row lands (D326, fixed 2026-09-16). This
   // panel gated on the row's existence until then — the same local workaround

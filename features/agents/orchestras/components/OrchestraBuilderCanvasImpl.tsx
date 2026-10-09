@@ -40,7 +40,6 @@ import dagre from "dagre";
 import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   addAgentToOrchestra,
   removeAgentFromOrchestra,
@@ -67,6 +66,7 @@ import {
   type OrgChartTreeNode,
   type PlacedOrgNode,
 } from "@/components/official/org-chart/layout";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const ORCH_ID = "__conductor__";
 
@@ -104,7 +104,7 @@ function ConductorNode({ data }: NodeProps) {
   // below, so it's safe.
   const d = data as unknown as ConductorData;
   const a = accentClasses(d.accent);
-  const agent = useAppSelector((s) => selectAgentById(s, d.agentId));
+  const agent = useAgentView(d.agentId);
   return (
     <div
       className={cn(

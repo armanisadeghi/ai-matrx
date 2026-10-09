@@ -29,15 +29,12 @@ import { toast } from "@/lib/toast";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import {
-  ensureOrganizationForWrite,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
-import {
   currentAlchemySession,
   subscribeAlchemySession,
   type AlchemySessionRequest,
 } from "./alchemy-session";
 import { extractErrorMessage } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export function AlchemySessionPortal() {
   const request = React.useSyncExternalStore(
@@ -98,15 +95,13 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       void (async () => {
         try {
           // The person pressed to send: this IS the act, so the question is asked, never refused.
-          await ensureOrganizationForWrite(undefined, { interactive: true });
+          await ensureOrgId(null);
           for (let i = 0; i < 40 && !(capabilitiesRef.current.actions ?? []).length; i++) {
             await new Promise((r) => setTimeout(r, 50));
           }
           await new Promise((r) => setTimeout(r, 0));
         } catch (error) {
-          if (!isOrganizationSelectionCancelled(error)) {
-            toast.error("Choosing an organization did not work", { description: errorText(error) });
-          }
+          toast.error("Choosing an organization did not work", { description: errorText(error) });
         }
         openWorkspace();
       })();
@@ -129,9 +124,8 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       // destinations, which we wait for. Dismiss = nothing happened.
       if (!action && !hasWorkspace()) {
         try {
-          await ensureOrganizationForWrite();
+          await ensureOrgId(null);
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
           toast.error(`${intent.label} did not work`, { description: errorText(error) });
           return;
         }

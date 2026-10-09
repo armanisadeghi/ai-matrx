@@ -26,7 +26,7 @@ import {
   type OrgResourceEntry,
 } from "../resource-catalogue";
 import { useOrgContributableItems } from "../hooks/useOrgContributableItems";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface ContributeResourceSheetProps {
   open: boolean;

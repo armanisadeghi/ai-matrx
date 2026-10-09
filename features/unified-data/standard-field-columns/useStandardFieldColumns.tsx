@@ -31,6 +31,7 @@ import {
   displayCustomValue,
   keyOfColumnId,
   mergeFieldDefinitions,
+  optionsInDeclaredOrder,
   type StandardFieldColumn,
   type StandardFieldDefinition,
   type StandardFieldOption,
@@ -73,7 +74,7 @@ type AcrossAnswer =
   | {
       ok: true;
       data: {
-        fields: (Record<string, unknown> & { id: string; options?: Record<string, { label: string; retired?: boolean }> | null })[];
+        fields: (Record<string, unknown> & { id: string; options?: Record<string, { label: string; retired?: boolean; position?: number | null }> | null })[];
         unavailable: { organization_id?: string; reason?: string | null }[];
       };
     }
@@ -123,9 +124,7 @@ async function loadFields(
         if (field.options && typeof field.options === "object") {
           optionsByField.set(
             field.id,
-            Object.entries(field.options)
-              .filter(([, o]) => !o.retired)
-              .map(([key, o]) => ({ key, label: o.label })),
+            optionsInDeclaredOrder(field.options),
           );
         }
       }

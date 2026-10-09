@@ -7,7 +7,7 @@
 // what Cedar Ridge already had, the slots table the app keeps for the booking page, or anything that
 // appeared in a different organization at the same moment.
 //
-// RED ON A PLANT: drop the "before" check, the kept-by-the-app check, the organization check or the
+// RED ON A PLANT: drop the "before" check, the platform-owned check, the organization check or the
 // booking-is-also-a-form de-duplication in `madeSince` and a case below fails.
 
 import type { DataHomeItemRow, DataHomeTableRow } from "@/features/unified-data/hub/doors";
@@ -27,7 +27,7 @@ const table = (id: string, name: string, org = CEDAR, extra: Partial<DataHomeTab
   updated_at: "2026-10-02T21:00:00Z",
   mine: true,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   ...extra,
 });
@@ -80,7 +80,7 @@ describe("the describe box shows only what the sentence made", () => {
   it("never lists the slots table the app keeps for a booking page", () => {
     const made = madeSince(
       before,
-      { tables: [table("t-slots", "Book your first visit slots", CEDAR, { kept_by_the_app: true, kind: "booking" })], items: [] },
+      { tables: [table("t-slots", "Book your first visit slots", CEDAR, { platform_owned: true, kind: "booking" })], items: [] },
       CEDAR,
     );
     expect(made).toEqual([]);

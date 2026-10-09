@@ -45,7 +45,7 @@ import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
@@ -72,7 +72,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { ProjectTaskList } from "./ProjectTaskList";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 // Tasks + projects have their own surfaces; don't double-count them as "resources".

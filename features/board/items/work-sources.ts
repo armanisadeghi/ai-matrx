@@ -24,13 +24,45 @@ export function entityId(source: NodeSource): string | null {
  * conversation exists) or the conversation's own agent (after), so a reload
  * reopens it without a lookup.
  */
-export function chatSource(conversationId: string | null, agentId: string | null): EntitySource {
+export function chatSource(conversationId: string | null, agentId: string | null, list?: ChatListChoice | null): EntitySource {
+  const meta: Record<string, string> = {};
+  if (agentId) meta.agentId = agentId;
+  if (list) meta.list = list;
   return {
     kind: "entity",
     entity: "chat",
     id: conversationId,
-    ...(agentId ? { meta: { agentId } } : {}),
+    ...(Object.keys(meta).length ? { meta } : {}),
   };
+}
+
+// ── the chat tile's conversation list ────────────────────────────────────────
+//
+// A chat tile shows the board's conversations in a list beside the chat. Open or
+// closed is the person's choice, saved on the tile (`meta.list`); with no choice
+// it follows the tile's width — open when wide, behind a header toggle when narrow.
+
+export type ChatListChoice = "open" | "closed";
+
+/** Below this tile width (board px) the list starts closed. */
+export const CHAT_LIST_WIDE_PX = 560;
+
+export function chatListChoice(source: NodeSource): ChatListChoice | null {
+  if (!isEntity(source, "chat")) return null;
+  const v = source.meta?.list;
+  return v === "open" || v === "closed" ? v : null;
+}
+
+/** Is the list showing? The person's choice, else open on a wide tile. */
+export function chatListOpen(source: NodeSource, widthPx: number): boolean {
+  const choice = chatListChoice(source);
+  return choice ? choice === "open" : widthPx >= CHAT_LIST_WIDE_PX;
+}
+
+/** The same chat tile with the list's choice saved. */
+export function withChatList(source: NodeSource, list: ChatListChoice): NodeSource {
+  if (!isEntity(source, "chat")) return source;
+  return chatSource(source.id, chatAgentId(source), list);
 }
 
 /**
@@ -47,16 +79,41 @@ export function chatSourceToSave(input: {
   savedId: string | null;
   agentId: string | null;
   chosenAgentId: string | null;
+  /** The tile's saved list choice — carried through every save. */
+  list?: ChatListChoice | null;
 }): EntitySource | null {
   const agentId = input.agentId ?? input.chosenAgentId;
+  const list = input.list ?? null;
   if (!input.serverHasIt) {
     // The saved conversation itself, still being brought up: leave the tile alone.
     if (input.conversationId === input.savedId) return null;
     // A different, unsent conversation: forget the old id so a reload starts fresh.
-    if (input.savedId !== null) return chatSource(null, agentId);
-    return agentId && agentId !== input.chosenAgentId ? chatSource(null, agentId) : null;
+    if (input.savedId !== null) return chatSource(null, agentId, list);
+    return agentId && agentId !== input.chosenAgentId ? chatSource(null, agentId, list) : null;
   }
-  return input.conversationId !== input.savedId ? chatSource(input.conversationId, agentId) : null;
+  return input.conversationId !== input.savedId ? chatSource(input.conversationId, agentId, list) : null;
+}
+
+/** What a new chat tile is called until the server titles its conversation. */
+export const DEFAULT_CHAT_TITLE = "Chat";
+
+/**
+ * The tile title to save together with a changed chat source: the server's title for a
+ * conversation it has, else the default — an unsent chat (after "New conversation") must
+ * not keep the previous conversation's title. Undefined = leave the title as it is.
+ */
+export function chatTitleToSave(input: { serverHasIt: boolean; conversationTitle: string | null }): string | undefined {
+  if (!input.serverHasIt) return DEFAULT_CHAT_TITLE;
+  return input.conversationTitle?.trim() ? input.conversationTitle : undefined;
+}
+
+/**
+ * "Remove from this board" on the conversation the tile is showing: the tile must start a
+ * new conversation (default title, empty chat) rather than keep the removed one's title
+ * over a body the board no longer has. A row that is not the shown one changes nothing.
+ */
+export function removedChatResetsTile(removedConversationId: string, shownConversationId: string | null): boolean {
+  return shownConversationId !== null && removedConversationId === shownConversationId;
 }
 
 export function chatAgentId(source: NodeSource): string | null {

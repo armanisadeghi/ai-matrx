@@ -8,9 +8,11 @@ import {
   DATABASE_CHART_TYPES,
   DATABASE_OPEN_AS,
   DATABASE_VIEW_LAYOUTS,
+  BUTTON_ACTION_KINDS,
   RENDERED_BLOCK_TYPES,
   SCHEMA_ONLY_BLOCK_TYPES,
   SPACE_COLORS,
+  PAGE_PROPERTY_TYPES,
   type RichSpan,
   type SpaceBlock,
   type SpaceSnapshot,
@@ -63,6 +65,8 @@ const media: PropsCheck = (p) => {
   const has = Number(nonEmpty(p.fileId)) + Number(nonEmpty(p.url));
   if (has !== 1) return "needs exactly one of props.fileId (our file) or props.url";
   if (p.width !== undefined && typeof p.width !== "number") return "width must be a number of px";
+  if (p.height !== undefined && typeof p.height !== "number") return "height must be a number of px";
+  if (p.align !== undefined && !["left", "center", "right"].includes(String(p.align))) return "align must be left, center or right";
   if (p.name !== undefined && !str(p.name)) return "name must be text";
   if (p.caption !== undefined) return spansProblem(p.caption, "caption");
   return null;
@@ -75,12 +79,12 @@ const SPECS: BlockSpec[] = [
   {
     type: "heading",
     parity: "C2",
-    label: "Heading 1/2/3 (toggle heading when props.toggleable)",
+    label: "Heading 1/2/3/4 (toggle heading when props.toggleable)",
     rendered: true,
     text: "inline",
     children: "blocks",
     props: (p, b) => {
-      if (![1, 2, 3].includes(Number(p?.level)) || typeof p?.level !== "number") return "props.level must be 1, 2 or 3";
+      if (![1, 2, 3, 4].includes(Number(p?.level)) || typeof p?.level !== "number") return "props.level must be 1, 2, 3 or 4";
       if (p.toggleable !== undefined && typeof p.toggleable !== "boolean") return "props.toggleable must be true or false";
       return alignment(p, b);
     },
@@ -105,7 +109,7 @@ const SPECS: BlockSpec[] = [
     rendered: true,
     text: "inline",
     children: "blocks",
-    props: (p) => (p?.icon === undefined || str(p.icon) ? null : "props.icon must be a Lucide icon name or empty"),
+    props: (p) => (p?.icon === undefined || str(p.icon) ? null : "props.icon must be a Lucide icon name, an emoji, or empty"),
   },
   { type: "divider", parity: "C9", label: "Divider", rendered: true, text: "none", children: "none", props: ok },
   {
@@ -233,6 +237,32 @@ const SPECS: BlockSpec[] = [
   },
   { type: "tab", parity: "N1", label: "Tab (one named tab inside Tabs)", rendered: true, text: "inline", children: "blocks", props: ok },
   {
+    type: "synced",
+    parity: "C18",
+    label: "Synced block (its content is one source Space shared by every copy)",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => (nonEmpty(p?.sourceId) ? null : "needs props.sourceId (the synced source)"),
+  },
+  {
+    type: "button",
+    parity: "C19",
+    label: "Button",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => {
+      if (!str(p?.label)) return "props.label must be text";
+      if (p?.icon !== undefined && !str(p.icon)) return "props.icon must be a Lucide icon name";
+      if (!Array.isArray(p?.actions)) return "props.actions must be a list";
+      for (const [i, a] of (p.actions as unknown[]).entries()) {
+        if (!isObj(a) || !(BUTTON_ACTION_KINDS as readonly string[]).includes(String(a.kind))) return `actions[${i}].kind must be one of ${BUTTON_ACTION_KINDS.join(", ")}`;
+      }
+      return null;
+    },
+  },
+  {
     type: "slot",
     parity: "-",
     label: "Builder placeholder (phase-2 block marker)",
@@ -240,6 +270,20 @@ const SPECS: BlockSpec[] = [
     text: "none",
     children: "none",
     props: (p) => (str(p?.label) ? null : "props.label must be text"),
+  },
+  {
+    type: "ai",
+    parity: "C28",
+    label: "AI block (a prompt and the content it generated, in place)",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => {
+      if (typeof p?.prompt !== "string") return "props.prompt must be text";
+      if (p.output !== undefined && typeof p.output !== "string") return "props.output must be text (Markdown)";
+      if (p.ranAt !== undefined && typeof p.ranAt !== "string") return "props.ranAt must be an ISO time";
+      return null;
+    },
   },
 ];
 
@@ -273,7 +317,7 @@ function viewProblem(v: unknown): string | null {
   return null;
 }
 
-const SPAN_KEYS = new Set(["text", "bold", "italic", "underline", "strike", "code", "color", "background", "link", "mention", "equation"]);
+const SPAN_KEYS = new Set(["text", "bold", "italic", "underline", "strike", "code", "color", "background", "link", "mention", "equation", "suggestion"]);
 const COLOR_SET = new Set<string>(SPACE_COLORS);
 
 export function spanProblem(s: unknown): string | null {
@@ -286,6 +330,12 @@ export function spanProblem(s: unknown): string | null {
   for (const k of ["color", "background"]) if (s[k] !== undefined && !COLOR_SET.has(String(s[k]))) return `span.${k} is not a Space color`;
   if (s.link !== undefined && !nonEmpty(s.link)) return "span.link must be a URL";
   if (s.equation !== undefined && !str(s.equation)) return "span.equation must be text";
+  if (s.suggestion !== undefined) {
+    const g = s.suggestion;
+    if (!isObj(g) || !nonEmpty(g.id) || (g.kind !== "insert" && g.kind !== "delete") || !nonEmpty(g.by) || !nonEmpty(g.at)) {
+      return "span.suggestion must be { id, kind: insert|delete, by, at }";
+    }
+  }
   if (s.mention !== undefined) {
     const m = s.mention;
     if (!isObj(m)) return "span.mention must be an object";
@@ -348,9 +398,9 @@ export function validateBlocks(blocks: unknown, path = "blocks", seen: Set<strin
 
 function mediaProblem(m: unknown, where: string, allowOffset: boolean): string | null {
   if (m === null || m === undefined) return null;
-  if (!isObj(m)) return `${where} must be { fileId } | { url } | { icon } or null`;
-  const keys = ["fileId", "url", "icon"].filter((k) => nonEmpty(m[k]));
-  if (keys.length !== 1) return `${where} must name exactly one of fileId, url, icon`;
+  if (!isObj(m)) return `${where} must be { fileId } | { url } | { icon } | { emoji } or null`;
+  const keys = ["fileId", "url", "icon", "emoji"].filter((k) => nonEmpty(m[k]));
+  if (keys.length !== 1) return `${where} must name exactly one of fileId, url, icon, emoji`;
   if (allowOffset && m.offsetY !== undefined && typeof m.offsetY !== "number") return `${where}.offsetY must be a number`;
   return null;
 }
@@ -370,6 +420,15 @@ export function validateSnapshot(s: unknown): string[] {
   if (icon) out.push(icon);
   const cover = mediaProblem(s.cover, "cover", true);
   if (cover) out.push(cover);
+  if (s.properties !== undefined) {
+    if (!Array.isArray(s.properties)) out.push("properties must be a list");
+    else
+      for (const [i, prop] of (s.properties as unknown[]).entries()) {
+        if (!isObj(prop) || !nonEmpty(prop.id) || typeof prop.name !== "string") out.push(`properties[${i}] needs an id and a name`);
+        else if (!(PAGE_PROPERTY_TYPES as readonly string[]).includes(String(prop.type))) out.push(`properties[${i}].type must be one of ${PAGE_PROPERTY_TYPES.join(", ")}`);
+        else if (prop.value !== undefined && prop.value !== null && typeof prop.value !== "string" && typeof prop.value !== "number") out.push(`properties[${i}].value must be text, a number or empty`);
+      }
+  }
   out.push(...validateBlocks(s.blocks));
   return out;
 }

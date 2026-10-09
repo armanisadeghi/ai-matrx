@@ -5,7 +5,7 @@ import {
   RobotTapButton,
   ViewTapButton,
   ShieldCheckTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 

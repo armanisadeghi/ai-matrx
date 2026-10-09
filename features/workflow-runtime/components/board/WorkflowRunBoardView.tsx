@@ -46,10 +46,6 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { selectRequestCarriesKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -110,6 +106,7 @@ import {
   type RunStepPresentation,
 } from "../run/node-presentation";
 import { layoutWorkflowRunBoard, type RunBoardLayout } from "./run-board-layout";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** Down only takes a tile off this board — the step stays in its run. */
 const RUN_THROWS: Record<ThrowDirection, ThrowAction> = { ...DEFAULT_THROW_ACTIONS, down: "remove" };
@@ -311,7 +308,7 @@ function RunBoard({
       return;
     }
     try {
-      const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
+      const organizationId = await ensureOrgId(null);
       await NotesAPI.create({
         label: `${workflowName} — ${spec.title}`,
         content: `# ${spec.title}\n\n${text}`,
@@ -320,7 +317,6 @@ function RunBoard({
         organization_id: organizationId,
       });
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(
         `Could not save "${spec.title}" to Notes: ${err instanceof Error ? err.message : String(err)}`,
       );

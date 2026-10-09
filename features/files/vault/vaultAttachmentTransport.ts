@@ -8,7 +8,6 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import {
   buildMatrxRequestUrl,
@@ -16,6 +15,7 @@ import {
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -29,7 +29,7 @@ async function authorizationHeader(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Attaching or replacing a
   // Vault file with no organization selected asks, then continues this same
   // upload; a download read keeps the fail-closed refusal.
-  const organizationId = await ensureOrganizationForRequest({ method });
+  const organizationId = await ensureOrgId(null);
   const supabase = createClient();
   const {
     data: { session },

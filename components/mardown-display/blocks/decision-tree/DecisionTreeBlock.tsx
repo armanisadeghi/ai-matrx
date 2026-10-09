@@ -32,7 +32,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { decisionBranchesSideBySide } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 
@@ -120,13 +120,12 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        decisionTree.title.replace(/\s+/g, "-").toLowerCase() ||
-          "decision-tree",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = decisionTree.title.replace(/\s+/g, "-").toLowerCase() || "decision-tree";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "landscape" }), "application/pdf");
     } catch (err) {
       console.error("[DecisionTreeBlock] Print failed:", err);
     } finally {

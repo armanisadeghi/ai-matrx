@@ -57,10 +57,15 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   // An UNREAD catalogue, deliberately: the violation alert must stay silent
   // until the system agents are actually known. An empty list is "not loaded",
   // never "not a system agent".
   selectBuiltinAgents: () => [],
+}));
+jest.mock("@ai-matrx/chat/agents/identity/agent-catalog-lists", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/identity/agent-catalog-lists"),
+  useBuiltinAgents: () => [],
 }));
 
 jest.mock("@/features/agents/redux/builder-versions.thunks", () => ({

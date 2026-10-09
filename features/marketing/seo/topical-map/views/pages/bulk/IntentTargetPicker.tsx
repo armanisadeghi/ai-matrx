@@ -46,7 +46,7 @@ import { topicalMapErrorText } from "../../../errors";
 import { useMapTopicRows, useMapTopicSearch, usePageIntents } from "../../../hooks";
 import type { PagesWorkspaceContext } from "../seams";
 import type { BulkIntentDraft } from "./useBulkIntentFlow";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 /** A page search says nothing useful under two characters; it says so instead. */
 const PAGE_SEARCH_MIN_CHARS = 2;

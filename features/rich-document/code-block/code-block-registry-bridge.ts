@@ -6,7 +6,6 @@
 // in ONLY the registry + the answer-tools handler module — not the whole
 // document action set.
 
-import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
@@ -59,7 +58,7 @@ export function resolveCodeBlockMenuItems(
       category: "Answer tools",
       showToast: false,
       action: () => {
-        void holdDeliberateIntent(() => action.run(ctx)).catch((err: unknown) => {
+        void Promise.resolve().then(() => action.run(ctx)).catch((err: unknown) => {
           console.error(`[code-block] action ${String(action.id)} threw`, err);
         });
       },

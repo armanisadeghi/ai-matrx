@@ -23,7 +23,7 @@ jest.mock("@/features/shell/components/header/RouteHeader", () => ({
     <header data-route-header>{left}</header>
   ),
 }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   ChevronLeftTapButton: ({
     href,
     ariaLabel,

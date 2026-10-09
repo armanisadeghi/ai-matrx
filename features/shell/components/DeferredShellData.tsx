@@ -14,10 +14,8 @@ import {
   sanitizeLoadedPreferences,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
-import {
-  hydrateModels,
-  type AIModel,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModel } from "@ai-matrx/chat/agents/redux/model-registry";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 // smsSlice imported lazily — avoids pulling the full SMS feature into the shell bundle
 import { supabase } from "@/utils/supabase/client";
 import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";
@@ -162,14 +160,12 @@ export default function DeferredShellData() {
         // context-menu-v2 on 2026-07-19.
 
         if (shellData.ai_models.length > 0) {
-          dispatch(
-            hydrateModels({
-              models: shellData.ai_models as AIModel[],
-              fetchType: "options",
-              fetchScope: "active",
-              lastFetched: Date.now(),
-            }),
-          );
+          getModelRecords().hydrate({
+            models: shellData.ai_models as AIModel[],
+            fetchType: "options",
+            fetchScope: "active",
+            lastFetched: Date.now(),
+          });
         }
 
         if (shellData.sms_unread_total > 0) {

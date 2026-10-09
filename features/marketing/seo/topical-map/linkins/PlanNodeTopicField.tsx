@@ -30,7 +30,7 @@ import { topicalMapErrorText } from "../errors";
 import { useMapTopicRows } from "../hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const NONE = "__none__";
 

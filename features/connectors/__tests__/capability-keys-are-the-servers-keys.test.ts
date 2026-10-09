@@ -418,7 +418,7 @@ describe("every file type the server declares can be rendered", () => {
       expect(descriptor.label).not.toContain("_");
       // A type with no client read must SAY so; a blank detail is the dead end.
       if (descriptor.clientRead === null) {
-        expect(descriptor.readOnlyNote?.length ?? 0).toBeGreaterThan(20);
+        expect((descriptor as { readOnlyNote?: string }).readOnlyNote?.length ?? 0).toBeGreaterThan(20);
       }
       // And the door always exists, read or no read.
       expect(descriptor.hrefFor("1AbC")).toMatch(/^https:\/\//);

@@ -38,9 +38,9 @@ import {
 import { formatAbsoluteDate } from "@/features/files/utils/format";
 import type { ResourceType } from "@/features/files/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { useRead } from "@/components/read-state/useRead";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { useRead } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface ShareLinkDialogProps {

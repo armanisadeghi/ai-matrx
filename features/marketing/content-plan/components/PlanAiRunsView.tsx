@@ -25,7 +25,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
 import { planAiRunSummary } from "../format";
@@ -52,7 +52,7 @@ export function PlanAiRunsView({
   /** Open the page a per-page run was made for (THE DOOR LAW). */
   onOpenNode: (nodeId: string) => void;
 }) {
-  const { format: formatCostDisplay, unit } = useCostDisplay();
+  const { format: formatCostDisplay, unit, rate: costRate } = useCostDisplay();
   const money = (cost: number): string => (!cost ? "" : formatCostDisplay(cost));
   const runs = usePlanAiRuns(siteId);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function PlanAiRunsView({
                 size="icon"
                 label="AI runs"
                 human={() =>
-                  (runs.data ?? []).map((run) => planAiRunSummary(run, unit)).join("\n")
+                  (runs.data ?? []).map((run) => planAiRunSummary(run, costRate, unit)).join("\n")
                 }
                 json={() => runs.data ?? []}
                 agent={() => {
@@ -238,7 +238,7 @@ export function PlanAiRunsView({
                 <CopyButtons
                   size="xs"
                   label={`AI run — ${run.kindLabel}`}
-                  human={() => planAiRunSummary(run, unit)}
+                  human={() => planAiRunSummary(run, costRate, unit)}
                   json={() => (open && detail.data ? detail.data : run)}
                   agent={() => ({
                     kind: "plan_ai_run",
@@ -255,7 +255,7 @@ export function PlanAiRunsView({
                         ? undefined
                         : "This run is collapsed; open it to include the complete request and result.",
                     },
-                    summary: planAiRunSummary(run, unit),
+                    summary: planAiRunSummary(run, costRate, unit),
                     attributes: {
                       run_id: run.runId,
                       kind: run.kind,

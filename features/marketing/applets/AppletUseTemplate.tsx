@@ -5,8 +5,8 @@
 // A guest gets a link through sign-up that comes back here with ?use=1. A signed-in person gets the
 // data template's own install door (TemplatePreview: the organization it saves to — held until one is
 // set — the live progress and the landing); when the install lands, the Applet is copied into that
-// organization with its sources rebound, and "Open your app" goes to /apps/<slug>. An organization
-// that already has the data template gets "Add the app" over the install it has.
+// organization with its sources rebound, and "Open your Applet" goes to /applets/<slug>. An organization
+// that already has the data template gets "Add the Applet" over the install it has.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -22,9 +22,7 @@ import { useSignedIn } from "@/lib/scoped-config/useSignedIn";
 import { createClient } from "@/utils/supabase/client";
 
 import { copyAppletFromTemplate, type CopiedApplet } from "./copyAppletFromTemplate";
-import { appletOpenHref } from "./types";
-
-export const USE_ON_RETURN = "use";
+import { appletHref, USE_ON_RETURN } from "./types";
 
 type Copy = { phase: "idle" } | { phase: "copying" } | { phase: "done"; applet: CopiedApplet } | { phase: "failed"; why: string };
 
@@ -41,6 +39,7 @@ export function AppletUseTemplate({
 }) {
   const signedIn = useSignedIn();
   const params = useSearchParams();
+  // org-filter: write-target the copy lands in the organization the person chooses
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
   const [copy, setCopy] = useState<Copy>({ phase: "idle" });
@@ -57,6 +56,7 @@ export function AppletUseTemplate({
       .select("id, slug, name")
       .eq("metadata->from_template->>applet_id", appletId)
       .is("deleted_at", null);
+    // org-filter: write-target checks whether the destination organization already holds a copy
     if (organizationId) q = q.eq("organization_id", organizationId);
     void q
       .order("created_at", { ascending: false })
@@ -70,10 +70,11 @@ export function AppletUseTemplate({
     };
   }, [signedIn, organizationId, appletId, copy.phase]);
 
-  // Does the chosen organization already have the data template? Then the app is added over it.
+  // Does the chosen organization already have the data template? Then the Applet is added over it.
   useEffect(() => {
     if (!signedIn || !organizationId) return;
     let alive = true;
+    // org-filter: write-target checks whether the destination organization already has the template
     void createClient()
       .schema("custom")
       .rpc("templates", { p_filter: galleryFilter({}, { installedIn: organizationId, id: templateId }) })
@@ -129,16 +130,16 @@ export function AppletUseTemplate({
     <div className="flex flex-col gap-3" data-applet-template-install="">
       {copy.phase === "done" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-done={copy.applet.slug}>
-          <span className="text-sm font-medium">{copy.applet.existed ? "Your app is ready" : "Your app is added"}</span>
+          <span className="text-sm font-medium">{copy.applet.existed ? "Your Applet is ready" : "Your Applet is added"}</span>
           <Link
-            href={appletOpenHref(copy.applet.slug)}
+            href={appletHref(copy.applet.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open your app
+            Open your Applet
           </Link>
         </div>
       ) : null}
-      {copy.phase === "copying" ? <p className="text-sm text-muted-foreground">Adding the app to your organization…</p> : null}
+      {copy.phase === "copying" ? <p className="text-sm text-muted-foreground">Adding the Applet to your organization…</p> : null}
       {copy.phase === "failed" ? (
         <p className="text-sm text-destructive" role="alert" data-applet-template-failed="">
           {copy.why}
@@ -146,24 +147,25 @@ export function AppletUseTemplate({
       ) : null}
       {mine && copy.phase !== "done" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-have={mine.slug}>
-          <span className="text-sm font-medium">Your app is ready</span>
+          <span className="text-sm font-medium">Your Applet is ready</span>
           <Link
-            href={appletOpenHref(mine.slug)}
+            href={appletHref(mine.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open your app
+            Open your Applet
           </Link>
         </div>
       ) : null}
       {alreadyInstalled && !mine && copy.phase !== "done" ? (
         <Button variant="primary" onClick={() => void addOverInstall()} disabled={copy.phase === "copying"} className="self-start">
-          Add the app
+          Add the Applet
         </Button>
       ) : null}
       <TemplatePreview
         templateId={templateId}
         productName={appletName}
         bare
+        installLabel="Use this template"
         autoInstall={params.get(USE_ON_RETURN) === "1"}
         onInstalled={(answer, orgId) => void addApp(answer, orgId)}
       />

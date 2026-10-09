@@ -15,7 +15,7 @@ jest.mock("@/utils/supabase/client", () => {
 jest.mock("next/navigation", () => jest.requireActual("./remount-safety/next-navigation"));
 
 import { BOARD_ITEM_TYPES } from "../items/catalog";
-import { expectRemountSafe, runCycle, typeInto, type TileHandle } from "./remount-safety/harness";
+import { expectRemountSafe, richEditorIn, richTextOf, runCycle, typeInto, typeIntoRich, type TileHandle } from "./remount-safety/harness";
 import { installBrowserGaps } from "./remount-safety/browser-gaps";
 import {
   MEETING_ID,
@@ -49,7 +49,8 @@ const skeleton = (tile: TileHandle) => tile.container.querySelector('[aria-busy=
 
 // Break: the task editor rebuilds its description from the last saved copy on
 // remount (an unsaved edit lost), or re-reads the task on wake.
-const DESCRIPTION = `${taskRow.description} Confirm the October 9 slot with Luis.`;
+const APPENDED = " Confirm the October 9 slot with Luis.";
+const DESCRIPTION = `${taskRow.description}${APPENDED}`;
 remountType(
   "task",
   () =>
@@ -58,12 +59,12 @@ remountType(
       prepare: seedTask,
       loadMs: 800,
       act: async (tile) => {
-        const description = [...tile.container.querySelectorAll("textarea")].find((t) => t.value.startsWith("Book Rivera"));
+        const description = richEditorIn(tile.container);
         if (!description) throw new Error("the task's description field never rendered");
-        await typeInto(description, DESCRIPTION);
+        await typeIntoRich(description, [APPENDED]);
       },
       kept: (tile) => ({
-        description: [...tile.container.querySelectorAll("textarea")].find((t) => t.value.startsWith("Book Rivera"))?.value,
+        description: richTextOf(tile.container),
         title: (tile.container.querySelector('input[aria-label="Task title"]') as HTMLInputElement | null)?.value,
       }),
     }),

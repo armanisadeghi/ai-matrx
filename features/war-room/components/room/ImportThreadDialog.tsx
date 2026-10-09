@@ -13,7 +13,7 @@
 // no clones, no copies (`attachExistingThreadToRoom`).
 
 import { useEffect, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   ArrowRight,
   FolderInput,

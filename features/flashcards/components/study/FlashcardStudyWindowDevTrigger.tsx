@@ -1,6 +1,6 @@
 "use client";
 
-import { TriangleAlertTapButton } from "@ai-matrx/tap-target/buttons";
+import { TriangleAlertTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { useOpenFlashcardStudyWindow } from "@/features/overlays/openers/flashcardStudyWindow";

@@ -14,7 +14,7 @@
  * anything that slips past static analysis.
  */
 
-import { getActivePlaybackHolderId } from "@/features/audio/playback/playbackLock";
+import { getActivePlaybackHolderId } from "@ai-matrx/media/speech";
 
 let warnedContexts = new Set<string>();
 

@@ -13,12 +13,17 @@
 // one that is actually there and takes the text wins.
 
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
-import { blockBoundary, insertTextAtTextareaCursor } from "@/utils/text-insertion";
+import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
+import { blockBoundary } from "@ai-matrx/rich-editor/core/text-insertion";
 
 /**
  * `inline` goes exactly at the caret; `block` (a reference fence, a section)
- * goes on its own line — at the end of the caret's line, never inside a word
- * (G5 review, 2026-10-02: "of" became "o" + block + "f").
+ * goes on its own line, never inside a word (G5 review, 2026-10-02: "of" became
+ * "o" + block + "f") — BEFORE the caret's line only from its very start,
+ * AFTER it otherwise (G11B: a right-click at the start of a line goes above;
+ * G15, 2026-10-07: a character "first half" rule surprised wrapped
+ * paragraphs). The one rule is `blockBoundary(…, "nearest")`
+ * (@ai-matrx/rich-editor ≥ 0.3.1).
  */
 export type EditorInsertPlacement = "inline" | "block";
 
@@ -77,7 +82,7 @@ export function insertIntoEditor(
   if (field) {
     const took = attempt("textarea", () => {
       if (placement === "block" && field.selectionStart === field.selectionEnd) {
-        const at = blockBoundary(field.value, field.selectionStart, field.selectionEnd);
+        const at = blockBoundary(field.value, field.selectionStart, field.selectionEnd, "nearest");
         field.setSelectionRange(at, at);
       }
       return insertTextAtTextareaCursor(field, shaped.textarea(field), onTextReplace);
@@ -106,8 +111,8 @@ function attempt(target: EditorInsertTarget, insert: () => boolean): boolean {
 }
 
 /**
- * A collapsed caret inside a contentEditable text node moves to the end of its
- * line (the next newline in that node, or the node's end), so a block never
+ * A collapsed caret inside a contentEditable text node moves to an edge of its
+ * line (the start only from the very start, else the end), so a block never
  * lands inside a word. A selection is left alone: it is replaced where it is.
  */
 function moveEditorCaretToLineEnd(editorId: string): void {
@@ -119,7 +124,7 @@ function moveEditorCaretToLineEnd(editorId: string): void {
   const node = range.startContainer;
   if (node.nodeType !== Node.TEXT_NODE) return;
   const text = node.textContent ?? "";
-  const at = blockBoundary(text, range.startOffset, range.startOffset);
+  const at = blockBoundary(text, range.startOffset, range.startOffset, "nearest");
   const next = document.createRange();
   next.setStart(node, at);
   next.collapse(true);

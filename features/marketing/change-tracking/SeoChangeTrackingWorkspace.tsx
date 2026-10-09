@@ -92,7 +92,7 @@ import {
   type UntrackedSnapshotChange,
 } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 

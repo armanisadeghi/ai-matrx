@@ -12,7 +12,11 @@ const ADMIN_ROUTE_FAMILY_MOVES = [
     ["/administration/ai-models", "/administration/ai/ai-models"],
     ["/administration/ai-tasks", "/administration/ai/ai-tasks"],
     ["/administration/system-agents", "/administration/agents/system-agents"],
-    ["/administration/agent-apps", "/administration/agents/agent-apps"],
+    // Retired names (2026-10-07: "agent app" became "Applet"). The rename pass once turned this
+    // row into /administration/applets -> /administration/applets, a redirect to itself, and every
+    // /administration/applets/** page answered ERR_TOO_MANY_REDIRECTS.
+    ["/administration/agents/agent-apps", "/administration/applets"],
+    ["/administration/agent-apps", "/administration/applets"],
     ["/administration/skills", "/administration/agents/skills"],
     ["/administration/mcp-tools", "/administration/agents/mcp-tools"],
     ["/administration/mcp-servers", "/administration/agents/mcp-servers"],

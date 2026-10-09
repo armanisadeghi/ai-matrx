@@ -16,6 +16,7 @@
 // actionable wherever a layout puts it (top level, inside a fold, in a
 // filtered flat list).
 
+import { hasEditInPlaceTarget, openEditInPlaceFromLastInteraction } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { parseKeyCombo } from "../utils/key-combo";
 import type React from "react";
 import {
@@ -26,6 +27,7 @@ import {
   FolderOpen,
   Zap,
   Scissors,
+  Pencil,
   Copy,
   Clipboard,
   Type,
@@ -53,7 +55,6 @@ import {
   Headphones,
   AudioLines,
   RotateCcw,
-  type LucideIcon,
 } from "lucide-react";
 import type { IconComponentType } from "@ai-matrx/icons";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
@@ -88,6 +89,23 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface MenuNodeBase {
   id: string;
+}
+
+/**
+ * "Edit" for rendered content that edits in place (Arman, 2026-10-08: never a double-click — the
+ * Edit icon or this right-click row opens it; the caret lands where he right-clicked).
+ */
+function withEditInPlace(sections: MenuSection[]): MenuSection[] {
+  if (!hasEditInPlaceTarget()) return sections;
+  const edit: MenuItemNode = {
+    kind: "item",
+    id: "edit-in-place",
+    label: "Edit",
+    icon: Pencil,
+    iconClassName: "text-muted-foreground",
+    onSelect: () => void openEditInPlaceFromLastInteraction(),
+  };
+  return [{ id: "edit-in-place", group: "editable", nodes: [edit] }, ...sections];
 }
 
 export interface MenuItemNode extends MenuNodeBase {
@@ -196,8 +214,8 @@ export interface MenuSection {
   group: MenuGroup;
   /** Muted heading rendered above the section (surface sections). */
   label?: string;
-  /** Icon for the fold a layout may collapse this section into. */
-  icon?: LucideIcon;
+  /** Icon for the fold a layout may collapse this section into (any className-drawn icon, like nodes). */
+  icon?: IconComponentType;
   /** Classic rendering: no separator between this and the previous section. */
   joinPrevious?: boolean;
   /** The clicked target's section — see `ContextMenuExtraSection.primary`. */
@@ -1035,7 +1053,7 @@ export function buildMenuModel(
     recordSections.push(surfaceInfo);
     return {
       header,
-      sections: liftPrimarySections(recordSections),
+      sections: withEditInPlace(liftPrimarySections(recordSections)),
       roles: {
         copy, speak, listen: null, copyAs, json, cut, paste, selectAll, find, insertReference, chat,
         undo, redo, viewHistory, compare: null, exportMenu, convert, attach, linkRecord, share,
@@ -1065,7 +1083,7 @@ export function buildMenuModel(
   if (registry) sections.push({ id: "registry", group: "document", nodes: registry });
   sections.push(...extras["after-clipboard"]);
   sections.push({ id: "tools", group: "tools", nodes: [chat] });
-  // THE SECTION IS ITS TITLE (page-pass 2026-09-27, /agent-apps/[id]/run):
+  // THE SECTION IS ITS TITLE (page-pass 2026-09-27, /applets/manage/[id]/run):
   // "History" held Compare, Export, Convert, Attach To and Share. History keeps
   // what is history; the rest sit in sections of their own kind.
   sections.push({
@@ -1103,7 +1121,7 @@ export function buildMenuModel(
 
   return {
     header,
-    sections: liftPrimarySections(sections),
+    sections: withEditInPlace(liftPrimarySections(sections)),
     roles: {
       copy,
       speak,

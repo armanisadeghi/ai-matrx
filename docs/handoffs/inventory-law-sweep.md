@@ -858,7 +858,7 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
       instance), and answering it once should settle both.
 - [ ] Entities with **no** registry, by surface count: **file/folder** (4 rival
       vocabularies; `FileContextMenu.tsx` alone has 29 `DropdownMenuItem`s),
-      **task** (6 surfaces), agent shortcut (5+), agent app, agent set,
+      **task** (6 surfaces), agent shortcut (5+), Applet, agent set,
       schedule, project, document, podcast, artifact, image, agent template,
       surface.
 - [ ] **`messageActionRegistry` is forked three ways** — `features/agents/…/
@@ -1006,7 +1006,7 @@ Missing-entirely, ranked. **`/agents/all` and `/transcripts` rows are DONE** —
 both inherited right-click from the one `rowWrapper` seam on the canonical list
 shell (Wave 3), which is why converting a surface to `EntityListPage` is worth
 more than wiring its menu by hand. Remaining: `AgentListDropdown` · tasks list
-rows · scheduling · agent shortcuts · agent apps · agent sets · chat pinned
+rows · scheduling · agent shortcuts · Applets · agent sets · chat pinned
 agents · CRM rows.
 
 ---
@@ -1037,7 +1037,7 @@ this is nearly free: `AgentSneakPeekModal` (6 consumers; `AgentPeekWindow.tsx`
 already wraps this exact modal in a `WindowPanel` with 1 consumer) ·
 `AgentSettingsModal` (`agentSettingsWindow` exists; `SystemInstructionModal`
 already offers Dialog/Window side by side two files over) · `TaskDetails`
-(`taskEditorWindow` has 13 call sites) · `UserTableViewer` (`userTableWindow`
+(`taskEditorWindow` has 13 call sites) · the custom table page (`userTableWindow`
 exists). No twin yet: `AdvancedTranscriptViewer` (1278 LOC) ·
 `DocumentViewer` (RAG) · `FeedbackDetailDialog` (2648 LOC, the record's only door).
 

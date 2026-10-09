@@ -152,7 +152,8 @@ function baseRow(id: string, kind: string, title: string): TranscriptListRow {
     updated_at: "",
     is_owner: false,
     total_count: 0,
-  } as TranscriptListRow;
+    custom_fields: null,
+  };
 }
 
 /** A captured video's own facts (`metadata.media`, written by the YouTube lane). */

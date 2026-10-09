@@ -70,7 +70,8 @@ const DeferredSingletonCore = dynamic(
 
 export default function DeferredSingletonWrapper() {
   const [mounted, setMounted] = useState(false);
-  const ready = useIdleReady();
+  const idle = useIdleReady();
+  const ready = idle;
 
   // Error capture itself is installed at module scope above (pre-hydration).
   // Persistence stays here: it writes to Supabase and has nothing to gain from

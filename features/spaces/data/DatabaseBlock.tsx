@@ -11,9 +11,13 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, FormLookFrame, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField } from "@ai-matrx/records-ui";
+import type { PublicForm } from "@/features/forms/service";
+import { PublicFormRunner } from "@/app/(link)/f/[formId]/PublicFormRunner";
+import { spacesFormForAnswering } from "./form-actions";
+import { AutomationsPanel } from "./Automations";
 import type { RuleExpression } from "@ai-matrx/records";
-import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
+import { tableShapeChanged, useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
   ArrowUpRight,
@@ -40,7 +44,7 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -54,8 +58,12 @@ import { AutofillRows } from "./ai-autofill";
 import { designMarkdown } from "./designed-database";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice, NewButton } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
+import { DEFAULT_CHART } from "./first-reads";
+import { effectiveHidden, kindOf, scalarFilters, viewSpec, type ViewWithSummaries } from "./view-spec";
+import { BlockRecordsSeed } from "../page/space-seed-context";
 import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
+import { useStructureEdit } from "../page/structure";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 type Layout = SpaceViewLayout | "dashboard" | "form";
@@ -79,14 +87,6 @@ function viewIcon(view: SpaceDbView, size: number): ReactNode {
   const Icon = LAYOUTS.find((l) => l.id === view.layout)?.icon ?? Table2;
   return <Icon size={size} strokeWidth={1.8} />;
 }
-
-/** The field's parity type when the store sends it (the memory store does), else its behavior word. */
-function kindOf(f: Field): string {
-  const parity: unknown = (f as unknown as Record<string, unknown>)["parity_type"];
-  return typeof parity === "string" ? parity : String(f.type);
-}
-
-const DEFAULT_CHART: ChartSettings = { type: "donut", groupBy: null, op: "count", centerValue: true };
 
 export interface DatabaseBlockViewProps {
   blockId: string;
@@ -121,7 +121,9 @@ export function DatabaseBlock({ blockId, props: raw, onChange, editable }: Datab
         </div>
       )}
     >
-      <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} sample={props.sample === AGENCY_SAMPLE_ID} />
+      <BlockRecordsSeed>
+        <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} sample={props.sample === AGENCY_SAMPLE_ID} />
+      </BlockRecordsSeed>
     </DataMount>
   );
 }
@@ -143,6 +145,10 @@ function DatabaseFrame({
 }) {
   const client = useRecordsClient();
   const table = useTable(tableId);
+  // Structure (views, properties, layout, automations, saved filters) is Full access / Can edit only (Notion);
+  // a content editor adds and edits rows. The database enforces it; this only stops offering it.
+  const structure = useStructureEdit();
+  const shape = editable && structure;
   // On a page published to the web the rows are the page's own read-only copy: no automations, charts count rows.
   const published = usePublishedRows() !== null;
   const fields = useFields(tableId).data ?? [];
@@ -150,6 +156,8 @@ function DatabaseFrame({
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
   const [open, setOpen] = useState<string | null>(null);
+  /** The row "+ New" just made: its peek opens with the cursor in its title. */
+  const [fresh, setFresh] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion): it reaches the
@@ -177,8 +185,10 @@ function DatabaseFrame({
   // column, a read-only sample) falls back to the whole-record form, which says why.
   const addRow = () => {
     void client.recordWrite({ table_id: tableId, data: {} }).then((res) => {
-      if (res.ok) setOpen(res.data);
-      else if (sample) toast.info("The sample is read-only. Add your own table to add rows.");
+      if (res.ok) {
+        setFresh(res.data);
+        setOpen(res.data);
+      } else if (sample) toast.info("The sample is read-only. Add your own table to add rows.");
       else setCreating(true);
     });
   };
@@ -194,7 +204,8 @@ function DatabaseFrame({
       overRows={sample || published}
       sortOverride={sortOverride}
       search={search}
-      onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
+      shape={shape}
+      onSummaries={shape && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
       onFormId={(formId) => saveView({ formId })}
       onLook={saveView}
     />
@@ -205,7 +216,7 @@ function DatabaseFrame({
       {props.showTitle !== false && !isChart ? (
         <div className="spaces-db-title">
           {props.linked ? <ArrowUpRight size={14} strokeWidth={2} className="spaces-db-linked" /> : null}
-          {editable && !sample ? (
+          {shape && !sample ? (
             // Notion: the database's title is typed in place.
             <Input
               variant="bare"
@@ -215,7 +226,15 @@ function DatabaseFrame({
               className="spaces-db-title-input"
               onBlur={(e) => {
                 const next = e.target.value.trim();
-                if (next && next !== (props.title || sourceName)) save({ title: next });
+                if (!next || next === (props.title || sourceName)) return;
+                save({ title: next });
+                // Notion: an inline database's title IS the database's name (relation pickers, search, the sidebar).
+                // A linked view keeps a title of its own.
+                if (!props.linked && next !== table.data?.name)
+                  void client.recordUpdate({ record_id: tableId, patch: { name: next, label_singular: next, label_plural: next } }).then((renamed) => {
+                    if (renamed.ok) tableShapeChanged(tableId);
+                    else toast.error(`Database not renamed: ${renamed.error.message}`);
+                  });
               }}
               onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
             />
@@ -235,7 +254,7 @@ function DatabaseFrame({
                 icon={viewIcon(v, isChart ? 16 : 14)}
                 active={v.id === active.id}
                 pill={isChart}
-                editable={editable}
+                editable={shape}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
                 onDuplicate={() => {
@@ -253,8 +272,8 @@ function DatabaseFrame({
               />
             );
           })}
-          {isChart ? (
-            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
+          {isChart && shape ? (
+            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={shape} compact />
           ) : null}
           {isChart ? (
             // Notion's chart view keeps its view's filter and sort: the tile counts and orders what they show.
@@ -264,7 +283,7 @@ function DatabaseFrame({
                 fields={fields}
                 choice={filterChoices[active.id]}
                 onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-                canSave={editable}
+                canSave={shape}
                 onSave={(filters) => saveView({ filters })}
               />
               <ViewerSortButton
@@ -272,13 +291,13 @@ function DatabaseFrame({
                 fields={fields}
                 choice={sortChoices[active.id]}
                 onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-                canSave={editable}
+                canSave={shape}
                 onSave={(sorts) => saveView({ sorts })}
                 icon={<ArrowDownUp size={14} strokeWidth={1.8} />}
               />
             </span>
           ) : null}
-          {editable && !isChart ? (
+          {shape && !isChart ? (
             <Button variant="quiet" icon={<Plus size={14} />} aria-label="Add view" onClick={() => {
                 const v: SpaceDbView = { id: newViewId(), name: "Table", layout: "grid" };
                 save({ views: [...views, v], activeViewId: v.id });
@@ -292,20 +311,20 @@ function DatabaseFrame({
               fields={fields}
               choice={filterChoices[active.id]}
               onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-              canSave={editable}
+              canSave={shape}
               onSave={(filters) => saveView({ filters })}
-              onSaveWhere={editable && !sample && !published ? (where) => saveView({ where }) : undefined}
+              onSaveWhere={shape && !sample && !published ? (where) => saveView({ where }) : undefined}
             />
             <ViewerSortButton
               view={active}
               fields={fields}
               choice={sortChoices[active.id]}
               onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-              canSave={editable}
+              canSave={shape}
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
-            {published ? null : <AutomationsButton tableId={tableId} sample={sample} />}
+            {published || !shape ? null : <AutomationsButton tableId={tableId} sample={sample} fields={fields} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} />}
             {/* Notion's magnifier sits in this icon row and opens in place (records-ui's own box is hidden by spaces.css). */}
             {searchOpen[active.id] || search.value ? (
               <div className="spaces-db-search">
@@ -343,14 +362,14 @@ function DatabaseFrame({
               <Button variant="quiet" icon={<Search size={15} strokeWidth={1.8} />} aria-label="Search" title="Search" onClick={() => setSearchOpen((all) => ({ ...all, [active.id]: true }))} />
             )}
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
-            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
+            {shape ? <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={shape} /> : null}
             {published ? null : <NewButton onNew={addRow} />}
           </div>
         ) : null}
       </div>
       {body}
 
-      {open ? <RecordOpen tableId={tableId} recordId={open} as={props.openAs ?? "side"} onClose={() => setOpen(null)} /> : null}
+      {open ? <RecordOpen tableId={tableId} recordId={open} as={props.openAs ?? "side"} fresh={open === fresh} onClose={() => setOpen(null)} /> : null}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent size="lg">
@@ -362,52 +381,11 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} onLook={saveView} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} shape={shape} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={shape && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} onLook={saveView} />
         </DialogContent>
       </Dialog>
     </div>
   );
-}
-
-/** A custom table's view filter: its "is" filters (lists are a built-in source's "any of"). */
-function scalarFilters(f: SpaceDbView["filters"]): Record<string, string | number | boolean | null> {
-  const out: Record<string, string | number | boolean | null> = {};
-  for (const [k, v] of Object.entries(f ?? {})) if (!Array.isArray(v)) out[k] = v;
-  return out;
-}
-
-/** Notion's default date is "Full date" (January 1, 2026): every date column of an inline grid. */
-function longDates(fields: Field[]): Record<string, { id: "date"; options: { dateStyle: "long" } }> {
-  const out: Record<string, { id: "date"; options: { dateStyle: "long" } }> = {};
-  for (const f of fields) if (kindOf(f) === "date" || kindOf(f) === "datetime") out[f.key] = { id: "date", options: { dateStyle: "long" } };
-  return out;
-}
-
-/**
- * N6 — the calculation row: the footer measure each column shows (Count all, Sum, Average…), picked on
- * the table's own footer and saved with the block's view (`summaries`, a key the stored view carries
- * through; records-ui's summary bar draws and computes it).
- */
-type ViewWithSummaries = SpaceDbView & { summaries?: Record<string, string> };
-
-function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []): SavedViewSpec {
-  const layout = view.layout === "chart" ? "grid" : view.layout;
-  const formats = longDates(fields);
-  const hasFormats = Object.keys(formats).length > 0;
-  return {
-    name: view.name,
-    subject: tableId,
-    layout,
-    groupField: view.groupField ?? null,
-    dateField: view.dateField ?? null,
-    startField: view.dateField ?? null,
-    sorts: view.sorts ?? [],
-    filters: scalarFilters(view.filters),
-    ...(view.where ? { where: view.where as unknown as RuleExpression } : {}),
-    // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
-    // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
-    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}) },
-  };
 }
 
 function DatabaseBody({
@@ -416,6 +394,7 @@ function DatabaseBody({
   fields,
   onOpenRecord,
   editable,
+  shape,
   sample,
   overRows,
   sortOverride,
@@ -429,6 +408,8 @@ function DatabaseBody({
   fields: Field[];
   onOpenRecord: (id: string) => void;
   editable: boolean;
+  /** Full access / Can edit: the Form view's builder (a content editor, commenter or viewer answers it). */
+  shape: boolean;
   sample: boolean;
   /** The store has no aggregate door (the sample, a published page): charts count read rows. */
   overRows: boolean;
@@ -448,11 +429,12 @@ function DatabaseBody({
     return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={overRows} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
-  if ((view.layout as Layout) === "form") return <FormViewBody tableId={tableId} view={view} editable={editable && !overRows} onFormId={onFormId} />;
+  if ((view.layout as Layout) === "form") return <FormViewBody tableId={tableId} view={view} editable={shape && !overRows} onFormId={onFormId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
-  const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
+  // Notion: a calendar reads any date property, Created time and Last edited time included.
+  const date = needsDate ? (fields.find((f) => ["datetime", "date"].includes(kindOf(f))) ?? fields.find((f) => ["created_time", "modified_time"].includes(kindOf(f))))?.key : undefined;
   const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null }, fields);
   // Notion's inline database: records-ui's embedded grid (no tick-boxes, Actions column or pager; one-line
   // rows; its own "New page" line, which writes the row in place). The magnifier is this block's own, in
@@ -468,6 +450,7 @@ function DatabaseBody({
         searchOverride={search.value || null}
         onSearchChange={search.onChange}
         searchBox={false}
+        hideRefusedRowActions
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
         onViewChange={
@@ -481,6 +464,9 @@ function DatabaseBody({
                 const look: Partial<SpaceDbView> = {};
                 if (widths && JSON.stringify(widths) !== JSON.stringify(view.widths ?? {})) look.widths = widths;
                 if (columnOrder && JSON.stringify(columnOrder) !== JSON.stringify(view.columnOrder ?? [])) look.columnOrder = columnOrder;
+                // N5 "Wrap column": present means these columns wrap; absent from a look patch means none do.
+                const wrapColumns = patch.presentation ? (patch.presentation.wrapColumns ?? []) : undefined;
+                if (wrapColumns && JSON.stringify(wrapColumns) !== JSON.stringify(view.wrapColumns ?? [])) look.wrapColumns = wrapColumns;
                 if (Object.keys(look).length) onLook(look);
               }
             : undefined
@@ -495,7 +481,7 @@ function DatabaseBody({
  * over this table, and the table's own page for the rest. The in-memory sample has no store to keep a
  * rule in, and says so.
  */
-function AutomationsButton({ tableId, sample }: { tableId: string; sample: boolean }) {
+function AutomationsButton({ tableId, sample, fields, organizationId }: { tableId: string; sample: boolean; fields: Field[]; organizationId: string | null }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -506,6 +492,7 @@ function AutomationsButton({ tableId, sample }: { tableId: string; sample: boole
           <p className="type-secondary text-muted-foreground">This preview keeps no automations.</p>
         ) : (
           <div className="flex flex-col gap-2">
+            <AutomationsPanel tableId={tableId} organizationId={organizationId} fields={fields} />
             <NotifyRuleEditor tableId={tableId} />
             <a className="type-secondary text-muted-foreground underline-offset-2 hover:underline" href={`/data/${tableId}?rail=notifications`}>
               Open the table’s automations
@@ -525,7 +512,7 @@ function AutomationsButton({ tableId, sample }: { tableId: string; sample: boole
  * An answer is a row of this table. The view keeps its form; the first open makes one.
  */
 function FormViewBody({ tableId, view, editable, onFormId }: { tableId: string; view: SpaceDbView; editable: boolean; onFormId: (formId: string) => void }) {
-  if (!editable) return <div className="spaces-db-note">Only editors can change this form.</div>;
+  if (!editable) return <FormToAnswer formId={view.formId ?? null} />;
   return (
     <div className="spaces-db-body spaces-db-form">
       <FormBuilder
@@ -536,6 +523,35 @@ function FormViewBody({ tableId, view, editable, onFormId }: { tableId: string; 
           if (form.id && form.id !== view.formId) onFormId(String(form.id));
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * N8 — Notion: anyone who can open the page fills in the form. The form is the forms system's public
+ * form (same door and same rule as its `/f/<id>` link); an answer is a row of this table.
+ */
+function FormToAnswer({ formId }: { formId: string | null }) {
+  const [form, setForm] = useState<PublicForm | null | undefined>(formId ? undefined : null);
+  useEffect(() => {
+    if (!formId) return;
+    let live = true;
+    void spacesFormForAnswering(formId).then(
+      (got) => live && setForm(got),
+      () => live && setForm(null),
+    );
+    return () => {
+      live = false;
+    };
+  }, [formId]);
+  if (form === undefined) return <div className="spaces-db-body spaces-db-form" aria-busy="true" />;
+  if (!form) return <div className="spaces-db-note">This form is not open for answers.</div>;
+  if (form.state !== "open") return <div className="spaces-db-note">{form.message || "This form is closed."}</div>;
+  return (
+    <div className="spaces-db-body spaces-db-form" data-testid="spaces-form-answer">
+      <FormLookFrame look={null} title={form.title}>
+        <PublicFormRunner form={form} />
+      </FormLookFrame>
     </div>
   );
 }
@@ -723,6 +739,7 @@ function ViewSettings({
   const canShape = editable && !sample;
   const designer = useDatabaseDesigner();
   const client = useRecordsClient();
+  const table = useTable(tableId);
   const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props" | "newprop">("main");
   const chart = { ...DEFAULT_CHART, ...view.chart };
   const setChart = (p: Partial<ChartSettings>) => onView({ chart: { ...chart, ...p } });
@@ -760,7 +777,7 @@ function ViewSettings({
               </div>
             ) : null}
             <MenuRow icon={<Table2 size={15} />} label="Layout" end={<span className="type-secondary text-muted-foreground">{LAYOUTS.find((l) => l.id === view.layout)?.label}</span>} onClick={() => editable && setPage("layout")} />
-            <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - (view.hiddenFields ?? []).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} />
+            <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - effectiveHidden(view, fields).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} />
             {view.layout === "kanban" ? <MenuRow icon={<Kanban size={15} />} label="Group" end={<span className="type-secondary text-muted-foreground">{label(view.groupField)}</span>} onClick={() => editable && setPage("group")} /> : null}
             {view.layout === "chart" ? (
               <>
@@ -800,7 +817,7 @@ function ViewSettings({
                 ))}
                 <MenuRow icon={<Database size={15} />} label="Show database title" end={<Switch checked={props.showTitle !== false} tabIndex={-1} aria-hidden />} onClick={() => editable && onBlock({ showTitle: props.showTitle === false })} />
                 {canShape ? (
-                  <AutofillRows tableId={tableId} databaseName={props.title ?? "Database"} fields={fields} aiFields={props.aiFields ?? []} client={client} onAiFields={(aiFields) => onBlock({ aiFields })} />
+                  <AutofillRows tableId={tableId} databaseName={props.title ?? "Database"} fields={fields} aiFields={props.aiFields ?? []} client={client} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} onAiFields={(aiFields) => onBlock({ aiFields })} />
                 ) : null}
                 {canShape && designer.wired ? (
                   <MenuRow
@@ -834,13 +851,14 @@ function ViewSettings({
         {page === "props" ? (
           <>
             {fields.map((f) => {
-              const hidden = (view.hiddenFields ?? []).includes(f.key);
+              const hiddenNow = effectiveHidden(view, fields);
+              const hidden = hiddenNow.includes(f.key);
               return (
                 <div key={f.key} className="flex items-center">
                   <MenuRow
                     label={f.label}
                     end={<Switch checked={!hidden} tabIndex={-1} aria-hidden />}
-                    onClick={() => editable && onView({ hiddenFields: hidden ? (view.hiddenFields ?? []).filter((k) => k !== f.key) : [...(view.hiddenFields ?? []), f.key] })}
+                    onClick={() => editable && onView({ hiddenFields: hidden ? hiddenNow.filter((k) => k !== f.key) : [...hiddenNow, f.key] })}
                   />
                   {canShape ? <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit property ${f.label}`} title="Edit property" onClick={() => setEditing(f)} /> : null}
                 </div>
@@ -861,10 +879,10 @@ function ViewSettings({
   );
 }
 
-function RecordOpen({ tableId, recordId, as, onClose }: { tableId: string; recordId: string; as: "side" | "center" | "page"; onClose: () => void }) {
+function RecordOpen({ tableId, recordId, as, fresh, onClose }: { tableId: string; recordId: string; as: "side" | "center" | "page"; fresh: boolean; onClose: () => void }) {
   if (as === "side") {
     return (
-      <SidePeek onClose={onClose}>
+      <SidePeek onClose={onClose} focusFirstField={fresh}>
         <Peek tableId={tableId} recordId={recordId} onClose={onClose} />
       </SidePeek>
     );

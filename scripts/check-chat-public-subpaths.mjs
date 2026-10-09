@@ -21,6 +21,10 @@
  *   EXTENSION  the specifier carries a file extension
  *   DIRECTORY  names a directory — name the module (`…/index`)
  *   MISSING    names no module in packages/chat/src
+ *   NOT_EXPORTED  names a real module the package does NOT export — the exports map is EXPLICIT
+ *              (no wildcards; scripts/public-modules.json). Remedy: reach it through a stable subpath,
+ *              or, if the app legitimately needs it, run
+ *              `node ../aidream/apps/shared/chat/scripts/sync-public-surface.mjs --write`, commit and publish chat first
  *   TEST_PATH  a runtime file reaches a package test/fixture path
  *
  * A TEST file reaching a package test helper or fixture is allowed and counted
@@ -61,7 +65,11 @@ function chatPackageDir(root) {
 
 async function surface(root) {
   const mod = await import(pathToFileURL(path.join(chatPackageDir(root), "scripts/public-surface.mjs")).href);
-  return { domains: new Set(mod.PUBLIC_DOMAINS), named: new Set(Object.keys(mod.NAMED_ENTRIES).map((k) => k.slice(2))) };
+  return {
+    domains: new Set(mod.PUBLIC_DOMAINS),
+    named: new Set(Object.keys(mod.NAMED_ENTRIES).map((k) => k.slice(2))),
+    modules: new Set(mod.PUBLIC_MODULES),
+  };
 }
 
 function listFiles(root) {
@@ -80,7 +88,7 @@ function listFiles(root) {
 }
 
 /** One verdict for one specifier: null (public), "TEST_REACH", or a violation code. */
-export function judgeSpec(spec, importerRel, root, { domains, named }) {
+export function judgeSpec(spec, importerRel, root, { domains, named, modules }) {
   if (spec === SELF) return "ROOT";
   const sub = spec.slice(SELF.length + 1);
   if (named.has(sub)) return null;
@@ -93,7 +101,10 @@ export function judgeSpec(spec, importerRel, root, { domains, named }) {
   const base = path.join(chatPackageDir(root), "src", sub);
   // `a.slice` / `x.types` are module NAMES; `.json` / `.ts` / `.js` are extensions.
   if (/\.(json|[cm]?[jt]sx?|css|md)$/.test(sub)) return isTestPath ? "TEST_REACH" : "EXTENSION";
-  if (fs.existsSync(`${base}.ts`) || fs.existsSync(`${base}.tsx`)) return isTestPath ? "TEST_REACH" : null;
+  if (fs.existsSync(`${base}.ts`) || fs.existsSync(`${base}.tsx`)) {
+    if (isTestPath) return "TEST_REACH";
+    return modules.has(sub) ? null : "NOT_EXPORTED";
+  }
   if (fs.existsSync(path.join(base, "index.ts")) || fs.existsSync(path.join(base, "index.tsx"))) return "DIRECTORY";
   return "MISSING";
 }
@@ -137,6 +148,7 @@ const REMEDY = {
   EXTENSION: "drop the file extension",
   DIRECTORY: "name the module: append `/index`",
   MISSING: "no such module in packages/chat/src",
+  NOT_EXPORTED: "a real module the package does not export (the exports map is explicit) — use a stable subpath, or add it: node ../aidream/apps/shared/chat/scripts/sync-public-surface.mjs --write, commit + publish chat first",
   TEST_PATH: "a package test/fixture path is reachable from tests only",
 };
 
@@ -156,7 +168,11 @@ async function selfTest() {
   const w = (rel, body) => { fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true }); fs.writeFileSync(path.join(root, rel), body); };
   fs.mkdirSync(path.join(root, "packages/chat/scripts"), { recursive: true });
   fs.copyFileSync(path.join(chatPackageDir(REPO), "scripts/public-surface.mjs"), path.join(root, "packages/chat/scripts/public-surface.mjs"));
+  fs.copyFileSync(path.join(chatPackageDir(REPO), "scripts/public-modules.json"), path.join(root, "packages/chat/scripts/public-modules.json"));
+  // the fixture package exports exactly these (the real list is replaced so the cases are deterministic)
+  fs.writeFileSync(path.join(root, "packages/chat/scripts/public-modules.json"), JSON.stringify(["agents/redux/a.slice", "agents/run/index", "testing/fake-db"]));
   w("packages/chat/src/host/index.ts", "export {};");
+  w("packages/chat/src/agents/redux/b.internal.ts", "export {};");
   w("packages/chat/src/agents/redux/a.slice.ts", "export {};");
   w("packages/chat/src/agents/run/index.ts", "export {};");
   w("packages/chat/src/testing/fake-db.ts", "export {};");
@@ -167,6 +183,7 @@ async function selfTest() {
     ["features/domain.ts", `const m = await import("@ai-matrx/chat/nope/x");`, ["DOMAIN"]],
     ["features/ext.ts", `import x from "@ai-matrx/chat/agents/redux/a.slice.ts";`, ["EXTENSION"]],
     ["features/dir.ts", `jest.mock("@ai-matrx/chat/agents/run");`, ["DIRECTORY"]],
+    ["features/not-exported.ts", `import { b } from "@ai-matrx/chat/agents/redux/b.internal";`, ["NOT_EXPORTED"]],
     ["features/missing.ts", `export type T = import("@ai-matrx/chat/agents/gone").T;`, ["MISSING"]],
     ["features/runtime-test-path.ts", `import { fake } from "@ai-matrx/chat/testing/fake-db";`, ["TEST_PATH"]],
     ["features/__tests__/ok-test-reach.test.ts", `import { fake } from "@ai-matrx/chat/testing/fake-db";`, []],

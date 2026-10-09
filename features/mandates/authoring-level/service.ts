@@ -19,7 +19,6 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import { parseCallApiError } from "@/lib/api/errors";
 import { OrganizationContextError } from "@/lib/api/organization-context";
-import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
@@ -90,9 +89,6 @@ export async function createSoftMandate(
       ...(home ? { scopeOverrides: { organization_id: home } } : {}),
     }),
   );
-  // The organization gate's two answers keep their identity, so the page can tell "not now"
-  // (nothing happened) and "no organization" (say so, with the remedy) from a server refusal.
-  if (result.error?.code === "organization_selection_cancelled") throw new OrganizationSelectionCancelled();
   if (result.error?.code === "organization_context_required")
     throw new OrganizationContextError("organization_context_required", result.error.message);
   // The BackendApiError itself (its message IS the server's user message), so a

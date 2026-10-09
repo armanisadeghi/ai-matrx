@@ -21,7 +21,7 @@ import {
   ConfigurationTable,
   ConfigurationTableRow,
   PropertyRow,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

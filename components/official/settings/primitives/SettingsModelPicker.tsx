@@ -1,5 +1,6 @@
 "use client";
 
+import { useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
@@ -89,7 +90,7 @@ export function SettingsModelPicker({
     (state: RootState) => state.userPreferences.aiModels.inactiveModels,
   );
   // Catalog-resolved platform default (is_primary), for the null-option label.
-  const platformDefaultName = useSelector(
+  const platformDefaultName = useModelRecords(
     defaultModality === "image"
       ? selectPlatformDefaultImageModelName
       : selectPlatformDefaultTextModelName,

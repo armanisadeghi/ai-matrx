@@ -22,9 +22,10 @@ export interface SaveCadence {
 const DEBOUNCE_KNOB = { feature: "spaces.collab", key: "snapshot_debounce_ms" } as const;
 const MAX_WAIT_KNOB = { feature: "spaces.collab", key: "snapshot_max_wait_ms" } as const;
 
-async function readCadence(spaceId: string, userId: string): Promise<SaveCadence> {
+async function readCadence(spaceId: string, userId: string, knownOrg?: string): Promise<SaveCadence> {
   // The page's own organization: its override governs every member's host, whoever's active org it is.
-  const org = await pageOrganizationId(spaceId).catch(() => null);
+  // Round 40: the page read already carries it (SpaceDoc.organizationId); asked only when it does not.
+  const org = knownOrg ?? (await pageOrganizationId(spaceId).catch(() => null));
   const read = (o: string | null) => Promise.all([ensureEffectiveKnob(o, userId, DEBOUNCE_KNOB), ensureEffectiveKnob(o, userId, MAX_WAIT_KNOB)]);
   // A person the page is shared with from outside its organization cannot read that organization's
   // settings (knob_snapshot refuses a non-member): they get the platform value and their own override.
@@ -102,7 +103,7 @@ export function useSpaceCollab(args: {
         setSession(s);
         elect.current();
       });
-    void readCadence(spaceId, userId).then(
+    void readCadence(spaceId, userId, snapshot.organizationId).then(
       (c) => {
         trace({ ev: "cadence", ...c });
         if (live) setCadence(c);
@@ -134,8 +135,11 @@ export function useSpaceCollab(args: {
 
   // Offline (Notion's indicator); when the connection comes back the provider catches up by itself and
   // the election runs again.
-  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  // Online until the browser says otherwise: the server render (where Node's `navigator` has no `onLine`)
+  // and the hydrating pass must draw the same top bar (round 34).
+  const [online, setOnline] = useState(true);
   useEffect(() => {
+    if (navigator.onLine === false) setOnline(false);
     const up = () => setOnline(true);
     const down = () => setOnline(false);
     window.addEventListener("online", up);

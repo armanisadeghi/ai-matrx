@@ -29,7 +29,7 @@ import {
   useAppStore,
 } from "@/lib/redux/hooks";
 import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
-import type { AgentLineageRef } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { AgentLineageRef } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";

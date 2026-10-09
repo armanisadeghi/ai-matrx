@@ -30,7 +30,6 @@
 import { useRef, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { getGenerator } from "@/features/education/convert/registry";
-import { listGeneratedFrom } from "@/features/education/convert/lineage";
 import { resolveKitTitle, type KitTitle } from "./kitTitle";
 import type {
   ConvertOptions,
@@ -44,6 +43,7 @@ import type { ResolvedSourceSet, SourceSet } from "@ai-matrx/agents/sources";
 import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 import { readKit, renameKit } from "@/features/education/kits/kitService";
+import { addKitSource, createKitScope, KIT_TOKEN } from "@/features/education/kits/kitScope";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
@@ -137,6 +137,8 @@ export interface UseKitGeneration {
   errorCause: unknown;
   /** True when this run continues one that stopped with its page. */
   continued: boolean;
+  /** Titles of picked Sources the kit could not file (the kit itself was made). */
+  sourcesNotFiled: string[];
   busy: boolean;
   /**
    * Start a kit build. Resolves true once the material was read and every
@@ -188,6 +190,7 @@ export function useKitGeneration(): UseKitGeneration {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [ingestFinishedAt, setIngestFinishedAt] = useState<number | null>(null);
   const [continued, setContinued] = useState(false);
+  const [sourcesNotFiled, setSourcesNotFiled] = useState<string[]>([]);
   // The running build's journal and its writer — a rename typed mid-build goes
   // into it, so the run applies it at the end and a continuation keeps it.
   const live = useRef<{ journal: KitRunJournal; write: () => void } | null>(null);
@@ -203,6 +206,7 @@ export function useKitGeneration(): UseKitGeneration {
     setStartedAt(null);
     setIngestFinishedAt(null);
     setContinued(false);
+    setSourcesNotFiled([]);
   };
 
   const patchTarget = (kind: TargetKind, patch: Partial<KitTargetState>) => {
@@ -215,9 +219,9 @@ export function useKitGeneration(): UseKitGeneration {
     patchTarget(kind, { stillGenerating: false, finishedAt: Date.now() });
   };
 
-  /** Apply a name to a kit that exists (its anchor holds artifacts). */
-  const applyRename = async (fileId: string, title: string) => {
-    const kit = await readKit("file", fileId);
+  /** Apply a name to the kit this run made. */
+  const applyRename = async (kitId: string, title: string) => {
+    const kit = await readKit(KIT_TOKEN, kitId);
     if (kit && kit.title !== title) await renameKit(kit, title);
   };
 
@@ -240,6 +244,8 @@ export function useKitGeneration(): UseKitGeneration {
     live.current = { journal, write };
     // Set once every output settled — a late name then renames the kit itself.
     let finished = false;
+    // The kit's Sources being filed (started once the kit exists, awaited at the end).
+    let linking: Promise<void> = Promise.resolve();
     const { kinds, options, orgId } = request;
 
     setError(null);
@@ -247,6 +253,7 @@ export function useKitGeneration(): UseKitGeneration {
     setSource(null);
     setKitTitle(null);
     setContinued(isContinuation);
+    setSourcesNotFiled([]);
     setPhase("ingesting");
     setIngestProgress(null);
     setStartedAt(Date.now());
@@ -266,6 +273,8 @@ export function useKitGeneration(): UseKitGeneration {
           sourcesClient.resolve(request.sourceSet, { organizationId: orgId }),
         setIngestProgress,
         journal.source?.ref,
+        // The kit holds each Source itself — no merged `.md` copy.
+        { copyAnchor: false },
       );
       setSource(normalized);
       setIngestFinishedAt(Date.now());
@@ -288,6 +297,7 @@ export function useKitGeneration(): UseKitGeneration {
         text: normalized.text,
         rawTitle: normalized.title,
         sourceTitles: normalized.meta.sourceTitles,
+        sourceSamples: normalized.meta.sourceSamples,
         focus: options.focus,
         orgId,
       }));
@@ -296,6 +306,38 @@ export function useKitGeneration(): UseKitGeneration {
     };
     journal.title = titleNow;
     write();
+
+    // THE KIT, made once: its own record holding every picked Source
+    // (`kits/kitScope.ts`). A continued run keeps the kit it already made.
+    if (!normalized.ref.kitId) {
+      setIngestProgress({ phase: "ready", message: "Making your kit" });
+      const scope = await createKitScope(orgId, journal.renamedTo ?? titleNow.title);
+      normalized = { ...normalized, ref: { ...normalized.ref, kitId: scope.id } };
+      setSource(normalized);
+      const { text: _kept, ...kept } = normalized;
+      journal.source = kept;
+      write();
+      // THE SOURCES ARE FILED BESIDE THE BUILD, NEVER IN FRONT OF IT
+      // (2026-10-08). They were awaited one by one before the fan-out: one
+      // slow `assoc_add` (28 s, then a 57014 timeout behind a long-held row
+      // lock) held every output back and then threw, sinking a kit that
+      // already existed. Now they file while the outputs build (one after
+      // another, so the kit lists them in the order picked); one that fails is
+      // named on the board, and the kit goes on.
+      const kitSources = normalized.ref.kitSources ?? [];
+      linking = (async () => {
+        const missed: string[] = [];
+        for (const kitSource of kitSources) {
+          try {
+            await addKitSource(scope, kitSource);
+          } catch (e) {
+            console.error("[useKitGeneration] a Source was not filed in the kit:", e);
+            missed.push(kitSource.title);
+          }
+        }
+        if (missed.length > 0) setSourcesNotFiled(missed);
+      })();
+    }
     setKitTitle(journal.renamedTo ? { ...titleNow, title: journal.renamedTo } : titleNow);
     // A name that arrives after the deadline still names the kit (applied at
     // the end with `renameKit`) — unless the person already typed one.
@@ -305,7 +347,7 @@ export function useKitGeneration(): UseKitGeneration {
       journal.renamedTo = named.title;
       write();
       setKitTitle(named);
-      const kitId = normalized.ref.fileId;
+      const kitId = normalized.ref.kitId;
       if (finished && kitId) {
         applyRename(kitId, named.title).catch((e: unknown) =>
           console.error("[useKitGeneration] the kit's late name was not applied:", e),
@@ -316,11 +358,11 @@ export function useKitGeneration(): UseKitGeneration {
     // Outputs this kit already saved: the journal's, plus any the database
     // holds for this anchor since the run began (saved in the instant before
     // the page closed, before the journal heard of it).
-    const anchorId = normalized.ref.fileId;
+    const anchorId = normalized.ref.kitId;
     if (isContinuation && anchorId) {
       try {
         const since = request.startedAt - 1_000;
-        const made = await listGeneratedFrom("file", anchorId, { failureMode: "throw" });
+        const made = (await readKit(KIT_TOKEN, anchorId))?.artifacts ?? [];
         for (const row of made) {
           const kind = row.targetKind;
           if (!kind || !kinds.includes(kind) || journal.done?.[kind]) continue;
@@ -425,6 +467,7 @@ export function useKitGeneration(): UseKitGeneration {
       );
     }
 
+    await linking;
     finished = true;
     const rename = journal.renamedTo;
     if (rename && anchorId) {
@@ -485,7 +528,7 @@ export function useKitGeneration(): UseKitGeneration {
     const clean = title.trim();
     if (!clean || !kitTitle) return;
     setKitTitle({ ...kitTitle, title: clean });
-    const anchorId = source?.ref.fileId;
+    const anchorId = source?.ref.kitId;
     if (phase === "done") {
       if (anchorId) await applyRename(anchorId, clean);
       return;
@@ -509,6 +552,7 @@ export function useKitGeneration(): UseKitGeneration {
     error,
     errorCause,
     continued,
+    sourcesNotFiled,
     busy: phase === "ingesting" || phase === "generating",
     run,
     stopped: tabRun.stopped

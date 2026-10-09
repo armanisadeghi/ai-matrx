@@ -57,7 +57,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
@@ -90,7 +90,7 @@ import { leaveQueueHref } from "./routes";
 import { useLeaveQueue, type LeaveQueueRow } from "./useLeaveQueue";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 

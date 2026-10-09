@@ -6,7 +6,7 @@
 // then sign up — nothing may block a guest). After a guest's meeting the record
 // view offers a free account; the sign-up link returns to the meeting with
 // `?claim=1`, and on arrival the guest pass this browser kept from the meeting
-// (`@ai-matrx/meet`'s `createWebRoomTokenStorage`) is presented with the new
+// (`@ai-matrx/meet`'s `rememberedMeetingPass`) is presented with the new
 // session to `POST /api/v1/meet/claim`. The server stamps the attendance on the
 // admitted guest row; from then on the account reads what guests may read of
 // that meeting, without the pass and without its expiry.
@@ -15,7 +15,8 @@
 // claimed by whoever signs in next without asking for it.
 
 import {
-  createWebRoomTokenStorage,
+  MEETING_PASS_HEADER,
+  rememberedMeetingPass,
   type MeetApi,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
@@ -25,25 +26,15 @@ export const GUEST_CLAIM_PARAM = "claim";
 // `MEET_ROUTES.claim` in @ai-matrx/meet from the next release; the literal is
 // the same pinned path (aidream `test_meet_service.py` guards the server side).
 export const GUEST_CLAIM_ROUTE = "/api/v1/meet/claim";
-const ROOM_TOKEN_HEADER = "x-meet-room-token";
 
 /** Where "Create a free account" sends a guest: sign-up, then back here to claim. */
 export function keepNotesHref(slug: string): string {
   return signUpHref(`/meet/${encodeURIComponent(slug)}?${GUEST_CLAIM_PARAM}=1`);
 }
 
-/** The guest pass this browser kept for the room, or null. */
+/** The meeting pass this browser kept for the room as a guest, or null. */
 export function rememberedGuestPass(roomName: MeetingRecord["roomName"]): string | null {
-  const raw = createWebRoomTokenStorage().read(roomName);
-  if (raw === null) return null;
-  try {
-    const parsed = JSON.parse(raw) as { token?: unknown; identity?: unknown };
-    if (typeof parsed.token !== "string" || parsed.token.length === 0) return null;
-    if (typeof parsed.identity === "string" && !parsed.identity.startsWith("guest:")) return null;
-    return parsed.token;
-  } catch {
-    return null;
-  }
+  return rememberedMeetingPass(roomName);
 }
 
 export interface GuestClaimResult {
@@ -62,7 +53,7 @@ export async function claimGuestAttendance(
     method: "POST",
     requireAuth: true,
     operation: "meet.claim",
-    headers: { [ROOM_TOKEN_HEADER]: pass },
+    headers: { [MEETING_PASS_HEADER]: pass },
     body: { meeting_id: meeting.id },
   });
   let body: Record<string, unknown> = {};

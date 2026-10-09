@@ -16,7 +16,7 @@
 import type { ReactNode } from "react";
 import type { LaneSupport, ListScopeKind } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type {
@@ -549,7 +549,7 @@ export interface EntityListConfig<TRow> {
 
   /**
    * Page-owned on/off switches drawn in the Filters panel under one heading each — for a choice
-   * that changes WHAT the page reads (the data home's "Show app tables"), not a filter-bag entry.
+   * that changes WHAT the page reads (the data home's "Show platform tables"), not a filter-bag entry.
    * The page holds the state; the panel only draws it.
    */
   panelSwitches?: EntityPanelSwitch[];

@@ -3,7 +3,7 @@
 /**
  * THE ONE RECORDS-UI HOST BINDING (one-grid merge, step 7).
  *
- * Every place in this app that draws a record-store table — the /data table page, the table
+ * Every place in this app that draws a custom table — the /data table page, the table
  * window, the dataset overlay, a chat table artifact, the quick data sheet, the tables picker,
  * the chat "view table" modal — hands `@ai-matrx/records-ui` the SAME ports: links, toasts, files,
  * members, share, the record chat, agent row actions, "ask an agent", number click-through, the
@@ -20,15 +20,16 @@
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, type ReactNode } from "react";
+import { usePersonTimeZone } from "@/hooks/usePersonTimeZone";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   personActor,
   recordsDataSource,
+  setPersonTimeZone,
   tableRightsAt,
   type AgentBuildAsk,
-  type HostLayout,
   type OpenRecordsAsk,
   type RecordsUiHost,
 } from "@ai-matrx/records-ui";
@@ -37,7 +38,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
-import { APPLETS_PORT } from "@/features/agent-apps/embed/appletsPort";
+import { APPLETS_PORT } from "@/features/applets/embed/appletsPort";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
@@ -49,10 +50,12 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
 import { RECORDS_REFERENCES } from "@/features/unified-data/recordsReferences";
+import { RECORDS_AGENT_PORTS } from "@/features/data-tables/records-ui-host/recordsAgentPorts";
 import {
   type GridContextChannel,
 } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { toast } from "@/lib/toast";
+import { organizationArchiveState, restoreArchivedOrganizationById } from "@/features/organizations/service/organizationArchive";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
@@ -80,14 +83,23 @@ export interface RecordsUiHostArgs {
   merged: boolean;
   /** The merged grid's agent channel (`useGridContextChannel`); bound only when `merged`. */
   gridContext?: GridContextChannel | null;
-  /** Layouts the host draws beside the package's own (the /data page's Sheet). */
-  layouts?: HostLayout[];
   /**
    * The host's own narrower answer (records-ui `rights` port): a PREVIEW is read-only whatever the
    * person holds. Left out, the store's own doors decide (`letTheStoreDecideRights`).
    */
   rights?: RecordsUiHost["rights"];
 }
+
+/** records-ui `archivedOrganization`: the restore door of an archived organization, by id. */
+const ARCHIVED_ORGANIZATION_PORT = {
+  state: async (organizationId: string) => {
+    const state = await organizationArchiveState(organizationId);
+    return state ? { mayRestore: state.mayRestore } : null;
+  },
+  restore: async (organizationId: string) => {
+    await restoreArchivedOrganizationById(organizationId);
+  },
+};
 
 /**
  * THE HOST, WRITTEN ONCE. Pure: the same inputs give the same port list on every surface.
@@ -118,7 +130,7 @@ export const RECORDS_ICONS: Pick<RecordsUiHost, "renderIcon"> = {
   renderIcon: (name: string) => <DynamicIcon name={name} size={14} fallbackIcon="FileText" />,
 };
 
-export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }: RecordsUiHostArgs): RecordsUiHost {
+export function recordsUiHostFor({ ports, merged, gridContext, rights }: RecordsUiHostArgs): RecordsUiHost {
   return {
     Link,
     density: "condensed",
@@ -143,8 +155,12 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     openRecords: ports.openRecords,
     runAgentAction: ports.runAgentAction,
     share: recordStoreShare,
+    // "This organization is archived" on every refusal that names one: an owner (or super admin) gets
+    // "Restore organization" (the one iam.organization_restore door), everyone else is told who can.
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...{ archivedOrganization: ARCHIVED_ORGANIZATION_PORT },
     // Applets on a page built from tables (records-ui `applets`, v7 APPS-ON-DATA item 3): the person's
-    // agent apps, drawn by the one app renderer. Spread: a records-ui build before the port ignores it.
+    // Applets, drawn by the one app renderer. Spread: a records-ui build before the port ignores it.
     ...APPLETS_PORT,
     // EVERY RECORD OPENS ITS OWN PAGE (no-dead-ends): the grid's ⤢, a card's Open / new tab / Copy
     // link and the peek's Open all reach /data/<table>/r/<record> (records-ui `hrefForRecord`).
@@ -172,7 +188,9 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     // (LinkRecordOverlay), the same anchored_to edge every other record menu writes. Spread as its
     // own object: a records-ui build before the port ignores the key.
     ...(ports.linkRecord ? { linkRecord: ports.linkRecord } : {}),
-    ...(layouts && layouts.length > 0 ? { layouts } : {}),
+    // The older Sheet's AI pieces (Sheet retirement): "Help with this…" in the formula box runs
+    // data.formula_writing, and the settings panel is the matrx-user/table-settings surface.
+    ...RECORDS_AGENT_PORTS,
     ...(rights ? { rights } : {}),
   };
 }
@@ -384,6 +402,12 @@ export interface AppRecordsConfig {
 export function useAppRecordsConfig(organizationId: string | null): AppRecordsConfig {
   const dataSource = useRecordsDataSource();
   const userId = useAppSelector(selectUserId);
+  // THE PERSON'S ZONE reaches every records-ui screen (calendar today, now-line, date picker) here: every
+  // records mount builds its config through this hook, so the saved zone is mirrored once, in one place.
+  const personZone = usePersonTimeZone();
+  useLayoutEffect(() => {
+    setPersonTimeZone(personZone);
+  }, [personZone]);
   return useMemo(
     () => ({
       dataSource,

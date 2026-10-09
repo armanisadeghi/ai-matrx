@@ -60,7 +60,7 @@ import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 interface ProposedDirectivesZoneProps {
   conversationId: string;

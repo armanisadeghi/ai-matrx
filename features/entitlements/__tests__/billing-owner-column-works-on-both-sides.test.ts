@@ -118,7 +118,7 @@ describe("after the column move — organization_id is there", () => {
   };
 
   it("REFUSES rather than substituting an organization (Arman, 2026-09-19, F2)", async () => {
-    // The whole ruling in one assertion: no default organization, no personal
+    // The whole ruling in one assertion: no preselected organization, no personal
     // workspace, no "the first one they belong to". It asks.
     expect(isBillingOrganizationRequiredError(await refusalFor({ userId: PERSON }))).toBe(true);
     expect(

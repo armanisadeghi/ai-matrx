@@ -58,11 +58,11 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/education/start",
-      label: "Universal Ingest — Study Kit (P9)",
+      url: "/education/kits/new",
+      label: "Create a study kit (P9)",
       description:
-        "The hero onboarding flow: drop/paste/link ANY input (PDF, notes, URL, YouTube) → one grounded, cited study kit (deck + summary + mind map; quiz/audio as P1/P3 register on the converter). Every artifact links a `source` edge to a durable cld_files anchor.",
-      filePath: "app/(core)/education/start/page.tsx",
+        "THE one create page (Build with AI | Saved aids; /education/start forwards here): drop/paste/link ANY input (PDF, notes, URL, YouTube) → one grounded, cited study kit (deck + summary + mind map; quiz/audio as P1/P3 register on the converter). Every artifact links a `source` edge to a durable cld_files anchor.",
+      filePath: "app/(core)/education/kits/new/page.tsx",
       status: "Live",
       notes: [
         "Feature: features/education/onboard/** (useIngest → useKitGeneration → StartHero)",
@@ -570,10 +570,10 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "StartHero (Universal Ingest)",
+      name: "StartHero (Create a study kit)",
       filePath: "features/education/onboard/components/StartHero.tsx",
       description:
-        "P9 — the study-kit front door: the one Source input → kit target picker → live per-target board → linked artifacts. Driven by useKitGeneration + useIngest.",
+        "P9 — THE one create page at /education/kits/new: the one Source input, then Build with AI (kit target picker → live per-target board → linked artifacts; useKitGeneration + useIngest) or Saved aids (SavedAidsKitForm + SavedAidPicker). Adding aids to a kit is KitHub's AddSavedAidsDialog.",
       tier: "official",
     },
     {

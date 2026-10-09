@@ -24,6 +24,20 @@ export function buildSourceTrust(
 ): TrustEnvelope {
   const ref = source.ref;
   const label = source.title ?? fallbackTitle;
+  // A multi-source kit cites EACH Source, so every citation opens its own one.
+  if (ref?.kitSources && ref.kitSources.length > 0) {
+    return {
+      citations: ref.kitSources.map((s) => ({
+        sourceId: s.processedDocumentId ?? s.fileId ?? s.id,
+        sourceKind: (s.processedDocumentId || !s.fileId ? "document" : "file") as CitationSourceKind,
+        title: s.title,
+        ...(s.fileId ? { fileId: s.fileId } : {}),
+        ...(s.processedDocumentId ? { documentId: s.processedDocumentId } : {}),
+      })),
+      confidence: "grounded",
+      groundedIn: ref.kitSources.map((s) => s.title).join(", "),
+    };
+  }
   const sourceKind: CitationSourceKind = ref?.processedDocumentId
     ? "document"
     : ref?.fileId

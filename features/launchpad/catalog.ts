@@ -59,7 +59,7 @@ const LAUNCHPAD_CARD_DESCRIPTIONS: Record<string, string> = {
   Chat: "Chat with AI Matrx",
   Masterwork: "Your expertise, enforced as rules",
   Knowledge: "Stores, graph, research, and search",
-  "Agent Apps": "Apps built from agents",
+  "Applets": "Apps built from agents",
   Workflows: "Run multi-step workflows live",
   Shapes: "Design structured-content shapes",
   Reports: "Agent drift and other reports",

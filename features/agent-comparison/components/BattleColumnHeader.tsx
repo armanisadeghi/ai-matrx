@@ -26,7 +26,6 @@ import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versio
 import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAgentById,
-  selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
@@ -39,6 +38,7 @@ import {
   setColumnVersion,
 } from "../redux/thunks";
 import type { BattleColumn } from "../types";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface BattleColumnHeaderProps {
   column: BattleColumn;
@@ -74,9 +74,7 @@ export function BattleColumnHeader({
   const agent = useAppSelector((s) =>
     column.agentId ? selectAgentById(s, column.agentId) : undefined,
   );
-  const agentName = useAppSelector((s) =>
-    column.agentId ? selectAgentName(s, column.agentId) : null,
-  );
+  const agentName = useAgentName(column.agentId) ?? null;
 
   // Fetch version history when an agent is set; we own the local copy
   // because selectVersionsByParentAgentId only returns versions that were

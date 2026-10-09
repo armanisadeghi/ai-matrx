@@ -14,7 +14,7 @@
  * the click. The identical click with an organization selected succeeded in
  * about a second.
  *
- * The owner ruling (Arman, 2026-09-19): there is no default organization, so
+ * The owner ruling (Arman, 2026-09-19): there is no preselected organization, so
  * Start must be either honest-disabled with its reason beside it — the same
  * pattern `Continue` already uses on this very screen — or, with sole
  * membership, silently pre-selected.

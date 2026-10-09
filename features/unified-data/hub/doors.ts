@@ -225,7 +225,7 @@ export interface TableFactRow {
    * folds it on from here — otherwise a pick list is listed as one of the organization's tables.
    * Absent on a store whose door answers only the first three columns.
    */
-  kept_by_the_app?: boolean | null;
+  platform_owned?: boolean | null;
   /** The store's sentence for who keeps a kept Table. */
   keeper_says?: string | null;
 }
@@ -287,7 +287,7 @@ export interface DataHomeTableRow {
   /** A live grant names the person signed in, given by somebody else. */
   shared_with_me: boolean;
   /** The store keeps this Table for itself (custom.table_placement). Listed all the same. */
-  kept_by_the_app: boolean;
+  platform_owned: boolean;
   /**
    * What it is, in the store's one word: table (the person's own) · list · scope · form · view ·
    * comment · dashboard · action · checklist · booking · workflow · kit · store · demo · app.
@@ -326,15 +326,15 @@ export interface DataHomeTableRow {
 export function dataHomeTables(
   dataSource: RecordsDataSource,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeTableRow[]>> {
   return call<DataHomeTableRow[]>(
     dataSource,
     "data_home_tables",
-    // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8): the door leaves out the tables the app keeps for
+    // "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, N-C8): the door leaves out the tables the app keeps for
     // agents' outputs; the (uuid, boolean) overload is picked by naming BOTH arguments.
-    options.includeAppTables
-      ? { p_organization_id: organizationId, p_include_app_tables: true }
+    options.includePlatformTables
+      ? { p_organization_id: organizationId, p_include_platform_tables: true }
       : organizationId
         ? { p_organization_id: organizationId }
         : {},
@@ -576,12 +576,12 @@ export function dataHomeChangedBy(
 }
 
 /**
- * "SHOW APP TABLES" (CHAIR-DOORS-2, v6 N-C8): every table door leaves out the tables the app
+ * "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, v6 N-C8): every table door leaves out the tables the app
  * keeps out of default lists (`custom.table_kept_out_of_lists` — an agent's outputs tables) unless
  * asked. Omitted or false = the default list.
  */
-export interface AppTablesOption {
-  includeAppTables?: boolean;
+export interface PlatformTablesOption {
+  includePlatformTables?: boolean;
 }
 
 /** The data home in one answer (`custom.data_home`, DATA-HOME-2). */
@@ -601,11 +601,11 @@ export interface DataHomeAnswer {
 export async function dataHome(
   dataSource: RecordsDataSource,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeAnswer>> {
   const answered = await call<DataHomeAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
-    ...(options.includeAppTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_platform_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
@@ -652,14 +652,14 @@ export async function dataHomeSearch(
   dataSource: RecordsDataSource,
   search: string,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeSearchAnswer>> {
   const q = search.trim();
   if (q === "") return { ok: true, data: { search: "", tables: [], items: [], changed_by: [] } };
   const answered = await call<DataHomeSearchAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
     p_search: q,
-    ...(options.includeAppTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_platform_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;

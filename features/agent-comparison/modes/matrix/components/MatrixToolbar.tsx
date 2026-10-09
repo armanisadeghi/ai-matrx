@@ -8,10 +8,9 @@ import { useState } from "react";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
 import { BattleHeader, type BattleAction } from "@/features/agent-comparison/shared/BattleHeader";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { setActiveMatrixSet } from "../redux/slice";
 import {
   archiveMatrixBattle,
@@ -67,7 +66,6 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
     try {
       await dispatch(runMatrixBattle({ cells: null, scope })).unwrap();
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(`Run failed: ${message(err)}`);
     }
   };
@@ -80,7 +78,6 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
         saved.created ? "Battle saved" : "Changes saved",
       );
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(`Couldn't save: ${message(err)}`);
     }
   };
@@ -212,7 +209,7 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
             setSaveAsOpen(false);
             toast.success(`Saved a copy as "${name}"`);
           } catch (err) {
-            if (!isOrganizationSelectionCancelled(err)) toast.error(`Couldn't save: ${message(err)}`);
+            toast.error(`Couldn't save: ${message(err)}`);
           } finally {
             setBusy(false);
           }

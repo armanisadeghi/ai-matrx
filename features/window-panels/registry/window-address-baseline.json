@@ -7,6 +7,7 @@
     "This file is the CENSUS of the class, not a permission slip. `addressless` holds windows that genuinely must not have an address, each with its reason. `unaddressedBaseline` is DEBT: windows whose payload names a durable subject and that still have no address. The guard only lets it SHRINK — a new window in either list fails, and an entry that has since been addressed must be deleted from here."
   ],
   "addressless": {
+    "agentFromChatWindow": "Holds a live server run for one chat (its row is ephemeral: the run streams into the open window and the new agent lands in the person's agents either way). A deep link would reopen it with no run to show, so it is opened from the chat that raised it and nothing else.",
     "agentPickerWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "createProjectWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
     "curatedIconPickerWindow": "Returns a value to the caller that opened it (its payload carries `callbackGroupId`). A deep link would open a picker with nothing to hand its answer back to, so this window is addressed by the surface that raised it and nothing else.",
@@ -43,7 +44,6 @@
     "agentConvertSystemWindow",
     "systemInstructionWindow",
     "promptPreviewWindow",
-    "agentCreateAppWindow",
     "agentDataStorageWindow",
     "agentDebugWindow",
     "agentFindUsagesWindow",

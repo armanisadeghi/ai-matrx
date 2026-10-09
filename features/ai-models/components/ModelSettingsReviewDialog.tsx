@@ -43,7 +43,8 @@ import {
 import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { ReplaceFailureBanner } from "@/components/official/error-detail/ReplaceFailureBanner";
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
-import { selectAllModels } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectAllModels } from "@ai-matrx/agents/models";
+import { useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { suggestSettingSwaps } from "./suggestSettingSwaps";
 
@@ -104,7 +105,7 @@ export function ModelSettingsReviewDialog({
   error = null,
 }: ModelSettingsReviewDialogProps) {
   const dispatch = useAppDispatch();
-  const models = useAppSelector(selectAllModels);
+  const models = useModelRecords(selectAllModels);
   const suggestions =
     sourceSettings && replacementModelId
       ? suggestSettingSwaps(sourceSettings, replacementModelId, models)

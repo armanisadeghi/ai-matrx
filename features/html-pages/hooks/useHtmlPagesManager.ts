@@ -48,7 +48,6 @@ export function useHtmlPagesManager() {
       metaTitle: string;
       metaDescription?: string;
       metaFields?: HtmlPageMetaFields;
-      forceNew?: boolean;
     }): Promise<{ pageId: string; url: string }> => {
       setIsSaving(true);
       setError(null);
@@ -59,7 +58,6 @@ export function useHtmlPagesManager() {
           params.metaDescription ?? "",
           undefined,
           params.metaFields ?? {},
-          params.forceNew ? { forceNew: true } : {},
         );
         await refresh();
         return result as { pageId: string; url: string };

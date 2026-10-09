@@ -3,11 +3,6 @@
   "entries": [
     {
       "piece": "agent-variables",
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "agent-variables",
       "file": "features/agent-shortcuts/components/DefaultVariableValuesEditor.tsx",
       "reason": "known duplicate, decision pending"
     },
@@ -37,11 +32,6 @@
       "reason": "known duplicate, decision pending"
     },
     {
-      "piece": "agent-variables",
-      "file": "../aidream/apps/shared/chat/src/agents/components/widgets/WidgetVariableInputs.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
       "piece": "chat-input",
       "file": "app/(dev)/demos/context-menu/lab/page.dev.tsx",
       "reason": "known duplicate, decision pending"
@@ -63,17 +53,7 @@
     },
     {
       "piece": "chat-input",
-      "file": "components/ai/AiChatModal.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "chat-input",
       "file": "components/official/ProTextarea.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "chat-input",
-      "file": "features/ai-work/compose/components/AiWorkComposer.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -107,16 +87,6 @@
       "reason": "known duplicate, decision pending"
     },
     {
-      "piece": "chat-input",
-      "file": "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "chat-input",
-      "file": "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
       "piece": "enter-to-send",
       "file": "app/(dev)/demos/general/voice/debate-assistant/debate-page.tsx",
       "reason": "known duplicate, decision pending"
@@ -128,37 +98,7 @@
     },
     {
       "piece": "enter-to-send",
-      "file": "app/(transitional)/_flash-cards/ai/PromptInputWithActions.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "components/ai/AiChatModal.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "components/ai/PromptInputWithActions.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "features/agent-apps/sample-code/apps/fact-checker-hooked.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "features/agent-apps/sample-code/apps/fact-checker.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
       "file": "features/knowledge/ask/AskPanel.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "features/make/describe/DescribeBox.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -173,32 +113,12 @@
     },
     {
       "piece": "enter-to-send",
-      "file": "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
-      "file": "../aidream/apps/shared/chat/src/public-chat/components/PublicVariableInputs.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "enter-to-send",
       "file": "../aidream/apps/shared/chat/src/tool-call-visualization/components/ToolCallVisualization.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "mac-detection",
       "file": "components/official/settings/primitives/SettingsKeybinding.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "mac-detection",
-      "file": "components/rich-editor/format/useTextareaFormatting.ts",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "mac-detection",
-      "file": "components/rich-editor/panels/ShortcutsDialog.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -265,6 +185,96 @@
       "piece": "paste-to-upload",
       "file": "components/official/ImageCropUploader.tsx",
       "reason": "known duplicate, decision pending"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/agent-creators/interactive-builder/AgentGenerator.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/org-chart/components/DefineSeatJobDialog.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/applets-host/builder/AppletBuilder.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/mandates/admin/TryItNowPanel.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/mandates/workspace/TriadSections.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/marketing/local/EndowmentAnalysisCard.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/marketing/seo/value-system/workbench/session/TrialPanel.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/research/components/agents/DeepResearchMandateCard.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/research/components/resources/ContextBuilder.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/spaces/data/ai-autofill.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/spaces/editor/button-block.tsx",
+      "reason": "hand-rolled message box found when the detector widened to ProTextarea/ProInput + headless doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "agent-variables",
+      "file": "features/agents/components/widgets/WidgetVariableInputs.tsx",
+      "reason": "moved file, same known duplicate"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/run-controls/AgentExecutionTestModal.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/applets/route/AppletRecordEditors.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/content-ir/studio/components/NewShapeClient.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "enter-to-send",
+      "file": "features/pdf-extractor/studio/PdfStudioInspector.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
     }
   ]
 }

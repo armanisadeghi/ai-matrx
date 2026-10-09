@@ -33,7 +33,7 @@
 import {
   FieldHelp,
   PropertyRow,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Lock, PenLine } from "lucide-react";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { InfoHint } from "@/components/official/InfoHint";

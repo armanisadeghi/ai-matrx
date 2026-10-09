@@ -37,6 +37,8 @@ Execution happens on:
     admin surface that names a task links here via `adminScheduleHref`
     (`constants/routes.ts`), never `/schedules/<id>` (no lane there).
   - `runs/page.tsx` — all-user runs (status/surface filters)
+  - `costs/page.tsx` — every automation's cost and behavior (see "Automation costs" below);
+    `costs/[kind]/[id]/page.tsx` — one automation with every run
   - `orphan-leases/page.tsx` — stuck claims + force-fail action
   - `cron-tester/page.tsx` — FE preview validator
   - `scanner-health/page.tsx` — aidream-backed status (auto-refresh)
@@ -230,6 +232,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- `2026-10-08` — **Automation costs.** Live `scheduler.automation_cost_rollup` / `automation_cost_runs` (+ invoker helpers `_automation_run_costs`, `_is_premium_model`; doors declared) via the Supabase MCP after a clone proof; new Costs tab + per-automation page, cost/behavior/flag columns on System jobs, Automations section on the org admin page. Visibility only — nothing pauses, re-homes or re-models a job.
 - `2026-09-29` — **Org-filter sweep (F5): scheduler READS never carry or require the selected organization.** `schedulerClient.authHeaders` sends no `X-Organization-Id` on a GET unless the caller names one; writes keep the org gate. The duplicate check goes out org-free and never retries with the active organization (the 2026-09-29 temporary fallback was removed 2026-09-30 — active-org-never-a-list-filter AO-150; aidream declared the route org-free in 7b6140af15). Server-side org-free reads are the aidream lane's.
 - `2026-09-26` — **Scheduler base contract: FKs + `sch_agent_task.organization_id`.** `migrations/sch_base_contract_b_fks_and_agent_task_org.sql` (production 14:45:41Z, chair step, ledgered; rule 27 green on the clone): organization/created_by/updated_by FKs (+ covering indexes) on sch_task, created_by/updated_by on sch_run and sch_trigger; `sch_agent_task` gains `organization_id` NOT NULL (FK, backfilled 112/112 from its parent task, no default, no trigger) and `created_at`. Every writer passes the parent task's organization explicitly: `public.create_agent_task`, `communication.schedule_task_sms_snooze`, matrx-scheduler `upsert_agent_task` (guard `test_agent_task_row_carries_its_task_organization`), aidream's Gmail recovery carrier and the three system-task seed scripts. The frontend only UPDATEs `sch_agent_task`. `canonical_certify_ok`: sch_agent_task now **true**; sch_task / sch_run / sch_trigger still false only on the `user_id` legacy owner column (and, on sch_task, the SECURITY-SWEEP-2 restrictive policies that guard it; on sch_trigger an audit false positive on `custom._record_events_to_activity`'s transition table).
 
@@ -568,6 +571,20 @@ deleted_at IS NULL` so the common "my schedules, newest first"
   full admin UI, matrx-scheduler Python package, aidream router with
   5 endpoints under `/scheduling`.
 
+## Automation costs — what every automation costs and how it behaves (2026-10-08)
+
+One database rollup, `scheduler.automation_cost_rollup(p_org_id, p_days)` + `scheduler.automation_cost_runs(kind, id, days)`
+(SECURITY DEFINER; null org = super admin in the admin lane, an org id = that org's admins), read through
+`service/automationCosts.ts`, rendered by `components/costs/` everywhere: the **Costs** tab, the **System jobs** tab
+(cost columns keyed by sch_task id, title opens the cost detail page), and the org admin page
+(`/organizations/<org>/admin` → Automations). Automations = sch_task (scheduled task / scheduled agent / recurring
+mandate) + workflow.trigger. Cost = settled facts of each sch_run's execution tree (root `link_kind='sch_run'` and its
+`root_execution_id` descendants); models/turns/agents/mandates = `chat.request` rows with `execution_kind='sch_run'`;
+workflow triggers via `workflow.run.metadata.trigger_id` → `chat.user_request.workflow_run_id`. Turns = model calls per run.
+Flags (`automationFlags`) are the spend rules in `common-docs/policies/ai-model-and-spend-rules.md` plus "Runs as a person"
+(a system job outside the system organization) and "Admin account" (a non-system automation owned by a platform admin).
+Est. / month = last-7-day run rate × 30-day average cost per run, zero when off.
+
 ## Schedule alarms — the schedules that need a human (2026-08-24)
 
 `scheduler.sch_task` carries only the canonical `std_*` policies (FOUND_DEFECTS
@@ -674,3 +691,7 @@ system job shows no Delete and its Edit mode opens the System jobs console.
 ## Realtime
 
 Realtime moved onto `@ai-matrx/realtime` (2026-09-07), including the PRIVATE Database Broadcast topic — the hand-rolled `config.private` + `realtime.setAuth()` dance is now `private: true` on the spec (the package gap that produced realtime 0.7.0). The feed gained a `resync` signal from the backfill door, wired to `fetchScheduledTasks` / `fetchRunsForTaskThunk` / `onResync`; before it, a schedule that fired or errored while the tab slept simply never arrived. `subscribeToTasks` no longer takes a SupabaseClient.
+
+## Admin seat run stream (2026-10-08)
+
+The scheduler broadcasts per OWNER. `useRunStream` joins the viewer's feed on user pages and the task OWNER's feed on the admin seat (`runStreamOwnerId`); on the seat it also re-reads the run history every 10 s because Realtime join authorization carries no admin lane. Guard: `__tests__/run-stream-owner.test.ts`.

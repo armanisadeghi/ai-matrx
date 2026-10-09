@@ -12,7 +12,7 @@ import {
   PencilTapButton,
   CopyTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
+import { AI_MODEL_DRILL } from "./aiModelDrill";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import {
   AlertDialog,
@@ -54,8 +55,10 @@ import {
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
+import { CostRatingCell } from "./CostRatingCell";
+import { matchesTierView } from "../maxTier";
 import {
   DEFAULT_AI_MODEL_FILTERS,
   isDeprecatedFilterNonDefault,
@@ -82,7 +85,7 @@ import {
   type ProviderPriceField,
 } from "./ProviderPriceCell";
 import { formatCount } from "@ai-matrx/kit/format";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -394,6 +397,13 @@ const COLUMNS: ColDef[] = [
         trueClass="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
       />
     ),
+  },
+  {
+    key: "cost_rating",
+    header: "Cost",
+    width: "w-[150px] min-w-[130px]",
+    sortable: true,
+    render: (item) => <CostRatingCell model={item} />,
   },
   // Pricing remains read-only here; editing still lives only on ai.offering.
 ];
@@ -1240,6 +1250,10 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
   const providerMap = Object.fromEntries(
     providers.map((provider) => [provider.id, provider.name ?? provider.id]),
   );
+  const tierView = tabState.filters.tier;
+  const tierModels = tierView
+    ? models.filter((model) => matchesTierView(model, tierView))
+    : models;
   const columns: MatrxColumnDef<AiModel>[] = COLUMNS.map((column) => ({
     id: column.key,
     header: column.header,
@@ -1284,6 +1298,23 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
         column.render(model, providerMap)
       ),
   }));
+  // Facts a model has no column for today, read by the drill (hidden until a person adds them).
+  const kinds = (model: AiModel, side: "input" | "output") => {
+    const caps = parseCapabilities(model.capabilities, { modelId: model.id, modelName: model.name });
+    const list = side === "input" ? caps.input : caps.output;
+    return Array.isArray(list) && list.length > 0 ? [...list].sort().join(" + ") : "None";
+  };
+  const drillColumns: MatrxColumnDef<AiModel>[] = [
+    {
+      id: "hosted_by",
+      header: "Hosted by",
+      hidden: true,
+      sortable: false,
+      accessorFn: (model) => (model.provider_id ? (providerMap[model.provider_id] ?? "Unknown") : "None"),
+    },
+    { id: "input_kinds", header: "Accepts", hidden: true, sortable: false, accessorFn: (model) => kinds(model, "input") },
+    { id: "output_kinds", header: "Returns", hidden: true, sortable: false, accessorFn: (model) => kinds(model, "output") },
+  ];
   if (props.loadError && models.length === 0) {
     return (
       <ReadFailure error={props.loadError} what="the model catalog" onRetry={onRefresh} />
@@ -1294,8 +1325,9 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
     <MatrxDataTable<AiModel>
       tableId="ai/models-canonical"
       viewTabs={false}
-      data={models}
-      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
+      data={tierModels}
+      drill={AI_MODEL_DRILL}
+      columns={[...(columns), ...drillColumns, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
         <CanonicalModelActions
           model={model}
           onSelect={onSelect}

@@ -20,6 +20,7 @@ export function readScribeSessionId(data: CanvasJson | undefined | null): string
 
 export const quickScribeKind = defineCanvasKind<CanvasJson>({
   id: QUICK_SCRIBE_KIND,
+  surface: "dom",
   label: TITLE,
   icon: Mic,
   load: () => import("./QuickScribeCanvasView"),

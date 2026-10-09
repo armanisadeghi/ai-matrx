@@ -26,7 +26,7 @@
 // no agent was bound for the job (V-XT/V3, 2026-09-15).
 
 import { useId, useState } from "react";
-import { AlertTriangle, CircleAlert, Info, Loader2, Send } from "lucide-react";
+import { CircleAlert, Loader2, Send } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Button } from "@/components/ui/button";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
@@ -37,6 +37,8 @@ import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
 import { useCodingReplyResponder } from "./useCodingReplyResponder";
+import { replyDoorView } from "@ai-matrx/chat/agents/coding-session-reply/reply-door";
+import { CodingReplyNotice } from "@ai-matrx/chat/agents/coding-session-reply/CodingReplyNotice";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 // `source_feature` for every reply sent from this composer. Per the provenance
 // ruling the reply's source_app is `code-plugin`; this composer sends none —
@@ -103,29 +105,10 @@ export function AiMatrxReplyComposer({
     organizationId: conversationOrganizationId,
     enabled: true,
   });
-  const report = responder.report;
-  // A conversation that is not a mirror gets the ordinary composer with no
-  // label at all — exactly what it had before this control existed.
-  const label =
-    report && report.is_coding_session_mirror
-      ? report.composer_label
-      : null;
-  /**
-   * WHY a reply cannot be sent, in the server's own words. `reason` is present
-   * exactly when the server refused the door itself (a conversation this
-   * account cannot reply to) rather than merely lacking an agent to answer —
-   * and it is printed verbatim, never re-worded here.
-   */
-  const refusalSentence = report && !report.can_reply
-    ? (label ?? report.reason ?? null)
-    : null;
-  const standInNotice =
-    report && report.responder?.used_platform_default
-      ? report.stand_in_notice
-      : null;
-  // Only the SERVER says a reply cannot be answered. A read that has not
-  // landed, or failed, never invents that verdict.
-  const replyRefused = report ? !report.can_reply : false;
+  // The one reply-door decision (package): the server's label, refusal and stand-in, verbatim.
+  const door = replyDoorView(responder);
+  const refusalSentence = door.refusalSentence;
+  const replyRefused = door.replyRefused;
   const [text, setText] = useState("");
   const [send, setSend] = useState<SendState>({ phase: "idle" });
   /**
@@ -138,7 +121,7 @@ export function AiMatrxReplyComposer({
   const [preview, setPreview] = useState("");
 
   const busy = send.phase === "answering";
-  const inputBlocked = responder.status === "loading" || replyRefused;
+  const inputBlocked = door.inputBlocked;
   const canSend = text.trim().length > 0 && !busy && !inputBlocked;
 
   async function submit() {
@@ -224,63 +207,16 @@ export function AiMatrxReplyComposer({
       <h2 className="text-sm font-medium text-foreground">
         Reply in AI Matrx
       </h2>
-      {/* WHO is answering, in the server's own sentence: always visible, never
-          a tooltip, and never a guess. It is the only thing standing between
-          this control and a person believing they just messaged their coding
-          tool — or that an agent nobody bound is the one replying. */}
-      {responder.status === "loading" ? (
-        <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-          <span>Checking who answers here…</span>
-        </p>
-      ) : responder.status === "error" ? (
-        <p className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            Who answers here could not be loaded, so this page is not naming
-            anyone: {responder.error}
-            <ErrorAlchemyMenu error={responder.error} />
-          </span>
-        </p>
-      ) : label ? (
-        <p
-          id={labelId}
-          className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
-        >
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{label}</span>
-        </p>
-      ) : refusalSentence ? (
-        /* The server refused the door itself, so there is no "who answers"
-           sentence to show — its refusal takes that place, verbatim. */
-        <p
-          id={labelId}
-          className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
-        >
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{refusalSentence} <ErrorAlchemyMenu error={refusalSentence} /></span>
-        </p>
-      ) : null}
-      {/* THE ANNOUNCED STAND-IN, on screen and not only in a log: visually
-          secondary to the label above, and present only when the server says
-          the platform default is standing in. */}
-      {standInNotice ? (
-        <p className="mt-1 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
-          <Info className="mt-0.5 h-3 w-3 shrink-0" />
-          <span>{standInNotice}</span>
-        </p>
-      ) : null}
+      {/* WHO is answering, in the server's own sentence — the package's one notice
+          (label, refusal, announced stand-in, pending and failed reads). */}
+      <CodingReplyNotice state={responder} labelId={labelId} className="mt-1" />
 
       <Textarea
         value={text}
         onChange={(event) => setText(event.target.value)}
         rows={3}
         disabled={busy || inputBlocked}
-        placeholder={
-          replyRefused
-            ? "A reply cannot be sent here."
-            : "Ask AI Matrx about this session, or say what to do next."
-        }
+        placeholder={door.placeholder}
         className="mt-3"
         aria-label="Your reply to AI Matrx"
         // The visible reason a refused field cannot be typed in is the

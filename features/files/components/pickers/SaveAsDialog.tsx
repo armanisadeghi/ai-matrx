@@ -40,8 +40,8 @@ import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import { FileIcon } from "@ai-matrx/media/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // ---------------------------------------------------------------------------
 // Declarative component

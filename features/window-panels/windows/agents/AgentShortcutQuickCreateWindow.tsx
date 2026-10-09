@@ -50,7 +50,6 @@ import {
   type ShortcutQuickCreateState,
 } from "@/features/agent-shortcuts/hooks/useShortcutQuickCreate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
@@ -58,6 +57,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentShortcutQuickCreateWindowProps {
   isOpen: boolean;
@@ -159,7 +159,7 @@ function AgentShortcutQuickCreateWindowWithAgent({
   );
 
   const dispatch = useAppDispatch();
-  const agentName = useAppSelector((s) => selectAgentName(s, agentId) ?? null);
+  const agentName = useAgentName(agentId) ?? null;
   const openAgentContentWindow = useOpenAgentContentWindow();
   const agentSection = buildAgentMenuSection({
     agentId,

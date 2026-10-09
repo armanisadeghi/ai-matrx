@@ -143,11 +143,16 @@ describe("appContextPolicy.remote.fetch answers on every exit", () => {
     expect(isOrgBootstrapResolved()).toBe(true);
   });
 
-  it("answers when the idle gate ABORTS", async () => {
+  it("never waits for the page to go idle — no request leaves before it answers", async () => {
     whenPageIdle.mockResolvedValue(false);
+    resolveActiveOrgContext.mockResolvedValue({
+      organization_id: "org-1",
+      organization_name: "Acme",
+    });
     const result = await runFetch(new AbortController().signal, authIdentity);
-    expect(result?.orgBootstrapResolved).toBe(true);
-    expect(resolveActiveOrgContext).not.toHaveBeenCalled();
+    expect(whenPageIdle).not.toHaveBeenCalled();
+    expect(resolveActiveOrgContext).toHaveBeenCalledTimes(1);
+    expect(result?.organization_id).toBe("org-1");
     expect(isOrgBootstrapResolved()).toBe(true);
   });
 

@@ -419,6 +419,10 @@ const nextConfig = {
     // jspdf/html2canvas deps (the alias target resolves from the app root) stay.
     resolveAlias: {
       jspdf: "jspdf/dist/jspdf.es.min.js",
+      // rich-content and chat still request thinking helpers from kit/text,
+      // but kit@0.36.1 publishes them from content-ir/source instead.
+      "@ai-matrx/kit/text": "./lib/compat/kit-text.ts",
+      "@ai-matrx/kit/json-extract": "@ai-matrx/content-ir/json-extract",
       // The demos AppShell is shared by every demo route. Keep the registrations
       // appended in v0.4.2884 out of that global graph, but retain the same
       // synchronous module for every non-demos profile. The demos route layout
@@ -488,6 +492,15 @@ const nextConfig = {
       // pages moved from /data-v2 to /data. Saved links, sent notifications and
       // DB-built hrefs keep working; the query string carries over untouched.
       // THE ONLY place "/data-v2" may appear in source (scripts/check-no-data-v2.ts).
+      // 2026-10-07: "agent apps" became Applets. Saved links, bookmarks and sent links to the old
+      // addresses open the same Applet or owner tool (an id after /applets/ resolves to the Applet).
+      { source: "/agent-apps", destination: "/applets", permanent: true },
+      { source: "/agent-apps/build", destination: "/applets/build", permanent: true },
+      { source: "/agent-apps/:id/run", destination: "/applets/:id", permanent: true },
+      { source: "/agent-apps/:id/:rest*", destination: "/applets/manage/:id/:rest*", permanent: true },
+      { source: "/apps/:slug/:path*", destination: "/applets/:slug/:path*", permanent: true },
+      { source: "/p/:slug", destination: "/applets/:slug", permanent: true },
+      { source: "/templates/apps", destination: "/templates/applets", permanent: true },
       { source: "/data-v2", destination: "/data", permanent: true },
       { source: "/data-v2/:path*", destination: "/data/:path*", permanent: true },
       // The old "New table" page; a table is made on the Data home itself.
@@ -1029,6 +1042,8 @@ const nextConfig = {
     // alias silently leaves demos without the base registrations.
     config.resolve.alias = {
       ...config.resolve.alias,
+      "@ai-matrx/kit/text": path.join(__dirname, "lib/compat/kit-text.ts"),
+      "@ai-matrx/kit/json-extract": "@ai-matrx/content-ir/json-extract",
       "@/providers/chatUiRegistrationProfile": path.join(
         __dirname,
         MATRX_PROFILE === "demos"
@@ -1143,8 +1158,30 @@ function assertSharedDevServer(phase) {
   if (refusal) throw new Error(refusal);
 }
 
+// THE SHARED PREVIEW NEVER 500s ON AN @ai-matrx NAME NOT PUBLISHED YET (2026-10-07: three outages
+// in one day, every route 500 for ~30 agents, each one an edit importing a name the installed
+// package did not ship yet). In `next dev` only, a file that mentions @ai-matrx/ passes through a
+// loader that swaps an import the INSTALLED package certainly cannot satisfy for a loud placeholder
+// (red inline box + one console error naming file, package, installed and source version). A build
+// never gets it — a release must still fail on the real error. Why and the judge:
+// scripts/lib/matrx-pending-imports.mjs; `pnpm check:matrx-pending:self-test`.
+const MATRX_PENDING_LOADER = require.resolve("./lib/turbopack/matrx-pending-imports-loader.cjs");
+function withPendingImportRescue(config) {
+  const rule = {
+    condition: { all: [{ not: "foreign" }, { content: /@ai-matrx\// }] },
+    loaders: [MATRX_PENDING_LOADER],
+  };
+  const rules = { ...(config.turbopack?.rules ?? {}) };
+  for (const glob of ["*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs"]) {
+    if (rules[glob]) throw new Error(`[matrx] turbopack.rules already has ${glob}; merge the pending-import rescue into it`);
+    rules[glob] = rule;
+  }
+  return { ...config, turbopack: { ...config.turbopack, rules } };
+}
+
 copyFiles();
 module.exports = (phase) => {
   assertSharedDevServer(phase);
-  return withBundleAnalyzer(nextConfig);
+  const config = phase === PHASE_DEVELOPMENT_SERVER ? withPendingImportRescue(nextConfig) : nextConfig;
+  return withBundleAnalyzer(config);
 };

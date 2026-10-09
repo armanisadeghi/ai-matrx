@@ -64,6 +64,20 @@
 //                 on a check that is always red is not a guard.
 //   --root <dir>  audit that project root instead of this script's repo (used to
 //                 prove the guard red/green on a historical lockfile).
+//
+// 🚨 IN CI, CURRENCY IS JUDGED AT THE COMMIT'S TIME, NOT AT CI TIME (2026-10-08).
+// aidream's publish train releases constantly, so between a release push and CI
+// reaching this check a sibling version can land on npm — and a commit that was
+// fully current when it was made went red for something its author could not have
+// installed. matrx-vscode runs 37829153103 (v0.1.353: data 0.22.10 published the
+// SAME SECOND as the commit) and 37832365343 (v0.1.354: associations 0.13.179
+// published after the commit, 43 s before CI ran) failed only here while typecheck,
+// tests and build were green. So when the standard `CI` env var is set, an installed
+// version is STALE only if a newer non-prerelease version (≤ npm latest) had been
+// published at least COMMIT_TIME_GRACE_SECONDS before HEAD's committer date
+// (`git log -1 --format=%cI`), read from npm's per-version publish times. Local and
+// ship-time runs keep judging against latest-NOW: that is when the author can still
+// update. Pins, AHEAD, duplicates and servability are unchanged in every mode.
 
 import { execFileSync } from 'node:child_process';
 import {
@@ -85,6 +99,11 @@ import { fileURLToPath } from 'node:url';
 // Longer than the worst observed real propagation (~25 min) and short enough that
 // a genuinely broken `latest` cannot hide behind it forever.
 export const PROPAGATION_WINDOW_MINUTES = 45;
+
+// In CI, a version published less than this long before the commit is treated as not
+// yet installable at commit time (publish-to-registry lag): it does not make the
+// commit stale. See "IN CI, CURRENCY IS JUDGED AT THE COMMIT'S TIME" above.
+export const COMMIT_TIME_GRACE_SECONDS = 120;
 
 const DEPENDENCY_SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies'];
 // The sections of an INSTALLED package that a consumer actually installs.
@@ -432,6 +451,7 @@ export function scanNodeModules(projectRoot, graph = emptyGraph()) {
         if (entry.startsWith('.')) continue; // .ignored, .pnpm, .bin, .cache
         if (entry.startsWith('@')) {
             for (const scoped of safeReaddir(join(nodeModules, entry))) {
+                if (scoped.startsWith('.')) continue; // parked `.ignored_<name>` copies
                 roots.add(join(nodeModules, entry, scoped, 'node_modules'));
             }
             continue;
@@ -615,6 +635,7 @@ export async function auditGraph({
     getRegistry,
     getTarballReachable = async () => true,
     now = new Date(),
+    judgeAt = null,
     syncCommand = 'pnpm sync:matrx-packages',
     updateCommand = updateCommandFor({ pnpm: true }),
 }) {
@@ -696,6 +717,24 @@ export async function auditGraph({
                 continue;
             }
 
+            // CI: judged at the commit's time. Only a newer release the author could
+            // have installed when committing makes this version stale.
+            if (judgeAt) {
+                const atCommit = newerReleaseBefore({
+                    installedVersion: version,
+                    latest,
+                    versionTimes: info.versionTimes,
+                    judgeAt,
+                });
+                if (atCommit.known && !atCommit.newer) {
+                    notes.push(
+                        `✓ ${name}@${version} was npm latest when this commit was made (${judgeAt}); ` +
+                            `${latest} was published after it${info.publishedAt ? ` (${info.publishedAt})` : ''}.`,
+                    );
+                    continue;
+                }
+            }
+
             const declaredHere = graph.declared.some(
                 (d) => d.name === name && (d.specifier === 'latest' || d.specifier === 'workspace:*'),
             );
@@ -744,6 +783,48 @@ export async function auditGraph({
 
 // ── I/O ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Pure. The newest non-prerelease version above `installedVersion` (and not above
+ * `latest`) that npm had published at least COMMIT_TIME_GRACE_SECONDS before
+ * `judgeAt`. `known: false` when npm gave no per-version times — the caller must
+ * then judge against latest-now rather than excuse anything it cannot prove.
+ */
+export function newerReleaseBefore({ installedVersion, latest, versionTimes, judgeAt }) {
+    if (!versionTimes || typeof versionTimes !== 'object') return { known: false, newer: null };
+    const cutoff = new Date(judgeAt).getTime() - COMMIT_TIME_GRACE_SECONDS * 1000;
+    if (!Number.isFinite(cutoff)) return { known: false, newer: null };
+    let newer = null;
+    for (const [version, published] of Object.entries(versionTimes)) {
+        if (version === 'created' || version === 'modified' || version.includes('-')) continue;
+        if (compareVersions(version, installedVersion) <= 0) continue;
+        if (compareVersions(version, latest) > 0) continue;
+        const at = new Date(published).getTime();
+        if (!Number.isFinite(at) || at > cutoff) continue;
+        if (!newer || compareVersions(version, newer) > 0) newer = version;
+    }
+    return { known: true, newer };
+}
+
+/** True when the standard `CI` env var says this is a CI run. */
+export function isCiRun(env = process.env) {
+    const value = String(env.CI ?? '').trim().toLowerCase();
+    return value !== '' && value !== 'false' && value !== '0';
+}
+
+/** HEAD's committer date (ISO 8601), or null when git cannot answer. */
+function headCommitTime(projectRoot) {
+    try {
+        const out = execFileSync('git', ['log', '-1', '--format=%cI'], {
+            cwd: projectRoot,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+        return out && Number.isFinite(new Date(out).getTime()) ? out : null;
+    } catch {
+        return null;
+    }
+}
+
 function readRegistry(name, projectRoot) {
     try {
         const view = JSON.parse(
@@ -758,6 +839,7 @@ function readRegistry(name, projectRoot) {
             registryVersion,
             tarballUrl: view.dist?.tarball ?? null,
             publishedAt: registryVersion ? (view.time?.[registryVersion] ?? null) : null,
+            versionTimes: view.time ?? null,
         };
     } catch (error) {
         return { registryVersion: null, registryError: error?.message?.split('\n')[0] ?? 'npm view failed' };
@@ -801,6 +883,7 @@ export async function runCheck({
     getRegistry,
     getTarballReachable,
     now = new Date(),
+    judgeAt = null,
     log = console.log,
     error = console.error,
 } = {}) {
@@ -814,10 +897,17 @@ export async function runCheck({
         getRegistry,
         getTarballReachable,
         now,
+        judgeAt,
         syncCommand,
         updateCommand,
     });
 
+    if (judgeAt) {
+        log(
+            `CI run: currency is judged at HEAD's commit time ${judgeAt} ` +
+                `(grace ${COMMIT_TIME_GRACE_SECONDS}s), not at CI time.`,
+        );
+    }
     for (const note of notes) log(note);
 
     if (transients.length > 0) {
@@ -1257,6 +1347,63 @@ async function selfTest() {
         1,
     );
 
+    // ── CI judges at COMMIT time (2026-10-08, matrx-vscode runs 37829153103 / 37832365343) ──
+    // The commit installed kit 0.8.0, which was latest when it was made; the publish
+    // train released 0.9.0 between the push and CI reaching this check.
+    const commitAt = '2026-09-10T07:50:00Z';
+    const secondsAfterCommit = (s) => new Date(new Date(commitAt).getTime() + s * 1000).toISOString();
+    const trainRegistry = (publishedOffsetSeconds) => async () => ({
+        registryVersion: '0.9.0',
+        tarballUrl: 'https://registry.npmjs.org/@ai-matrx/kit/-/kit-0.9.0.tgz',
+        publishedAt: secondsAfterCommit(publishedOffsetSeconds),
+        versionTimes: {
+            created: '2026-01-01T00:00:00Z',
+            modified: secondsAfterCommit(publishedOffsetSeconds),
+            '0.8.0': '2026-09-01T00:00:00Z',
+            '0.9.0-rc.1': '2026-09-02T00:00:00Z',
+            '0.9.0': secondsAfterCommit(publishedOffsetSeconds),
+        },
+    });
+    const ciRun = (graph, getRegistry, judgeAt) =>
+        runCheck({
+            graph,
+            syncCommand: 'pnpm sync:matrx-packages',
+            updateCommand: updateCommandFor({ pnpm: true }),
+            getRegistry,
+            getTarballReachable: async () => true,
+            now,
+            judgeAt,
+            log: silence,
+            error: silence,
+        });
+    expect('CI: newer version published AFTER the commit is not stale', await ciRun(behind, trainRegistry(43), commitAt), 0);
+    expect('CI: newer version published the SAME SECOND as the commit', await ciRun(behind, trainRegistry(0), commitAt), 0);
+    expect(
+        `CI: newer version published inside the ${COMMIT_TIME_GRACE_SECONDS}s grace before the commit`,
+        await ciRun(behind, trainRegistry(-(COMMIT_TIME_GRACE_SECONDS - 30)), commitAt),
+        0,
+    );
+    expect('CI: newer version published 10 min BEFORE the commit is stale', await ciRun(behind, trainRegistry(-600), commitAt), 1);
+    expect('local (no judgeAt): same post-commit publish is still stale', await ciRun(behind, trainRegistry(43), null), 1);
+    expect(
+        'CI: npm gave no per-version times, so nothing is excused',
+        await ciRun(
+            behind,
+            async () => ({ registryVersion: '0.9.0', publishedAt: secondsAfterCommit(43) }),
+            commitAt,
+        ),
+        1,
+    );
+    expect(
+        'CI: a duplicate is still red at commit time',
+        await ciRun(parsePnpmLock(PNPM_FIXTURE_DUPLICATE), fixtureRegistry, commitAt),
+        1,
+    );
+    expect('CI: a pin is still red at commit time', await ciRun(parsePnpmLock(PNPM_FIXTURE_PIN), fixtureRegistry, commitAt), 1);
+    expect('isCiRun: CI=true', isCiRun({ CI: 'true' }), true);
+    expect('isCiRun: unset', isCiRun({}), false);
+    expect('isCiRun: CI=false', isCiRun({ CI: 'false' }), false);
+
     if (problems.length > 0) {
         console.error('check-matrx-packages --self-test FAILED:');
         for (const problem of problems) console.error(`  - ${problem}`);
@@ -1266,7 +1413,8 @@ async function selfTest() {
         '✓ check-matrx-packages self-test passed: classifier (6), stale transitive on the real\n' +
             '  matrx-vscode pre-fix lockfile (a), duplicate version (b), pinned spec (c), store residue\n' +
         '  excluded, clean green,\n' +
-            '  and whole-run exit codes incl. a simulated 404 tarball.',
+            '  and whole-run exit codes incl. a simulated 404 tarball, and CI judged at commit time\n' +
+            '  (a post-commit publish is not stale; a pre-commit one is; local stays latest-now).',
     );
 }
 
@@ -1288,12 +1436,22 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         process.exit(runDuplicatesCheck({ graph: collectGraph(projectRoot), updateCommand: updateCommandFor({ pnpm }) }));
     } else {
         const pnpm = existsSync(resolve(projectRoot, 'pnpm-lock.yaml'));
+        let judgeAt = null;
+        if (isCiRun()) {
+            judgeAt = headCommitTime(projectRoot);
+            if (!judgeAt) {
+                console.error(
+                    'CI run, but HEAD has no readable committer date: judging currency against npm latest NOW.',
+                );
+            }
+        }
         const exitCode = await runCheck({
             graph: collectGraph(projectRoot),
             syncCommand: syncCommandFor(projectRoot),
             updateCommand: updateCommandFor({ pnpm }),
             getRegistry: (name) => readRegistry(name, projectRoot),
             getTarballReachable: (url) => probeTarball(url),
+            judgeAt,
         });
         process.exit(exitCode);
     }

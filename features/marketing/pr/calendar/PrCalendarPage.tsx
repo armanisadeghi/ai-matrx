@@ -27,8 +27,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
-import { ReadGate } from "@/components/read-state/ReadGate";
-import { useRead } from "@/components/read-state/useRead";
+import { ReadGate } from "@ai-matrx/design-system";
+import { useRead } from "@ai-matrx/design-system";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { getComingSoon } from "@/lib/coming-soon/registry";

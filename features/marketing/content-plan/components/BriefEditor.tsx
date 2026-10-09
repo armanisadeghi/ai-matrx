@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { Label } from "@/components/ui/label";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import PageBriefBlock, {
   PageBriefPoints,
 } from "@/components/mardown-display/blocks/page-brief/PageBriefBlock";

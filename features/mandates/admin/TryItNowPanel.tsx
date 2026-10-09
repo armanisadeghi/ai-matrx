@@ -24,7 +24,7 @@ import {
   ConfigurationTableRow,
   FieldHelp,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
@@ -76,8 +76,10 @@ import {
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
-import { formatDurationMs } from "@ai-matrx/kit/format";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
+import { costWords } from "@/features/mandates/run-history/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
@@ -86,6 +88,19 @@ interface CompletedRun {
   variables: JsonObject;
   userInput: string | null;
 }
+const INPUT_COLUMNS = [
+  { key: "name", label: "Name" },
+  { key: "value", label: "Value" },
+  { key: "source", label: "Source" },
+];
+const RESULT_COLUMNS = [
+  { key: "status", label: "Status" },
+  { key: "structure", label: "Structure" },
+  { key: "duration", label: "Duration" },
+  { key: "cost", label: "Cost" },
+  { key: "tokens", label: "Tokens" },
+  { key: "ran", label: "Ran" },
+];
 const APPLIED_OVERRIDE_COLUMNS = [
   { key: "setting", label: "Applied override" },
   { key: "value", label: "Value" },
@@ -143,6 +158,7 @@ export function TryItNowPanel({
   passesUserInput: boolean | undefined;
   onSavedTestCase: () => void;
 }) {
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();
   const [testMode, setTestMode] = useState<"server" | "display">("server");
@@ -444,12 +460,6 @@ export function TryItNowPanel({
     }),
   }, "run_once");
 
-  const inputColumns = [
-    { key: "format", label: "Format" },
-    { key: "required", label: "Required" },
-    { key: "delivery", label: "Entry" },
-    { key: "source", label: "Source" },
-  ];
 
   return (
     <section className="min-w-0 space-y-4">
@@ -510,17 +520,11 @@ export function TryItNowPanel({
           />
         </section>
       ) : null}
+      {adminSeat ? null : (
       <PropertyRow
         label="Test mode"
-        help={
-          adminSeat
-            ? "Server test executes this job's system default and returns diagnostics."
-            : `${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved Mandate Holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`
-        }
+        help="Server test runs the job; display preview runs your saved holder."
         value={
-          adminSeat ? (
-            "Server test"
-          ) : (
             <Select
               value={testMode}
               onValueChange={(value: "server" | "display") => {
@@ -539,9 +543,9 @@ export function TryItNowPanel({
                 <SelectItem value="display">My display preview</SelectItem>
               </SelectContent>
             </Select>
-          )
         }
       />
+      )}
       {allowPrincipalSelection && !adminSeat ? (
         <PropertyRow
           label="Test as"
@@ -567,7 +571,7 @@ export function TryItNowPanel({
               </Select>
             )
           }
-          help="System default preserves the administrator bench. My effective Mandate Holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
+          help="Both run as you."
         />
       ) : null}
       {surfaceState.status === "loading" ? (
@@ -588,7 +592,8 @@ export function TryItNowPanel({
         testId="test-input-surface-notes"
         folded
       />
-      <div className="grid min-w-0 gap-3">
+      {/* INPUTS — one row per input: name, value, source. */}
+      <ConfigurationTable label="Inputs" columns={INPUT_COLUMNS}>
         {fields.map((field) => {
           const definition = agentDefinitions.find(
             (item) => item.name === field.name,
@@ -597,54 +602,27 @@ export function TryItNowPanel({
             !SCALAR_VALUE_KINDS.has(field.kind) &&
             !MEDIA_VALUE_KINDS.has(field.kind);
           const label = displayLabel(field.label === field.name ? undefined : field.label, field.name);
+          // A binding prompt left blank runs on the holder's own default
+          // (guard: features/mandates/__tests__/invoke-supplied-values.test.ts).
+          const blankUsesDefault =
+            field.origin === "binding_prompt" &&
+            field.sourcing === "optional" &&
+            !field.pinned;
           return (
-            <div
+            <ConfigurationTableRow
               key={field.name}
-              className="min-w-0 space-y-2 rounded-lg border border-border p-3"
-            >
-              <h4 className="flex items-center gap-2 type-title">
-                {label}
-                {field.help ? (
-                  <FieldHelp label={label}>{field.help}</FieldHelp>
-                ) : null}
-              </h4>
-              <ConfigurationTable
-                label={`${label} input properties`}
-                columns={inputColumns}
-              >
-                <ConfigurationTableRow
-                  columns={inputColumns}
-                  cells={{
-                    format: (humanizeIdentifier(field.kind) || field.kind),
-                    required: field.sourcing !== "optional" ? "Yes" : "No",
-                    delivery: field.pinned ? "Automatic" : "Manual",
-                    source: ORIGIN_LABEL[field.origin],
-                  }}
-                />
-              </ConfigurationTable>
-              {/* 🚨 A QUESTION THIS JOB ASKS YOU NEVER GETS SILENTLY ANSWERED
-                  (walk, 2026-08-31; moved here 2026-09-09 when the workspace's
-                  own run panel was deleted by `816ea88701`'s tab refactor and
-                  this became the only run form in the product). A
-                  `binding_prompt` source served as an OPTIONAL field was left
-                  blank and the run went ahead on the agent's own default — the
-                  person was asked nothing, told nothing, and got a value they
-                  never chose. It is not made required: the binding's author
-                  said optional and that stands. The consequence of leaving it
-                  blank is stated BEFORE the run instead of discovered after
-                  it. Guard: `features/mandates/__tests__/invoke-supplied-values.test.ts`. */}
-              {field.origin === "binding_prompt" &&
-              field.sourcing === "optional" &&
-              !field.pinned ? (
-                <p className="type-secondary leading-snug text-warning">
-                  This job asks you for this. Leave it blank and the run uses
-                  the Mandate Holder&rsquo;s own default instead of an answer from you.
-                </p>
-              ) : null}
+              columns={INPUT_COLUMNS}
+              cells={{
+                name: (
+                  <span className="inline-flex items-center gap-1">
+                    {label}
+                    {field.help ? <FieldHelp label={label}>{field.help}</FieldHelp> : null}
+                  </span>
+                ),
+                value: (
+                  <div className="min-w-0">
               {field.pinned ? (
-                <PropertyRow
-                  label="Value"
-                  value={
+                <>{
                     field.pinnedValue == null ? (
                       "Provided at run time"
                     ) : typeof field.pinnedValue === "object" ||
@@ -657,8 +635,7 @@ export function TryItNowPanel({
                     ) : (
                       String(field.pinnedValue)
                     )
-                  }
-                />
+                  }</>
               ) : structured ? (
                 <ProJsonTextarea
                   aria-label={label}
@@ -721,96 +698,87 @@ export function TryItNowPanel({
                   autoFocus={false}
                 />
               )}
-            </div>
+                  </div>
+                ),
+                source: (
+                  <span title={blankUsesDefault ? "Blank uses the holder's default" : undefined}>
+                    {ORIGIN_LABEL[field.origin]}
+                    {field.sourcing !== "optional" ? " · Required" : ""}
+                    {field.pinned ? " · Automatic" : ""}
+                    {blankUsesDefault ? " · Blank uses default" : ""}
+                  </span>
+                ),
+              }}
+            />
           );
         })}
-      </div>
-      {surface && fields.length === 0 ? (
-        <PropertyRow label="Declared inputs" value="None" />
-      ) : null}
-      <div className="min-w-0 space-y-2 rounded-lg border border-border p-3">
-        <h4 className="flex items-center gap-2 type-title">
-          User message
-          <FieldHelp label="User message">
-            Optional text from the person running the test. Provision values are
-            sent separately.
-          </FieldHelp>
-        </h4>
-        <ConfigurationTable
-          label="User message properties"
-          columns={inputColumns}
-        >
-          <ConfigurationTableRow
-            columns={inputColumns}
-            cells={{
-              format: "Text",
-              required: "No",
-              delivery: "Manual",
-              source: "User",
-            }}
-          />
-        </ConfigurationTable>
-        {surface?.acceptsUserInput ? (
-          <ProTextarea
-            aria-label="User message"
-            value={userInput}
-            onChange={(event) => setUserInput(event.target.value)}
-            placeholder="User message"
-            className="min-h-32 text-sm"
-            minHeight={128}
-            autoFocus={false}
-          />
-        ) : (
-          <PropertyRow
-            label="User message"
-            value={surface ? "Not accepted" : "Unknown"}
-          />
-        )}
-      </div>
+        <ConfigurationTableRow
+          columns={INPUT_COLUMNS}
+          cells={{
+            name: "User message",
+            value: surface?.acceptsUserInput ? (
+              <ProTextarea
+                aria-label="User message"
+                value={userInput}
+                onChange={(event) => setUserInput(event.target.value)}
+                placeholder="User message"
+                className="min-h-24 text-sm"
+                minHeight={96}
+                autoFocus={false}
+              />
+            ) : surface ? (
+              "Not accepted"
+            ) : (
+              "—"
+            ),
+            source: "User",
+          }}
+        />
+      </ConfigurationTable>
       {failure ? <RunFailureCard failure={failure} /> : null}
       {result ? (
         <section className="space-y-3 rounded-lg border border-border p-3">
-          <h3 className="type-title">Test result</h3>
-          <PropertyRow
-            label="Execution"
-            value={
-              <StatusToken
-                status={result.error ? "error" : "ok"}
-                label={result.error ? "Failed" : "Completed"}
-              />
-            }
-          />
-          <PropertyRow
-            label="Output structure"
-            value={
-              <StatusToken
-                status={
-                  !structure?.checked
-                    ? "unknown"
-                    : structure.ok
-                      ? "ok"
-                      : "error"
-                }
-                label={
-                  !structure?.checked
-                    ? "Not yet evaluated"
-                    : structure.ok
-                      ? "Passed"
-                      : "Failed"
-                }
-              />
-            }
-          />
-          <PropertyRow
-            label="Full validation"
-            value={<StatusToken status="neutral" label="Not yet evaluated" />}
-          />
-          <PropertyRow
-            label="Duration"
-            value={formatDurationMs(result.duration_ms ?? 0, {
-              style: "compact",
-            })}
-          />
+          <h3 className="type-title">Result</h3>
+          <ConfigurationTable label="Result" columns={RESULT_COLUMNS}>
+            <ConfigurationTableRow
+              columns={RESULT_COLUMNS}
+              cells={{
+                status: (
+                  <StatusToken
+                    status={result.error ? "error" : "ok"}
+                    label={result.error ? "Failed" : "Succeeded"}
+                  />
+                ),
+                structure: (
+                  <StatusToken
+                    status={!structure?.checked ? "neutral" : structure.ok ? "ok" : "error"}
+                    label={!structure?.checked ? "—" : structure.ok ? "Passed" : "Failed"}
+                  />
+                ),
+                duration: formatDurationMs(result.duration_ms ?? 0, { style: "compact" }),
+                cost: costWords(result.accounting?.total_cost_usd ?? null, costRate, costUnit),
+                tokens:
+                  result.accounting && (result.accounting.input_tokens != null || result.accounting.output_tokens != null)
+                    ? formatCount((result.accounting.input_tokens ?? 0) + (result.accounting.output_tokens ?? 0))
+                    : "—",
+                ran:
+                  runHolder?.holderType === "workflow" ? (
+                    runHolder.runId ? (
+                      <Link href={`/workflows/runs/${runHolder.runId}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                        Workflow run
+                        <ExternalLink className="size-3" />
+                      </Link>
+                    ) : (
+                      "—"
+                    )
+                  ) : ranAgentId ? (
+                    <EntityRef token="agent" id={ranAgentId} href={`/agents/go/${ranAgentId}`} openInNewTab wrap />
+                  ) : (
+                    "—"
+                  ),
+              }}
+            />
+          </ConfigurationTable>
           <ConfigurationTable
             label="Applied model overrides"
             columns={APPLIED_OVERRIDE_COLUMNS}
@@ -854,52 +822,6 @@ export function TryItNowPanel({
               />
             )}
           </ConfigurationTable>
-          <PropertyRow
-            label="Resolution source"
-            value={
-              result.provenance
-                ? (humanizeIdentifier(result.provenance) || result.provenance)
-                : "Unknown"
-            }
-          />
-          <PropertyRow
-            label="Mandate Holder type"
-            value={runHolder?.holderType === "workflow" ? "Workflow" : "Agent"}
-          />
-          {runHolder?.holderType === "workflow" ? (
-            <PropertyRow
-              label="Workflow run"
-              value={
-                runHolder.runId ? (
-                  <Button asChild variant="outline">
-                    <Link href={`/workflows/runs/${runHolder.runId}`} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="mr-2 size-4" />
-                      Open run
-                    </Link>
-                  </Button>
-                ) : (
-                  "Unavailable"
-                )
-              }
-            />
-          ) : (
-            <PropertyRow
-              label="Executed agent"
-              value={
-                ranAgentId ? (
-                  <EntityRef
-                    token="agent"
-                    id={ranAgentId}
-                    href={`/agents/go/${ranAgentId}`}
-                    openInNewTab
-                    wrap
-                  />
-                ) : (
-                  "Unavailable"
-                )
-              }
-            />
-          )}
           <ServerNotes
             heading="Run notes"
             notes={result.notes ?? []}
@@ -925,9 +847,8 @@ export function TryItNowPanel({
                 outputKind={structure?.output_kind ?? null}
               />
               <PropertyRow
-                label="Inputs changed since test"
+                label="Inputs changed since run"
                 value={inputsChanged ? "Yes" : "No"}
-                help="Saving uses the completed run's exact input snapshot."
               />
               <label className="block space-y-1 text-sm">
                 <span>Test case name</span>

@@ -112,7 +112,8 @@ jest.mock("@/components/navigation/AppLink", () => {
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
   confirm: async () => true,
 }));
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   TextInputDialog: () => null,
 }));
 jest.mock("@/lib/toast", () => ({

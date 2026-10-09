@@ -16,6 +16,15 @@ export function installDevWalkMonitor(deps: DevWalkMonitorDeps): () => void {
   const source = new deps.EventSource("/__dev-walk?stream=1");
   const park = () => {
     source.close();
+    // NOTHING FAILS SILENTLY (lane FIRST-PAGE-ABORT, 2026-10-08): a walk the cap evicted mid-load used
+    // to leave only React's "Transition was aborted because of invalid state" and a page with no rows
+    // behind it, which two lanes read as a table-page fault. Say what is happening, in the console and
+    // on the document, before leaving; the parked page then carries the Resume button.
+    console.warn(
+      "[walk-cap] This preview host was evicted (paused) to free a live-database slot for another session. " +
+        "The page is about to unload into the Resume page; an abort or empty table seen after this line is the pause, not an app fault.",
+    );
+    deps.window.document.documentElement.setAttribute("data-matrx-walk-parked", "evicted");
     const returnTo = `${deps.window.location.pathname}${deps.window.location.search}${deps.window.location.hash}`;
     (deps.park ?? ((target) => deps.window.location.replace(target)))(`/__dev-walk?parked=1&returnTo=${encodeURIComponent(returnTo)}`);
   };

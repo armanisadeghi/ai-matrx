@@ -40,7 +40,6 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { NewClassDraftScope } from "@/features/surfaces/manifests/education-classes.manifest";
 import { makeExamId, parseNewClassDraftValue } from "../classAgentWrites";
 
@@ -197,7 +196,6 @@ export function ClassFormDialog({
       onOpenChange(false);
     } catch (e) {
       // Closing the workspace picker is an answer ("not now"), not a failure.
-      if (isOrganizationSelectionCancelled(e)) return;
       toast.error(
         e instanceof Error ? e.message : "Could not save the class.",
       );

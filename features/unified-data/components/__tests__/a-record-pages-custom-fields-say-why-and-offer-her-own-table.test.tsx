@@ -12,7 +12,7 @@
  *
  * Plants (recorded in lane 7's W1 report): swap `check` for `enabled` -> the unavailable clause goes
  * red; drop `entityLabel` or `onMakeOwnTable` -> the wiring clause goes red; drop the organization
- * pre-choice -> the dispatch clause goes red.
+ * hand-off to the dialog -> the organization clause goes red.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -87,7 +87,8 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   useAppRecordsConfig: (organizationId: string | null) => ({ dataSource: {}, actor: { actor: "user" }, organizationId }),
 }));
 jest.mock("@/features/make/MakeMount", () => ({
-  NewTableDialog: ({ what }: { what: string | null }) => (what ? <div data-new-table-dialog={what} /> : null),
+  NewTableDialog: ({ what, organization }: { what: string | null; organization?: { id: string } | null }) =>
+    what ? <div data-new-table-dialog={what} data-new-table-organization={organization?.id ?? ""} /> : null,
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/custom-field-targets", () => ({
@@ -150,12 +151,14 @@ describe("a record page's custom fields say why, and offer her own table", () =>
     expect(typeof props?.["onMakeOwnTable"]).toBe("function");
   });
 
-  it("T1.2: Make your own table opens New table with the record's organization chosen", async () => {
+  it("T1.2: Make your own table opens New table in the record's organization — the active one is never switched", async () => {
     await show();
     const offer = sectionProps.at(-1)?.["onMakeOwnTable"] as () => void;
     await act(async () => offer());
-    expect(dispatched).toEqual([{ type: "choose", org: { id: CEDAR_RIDGE, name: "Cedar Ridge Physical Therapy" } }]);
-    expect(host.querySelector('[data-new-table-dialog="create"]')).not.toBeNull();
+    // Opening a record never switches the active organization (active-organization plan, 2026-10-07).
+    expect(dispatched).toEqual([]);
+    const dialog = host.querySelector('[data-new-table-dialog="create"]');
+    expect(dialog?.getAttribute("data-new-table-organization")).toBe(CEDAR_RIDGE);
   });
 
   it("T1.2: already working in the record's organization, nothing is switched", async () => {

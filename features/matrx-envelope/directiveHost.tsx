@@ -68,6 +68,7 @@ import {
 } from "@/features/directive-catalog/service";
 import type { DirectiveShellState } from "@/features/directive-catalog/types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { provideDirectiveHost } from "@/features/content-ir/host/directiveHostSlot";
 import { invalidateReferenceLabel } from "@/features/matrx-envelope/referenceResolvers";
 import { BackendApiError } from "@/lib/api/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
@@ -181,6 +182,17 @@ function organizationNameOf(organizationId: string): string | null {
 }
 
 function ask(request: DirectiveAskRequest): Promise<boolean> {
+  return askDirective(request);
+}
+
+/**
+ * THE ONE QUESTION, for every surface that runs a directive: the cards (via
+ * `ask`) and the admin builder (`surface: "admin"` — no "this text" there).
+ */
+export function askDirective(
+  request: DirectiveAskRequest,
+  { surface = "text" }: { surface?: "text" | "admin" } = {},
+): Promise<boolean> {
   // The organization the write will land in — the one `authedDirectiveHeaders`
   // sends with every directive write (the active organization is for writes).
   const organizationName = selectActiveOrganizationName(requireStore().getState());
@@ -189,6 +201,7 @@ function ask(request: DirectiveAskRequest): Promise<boolean> {
   return confirmDialog(
     directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName, organizationNameOf, {
       valueLabel: matrxDirectiveValueLabel,
+      surface,
     }),
   );
 }
@@ -488,3 +501,8 @@ export const matrxDirectiveHost: DirectiveHost = {
       hint: "The emitter minted a slug outside the directive_v<version>_<class>_<noun> grammar.",
     }),
 };
+
+// The content-ir host reads this through a leaf slot, never by importing this
+// module — that import closed a 13-module static cycle (G13). Guard:
+// `pnpm check:host-cycles`.
+provideDirectiveHost(matrxDirectiveHost);

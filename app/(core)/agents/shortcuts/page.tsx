@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { PlusTapButton, ListTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlusTapButton, ListTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { PromoteToGlobalModal } from "@/features/agent-shortcuts/components/PromoteToGlobalModal";
 import { ShortcutList } from "@/features/agent-shortcuts/components/ShortcutList";

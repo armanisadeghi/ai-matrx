@@ -18,7 +18,7 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { AddToOrchestraDialog } from "./components/AddToOrchestraDialog";
 import { AgentBrowseCards } from "./components/AgentBrowseCards";
 import { AgentBrowseRows } from "./components/AgentBrowseRows";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { BROWSE_COLUMNS } from "./columns";
 import {
   fetchAgentBrowsePage,
@@ -107,6 +107,7 @@ function useAgentListRowActions(
           navigationIds={list.rows.map((r) => r.id)}
         />
       )}
+      {host.duplicateDialog}
       {host.shareAgent && (
         <ShareModal
           isOpen

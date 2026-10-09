@@ -1,11 +1,22 @@
 // N5 property menu (round 30): an inline database's column header menu renames a property and opens its
 // settings; a dragged width survives a reload; no grouping bar / Undo over the rows. Exit 1 on failure.
-//   SPACES_WALK_ORG="Ashford Labs" node features/spaces/__tests__/walk/property-menu.walk.mjs <pageId>
-import { open, act, originOf } from "./lib.mjs";
+// Round 33: makes its own scratch page with an inline database (no page id argument) and trashes it.
+//   node features/spaces/__tests__/walk/property-menu.walk.mjs
+import { open, act, originOf, newPage, slash, trashPage } from "./lib.mjs";
 
 const SHOT = process.env.SHOT_DIR ?? "/tmp";
-const id = process.argv[2];
 const { browser, page } = await open({ member: true, width: 1440, height: 1000 });
+const id = await newPage(page);
+console.log(JSON.stringify({ page: id }));
+await page.waitForTimeout(2000);
+await act(page, async () => {
+  await page.locator(".bn-editor .bn-inline-content").last().click();
+  await slash(page, "Database - Inline");
+  await page.locator(".spaces-db-frame").first().waitFor({ timeout: 60_000 });
+  // The page saves the database block before the walk reloads it.
+  await page.locator('.spaces-edited[data-state="saved"]').waitFor({ timeout: 30_000 }).catch(() => {});
+  await page.waitForTimeout(3000);
+});
 let failed = 0;
 const check = (name, ok, extra = {}) => {
   if (!ok) failed++;
@@ -58,5 +69,6 @@ frame = await load();
 const w1 = Math.round((await header().boundingBox()).width);
 check("a dragged width is kept with the view", w1 >= w0 + 80, { before: w0, after: w1 });
 await page.screenshot({ path: `${SHOT}/property-menu-after.png` });
+check("scratch page trashed", await act(page, () => trashPage(page)));
 await browser.close();
 process.exit(failed ? 1 : 0);

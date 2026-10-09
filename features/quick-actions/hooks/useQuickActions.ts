@@ -11,7 +11,6 @@ import {
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 
 export type OpenChatWindowOptions = Pick<
   OpenAgentRunWindowOptions,
@@ -59,8 +58,7 @@ export function useQuickActions() {
             agentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY))
               .agentId;
           } catch (error) {
-            // The person declined the organization question: nothing happened.
-            if (isOrganizationSelectionCancelled(error)) return;
+            // Resolution failed (e.g. the organization question was dismissed): fall back to the picker.
             console.error(
               `[useQuickActions] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
               error,

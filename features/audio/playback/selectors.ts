@@ -4,7 +4,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { PlaybackItem } from "./types";
+import type { PlaybackItem } from "@ai-matrx/media/speech";
 
 const selectAudioPlayback = (state: RootState) => state.audioPlayback;
 

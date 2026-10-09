@@ -21,7 +21,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { FileIcon } from "@ai-matrx/media/react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {

@@ -58,6 +58,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: (
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => USER,
   selectIsSuperAdmin: () => false,
+  selectAdminFeature: () => false,
 }));
 
 const readIndex = jest.mocked(fetchKnobIndex);

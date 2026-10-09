@@ -62,7 +62,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock(
-  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@ai-matrx/chat/ui/markdown-stream/useBoundAgentOutputSchema",
   () => ({ useBoundAgentOutputSchema: () => null }),
 );
 
@@ -108,7 +108,7 @@ jest.mock(
   () => ({ __esModule: true, default: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/ToolHandlers",
+  "@ai-matrx/chat/ui/markdown-stream/internal-handlers/ToolHandlers",
   () => ({
     InlineToolCard: () => null,
     DbToolCard: () => null,
@@ -121,11 +121,11 @@ jest.mock(
   () => ({ InlineStatusIndicator: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineThinkingSlot",
+  "@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineThinkingSlot",
   () => ({ InlineThinkingSlot: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineAssistantError",
+  "@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineAssistantError",
   () => ({ InlineAssistantError: () => null }),
 );
 jest.mock(
@@ -142,7 +142,7 @@ jest.mock(
   () => ({ LiveToolCallCard: () => null }),
 );
 
-import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 import { ImagePolicyProvider } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 interface StreamCase {

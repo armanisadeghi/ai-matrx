@@ -38,6 +38,7 @@ export function groupChatInspectorToggleInput(tab: GroupChatInspectorTab): ToolT
 
 export const GROUP_CHAT_INSPECTOR_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: GROUP_CHAT_INSPECTOR_KIND,
+  surface: "dom",
   label: "Group chat",
   icon: Users,
   load: () => import("./GroupChatInspectorCanvasView"),

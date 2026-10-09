@@ -428,7 +428,7 @@ export function menuHeader(
   message?: { role: string; createdAt?: string | null } | null,
 ): { content: string | null; contentLabel: string | null } {
   // A MESSAGE is named, never dumped: "AI answer", not "Content: <the whole answer>"
-  // (page-pass 2026-09-27, agent-app Run History). A selection still shows itself.
+  // (page-pass 2026-09-27, applet Run History). A selection still shows itself.
   if (message && actionText.source !== "selection" && actionText.source !== "none") {
     const who = message.role === "user" ? "Your message" : message.role === "assistant" ? "AI answer" : "Message";
     const at = message.createdAt ? new Date(message.createdAt) : null;

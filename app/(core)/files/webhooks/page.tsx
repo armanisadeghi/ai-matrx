@@ -11,7 +11,7 @@ import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { WebhooksManager } from "@/features/files/webhooks/components/WebhooksManager";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 export const metadata: Metadata = { title: "Webhooks | Files" };
 

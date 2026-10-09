@@ -46,6 +46,8 @@ import {
   useEffectiveDating,
 } from "../../shared/EffectiveDatedForm";
 import { recordHrPositionChange } from "../../service";
+import { EmploymentPicker } from "../relations/components/EmploymentPicker";
+import { managerPatch } from "./managerPatch";
 import { hrSettingsHref } from "../../routes";
 import { activeStructure, useHrStructure } from "../shared/useHrStructure";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -114,6 +116,8 @@ export function ChangePositionForm({
     str(currentAssignment, "flsa_exemption_basis") ?? "",
   );
   const [changeReason, setChangeReason] = useState("");
+  const currentManagerId = str(currentAssignment, "manager_employment_id");
+  const [managerId, setManagerId] = useState<string | null>(currentManagerId);
 
   const { jobTitles, locations, departments } = activeStructure(structure);
 
@@ -198,6 +202,7 @@ export function ChangePositionForm({
       effective_from: dating.value.effectiveFrom,
       change_intent: dating.value.mode,
       change_reason: changeReason || null,
+      ...managerPatch(currentManagerId, managerId, employmentId),
       is_transfer: kind === "transfer",
     });
 
@@ -270,6 +275,10 @@ export function ChangePositionForm({
                 ))}
               </SelectContent>
             </Select>
+          </Field>
+
+          <Field label="Reports to">
+            <EmploymentPicker value={managerId} onChange={setManagerId} placeholder="Search for their manager" />
           </Field>
 
           <Field label="Location">

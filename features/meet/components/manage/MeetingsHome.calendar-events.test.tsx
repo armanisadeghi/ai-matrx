@@ -22,7 +22,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@ai-matrx/meet/react", () => ({ useMeetHost: () => null }));
-jest.mock("@ai-matrx/tap-target", () => ({
+jest.mock("@ai-matrx/design-system/tap-target", () => ({
   TapTargetButton: () => null,
   TapTargetButtonSolid: () => null,
 }));
@@ -97,8 +97,8 @@ jest.mock("@/components/ui/select", () => ({
   SelectTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SelectValue: () => null,
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: () => mockEnsureOrganizationContext(),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: () => mockEnsureOrganizationContext(),
 }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("@/features/meet/hooks/useMeetingsDirectory", () => ({

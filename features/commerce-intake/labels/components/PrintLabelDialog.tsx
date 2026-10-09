@@ -14,7 +14,7 @@
  *   deleted, freeing its slot in the live unique index.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";

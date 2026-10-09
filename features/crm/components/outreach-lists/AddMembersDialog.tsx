@@ -8,7 +8,7 @@
 // including them is a visible, deliberate choice.
 
 import { useEffect, useMemo, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { Bookmark, Building2, Contact, Users } from "lucide-react";
 import { toast } from "@/lib/toast";

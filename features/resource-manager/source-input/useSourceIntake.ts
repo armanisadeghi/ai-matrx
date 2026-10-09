@@ -33,10 +33,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import {
-  holdDeliberateIntent,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
@@ -67,7 +64,7 @@ if (typeof window !== "undefined") {
 
 /** True when a landing stopped only because no organization is chosen yet. */
 export function waitsForOrganization(error: unknown): boolean {
-  return isOrganizationRequiredError(error) || isOrganizationSelectionCancelled(error);
+  return isOrganizationRequiredError(error);
 }
 
 export function useSourceIntake(
@@ -132,8 +129,9 @@ export function useSourceIntake(
         return linked.ok ? { ok: true } : { ok: false, error: { message: linked.error.message } };
       },
     },
-    ensureOrganization: () => ensureOrgId(activeOrgId),
-    holdIntent: holdDeliberateIntent,
+    ensureOrganization: () => ensureOrgId(null),
+    hasOrganization: () => Boolean(activeOrgId || getActiveOrgId()),
+    holdIntent: (work) => Promise.resolve().then(work),
     waitsForOrganization,
     failureSentence: addFailureSentence,
     userId: () => userId,

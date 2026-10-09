@@ -3,7 +3,7 @@
 // AN INBOUND TEXT THAT NO ORGANIZATION HAS REGISTERED IS A ROUTING FAILURE.
 // IT IS NOT AN INVITATION TO PICK AN ORGANIZATION FOR IT.
 //
-// Ruling (Arman, 2026-09-19): a "default organization" is at most a per-client
+// Ruling (Arman, 2026-09-19): a "preselected organization" is at most a per-client
 // DISPLAY preference. Nothing but the org picker and pure UI display may read
 // it. No data read, write, API route, boot ladder, trigger or billing query may
 // pick or substitute an organization — not a cookie, not a preference, not the

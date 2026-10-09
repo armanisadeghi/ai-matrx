@@ -209,7 +209,6 @@ export function createMatrxTransport(
           hasAppContext ? selectOrganizationId(state) : undefined,
           callOrganizationId,
           request.method,
-          undefined,
         );
       } else if (callOrganizationId) {
         organizationId = requireOrganizationContext(null, callOrganizationId);

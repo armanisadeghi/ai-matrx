@@ -25,7 +25,7 @@ import { ArrowRight, Check, Flag, Pencil, Users, X } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

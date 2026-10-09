@@ -3,7 +3,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
 import type { NoteSaveReceipt } from "@/features/notes/service/noteSaveErrors";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
-import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import type { ServerProcessedBlock } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 
 declare module "@ai-matrx/rich-content/rich-document/host-types" {
   interface RichDocumentHostTypes {

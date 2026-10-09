@@ -27,7 +27,11 @@ import { apiGet } from "@/lib/api/typed-client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
+import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
+import { DrillOrList } from "@/components/official/drill-explorer/DrillOrList";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { usageNameResolver } from "@/features/admin/usage-drill/useUsageDrill";
 
 type SystemErrorRow = components["schemas"]["SystemErrorRecord"];
 type RecentResponse =
@@ -125,7 +129,7 @@ function renderEvidenceDetail(row: SystemErrorRow) {
   );
 }
 
-export default function SystemErrorsPanel() {
+function SystemErrorsList() {
   // An alarm's link must land on exactly its own evidence, never a broad list.
   const searchParams = useSearchParams();
   const linkedHours = Number(searchParams.get("hours"));
@@ -553,5 +557,38 @@ export default function SystemErrorsPanel() {
         />
       </div>
     </div>
+  );
+}
+
+// THE PAGE'S FIRST SCREEN IS THE ERROR LEDGER COUNTED (lane DRILL-WAVE2-B): the declared definition
+// `system_errors` by app, then kind, type, route and feature, down to the day. The list below it (search,
+// Resolve, copy, the alarm links' kind / hours / request filters) is one control away and opens by itself
+// when an alarm link names one of those filters.
+export default function SystemErrorsPanel() {
+  return (
+    <DrillOrList
+      definition="system_errors"
+      listLabel="Error list"
+      listParams={["kind", "hours", "request_id"]}
+      list={<SystemErrorsList />}
+      renderDrill={(extras) => (
+        <DrillExplorer
+          source={{ kind: "entity", token: "system_errors" }}
+          lane="platform"
+          // org-fallback-deliberate: the platform lane of an admin explorer asks in the platform's own organization (its calendar is UTC)
+          organizationId={SYSTEM_ORGANIZATION_ID}
+          timeZone="UTC"
+          title="System errors"
+          rootLabel="All errors"
+          names={{ person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person") }}
+          headline={{ measure: "errors", also: ["open", "resolved"] }}
+          rowNoun="error"
+          countMeasure="errors"
+          location="Administration › System errors"
+          headerExtras={extras}
+          dataAttributes={{ "data-system-errors-drill": "" }}
+        />
+      )}
+    />
   );
 }

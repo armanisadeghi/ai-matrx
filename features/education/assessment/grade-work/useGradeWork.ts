@@ -17,7 +17,6 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useState } from "react";
@@ -64,7 +63,6 @@ export function useGradeWork(
       try {
         await ensureOrgId(null);
       } catch (holdError) {
-        if (isOrganizationSelectionCancelled(holdError)) return null;
         setError(
           isOrganizationRequiredError(holdError)
             ? organizationRefusalMessage({ subject: "Your work", act: "graded" })

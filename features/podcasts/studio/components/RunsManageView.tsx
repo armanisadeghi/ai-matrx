@@ -58,7 +58,7 @@ import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { RunHistoryCard, runEditHref, runHistoryHref } from "./RunHistoryCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 type FilterKey = "all" | "active" | "completed" | "failed" | "draft";
 

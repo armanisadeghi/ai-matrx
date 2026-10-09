@@ -157,6 +157,21 @@ describe("the explorer on the published packages", () => {
     });
   };
 
+  it("follows the page's window — on mount and when the page's control moves it (DRILL-LIVE-FIX-2 #4)", async () => {
+    const at = async (pageWindow: string | null) => {
+      await act(async () => {
+        root.render(
+          <DrillExplorer source={{ kind: "entity", token: "ai_usage" }} lane="platform" organizationId="00000000-0000-0000-0000-000000000001" title="AI usage" rootLabel="All usage" headline={{ measure: "cost" }} rowNoun="request" pageWindow={pageWindow} />,
+        );
+      });
+      await act(async () => {});
+    };
+    await at("7d");
+    expect((captured.table!.question as { window?: string | null }).window).toBe("7d");
+    await at("90d");
+    expect((captured.table!.question as { window?: string | null }).window).toBe("90d");
+  });
+
   it("draws the chart above the answer, fed the knob's Top N and the window's grain", async () => {
     await mount();
     const chart = host.querySelector("[data-chart-stand-in]");

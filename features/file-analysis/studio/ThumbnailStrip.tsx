@@ -23,7 +23,7 @@ import {
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface Props {
   fileId: string;

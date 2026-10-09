@@ -31,8 +31,9 @@ import { WAR_ROOM_RESOURCES_CANVAS_KIND } from "@/features/war-room/canvas/warRo
 import { COMMENT_THREAD_CANVAS_KIND } from "@/features/rich-document/annotations/canvas/commentThreadKind";
 import { GROUP_CHAT_INSPECTOR_CANVAS_KIND } from "@/features/vision-interview/group-chat/canvas/groupChatInspectorKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
+import { withOutputDecisions } from "./kindOutputDecisions";
 
-export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
+export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = withOutputDecisions([
   RECORD_PEEK_CANVAS_KIND,
   AI_ANSWER_CANVAS_KIND,
   SOURCE_PREVIEW_CANVAS_KIND,
@@ -63,7 +64,7 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   GROUP_CHAT_INSPECTOR_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
-];
+]);
 
 export function registerFeatureCanvasKinds(): () => void {
   return registerCanvasKinds(FEATURE_CANVAS_KINDS);

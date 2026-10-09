@@ -8,7 +8,7 @@
 // a stored column would snapshot the whole row on every dial).
 
 import { Button } from "@/components/ui/button";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useState } from "react";
 import Link from "next/link";
@@ -79,6 +79,7 @@ const COMPOSER_CHANNELS: InteractionChannel[] = [
   "call",
   "email",
   "meeting",
+  "other",
   "note",
 ];
 

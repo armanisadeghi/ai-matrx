@@ -17,12 +17,14 @@
  *         write the entity form; no migration pass is needed).
  */
 
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
-import { File as FileIcon, FolderOpen, MessagesSquare, StickyNote, Upload } from "lucide-react";
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { File as FileIcon, FolderOpen, MessagesSquare, PanelLeftClose, PanelLeftOpen, Plus, StickyNote, Upload } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PANEL_MOTION_CLASS } from "@ai-matrx/design-system";
+import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { ConversationHistorySidebar } from "@ai-matrx/chat/agents/components/conversation-history/ConversationHistorySidebar";
 import { ChatConversationSurface } from "@ai-matrx/chat/agents/components/chat/ChatConversationSurface";
@@ -46,19 +48,26 @@ import { NoteItemBody } from "./NoteItemBody";
 import { AGENT_FORM_PLACEHOLDER_TITLE, AgentFormItemBody } from "./AgentFormItemBody";
 import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
-import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
+import { entityComments, type BoardItemType, type HeaderActionProps, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
+import { useBoardChats } from "./board-chats";
 import {
   AGENT_FORM_ENTITY,
   agentFormSource,
   chatAgentId,
+  chatListChoice,
+  chatListOpen,
   chatSource,
+  CHAT_LIST_WIDE_PX,
   chatSourceToSave,
+  chatTitleToSave,
+  removedChatResetsTile,
   entityId,
   fileIdOf,
   chatItem,
   fileItem,
   noteItem,
   isEntity,
+  withChatList,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
 import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
@@ -83,11 +92,13 @@ import { SegmentedControl } from "@ai-matrx/design-system/controls";
  * so it never sees itself as context — and its launch opts out of adopting a
  * mounted surface, exactly as /chat's own launcher does.
  */
-function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
+function ChatBody({ tileId, source, title, tier, onSource }: ItemBodyProps) {
   const store = useAppStore();
   const surfaceKey = `board-chat:${tileId}`;
   const savedId = entityId(source);
   const chosenAgentId = chatAgentId(source);
+  const list = chatListChoice(source);
+  const boardChats = useBoardChats();
   // Read once, at mount: reopen THIS conversation, or start one.
   const chat = useCanvasWorkspaceConversation(surfaceKey, {
     start: savedId
@@ -116,9 +127,10 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
       savedId,
       agentId: selectAgentIdFromInstance(id)(store.getState()) ?? null,
       chosenAgentId: chosenAgentId ?? null,
+      list,
     });
     if (next) {
-      onSource(next, nextTitle ?? undefined);
+      onSource(next, chatTitleToSave({ serverHasIt, conversationTitle: nextTitle }));
     } else if (serverHasIt && nextTitle && nextTitle !== title) {
       // The server titles a conversation after its first turn; the tile follows.
       onSource(source, nextTitle);
@@ -127,6 +139,25 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   useEffect(() => {
     if (conversationId) record(conversationId, conversationTitle);
   }, [conversationId, conversationTitle, serverHasIt]);
+
+  // The conversation belongs to this board once the server has it (started
+  // here, brought in, or added by an agent — each mounts a tile).
+  const file = boardChats?.file;
+  useEffect(() => {
+    if (conversationId && serverHasIt && file) file(conversationId);
+  }, [conversationId, serverHasIt, file]);
+
+  // The list: the board's conversations beside the chat. Open on a wide tile,
+  // behind the header toggle on a narrow one; the person's choice is saved.
+  const { ref: frameRef, width } = useElementWidth();
+  const listOn = !!boardChats && (tier === "read" || tier === "glance");
+  const open = listOn && chatListOpen(source, width);
+  const setOpen = (next: boolean) => onSource(withChatList(source, next ? "open" : "closed"));
+  const narrow = width < CHAT_LIST_WIDE_PX;
+  const switchTo = (conv: ConversationListItem) => {
+    chat.openExisting(conv.conversationId, conv.agentId ?? null);
+    if (narrow) setOpen(false);
+  };
 
   if (!isEntity(source, "chat")) return null;
   const column = (
@@ -138,12 +169,133 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
     />
   );
   // The surface exists once there is a conversation to describe.
-  if (!conversationId) return column;
-  return (
+  const surfaced = !conversationId ? (
+    column
+  ) : (
     <ChatConversationSurface conversationId={conversationId} agentId={agentId ?? chosenAgentId ?? ""} surfaceKey={surfaceKey}>
       {column}
     </ChatConversationSurface>
   );
+  if (!boardChats) return surfaced;
+  return (
+    <div ref={frameRef} className="relative flex h-full min-h-0 w-full">
+      {listOn && (
+        <aside
+          inert={!open}
+          aria-hidden={!open}
+          data-board-chat-list
+          className={cn(
+            "z-10 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-border bg-card transition-[width,opacity,border-width] motion-reduce:transition-none",
+            PANEL_MOTION_CLASS,
+            narrow ? "absolute inset-y-0 left-0 shadow-xl" : "relative",
+            open ? "w-[min(15rem,85%)] border-r opacity-100" : "w-0 border-r-0 opacity-0",
+          )}
+        >
+          <div className="flex h-full w-[min(15rem,85vw)] min-w-0 flex-col">
+            <BoardChatList
+              activeConversationId={conversationId}
+              onSwitch={switchTo}
+              onNew={() => {
+                chat.startNew();
+                if (narrow) setOpen(false);
+              }}
+              onClose={() => setOpen(false)}
+            />
+          </div>
+        </aside>
+      )}
+      <div className="h-full min-h-0 min-w-0 flex-1">{surfaced}</div>
+    </div>
+  );
+}
+
+/** The sidebar inside the chat tile: New conversation + collapse over the board's list. */
+function BoardChatList({
+  activeConversationId,
+  onSwitch,
+  onNew,
+  onClose,
+}: {
+  activeConversationId: string | null;
+  onSwitch: (conv: ConversationListItem) => void;
+  onNew: () => void;
+  onClose: () => void;
+}) {
+  const boardChats = useBoardChats();
+  // The board's conversations are not known yet: nothing is listed (and nothing
+  // is read) rather than the person's whole library.
+  if (!boardChats || boardChats.ids === null) return null;
+  return (
+    <ConversationHistorySidebar
+      variant="dense"
+      scopeId={`board-chats:${boardChats.boardId}`}
+      agentIds={ALL_AGENTS}
+      onlyConversationIds={boardChats.ids}
+      removeFromList={{
+        label: "Remove from this board",
+        onRemove: (conv) => {
+          boardChats.unfile(conv.conversationId);
+          if (removedChatResetsTile(conv.conversationId, activeConversationId)) onNew();
+        },
+      }}
+      activeConversationId={activeConversationId}
+      onOpenConversation={onSwitch}
+      openInPlace
+      keepLoaded
+      serverSearch={false}
+      showGroupingToggle={false}
+      titleFirst
+      emptyState={<p className="px-2 py-1 text-xs text-muted-foreground">No chats on this board yet</p>}
+      headerSlot={
+        <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
+          <Button type="button" variant="outline" onClick={onNew} className="min-w-0 flex-1 justify-start gap-1">
+            <Plus className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">New conversation</span>
+          </Button>
+          <Button type="button" variant="quiet" onClick={onClose} aria-label="Close sidebar" title="Close sidebar">
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      }
+      className="h-full bg-transparent"
+    />
+  );
+}
+
+/** The header toggle: show or hide the tile's conversation list (no new row). */
+function ChatListToggle({ source, width, onSource }: HeaderActionProps) {
+  const boardChats = useBoardChats();
+  if (!boardChats || !isEntity(source, "chat")) return null;
+  const open = chatListOpen(source, width);
+  const Icon = open ? PanelLeftClose : PanelLeftOpen;
+  const label = open ? "Close conversations" : "Show conversations";
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={open}
+      onClick={() => onSource(withChatList(source, open ? "closed" : "open"))}
+      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+/** The element's width in CSS px (the tile's container, not the zoomed screen). */
+function useElementWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.offsetWidth);
+    const ro = new ResizeObserver(() => setWidth(el.offsetWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { ref, width };
 }
 
 /** Stable empty list: `agentIds: []` = every conversation the person can open. */
@@ -163,8 +315,6 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
             onPick([chatItem(conv.conversationId, conv.title, conv.agentId ?? null)])
           }
           openInPlace
-          historyLabel="Conversations"
-          initialSearchOpen
           className="h-full bg-transparent"
         />
       </div>
@@ -353,6 +503,8 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
+    HeaderAction: ChatListToggle,
+    usesTier: true,
     Keep: ChatKeep,
     // Two ways to start: the default chat (the `chat.default_new_chat` job,
     // exactly /chat/new) or a chat with an agent the person picks.

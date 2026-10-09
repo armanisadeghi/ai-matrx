@@ -26,7 +26,7 @@ import type {
 } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { cn } from "@/lib/utils";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const SIZES: ComposerSize[] = ["splash", "page", "compact"];

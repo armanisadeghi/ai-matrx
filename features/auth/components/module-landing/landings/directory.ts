@@ -76,11 +76,11 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     group: "Conversational",
   },
   {
-    label: "Agent Apps",
-    href: "/agent-apps",
+    label: "Applets",
+    href: "/applets",
     icon: AppWindow,
     teaser:
-      "Wrap a powerful agent as a one-click form your team and clients actually use.",
+      "Custom multi-page Applets on your own data, built by talking.",
     group: "Conversational",
   },
   {

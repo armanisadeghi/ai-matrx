@@ -31,6 +31,8 @@ export interface CalendarEvent {
   readonly rrule?: string | null;
   /** IANA zone the event is authored in; REQUIRED for a repeating event to hold its wall clock. */
   readonly timeZone?: string | null;
+  /** A reminder this many minutes before the start (an .ics VALARM); absent = no alarm. */
+  readonly alarmMinutesBefore?: number | null;
 }
 
 /** Outlook on the web's compose link has no recurrence parameter; a series must use the `.ics`. */
@@ -185,6 +187,15 @@ export function icsContent(
       : []),
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
     ...(event.url ? [`URL:${event.url}`] : []),
+    ...(event.alarmMinutesBefore != null && event.alarmMinutesBefore >= 0
+      ? [
+          "BEGIN:VALARM",
+          "ACTION:DISPLAY",
+          `DESCRIPTION:${escapeText(event.title)}`,
+          `TRIGGER:-PT${Math.round(event.alarmMinutesBefore)}M`,
+          "END:VALARM",
+        ]
+      : []),
     "END:VEVENT",
     "END:VCALENDAR",
   ];

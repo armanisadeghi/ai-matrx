@@ -30,8 +30,8 @@ import {
 } from "lucide-react";
 import KindRenderPaths from "@/features/content-ir/render-paths/KindRenderPaths";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 interface KindExamplePreviewProps {
   kind: string;

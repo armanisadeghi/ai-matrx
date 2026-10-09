@@ -45,7 +45,7 @@ Action vocabulary:
 - **`features/code/`** — BinaryFileViewer + BinaryFilePdfPreview + CloudFilePreviewer + EditorArea + useOpenFile MODIFIED.
 - **`features/image-studio/`** — variant tile + embedded studio + annotate shell MODIFIED (display side only).
 - **`features/html-pages/`** — SavePageTab + markdown-wordpress-utils MODIFIED.
-- **`features/agent-apps/`** — Overview + Settings tabs MODIFIED (icon/cover display).
+- **`features/applets/`** — Overview + Settings tabs MODIFIED (icon/cover display).
 - **`features/artifacts/`** — CmsArtifactDetail MODIFIED.
 - **`features/tasks/`** — TaskAssigneePicker + TaskAttachments MODIFIED (avatar display only).
 - **`components/image/cloud/`** — `resolveCloudFileUrl.ts` DELETED; ImageStudioTab DELETED (image-manager replacement); browse table + grid + list MODIFIED; CloudUploadTab + CloudFilesTab + CloudImagesTab — uploads OUT of scope, display portions MODIFIED.
@@ -384,13 +384,13 @@ NEW hooks in `features/files/hooks/` introduced by PR3: `useFile.ts`, `useFileSr
 | features/html-pages/components/tabs/SavePageTab.tsx | 456 | references `publicUrl`/`signedUrl` for assets | MODIFY | `useFile(ref)` |
 | features/html-pages/utils/markdown-wordpress-utils.ts | 473 | builds `<img src>` strings from publicUrl | MODIFY | use `fileHandler.resolve(ref)` to mint stable URLs |
 
-### features/agent-apps/
+### features/applets/
 
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
-| features/agent-apps/route/AgentAppOverviewContent.tsx | 657 | icon + cover via `publicUrl`/`signedUrl` | MODIFY | `<InlineMediaRef>` |
-| features/agent-apps/route/AgentAppSettingsContent.tsx | 542 | settings preview tiles | MODIFY | `<InlineMediaRef>` |
-| features/agent-apps/components/inputs/AgentAppImageField.tsx | 161 | image field display | MODIFY | display side `<InlineMediaRef>` |
+| features/applets/route/AppletOverviewContent.tsx | 657 | icon + cover via `publicUrl`/`signedUrl` | MODIFY | `<InlineMediaRef>` |
+| features/applets/route/AppletSettingsContent.tsx | 542 | settings preview tiles | MODIFY | `<InlineMediaRef>` |
+| features/applets/components/inputs/AppletImageField.tsx | 161 | image field display | MODIFY | display side `<InlineMediaRef>` |
 
 ### features/artifacts/
 
@@ -532,7 +532,7 @@ The following files matched a tag scan but are not in scope (they render unrelat
 
 ## Cross-cutting patterns being eliminated
 
-1. **Bespoke URL-chooser ladders.** `file.publicUrl ?? signedUrl ?? metadata.cdn_url ?? fileUri ?? ...` patterns exist in `features/files/utils/resolveRenderableImageUrl.ts`, `components/image/cloud/resolveCloudFileUrl.ts`, and inline in ~12 components (org logos, agent-apps tiles, podcasts, image-manager, html-pages, image-studio, etc.). All collapse to `useFile(ref).url` or `<InlineMediaRef ref={ref} />`.
+1. **Bespoke URL-chooser ladders.** `file.publicUrl ?? signedUrl ?? metadata.cdn_url ?? fileUri ?? ...` patterns exist in `features/files/utils/resolveRenderableImageUrl.ts`, `components/image/cloud/resolveCloudFileUrl.ts`, and inline in ~12 components (org logos, applets tiles, podcasts, image-manager, html-pages, image-studio, etc.). All collapse to `useFile(ref).url` or `<InlineMediaRef ref={ref} />`.
 
 2. **`useSignedUrl` direct consumers (~18 files).** All in `features/files/components/**` + a handful in `features/transcripts`, `features/file-handler/hooks`. Migrate to `useFile(ref, { target: "render" }).url`.
 
@@ -575,8 +575,8 @@ The following files matched a tag scan but are not in scope (they render unrelat
 2. **`features/files/redux/virtual-thunks.ts`** — fetches signed URLs for virtual sources (code-files, notes, prompt-apps, tool-ui-components, aga-apps). Should virtual-source URL minting also funnel through the new `useFile` resolver, or stay separate? The plan doesn't explicitly call it out.
 3. **`packages/chat/src/cx-conversation/AssistantMessage.tsx` (297)** vs **`packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx` (297)** — same line count, very similar names. Confirm both are active (one may be dead code from an earlier rename).
 4. **`features/prompts/components/builder/PromptAssistantMessage.tsx`** and the prompt-app legacy editor — these match the active prompts→agents migration. Should the read-path sweep skip them entirely (because they're scheduled for deletion in phases 16–19), or do they still need to work during the transition window?
-5. **`components/admin/applet-admin/AppletConfigViewer.tsx`** — admin debug viewer. Worth migrating, or freeze and let it be replaced once applets→agent-apps lands?
-6. **`features/agent-apps/components/inputs/AgentAppImageField.tsx` (161)** — confirm this is a display field (read), not the upload field (write). The grep hit included it under both — may need a closer look.
+5. **`components/admin/applet-admin/AppletConfigViewer.tsx`** — admin debug viewer. Worth migrating, or freeze and let it be replaced once applets→applets lands?
+6. **`features/applets/components/inputs/AppletImageField.tsx` (161)** — confirm this is a display field (read), not the upload field (write). The grep hit included it under both — may need a closer look.
 7. **`PdfAnnotationLayer/`** files in `features/files/components/core/` — couldn't enumerate contents from one grep; confirm these stay as MODIFY (ref-based) or KEEP (annotation overlay on top of an already-resolved PDF).
 8. **`features/audio/components/AudioRecoveryModal.tsx`** — references the `audioSafetyStore` (IndexedDB crash-recovery), not `cld_files`. Should it still render via the new handler once recovered, or stay on its dedicated path (per file-handler FEATURE.md's "deliberately does NOT own" list)?
 9. **`features/files/components/core/FilePreview/preview-actions.ts`** — currently builds copy-URL / open-in / download handlers; depends on `useFileSrc`-style helpers. Confirm migrate alongside `useFileActions.ts` (also a hit).

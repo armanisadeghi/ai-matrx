@@ -1,31 +1,40 @@
 /**
- * GUARD — archiving a conversation is never silent (verifier, 2026-09-28).
+ * GUARD — archiving a conversation is never silent (verifier, 2026-09-28;
+ * re-pointed 2026-10-08 at the one-Archived-place model).
  *
  * "Archive in the chat header ⋯ does nothing: no toast, and the conversation
- * stays." The write landed, but (a) the action said nothing on success and (b)
- * the history list never filtered `status = archived`, so the archived row
- * stayed exactly where it was — the archived-items law's default (hide, with
- * "Archived (N)" one click away) was never applied to conversations.
+ * stays." The archived-items law's default (hide archived, one click to see
+ * them) was never applied to conversations. Since 2026-10-08 (@ai-matrx/chat
+ * aaf726a345) there is no archive-view toggle or "Archived (N)" counter on the
+ * history scope: archived AND deleted conversations share ONE "Archived"
+ * section at the foot of every list (the conversation-list `trash*` store),
+ * and the live list never shows an archived row.
  *
  * Properties locked here, each false before this change:
- *   1. the list's view hides archived rows by default and shows only them in
- *      the archive view;
- *   2. archiving a listed row removes it from the view at once and moves the
- *      "Archived (N)" count;
- *   3. the server read carries the archive predicate for both views;
+ *   1. the live list hides archived rows by default, and the Archived section
+ *      is where they are shown (the section's read asks for archived + deleted);
+ *   2. archiving a listed row removes it from the live view at once and puts
+ *      it in the Archived section (restoring does the reverse);
+ *   3. the server read carries the archive predicate for both halves: the live
+ *      list excludes archived, the Archived section includes them;
  *   4. the shared ⋯ Archive verb confirms success with an Undo.
  */
 import reducer, {
   patchConversationInScopes,
-  setScopeArchiveView,
-  setScopeArchivedCount,
   setScopePageSuccess,
 } from "@ai-matrx/chat/agents/redux/conversation-history/slice";
+import listReducer, {
+  addToTrash,
+  removeFromTrash,
+  setTrashSuccess,
+} from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.slice";
 import { makeSelectConversationHistoryItems } from "@ai-matrx/chat/agents/redux/conversation-history/selectors";
 import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 import { chatSourceDir, CHAT_SRC_REL, gitGrepFiles } from "../../../../chat-source";
 const CHAT_DIR = chatSourceDir("agents/redux/conversation-history/__tests__");
+const read = (p: string) =>
+  require("node:fs").readFileSync(require("node:path").join(process.cwd(), p), "utf8") as string;
 
 const row = (id: string, status: string): ConversationListItem =>
   ({
@@ -47,6 +56,8 @@ const visible = (state: ReturnType<typeof reducer>) =>
     conversationHistory: state,
   } as unknown as ChatRootState).map((i) => i.conversationId);
 
+const archivedIds = (s: ReturnType<typeof listReducer>) => s.trashConversationIds;
+
 function seeded() {
   let s = reducer(undefined, { type: "@@init" });
   s = reducer(
@@ -59,47 +70,48 @@ function seeded() {
       nextOffset: 2,
     }),
   );
-  return reducer(s, setScopeArchivedCount({ scopeId: "chat", count: 1 }));
+  return s;
 }
 
 describe("archive is never silent", () => {
-  it("hides archived rows by default and shows only them in the archive view", () => {
-    const s = seeded();
-    expect(visible(s)).toEqual(["live"]);
-    expect(s.scopes.chat.archiveView).toBe("active");
-    const arch = reducer(s, setScopeArchiveView({ scopeId: "chat", view: "archived" }));
-    // switching invalidates the window; the refetch brings the archived half
-    const refilled = reducer(
-      arch,
-      setScopePageSuccess({ scopeId: "chat", items: [row("old", "archived")], hasMore: false, replace: true, nextOffset: 1 }),
+  it("hides archived rows from the live list; the Archived section holds them", () => {
+    expect(visible(seeded())).toEqual(["live"]);
+    const section = listReducer(
+      undefined,
+      setTrashSuccess({ items: [row("old", "archived")] }),
     );
-    expect(visible(refilled)).toEqual(["old"]);
+    expect(archivedIds(section)).toEqual(["old"]);
   });
 
-  it("an archived row leaves the list at once and moves the count", () => {
+  it("an archived row leaves the live list at once and enters the Archived section", () => {
     const s = reducer(
       seeded(),
       patchConversationInScopes({ conversationId: "live", patch: { status: "archived" } }),
     );
     expect(visible(s)).toEqual([]);
-    expect(s.scopes.chat.archivedCount).toBe(2);
+    const section = listReducer(undefined, addToTrash(row("live", "archived")));
+    expect(archivedIds(section)).toEqual(["live"]);
     const back = reducer(
       s,
       patchConversationInScopes({ conversationId: "live", patch: { status: "active" } }),
     );
     expect(visible(back)).toEqual(["live"]);
-    expect(back.scopes.chat.archivedCount).toBe(1);
+    expect(archivedIds(listReducer(section, removeFromTrash("live")))).toEqual([]);
+  });
+
+  it("the archive verb files the row into / out of the Archived section", () => {
+    const src = read(`${CHAT_SRC_REL}/agents/redux/conversation-list/conversation-row-actions.thunks.ts`);
+    expect(src).toMatch(/dispatch\(addToTrash\(/);
+    expect(src).toMatch(/dispatch\(removeFromTrash\(/);
   });
 });
 
 describe("the server read and the verb", () => {
-  const read = (p: string) =>
-    require("node:fs").readFileSync(require("node:path").join(process.cwd(), p), "utf8") as string;
-
-  it("the history read filters on the archive view, both ways", () => {
-    const src = read(`${CHAT_SRC_REL}/agents/redux/conversation-history/thunks.ts`);
-    expect(src).toMatch(/query\.eq\("status", "archived"\)/);
-    expect(src).toMatch(/query\.neq\("status", "archived"\)/);
+  it("the live read excludes archived; the Archived section read includes them", () => {
+    const live = read(`${CHAT_SRC_REL}/agents/redux/conversation-history/thunks.ts`);
+    expect(live).toMatch(/query\.neq\("status", "archived"\)/);
+    const archive = read(`${CHAT_SRC_REL}/agents/redux/conversation-list/conversation-trash.thunks.ts`);
+    expect(archive).toMatch(/\.or\("deleted_at\.not\.is\.null,status\.eq\.archived"\)/);
   });
 
   it("the ⋯ Archive verb confirms success with an Undo", async () => {

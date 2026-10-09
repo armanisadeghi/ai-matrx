@@ -16,8 +16,10 @@ import {
   isDirectiveApplyStateResult,
   isDirectiveCatalog,
   isDirectiveConfirmResult,
+  isDirectiveNounSchemas,
   type DirectiveApplyResult,
   type DirectiveCatalog,
+  type DirectiveNounSchemas,
   type DirectiveExecuteRequest,
   type DirectiveConfirmRequest,
   type DirectiveConfirmResult,
@@ -30,7 +32,7 @@ import {
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Organization admission rides with auth: the server's AuthMiddleware
@@ -59,11 +61,7 @@ async function authedDirectiveHeaders(
   // A background READ (the ledger state a card reads on mount) passes
   // `interactive: false`: nobody pressed anything, so it refuses quietly rather
   // than raise a picker out of nowhere.
-  const organizationId = await ensureOrganizationForRequest({
-    method: "POST",
-    personWrite: true,
-    interactive: options.interactive,
-  });
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(
     {
       "Content-Type": "application/json",
@@ -119,6 +117,41 @@ export async function fetchDirectiveCatalog(
   if (!isDirectiveCatalog(payload)) {
     throw new Error(
       `Directive catalog response was malformed (missing directive_version / nouns) from ${url}`,
+    );
+  }
+  return payload;
+}
+
+/**
+ * Fetch ONE noun's write item schemas (`GET {baseUrl}/directives/catalog/{noun}`)
+ * — the summary catalog carries none. Public, unauthenticated, ETag-cached by
+ * the browser. Throws on a missing base, a non-2xx (404 = the catalog lists no
+ * such noun), or a malformed payload.
+ */
+export async function fetchDirectiveNounSchemas(
+  baseUrl: string | undefined,
+  noun: string,
+  signal?: AbortSignal,
+): Promise<DirectiveNounSchemas> {
+  if (!baseUrl) {
+    throw new Error(
+      "No backend base URL configured. Set the active server (apiConfigSlice) / NEXT_PUBLIC_BACKEND_URL_* env var.",
+    );
+  }
+  const url = buildMatrxRequestUrl(
+    trimRoot(baseUrl),
+    ENDPOINTS_DIRECTIVES.nounSchemas(noun),
+  );
+  const response = await sendMatrxRequest(url, { method: "GET" }, { signal });
+  if (!response.ok) {
+    throw new Error(
+      `Directive schemas request failed: HTTP ${response.status} ${response.statusText} (${url})`,
+    );
+  }
+  const payload: unknown = await response.json();
+  if (!isDirectiveNounSchemas(payload)) {
+    throw new Error(
+      `Directive schemas response was malformed (missing noun / schemas) from ${url}`,
     );
   }
   return payload;

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { FileText, Loader2 } from "lucide-react";
 import { useResearchTemplates } from "../../hooks/useResearchState";
 import type { ResearchTemplate } from "../../types";

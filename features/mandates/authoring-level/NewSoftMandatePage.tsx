@@ -17,7 +17,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { toast, recordToast } from "@/lib/toast";
@@ -28,7 +28,6 @@ import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { OutputKindPicker } from "../authoring/OutputKindPicker";
 import { type DraftInput } from "../authoring/service";
 import { createSoftMandate } from "./service";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import {
@@ -294,7 +293,6 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
       });
     } catch (error: unknown) {
       // Closing the organization picker is an answer ("not now"), never an error.
-      if (isOrganizationSelectionCancelled(error)) return;
       setServerError(
         isOrganizationRequiredError(error)
           ? organizationRefusalMessage({ subject: "The mandate", act: "created" })

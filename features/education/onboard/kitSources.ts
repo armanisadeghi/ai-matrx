@@ -16,6 +16,7 @@
 
 import type { ResolvedSource, ResolvedSourceSet } from "@ai-matrx/agents/sources";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
+import type { KitSourceRef } from "@/features/education/convert/types";
 
 export interface KitMaterial {
   text: string;
@@ -54,7 +55,9 @@ export function kitMaterialFromSources(resolved: ResolvedSourceSet): KitMaterial
   }
   return {
     text: sources.map((s) => s.text).join("\n\n"),
-    title: sources.length > 1 ? `${first} and ${sources.length - 1} more` : first,
+    // Never "X and N more": the namer titles a kit of several from the material;
+    // this is only the floor under it.
+    title: first,
     truncated: sources.some((s) => s.truncated),
     sourceCount: sources.length,
     pages: pages.size > 0 ? pages.size : undefined,
@@ -89,4 +92,36 @@ export function pickedFileAnchor(cards: readonly SourceCardModel[]): string | nu
   const type = only.draft.ref.resource_type;
   if (type === "file" || type === "cld_file") return only.draft.ref.resource_id;
   return only.draft.fileId ?? null;
+}
+
+/**
+ * Each Source the kit's text was read from, as the kit holds it: the
+ * Source's own record (never a merged copy), plus the file / processed
+ * document behind it so every citation opens the right one.
+ */
+const CHUNK_ID_RE = /^### Chunk (\S+)(?: \(page \d+\))?[ \t]*$/gm;
+
+function chunkIdsOf(source: ResolvedSource): string[] {
+  const ids = new Set<string>(source.segments.map((seg) => seg.id));
+  for (const m of source.text.matchAll(CHUNK_ID_RE)) ids.add(m[1]);
+  return [...ids];
+}
+
+export function kitSourceRefs(resolved: ResolvedSourceSet): KitSourceRef[] {
+  return resolved.sources
+    .filter((s) => s.text.trim().length > 0)
+    .map((s) => {
+      const type = s.ref.resource_type === "cld_file" ? "file" : s.ref.resource_type;
+      const fileId = s.file_id ?? (type === "file" ? s.ref.resource_id : undefined);
+      const processedDocumentId =
+        s.processed_document_id ?? (type === "processed_document" ? s.ref.resource_id : undefined);
+      return {
+        type,
+        id: s.ref.resource_id,
+        title: s.label.trim() || "Source",
+        ...(fileId ? { fileId } : {}),
+        ...(processedDocumentId ? { processedDocumentId } : {}),
+        chunkIds: chunkIdsOf(s),
+      };
+    });
 }

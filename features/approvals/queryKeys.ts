@@ -26,6 +26,7 @@
  */
 
 import type { QueryClient } from "@tanstack/react-query";
+import { forgetWaitingWorkInbox } from "./sharedInbox";
 
 export const PENDING_APPROVALS_QUERY_KEY = ["approvals", "pending-count"];
 
@@ -37,6 +38,8 @@ export function invalidateApprovals(
   client: QueryClient,
   kindQueryKey?: readonly unknown[],
 ): void {
+  // A decision moved the queue: the shared inbox read asks the store again (lane PAGE-BUNDLE-2).
+  forgetWaitingWorkInbox();
   if (kindQueryKey) {
     void client.invalidateQueries({ queryKey: kindQueryKey });
   }

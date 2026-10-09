@@ -12,7 +12,6 @@
 
 import { postGoogleBackend } from "@/features/marketing/google/service";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -23,6 +22,7 @@ import type {
   GoogleSyncedRecordResponse,
 } from "./types";
 import { isGoogleDocumentSyncStatus } from "./record";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * The bare router prefix (`aidream/api/app.py` mounts `google_sync.router` at
@@ -195,9 +195,7 @@ export async function refreshGoogleDocument(args: {
   // ORG-GATE-AUDIT: the record's OWN organization wins and never asks. The
   // birth door (opening a picked file that has no Record yet) has no record
   // organization; with none selected it asks, then continues this same open.
-  const organizationId = await ensureOrganizationContext({
-    organizationId: args.organizationId,
-  });
+  const organizationId = await ensureOrgId(args.organizationId);
   const response = await postGoogleBackend(
     REFRESH_PATH,
     { organization_id: organizationId, file_id: args.fileId },

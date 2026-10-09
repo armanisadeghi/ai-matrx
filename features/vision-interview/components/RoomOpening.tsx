@@ -193,7 +193,7 @@ export function OpeningVisionSend({
       // instance, then fire the one send thunk in the same tick — exactly
       // what every composer's send button does
       // (`features/agents/components/inputs/smart-input/InputActionButtons.tsx`,
-      // `features/agent-apps/hooks/useAgentApp.ts` `submit()`).
+      // `features/applets/hooks/useApplet.ts` `submit()`).
       dispatch(setUserInputText({ conversationId, text: vision }));
       await dispatch(
         smartExecute({

@@ -30,7 +30,7 @@
  * and the upload lane; SKU/notes/voice stay fully functional.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import React, {
   useCallback,
   useEffect,

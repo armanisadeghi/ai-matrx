@@ -8,7 +8,8 @@ const mockDispatch = jest.fn();
 jest.mock("@ai-matrx/chat/store/hooks", () => ({ useAppDispatch: () => mockDispatch, useAppSelector: () => undefined }));
 jest.mock("@ai-matrx/chat/agents/hooks/useMcpTools", () => ({ useMcpCatalog: () => ({ catalog: mockEntries, serverStates: mockEntries.map(entry => ({ entry, truth: { state: "connected", reason: null }, toolCount: 1, attachable: [] })), status: "succeeded", availabilityStatus: "succeeded", refreshAvailability: jest.fn() }) }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({ selectPrimaryRequest: jest.fn() }));
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({ selectAgentRunControlsReady: jest.fn(), selectAgentMcpServers: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"), selectAgentRunControlsReady: jest.fn(), selectAgentMcpServers: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors", () => ({ selectAgentIdFromInstance: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({ selectBuilderAdvancedSettings: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice", () => ({ setBuilderAdvancedSettings: jest.fn() }));

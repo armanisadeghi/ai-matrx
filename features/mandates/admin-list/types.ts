@@ -33,7 +33,7 @@ export type MandateCodeState =
 export type MandateServes =
   | "Shortcut"
   | "Surface"
-  | "Agent app"
+  | "Applet"
   | "Feature code"
   | "Nothing found";
 
@@ -43,7 +43,7 @@ export type MandateDefaultState = "Own default" | "Fallback" | "No default";
 export interface MandateAdminRow extends MandateRow {
   /** The pretty name — the author's label, else the key's last segment. */
   name: string;
-  /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Agent apps". */
+  /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Applets". */
   featureLabel: string;
   goal: string | null;
   /** THE status (features/mandates/status/mandate-status.ts) — draft/active/disabled. */
@@ -121,4 +121,16 @@ export interface MandateAdminRow extends MandateRow {
    * the database answer did not carry it).
    */
   candidate?: MandateCandidateCell | null;
+  /**
+   * THE MODEL: the default Holder's model first ("Workflow" for a workflow
+   * Holder), then the other models bindings run on. `null` = the database
+   * answer did not carry models.
+   */
+  models: string[] | null;
+  /**
+   * Dollars over the list's period (./spend.ts). `null` = not read — still
+   * reading (`spendPending`) or the read failed.
+   */
+  spendUsd: number | null;
+  spendPending: boolean;
 }

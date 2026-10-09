@@ -97,7 +97,7 @@ describe("database admin surface contract", () => {
     expect(databaseFrame).toContain('!isFullHeightDatabaseTool && "scroll-page-end-space"');
     expect(databaseFrame).toContain('currentPath === `${DATABASE_MODULE_HOME}/canonicalization`');
     expect(databaseFrame).toContain('currentPath.startsWith(`${DATABASE_MODULE_HOME}/canonicalization/`)');
-    for (const tool of ["sql-functions", "sql-queries", "workbench", "enums", "data-integrity", "store-tables"]) {
+    for (const tool of ["sql-functions", "sql-queries", "workbench", "enums", "data-integrity", "custom-tables"]) {
       expect(databaseFrame).toContain(`"${tool}"`);
     }
     expect(databaseFrame).not.toContain('"relationships"');

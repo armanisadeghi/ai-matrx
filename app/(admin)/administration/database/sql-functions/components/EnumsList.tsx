@@ -8,7 +8,7 @@ import { Database, Edit, List, Trash2 } from 'lucide-react';
 import { MatrxDataTable } from '@ai-matrx/design-system/data-table';
 import type { MatrxColumnDef } from '@ai-matrx/design-system/data-table/types';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 interface EnumsListProps { enums: DatabaseEnum[]; loading: boolean; /** The list read's outcome (RC-B12 r13). */ read?: ReadOutcome; onViewDetails: (value: DatabaseEnum, tab?: EnumDetailTab) => void; onEditEnum: (value: DatabaseEnum) => void; onDeleteEnum: (schema: string, name: string) => Promise<boolean>; onSortChange: (field: EnumSort['field']) => void; sortField: EnumSort['field']; sortDirection: EnumSort['direction']; }
 const valuesText = (values: string[]) => values.length <= 3 ? values.join(', ') : `${values.slice(0, 3).join(', ')} (+${values.length - 3} more)`;
 export default function EnumsList({ enums, loading, read, onViewDetails, onEditEnum, onDeleteEnum }: EnumsListProps) {

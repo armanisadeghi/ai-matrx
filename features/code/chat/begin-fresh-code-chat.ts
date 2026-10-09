@@ -23,17 +23,20 @@ export function beginFreshCodeChat({
   pathname,
   searchParams,
   agentId,
+  agentInUrl = true,
 }: {
   dispatch: AppDispatch;
   router: AppRouterInstance;
   pathname: string;
   searchParams: URLSearchParams;
   agentId: string;
+  /** False when a mandate pins the agent: the address never names it. */
+  agentInUrl?: boolean;
 }): void {
   dispatch(clearFocus(codeWorkspaceSurfaceKey(agentId)));
   dispatch(bumpFreshSession());
   const next = new URLSearchParams(searchParams.toString());
-  next.set("agentId", agentId);
+  if (agentInUrl) next.set("agentId", agentId);
   next.delete("conversationId");
   replaceAddressWithoutNavigating(`${pathname}?${next.toString()}`);
 }

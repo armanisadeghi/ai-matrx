@@ -43,21 +43,33 @@ function readRepoFile(relativePath: string): string {
 }
 
 describe("the canonical ladder", () => {
-  it("carries the four doctrine levels in authority order", () => {
-    // AI Matrx Data Doctrine R18 (2026-09-10): viewer · commenter · editor · admin.
+  it("carries the doctrine levels in authority order", () => {
+    // AI Matrx Data Doctrine R18 (2026-09-10): viewer · commenter · editor · admin, plus
+    // `edit_content` ("Can edit content", lane SHARE-EDIT-CONTENT 2026-10-07) between commenter and editor.
     expect([...PERMISSION_LEVELS]).toEqual([
       "viewer",
       "commenter",
+      "edit_content",
       "editor",
       "admin",
     ]);
   });
 
-  it("places commenter at ordinal 2, between viewer and editor", () => {
+  it("places edit_content between commenter and editor", () => {
     expect(PERMISSION_LEVEL_RANK.viewer).toBe(1);
     expect(PERMISSION_LEVEL_RANK.commenter).toBe(2);
-    expect(PERMISSION_LEVEL_RANK.editor).toBe(3);
-    expect(PERMISSION_LEVEL_RANK.admin).toBe(4);
+    expect(PERMISSION_LEVEL_RANK.edit_content).toBe(3);
+    expect(PERMISSION_LEVEL_RANK.editor).toBe(4);
+    expect(PERMISSION_LEVEL_RANK.admin).toBe(5);
+  });
+
+  it("edit_content satisfies commenter and viewer, never editor or admin", () => {
+    expect(satisfiesPermissionLevel("edit_content", "viewer")).toBe(true);
+    expect(satisfiesPermissionLevel("edit_content", "commenter")).toBe(true);
+    expect(satisfiesPermissionLevel("edit_content", "edit_content")).toBe(true);
+    expect(satisfiesPermissionLevel("edit_content", "editor")).toBe(false);
+    expect(satisfiesPermissionLevel("edit_content", "admin")).toBe(false);
+    expect(satisfiesPermissionLevel("editor", "edit_content")).toBe(true);
   });
 });
 
@@ -222,7 +234,6 @@ const CENSUS_SITES = [
   "utils/permissions/orgResources.ts",
   "features/notes/redux/notes.types.ts",
   "features/messaging/types.ts",
-  "../aidream/apps/shared/chat/src/cx-chat/types/cx-tables.ts",
   "../aidream/apps/shared/chat/src/public-chat/types/cx-tables.ts",
   "features/access-gate/service/accessRequests.ts",
   "features/access-gate/service/accessDeniedContext.ts",
@@ -244,7 +255,7 @@ describe("no ladder site restates the level union", () => {
     expect(source).not.toMatch(RESTATED_ARRAY);
     expect(source).not.toMatch(SILENT_DOWNGRADE);
     // and it reaches the canonical module, directly or by re-export
-    expect(source).toMatch(/permissions\/levels|from "\.\/levels"/);
+    expect(source).toMatch(/permissions\/levels|ui\/permission-levels|from "\.\/levels"/);
   });
 });
 

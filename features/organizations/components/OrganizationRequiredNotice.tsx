@@ -39,8 +39,8 @@ import {
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import Link from "next/link";
 
 // The recogniser's ONE home is `lib/organizations/organizationRequiredError`.
 // It is re-exported here because this component and that predicate are always
@@ -88,7 +88,7 @@ export function organizationNeededFor(what: string): string {
 }
 
 const DEFAULT_DESCRIPTION =
-  "Nothing was loaded because no organization is selected for this session.";
+  "You do not belong to an organization yet, so nothing was loaded.";
 
 export function OrganizationRequiredNotice({
   what,
@@ -99,7 +99,7 @@ export function OrganizationRequiredNotice({
   className,
 }: OrganizationRequiredNoticeProps) {
   const headline =
-    title ?? (what ? organizationNeededFor(what) : "Choose an organization");
+    title ?? (what ? organizationNeededFor(what) : "An organization is needed");
 
   // 🚨 ONE LINE AND A BUTTON, NEVER THE WHOLE LIST (page-pass shared defects,
   // 2026-09-27). The picker used to be drawn inline — ~600px on an account
@@ -108,7 +108,9 @@ export function OrganizationRequiredNotice({
   // bottom sheet the header uses (`OrganizationPickerPopover`).
   const actions = (
     <div className={compact ? "flex flex-wrap items-center gap-2" : "flex flex-wrap items-center justify-center gap-2"}>
-      <OrganizationPickerButton align={compact ? "start" : "center"} />
+      <Button asChild size="sm" variant="outline">
+        <Link href="/organizations">Create an organization</Link>
+      </Button>
       {onRetry ? (
         <Button size="sm" variant="ghost" onClick={onRetry}>
           Try again

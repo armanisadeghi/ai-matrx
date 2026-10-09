@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { archiveEnrollment, triggerReview, updateEnrollment } from "../api";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { fmtCost } from "../components/tokens";
 
 export function useEnrollmentActions(
@@ -40,7 +41,7 @@ export function useEnrollmentActions(
     onSuccess: (res) => {
       if (res.status === "completed") {
         toast.success(
-          `Review done — ${res.findings_created} finding(s) from ${res.example_count} real run(s), ${fmtCost(res.cost_usd)} spent`,
+          `Review done — ${res.findings_created} finding(s) from ${res.example_count} real run(s), ${fmtCost(res.cost_usd, currentPointsRate())} spent`,
         );
       } else {
         toast.info(`Review ${res.status}${res.reason ? `: ${res.reason}` : ""}`);

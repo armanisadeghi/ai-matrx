@@ -190,6 +190,13 @@ jobs:
         run: pnpm check:matrx-imports:self-test
       - name: Every @ai-matrx import exists in the installed package
         run: pnpm check:matrx-imports
+      # 2026-10-05..07, 5+ outages: the app (or a published package) imported an @ai-matrx subpath or
+      # name the INSTALLED published version lacks. The fast layer: subpath + name resolution from the
+      # installed exports maps, app source AND the installed packages' own dist (seconds of CPU).
+      - name: The package-import guard goes RED per rule (planted in a temp tree)
+        run: pnpm check:package-imports-resolve:self-test
+      - name: Every @ai-matrx import (app source and installed package graph) resolves
+        run: pnpm check:package-imports-resolve
 
   # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
@@ -261,6 +268,12 @@ jobs:
       - name: every store table mounts the one table page (no old grid, no second host)
         # 2026-10-04: the window, chat modal, canvas, quick sheet and picker mount what /data/<table> mounts.
         run: pnpm check:one-store-grid && pnpm check:one-store-grid:self-test
+      - name: no heavy module in the shell's eager client set
+        # 2026-10-08: it ran only in the advisory release gates, so a compiler or editor pulled into
+        # the first chunk of every page shipped unseen. ~90s, static, no secrets.
+        run: pnpm check:shell-eager-graph
+      - name: the shell-eager-graph guard can still fail (self-test)
+        run: pnpm check:shell-eager-graph:self-test
       - name: the no-fake-data guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants a
         # seed file carrying Acme, a sequential name and an example.com mailbox
@@ -366,6 +379,20 @@ jobs:
         # "control" is a comment — and asserts all three are reported, while a
         # service layer, a single-record read and a reasoned exemption are not.
         run: pnpm check:archived-items-law:self-test
+      - name: EVERY BOX A PERSON WRITES IN IS ProTextarea / ProInput
+        # Arman, 2026-10-07: the Applet builder's first field was a bare
+        # design-system Textarea — no microphone, no read-aloud, none of the
+        # page's agents. A bare Textarea / <textarea> / text Field where a
+        # person writes prose is NEW debt; raw values (code, JSON, slugs)
+        # carry `ui-exception:`. Baseline scripts/writing-boxes/baseline.json
+        # only shrinks. Pure static scan over tracked .tsx, offline, ~3s.
+        run: pnpm check:writing-boxes:strict
+      - name: the writing-box guard can still fail (self-test)
+        # Plants the Applet builder's exact shape, a multi-line aliased import
+        # and a raw <textarea>, and asserts each is reported and a count above
+        # the baseline is NEW — while ProTextarea, typed, read-only, monospace
+        # and excepted boxes stay quiet.
+        run: pnpm check:writing-boxes:self-test
       - name: A ROUTE ADDED WITHOUT A MANIFEST ENTRY IS A LINK THE SPINE REWRITES
         # `aidream/services/notifications/link_honesty.py` asks the route
         # manifest whether a deep link can answer before it puts one in an
@@ -427,6 +454,12 @@ jobs:
         # there is no baseline and any finding is NEW. Pure static scan over
         # tracked .ts/.tsx.
         run: pnpm check:mandate-keys
+      - name: retired product names (platform lexicon) can still be caught (self-test)
+        # check:lexicon parses the lexicon's "Retired aliases" column at run
+        # time. The self-test is offline; the REAL scan needs the common-docs
+        # checkout this job does not have, so it runs release-side
+        # (scripts/run-release-gates.sh) and locally, UNMEASURED without it.
+        run: pnpm check:lexicon:self-test
       - name: the mandate-key guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. The self-test
         # plants a hand-typed key in each position the guard claims to cover —
@@ -833,6 +866,10 @@ jobs:
       # and My team is empty for a person on no team (scripts/check-list-counts.ts).
       - name: List counts are the list, and My team is honest
         run: pnpm check:list-counts:strict
+      # Max-tier lock (2026-10-08): no agent/system writer may move a model into or
+      # out of cost_rating 6 unheld (ai._cost_tier_hold; four rolled-back cases).
+      - name: The max cost tier is held against non-person writers
+        run: pnpm check:cost-tier-hold:strict
 
   # ---------------------------------------------------------------------------
   # soft-delete-cascade — liveness for platform.soft_delete_edge and the two
@@ -1341,11 +1378,33 @@ jobs:
   # Both run even if the other fails — a masked second failure is how two
   # regressions ship as one.
   # ---------------------------------------------------------------------------
+  #
+  # Since the rich-content switch (2026-10-06) the engine half of the block
+  # dispatch, the splitter literals and the kind-correction OWNER live in
+  # aidream's apps/shared — the content-ir suites read them at ../aidream (the
+  # sibling-checkout layout every reader resolves through SHAPE_SOURCE_FILES).
+  # The checkout is moved OUT of the workspace so jest never collects aidream's
+  # own tests. Without AIDREAM_REPO_TOKEN those suites fail BY NAME (missing
+  # ../aidream file) — never a silent pass.
   suites:
     name: content-ir + workflow-runtime suites
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: always()
     steps:
       - uses: actions/checkout@v4
+      - name: Check out aidream's shared packages (dispatch engine half, splitter, correctors)
+        if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream-sibling
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          sparse-checkout: apps/shared
+          sparse-checkout-cone-mode: false
+      - name: Place aidream beside this checkout (../aidream)
+        if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+        run: mv aidream-sibling "$GITHUB_WORKSPACE/../aidream"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

@@ -20,7 +20,7 @@
  *                  org's group UUID (until an explicit org-group
  *                  mapping ships in the backend).
  *
- * Virtual files (Notes, Code Snippets, Agent Apps, …) don't go through
+ * Virtual files (Notes, Code Snippets, Applets, …) don't go through
  * the cld_files share/permission tables — they have their own per-source
  * sharing surfaces. We surface a friendly hint in that case.
  */

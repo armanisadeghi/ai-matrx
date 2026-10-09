@@ -11,16 +11,30 @@ jest.mock("@/utils/supabase/client", () => {
   return { createClient: () => client, supabase: client };
 });
 
-import { heldWritesOnTable } from "../HeldWritesOnTable";
+import { forgetHeldWritesOnTable, heldWritesOnTable } from "../HeldWritesOnTable";
 
 const ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04";
 const TABLE = "0f1a0f28-bc54-4e39-ad14-699072ed08f8";
 
-it("two headers asking at once share one queue read; a later ask reads again", async () => {
+// PAGE-BUNDLE-2: the second header mounts a moment AFTER the first read lands, so the answer is
+// shared for a few seconds after it lands too; a decision, or time, makes the next ask read again.
+it("two headers share one queue read, at once or a moment apart; a decision or time reads again", async () => {
   const [a, b] = await Promise.all([heldWritesOnTable(ORG, TABLE), heldWritesOnTable(ORG, TABLE)]);
   expect(a).toEqual({ state: "none" });
   expect(b).toEqual({ state: "none" });
   expect(rpc).toHaveBeenCalledTimes(1);
   await heldWritesOnTable(ORG, TABLE);
+  expect(rpc).toHaveBeenCalledTimes(1);
+  forgetHeldWritesOnTable();
+  await heldWritesOnTable(ORG, TABLE);
   expect(rpc).toHaveBeenCalledTimes(2);
+  const realNow = Date.now;
+  const later = realNow() + 6_000;
+  Date.now = () => later;
+  try {
+    await heldWritesOnTable(ORG, TABLE);
+    expect(rpc).toHaveBeenCalledTimes(3);
+  } finally {
+    Date.now = realNow;
+  }
 });

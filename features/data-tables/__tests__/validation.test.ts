@@ -2,7 +2,6 @@ import {
   describeValidationRules,
   hasValidationRules,
   parseValidationRules,
-  serializeValidationRules,
   validateCellValue,
   type ValidationRules,
 } from "../validation";
@@ -83,30 +82,12 @@ describe("parseValidationRules", () => {
   });
 });
 
-describe("hasValidationRules / serializeValidationRules", () => {
+describe("hasValidationRules", () => {
   it("knows an empty rule set from a real one", () => {
     expect(hasValidationRules(null)).toBe(false);
     expect(hasValidationRules({})).toBe(false);
     expect(hasValidationRules({ required: true })).toBe(false);
     expect(hasValidationRules({ min: 0 })).toBe(true);
-  });
-
-  it("stores {} when everything is cleared — the only way to clear the column", () => {
-    // A null would keep the old rules forever. An empty object is what actually clears them.
-    expect(serializeValidationRules({})).toEqual({});
-    expect(serializeValidationRules(null)).toEqual({});
-  });
-
-  it("never stores `required`", () => {
-    expect(serializeValidationRules({ required: true, min: 1 })).toEqual({ min: 1 });
-  });
-
-  it("drops a dangling hint and an empty allowedValues", () => {
-    expect(serializeValidationRules({ patternHint: "###", allowedValues: [] })).toEqual({});
-    expect(serializeValidationRules({ pattern: "^a$", patternHint: "a" })).toEqual({
-      pattern: "^a$",
-      patternHint: "a",
-    });
   });
 });
 

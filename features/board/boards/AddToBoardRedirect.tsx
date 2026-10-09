@@ -11,11 +11,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectAuthReady, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { beginBoardCreate, getLastOpenedBoardId, isBoardError } from "../persistence/boardsService";
 
 /** Where an add lands: the board it opens on, carrying the item key. Exported for tests. */
@@ -43,10 +42,6 @@ export function AddToBoardRedirect({ addKey }: { addKey: string }) {
         const id = last ?? (await beginBoardCreate({ organizationId })).id;
         router.replace(addToBoardHref(id, addKey));
       } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) {
-          router.replace("/board");
-          return;
-        }
         setFailure(isBoardError(error) ? error.message : error instanceof Error ? error.message : "Your board could not be opened.");
       }
     })();

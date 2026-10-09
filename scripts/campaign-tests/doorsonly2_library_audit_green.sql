@@ -53,9 +53,9 @@ begin
     raise exception '0: the seat is not admin@admin.com -- auth.uid() is %', auth.uid();
   end if;
 
-  v_actor_org := iam.default_organization_id(c_admin);
+  v_actor_org := (select m.container_id from iam.memberships m join iam.organizations fo on fo.id = m.container_id where m.user_id = c_admin and m.container_type = 'organization' and m.status = 'active' and m.deleted_at is null and fo.archived_at is null order by m.created_at, m.container_id limit 1);
   if v_actor_org is null then
-    raise exception '0: admin@admin.com has no default organization, so this suite cannot state what the kernel column must hold';
+    raise exception '0: admin@admin.com has no first organization, so this suite cannot state what the kernel column must hold';
   end if;
 
   select count(*) into v_n from rag.library_audit_log;

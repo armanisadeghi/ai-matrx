@@ -375,7 +375,7 @@ function EditTabContent({ fileId }: EditTabContentProps) {
   const file = useAppSelector((s) => selectFileById(s, fileId));
   if (!file) return null;
 
-  // Virtual sources (Notes, Code Snippets, Agent Apps, …) own their own
+  // Virtual sources (Notes, Code Snippets, Applets, …) own their own
   // edit experience inside the Preview tab via `inlinePreview` — the Edit
   // tab here is for real cloud-files only. Surface a friendly hint.
   if (file.source.kind === "virtual") {

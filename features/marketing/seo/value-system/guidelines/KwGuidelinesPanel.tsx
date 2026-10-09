@@ -59,7 +59,7 @@ import { KEYWORD_MEANING_SURFACE } from "@/features/approvals/kinds/seo/keyword-
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** After this long without an edit the document is called out as possibly
  *  stale — "we keep these things up to date" is half the ruling. ONE line,

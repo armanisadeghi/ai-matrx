@@ -104,7 +104,7 @@ describe("a package preference write lands where the preferences are kept", () =
     expect(selectRestoreUnsentDrafts(store.getState())).toBe(false);
 
     store.dispatch(packageToggleShowCreatorPanel());
-    expect(store.getState().creatorDebug.showCreatorPanel).toBe(true);
+    expect(store.getState().userPreferences.assistant.showCreatorPanel).toBe(true);
     expect(selectShowCreatorPanel(store.getState())).toBe(true);
   });
 

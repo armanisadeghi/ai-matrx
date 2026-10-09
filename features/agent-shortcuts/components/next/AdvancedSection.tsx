@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { PropertyRow } from "@ai-matrx/design-system/controls";
 import {
   ShortcutFieldRow as FieldRow,
   ShortcutToggleRow as ToggleRow,

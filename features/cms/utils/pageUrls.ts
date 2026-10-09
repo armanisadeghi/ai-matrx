@@ -36,7 +36,7 @@
  * DNS is attached). See `my-matrx/docs/DOMAIN_ROUTING_DESIGN.md`.
  */
 
-const HTML_SITE_URL = process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
+const HTML_SITE_URL = process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://www.mymatrx.com";
 
 /**
  * Return the custom domain only when it is allowed to receive generated traffic.

@@ -802,7 +802,7 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
 }
 
 /**
- * Two menus on one box (`AgentAppsGrid`: one after the title and one at the
+ * Two menus on one box (`AppletsGrid`: one after the title and one at the
  * right edge) — the person sees two identical icons and does not know which
  * is the error. Menus in exclusive branches (`a ? <p>…<Menu/></p> : …`) are
  * never on screen together and do not count. An ErrorNotice / ErrorBox draws
@@ -853,7 +853,6 @@ export function findDoubleMenus(source: string, fileName = "file.tsx"): number[]
  * The files the census (and the lint rule matrx/error-render-carries-alchemy)
  * reads. The primitives themselves — they ARE the one place an error box is drawn. */
 export const CENSUS_PRIMITIVES = new Set([
-  "components/errors/ErrorNotice.tsx",
   "components/errors/ErrorAlchemyMenu.tsx",
   // The package error slot and the toast decorator render only for an error.
   "components/errors/PackageErrorActions.tsx",

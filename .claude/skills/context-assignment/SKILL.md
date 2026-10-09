@@ -89,7 +89,7 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
 - **Org default-but-changeable.** Assignment mode defaults to **"All
   organizations"** (`ALL_ORGS` sentinel — nothing filtered, scope sections
   grouped per org, `selection.organizationId = null`). Surfaces that "enforce"
-  an org pass `defaultOrganizationId` to override that default; the user can
+  an org pass `initialOrganizationId` to override that starting selection; the user can
   always switch (including back to All).
 - **No layout shift.** Fixed section heights; fixed-size check targets;
   status icons swap glyphs, never dimensions.

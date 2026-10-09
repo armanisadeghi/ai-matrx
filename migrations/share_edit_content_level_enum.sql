@@ -1,0 +1,14 @@
+-- chair-step: ALTER TYPE ... ADD VALUE is additive and idempotent (if not exists) but cannot run in a transaction; lane SHARE-EDIT-CONTENT adds one share level and changes no existing grant.
+-- Add the share level `edit_content` ("Can edit content") to public.permission_level, between
+-- `commenter` and `editor`. Lane SHARE-EDIT-CONTENT (Spaces ask, 2026-10-07).
+--
+-- WHAT IT IS: a person shared at edit_content may change the rows and page content of a thing,
+-- and may not change its structure (columns, views, settings) or its sharing; both stay with
+-- `editor` and `admin`. Notion's "Can edit content". The value sorts below `editor` so every
+-- door that asks `editor` or above keeps refusing it, and every door that asks `commenter` or
+-- below keeps admitting it. No existing share changes level or behaviour.
+--
+-- Autocommit file (ALTER TYPE ... ADD VALUE cannot run in the frontend runner's transaction):
+--   cd aidream && uv run python db/apply_migrations.py --source matrx-frontend --only share_edit_content_level_enum.sql
+-- Apply BEFORE share_edit_content_level_doors.sql.
+alter type public.permission_level add value if not exists 'edit_content' before 'editor';

@@ -30,6 +30,8 @@
 
 import { useEffect } from "react";
 
+import { TRANSIENT_OVERLAY_SELECTOR } from "@/lib/layout/floating-chrome";
+
 const DOCK_SELECTOR = "[data-assists-dock]";
 const CLEARED_ATTR = "data-assist-clearance";
 /** Breathing room between the scroller's last item and the control. */
@@ -186,6 +188,50 @@ const INTERACTIVE =
 const ROW = '[data-row-id], [data-matrx-table-group-row], tr, [role="row"]';
 const LIFT_VAR = "--assist-dock-lift";
 const YIELD_ATTR = "data-assist-dock-yield";
+/**
+ * The dock is drawn only at a place that has HELD (zero layout shift, Arman's standing rule). The
+ * dock's own class hides it with `visibility` while it carries PENDING_ATTR — a hidden box takes no
+ * layout space and scores no shift. It mounts pending; every pass that changes its place puts it
+ * back to pending in the same frame (before paint), and it is shown again once two consecutive
+ * passes agree and the document has loaded (or REVEAL_CAP_MS passed, so a page that never settles
+ * still shows it). Before this, the first pass ran against a half-painted page, docked the pill in
+ * the header, and a later pass moved it back — visibly, three times a load.
+ */
+export const PENDING_ATTR = "data-assist-dock-pending";
+export const REVEAL_CAP_MS = 4000;
+
+export interface DockRevealState {
+  /** The place the last pass chose, as a string; null before the first pass. */
+  signature: string | null;
+  /** When the dock last went pending; null while it is drawn. */
+  pendingSince: number | null;
+}
+
+export interface DockRevealStep {
+  state: DockRevealState;
+  /** What the dock's pending attribute must be after this pass. */
+  pending: boolean;
+  /** True when another pass is needed to confirm the place held. */
+  again: boolean;
+}
+
+/** Pure: given the place this pass chose, decide whether the dock may be drawn. */
+export function stepDockReveal(
+  prev: DockRevealState,
+  signature: string,
+  now: number,
+  documentComplete: boolean,
+): DockRevealStep {
+  if (signature !== prev.signature) {
+    // The place moved (or is the first answer): hide through the move, confirm next pass.
+    return { state: { signature, pendingSince: prev.pendingSince ?? now }, pending: true, again: true };
+  }
+  if (prev.pendingSince === null) return { state: prev, pending: false, again: false };
+  if (documentComplete || now - prev.pendingSince >= REVEAL_CAP_MS) {
+    return { state: { signature, pendingSince: null }, pending: false, again: false };
+  }
+  return { state: prev, pending: true, again: true };
+}
 const LIFT_STEP_PX = 8;
 /** Quiet time after the last scroll / DOM change before the dock re-checks what lies under it. */
 export const SETTLE_MS = 150;
@@ -295,7 +341,10 @@ function samplePoints(r: DockRect): [number, number][] {
 function hitCoverage(r: DockRect, rowsCount: boolean, points: [number, number][] = samplePoints(r)): Coverage {
   for (const [x, y] of points) {
     const stack = document.elementsFromPoint?.(x, y) ?? [];
-    const under = stack.find((el) => !el.closest(DOCK_SELECTOR));
+    // A toast floats over the page for a few seconds; it is never what the pill must clear. Counting
+    // it hid and re-placed the pill, which moved the floating clearance, which moved the toast
+    // stack — a loop the owner saw as "toasts moving the UI around" (2026-10-08).
+    const under = stack.find((el) => !el.closest(DOCK_SELECTOR) && !el.closest(TRANSIENT_OVERLAY_SELECTOR));
     if (!under) continue;
     if (rowsCount) {
       const row = under.closest(ROW);
@@ -663,6 +712,7 @@ export function useAssistClearance(active: boolean): void {
     let frame = 0;
     let settle: ReturnType<typeof setTimeout> | null = null;
     let fillSince = 0;
+    let reveal: DockRevealState = { signature: null, pendingSince: performance.now() };
     let lastBox: Element | null = null;
     // The bar holding a docked control (and its pane) is watched, so the control follows the bar.
     let watched: Element | null = null;
@@ -673,6 +723,24 @@ export function useAssistClearance(active: boolean): void {
       ro.disconnect();
       watched = host;
       for (let el: Element | null = host, n = 0; el && n < 4; el = el.parentElement, n += 1) ro.observe(el);
+    };
+    // Draw the dock only at a place that has held (see PENDING_ATTR).
+    const revealWhenFinal = (placement: DockPlacement) => {
+      const docks = dockElements();
+      if (docks.length === 0) return;
+      const box = fixedBoxOf(docks[0]!);
+      const signature = `${placement}|${PLACEMENT_VARS.map((v) => box.style.getPropertyValue(v)).join("|")}|${document.documentElement.getAttribute(SLOT_ATTR) ?? ""}`;
+      // A dock that mounted pending (a remount) is pending whatever the state says.
+      const fresh = docks.some((el) => el.hasAttribute(PENDING_ATTR));
+      const step = stepDockReveal(
+        fresh && reveal.pendingSince === null ? { ...reveal, pendingSince: performance.now() } : reveal,
+        signature,
+        performance.now(),
+        document.readyState === "complete",
+      );
+      reveal = step.state;
+      for (const el of docks) setAttr(el, PENDING_ATTR, step.pending ? "" : null);
+      if (step.again) scheduleSettled();
     };
     const pass = () => {
       frame = 0;
@@ -695,6 +763,7 @@ export function useAssistClearance(active: boolean): void {
       const placement = applyAssistDockLift();
       applyAssistClearance({ resting: placement === "rest" });
       watchSlot();
+      revealWhenFinal(placement);
       const first = dockElements()[0];
       lastBox = first ? fixedBoxOf(first) : null;
       measure("assists-dock:pass", t0);
@@ -742,6 +811,8 @@ export function useAssistClearance(active: boolean): void {
           continue;
         }
         if (insideDock(m.target)) continue;
+        // Toasts appearing, stacking and leaving change nothing under the dock.
+        if (m.target instanceof Element && m.target.closest(TRANSIENT_OVERLAY_SELECTOR)) continue;
         later = true;
       }
       // The dock's box was replaced (quiet ↔ open): its placement went with it.

@@ -19,8 +19,8 @@ export type BlockId = string;
 
 // Block, span, color, media and data-source shapes are defined ONCE in lib/spaces-blocks/types.ts
 // (shared with the Notion importer and every server-side writer); this contract re-exports them.
-import type { RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia } from "@/lib/spaces-blocks/types";
-export type { RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia };
+import type { PageProperty, PagePropertyType, RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia } from "@/lib/spaces-blocks/types";
+export type { PageProperty, PagePropertyType, RichSpan, SpaceBlock, SpaceColor, SpaceDataSource, SpaceMedia };
 
 export interface SpaceDoc {
   id: SpaceId;
@@ -37,8 +37,12 @@ export interface SpaceDoc {
     fullWidth: boolean;
     locked: boolean;
   };
+  /** N13 — properties shown under the title (Notion's page properties); absent = none. */
+  properties?: PageProperty[];
   blocks: SpaceBlock[];
   isArchived: boolean;
+  /** The page's own organization, as the database read it (absent in the memory store). */
+  organizationId?: string;
   /** Integer row version — the optimistic-concurrency token (guardedUpdate), never updatedAt. */
   version: number;
   createdAt: string;

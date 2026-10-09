@@ -29,6 +29,7 @@ import {
   type DirectiveNounCatalog,
 } from "@ai-matrx/content-ir";
 import {
+  changesNothing,
   DirectiveChangeList,
   directiveValueWord,
   itemChanges,
@@ -113,7 +114,7 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
 
   const label = (
     <>
-      {name === null ? <NamePlaceholder /> : <span className="truncate">{name}</span>}
+      {name === null ? <NamePlaceholder /> : <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]" data-record-name="">{name}</span>}
       {loading && name !== null ? (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       ) : null}
@@ -131,7 +132,7 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
         title="Not found — deleted, or not shared with you"
         data-record-missing=""
       >
-        <span className="truncate">{name ?? fallback}</span>
+        <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]" data-record-name="">{name ?? fallback}</span>
         <span className="shrink-0 text-xs">· Not found</span>
       </span>
     );
@@ -519,6 +520,13 @@ export interface DirectiveConsequenceOptions {
   valueLabel?: ValueLabel;
   /** Test seam: how long the question waits for its reads. */
   readTimeoutMs?: number;
+  /**
+   * WHERE the question is asked. `"text"` (default): a card inside a note or a
+   * chat, so "the record itself, not just this text" is true. `"admin"`: the
+   * admin builder, which has no text — its words name only the record and its
+   * organization (G18 review, 2026-10-07).
+   */
+  surface?: "text" | "admin";
 }
 
 /**
@@ -547,6 +555,7 @@ export function directiveConsequenceDialog(
 ): ConfirmOptions {
   const { directive, items, nounLabel } = request;
   const { valueLabel } = options;
+  const inText = options.surface !== "admin";
   // EVERY QUESTION NAMES ITS ORGANIZATION (G6A review, 2026-10-02: only Create's
   // did). A create or an action lands in the organization it is sent with; an
   // update or delete changes a record where that record lives.
@@ -564,12 +573,32 @@ export function directiveConsequenceDialog(
   const ranBefore = "This already ran once.";
   const twice = again ? " again" : "";
 
+  // NOTHING CHOSEN, SAID PLAINLY (G18 review, 2026-10-07: the builder asked
+  // "Delete this Task?" with no task picked, then failed "ID is required").
+  // The yes stays offered — validation offers, never blocks.
+  if (
+    (directive.directiveClass === "update" || directive.directiveClass === "delete") &&
+    targetIds(request).length === 0
+  ) {
+    const deleting = directive.directiveClass === "delete";
+    return {
+      title: `No ${noun} chosen`,
+      description: (
+        <p data-directive-nothing-chosen="">
+          Nothing will be {deleting ? "deleted" : "updated"}. Choose {article(noun)} {noun} first.
+        </p>
+      ),
+      confirmLabel: deleting ? "Delete" : "Update",
+      ...(deleting ? { variant: "destructive" as const } : {}),
+    };
+  }
+
   switch (directive.directiveClass) {
     case "delete": {
       const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
-          <WhenRead prepared={prepared} loading={<>Delete {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
+          <WhenRead prepared={prepared} loading={<>Delete this {noun}{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
@@ -601,13 +630,14 @@ export function directiveConsequenceDialog(
                     </p>
                   ) : one ? (
                     <p>
-                      {again ? `${ranBefore} ` : null}Moves {oneLabel(question)} to the trash in {org} — the {noun}{" "}
-                      itself, not just this text.{again ? null : " You can restore it from there."}
+                      {again ? `${ranBefore} ` : null}Moves {oneLabel(question)} to the trash in {org}
+                      {inText ? <> — the {noun} itself, not just this text.</> : "."}
+                      {again ? null : " You can restore it from there."}
                     </p>
                   ) : (
                     <p>
-                      {again ? `${ranBefore} ` : null}Moves these {many} to the trash in {org} — the records
-                      themselves, not just this text.
+                      {again ? `${ranBefore} ` : null}Moves these {many} to the trash in {org}
+                      {inText ? " — the records themselves, not just this text." : "."}
                     </p>
                   )}
                   {one ? null : <NameList named={named} withChanges={false} noun={directive.noun} />}
@@ -625,7 +655,7 @@ export function directiveConsequenceDialog(
       const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
-          <WhenRead prepared={prepared} loading={<>Update {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
+          <WhenRead prepared={prepared} loading={<>Update this {noun}{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
@@ -640,11 +670,21 @@ export function directiveConsequenceDialog(
             {(question) => {
               const named = namedTargets(request, question);
               const org = <Org name={question.organization} />;
+              // Every record read already holds every value: the question says
+              // so, first time or "Run again" (G11B) — the yes stays offered.
+              const nothing =
+                named.length > 0 &&
+                named.every((entry) => entry.values !== null && changesNothing(itemChanges(entry.item, entry.values)));
               return (
                 <>
                   {question.unread ? <UnreadLine /> : null}
                   <p>
-                    {again ? (
+                    {nothing ? (
+                      <span data-directive-nothing-to-change="">
+                        {again ? `${ranBefore} ` : null}Nothing to change — {one ? "it" : "they"} already{" "}
+                        {one ? "has" : "have"} these values in {org}.
+                      </span>
+                    ) : again ? (
                       <>
                         {ranBefore} Writes these fields again in {org}, as you.
                       </>
@@ -703,7 +743,7 @@ export function directiveConsequenceDialog(
             <p>
               {again
                 ? `${ranBefore} Running it again adds a second copy${one ? "" : " of each"} to ${activeOrg}.`
-                : `Adds ${one ? `this ${noun}` : `these ${many}`} to ${activeOrg}, as you — not just to this text.`}
+                : `Adds ${one ? `this ${noun}` : `these ${many}`} to ${activeOrg}, as you${inText ? " — not just to this text" : ""}.`}
             </p>
             {one ? null : <NameList named={named} withChanges={false} noun={directive.noun} />}
           </>
@@ -722,7 +762,9 @@ export function directiveConsequenceDialog(
             <p>
               {again
                 ? `${ranBefore} Running it again repeats it in ${activeOrg}, as you.`
-                : `Runs now in ${activeOrg}, as you, and changes data outside this text. Continue only if you trust its source.`}
+                : inText
+                  ? `Runs now in ${activeOrg}, as you, and changes data outside this text. Continue only if you trust its source.`
+                  : `Runs now in ${activeOrg}, as you.`}
             </p>
             <NameList named={named} withChanges={false} noun={directive.noun} />
           </>
@@ -731,11 +773,6 @@ export function directiveConsequenceDialog(
       };
     }
   }
-}
-
-/** The name slot of a question title while its record is read. */
-function DirectiveTitlePlaceholder() {
-  return <NamePlaceholder />;
 }
 
 /**

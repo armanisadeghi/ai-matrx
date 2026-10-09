@@ -62,9 +62,9 @@ was restored. So:
 - A unit with `owner_words`: read its `context`. If it is his guidance → add it to
   `scripts/interface-text/keep.json` (text, file, reason, `by: "check-owner-words"`) and change
   nothing. If he pasted it only to complain about it → it rejoins the sweep; cite the context.
-- Every deletion and rewrite reaches his **review page** (page link, before → after, keep /
-  restore / note). His `restore` and `keep` verdicts go into `keep.json` and the code is reverted;
-  his notes become rows in this file's mistake list. That page is how the patterns are learned.
+- Text edits never go to a review page or review queue (Arman, 2026-10-08: that is for complex
+  work he tests, a few a day). The round's report to him is a few sample page links, each with
+  the exact before → after. A restore he asks for goes into `keep.json` and the code is reverted.
 
 ## 5. What else goes to Arman — almost nothing
 

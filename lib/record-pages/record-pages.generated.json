@@ -2,8 +2,8 @@
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
   "list.sourceWithoutCustomFields": 1,
-  "route.pending": 1291,
-  "route.none": 36,
+  "route.pending": 1289,
+  "route.none": 37,
   "route.tokens": 16,
   "route.host": 1,
   "window.pending": 183,
@@ -85,34 +85,6 @@
   },
   "route:/administration/agents": {
    "file": "app/(admin)/administration/agents/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps": {
-   "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/analytics": {
-   "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/apps": {
-   "file": "app/(admin)/administration/agents/agent-apps/apps/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/categories": {
-   "file": "app/(admin)/administration/agents/agent-apps/categories/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/edit/[id]": {
-   "file": "app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/executions": {
-   "file": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
-   "pending": true
-  },
-  "route:/administration/agents/agent-apps/rate-limits": {
-   "file": "app/(admin)/administration/agents/agent-apps/rate-limits/page.tsx",
    "pending": true
   },
   "route:/administration/agents/bundles": {
@@ -363,6 +335,34 @@
    "file": "app/(admin)/administration/ai/ai-tasks/page.tsx",
    "pending": true
   },
+  "route:/administration/applets": {
+   "file": "app/(admin)/administration/applets/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/all": {
+   "file": "app/(admin)/administration/applets/all/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/analytics": {
+   "file": "app/(admin)/administration/applets/analytics/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/categories": {
+   "file": "app/(admin)/administration/applets/categories/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/edit/[id]": {
+   "file": "app/(admin)/administration/applets/edit/[id]/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/executions": {
+   "file": "app/(admin)/administration/applets/executions/page.tsx",
+   "pending": true
+  },
+  "route:/administration/applets/rate-limits": {
+   "file": "app/(admin)/administration/applets/rate-limits/page.tsx",
+   "pending": true
+  },
   "route:/administration/applications": {
    "file": "app/(admin)/administration/applications/page.tsx",
    "pending": true
@@ -438,6 +438,10 @@
   "route:/administration/automation/workflow-runs": {
    "file": "app/(admin)/administration/automation/workflow-runs/page.tsx",
    "none": "an admin list of workflow runs"
+  },
+  "route:/administration/automation/workflows": {
+   "file": "app/(admin)/administration/automation/workflows/page.tsx",
+   "none": "the admin list of the platform's own workflows"
   },
   "route:/administration/billing": {
    "file": "app/(admin)/administration/billing/page.tsx",
@@ -617,7 +621,7 @@
   },
   "route:/administration/database/store-tables": {
    "file": "app/(admin)/administration/database/store-tables/page.tsx",
-   "none": "an admin list of store tables"
+   "none": "an admin list of custom tables"
   },
   "route:/administration/database/switch-presses": {
    "file": "app/(admin)/administration/database/switch-presses/page.tsx",
@@ -1119,38 +1123,6 @@
    "file": "app/(admin)/administration/utilities/utils/text-cleaner/page.tsx",
    "pending": true
   },
-  "route:/agent-apps": {
-   "file": "app/(core)/agent-apps/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]": {
-   "file": "app/(core)/agent-apps/[id]/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]/code": {
-   "file": "app/(core)/agent-apps/[id]/code/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]/run": {
-   "file": "app/(core)/agent-apps/[id]/run/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]/settings": {
-   "file": "app/(core)/agent-apps/[id]/settings/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]/v/[version]": {
-   "file": "app/(core)/agent-apps/[id]/v/[version]/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/[id]/versions": {
-   "file": "app/(core)/agent-apps/[id]/versions/page.tsx",
-   "pending": true
-  },
-  "route:/agent-apps/build": {
-   "file": "app/(core)/agent-apps/build/page.tsx",
-   "pending": true
-  },
   "route:/agent-connections": {
    "file": "app/(core)/agent-connections/page.tsx",
    "pending": true
@@ -1477,8 +1449,40 @@
    "file": "app/(core)/agents/templates/[id]/page.tsx",
    "pending": true
   },
-  "route:/applets/[slug]": {
-   "file": "app/(public)/applets/[slug]/page.tsx",
+  "route:/applets": {
+   "file": "app/(core)/applets/page.tsx",
+   "pending": true
+  },
+  "route:/applets/[slug]/[[...path]]": {
+   "file": "app/(link)/applets/[slug]/[[...path]]/page.tsx",
+   "pending": true
+  },
+  "route:/applets/build": {
+   "file": "app/(core)/applets/build/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]": {
+   "file": "app/(core)/applets/manage/[id]/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]/code": {
+   "file": "app/(core)/applets/manage/[id]/code/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]/run": {
+   "file": "app/(core)/applets/manage/[id]/run/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]/settings": {
+   "file": "app/(core)/applets/manage/[id]/settings/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]/v/[version]": {
+   "file": "app/(core)/applets/manage/[id]/v/[version]/page.tsx",
+   "pending": true
+  },
+  "route:/applets/manage/[id]/versions": {
+   "file": "app/(core)/applets/manage/[id]/versions/page.tsx",
    "pending": true
   },
   "route:/appointment-reminder": {
@@ -1487,10 +1491,6 @@
   },
   "route:/approvals": {
    "file": "app/(core)/approvals/page.tsx",
-   "pending": true
-  },
-  "route:/apps/[app]/[[...path]]": {
-   "file": "app/(link)/apps/[app]/[[...path]]/page.tsx",
    "pending": true
   },
   "route:/artifacts": {
@@ -4259,8 +4259,8 @@
    "file": "app/(core)/organizations/[orgId]/admin/users/[userId]/resources/page.tsx",
    "pending": true
   },
-  "route:/organizations/[orgId]/agent-apps": {
-   "file": "app/(core)/organizations/[orgId]/agent-apps/page.tsx",
+  "route:/organizations/[orgId]/applets": {
+   "file": "app/(core)/organizations/[orgId]/applets/page.tsx",
    "pending": true
   },
   "route:/organizations/[orgId]/context-items": {
@@ -4421,10 +4421,6 @@
   },
   "route:/organizations/[orgId]/workflows": {
    "file": "app/(core)/organizations/[orgId]/workflows/page.tsx",
-   "pending": true
-  },
-  "route:/p/[slug]": {
-   "file": "app/(link)/p/[slug]/page.tsx",
    "pending": true
   },
   "route:/p/e/[resourceType]/[id]": {
@@ -5151,8 +5147,8 @@
    "file": "app/(public)/templates/[slug]/page.tsx",
    "pending": true
   },
-  "route:/templates/apps": {
-   "file": "app/(public)/templates/apps/page.tsx",
+  "route:/templates/applets": {
+   "file": "app/(public)/templates/applets/page.tsx",
    "pending": true
   },
   "route:/templates/category/[industry]": {
@@ -6207,16 +6203,16 @@
    "file": "features/workflow-runtime/discovery/windows/WaitingRunsWindow.tsx",
    "pending": true
   },
-  "peek:features/organizations/peek/kinds/AgentAppPeek.tsx": {
-   "file": "features/organizations/peek/kinds/AgentAppPeek.tsx",
-   "tokens": [
-    "app"
-   ]
-  },
   "peek:features/organizations/peek/kinds/AgentPeek.tsx": {
    "file": "features/organizations/peek/kinds/AgentPeek.tsx",
    "tokens": [
     "agent"
+   ]
+  },
+  "peek:features/organizations/peek/kinds/AppletPeek.tsx": {
+   "file": "features/organizations/peek/kinds/AppletPeek.tsx",
+   "tokens": [
+    "app"
    ]
   },
   "peek:features/organizations/peek/kinds/CanvasPeek.tsx": {
@@ -6230,10 +6226,6 @@
    "tokens": [
     "conversation"
    ]
-  },
-  "peek:features/organizations/peek/kinds/DatasetPeek.tsx": {
-   "file": "features/organizations/peek/kinds/DatasetPeek.tsx",
-   "none": "dataset is a Deprecated table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/FilePeek.tsx": {
    "file": "features/organizations/peek/kinds/FilePeek.tsx",
@@ -6317,6 +6309,10 @@
     "skill"
    ]
   },
+  "peek:features/organizations/peek/kinds/TablePeek.tsx": {
+   "file": "features/organizations/peek/kinds/TablePeek.tsx",
+   "none": "table is read through the record store, which takes no custom fields"
+  },
   "peek:features/organizations/peek/kinds/TaskPeek.tsx": {
    "file": "features/organizations/peek/kinds/TaskPeek.tsx",
    "tokens": [
@@ -6347,12 +6343,12 @@
   }
  },
  "tables": {
-  "app/(admin)/administration/agents/agent-apps/analytics/page.tsx": "pending",
-  "app/(admin)/administration/agents/agent-apps/apps/page.tsx": "pending",
-  "app/(admin)/administration/agents/agent-apps/executions/page.tsx": "pending",
-  "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx": "pending",
   "app/(admin)/administration/agents/system-agents/apps/page.tsx": "pending",
   "app/(admin)/administration/ai/ai-tasks/page.tsx": "pending",
+  "app/(admin)/administration/applets/all/page.tsx": "pending",
+  "app/(admin)/administration/applets/analytics/page.tsx": "pending",
+  "app/(admin)/administration/applets/executions/page.tsx": "pending",
+  "app/(admin)/administration/applets/rate-limits/RateLimitsClient.tsx": "pending",
   "app/(admin)/administration/automation/scheduling/orphan-leases/page.tsx": "pending",
   "app/(admin)/administration/automation/scheduling/runs/page.tsx": "pending",
   "app/(admin)/administration/automation/scheduling/system-jobs/page.tsx": "pending",
@@ -6488,8 +6484,8 @@
   "features/crm/components/outreach-lists/OutreachListsPage.tsx": "pending",
   "features/crm/outcomes/OutcomesPanel.tsx": "pending",
   "features/cx-dashboard/explorer/ConversationExplorer.tsx": "pending",
-  "features/documents/components/DocumentsHubTable.tsx": "set",
   "features/directive-catalog/components/DirectiveCatalogGrid.tsx": "pending",
+  "features/documents/components/DocumentsHubTable.tsx": "set",
   "features/education/home/blocks/RecentBlock.tsx": "pending",
   "features/feature-docs/components/FeatureDocsTable.tsx": "pending",
   "features/files/devices/admin/SyncFleetClient.tsx": "pending",

@@ -115,7 +115,7 @@ export interface EmbeddedImageStudioProps {
 
   /**
    * Folder segment under `Images/Generated/`. Defaults to the host
-   * feature's identifier (e.g. "html-pages", "agent-apps"). Variants
+   * feature's identifier (e.g. "html-pages", "applets"). Variants
    * land in `Images/Generated/<rootFolderSegment>/<filenameBase>/`.
    */
   rootFolderSegment?: string;

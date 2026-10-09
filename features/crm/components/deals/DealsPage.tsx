@@ -8,8 +8,8 @@
 // useListViewPrefs("crm-deals"). Smart views ride the same `platform.saved_view`
 // table as the party list, discriminated by `surface_key='crm/deals'`.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -28,8 +28,8 @@ import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { dealMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

@@ -24,11 +24,12 @@ jest.mock("next/link", () => ({
   ),
 }));
 
-jest.mock("@/components/official/item/ItemMenu", () => ({
+jest.mock("@ai-matrx/design-system/item", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/item"),
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({
+jest.mock("@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef", () => ({
   AiModelRef: ({
     modelId,
     showClass,
@@ -80,12 +81,6 @@ const sharedAgent: AgentBrowseRow = {
   updated_at: "2026-08-29T00:00:00.000Z",
   version: 1,
   visibility: "shared",
-  // Never run: the usage rollup answers zeros and a null last-used time.
-  run_count: 0,
-  success_count: 0,
-  failure_count: 0,
-  last_used_at: null as unknown as string,
-  total_cost: 0,
 };
 
 describe("AgentBrowseCards", () => {

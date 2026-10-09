@@ -14,6 +14,7 @@ import "./capture";
 import "./share";
 import "./listen";
 import "./transfer";
+import "./attach-to-chat";
 import "./ask";
 import "./ai";
 import "./send-to-agent";

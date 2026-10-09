@@ -35,7 +35,7 @@ const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat
 
 /** Editable rendered hosts that are not wired, each with its reason. Shrink-only. */
 const EXEMPT: Record<string, string> = {
-  "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx": "the renderer itself",
+  "../aidream/apps/shared/chat/src/ui/markdown-stream/EnhancedChatMarkdown.tsx": "the renderer itself (moved into @ai-matrx/chat)",
   "components/matrx/MatrxSplit.tsx": "Split: the source editor is always open beside the preview",
   "components/markdown-studio/MarkdownStudio.tsx": "routes the buffer to PreviewPanel (wired) and its Editor mode",
   // Click-to-edit already swaps to their own editor in place; the move onto
@@ -44,8 +44,6 @@ const EXEMPT: Record<string, string> = {
   "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": "follow-up lane: system instructions click-to-edit",
   // No live route mounts these copies (census 2026-10-05); the live chat is
   // ../aidream/apps/shared/chat/src/agents (wired above).
-  "../aidream/apps/shared/chat/src/cx-conversation/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
-  "../aidream/apps/shared/chat/src/cx-chat/components/messages/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
 };
 
 const RENDERS = /<(RichDocument|MarkdownStream|RichContent|EnhancedChatMarkdown)\b/;

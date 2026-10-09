@@ -20,7 +20,7 @@
  * same module as the honesty formatters would invite exactly the misuse they
  * exist to stop, so it stays host glue with its reasoning attached.
  *
- * The re-export below exists for ONE caller, `features/agent-apps/format.ts`,
+ * The re-export below exists for ONE caller, `features/applets/format.ts`,
  * which this lane was not permitted to edit. It re-exports the package's
  * functions — it does not redefine them — and should be deleted the moment
  * that file's owner points it at `@ai-matrx/kit/format`.

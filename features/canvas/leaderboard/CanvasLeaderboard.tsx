@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLeaderboard } from '@/hooks/canvas/useLeaderboard';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Loader2 } from 'lucide-react';

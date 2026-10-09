@@ -49,7 +49,7 @@ jest.mock("@/features/scopes/hooks/useEntityScopes", () => ({
 }));
 jest.mock("@/features/organizations/resource-catalogue", () => ({ getEntry: () => null, moduleKey: () => "" }));
 jest.mock("@/features/organizations/orgModuleSettings", () => ({ getOrgModuleSetting: jest.fn() }));
-jest.mock("@/components/read-state/ReadFailure", () => ({ ReadFailure: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ...jest.requireActual("@ai-matrx/design-system"), ReadFailure: () => null }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("@ai-matrx/icons", () => ({ DynamicIcon: () => null }));
 

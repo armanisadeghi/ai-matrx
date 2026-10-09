@@ -50,7 +50,7 @@ import {
   setPreferredInputDeviceId,
   notifyMicPermissionRevoked,
 } from "@ai-matrx/browser-audio/core";
-import { setPreferredOutputDeviceId } from "@/features/audio/audioOutputSink";
+import { setPreferredOutputDeviceId } from "@ai-matrx/media/speech";
 
 export type MediaPermissionState = "granted" | "denied" | "prompt" | "unknown";
 

@@ -55,7 +55,7 @@ export const GUARDS_AND_TESTS = new Set([
 export interface Reach {
     /** Repo-relative file. */
     file: string;
-    /** What it reached: a campaign module, or a campaign store table. */
+    /** What it reached: a campaign module, or a campaign custom table. */
     what: string;
     /** `import` | `store` */
     how: "import" | "store";

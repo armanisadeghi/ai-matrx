@@ -4,7 +4,7 @@
 // /data/<table>, as admin@admin.com: the cell shows the head text and "Open the whole text",
 // and that link opens the file's own page as the person.
 //
-//   ORIGIN=<site> TABLE=<store table id> FILE=<file id> FILE_NAME=<name> SHOTS=<dir> node scripts/big-values-live-walk.mjs
+//   ORIGIN=<site> TABLE=<custom table id> FILE=<file id> FILE_NAME=<name> SHOTS=<dir> node scripts/big-values-live-walk.mjs
 //
 // Reads only. Prints a JSON verdict; exit 1 on any miss.
 import { chromium } from "playwright";

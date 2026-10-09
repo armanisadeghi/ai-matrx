@@ -16,7 +16,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
-import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { readOf, type ReadOutcome } from "@ai-matrx/design-system";
 
 interface BucketRow {
   key: string;

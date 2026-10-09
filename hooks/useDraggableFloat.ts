@@ -202,25 +202,20 @@ export function useDraggableFloat({
   const restoredRef = useRef(false);
   const geometryFrameRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // The remembered position lands BEFORE the browser paints: this layout effect
+  // hands it to the reconcile layout effect below, which runs in the same
+  // commit and places the card. Deferred to a timer, the card painted at its
+  // default corner first and then jumped to where the person had dragged it
+  // (2026-10-08). Declared first so it runs first.
+  useLayoutEffect(() => {
     if (restoredRef.current) return;
     // Wait for the conditional surface itself. Resolving against a null element
     // loses its dimensions and delays an otherwise deterministic restoration.
     if (!element) return;
+    restoredRef.current = true;
     const stored = readStored(storageKey);
-    if (!stored) {
-      restoredRef.current = true;
-      return;
-    }
-    // Defer the first paint update so restoration does not create a cascading
-    // render from the effect that reads browser storage.
-    const restoreTimer = window.setTimeout(() => {
-      restoredRef.current = true;
-      preferredPositionRef.current = stored;
-      setPosition(avoidExclusions(stored, element, exclusion));
-    }, 0);
-    return () => window.clearTimeout(restoreTimer);
-  }, [storageKey, element, exclusion]);
+    if (stored) preferredPositionRef.current = stored;
+  }, [storageKey, element]);
 
   /**
    * A remembered position can be read before this conditional surface mounts,

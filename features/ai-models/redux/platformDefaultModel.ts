@@ -16,14 +16,12 @@
 // returns null — it never silently picks index 0. An unloaded catalog
 // returns null silently (nothing to resolve yet, not a defect).
 
+// Selectors over the model catalog's records (`useModelRecords(selectPlatformDefault…)`).
 import { createSelector } from "@reduxjs/toolkit";
 import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isConversationalModelCapability } from "@ai-matrx/agents/models";
-import {
-  selectActiveModels,
-  selectActiveModelsReady,
-  type AIModelRecord,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectActiveModels, selectActiveModelsReady } from "@ai-matrx/agents/models";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 
 /** The modalities a preference field can default on. Extend as fields appear. */
 export type DefaultableModality = "text" | "image";

@@ -18,8 +18,6 @@ import { useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -56,6 +54,7 @@ export function AutofillRows({
   fields,
   aiFields,
   client,
+  organizationId: tableOrganizationId,
   onAiFields,
 }: {
   tableId: string;
@@ -63,10 +62,13 @@ export function AutofillRows({
   fields: RecordField[];
   aiFields: AiFieldSpec[];
   client: RecordsClient;
+  /** The table's own organization: what each autofill run is filed in (never the active one). */
+  organizationId: string | null;
   onAiFields: (next: AiFieldSpec[]) => void;
 }) {
   useDeclaredSurfaceMandates(AUTOFILL_KEY ? [{ mandateKey: AUTOFILL_KEY, does: "fills AI autofill properties row by row" }] : []);
   const live = useLiveAgentRun();
+  // org-filter: server-call each autofill run executes in the organization the person works in
   const activeOrg = useAppSelector(selectActiveOrganizationId);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -80,7 +82,8 @@ export function AutofillRows({
     setBusy(spec.key);
     let done = 0;
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      if (!tableOrganizationId) throw new Error("This table's organization isn't known yet, so the fill can't start.");
+      const organizationId = tableOrganizationId;
       const page = await client.listPage({ table_id: tableId, limit: 200 });
       if (!page.ok) throw new Error(page.error.message);
       const aiKeys = aiFields.map((f) => f.key);
@@ -112,7 +115,6 @@ export function AutofillRows({
       }
       toast.success(done === 1 ? `${spec.label}: 1 row filled` : `${spec.label}: ${done} rows filled`);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(`${spec.label} could not be filled`, { description: err instanceof Error ? err.message : undefined });
     } finally {
       setBusy(null);

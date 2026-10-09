@@ -108,7 +108,7 @@ function buildBatchRequest(
   return {
     agent: {
       agent_id: state.agentId,
-      user_input: state.userInput,
+      user_input: state.userInput.trim() || undefined,
       source_app: "matrx-frontend",
       source_feature: "agents-other",
       // The demo runs when a person presses Run on this screen; without the
@@ -147,7 +147,7 @@ export function runAssignmentDemo(): AppThunk<Promise<void>> {
           conversation_id: crypto.randomUUID(),
           is_new: true,
           store: true,
-          user_input: state.userInput,
+          user_input: state.userInput.trim() || undefined,
           variables: {
             [variableName]: { type: "auto_assign", strategy: "random" },
           },

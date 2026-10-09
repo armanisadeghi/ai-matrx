@@ -28,7 +28,7 @@ const table = (id: string, name: string, org: string, orgName: string, extra: Re
   updated_at: "2026-10-02T15:00:00Z",
   mine: true,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   ...extra,
 });
@@ -37,7 +37,7 @@ const ANSWER = {
   tables: [
     table("t-intake", "Patient Intake", CEDAR, "Cedar Ridge Physical Therapy"),
     table("t-scratch", "Lane scratch rows", SCRATCH, "Lane scratch org"),
-    table("t-scope", "Clinic locations", CEDAR, "Cedar Ridge Physical Therapy", { kept_by_the_app: true, kind: "scope" }),
+    table("t-scope", "Clinic locations", CEDAR, "Cedar Ridge Physical Therapy", { platform_owned: true, kind: "scope" }),
     table("t-gone", "Old waitlist", CEDAR, "Cedar Ridge Physical Therapy", { archived_at: "2026-09-25T10:00:00Z" }),
   ],
   items: [

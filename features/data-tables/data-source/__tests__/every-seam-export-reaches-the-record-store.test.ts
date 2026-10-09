@@ -70,7 +70,6 @@ const CALLS: Array<[string, () => Promise<unknown>]> = [
   ["setRowOrdering", () => service.setRowOrdering({ tableId: TABLE, enabled: true, order: ["r"] })],
   ["setDefaultSort", () => service.setDefaultSort({ tableId: TABLE, sortField: "stage", sortDirection: "asc" })],
   ["deleteRow", () => service.deleteRow({ tableId: TABLE, rowId: "r" })],
-  ["getRowsForClientSort", () => service.getRowsForClientSort({ tableId: TABLE, limit: 100 })],
   ["updateTableConfig", () => service.updateTableConfig({ tableId: TABLE, fieldUpdates: [{ id: FIELD.id, is_required: true }] })],
   ["addTableColumn", () => service.addTableColumn({ tableId: TABLE, fieldName: "minutes", displayName: "Minutes", dataType: "number", isRequired: false })],
   ["readTableDetails", () => service.readTableDetails(TABLE)],

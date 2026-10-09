@@ -7,13 +7,15 @@
 // every claim tied to that mode's real library/study-spine evidence, and gives
 // the learner one inviting next move.
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { refreshStoreRead } from "@/lib/redux/slices/storeReadsSlice";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
 import Link from "next/link";
 import {
+  Archive,
   ArrowRight,
   CalendarClock,
   FileSearch,
@@ -22,7 +24,6 @@ import {
   Pencil,
   Plus,
   Route,
-  Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
@@ -48,9 +49,12 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import {
   kitArtifactKey,
+  kitHref,
   kitMembershipFingerprint,
-  deleteKit,
+  archiveKit,
   readKit,
+  resolveKit,
+  restoreKit,
   readKitArtifactStats,
   removeKitMember,
   removeKitMembersVersioned,
@@ -61,6 +65,10 @@ import {
   type StudyKit,
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
+import { KitSourcesPanel } from "./KitSourcesPanel";
+import { AddSavedAidsDialog } from "./AddSavedAidsDialog";
+import { newKitHref } from "@/features/education/onboard/startRoutes";
+import { KIT_TOKEN } from "../kitScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -124,7 +132,7 @@ function ArtifactCard({
     <Link
       href={artifactActionHref(artifact)}
       className={cn(
-        "group flex min-h-48 flex-col rounded-2xl border border-border bg-card p-4 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:bg-accent/30",
+        "group flex min-h-48 flex-col rounded-2xl border border-border bg-card p-4 transition-[border-color,transform,translate,background-color] hover:-translate-y-0.5 hover:bg-accent/30",
         look.hoverBorder,
       )}
       aria-label={`${look.verb} ${look.label}`}
@@ -251,7 +259,7 @@ function KitLoading({ header }: { header: ReactNode }) {
 
 export function KitHub({
   sourceId,
-  sourceType = "file",
+  sourceType: sourceTypeProp,
   addTarget,
   renderHeader,
   proposedLayout = false,
@@ -275,6 +283,8 @@ export function KitHub({
   proposedLayout?: boolean;
 }) {
   const router = useRouter();
+  // No type in the link: the id alone is resolved (kit scope first, then a file's kit).
+  const sourceType = sourceTypeProp ?? "file";
   const [managing, setManaging] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -286,16 +296,22 @@ export function KitHub({
   // after a write or a conversion. Progress also re-reads in the background when the kept copy
   // is over a minute old (the person studied somewhere else and came back).
   const dispatchRead = useDispatchThunk();
-  const kitKey = `education.kit:${sourceType}:${sourceId}`;
-  const statsKey = `education.kit_stats:${sourceType}:${sourceId}`;
-  const kitRead = useStoreRead<StudyKit | null>(kitKey, () => readKit(sourceType, sourceId));
+  const kitKey = `education.kit:${sourceTypeProp ?? "auto"}:${sourceId}`;
+  const statsKey = `education.kit_stats:${sourceTypeProp ?? "auto"}:${sourceId}`;
+  const kitRead = useStoreRead<StudyKit | null>(kitKey, () => resolveKit(sourceId, sourceTypeProp));
   const kit = kitRead.data ?? null;
+  // An older kit that was promoted to its own record answers its old link with
+  // that record — move the address to the kit's own.
+  const movedTo = kit && (kit.sourceId !== sourceId || (sourceTypeProp !== undefined && kit.sourceType !== sourceTypeProp)) ? kitHref(kit.sourceType, kit.sourceId) : null;
+  useEffect(() => {
+    if (movedTo) router.replace(movedTo);
+  }, [movedTo, router]);
   const statsRead = useStoreRead<KitArtifactStats>(statsKey, () => readKitArtifactStats(kit?.artifacts ?? []), {
     enabled: kit !== null,
     staleAfterMs: 60_000,
   });
-  // The saved aids an agent may add (bounded; the add page has the full list). Read once per tab.
-  const candidatesKey = `education.kit_candidates:${sourceType}:${sourceId}`;
+  // The saved aids an agent may add (bounded; the Add saved aids dialog has the full list). Read once per tab.
+  const candidatesKey = `education.kit_candidates:${sourceTypeProp ?? "auto"}:${sourceId}`;
   const readCandidates = async (): Promise<EducationLibraryRow[]> => {
     const page = await fetchEducationLibraryPage(
       { ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, page: 1 },
@@ -315,7 +331,7 @@ export function KitHub({
   const reload = () => {
     void (async () => {
       const fresh = await dispatchRead(
-        refreshStoreRead(kitKey, () => readKit(sourceType, sourceId)),
+        refreshStoreRead(kitKey, () => resolveKit(sourceId, sourceTypeProp)),
       );
       if (fresh) await dispatchRead(refreshStoreRead(statsKey, () => readKitArtifactStats(fresh.artifacts)));
       await dispatchRead(refreshStoreRead(candidatesKey, readCandidates));
@@ -351,7 +367,7 @@ export function KitHub({
       delete: {
         parse: (value) => { if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes."); return parseKitDeletes(value, [kit]); },
         run: async (plan) => {
-          await deleteKit(plan.kit, plan.fingerprint);
+          await archiveKit(plan.kit, plan.fingerprint);
           router.push("/education/kits");
           return { id: plan.kit.sourceId, name: plan.kit.title };
         },
@@ -395,7 +411,7 @@ export function KitHub({
       validate: (value: unknown) => { parseMemberAdd(value); },
       apply: async (value: unknown) => {
         const plan = parseMemberAdd(value);
-        // The same write the add page's button runs.
+        // The same write the Add saved aids dialog runs.
         await createManualKit({ sourceId: kit.sourceId, sourceType: kit.sourceType as ManualKitSourceType, title: plan.title, artifacts: plan.artifacts, allowExisting: true, expectedFingerprint: plan.expectedFingerprint });
         reload();
         return { summary: `Added ${plan.artifacts.length} saved study aid${plan.artifacts.length === 1 ? "" : "s"} to the kit.`, data: { added: plan.artifacts.map((row) => ({ kind: row.kind, id: row.id, title: row.title })) } };
@@ -466,7 +482,7 @@ export function KitHub({
             </p>
             {sourceType === "file" ? (
               <Button asChild size="sm" className="gap-1.5">
-                <Link href={`/education/kits/new?source=${encodeURIComponent(sourceId)}`} data-tap-target>
+                <Link href={newKitHref({ source: sourceId })} data-tap-target>
                   <AGENT_ICON className="h-4 w-4" />
                   Create a study kit from this material
                 </Link>
@@ -488,7 +504,9 @@ export function KitHub({
 
   const originToken = resolveEntityToken(kit.sourceType);
   const materialHref =
-    originToken === "file"
+    originToken === KIT_TOKEN
+      ? null // a kit's material is its Sources list
+      : originToken === "file"
       ? `/files/f/${kit.sourceId}`
       : (peekHref(originToken, kit.sourceId) ?? null);
   const MaterialIcon = tryGetEntityInfo(originToken)?.Icon ?? FileSearch;
@@ -545,19 +563,32 @@ export function KitHub({
   };
   const removeWholeKit = async () => {
     const accepted = await confirm({
-      title: "Delete this study kit?",
-      description: "This removes the kit grouping only. Your source material and study aids stay saved.",
-      confirmLabel: "Delete kit",
-      variant: "destructive",
+      title: "Archive this study kit?",
+      description: "Your source material and study aids stay saved. Restore the kit from the archive.",
+      confirmLabel: "Archive kit",
     });
     if (!accepted) return;
     setWriting(true);
     setWriteError(null);
     try {
-      await deleteKit(kit);
-      router.push("/education/kits");
+      const archived = await archiveKit(kit);
+      toast.success(`Archived "${kit.title}".`, {
+        action: {
+          label: "Undo",
+          onClick: () =>
+            void restoreKit(archived).then(
+              () => {
+                toast.success(`Put back "${kit.title}".`);
+                router.push(kitHref(archived.sourceType, archived.sourceId));
+              },
+              (err: unknown) => toast.error(err instanceof Error ? err.message : "It could not be put back."),
+            ),
+        },
+      });
+      // Always leave the archived kit's address, whichever state the page was in.
+      router.replace("/education/kits");
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : "Could not delete this study kit.");
+      setWriteError(error instanceof Error ? error.message : "Could not archive this study kit.");
       setWriting(false);
     }
   };
@@ -585,6 +616,9 @@ export function KitHub({
         </Button>
       )}
       <MakeMoreFromKit
+        key={kit.sources.map((s) => s.edgeId).join("|")}
+        sources={kit.sources}
+        organizationId={kit.organizationId}
         sourceType={kit.sourceType}
         sourceId={kit.sourceId}
         kitTitle={kit.title}
@@ -593,14 +627,16 @@ export function KitHub({
         buttonVariant="outline"
         buttonClassName={proposedButton}
       />
-      <Button asChild variant="outline" className={proposedButton}>
-        <Link
-          href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}
-        >
-          <Plus className="h-4 w-4" />
-          Add saved aid
-        </Link>
-      </Button>
+      <AddSavedAidsDialog
+        kit={kit}
+        onAdded={reload}
+        trigger={
+          <Button variant="outline" className={proposedButton}>
+            <Plus className="h-4 w-4" />
+            Add saved aid
+          </Button>
+        }
+      />
       <Button
         variant="outline"
         className={proposedButton}
@@ -637,13 +673,20 @@ export function KitHub({
             </Button>
           )}
           <MakeMoreFromKit
+            key={kit.sources.map((s) => s.edgeId).join("|")}
+            sources={kit.sources}
+            organizationId={kit.organizationId}
             sourceType={kit.sourceType}
             sourceId={kit.sourceId}
             kitTitle={kit.title}
             addTarget={addTarget}
             onConverted={() => reload()}
           />
-          <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}>Add saved aid</Link></Button>
+          <AddSavedAidsDialog
+            kit={kit}
+            onAdded={reload}
+            trigger={<Button variant="outline" size="sm">Add saved aid</Button>}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -679,8 +722,8 @@ export function KitHub({
               ))}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
-              <p className="type-secondary text-muted-foreground">Deleting removes the kit grouping only. Your source material and study aids remain saved.</p>
-              <Button size="sm" variant="destructive" disabled={writing} onClick={() => void removeWholeKit()}><Trash2 className="h-4 w-4" />Delete kit</Button>
+              <p className="type-secondary text-muted-foreground">Archiving keeps your material and study aids saved.</p>
+              <Button size="sm" variant="destructive" disabled={writing} onClick={() => void removeWholeKit()}><Archive className="h-4 w-4" />Archive kit</Button>
             </div>
             {writeError && <p className="mt-3 type-body text-destructive">{writeError} <ErrorAlchemyMenu error={writeError} /></p>}
           </section>
@@ -692,6 +735,7 @@ export function KitHub({
       <KitBody className="space-y-7">
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
+        <KitSourcesPanel kit={kit} onChanged={reload} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
 
 
         <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
@@ -712,7 +756,7 @@ export function KitHub({
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
-                  {ordered.length} study aids
+                  {ordered.length} study {ordered.length === 1 ? "aid" : "aids"}
                 </span>
                 {!statsLoading && itemTotal > 0 && (
                   <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">

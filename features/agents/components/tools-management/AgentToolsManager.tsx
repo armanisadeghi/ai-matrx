@@ -1,5 +1,6 @@
 "use client";
 
+import { isBundleListerName } from "@ai-matrx/agents/tools";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -109,7 +110,6 @@ import {
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { fetchMcpServerConfigs } from "@ai-matrx/chat/agents/services/mcp.service";
 import { headerFieldKey } from "@ai-matrx/chat/agents/services/mcp-connections.service";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
@@ -117,11 +117,6 @@ import type {
   JsonSchemaProperty,
 } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { createClient } from "@/utils/supabase/client";
-import {
-  selectAllTools,
-  selectToolsStatus,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -129,7 +124,7 @@ import {
   isOrgKnobGatedTool,
   toolsWithheldInOrganization,
 } from "@/lib/knobs/toolKnobGating";
-import { selectNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
+import { useNormalizedControls } from "@ai-matrx/chat/agents/identity/settings-store";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
@@ -141,11 +136,12 @@ import {
   TOOL_AVAILABILITY_LABELS,
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
+import { loadAvailableTools, selectAllTools, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -161,9 +157,6 @@ const BUNDLES_CATEGORY = "__bundles__";
  * made bundles feel "missing"). They stay in the orphan-resolution universe so
  * a selected bundle is never flagged as an unresolved tool.
  */
-function isBundleListerName(name?: string | null): boolean {
-  return typeof name === "string" && name.startsWith("bundle:list_");
-}
 
 // Deterministic color palette for category icons — muted, professional tones
 // that work in both light and dark mode.
@@ -381,9 +374,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   // dropped. Permissive by default — only fires for an explicit
   // tools:{allowed:false} model. See supportsTools() / aidream tool_merge.py.
   useAgentSettingsClassControls(agentId);
-  const normalizedControls = useAppSelector((state) =>
-    selectNormalizedControls(state, agentId),
-  );
+  const normalizedControls = useNormalizedControls(agentId);
   const modelSupportsTools = supportsTools(normalizedControls);
 
   // Saved tool set across all three lanes — drives the drop advisory.
@@ -398,8 +389,8 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
     (Array.isArray(savedTools) ? savedTools.length : 0) +
     (Array.isArray(savedCustomTools) ? savedCustomTools.length : 0) +
     (Array.isArray(savedMcpServers) ? savedMcpServers.length : 0);
-  const reduxTools = useAppSelector(selectAllTools);
-  const reduxToolsStatus = useAppSelector(selectToolsStatus);
+  const reduxTools = useToolCatalog(selectAllTools);
+  const reduxToolsStatus = useToolCatalog(selectToolsStatus);
   const externalTools: DatabaseTool[] | undefined =
     reduxToolsStatus === "succeeded" ? reduxTools : undefined;
 
@@ -448,7 +439,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   // already loaded, so this is safe to fire on every mount.
   useEffect(() => {
     if (reduxToolsStatus !== "succeeded" && reduxToolsStatus !== "loading") {
-      dispatch(fetchAvailableTools());
+      void loadAvailableTools();
     }
   }, [reduxToolsStatus, dispatch]);
 
@@ -481,7 +472,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   const toolsReadError = metadata ? null : metadataError;
   const retryToolsRead = () => {
     setMetadataError(null);
-    dispatch(fetchAvailableTools());
+    void loadAvailableTools();
     setMetadataAttempt((n) => n + 1);
   };
 
@@ -3085,7 +3076,6 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setToken("");
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3186,7 +3176,6 @@ export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setApiKey("");
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3341,7 +3330,6 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setEnvValues({});
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };

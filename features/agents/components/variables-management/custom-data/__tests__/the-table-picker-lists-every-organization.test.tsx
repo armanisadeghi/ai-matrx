@@ -37,7 +37,7 @@ function row(id: string, name: string, org: string, orgName: string, extra: Reco
     updated_at: "2026-09-27T15:40:00Z",
     mine: false,
     shared_with_me: org === OJAI,
-    kept_by_the_app: false,
+    platform_owned: false,
     kind: "table",
     team: false,
     system: false,
@@ -51,7 +51,7 @@ const EVERY_ROW = [
   row("a1000000-0000-4000-8000-000000000002", "Service calls", RINCON, "Rincon Plumbing Co"),
   row("a1000000-0000-4000-8000-000000000003", "Backflow test schedule", OJAI, "Ojai Valley Home Services"),
   row("a1000000-0000-4000-8000-000000000004", "Status choices", RINCON, "Rincon Plumbing Co", {
-    kept_by_the_app: true,
+    platform_owned: true,
     kind: "list",
   }),
   // Published by an organization she is not in: Public lane only, never folded into All.
@@ -82,7 +82,6 @@ jest.mock("@ai-matrx/records/react", () => ({
       id: r.table_id,
       name: r.table_name,
       organization_id: RINCON,
-      ...(r.kept_by_the_app ? { kept_by_the_app: true } : {}),
     })),
     reload: () => {},
   }),
@@ -96,16 +95,18 @@ jest.mock("@ai-matrx/records-ui", () => ({
   fieldName: (f: { key: string }) => f.key,
   rowNameIn: () => "",
   tableName: (t: { name: string }) => t.name,
-  keptByTheApp: (t: { kept_by_the_app?: boolean }) => t.kept_by_the_app === true,
+  platformOwned: (t: { platform_owned?: boolean }) => t.platform_owned === true,
   recordsDataSource: () => ({ rpc: jest.fn() }),
   personActor: () => ({}),
   // The picker's one rule (records-ui tablePicking): tables only, the chosen one always kept.
   tablePickerEntries: (
-    rows: Array<{ id: string; kept_by_the_app?: boolean }>,
+    rows: Array<{ id: string; platform_owned?: boolean }>,
     { keep }: { keep?: string | null },
-  ) => ({ entries: rows.filter((r) => !r.kept_by_the_app || r.id === keep).map((table) => ({ table })) }),
+  ) => ({ entries: rows.filter((r) => !r.platform_owned || r.id === keep).map((table) => ({ table })) }),
 }));
+// Keeps the real module (the chat package reads `cn` etc. from it at import time); only the two inputs are stand-ins.
 jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   Input: () => null,
   Textarea: () => null,
 }));
@@ -249,7 +250,7 @@ it("keeps the old picker's fold for tables the app keeps, counted across every o
   const fold = host.querySelector<HTMLButtonElement>("[data-footer]");
   expect(fold?.textContent).toBe("Show 1 table the app keeps");
   await act(async () => fold!.click());
-  expect(offered().join("\n")).toContain("Status choices — Rincon Plumbing Co · list · kept by the app");
+  expect(offered().join("\n")).toContain("Status choices — Rincon Plumbing Co · list · platform table");
 });
 
 it("shows the shell's organization filter on the Table row, starting on All organizations", async () => {
@@ -260,7 +261,7 @@ it("shows the shell's organization filter on the Table row, starting on All orga
   // All organizations first; each organization with its count from the complete answer.
   expect(choices[0]).toContain("All organizations");
   expect(choices.join("|")).toContain("Harbor Dental Group1");
-  // Counts are what the list shows: Rincon's "Status choices" sits behind the kept-by-the-app fold.
+  // Counts are what the list shows: Rincon's "Status choices" sits behind the platform-owned fold.
   expect(choices.join("|")).toContain("Rincon Plumbing Co1");
 });
 

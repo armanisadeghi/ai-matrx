@@ -31,6 +31,8 @@ interface SourceFolderNodeProps {
    *  leave this off by default so the Library panel stays cheap to
    *  open — the user pays for a source only when they expand it. */
   autoLoad?: boolean;
+  /** Show only this row, already open (a host editing one record). */
+  onlyRowId?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
   adapter,
   depth,
   autoLoad = false,
+  onlyRowId,
 }) => {
   const activeTabId = useAppSelector(selectActiveTabId);
   const openEntry = useOpenSourceEntry();
@@ -265,8 +268,9 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
             </div>
           )}
           {status === "ready" &&
-            entries.map((entry) => (
+            entries.filter((entry) => !onlyRowId || entry.rowId === onlyRowId).map((entry) => (
               <SourceEntryNode
+                defaultExpanded={entry.rowId === onlyRowId}
                 key={entry.rowId}
                 adapter={adapter}
                 entry={entry}

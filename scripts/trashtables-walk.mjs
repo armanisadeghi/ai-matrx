@@ -11,7 +11,7 @@
  *   4. archives it again from its page; Organization settings -> Trash lists it; Restore there;
  *   5. ends by archiving it again (archive, never delete).
  * Credentials come from .env.local and are never printed. Screenshots:
- *   common-docs/operations/for-arman/2026-09-25/trash-tables/
+ *   /tmp/matrx-evidence/2026-09-25/trash-tables/
  *
  *   node scripts/trashtables-walk.mjs
  */

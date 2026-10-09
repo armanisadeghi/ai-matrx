@@ -40,7 +40,6 @@ import {
 } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
 import { AgentAssistantMessage } from "@ai-matrx/chat/agents/components/messages-display/assistant/AgentAssistantMessage";
 import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   selectAgentIdFromInstance,
@@ -64,6 +63,7 @@ import {
   entityId,
   isEntity,
 } from "./work-sources";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** The inputs layout a new tile starts with (see OPEN QUESTION above). */
 export const AGENT_FORM_DEFAULT_INPUT_STYLE: VariablesPanelStyle = "form";
@@ -97,7 +97,7 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
   const conversationId = run.conversationId;
   const agentId =
     useAppSelector((s) => (conversationId ? selectAgentIdFromInstance(conversationId)(s) : null)) ?? chosenAgentId;
-  const agentName = useAppSelector((s) => (agentId ? selectAgentName(s, agentId) : undefined));
+  const agentName = useAgentName(agentId);
 
   // A viewer of the run holds it (LIVE-RUN-RETENTION.md).
   useRetainLatestRequestForViewer(conversationId, "board-agent-form-tile");

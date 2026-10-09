@@ -19,9 +19,8 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: (s: { appContext: { organization_id: string } }) => s.appContext.organization_id,
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  isOrganizationSelectionCancelled: () => false,
-  ensureOrganizationContext: async ({ organizationId }: { organizationId: string | null }) => organizationId ?? "org-1",
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async (organizationId: string | null) => organizationId ?? "org-1",
 }));
 jest.mock("@/lib/organizations/orgBootstrapGate", () => ({ whenOrgBootstrapResolved: async () => undefined }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));

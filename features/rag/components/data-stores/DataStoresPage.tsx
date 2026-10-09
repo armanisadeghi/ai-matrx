@@ -87,7 +87,7 @@ import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buil
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { DATA_STORES_PATH } from "@/features/knowledge/modulePaths";
 
 /** Canonical `ui_surface.name` this page emits. */

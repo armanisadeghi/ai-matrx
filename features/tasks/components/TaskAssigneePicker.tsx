@@ -20,7 +20,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ConnectionsReadNotice } from "@/features/messaging/components/ConnectionsReadNotice";
 
 const SOURCE_ICON: Record<ConnectionUser["source"], typeof Users> = {

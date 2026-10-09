@@ -21,7 +21,6 @@ import { useSidecar } from "@/features/rich-document/annotations/AnnotationSidec
 import { addComment, createHighlight } from "@/features/rich-document/annotations/service";
 import { newRequestId } from "@/features/rich-document/annotations/useAnnotationSidecar";
 import type { ResolvedItem } from "@/features/rich-document/annotations/types";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
@@ -145,9 +144,7 @@ export function StudyGuideAgentBridge({
         },
         nameOf: (plan) => (plan.quote ? `highlight "${short(plan.quote)}"` : `note "${short(plan.note)}"`),
         refusalFor: (e) =>
-          isOrganizationSelectionCancelled(e)
-            ? "The person closed the workspace picker, so nothing was saved. Ask which workspace their private notes belong in."
-            : undefined,
+          undefined,
       },
       update: {
         parse: (value) => ready(() => parseUpdatePersonalNotesValue(value, currentPersonal())),

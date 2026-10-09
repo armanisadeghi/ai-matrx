@@ -1,6 +1,6 @@
 "use client";
 import { type RenderBlock, type BlockDispatchContext, type BlockRenderFn, DEFAULT_UNLABELED_FENCE_LANGUAGE, audioMimeFromUrl, isBlockLoading, type FeSynthesizedBlockType, type DetectorProtocolBlockType, type ProtocolBlockType, type ScalarGenericBlockType, type ShapeBlockType, type OpaqueBlockType, type KnownBlockType, reportUnregisteredBlockType } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
-import { BLOCK_DISPATCH as ENGINE_BLOCK_DISPATCH, registerBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
+import { BLOCK_DISPATCH as ENGINE_BLOCK_DISPATCH, BLOCK_DISPATCH_CLASSIFICATION as ENGINE_BLOCK_DISPATCH_CLASSIFICATION, registerBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 /**
  * block-dispatch — the declarative render-block dispatch registry.
  *
@@ -935,6 +935,44 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.AppletBuildResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
+  // Kind-routed — the Spaces agents' answers (`spaces.build`, `spaces.design_database`,
+  // `spaces.move_in`). Complete-only: Spaces acts on the finished answer.
+  space_build_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceBuildResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
+  space_database_design: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceDatabaseDesignBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
+  space_notion_import: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceNotionImportBlock
           key={index}
           serverData={block.serverData}
         />
@@ -1922,5 +1960,22 @@ export const DOMAIN_BLOCK_DISPATCH_CLASSIFICATION = {
   shape: Object.keys(SHAPE_BLOCK_DISPATCH),
   intentionally_opaque: Object.keys(OPAQUE_BLOCK_DISPATCH),
 } as const;
+
+type DispatchBucket = keyof typeof DOMAIN_BLOCK_DISPATCH_CLASSIFICATION;
+
+/**
+ * THE classification as this app resolves it — the engine's generic half plus this app's domain
+ * half, per bucket. Read this (never the engine's `BLOCK_DISPATCH_CLASSIFICATION` alone, which
+ * cannot see a single domain kind) whenever a check asks "is X dispatched as a shape?".
+ */
+export const APP_BLOCK_DISPATCH_CLASSIFICATION: Readonly<Record<DispatchBucket, readonly string[]>> = {
+  protocol: [...ENGINE_BLOCK_DISPATCH_CLASSIFICATION.protocol, ...DOMAIN_BLOCK_DISPATCH_CLASSIFICATION.protocol],
+  scalar_generic: [...ENGINE_BLOCK_DISPATCH_CLASSIFICATION.scalar_generic, ...DOMAIN_BLOCK_DISPATCH_CLASSIFICATION.scalar_generic],
+  shape: [...ENGINE_BLOCK_DISPATCH_CLASSIFICATION.shape, ...DOMAIN_BLOCK_DISPATCH_CLASSIFICATION.shape],
+  intentionally_opaque: [
+    ...ENGINE_BLOCK_DISPATCH_CLASSIFICATION.intentionally_opaque,
+    ...DOMAIN_BLOCK_DISPATCH_CLASSIFICATION.intentionally_opaque,
+  ],
+};
 
 registerBlockDispatch(DOMAIN_BLOCK_DISPATCH);

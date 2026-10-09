@@ -1,4 +1,4 @@
-import { formatAdminCost } from "./formatAdminCost";
+import { formatAdminCost, formatAdminUsd } from "./formatAdminCost";
 
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
@@ -24,5 +24,14 @@ describe("admin cost display", () => {
 describe("the rate is the caller's, never a silent read (VERIFY-DRILL-FINAL L-b)", () => {
   it("a missing rate is an unmeasured points half, said with the dollars", () => {
     expect(formatAdminCost(0.0204, { rate: null })).toBe("$0.0204 · —");
+  });
+});
+
+describe("formatAdminUsd threshold voice", () => {
+  it("prints a limit in whole dollars when it is one, cents when it is not", () => {
+    expect(formatAdminUsd(1, { digits: "whole" })).toBe("$1");
+    expect(formatAdminUsd(0.5, { digits: "whole" })).toBe("$0.50");
+    expect(formatAdminUsd(2.25, { digits: "whole" })).toBe("$2.25");
+    expect(formatAdminUsd(null, { digits: "whole" })).toBe("—");
   });
 });

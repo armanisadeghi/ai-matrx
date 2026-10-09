@@ -53,7 +53,7 @@ const HOLDER_COLUMNS = [
 /** Trees a browser bundle is built from. Generated types are not code. */
 const SEARCHED_TREES = ["features", "../aidream/apps/shared/chat/src", "lib", "app", "components", "hooks", "utils"];
 const SKIPPED_DIRS = new Set(["node_modules", ".next", "__tests__", "generated"]);
-const SKIPPED_FILES = new Set(["database.types.ts", "api-types.ts"]);
+const SKIPPED_FILES = new Set(["database.types.ts", "api-types.ts", "db-types.ts"]); // db-types.ts: the chat package's generated copy (P27, 618a850bf1)
 
 function walk(dir: string, out: string[]): string[] {
   let entries: string[];

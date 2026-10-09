@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
-import { formatPoints } from "../catalog/format";
+import { formatPoints } from "@ai-matrx/kit/format";
 import { fetchPersonalUsageHistory } from "./service";
 import type { UsageHistoryActivity, UsageHistoryEntry, UsageHistoryPage, UsageHistoryQuery, UsageHistoryRange } from "./types";
 
@@ -18,7 +18,7 @@ function timestamp(value: string): string {
 function amount(entry: UsageHistoryEntry): string {
   if (entry.quantity === null) return "—";
   const prefix = entry.quantity > 0 ? "−" : entry.quantity < 0 ? "+" : "";
-  return `${prefix}${formatPoints(Math.abs(entry.quantity))} points`;
+  return `${prefix}${formatPoints(Math.abs(entry.quantity))}`;
 }
 
 function rowTone(entry: UsageHistoryEntry): string {

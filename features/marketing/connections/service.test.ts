@@ -18,8 +18,8 @@ jest.mock("@/lib/api/resolve-service-url", () => ({
 jest.mock("@/lib/api/organization-context", () => ({
   applyOrganizationContextHeader: jest.fn(),
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationForRequest: jest.fn(),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(),
 }));
 jest.mock("@/lib/api/stream-parser", () => ({ consumeStream: jest.fn() }));
 const expected = {

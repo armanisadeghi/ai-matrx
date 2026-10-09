@@ -24,7 +24,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { type Tables, type TablesUpdate } from "@/types/database.types";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

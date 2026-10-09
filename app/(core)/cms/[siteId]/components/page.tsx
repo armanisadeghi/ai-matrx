@@ -39,8 +39,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // ── Surface write-target input validation ──────────────────────────────
 // The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)

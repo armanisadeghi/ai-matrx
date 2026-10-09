@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectAgentById,
   selectAgentDefinition,
   selectAgentOutputSchema,
   selectAgentReadyForBuilder,
@@ -34,12 +33,7 @@ import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
-import {
-  selectAllTools,
-  selectToolsReady,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import type {
   AgentDefinition,
@@ -62,12 +56,12 @@ import {
   Braces,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
 import { AgentPeekDuplicateButton } from "@/features/agents/components/shared/AgentPeekDuplicateButton";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import {
   PEEK_CONTENT_PROPS,
   useTransientPeek,
@@ -75,6 +69,8 @@ import {
 import { variableRunLabel } from "@ai-matrx/agents";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Badge } from "@ai-matrx/design-system/controls";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
+import { loadAvailableTools, selectAllTools, selectToolsReady, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -279,14 +275,14 @@ export function AgentSneakPeekContent({
 }: AgentSneakPeekContentProps) {
   const dispatch = useAppDispatch();
 
-  const record = useAppSelector((state) => selectAgentById(state, agentId));
+  const record = useAgentView(agentId);
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, agentId),
   );
   // The model it uses, named with its class when the model has several.
   const { label: modelLabel } = useAgentModelLabel(agentId);
-  const allTools = useAppSelector(selectAllTools);
-  const toolsReady = useAppSelector(selectToolsReady);
+  const allTools = useToolCatalog(selectAllTools);
+  const toolsReady = useToolCatalog(selectToolsReady);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   // The full-agent read's failure, so the peek never spins forever over it.
@@ -315,8 +311,8 @@ export function AgentSneakPeekContent({
         .then(() => setAgentReadError(null))
         .catch((err: unknown) => setAgentReadError(err ?? true));
     }
-    dispatch(fetchModelOptions());
-    dispatch(fetchAvailableTools());
+    getModelRecords().loadOptions();
+    void loadAvailableTools();
   }, [active, isReady, agentId, dispatch, readAttempt]);
 
   const systemPromptText = useMemo(() => {
@@ -750,7 +746,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
-  const record = useAppSelector((state) => selectAgentById(state, agentId));
+  const record = useAgentView(agentId);
   const definition = useAppSelector((state) =>
     selectAgentDefinition(state, agentId),
   );
@@ -902,7 +898,7 @@ export function AgentSneakPeekModal({
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, hasNav, currentIndex, navigationIds]);
 
-  const record = useAppSelector((state) => selectAgentById(state, currentId));
+  const record = useAgentView(currentId);
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, currentId),
   );

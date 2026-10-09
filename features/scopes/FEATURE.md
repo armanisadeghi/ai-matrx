@@ -67,7 +67,7 @@ this directory.
    `features/agent-context/components/ScopePicker.tsx` and `hooks/useScopeAssignment.ts` — consumerless;
    entity scope tagging is `ContextAssignmentField` / `EntityScopeTagger` only.
    Retired (2026-09-25, lane HIERARCHY-CASCADE): the `agent-context/components/hierarchy-selection/`
-   family, `AgentAppHierarchyCascade`, `ShortcutScopePicker`, and `agent-context/redux/scope/
+   family, `AppletHierarchyCascade`, `ShortcutScopePicker`, and `agent-context/redux/scope/
    {scopeAssignmentsSlice,selectors}.ts` + the `scopeAssignments` key. Callers use
    `active-context/engagement/*` and `active-context/binding-target/BindingTargetPicker`.
    Retired (2026-09-25, lane SCOPE-ADMIN-CANONICAL): `agent-context/redux/scope/{scopeTypesSlice,

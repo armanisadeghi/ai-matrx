@@ -24,15 +24,15 @@ labour right and children stay tiny; get it wrong and you split the vocabulary.
 2. **Never re-declare what the parent conveys** — that is a SHADOW: one concept, two declarations, and bindings land on whichever copy the author happened to see. Same meaning → delete the child's copy (the scope builder still takes it as a param). Different meaning → it needs its OWN name. `pnpm check:surface-impact` reports these as `SHADOWED_VALUE`.
    **The one exception — THE AVAILABILITY OVERRIDE:** the parent always has the value, this child only sometimes does. Re-declare it with the SAME name and type and `alwaysAvailable: false`. That is the honest declaration, the screamer does not flag it, and deleting it would convert an under-promise into a promise the child cannot keep — the value-mapping guard then screams at runtime. Widening (child `true` where the parent says `false`) is forbidden unless the child truly emits it every time.
 3. **Push a value UP the moment a second child needs it.** Two siblings declaring the same concept is the missing-parent smell: move it to the parent (or introduce one), delete both copies, repoint nothing — the name did not change.
-4. **A parent value is load-bearing for the whole family.** Before you touch one, run `pnpm check:surface-impact <parent>` — it prints every descendant plus every binding/shortcut/write-twin, including ones that arrived `via child <name>`. `brand_id` on `marketing-brand` has 21 descendants; renaming it is 21 scope builders and every binding under them.
+4. **A parent value is load-bearing for the whole family.** Before you touch one, run `pnpm check:surface-impact <parent>` — it prints every descendant plus every binding/shortcut/write-twin, including ones that arrived `via child <name>`.
 5. **Depth ≤ 3, and never inherit for convenience.** The registry throws at module init on an unknown parent, a cycle, or depth > 3. If you want a parent only to avoid retyping five values, you want a copy, not a family.
 
-**The shape, in the live marketing family** (`brand → site → page`, the deepest we have):
+**Marketing family example** (`brand → site → page`):
 
 ```
-marketing-brand   12 own   brand_id*, brand_name, brand_context, brand_profile, …        21 descendants
-  marketing-site  11 own   site_id*, site_name, site_root_url, site_context, …           18 descendants
-    marketing-page 60 own  page_id*, page_url*, page_content, observed_*, findings, …    leaf
+marketing-brand   brand_id*, brand_name, brand_context, brand_profile, …
+  marketing-site  site_id*, site_name, site_root_url, site_context, …
+    marketing-page page_id*, page_url*, page_content, observed_*, findings, …
 ```
 The child declares ONLY its own layer; `site_id` and `brand_id` arrive by
 inheritance and become REQUIRED params of `createMarketingPageScope`, so a page

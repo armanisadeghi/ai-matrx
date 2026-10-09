@@ -18,8 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import {
   TapTargetButtonTransparent,
-} from "@ai-matrx/tap-target";
-import { TapTargetLabeled } from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target";
+import { TapTargetLabeled } from "@ai-matrx/design-system/tap-target";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import type { OrgNode } from "@/features/scopes/types";
 import { flattenScopes, selCount, type PickKind, type PickSel } from "./model";

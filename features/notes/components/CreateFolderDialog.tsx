@@ -26,7 +26,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { FOLDER_CATEGORIES } from "../constants/folderCategories";
 import { cn } from "@/lib/utils";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateFolderDialogProps {
@@ -97,7 +96,6 @@ export function CreateFolderDialog({
       reset();
       onOpenChange(false);
     } catch (cause) {
-      if (isOrganizationSelectionCancelled(cause)) return;
       // A rejected thunk arrives as RTK's serialized plain object, never an
       // Error — `instanceof Error` here printed a dead-end generic for it.
       setError(noteCreateErrorMessage(cause));

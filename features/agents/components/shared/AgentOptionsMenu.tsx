@@ -51,11 +51,12 @@ import {
   ArchiveRestore,
   Trash2,
   PackagePlus,
+  Coins,
 } from "lucide-react";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,9 +69,10 @@ import {
   DropdownMenuLabel,
 } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
-import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
+import { MenuTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationCost";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
-import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
+import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
 import { selectIsSuperAdmin } from "@ai-matrx/chat/host/identity";
 import { selectOrganizationId } from "@ai-matrx/chat/host/org";
@@ -250,10 +252,7 @@ export function AgentOptionsMenu({
   // Duplicate asks which version to copy (default: current), then runs the
   // shared flow. The dialog lives at this level so it survives the dropdown /
   // drawer that opened it closing.
-  const duplicateFlow = useAgentDuplicateFlow(agentId, {
-    basePath,
-    fallbackSuffix: "",
-  });
+  const duplicateFlow = useAgentDuplicateFlow({ basePath, fallbackSuffix: "" });
 
   // Builtin/system agents need different menu options than user agents.
   // - "Convert to Template" is meaningless — builtins ARE the templates users
@@ -267,7 +266,7 @@ export function AgentOptionsMenu({
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
 
-  const runDuplicate = duplicateFlow.openChooser;
+  const runDuplicate = () => void duplicateFlow.openDuplicate({ agentId });
 
   const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
     (item) =>
@@ -636,6 +635,14 @@ export function AgentOptionsMenu({
                   <span className="flex-1">{label}</span>
                 </DropdownMenuItem>
               ))}
+              <ConversationCostMenuRow>
+                {({ label, open: openCost }) => (
+                  <DropdownMenuItem onClick={openCost}>
+                    <Coins className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <span className="flex-1">{label}</span>
+                  </DropdownMenuItem>
+                )}
+              </ConversationCostMenuRow>
             </>
           )}
           {lifecycle.available && (
@@ -947,6 +954,11 @@ function MobileMenuContent({
             {adminItems.map(({ label, icon: Icon }) => (
               <Tile variant="quiet" icon={<Icon />} title={label} key={label} onClick={() => handleItem(label)} />
             ))}
+            <ConversationCostMenuRow>
+              {({ label, open: openCost }) => (
+                <Tile variant="quiet" icon={<Coins />} title={label} onClick={() => { onClose(); openCost(); }} />
+              )}
+            </ConversationCostMenuRow>
           </div>
         </>
       )}

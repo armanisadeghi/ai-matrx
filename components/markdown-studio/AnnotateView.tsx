@@ -29,7 +29,6 @@ import {
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -111,7 +110,6 @@ export function AnnotateView({
                 });
                 onOpenDocument(id);
               } catch (e) {
-                if (isOrganizationSelectionCancelled(e)) return;
                 if (presentOrganizationRefusal(e, { act: "created", subject: "The document" })) return;
                 toastWriteFailure(e, { action: "create a document from this text", remedy: "Try again." });
               } finally {
@@ -154,6 +152,7 @@ export function AnnotateView({
       await saveDocumentBody(doc, next);
       await reload(doc.id);
     },
+    // Studio-internal: this doc is already open in the Studio as markdown, so it is not a Space.
     href: `/markdown-studio?source=document&id=${doc.id}`,
   };
 

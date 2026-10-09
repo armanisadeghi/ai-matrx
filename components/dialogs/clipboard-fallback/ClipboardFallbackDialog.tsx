@@ -65,6 +65,8 @@ export function ClipboardFallbackDialog({
   const multiline = url.includes("\n") || url.length > 120;
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const [copied, setCopied] = React.useState(false);
+  const copiedTimer = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
 
   // Focus + select on open so Cmd/Ctrl+C just works. The setTimeout
   // gives the radix portal a tick to mount the input into the DOM.
@@ -91,7 +93,8 @@ export function ClipboardFallbackDialog({
     });
     if (ok) {
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      window.clearTimeout(copiedTimer.current);
+      copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
       return;
     }
     // Still refused — re-select so the keyboard shortcut works.

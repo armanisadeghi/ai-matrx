@@ -26,6 +26,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
 interface RouteParams {
   params: Promise<{ serverId: string }>;
@@ -54,8 +55,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+  if (!(await checkIsSuperAdmin(supabase, user.id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-  // Load the server row (RLS will gate; the page that calls this is /admin/* anyway)
+  // Check the administrator before probing an endpoint or using privileged writes.
   const { data: server, error: serverError } = await supabase
     .schema("tool").from("mcp_server")
     .select("id, slug, name, transport, endpoint_url")

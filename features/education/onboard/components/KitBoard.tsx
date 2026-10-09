@@ -36,7 +36,7 @@ import type { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 import { KitAudioRunner } from "./KitAudioRunner";
 import { formatElapsed } from "./elapsed";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { Input } from "@ai-matrx/design-system";
 
@@ -117,6 +117,13 @@ export function KitBoard({
   // what is ready and the sections done across every output; the clock beside
   // it says how long it has been.
   const headline = kitHeadline(kit.phase, kit.targets, { finished, stillWorking, failed });
+  const kitId = kit.source?.ref?.kitId;
+  const fileId = kit.source?.ref?.fileId;
+  const openKitHref = kitId
+    ? kitHref("scope", kitId)
+    : done && finished > 0 && fileId
+      ? kitHref("file", fileId)
+      : null;
 
   return (
     <div className="space-y-4">
@@ -151,9 +158,16 @@ export function KitBoard({
           {/* THE KIT'S OWN DOOR. Without this the kit dies with the tab: the
               artifacts persist but the THING the learner made — one subject,
               everything for it — was reachable from nowhere afterwards. */}
-          {done && finished > 0 && kit.source?.ref?.fileId && (
-            <Button variant="primary" asChild>
-              <Link href={kitHref("file", kit.source.ref.fileId)}>
+          {/* The door opens the moment the kit exists (2026-10-08) — never
+              only at the end of a multi-minute build. While it builds, the
+              kit opens in a new tab: this tab holds the run (useKitGeneration
+              is tab-bound), so leaving it would stop the merge and save. */}
+          {openKitHref && (
+            <Button variant={done && finished > 0 ? "primary" : "outline"} asChild>
+              <Link
+                href={openKitHref}
+                {...(done ? {} : { target: "_blank", rel: "noopener" })}
+              >
                 <Package className="h-4 w-4" />
                 Open your kit
               </Link>
@@ -166,6 +180,16 @@ export function KitBoard({
           )}
         </div>
       </div>
+
+      {kit.sourcesNotFiled.length > 0 && (
+        <ErrorNotice
+          size="inline"
+          title="Sources not added to the kit"
+          message={`${kit.sourcesNotFiled.join(", ")} — add them from the kit page.`}
+          error={kit.sourcesNotFiled.join(", ")}
+          operation="Add sources to a study kit"
+        />
+      )}
 
       <SourceStage kit={kit} now={now} />
 

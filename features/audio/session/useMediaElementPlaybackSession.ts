@@ -27,7 +27,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import {
   claimPlayback,
   releasePlayback,
-} from "@/features/audio/playback/playbackLock";
+} from "@ai-matrx/media/speech";
 import {
   registerSession,
   updateSession,

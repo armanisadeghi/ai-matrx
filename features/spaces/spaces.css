@@ -848,13 +848,17 @@
 .spaces-editor [data-content-type="heading"][data-level="3"] {
   --level: 1.25em;
 }
+.spaces-editor [data-content-type="heading"][data-level="4"] {
+  --level: 1.125em;
+}
 .spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="1"]) {
   margin-top: 2em;
 }
 .spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="2"]) {
   margin-top: 1.4em;
 }
-.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="3"]) {
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="3"]),
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="4"]) {
   margin-top: 1em;
 }
 .spaces-editor .bn-block-group > .bn-block-outer:first-child:has(> .bn-block > [data-content-type="heading"]) {
@@ -1472,6 +1476,7 @@
 .spaces-chart-legend em { font-style: normal; color: var(--spaces-ink); }
 .spaces-chart-loading { min-height: 260px; }
 .spaces-peek-side { position: fixed; top: var(--header-height, 0px); right: 0; bottom: 0; z-index: 50; width: min(560px, 100vw); display: flex; flex-direction: column; background: var(--spaces-page-bg); border-left: 1px solid var(--spaces-rule); box-shadow: -8px 0 24px var(--spaces-shadow-md); }
+.spaces-peek-side:focus { outline: none; }
 .spaces-peek-bar { display: flex; align-items: center; height: 44px; padding: 0 8px; flex: none; }
 .spaces-peek-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 24px; }
 @media (max-width: 767px) {
@@ -1840,3 +1845,145 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
+
+/* C18 synced block: Notion's outline + bar on hover (the body is its own editor). */
+.spaces-synced { position: relative; border-radius: 4px; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 120ms ease; margin: 2px 0; }
+.spaces-synced:hover, .spaces-synced:focus-within { outline-color: color-mix(in srgb, var(--destructive) 55%, transparent); }
+.spaces-synced-bar { position: absolute; top: -30px; left: 0; display: none; align-items: center; gap: 2px; height: 26px; padding: 0 4px; border-radius: 6px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 0 0 1px var(--border), 0 3px 8px var(--spaces-shadow-md); font-size: 12px; z-index: 5; white-space: nowrap; }
+.spaces-synced:hover .spaces-synced-bar, .spaces-synced:focus-within .spaces-synced-bar { display: inline-flex; }
+.spaces-synced-tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; color: var(--destructive); font-weight: 500; }
+.spaces-synced-count { padding: 0 6px; color: var(--muted-foreground); border-left: 1px solid var(--border); }
+.spaces-synced-action { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px; border-radius: 4px; color: var(--muted-foreground); }
+.spaces-synced-action:hover { background: var(--muted); color: var(--foreground); }
+.spaces-synced-body .bn-container, .spaces-synced-body .bn-editor { padding-inline: 0 !important; }
+.spaces-synced-loading { min-height: 28px; }
+.spaces-synced-missing { padding: 6px 8px; font-size: 13px; color: var(--muted-foreground); }
+
+/* C19 button block: Notion's gray pill with a gear on hover; the editor opens under it. */
+.spaces-button-block { margin: 2px 0; }
+.spaces-button-row { display: inline-flex; align-items: center; gap: 2px; }
+.spaces-button-press { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; background: var(--muted); color: var(--foreground); font-size: 14px; font-weight: 500; box-shadow: 0 0 0 1px var(--border); }
+.spaces-button-press:hover { background: var(--accent); }
+.spaces-button-press[aria-busy="true"] { opacity: 0.6; }
+.spaces-button-gear { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--muted-foreground); opacity: 0; }
+.spaces-button-block:hover .spaces-button-gear { opacity: 1; }
+.spaces-button-gear:hover { background: var(--muted); }
+.spaces-button-editor { display: flex; flex-direction: column; gap: 8px; max-width: 460px; margin-top: 6px; padding: 10px; border-radius: 8px; background: var(--popover); box-shadow: 0 0 0 1px var(--border), 0 6px 16px var(--spaces-shadow-md); }
+.spaces-button-action { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-top: 1px solid var(--border); }
+.spaces-button-action-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; }
+.spaces-button-agent { display: flex; flex-direction: column; gap: 4px; }
+.spaces-button-add { display: flex; flex-wrap: wrap; gap: 2px; }
+.spaces-button-done { display: flex; justify-content: flex-end; }
+
+/* N3 suggested edits: an insert is underlined in green, a delete struck in red; the card opens under a click. */
+.spaces-suggestion[data-suggestion-kind="insert"] { color: var(--spaces-suggest-insert, #2e7d4f); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 60%, transparent); cursor: pointer; }
+.spaces-suggestion[data-suggestion-kind="delete"] { color: var(--destructive); text-decoration: line-through; cursor: pointer; }
+.spaces-suggestion-card { position: fixed; z-index: 80; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 4px 0 10px; border-radius: 8px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 6px 24px var(--spaces-shadow-md); font-size: 13px; }
+.spaces-suggestion-who { display: inline-flex; gap: 6px; }
+.spaces-suggestion-kind { color: var(--muted-foreground); }
+.spaces-suggestion-actions { display: inline-flex; gap: 2px; }
+.spaces-suggestion-actions button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--muted-foreground); }
+.spaces-suggestion-actions button:hover { background: var(--muted); color: var(--foreground); }
+
+/* Round 34 — the static first paint (server HTML) holds the page while the editor is built behind it
+   (SpacePage `revealWhenPainted`): the hidden editor takes the static body's box and never adds height. */
+.spaces-body-stack { position: relative; }
+.spaces-editor-behind { position: absolute; inset: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+
+/* C20 / C23 — media frame: Notion's side handles, hover tools, alignment, caption field (round 41). */
+.spaces-media-frame { position: relative; }
+.spaces-media-frame[data-align="center"] { margin-left: auto; margin-right: auto; }
+.spaces-media-frame[data-align="right"] { margin-left: auto; margin-right: 0; }
+.spaces-media-frame[data-align="left"] { margin-left: 0; margin-right: auto; }
+.spaces-media-body { position: relative; }
+.spaces-media-body .spaces-iframe-embed, .spaces-media-body .spaces-iframe-pdf { height: var(--spaces-embed-h, 420px); }
+.spaces-media-frame[data-media-kind="pdf"] .spaces-media-body:not([style]) .spaces-iframe-pdf { height: 640px; }
+.spaces-media-handle { position: absolute; z-index: 2; opacity: 0; transition: opacity 120ms; }
+.spaces-media-handle[data-side="left"], .spaces-media-handle[data-side="right"] { top: 0; bottom: 0; width: 14px; cursor: col-resize; display: flex; align-items: center; justify-content: center; }
+.spaces-media-handle[data-side="left"] { left: 0; }
+.spaces-media-handle[data-side="right"] { right: 0; }
+.spaces-media-handle[data-side="left"]::after, .spaces-media-handle[data-side="right"]::after { content: ""; width: 6px; height: 48px; max-height: 50%; border-radius: 20px; background: rgba(15, 15, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); }
+.spaces-media-handle[data-side="bottom"] { left: 0; right: 0; bottom: -6px; height: 12px; cursor: row-resize; }
+.spaces-media-handle[data-side="bottom"]::after { content: ""; position: absolute; left: 50%; top: 3px; width: 48px; height: 6px; margin-left: -24px; border-radius: 20px; background: rgba(15, 15, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); }
+.spaces-media-frame:hover .spaces-media-handle { opacity: 1; }
+.spaces-media-tools { position: absolute; top: 6px; right: 6px; z-index: 3; display: flex; align-items: center; gap: 1px; padding: 2px; border-radius: 6px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(15, 15, 15, 0.12); opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.spaces-media-frame:hover .spaces-media-tools, .spaces-media-tools:focus-within { opacity: 1; pointer-events: auto; }
+.spaces-media-tools button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--spaces-ink-soft); }
+.spaces-media-tools button:hover, .spaces-media-tools button[data-active] { background: var(--spaces-hover-strong); color: var(--foreground); }
+.spaces-media-tools-sep { width: 1px; height: 16px; margin: 0 2px; background: var(--border); }
+.spaces-caption-field { display: block; width: 100%; border: 0; outline: none; background: transparent; padding: 0 2px; }
+.spaces-caption-field::placeholder { color: var(--spaces-ink-faint, var(--muted-foreground)); }
+@media (hover: none) { .spaces-media-tools, .spaces-media-handle { opacity: 1; pointer-events: auto; } }
+
+/* C4 — nested numbered lists: 1. → a. → i. by depth (editor/numbering.ts writes data-marker). */
+.spaces-editor .bn-block-content[data-content-type="numberedListItem"][data-marker]::before,
+.spaces-static .bn-block-content[data-content-type="numberedListItem"][data-marker]::before {
+  content: attr(data-marker) !important;
+}
+
+/* C10 — code colors by language (editor/code-highlight.ts: Shiki). The code box is dark in both schemes
+   (--spaces-code-block-bg), so the dark theme's colors are the readable ones in both. */
+.spaces-editor [data-content-type="codeBlock"] code span[style*="--shiki-dark"] { color: var(--shiki-dark); }
+
+/* N13 — page properties under the title (page/PageProperties.tsx): Notion's two-column rows. */
+.spaces-page-props { display: flex; flex-direction: column; margin: 4px 0 8px; }
+.spaces-page-prop { display: flex; align-items: center; min-height: 34px; gap: 4px; }
+.spaces-page-prop-name { display: flex; align-items: center; width: 160px; flex: 0 0 160px; height: 30px; padding: 0 6px; border-radius: 4px; color: var(--spaces-ink-soft); font-size: 14px; text-align: left; }
+button.spaces-page-prop-name:hover { background: var(--spaces-hover); }
+.spaces-page-prop-name-inner { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.spaces-page-prop-value { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; font-size: 14px; }
+.spaces-page-prop-input { width: 100%; height: 30px; padding: 0 6px; border: 0; border-radius: 4px; background: transparent; outline: none; color: inherit; font-size: 14px; }
+.spaces-page-prop-input:hover, .spaces-page-prop-input:focus { background: var(--spaces-hover); }
+.spaces-page-prop-input::placeholder, .spaces-page-prop-empty { color: var(--spaces-ink-faint, var(--muted-foreground)); }
+.spaces-page-prop-empty, .spaces-page-prop-text { padding: 0 6px; }
+.spaces-page-prop-choice { display: flex; align-items: center; gap: 4px; width: 100%; min-height: 30px; padding: 0 6px; border-radius: 4px; text-align: left; }
+.spaces-page-prop-choice:hover { background: var(--spaces-hover); }
+.spaces-page-prop-chevron { opacity: 0; color: var(--spaces-ink-soft); }
+.spaces-page-prop-choice:hover .spaces-page-prop-chevron { opacity: 1; }
+.spaces-page-prop-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 3px; background: var(--spaces-hover-strong); font-size: 14px; line-height: 20px; }
+.spaces-page-prop-person { display: inline-flex; align-items: center; gap: 4px; }
+.spaces-page-prop-add { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 6px; border-radius: 4px; color: var(--spaces-ink-soft); font-size: 14px; width: fit-content; }
+.spaces-page-prop-add:hover { background: var(--spaces-hover); }
+
+/* C28 — the AI block (editor/ai-block.tsx). */
+.spaces-ai-block { width: 100%; margin: 4px 0; border-radius: 6px; }
+.spaces-ai-block[data-state="empty"], .spaces-ai-block[data-state="running"] { box-shadow: 0 0 0 1px var(--border); padding: 6px 8px; }
+.spaces-ai-block-ask { display: flex; align-items: center; gap: 8px; }
+.spaces-ai-block-icon { flex: 0 0 auto; color: var(--primary); }
+.spaces-ai-block-input { flex: 1 1 auto; field-sizing: content; min-height: 30px; resize: none; border: 0; outline: none; background: transparent; font-size: 15px; line-height: 1.5; color: inherit; padding: 4px 0; }
+.spaces-ai-block-input::placeholder { color: var(--spaces-ink-faint, var(--muted-foreground)); }
+.spaces-ai-block-body { font-size: 16px; }
+.spaces-ai-block-status { display: flex; align-items: center; gap: 6px; color: var(--spaces-ink-soft); font-size: 14px; }
+.spaces-ai-block-error { color: var(--destructive); font-size: 14px; }
+.spaces-ai-block-tools { display: flex; align-items: center; gap: 4px; margin-top: 2px; opacity: 0; transition: opacity 120ms; font-size: 12px; color: var(--spaces-ink-soft); }
+.spaces-ai-block:hover .spaces-ai-block-tools, .spaces-ai-block-tools:focus-within { opacity: 1; }
+.spaces-ai-block-tools button { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border-radius: 4px; }
+.spaces-ai-block-tools button:hover { background: var(--spaces-hover); }
+.spaces-ai-block-prompt { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 60%; padding: 0 6px; }
+@media (hover: none) { .spaces-ai-block-tools { opacity: 1; } }
+
+/* E4 — Spaces Home (workspace/SpacesHomeView.tsx): Notion Home's greeting, card row and lists. */
+.spaces-home { max-width: 900px; margin: 0 auto; padding: 56px 24px 80px; overflow-y: auto; height: 100%; }
+.spaces-home-greeting { text-align: center; font-size: 30px; font-weight: 700; margin-bottom: 36px; }
+.spaces-home-section { margin-bottom: 32px; }
+.spaces-home-heading { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 12px; font-weight: 500; color: var(--spaces-ink-soft); }
+.spaces-home-cards { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.spaces-home-card { position: relative; flex: 0 0 144px; height: 144px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding: 12px; border-radius: 16px; background: var(--card, var(--background)); box-shadow: 0 0 0 1px var(--border), 0 2px 4px rgba(15, 15, 15, 0.04); text-align: left; overflow: hidden; }
+.spaces-home-card:hover { background: var(--spaces-hover); }
+.spaces-home-card-top { position: absolute; inset: 0 0 auto 0; height: 44px; background: var(--spaces-hover-strong); }
+.spaces-home-card-icon { position: absolute; top: 28px; left: 12px; }
+.spaces-home-card-title { font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.spaces-home-card-meta { font-size: 12px; color: var(--spaces-ink-soft); }
+.spaces-home-list { display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 0 0 1px var(--border); padding: 4px; min-height: 40px; }
+.spaces-home-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 8px; text-align: left; font-size: 14px; }
+.spaces-home-row:hover { background: var(--spaces-hover); }
+.spaces-home-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.spaces-home-row-page, .spaces-home-row-meta, .spaces-home-time { font-size: 12px; color: var(--spaces-ink-soft); }
+.spaces-home-when { flex: 0 0 96px; display: flex; flex-direction: column; }
+.spaces-home-day { font-size: 13px; font-weight: 500; }
+.spaces-home-empty { font-size: 14px; color: var(--spaces-ink-soft); padding: 4px 2px; }
+.spaces-home-row-icon, .spaces-home-card-icon { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.spaces-home-row-icon { flex: 0 0 20px; width: 20px; height: 20px; }
+.spaces-home-row-icon > *, .spaces-home-row-icon svg, .spaces-home-row-icon img { max-width: 20px; max-height: 20px; }
+.spaces-home-card-icon { width: 30px; height: 30px; }
+.spaces-home-card-icon > *, .spaces-home-card-icon svg, .spaces-home-card-icon img { max-width: 30px; max-height: 30px; }

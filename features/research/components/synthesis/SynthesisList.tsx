@@ -1,6 +1,6 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useState, useMemo } from "react";
 import {
   Layers,
@@ -23,7 +23,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { SynthesisVersionHistory } from "./SynthesisVersionHistory";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
@@ -59,8 +59,8 @@ import {
   SYNTHESIS_CSV_COLUMNS,
 } from "@/features/research/copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;

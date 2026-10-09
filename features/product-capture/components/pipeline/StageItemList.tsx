@@ -10,7 +10,7 @@ import { Camera, Loader2 } from "lucide-react";
 
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 import type { PipelineItem } from "../../pipeline-service";
 import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";

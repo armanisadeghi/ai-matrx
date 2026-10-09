@@ -27,7 +27,7 @@ import { TopicalMapLoading } from "../components/TopicalMapStates";
 import { MapLinkProvider } from "../links";
 import { MAP_AUTHOR_SOURCE_KINDS, type MapAuthorSourceKind } from "../map-author";
 import { StartMapScreen } from "../start/StartMapScreen";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function TopicalMapStartDoor() {

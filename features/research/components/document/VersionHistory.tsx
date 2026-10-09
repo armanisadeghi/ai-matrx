@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useDocumentVersions } from '../../hooks/useResearchState';
 import type { ResearchDocument } from '../../types';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
+import { ReadFailure } from '@ai-matrx/design-system';
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 interface VersionHistoryProps {
     open: boolean;

@@ -14,8 +14,8 @@
 // converter, so the empty state sends the learner to the kit builder rather
 // than to a create form that does not exist.
 
-import { useRead } from "@/components/read-state/useRead";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useRead } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { useState } from "react";
 import { FileText, Plus } from "lucide-react";
@@ -125,7 +125,7 @@ export function SummaryHome() {
             onValueChange={setSearch}
             label="study summaries"
           />
-          <div className="flex gap-2"><Button asChild variant="outline"><Link href="/education/start"><AGENT_ICON className="h-4 w-4" />Summarize something</Link></Button><Button variant="primary" asChild><Link href="/education/summaries/new"><Plus className="h-4 w-4" />New summary</Link></Button></div>
+          <div className="flex gap-2"><Button asChild variant="outline"><Link href="/education/kits/new"><AGENT_ICON className="h-4 w-4" />Summarize something</Link></Button><Button variant="primary" asChild><Link href="/education/summaries/new"><Plus className="h-4 w-4" />New summary</Link></Button></div>
         </div>
 
         {loading ? (
@@ -143,7 +143,7 @@ export function SummaryHome() {
               kit builder writes a grounded summary with its sources attached.
             </p>
             <Button variant="primary" asChild>
-              <Link href="/education/start">
+              <Link href="/education/kits/new">
                 <AGENT_ICON className="h-4 w-4" />
                 Create a study kit
               </Link>

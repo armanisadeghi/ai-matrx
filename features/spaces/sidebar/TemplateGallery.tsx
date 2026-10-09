@@ -9,7 +9,7 @@ import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { LayoutTemplate, TreePalm } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 import type { SpaceDoc } from "../contract";

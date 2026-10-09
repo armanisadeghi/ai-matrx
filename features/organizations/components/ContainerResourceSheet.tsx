@@ -20,7 +20,7 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { OrgResourceEntry } from "../resource-catalogue";
 import type { ContainerColumn } from "../hooks/useContainerInventory";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface Item {
   id: string;

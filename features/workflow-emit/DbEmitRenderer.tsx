@@ -3,7 +3,7 @@
 /**
  * DbEmitRenderer — lazy entry point for the DB-driven workflow emit renderer.
  *
- * `DbEmitRendererImpl` statically imports the Agent Apps compiler, which in
+ * `DbEmitRendererImpl` statically imports the Applets compiler, which in
  * turn statically imports `@babel/standalone` (~hundreds of KB). Loading the
  * impl via `next/dynamic({ ssr: false })` keeps Babel OUT of the main bundle:
  * it ships in its own chunk that's fetched only when a node actually emits and

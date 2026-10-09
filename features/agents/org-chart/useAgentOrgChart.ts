@@ -14,7 +14,6 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchOrchestras, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { loadManualOrgEdges, loadOrgPositions, loadSeatJobs } from "@/features/agents/redux/orchestras/orgChartThunks";
 import {
@@ -33,6 +32,7 @@ import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEns
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
 import { boxId, parseBoxId } from "./constants";
 import { loadOrgDirectory, onOrgDirectoryRefreshed } from "./useBoxIdentity";
+import { useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const dispatch = useAppDispatch();
@@ -45,7 +45,7 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const positionsStatus = useAppSelector(selectOrgPositionsStatus);
   const manualError = useAppSelector(selectManualOrgError);
   const positions = useAppSelector(selectOrgPositions);
-  const agents = useAppSelector(selectAllAgents);
+  const agents = useAgentsById();
 
   // An archived record keeps its links (so a restore puts it back in place);
   // it is simply not drawn: a position in Trash (once positions are known), an

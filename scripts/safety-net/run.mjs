@@ -2,7 +2,7 @@
 // scripts/safety-net/run.mjs — LANE SAFETY-NET (2026-10-01): THE ONE COMMAND.
 //
 // Runs every safety-net check against LIVE or the CLONE and writes one pass/fail table, the logs
-// and the screenshots under common-docs/operations/for-arman/2026-10-01/safety-net/<run>/.
+// and the screenshots under /tmp/matrx-evidence/2026-10-01/safety-net/<run>/.
 //
 //   node scripts/safety-net/run.mjs --target live            # the before / after run (read-mostly)
 //   node scripts/safety-net/run.mjs --target clone           # everything, incl. SQL suites
@@ -29,6 +29,7 @@ import { dirname, join, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { CHECKS, ITEMS } from "./checks.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -390,7 +391,7 @@ try {
       }
       const status = r.skip ? "SKIP" : r.code === 0 ? "PASS" : "FAIL";
       rows.push({ check: c, status, ...r });
-      console.log(`[safety-net] ${status} ${c.id} (${Math.round((r.ms ?? 0) / 1000)} s)`);
+      console.log(`[safety-net] ${status} ${c.id} (${formatDurationMs(r.ms, { style: "compact" })})`);
     }
   }
   const walks = selected.filter((c) => c.kind === "walk");

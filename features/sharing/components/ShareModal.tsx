@@ -46,6 +46,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShareModalProps {
+  /** The level picker's words: "notion" = Full access · Can edit · Can edit content · Can comment · Can view. */
+  levelWording?: "roles" | "notion";
   isOpen: boolean;
   onClose: () => void;
   resourceType: ResourceType;
@@ -115,6 +117,7 @@ interface ShareModalProps {
  * />
  */
 export function ShareModal({
+  levelWording = "roles",
   isOpen,
   onClose,
   resourceType,
@@ -492,6 +495,7 @@ export function ShareModal({
                 {/* Add user form */}
                 {isOwner ? (
                   <ShareWithUserTab
+                    levelWording={levelWording}
                     onShare={shareWithUser}
                     onSuccess={refresh}
                     resourceType={resourceType}
@@ -504,7 +508,7 @@ export function ShareModal({
                     alreadySharedUserIds={userPermissions
                       .map((p) => p.grantedToUserId)
                       .filter((id): id is string => !!id)}
-                    // A record-store TABLE: a listed member may sit outside the table's own
+                    // A custom TABLE: a listed member may sit outside the table's own
                     // organization, so each one goes through the outside door, which grants an
                     // existing account outright whether inside or out.
                     {...(outsideShare

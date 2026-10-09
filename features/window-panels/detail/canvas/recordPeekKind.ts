@@ -28,6 +28,7 @@ function recordPeekMenu({ data }: CanvasKindProps): readonly CanvasMenuItem[] {
 
 export const RECORD_PEEK_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   id: RECORD_PEEK_KIND,
+  surface: "dom",
   label: "Record",
   icon: PanelRight,
   load: () => import("./RecordPeekCanvasView"),

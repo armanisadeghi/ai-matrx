@@ -112,7 +112,7 @@ export function EducationHub() {
       items: [
         { icon: AGENT_ICON, title: "Fast Fire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
         { icon: GraduationCap, title: "An AI tutor that knows everything", description: "Your sets, your history, your exam dates — present at every surface.", href: eduHref("features", "ai-tutor") },
-        { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: "/education/start" },
+        { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: "/education/kits/new" },
         { icon: Trophy, title: "Graded the way you actually answer", description: "Spoken, written, typed, and handwritten — all graded with feedback.", href: eduHref("features", "ai-grading") },
       ],
     },
@@ -120,7 +120,7 @@ export function EducationHub() {
       kind: "cta",
       heading: "Start studying — free",
       body: "Drop in a PDF or your notes and get a full study kit in one flow. No credit card, every grade level, every subject.",
-      primary: { label: "Create a study kit", href: "/education/start" },
+      primary: { label: "Create a study kit", href: "/education/kits/new" },
       secondary: { label: "Open the Study Hub", href: EDU_BASE },
     },
   ];
@@ -146,7 +146,7 @@ export function EducationHub() {
         title="Every subject. Every grade."
         titleAccent="Every way to learn."
         description="The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a tutor that knows your class that grades your spoken answers in real time. From a 2nd grader's picture cards to a med student's oral-exam prep."
-        primary={{ label: "Create a study kit", href: "/education/start" }}
+        primary={{ label: "Create a study kit", href: "/education/kits/new" }}
         secondary={{ label: "Start studying free", href: EDU_BASE }}
       />
       <SectionRenderer sections={sections} />

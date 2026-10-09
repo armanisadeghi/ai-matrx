@@ -13,9 +13,9 @@ import {
   PlayTapButton,
   PauseTapButton,
   StopTapButton,
-} from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
-import { useSpeech } from "@/features/audio/service/useSpeech";
+} from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
+import { useSpeech } from "@ai-matrx/media/react";
 
 interface Props {
   text: string;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Loader2, Save } from "lucide-react";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import {
   AlertDialog,
   AlertDialogAction,

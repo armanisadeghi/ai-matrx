@@ -33,12 +33,12 @@
 
 import type { ReactNode } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   createAdminSystemAgentsScope,
 } from "@/features/surfaces/manifests/admin-system-agents.manifest";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export function SystemAgentSurfaceEmitter({
   agentId,
@@ -47,7 +47,7 @@ export function SystemAgentSurfaceEmitter({
   agentId: string;
   children: ReactNode;
 }) {
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
 
   // Built at trigger time (Run), not on mount — reads whatever the Redux
   // record holds at that instant.

@@ -7,7 +7,7 @@
  *   TC_ORIGIN=http://publisher-5.localhost:3001 AI_ADMIN_USERNAME=… AI_ADMIN_PASSWORD=… \
  *   node scripts/campaign-tests/tablechrome_footer_walk.mjs
  *
- * Out: common-docs/operations/for-arman/2026-09-25/table-chrome/footer-*.png, footer-walk.json.
+ * Out: /tmp/matrx-evidence/2026-09-25/table-chrome/footer-*.png, footer-walk.json.
  */
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";

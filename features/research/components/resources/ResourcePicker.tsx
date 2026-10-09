@@ -18,7 +18,7 @@
  *     information (it is exactly what a gap analysis is looking for).
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useMemo, useState } from "react";
 import { ChevronRight, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";

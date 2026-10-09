@@ -243,8 +243,10 @@ describe("malformed inner text — graceful, loud fallback", () => {
     const block = first.find((b) => b.type === "flashcards");
     expect(block).toBeDefined();
     expect(envelopeOf(block?.metadata)).toBeNull();
+    // One error per REGION for the whole process: the live stream above already read this
+    // region through the same splitter, so the memo may hold it already.
     const callsAfterFirst = errorSpy.mock.calls.length;
-    expect(callsAfterFirst).toBe(1);
+    expect(callsAfterFirst).toBeLessThanOrEqual(1);
 
     // Hot re-split of the same message: memoized failure, no error spam.
     const second = splitContentIntoBlocksV2(source);

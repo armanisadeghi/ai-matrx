@@ -3,7 +3,7 @@
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, ListPlus, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,7 +12,6 @@ import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAccess } from "@/utils/permissions/access";
@@ -22,16 +21,20 @@ import { FindInPage } from "./FindInPage";
 import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
-import { createPageDatabase } from "../data/new-database";
+import { adoptPageDatabase, createPageDatabase } from "../data/new-database";
+import { tableToDatabase as convertTableToDatabase, type SimpleTable } from "../data/table-to-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
 import { LoadAccessState } from "../workspace/LoadAccessState";
-import { useSpacesAiDisclosure } from "../ai/spaces-ai";
+import { WRITING_ASSIST_KEY, useSpacesAiDisclosure } from "../ai/spaces-ai";
 import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
 import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { PlainTextView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { usePlainView } from "@ai-matrx/rich-content/copy/content-view-store";
 import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
@@ -43,8 +46,9 @@ import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
 import { Cover, CoverPicker } from "./Cover";
 import { IconPicker } from "./IconPicker";
+import { AddPropertyMenu, PageProperties } from "./PageProperties";
 import { PageMenu } from "./PageMenu";
-import { SpaceIcon } from "./SpaceIcon";
+import { SpaceIcon, isImageMedia } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
 import { CommentMargin } from "../collab/CommentMargin";
 import { CommentsPanel, PageComments } from "../collab/CommentsPanel";
@@ -58,12 +62,22 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
+import { SpaceSeedProvider, useSpaceSeedSettled, type SpaceBlockSeeds } from "./space-seed-context";
+import { SpaceLinksProvider, type SeededBacklink, type SpaceLinks } from "./space-links";
+import { StaticSpaceBody } from "../editor/static-body";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { usePageReminders } from "../editor/reminders";
+import { markNewSource, useSyncedEdges } from "../state/synced-sources";
+import { setSuggestAuthor, setSuggestName, setSuggestPage } from "../editor/suggest";
+import { useContentEditOnly } from "./content-edit";
+import { StructureProvider } from "./structure";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
-type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
+/** The longest the static first paint stays once the editor is built behind it. */
+const REVEAL_CAP_MS = 2500;
+
+type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks" | "properties">;
 
 function Title({
   value,
@@ -79,6 +93,9 @@ function Title({
   onEnter: () => void;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
+  // The title is in the first paint (server HTML, round 34); React never rewrites it after — later
+  // values (typing here, the room) are written by the effect so the caret is never disturbed.
+  const [first] = useState(value);
   useEffect(() => {
     const el = ref.current;
     if (el && el.textContent !== value) el.textContent = value;
@@ -113,7 +130,9 @@ function Title({
         e.preventDefault();
         document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*\n\s*/g, " "));
       }}
-    />
+    >
+      {first}
+    </h1>
   );
 }
 
@@ -137,16 +156,39 @@ function isBlankPage(blocks: readonly SpaceBlock[]): boolean {
   return only.type === "paragraph" && !(only.text ?? []).some((t) => (t as { text?: string }).text) && !only.children?.length;
 }
 
-export function SpacePage({ spaceId }: { spaceId: string }) {
+export function SpacePage({
+  spaceId,
+  initialDoc,
+  seeds,
+  links,
+  backlinks,
+}: {
+  spaceId: string;
+  initialDoc?: SpaceDoc;
+  seeds?: SpaceBlockSeeds;
+  links?: SpaceLinks;
+  backlinks?: { spaceId: string; rows: SeededBacklink[] };
+}) {
   const { pageEpoch } = useSpaces();
-  return <SpacePageScreen key={`${spaceId}:${pageEpoch(spaceId)}`} spaceId={spaceId} />;
+  const key = `${spaceId}:${pageEpoch(spaceId)}`;
+  // Round 34: the page as the server read it (its text is in the HTML) opens the FIRST screen only — a
+  // page rewritten outside its screen (a new epoch) opens again on what is stored.
+  const [servedKey] = useState(key);
+  const served = key === servedKey && initialDoc?.id === spaceId ? initialDoc : undefined;
+  return (
+    <SpaceSeedProvider seeds={key === servedKey ? seeds : undefined}>
+      <SpaceLinksProvider links={key === servedKey ? links : undefined} backlinks={key === servedKey ? backlinks : undefined}>
+        <SpacePageScreen key={key} spaceId={spaceId} initialDoc={served} />
+      </SpaceLinksProvider>
+    </SpaceSeedProvider>
+  );
 }
 
-function SpacePageScreen({ spaceId }: { spaceId: string }) {
+function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?: SpaceDoc }) {
   const spaces = useSpaces();
   const { store, pathTo, favorites, toggleFavorite, markVisited, openQuickFind, sidebarCollapsed, setSidebarCollapsed, setMobileSidebarOpen, patchSummary } = spaces;
   const isMobile = useIsMobile();
-  const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
+  const [doc, setDoc] = useState<SpaceDoc | null | undefined>(initialDoc);
   const [now, setNow] = useState(() => Date.now());
   const [saveState, setSaveState] = useState<SaveState>("saved");
   /** Why the last save failed — handed to the error menu beside "Not saved". */
@@ -160,6 +202,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // H1 — the comments panel, a thread being started (undefined = none; null anchor = the page), and the
   // page comment being written under the title.
   const [commentsOpen, setCommentsOpen] = useState(false);
+  // The bar's Plain switch: the page's exact markdown in place of the editor (which stays mounted).
+  const plainView = usePlainView(`space-page-${spaceId}`);
   const [draft, setDraft] = useState<SpaceCommentAnchor | null | undefined>(undefined);
   const [addingPageComment, setAddingPageComment] = useState(false);
   /** Bumped on every edit, so the comment margin re-reads block positions. */
@@ -170,7 +214,11 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // H5 — what this person may do here: the database decides (get_resource_access); a viewer or
   // commenter never gets editing affordances, never writes, and sees the room read-only.
   const access = useAccess("document", spaceId);
-  const canEdit = access.level === "edit" || access.level === "admin";
+  // Full editing (structure, sharing, settings) vs "Can edit content" (edit_content: the page's text and rows only);
+  // the database refuses the rest, so the page only stops offering it.
+  const fullEdit = access.level === "edit" || access.level === "admin";
+  const contentOnly = useContentEditOnly(spaceId, access.level === "view");
+  const canEdit = fullEdit || contentOnly;
   // A page in Trash (its own row or an ancestor's, by the store's read or the list) takes no edits and no
   // saves, and this member gives up the room's host role at once; Restore brings both back.
   const trashedNow = !!doc && (doc.isArchived || trashedByList(doc.id, doc.parentId, spaces.archived, spaces.byId));
@@ -284,7 +332,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // A page made a moment ago arrives in hand; any other is read. Both settle in a callback, so the
     // page's state is set by the answer, never synchronously by the effect.
     const made = spaces.takeFresh(spaceId);
-    void (made ? Promise.resolve(made) : store.get(spaceId)).then(
+    // The server's read of this page (round 34) is the stored page: adopted as if just read.
+    const read = made ?? (initialDoc?.id === spaceId ? initialDoc : null);
+    void (read ? Promise.resolve(read) : store.get(spaceId)).then(
       (d) => {
         if (!live) return;
         setMadeHere(Boolean(made));
@@ -358,7 +408,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
         editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
       }
       keptLocally.current = true;
-      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
+      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, properties: copy.doc.properties, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
     },
     offer: (_copy, { restore, discard }) =>
       toast.warning("Unsaved changes from this device", {
@@ -506,21 +556,36 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       }
       return value;
     });
+  const warnNotAdopted = (err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined });
+  /** C14 — a simple table's "Turn into database": a new table of this page holding its rows. */
+  const tableToDatabase = async (table: SimpleTable): Promise<PickedSource | null> => {
+    try {
+      return await convertTableToDatabase(spaceId, userId, table);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The table could not be turned into a database.");
+      return null;
+    }
+  };
   /** "/" → Database (inline or full page): a new table in this page's organization, as a sub-page when asked. */
   const newDatabase = async (fullPage: boolean): Promise<{ table: PickedSource; pageId?: string } | null> => {
     try {
       const table = await createPageDatabase(spaceId, activeOrg, userId);
-      if (!fullPage) return { table };
+      // The page that holds the database owns it (sharing the page shares it): this page inline, else the new sub-page.
+      if (!fullPage) {
+        await adoptPageDatabase(spaceId, table.tableId).catch(warnNotAdopted);
+        return { table };
+      }
       const view = { id: newViewId(), name: "Table", layout: "grid" as const };
       const sub = await spaces.createSpace(spaceId, {
         open: false,
         title: table.name,
         blocks: [{ id: crypto.randomUUID(), type: "database", props: { source: { kind: "table", tableId: table.tableId }, inline: false, title: table.name, linked: false, views: [view], activeViewId: view.id } }],
       });
+      await adoptPageDatabase(sub.id, table.tableId).catch(warnNotAdopted);
       window.setTimeout(() => spaces.open(sub.id), 60);
       return { table, pageId: sub.id };
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "The database could not be made.");
+      toast.error(err instanceof Error ? err.message : "The database could not be made.");
       return null;
     }
   };
@@ -623,12 +688,44 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // Flush on leaving this Space only.
   }, [spaceId]);
 
+  // Round 34 — the first paint is the page's static body (server HTML); the editor is built behind it
+  // once the room is joined and takes its place when it paints the same height (so nothing moves), or
+  // after REVEAL_CAP_MS whatever it draws.
+  // The editor's database blocks start from the server's answers: it is built once they have landed.
+  const seedSettled = useSpaceSeedSettled();
+  const stackRef = useRef<HTMLDivElement | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const revealWhenPainted = () => {
+    const started = performance.now();
+    let same = 0;
+    const tick = () => {
+      const stack = stackRef.current;
+      const shown = stack?.querySelector<HTMLElement>(":scope > .spaces-static-body");
+      const behind = stack?.querySelector<HTMLElement>(":scope > .spaces-editor-behind");
+      if (!stack || !shown || !behind) return setRevealed(true);
+      // Every React block drawn (BlockNote paints them a frame after the text) and the heights agree.
+      const pending = behind.querySelector(".react-renderer:empty, .spaces-db-loading");
+      same = !pending && Math.abs(behind.scrollHeight - shown.getBoundingClientRect().height) <= 1 ? same + 1 : 0;
+      if (same >= 2 || performance.now() - started > REVEAL_CAP_MS) return setRevealed(true);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
   // Every hook runs before the loading / missing returns below (React's order of hooks).
   const builder = useSpaceBuilder();
   const designer = useDatabaseDesigner();
   const moveIn = useMoveIn();
   // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
-  usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
+  usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow, doc?.organizationId);
+  useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && fullEdit);
+  // N3: suggestions carry this person as their author; suggest mode is per page.
+  useEffect(() => {
+    setSuggestAuthor(userId ?? null);
+    if (userId && fullName) setSuggestName(userId, fullName);
+    setSuggestPage(spaceId);
+    return () => setSuggestPage(null);
+  }, [userId, fullName, spaceId]);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -796,7 +893,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
         </nav>
         <span className="flex-1" />
         {locked ? (
-          <button type="button" className="spaces-locked-pill" onClick={() => canEdit && setSettings({ locked: false })} disabled={!canEdit} title={canEdit ? "Unlock page" : "Locked"}>
+          <button type="button" className="spaces-locked-pill" onClick={() => fullEdit && setSettings({ locked: false })} disabled={!fullEdit} title={fullEdit ? "Unlock page" : "Locked"}>
             <Lock size={13} />
             Locked
           </button>
@@ -814,6 +911,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : collab.isHost && saveState === "refused" ? "Not saved" : editedAgo(doc.updatedAt, now)}
           {collab.isHost && (saveState === "failed" || saveState === "refused") ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
+        {/* The content action set (Copy, Plain, Export, Print, Transform): the whole page as markdown. */}
+        <RichCopySplit size="xs" label="page" exportTitle={doc.title || "Untitled"} viewKey={`space-page-${spaceId}`} human={() => pageForAi().markdown} />
         <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
         <button
           type="button"
@@ -835,6 +934,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           <Star size={17} className={isFavorite ? "fill-[var(--spaces-star)] text-[var(--spaces-star)]" : undefined} />
         </button>
         <PageMenu
+          suggestPageId={canEdit ? doc.id : undefined}
+          contentOnly={contentOnly}
           settings={doc.settings}
           onSettings={setSettings}
           onCopyLink={copyLink}
@@ -859,6 +960,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           onExport={() => setExportOpen(true)}
           onAskAiChange={builder.wired && editable ? () => builder.ask({ spaceId: doc.id, ...pageForAi() }) : undefined}
           isTemplate={spaces.templates.ids ? spaces.templates.ids.includes(doc.id) : null}
+          onOpen={spaces.templates.ids === null ? spaces.templates.refresh : undefined}
           onTemplate={(on) =>
             void spaces.templates
               .setTemplate(doc.id, on)
@@ -899,8 +1001,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           <div className="spaces-header" ref={headerRef} data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
             {doc.icon ? (
               <IconPicker value={doc.icon} onChange={(icon) => update({ icon })} disabled={!editable}>
-                <button type="button" className="spaces-page-icon" data-image={doc.icon && !("icon" in doc.icon) ? "true" : undefined} aria-label="Change icon">
-                  <SpaceIcon media={doc.icon} size={doc.icon && !("icon" in doc.icon) ? 136 : 78} />
+                <button type="button" className="spaces-page-icon" data-image={doc.icon && isImageMedia(doc.icon) ? "true" : undefined} aria-label="Change icon">
+                  <SpaceIcon media={doc.icon} size={doc.icon && isImageMedia(doc.icon) ? 136 : 78} />
                 </button>
               </IconPicker>
             ) : null}
@@ -923,6 +1025,14 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
                     </button>
                   </CoverPicker>
                 ) : null}
+                {editable && !doc.properties?.length ? (
+                  <AddPropertyMenu onAdd={(p) => update({ properties: [p] })}>
+                    <button type="button" className="spaces-header-control">
+                      <ListPlus size={15} />
+                      Add property
+                    </button>
+                  </AddPropertyMenu>
+                ) : null}
                 <button type="button" className="spaces-header-control" onClick={() => setAddingPageComment(true)}>
                   <MessageSquare size={15} />
                   Add comment
@@ -930,11 +1040,17 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               </div>
             ) : null}
             <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
+            <PageProperties spaceId={doc.id} properties={doc.properties ?? []} editable={editable} onChange={(properties) => update({ properties })} />
             <Backlinks key={doc.id} spaceId={doc.id} />
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
           <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
-          {collab.session ? (
+          {plainView ? <PlainTextView text={pageForAi().markdown} /> : null}
+          <div className="spaces-body-stack" ref={stackRef} style={plainView ? { display: "none" } : undefined}>
+          {!revealed ? <StaticSpaceBody blocks={doc.blocks} /> : null}
+          {collab.session && seedSettled ? (
+          <div className={revealed ? "contents" : "spaces-editor-behind"} inert={!revealed}>
+          <StructureProvider value={fullEdit}>
           <SpaceEditor
             key={doc.id}
             spaceId={doc.id}
@@ -946,6 +1062,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               editorRef.current = editor;
               // After the room's body is in the editor: a copy kept on this device goes back on top.
               setReadyEditor(editor);
+              revealWhenPainted();
             }}
             slash={{
               createSubpage: async () => {
@@ -976,13 +1093,21 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               pickSource,
               designDatabase: designer.wired ? () => saveSoon(designer.design({ spaceId: doc.id, ...pageForAi() })) : undefined,
               newDatabase: (fullPage) => saveSoon(newDatabase(fullPage)),
+              aiBlock: Boolean(WRITING_ASSIST_KEY),
+              createSyncedSource: async () => {
+                // C18: the synced content is its own Space under this page (inherits its access), hidden from the tree.
+                const source = await spaces.createSpace(doc.id, { open: false, title: "Synced block", blocks: [{ id: crypto.randomUUID(), type: "text", text: [] }] });
+                await markNewSource(source.id, doc.id).catch((err: unknown) => toast.error(err instanceof Error ? err.message : "The synced block was not marked."));
+                return source.id;
+              },
             }}
-            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
+            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi, tableToDatabase }}
             onComment={startComment}
           />
-          ) : (
-            <div className="spaces-editor-pending" aria-busy="true" />
-          )}
+          </StructureProvider>
+          </div>
+          ) : null}
+          </div>
           {sourcePicker}
           <FindInPage rootSelector=".spaces-page .spaces-editor" />
           {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}

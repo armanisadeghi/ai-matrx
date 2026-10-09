@@ -31,6 +31,7 @@ import {
 import {
   ArrowUpCircle,
   CheckCircle2,
+  CopyPlus,
   GitCompareArrows,
   History,
   AlertTriangle,
@@ -39,6 +40,7 @@ import { cn } from "@ai-matrx/design-system";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { AgentDiffViewer, buildAgentAdapterRegistry } from "@/features/agents/components/diff/AgentDiffViewer";
 import { VersionHistoryTimeline } from "@/features/agents/components/diff/VersionHistoryTimeline";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 import { VersionIdBadge } from "@/features/agents/components/diff/VersionIdBadge";
 import { promoteFailureMessage } from "@/features/agents/components/diff/promote-failure-message";
 import { compareAgentDefinitions } from "@/features/agents/components/diff/compare-agent-definitions";
@@ -100,6 +102,8 @@ export function AgentVersionDiffPage({
 
   const [snapshotLoading, setSnapshotLoading] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  // "New agent from vN": the one Duplicate dialog with the shown version preselected.
+  const duplicateFlow = useAgentDuplicateFlow();
   const [showPromoteDialog, setShowPromoteDialog] = useState(false);
   const initialTabParam = searchParams?.get("tab");
   const [activeTab, setActiveTab] = useState<"compare" | "history">(
@@ -642,6 +646,21 @@ export function AgentVersionDiffPage({
 
           {activeTab === "compare" && (
             <>
+              {selectedVersionItem && (
+                <Button
+                  icon={<CopyPlus />}
+                  variant="outline"
+                  disabled={duplicateFlow.isDuplicating}
+                  onClick={() =>
+                    void duplicateFlow.openDuplicate({
+                      agentId,
+                      versionId: selectedVersionItem.version_id,
+                    })
+                  }
+                >
+                  New agent from v{selectedVersionItem.version_number}
+                </Button>
+              )}
               {liveAgent?.version != null &&
                 leftVersion != null &&
                 leftVersion !== liveAgent.version && (
@@ -749,6 +768,7 @@ export function AgentVersionDiffPage({
         </TabsContent>
       </Tabs>
 
+      {duplicateFlow.dialog}
       <AlertDialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

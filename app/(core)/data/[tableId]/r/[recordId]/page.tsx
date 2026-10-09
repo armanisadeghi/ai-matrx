@@ -1,13 +1,18 @@
-"use client";
-
 // app/(core)/data/[tableId]/r/[recordId]/page.tsx — THE MOUNT, AND NOTHING MORE. The screen is
 // `UnifiedRecordPage` (features/unified-data/table-page): the record panel, full page.
+//
+// A server component only to START the table's first reads as the signed-in person while the
+// browser is still loading the app (lane PAGE-BUNDLE-2, `features/unified-data/page-seed`).
 
-import { use } from "react";
+import { PrimedRecordPage } from "@/features/unified-data/page-seed/PrimedTablePages";
+import { readTablePage } from "@/features/unified-data/page-seed/tablePageSeed.server";
 
-import { UnifiedRecordPage } from "@/features/unified-data/table-page/UnifiedRecordPage";
-
-export default function UnifiedRecordRoute({ params }: { params: Promise<{ tableId: string; recordId: string }> }) {
-  const { tableId, recordId } = use(params);
-  return <UnifiedRecordPage tableId={tableId} recordId={recordId} />;
+export default async function UnifiedRecordRoute({
+  params,
+}: {
+  params: Promise<{ tableId: string; recordId: string }>;
+}) {
+  const { tableId, recordId } = await params;
+  const reads = readTablePage(tableId, recordId, { rows: false });
+  return <PrimedRecordPage tableId={tableId} recordId={recordId} gate={reads.gate} seed={reads.seed} opening={reads.opening} />;
 }

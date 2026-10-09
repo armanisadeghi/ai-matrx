@@ -10,6 +10,7 @@
 //   tokens      a compact count (12M, as the platform prints token counts)
 //   count, characters, and anything unnamed   a plain count (a ratio without a unit keeps 3 figures)
 //   ms          a human duration (850ms, 4.2s, 3m 07s, 2h 05m)
+//   duration    a length of time in ms — a `span` (latest minus earliest moment), read as `ms` (lane DRILL-SPAN)
 //   share       a fraction of 1 as a percent, one decimal (0.1234 → 12.3%)
 //   percent     a number already in percent (12.3 → 12.3%)
 //   times       a multiplier (6.0×)
@@ -37,6 +38,7 @@ export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUn
     case "tokens":
       return (v) => (v === null ? "—" : formatCount(v, { style: "compact" }));
     case "ms":
+    case "duration":
       return (v) => (v === null ? "—" : formatDurationMs(v, { style: "compact", fallback: "—" }));
     case "share":
       return (v) => (v === null ? "—" : formatPercentFromFraction(v, { digits: 1 }));
@@ -57,5 +59,5 @@ export function drillUnitFormatter(unit: string | undefined, money: DrillMoneyUn
 
 /** Does a Measure of this unit add up across groups by default? (A share or a multiplier never does.) */
 export function drillUnitAdds(unit: string | undefined): boolean {
-  return !(unit === "share" || unit === "percent" || unit === "times" || unit === "ms" || unit === "time");
+  return !(unit === "share" || unit === "percent" || unit === "times" || unit === "ms" || unit === "duration" || unit === "time");
 }

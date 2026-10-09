@@ -57,7 +57,7 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
@@ -77,7 +77,6 @@ import {
   formatDurationMs,
   type CostUnit,
 } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 
 import { DisclosureHeader } from "@ai-matrx/design-system/controls";
 export interface AgentResultBlockProps {
@@ -120,7 +119,7 @@ interface Fact {
   value: string;
 }
 
-function factList(facts: AgentRunFacts, unit: CostUnit): Fact[] {
+function factList(facts: AgentRunFacts, unit: CostUnit, rate: number | null): Fact[] {
   const out: Fact[] = [];
   if (facts.models.length > 0) {
     out.push({ label: "Model", value: facts.models.join(", ") });
@@ -135,7 +134,7 @@ function factList(facts: AgentRunFacts, unit: CostUnit): Fact[] {
     out.push({ label: "Tool calls", value: formatCount(facts.toolCalls) });
   }
   if (facts.costUsd !== null) {
-    out.push({ label: "Cost", value: formatCost(facts.costUsd, { rate: currentPointsRate(), unit }) });
+    out.push({ label: "Cost", value: formatCost(facts.costUsd, { rate, unit }) });
   }
   if (facts.inputTokens !== null || facts.outputTokens !== null) {
     out.push({
@@ -156,19 +155,19 @@ function factList(facts: AgentRunFacts, unit: CostUnit): Fact[] {
  * Empty when the producer tracked neither — the row then says only "Run
  * detail", which is honest rather than a fabricated "0ms · $0".
  */
-function summaryLine(facts: AgentRunFacts, unit: CostUnit): string | null {
+function summaryLine(facts: AgentRunFacts, unit: CostUnit, rate: number | null): string | null {
   const parts: string[] = [];
   const duration =
     facts.durationMs !== null ? formatDuration(facts.durationMs) : null;
   if (duration) parts.push(duration);
   if (facts.costUsd !== null && facts.costUsd > 0) {
-    parts.push(formatCost(facts.costUsd, { rate: currentPointsRate(), unit }));
+    parts.push(formatCost(facts.costUsd, { rate, unit }));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function RunDetail({ facts }: { facts: AgentRunFacts }) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const [open, setOpen] = useState(false);
   const detailRef = useRef<HTMLDivElement>(null);
   // The row sits at the BOTTOM of a bounded, scrollable host (the workflow
@@ -178,11 +177,11 @@ function RunDetail({ facts }: { facts: AgentRunFacts }) {
   useEffect(() => {
     if (open) detailRef.current?.scrollIntoView({ block: "nearest" });
   }, [open]);
-  const items = factList(facts, costUnit);
+  const items = factList(facts, costUnit, costRate);
   // Nothing to tell and nowhere to go — render no row at all rather than a
   // control that opens onto an empty box.
   if (items.length === 0 && !facts.conversationId) return null;
-  const summary = summaryLine(facts, costUnit);
+  const summary = summaryLine(facts, costUnit, costRate);
 
   return (
     <div className="mt-2 border-t border-border/50 pt-1.5">

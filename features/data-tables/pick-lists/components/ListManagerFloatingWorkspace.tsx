@@ -1,7 +1,7 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { getAccessibleLists, getListWithItems } from "../service";
 import type { UserList, UserListWithItems } from "../types";

@@ -130,7 +130,7 @@ export async function restoreFromTrash(
 }
 
 /**
- * A RECORD-STORE TABLE COMES BACK IN PASSES (lane TABLE-ACTIONS, 2026-10-03). The Trash door
+ * A CUSTOM TABLE COMES BACK IN PASSES (lane TABLE-ACTIONS, 2026-10-03). The Trash door
  * (`_trash_store_restore`) brings a Table back with its structure and a first bounded pass of what
  * its archive took (`custom.table_restore`); the rest — records, then forms, views, dashboards — is
  * carried on here, pass by pass, until the store says done. A Record, or a Table with nothing left

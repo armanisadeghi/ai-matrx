@@ -24,7 +24,7 @@ import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://drill.localhost:3001";
 const PHASE = process.env.PHASE ?? "after";
 const SHOTS =
-  process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/drill-table-primitive";
+  process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-29/drill-table-primitive";
 mkdirSync(SHOTS, { recursive: true });
 const TABLE = "46ae8d53-4068-4593-9439-fb2b656767f1";
 // GRID=merged forces the merged grid (`?grid=merged`); left out, the table opens as it is designated.

@@ -16,7 +16,7 @@
 // Copy and JSON copy the editor never had.
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { selectSubtasksByParent } from "@/features/agent-context/redux/tasksSlice";
 import { fetchTaskExportBundle } from "@/features/tasks/services/aiExportService";
 import { serializeTaskForAi } from "@/features/tasks/utils/serializeProjectTaskForAi";

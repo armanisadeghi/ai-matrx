@@ -14,7 +14,6 @@ import {
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
@@ -30,6 +29,7 @@ import {
   errorSentence,
   useMeetingActions,
 } from "@/features/meet/hooks/useMeetingActions";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export function meetingHref(
   meeting: Pick<MeetingRecord, "id">,
@@ -94,7 +94,7 @@ export function useMeetingActionHost({ onChanged }: { onChanged: () => void }) {
     if (!readOnly && !actions.ready) {
       setPending(args);
       try {
-        await ensureOrganizationContext();
+        await ensureOrgId(null);
       } catch {
         setPending(null);
       }

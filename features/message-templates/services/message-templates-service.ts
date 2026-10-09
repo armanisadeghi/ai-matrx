@@ -13,6 +13,7 @@ import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { getUserId, requireUserId } from "@/utils/auth/getUserId";
 import { publishedToWebPatch } from "@/lib/row-access";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
 const assertData = makeAssertData("load your message templates");
@@ -55,9 +56,13 @@ export async function fetchMessageTemplates(
   if (options.publishedToWeb !== undefined) {
     query = query.eq("published_to_web", options.publishedToWeb);
   } else {
-    // VIEW LAW: mine-scoped default list.
-    const userId = requireUserId();
-    query = query.eq("created_by", userId);
+    // VIEW LAW: mine-scoped default list — except on the admin seat
+    // (/administration), where the admin manages EVERY template; the database
+    // admits the rows behind the lane (platform_admin lane), so no owner filter.
+    if (!browserAdminLaneOpen()) {
+      const userId = requireUserId();
+      query = query.eq("created_by", userId);
+    }
   }
 
   if (options.search) {

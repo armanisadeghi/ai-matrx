@@ -36,7 +36,7 @@
 -- today. The per-row grant in clause 3 is therefore planted through `iam.memberships`, which is
 -- the union arm that IS writable, and which `iam.has_access('udt_dataset_rows', …)` honours.
 -- The door is correct either way — it asks the whole union — but a person trying to share ONE
--- row of a user table through the sharing UI cannot, and that is not this lane's to fix.
+-- row of a custom table through the sharing UI cannot, and that is not this lane's to fix.
 --
 -- Its twin is scripts/campaign-tests/udtwords_red.sql.
 --

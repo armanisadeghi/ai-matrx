@@ -1,4 +1,4 @@
--- draft: notifications-ui-redo (2026-10-01) applied on the CLONE only; it alters communication.notification, so the owner is told before it touches live (Arman, 2026-09-29). Remove this line only on his word.
+-- Approved by Arman 2026-10-07 for the live database (lane BELL-OWNER); rehearsed up/inverse/up on the clone 2026-10-01.
 --
 -- THE INBOX YOU TRIAGE TO ZERO (owner rulings 1 and 2, 2026-10-01,
 -- common-docs/projects/notifications-ui-redo/RESEARCH.md §0a, §3.1, §4).

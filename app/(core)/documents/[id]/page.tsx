@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { DocumentRecord } from "@/features/documents/components/DocumentRecord";
 import { useContentDocumentRedirect } from "@/features/documents/hooks/useContentDocumentRedirect";

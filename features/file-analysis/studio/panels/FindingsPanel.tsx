@@ -7,7 +7,7 @@
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Loader2 } from "lucide-react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useKeyFindings } from "@/features/file-analysis/hooks/useKeyFindings";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 

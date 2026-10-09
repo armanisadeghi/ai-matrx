@@ -235,7 +235,7 @@ const KIND_TITLE: Record<string, string> = {
   kit: "Kits",
   store: "The store itself",
   demo: "Demonstrations",
-  app: "Kept by the app",
+  app: "Platform tables",
 };
 
 /** Singular, for the row. */
@@ -256,7 +256,7 @@ const KIND_ONE: Record<string, string> = {
   kit: "Kit",
   store: "Store",
   demo: "Demonstration",
-  app: "Kept by the app",
+  app: "Platform tables",
 };
 
 function wordsOf(kind: string): string {

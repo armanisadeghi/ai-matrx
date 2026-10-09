@@ -1,66 +1,21 @@
 // lib/organizations/fetchWithOrganization.ts
 //
-// THE ONE WAY A BARE `fetch` TO ONE OF OUR OWN ROUTES CARRIES — AND ASKS FOR —
-// THE ORGANIZATION.
+// THE ONE WAY A BARE `fetch` TO ONE OF OUR OWN ROUTES CARRIES THE ORGANIZATION.
 //
-// THE GAP THIS CLOSES (2026-09-19)
-// --------------------------------
-// The 2026-09-19 ruling took the server-side fallback organization out of
-// five route handlers: `app/api/user/profile`, `app/api/user/email-preferences`,
-// `app/api/sms/preferences`, `app/api/sms/verify` and
-// `app/api/cms/access-context` used to let the SERVER choose the organization
-// when the request named none. They now
-// refuse, with a 400 whose body carries the caller's memberships.
+// The request names the organization it runs in on `X-Organization-Id`:
+//   1. the record's own organization when the caller passes it (acting on a
+//      record never switches the active organization);
+//   2. otherwise the ACTIVE organization. A write waits for the load ladder
+//      (`ensureOrgId`) so it never leaves on a painted cache; a read carries
+//      whatever is selected (reads are exempt from the wait).
 //
-// That is only half an answer, and the wrong half on its own. Every caller of
-// those five routes is a hand-written `fetch` in a feature file — six of them,
-// in `features/sms/hooks/useSmsEnrollment.ts`,
-// `features/user-profile/hooks/useUserProfile.ts`,
-// `features/settings/tabs/EmailTab.tsx`,
-// `features/cms/services/cmsAccessRequests.ts` and
-// `features/access-gate/service/accessDeniedContext.ts`. None of them sent
-// `X-Organization-Id`, and none of them could recognise the refusal. Shipping
-// the refusal without this would have turned a silent misfile into a permanent
-// dead end: the request is refused, nothing asks the person anything, and
-// retrying sends the identical request to be refused again forever. A refusal
-// with no way to answer it is exactly the dead end that pushed every boot
-// ladder in this codebase to GUESS an organization in the first place.
-//
-//   "one missed org check that should have just failed turns into 50 in a
-//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
-//    have a user and a default org, which means we just have user now."
-//
-// So: hold, ask, resume — the same three beats `ensureOrgId` and the gate give
-// every other action, applied at the ONE seam these six calls share.
-//
-//   1. Send with `X-Organization-Id` set to the organization the person has
-//      SELECTED, if they have selected one. Nothing is substituted here: with
-//      no selection the header is simply absent and the server refuses.
-//   2. If the server answers the `organization_required` envelope, open the
-//      picker through the ONE gate (`ensureOrganizationContext`). The person
-//      SETS an organization; it becomes the active organization globally.
-//   3. Replay the SAME request once with the organization they just named.
-//
-// Exactly once. A second refusal after the person has named an organization is
-// a real failure — a membership they lost, a route that wants a different
-// organization — and it is returned to the caller as the response it is,
-// never turned into another dialog.
-//
-// Cancelling throws `OrganizationSelectionCancelled`, which the ~50 sites that
-// already recognise it treat as "nothing happened": no toast, no error banner,
-// no cleared form. A caller that does not catch it will see a rejected promise
-// rather than a silent success, which is the honest failure.
-//
-// This deliberately does NOT go through `callApi`: that is the transport for
-// the Python backend (`lib/api/call-api.ts`, `requireOrganizationContext`,
-// `OrganizationContextError`) and is not in the path of a Next `/api/...`
-// route. Same three beats, different wire.
+// Our routes still refuse a request that names no organization
+// (`organization_required`). That refusal is returned to the caller as the
+// response it is — never replayed, never turned into a prompt — and the
+// caller's own error surface renders it honestly.
 
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
-import {
-  extractOrganizationHoldMemberships,
-  isOrganizationRequiredEnvelope,
-} from "@/lib/organizations/organizationRequiredError";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** The header every Matrx client carries; see app/api/_lib/apply-scope-to-insert.ts. */
 const ORGANIZATION_HEADER = "X-Organization-Id";
@@ -75,36 +30,11 @@ function withOrganizationHeader(
   return { ...init, headers };
 }
 
-/**
- * True when this response is our own routes' "name an organization" refusal.
- *
- * Reads the body from a CLONE, so the caller's `response.json()` still works
- * whatever the answer — a recogniser that consumes the stream would break
- * every success path it was added to protect.
- */
-/**
- * The refusal body, read from a CLONE so the caller's `response.json()` still
- * works whatever the answer, or `null` when this is not our envelope.
- */
-async function readOrganizationRefusal(
-  response: Response,
-): Promise<unknown | null> {
-  if (response.status !== 400) return null;
-  try {
-    const body = await response.clone().json();
-    return isOrganizationRequiredEnvelope(body) ? body : null;
-  } catch {
-    // Not JSON, or already consumed: then it is not our envelope.
-    return null;
-  }
-}
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
  * `fetch` for one of our own `/api/...` routes that acts inside an
  * organization. Drop-in: same arguments, same `Response`.
- *
- * @param input  as `fetch`
- * @param init   as `fetch`
  */
 export async function fetchWithOrganization(
   input: RequestInfo | URL,
@@ -113,34 +43,13 @@ export async function fetchWithOrganization(
    * PER-CALL ORGANIZATION (active-org law 2026-09-30, rule 3). A call about an EXISTING record
    * passes THAT RECORD'S own organization here; it rides as `X-Organization-Id` in place of the
    * active one, exactly like `callApi`'s `scopeOverrides.organization_id`. Omit it for new work,
-   * which is saved in the active organization. The organization-required refusal still opens the
-   * gate once when neither is known.
+   * which is saved in the active organization.
    */
   options?: { organizationId?: string | null },
 ): Promise<Response> {
-  const selected = options?.organizationId || getActiveOrgId();
-  const response = await fetch(input, withOrganizationHeader(init, selected)); // org-filter: server-call the organization the request runs in: the record's own when named, else the active one
-  const refusal = await readOrganizationRefusal(response);
-  if (!refusal) return response;
-
-  // The server says this request needs an organization and names none. Ask —
-  // and hand the gate the choices the refusal ALREADY carries
-  // (`details.organizations`), so the dialog can render them immediately
-  // instead of waiting on its own membership fetch. `null` (unreadable on this
-  // path) or `[]` (no memberships) both leave the gate to fall back to that
-  // fetch, exactly as before this envelope carried anything.
-  // The gate is imported here rather than at module scope so a caller that
-  // never meets a refusal never pulls the picker's graph into its chunk.
-  const { ensureOrganizationContext } = await import(
-    "@/lib/organization/organization-gate"
-  );
-  // Throws `OrganizationSelectionCancelled` when the person declines, which is
-  // an ANSWER ("not now") and is left to the caller to treat as nothing
-  // happened — never swallowed into a silent success here.
-  const chosen = await ensureOrganizationContext({
-    prefetchedOrganizations: extractOrganizationHoldMemberships(refusal),
-  });
-
-  // Replay once, and only once, with what they named.
-  return fetch(input, withOrganizationHeader(init, chosen));
+  const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+  const selected =
+    options?.organizationId ||
+    (READ_METHODS.has(method) ? getActiveOrgId() : await ensureOrgId(null));
+  return fetch(input, withOrganizationHeader(init, selected)); // org-filter: server-call the organization the request runs in: the record's own when named, else the active one
 }

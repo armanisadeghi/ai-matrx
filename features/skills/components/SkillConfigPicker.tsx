@@ -1,7 +1,7 @@
 "use client";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import * as React from "react";
 import {
   Check,

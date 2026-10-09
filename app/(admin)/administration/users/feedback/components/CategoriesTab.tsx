@@ -57,7 +57,7 @@ import {
 } from 'lucide-react';
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 import { useRegisterCategoryEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 

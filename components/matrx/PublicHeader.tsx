@@ -7,6 +7,7 @@ import { Download, LogIn } from "lucide-react";
 import { PublicHeaderAuth } from "./PublicHeaderAuth";
 import { PublicHeaderFeedback } from "./PublicHeaderFeedback";
 import { PublicHeaderThemeToggle } from "./PublicHeaderThemeToggle";
+import { PublicHeaderMobileNav } from "./PublicHeaderMobileNav";
 import { CanvasToggle } from "@ai-matrx/canvas/react";
 import {
   PUBLIC_HEADER_ICON_BUTTON,
@@ -62,7 +63,7 @@ export function PublicHeader() {
           />
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <div
             id="public-header-actions"
             className="flex min-w-0 items-center"
@@ -74,7 +75,7 @@ export function PublicHeader() {
           <Button
             asChild
             variant="quiet"
-            className={cn(PUBLIC_HEADER_ICON_BUTTON, "sm:w-auto")}
+            className={cn(PUBLIC_HEADER_ICON_BUTTON, "hidden sm:inline-flex sm:w-auto")}
           >
             <Link href={MATRX_LOCAL_DOWNLOAD_PATH} aria-label="Download">
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -93,6 +94,8 @@ export function PublicHeader() {
           <Button asChild variant="quiet" className="hidden md:inline-flex">
             <Link href="/templates">Templates</Link>
           </Button>
+
+          <PublicHeaderMobileNav />
 
           <Suspense fallback={null}>
             <PublicHeaderFeedback />

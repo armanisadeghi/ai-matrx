@@ -8,10 +8,10 @@ import { useOpenSaveToTable, type SaveToTableHandle } from "@/features/overlays/
 import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { extractErrorMessage } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { pickGoogleFormForConnection, type SelectedGoogleForm } from "./formPicker";
 import { previewSelectedFormResponses, type FormResponsesPreview } from "./service";
 import { selectedResponsesGrid } from "./transform";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface Props {
   connectionId: string;
@@ -79,7 +79,7 @@ export function SelectedFormResponsesReview({ connectionId, accountLabel, organi
     const own = invalidate();
     setBusy("preview");
     try {
-      const selectedOrganizationId = await ensureOrganizationContext({ organizationId });
+      const selectedOrganizationId = await ensureOrgId(organizationId);
       if (!mounted.current || epoch.current !== own) return;
       const result = await previewSelectedFormResponses({
         organization_id: selectedOrganizationId,

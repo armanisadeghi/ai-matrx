@@ -156,7 +156,7 @@ try {
       const row = db(`select st.id, (select count(*) from custom.record r where r.id = st.id and r.data_class = 'table'), (select count(*) from context.context_items ci where ci.scope_type_id = st.id and ci.deleted_at is null) from context.scope_types st where st.organization_id = ${q(FIXTURE_ORG_ID)} and st.label_plural = ${q(PLURAL)} and st.deleted_at is null`);
       const [id, inStore, items] = (row ?? "").split("|");
       state.typeId = id || null;
-      dbNote = ` · clone: old row ${id ? "yes" : "NO"}, store Table ${inStore === "1" ? "yes" : "NO"}, items ${items ?? "?"}`;
+      dbNote = ` · clone: old row ${id ? "yes" : "NO"}, custom table ${inStore === "1" ? "yes" : "NO"}, items ${items ?? "?"}`;
       if (!id || inStore !== "1" || items !== "1") return { ok: false, detail: `the page shows the type (${shown}/${afterReload}) but${dbNote}` };
     }
     state.typeHref = hrefs.find((h) => h && h.includes(`/organizations/${ORG_SLUG}/scopes/`) && h.toLowerCase().includes("treatment-programs")) ?? null;

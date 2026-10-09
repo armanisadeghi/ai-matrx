@@ -18,9 +18,10 @@ import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   buildWorkflowMenu,
+  useWorkflowsBasePath,
   workflowDesignHref,
   workflowRunHref,
 } from "./workflowActionRegistry";
@@ -31,7 +32,6 @@ import {
   setWorkflowFlag,
 } from "./service";
 import type { WorkflowBrowseRow } from "./types";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getUserMessage } from "@/lib/api/errors";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 
@@ -163,7 +163,6 @@ export function useWorkflowRowActions({
         refresh();
       } catch (err) {
         // Closing the organization picker is "not now", never a failure.
-        if (isOrganizationSelectionCancelled(err)) return;
         if (presentOrganizationRefusal(err, { subject: `"${row.name}"`, act: "duplicated" })) return;
         toast.error("Could not duplicate workflow", {
           description: getUserMessage(err),
@@ -200,18 +199,20 @@ export function useWorkflowRowActions({
     [removeRow],
   );
 
+  const basePath = useWorkflowsBasePath();
   const openRow = useCallback(
-    (row: WorkflowBrowseRow) => router.push(workflowRunHref(row.id)),
-    [router],
+    (row: WorkflowBrowseRow) => router.push(workflowRunHref(row.id, basePath)),
+    [router, basePath],
   );
 
   const menuFor = useCallback(
     (row: WorkflowBrowseRow) => () =>
       buildWorkflowMenu({
         workflow: row,
+        basePath,
 
-        onRun: () => router.push(workflowRunHref(row.id)),
-        onDesign: () => router.push(workflowDesignHref(row.id)),
+        onRun: () => router.push(workflowRunHref(row.id, basePath)),
+        onDesign: () => router.push(workflowDesignHref(row.id, basePath)),
 
         onDuplicate: () => void duplicate(row),
         onShare: () => setShareWorkflow(row),
@@ -228,7 +229,7 @@ export function useWorkflowRowActions({
           ),
 
         onCopyLink: () => {
-          const url = `${window.location.origin}${workflowRunHref(row.id)}`;
+          const url = `${window.location.origin}${workflowRunHref(row.id, basePath)}`;
           void copyText(url, "Link copied");
         },
 
@@ -244,7 +245,7 @@ export function useWorkflowRowActions({
 
         onDelete: () => void remove(row),
       }),
-    [duplicate, remove, router, saveFlag, toggleFavorite],
+    [duplicate, remove, router, saveFlag, toggleFavorite, basePath],
   );
 
   return useMemo(

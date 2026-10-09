@@ -26,7 +26,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 import {
   KgInspectorColumnHeader,

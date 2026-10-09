@@ -29,7 +29,10 @@
  * ───────────────────────────────────────────────────────────────────────────
  * THE FRAME SUBSTITUTIONS (esbuild `alias`) — each one has a module with
  * a header explaining why it exists and what the author sees instead:
- *   @/components/MarkdownStream               → FrameMarkdown     (ruling 1)
+ *   @ai-matrx/chat/ui/markdown-stream/MarkdownStream → FrameMarkdown (ruling 1; the
+ *     module moved into chat with P29a — stored-scope.ts requires it by that path,
+ *     and an alias left on the old app path matches nothing, so the whole chat
+ *     renderer, next/dynamic and Supabase landed in the frame: v0.4.2984–2986)
  *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
  *   @/components/matrx/buttons/markdown-copy-html → FrameCopyHtml (plain-text copy, no KaTeX)
@@ -38,7 +41,7 @@
  * bodies are migrated to the frame-safe implementations without a row
  * changing — including the five that import MarkdownStream.
  */
-import { build, type Metafile } from "esbuild";
+import { build, type Metafile, type Plugin } from "esbuild";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
@@ -56,8 +59,28 @@ const CSS_ENTRY = resolve(__dirname, "runtime/sandbox.css");
 const JS_OUT = resolve(ROOT, "public/kind-sandbox.js");
 const CSS_OUT = resolve(ROOT, "public/kind-sandbox.css");
 
+const FRAME_DESIGN_SYSTEM_ROOT = resolve(
+  __dirname,
+  "runtime/FrameDesignSystemRoot.ts",
+);
+const REAL_DESIGN_SYSTEM_ROOT = resolve(
+  ROOT,
+  "node_modules/@ai-matrx/design-system/dist/index.js",
+);
+const frameDesignSystemRoot: Plugin = {
+  name: "frame-design-system-root",
+  setup(b) {
+    b.onResolve({ filter: /^@ai-matrx\/design-system$/ }, (args) => ({
+      path:
+        args.importer === FRAME_DESIGN_SYSTEM_ROOT
+          ? REAL_DESIGN_SYSTEM_ROOT
+          : FRAME_DESIGN_SYSTEM_ROOT,
+    }));
+  },
+};
+
 const ALIAS: Record<string, string> = {
-  "@/components/MarkdownStream": resolve(
+  "@ai-matrx/chat/ui/markdown-stream/MarkdownStream": resolve(
     __dirname,
     "runtime/FrameMarkdown.tsx",
   ),
@@ -68,6 +91,12 @@ const ALIAS: Record<string, string> = {
   "@/components/agent-copy/CopyButtons": resolve(
     __dirname,
     "runtime/FrameCopyButtons.tsx",
+  ),
+  // Word/PDF export (pdfmake + docx) — announced stand-in; the menu's other
+  // formats are the real ones.
+  "@ai-matrx/print/document": resolve(
+    __dirname,
+    "runtime/FramePrintDocument.ts",
   ),
   "@/components/agent-copy/useAlchemyDisclosure": resolve(
     __dirname,
@@ -80,10 +109,6 @@ const ALIAS: Record<string, string> = {
   "@/components/errors/useErrorSurfaceSnapshot": resolve(
     __dirname,
     "runtime/FrameErrorSurfaceSnapshot.ts",
-  ),
-  "@/components/read-state/ReadGate": resolve(
-    __dirname,
-    "runtime/FrameReadGate.tsx",
   ),
   "@/features/google-workspace/export/sendToGoogle": resolve(
     __dirname,
@@ -183,12 +208,19 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
     tsconfig: resolve(ROOT, "tsconfig.json"),
     loader: { ".css": "empty", ".svg": "dataurl", ".png": "dataurl" },
     alias: ALIAS,
+    // esbuild `alias` is a PREFIX match, so the design-system root cannot be
+    // an alias entry: it would remap every subpath (`/data-table`, …) into
+    // the frame module. This plugin takes the bare root only.
+    plugins: [frameDesignSystemRoot],
     // THE FRAME HAS NO STORAGE (V-27 finding D). Both globals are
     // replaced with the announcing stand-in: on an opaque origin the real
     // ones throw a SecurityError, and durable state in an invisible place
     // is not something a Shape component may have. After this the audit
     // below can refuse the real names outright.
-    inject: [resolve(__dirname, "runtime/frame-storage.ts")],
+    inject: [
+      resolve(__dirname, "runtime/frame-storage.ts"),
+      resolve(__dirname, "runtime/frame-network.ts"),
+    ],
     define: {
       "process.env.NODE_ENV": '"production"',
       localStorage: "__matrxFrameStorage",
@@ -197,6 +229,14 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
       "window.sessionStorage": "__matrxFrameStorage",
       "globalThis.localStorage": "__matrxFrameStorage",
       "globalThis.sessionStorage": "__matrxFrameStorage",
+      // THE FRAME HAS NO NETWORK (CSP connect-src 'none'): library code that
+      // would call out gets the announcing stand-in (runtime/frame-network.ts).
+      fetch: "__matrxFrameFetch",
+      "window.fetch": "__matrxFrameFetch",
+      "globalThis.fetch": "__matrxFrameFetch",
+      XMLHttpRequest: "__matrxFrameXhr",
+      "window.XMLHttpRequest": "__matrxFrameXhr",
+      "globalThis.XMLHttpRequest": "__matrxFrameXhr",
     },
     logLevel: "info",
   });

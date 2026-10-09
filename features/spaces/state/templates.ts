@@ -8,7 +8,7 @@
 // These doors belong in the store-db adapter (owner's folder); until it carries them they live here
 // (NEEDS row). No permission logic: the database decides.
 
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { pageOrganizationId } from "../data/agency-install";
 import { supabase } from "@/utils/supabase/client";
 
 const ROLE = "labeled";
@@ -59,7 +59,9 @@ export async function setTemplate(spaceId: string, on: boolean): Promise<void> {
 
 /** "Use template": the template and its sub-pages copied to the top level of the active organization. */
 export async function copyTemplate(templateId: string, title: string, activeOrganizationId: string | null): Promise<string> {
-  const organizationId = await ensureOrgId(activeOrganizationId);
+  // The copy is filed in the template's own organization (read from the page), never whichever is active.
+  const organizationId = (await pageOrganizationId(templateId)) ?? activeOrganizationId;
+  if (!organizationId) throw new Error("We couldn't tell which organization this template belongs to.");
   // Not in the generated types until the next regeneration: a typed local shape for this one door.
   const content = supabase.schema("content") as unknown as {
     rpc(fn: "space_duplicate", args: Record<string, unknown>): PromiseLike<{ data: string | null; error: { message: string } | null }>;

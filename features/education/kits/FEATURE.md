@@ -107,14 +107,21 @@ A kit is reachable from every direction a learner can arrive from:
 
 ## MAKING MORE STAYS IN THE KIT
 
-**Add saved aid** opens `/education/kits/new?source=<id>&from=<type>` with the current kit
-preselected. The creator lists saved Education Library items, including flashcard decks saved
-from chat. New manual kits start from a file; an existing `file`, `note`,
-`processed_document`, `fc_set`, `assessment`, or `conversation` kit accepts manual members.
-The writer checks the current membership fingerprint and re-reads selected library records
-before writing flagged `member` edges. Switching sources clears the prior kit's title and
-selections; a draft restores only within its own source URL. The picker uses the platform's
-record doors so every listed aid remains openable.
+**ONE create page, the agents pattern** (Arman, 2026-10-07): `/education/kits` (list) →
+**Create kit** → `/education/kits/new` (`StartHero`: the one Source input, then **Build with AI**
+or **Saved aids** — `SavedAidsKitForm`, bundle saved aids, nothing generated) → the kit page
+`/education/kits/[id]` for everything after. Both modes make the same multi-source kit
+(`createMultiSourceKit` / `kitScope.ts`). `/education/start` forwards to `/new` with its query;
+`?source=<fileId>` pre-picks that file, and a `?source=&from=` naming an existing kit forwards to
+the kit page. Guard: `__tests__/one-create-route.test.ts`.
+
+**Add saved aid** on the kit page opens `AddSavedAidsDialog` in place — THE `SavedAidPicker`
+(search + paging over saved Education Library items, including decks saved from chat; aids
+already in the kit are not offered). An existing `file`, `note`, `processed_document`, `fc_set`,
+`assessment`, `conversation` or `scope` kit accepts manual members. The writer checks the current
+membership fingerprint and re-reads selected library records before writing flagged `member`
+edges. The Saved aids mode keeps its unsaved title + aids per tab (`manualKitDraftRecovery.ts`).
+The picker uses the platform's record doors so every listed aid remains openable.
 
 🚨 **"Make more from it" converts the kit's OWN material — never the generic ingest.** It used to
 link `/education/start`, which asks the learner to upload the same document again and builds a
@@ -149,6 +156,22 @@ same anchor and whatever is made lands in THIS kit.
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-10-07 — one create page.** `ManualKitCreator` is gone: `/education/kits/new` is
+  `StartHero` with two modes (Build with AI · Saved aids); `/education/start` forwards there.
+  Adding saved aids to a kit is the kit page's own dialog (`AddSavedAidsDialog` over the shared
+  `SavedAidPicker`). Every link repointed; the Board tile's new-kit body is `StartHero onMade`.
+
+- **2026-10-07 — a kit holds any number of Sources** (Arman: "Absolutely!"). A new kit is a
+  `scope` under the per-org "Study kit" type (`kitScope.ts`, zero tables): Sources are
+  `kitSource` edges into it, aids are flagged `member` edges, and each generated aid links a
+  `source` edge to EVERY Source stamped `kitId` (`recordSourceLineage`). `/education/start` no
+  longer merges picks into one `.md`; the hub lists Sources, adds them through the shared
+  Source input and archives the link on remove; Make more re-reads all Sources. An older anchor
+  kit is promoted on its first added Source (`promoteAnchorKit`: anchor = Source #1, aids
+  copied, old edges stamped `kitId`, old URL opens the new kit). The "one kit is ONE source"
+  section above is superseded. Live: kit `48f5e446…` built from a Wikipedia page, a YouTube
+  video and a PDF; a 4th Source added from the hub.
 
 - **2026-09-29 — saved-aid membership.** The kit hub opens a source-aware picker for saved
   study aids, including chat-saved decks. Existing non-file kits no longer route through file

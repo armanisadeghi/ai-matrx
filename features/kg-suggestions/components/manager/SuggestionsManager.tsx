@@ -35,8 +35,8 @@ import {
   UntrustedCount,
   countReadState,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+} from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useSuggestionsQuery } from "@/features/kg-suggestions/hooks/useSuggestionsQuery";
 import {
   KG_SUGGESTION_STAGE_FILTERS,

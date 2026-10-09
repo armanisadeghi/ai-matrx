@@ -1,7 +1,7 @@
--- LANE GRID-PRIMITIVES, G8 — "WHEN A ROW CHANGES, RUN AN AGENT" ON A RECORD-STORE TABLE.
+-- LANE GRID-PRIMITIVES, G8 — "WHEN A ROW CHANGES, RUN AN AGENT" ON A RECORD-CUSTOM TABLE.
 --
 -- THE USE CASE. Harbor Point Plumbing & Drain (Tacoma, WA) dispatches service calls from a
--- record-store table. Its office manager, Renée Castillo (admin@admin.com), keeps one schedule:
+-- custom table. Its office manager, Renée Castillo (admin@admin.com), keeps one schedule:
 -- "when a service call's Status changes, run the invoice agent" — the agent drafts the invoice
 -- for a call that reads Complete. Technician Sam Oduya (test@test.com) closes calls from the van.
 -- Every name, address and phone below is synthesized.

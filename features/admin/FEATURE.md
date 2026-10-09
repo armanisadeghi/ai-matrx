@@ -45,6 +45,7 @@ product feature that does not already have one.
 **Analytics mounts**
 
 - `features/admin/usage-drill/UsageExplorer.tsx` — `/administration/usage`: a mount of `components/official/drill-explorer` (`FEATURE.md` there) for the declared definition `ai_usage` in the platform lane; `useUsageDrill.ts` adds only what usage needs (names of people/organizations/agents via `platform.ai_usage_names`, the rollup's freshness and Recount).
+- `features/admin/agent-spend/` — AI spend health: `/administration/usage/agents` (+ `/detail?agent=&mandate=&days=`) and the org twin `/organizations/<org>/admin/ai-spend`; every agent/mandate with spend (7d/30d), spend-rule flags, every run, unsaved (store:false) runs labeled; `ConversationCost` (`ConversationCostMenuRow` + `ConversationSpendDialog`) opens a conversation's per-call cost from the agent ⋮ menu on the system-agent run page; `agent_spend_runs` narrows each subject through `_agent_spend_candidates` (index-backed) before attribution. Data: read-only `platform.agent_spend_health` / `agent_spend_runs` / `conversation_spend` over private `platform._agent_spend_facts` (super admin for all orgs, org admin for theirs).
 
 **Canonical declarations**
 
@@ -241,7 +242,7 @@ provider, a route that renders without the shell) stays in that section's own
 `LayoutClient`.
 
 Seven admin sections' `LayoutClient` components render through
-`AdminSectionShell`: `agents/agent-apps/AgentAppsAdminLayoutClient.tsx`,
+`AdminSectionShell`: `agents/applets/AppletsAdminLayoutClient.tsx`,
 `agents/system-agents/SystemAgentsLayoutClient.tsx` (uses
 `activeMatch="longest"` — its `shortcuts` tab href is a path segment of its
 `shortcuts/all` tab href), `applications/ApplicationsAdminLayoutClient.tsx`,
@@ -274,6 +275,8 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-10-08` — AI spend health board (admin + org admin) and conversation cost on the agent run page (`features/admin/agent-spend/`). Visibility only.
 
 - `2026-09-30` — `/administration/usage` became a thin mount of the shared `DrillExplorer` (lane DRILL-EXPLORER); `UsageSavedViews.tsx` removed (the explorer's `DrillSavedViews` keeps surface `drill/ai_usage`).
 - `2026-09-17` — Removed a double `decodeURIComponent` on `rowId` in `app/api/admin/users/acquisition/[rowId]/route.ts` — the App Router already decodes the value, so a row id carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.

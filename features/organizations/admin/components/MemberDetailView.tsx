@@ -53,7 +53,7 @@ interface Props {
 export function MemberDetailView({ orgId, organization, userId }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [takeOverOpen, setTakeOverOpen] = useState(false);
@@ -180,7 +180,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
           value={formatFileSize(member.accountBytesUsed)}
           hint={`${member.accountFilesCount} files (all orgs)`}
         />
-        <Metric label="Spend 24h" value={formatMcents(member.cost24hMcents, unit)} hint={`${member.requests24h} requests`} />
+        <Metric label="Spend 24h" value={formatMcents(member.cost24hMcents, costRate, unit)} hint={`${member.requests24h} requests`} />
         <Metric label="Requests 6h" value={String(member.requests6h)} hint="account-wide" />
       </div>
 

@@ -13,6 +13,7 @@ import {
   shellIconComponents,
 } from "@/features/shell/shellIconMap";
 import { REPORTS } from "@/features/reports/registry";
+import { createReportsScope } from "@/features/surfaces/manifests/reports.manifest";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
@@ -68,7 +69,20 @@ export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
     </div>
   );
 
-  if (mode !== "admin") return content;
+  if (mode !== "admin") {
+    const getScope = () => createReportsScope({
+      available_report_slugs: reports.filter((report) => report.status === "live").map((report) => report.slug),
+      report_is_admin_scope: false,
+      reports_catalog: reports,
+      report_count: reports.length,
+      content: reports.map((report) => `${report.title}: ${report.description} (${report.href}; ${report.status})`).join("\n"),
+    });
+    return (
+      <SurfaceRuntimeProvider surfaceName="matrx-user/reports" getScope={getScope}>
+          <div data-surface-value="reports_catalog">{content}</div>
+      </SurfaceRuntimeProvider>
+    );
+  }
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_REPORTING_SURFACE_NAME}

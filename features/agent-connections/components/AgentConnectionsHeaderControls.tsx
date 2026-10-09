@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { PanelLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";

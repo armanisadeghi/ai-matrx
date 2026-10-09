@@ -26,6 +26,7 @@ export function readMessageContextReceiptTab(
 
 export const messageContextReceiptKind = defineCanvasKind<CanvasJson>({
   id: MESSAGE_CONTEXT_RECEIPT_KIND,
+  surface: "dom",
   label: "Sent values",
   icon: Boxes,
   load: () => import("./MessageContextReceiptCanvasView"),

@@ -1026,7 +1026,7 @@ async function main() {
       await hp.locator('[aria-label="Row actions for this table"]').first().click();
       const item = hp.getByRole("menuitem", { name: /When a row changes, run an agent/ }).first();
       const offered = (await item.count()) > 0;
-      pass("rowchange-offered", offered, offered ? "the grid offers it on a record-store table (the store has G8)" : "the item is absent");
+      pass("rowchange-offered", offered, offered ? "the grid offers it on a custom table (the store has G8)" : "the item is absent");
       if (offered) {
         await item.click();
         await hp.waitForURL(/\/schedules\/new/, { timeout: 120000 });

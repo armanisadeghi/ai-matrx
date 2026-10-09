@@ -33,14 +33,8 @@ import {
 } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import {
-  fetchAgentsListFull,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
-  selectAllAgents,
-  selectAgentsSliceError,
-  selectAgentsSliceStatus,
   selectAgentCustomExecutionPayload,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
@@ -64,6 +58,8 @@ import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAgentCatalogError, useAgentCatalogStatus, useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 // ---------------------------------------------------------------------------
 // Sample-scope seeding
@@ -132,14 +128,14 @@ export default function SurfaceMappingsDemoPage() {
   const store = useAppStore();
 
   // ── Agent picker (real user agents via the canonical list thunk) ────────
-  const agents = useAppSelector(selectAllAgents);
-  const agentsStatus = useAppSelector(selectAgentsSliceStatus);
-  const agentsError = useAppSelector(selectAgentsSliceError);
+  const agents = useAgentsById();
+  const agentsStatus = useAgentCatalogStatus();
+  const agentsError = useAgentCatalogError();
   const [agentId, setAgentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (agentsStatus === "idle") {
-      void dispatch(fetchAgentsListFull());
+      void ensureAgentCatalog();
     }
   }, [agentsStatus, dispatch]);
 
@@ -147,9 +143,9 @@ export default function SurfaceMappingsDemoPage() {
     () =>
       Object.values(agents)
         .filter(
-          (agent) => agent.name && !agent.isVersion && agent.isActive !== false,
+          (agent) => !!agent.name && agent.isActive !== false,
         )
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
         .map((agent) => ({
           id: agent.id,
           name: agent.name,
@@ -327,7 +323,7 @@ export default function SurfaceMappingsDemoPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => void dispatch(fetchAgentsListFull())}
+                  onClick={() => void ensureAgentCatalog()}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-primary hover:bg-muted"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />

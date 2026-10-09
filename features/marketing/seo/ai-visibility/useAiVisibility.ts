@@ -467,7 +467,6 @@ export function useAiVisibility(siteId: string, organizationId: string) {
         : callApi({
             path: "/seo/collections/{run_id}/rejoin",
             // Background (rejoin / warm-up): never opens the workspace picker.
-            interactiveOrganization: false,
             method: "POST",
             pathParams: { run_id: request.runId },
             stream: true,

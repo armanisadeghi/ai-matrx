@@ -5,7 +5,8 @@ import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import MarkdownTable from "@ai-matrx/rich-content/display/tables/TableWithSeparatedControls";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
 import { KindTextGate } from "@ai-matrx/rich-content/display/chat-markdown/KindTextGate";
 
 import type { ComponentPropsWithoutRef } from "react";
@@ -44,6 +45,8 @@ const MarkdownRendererBody: React.FC<MarkdownRendererProps> = ({
   role = "assistant",
   className,
 }) => {
+  // This item's Plain / Formatted switch (the copy set's Plain icon).
+  const viewKey = `markdown-renderer-${React.useId()}`;
   const tableData = parseMarkdownTable(content);
 
   const components = {
@@ -240,11 +243,14 @@ const MarkdownRendererBody: React.FC<MarkdownRendererProps> = ({
           stripThinking
           size="sm"
           className="absolute top-1 right-1 z-10 mt-1 mr-1"
+          viewKey={viewKey}
         />
         <div className="text-base leading-relaxed tracking-wide h-full w-full">
-          <MarkdownCore preset="gfm-math" components={components}>
-            {content}
-          </MarkdownCore>
+          <ContentView viewKey={viewKey} text={content}>
+            <MarkdownCore preset="gfm-math" components={components}>
+              {content}
+            </MarkdownCore>
+          </ContentView>
         </div>
       </div>
     </div>

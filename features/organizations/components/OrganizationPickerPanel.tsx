@@ -47,7 +47,7 @@ type PickerSourceOrganization = ReturnType<
 /**
  * A membership as the shared `OrganizationPicker` draws it. ONE mapping, used
  * by every host of the picker in this app (header, user menu, Settings'
- * default-organization row), so the same list reads the same everywhere.
+ * preselected organization row), so the same list reads the same everywhere.
  */
 export function toPickerOrganizations(
   organizations: readonly PickerSourceOrganization[],

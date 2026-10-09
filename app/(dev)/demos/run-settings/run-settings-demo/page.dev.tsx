@@ -20,7 +20,7 @@ import {
 } from "@ai-matrx/chat/agents/components/run-controls/SimpleRunSettings/SimpleRunSettings";
 import { SimpleRunSettingsButton } from "@ai-matrx/chat/agents/components/run-controls/SimpleRunSettings/SimpleRunSettingsButton";
 import { ArrowUp, Mic, Paperclip } from "lucide-react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 function Section({
   title,

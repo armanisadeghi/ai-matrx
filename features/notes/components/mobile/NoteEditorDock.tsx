@@ -8,8 +8,18 @@
  * of Link-based navigation, since this is a contextual toolbar, not a nav bar.
  */
 
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import type { FormatTarget } from "@ai-matrx/rich-editor/format/format-target";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
+import { ExportPaletteAnchor, openExportPalette, useExportPaletteKey } from "@ai-matrx/rich-content/copy/ExportPalette";
+import { ContentActionMenuRows } from "@ai-matrx/rich-content/copy/ContentActions";
+import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { noteRecordData, type NoteRecordView } from "@/features/notes/format";
+import { selectNoteById } from "../../redux/selectors";
 import {
   FolderOpen,
   MoreHorizontal,
@@ -19,7 +29,7 @@ import {
 } from "lucide-react";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { useRouter } from "next/navigation";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { noteActions, openNotePrintStudio } from "../note-actions/noteActionSet";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { cn } from "@/lib/utils";
@@ -39,7 +49,7 @@ import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledge
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
-import { TextCopyChevron } from "@/components/agent-copy/TextCopySplit";
+import { CopyMenuButton } from "@ai-matrx/rich-content/copy/CopyMenuButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +72,8 @@ interface NoteEditorDockProps {
   /** Viewer-level sharee: hide the folder/tags mutators (their saves are
    *  RLS-rejected); copy/export/context/more stay available. */
   readOnly?: boolean;
+  /** The editor the dock's formatting strip acts on — set in the editing modes, null in Read. */
+  formatResolve?: (() => FormatTarget | null) | null;
 }
 
 // ─── Constants (mirrors MobileDock) ──────────────────────────────────────────
@@ -87,10 +99,27 @@ export function NoteEditorDock({
   onRename,
   isDeleting,
   readOnly = false,
+  formatResolve = null,
 }: NoteEditorDockProps) {
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
   const ingest = useNoteIngestStatus(noteId);
+  // Export… (the More sheet's row): the note's one Alchemy palette — Formatted, JSON (the live
+  // record), download, AI — the same palette the desktop note's copy chevron opens.
+  const exportPalette = useRef<ContentTransferController | null>(null);
+  const exportKey = useExportPaletteKey();
+  const exportNote = useAppSelector(selectNoteById(noteId));
+  const exportRecord = (): NoteRecordView | null =>
+    exportNote
+      ? {
+          note: exportNote,
+          content: exportNote.content ?? null,
+          dirtyFields: exportNote._dirtyFields ? [...exportNote._dirtyFields] : [],
+          error: exportNote._error ?? null,
+          saving: !!exportNote._saving,
+          consecutiveSaveFailures: exportNote._consecutiveSaveFailures ?? 0,
+        }
+      : null;
   const folderReferences = useAppSelector(selectFolderReferences);
   const availableFolders = folderReferences.filter(
     (candidate) => candidate.organizationId === organizationId,
@@ -268,6 +297,17 @@ export function NoteEditorDock({
         )}
         aria-hidden={sheetOpen ? true : undefined}
       >
+        {/* The phone's formatting: the essential set (text style, B, I, list,
+            checklist, link) and More for the rest — the same toolbar as desktop. */}
+        {formatResolve && !readOnly && (
+          <div className="mb-1.5 flex justify-center">
+            <FormatButtons
+              variant="essential"
+              resolve={formatResolve}
+              className="matrx-glass-core pointer-events-auto rounded-full px-1.5 py-1"
+            />
+          </div>
+        )}
         <div
           ref={navRef}
           className="relative flex items-stretch matrx-glass-core rounded-[22px] mb-2 pointer-events-auto"
@@ -303,6 +343,40 @@ export function NoteEditorDock({
                 }}
                 className="relative flex-1 flex items-center justify-center min-w-0"
               >
+                {item.key === "copy" ? (
+                  // THE Copy (Arman, 2026-10-08): one tap copies the raw note, then Copy raw ·
+                  // Copy formatted · Copy for AI — the dock's own tile, never a chevron.
+                  <CopyMenuButton
+                    content={() => content}
+                    label="note"
+                    title={exportNote?.label || "Note"}
+                    trigger={({ onClick, ...data }) => (
+                <button
+                        {...data}
+                        onClick={onClick}
+                        aria-label={item.tooltip}
+                        title={item.tooltip}
+                        className={cn(
+                          "relative z-10 flex w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors duration-200",
+                          isActive
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-[20px] w-[20px] transition-all duration-200 shrink-0",
+                            isActive &&
+                              "drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]",
+                          )}
+                        />
+                        <span className="max-w-full truncate text-xs leading-none">
+                          {item.label}
+                        </span>
+                      </button>
+                    )}
+                  />
+                ) : (
                 <button
                   onClick={() => item.onPress(i)}
                   aria-label={item.tooltip}
@@ -325,11 +399,24 @@ export function NoteEditorDock({
                     {item.label}
                   </span>
                 </button>
-                {item.key === "copy" ? <TextCopyChevron text={content} label="Copy note" /> : null}
+                )}
               </div>
             );
           })}
         </div>
+        <ExportPaletteAnchor exportKey={exportKey} controllerRef={exportPalette} className="absolute right-2 top-0" />
+        <CopyButtons
+          human={() => content}
+          contentFlavor="markdown"
+          richCopyFlavors={[]}
+          triggerHidden
+          controllerRef={exportPalette}
+          label={`Note "${noteLabel}"`}
+          json={() => {
+            const view = exportRecord();
+            return view ? noteRecordData(view) : { content };
+          }}
+        />
       </nav>
 
       {/* Folder + Tags sheet */}
@@ -400,6 +487,16 @@ export function NoteEditorDock({
           {/* THE note actions (noteActionSet.ts) — the same rows, names and
               order as every right-click menu on the note. */}
           <div className="px-2 py-1">
+            {/* The dock's ⋯ is this sheet, so the content action set lives here, each one tap:
+                Plain, PDF · Word · HTML · Markdown file · Text file, Print, Transform. */}
+            <ContentActionMenuRows
+              content={() => content}
+              title={exportNote?.label || "Note"}
+              viewKey={richDocumentViewKey(noteIdentityContentSource(noteId), "")}
+              onTransform={() => void openExportPalette(exportKey)}
+              onDone={() => setSheetOpen(null)}
+              rowClassName="min-h-11 gap-3 rounded-lg px-3"
+            />
             {noteActions({
               rename: readOnly ? undefined : () => setRenameOpen(true),
               duplicate: onDuplicate,

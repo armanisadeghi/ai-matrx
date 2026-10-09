@@ -24,12 +24,12 @@ import {
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // Vocabulary lives in a pure module so the surface manifest can import the
 // same constants this hook validates against (see quickNoteSaveVocabulary).
 export type { SaveMode, UpdateMethod } from "./quickNoteSaveVocabulary";
 import type { SaveMode, UpdateMethod } from "./quickNoteSaveVocabulary";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export interface UseQuickNoteSaveArgs {
   initialContent: string;
@@ -148,9 +148,8 @@ export function useQuickNoteSave({
     let organizationId: string;
     if (isCreate) {
       try {
-        organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
+        organizationId = await ensureOrgId(null);
       } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) return null;
         throw error;
       }
     } else {
@@ -251,7 +250,6 @@ export function useQuickNoteSave({
       setSavedNote(result);
       return result;
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return null;
       console.error("QuickNoteSave: save failed", err);
       toast.error("Failed to save — saved to Recovery");
       return null;

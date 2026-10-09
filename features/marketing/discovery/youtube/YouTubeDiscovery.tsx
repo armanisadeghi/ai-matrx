@@ -1,6 +1,6 @@
 "use client";
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState, type ComponentProps } from "react";

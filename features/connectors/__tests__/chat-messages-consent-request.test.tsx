@@ -51,7 +51,7 @@ const rollout: ConnectorCapabilityRollout[] = [
   ...new Set(provider.products.flatMap((product) => product.capabilityKeys)),
 ].map((capabilityKey) => ({
   capabilityKey,
-  phase: capabilityKey === "chat_messages" ? "internal_test" : "available",
+  phase: "available",
   eligible: capabilityKey === "chat_messages",
   requiredScopes: [],
   ineligibleReason: null,

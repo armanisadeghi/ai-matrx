@@ -54,7 +54,7 @@ import {
 } from "../utils/parseSessionReview";
 import { readGradeScore } from "../utils/gradeScore";
 import { sessionModeLabel } from "../modes";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const RESULT_META: Record<
   string,

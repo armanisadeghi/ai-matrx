@@ -18,6 +18,8 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectIsSuperAdmin: () => admission.isSuperAdmin,
+  // 9b938b6a0f: the window asks the registered admin feature "google.internal-review", not the raw admin selector.
+  selectAdminFeature: () => admission.isSuperAdmin,
   selectUserEmail: () => admission.email,
 }));
 jest.mock("@/features/window-panels/WindowPanel", () => ({

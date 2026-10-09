@@ -18,7 +18,7 @@ export default [
     timeoutMs: 20 * 60 * 1000,
   },
   {
-    // Save to a table from a note, a Read-mode selection and a chat answer → a store Table with the right columns.
+    // Save to a table from a note, a Read-mode selection and a chat answer → a custom table with the right columns.
     id: "agents.walk-save-as-table",
     area: "agents",
     kind: "walk",

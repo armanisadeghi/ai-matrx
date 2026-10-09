@@ -22,6 +22,7 @@ jest.mock("@ai-matrx/chat/agents/hooks/useMcpTools", () => ({
   }),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAgentMcpServers: () => [], selectAgentRunControlsReady: () => true,
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({ fetchAgentRunControls: jest.fn() }));

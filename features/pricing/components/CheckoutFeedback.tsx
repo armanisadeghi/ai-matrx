@@ -43,7 +43,7 @@ function CheckoutFeedbackForReturn({ search }: { search: string }) {
 
   const refreshAccess = useCallback(async () => {
     const [entitlements, usage] = await Promise.all([
-      fetchEntitlementSnapshot(),
+      fetchEntitlementSnapshot({ fresh: true }),
       readUsageSnapshot(),
     ]);
     if (entitlements) dispatch(setEntitlementSnapshot(entitlements));

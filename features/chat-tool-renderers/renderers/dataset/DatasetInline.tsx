@@ -36,7 +36,7 @@ function DatasetFieldPeek({ f }: { f: ParsedDatasetField }) {
 /**
  * Inline renderer for the `dataset` tool — a polished entity card
  * (name · row count · field schema chips). The real rows live in the overlay
- * (`UserTableViewer`) / the `/data/[id]` route via the "Open in" menu.
+ * (the store grid, `LocatedTableViewer`) / the `/data/[id]` route via the "Open in" menu.
  */
 export function DatasetInline({
   entry,

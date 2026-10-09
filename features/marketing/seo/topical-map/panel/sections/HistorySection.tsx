@@ -19,7 +19,7 @@ import { useMapHistory } from "../../hooks";
 import type { MapTopicStatus } from "../../types";
 import { TopicStatusMark } from "../../ui/TopicStatusMark";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const EVERY_STATUS: MapTopicStatus[] = ["proposed", "active", "retired", "rejected"];
 

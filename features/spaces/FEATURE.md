@@ -1,6 +1,6 @@
 # Spaces — Notion-style pages (FEATURE)
 
-**Status:** building (2026-10-05). Route `/spaces` (not in any menu until the switch-over).
+**Status:** building (2026-10-05). Route `/spaces` — first row of the main menu's Content group (round 32, members only).
 Product truth: `../common-docs/systems/content/spaces/` — `VISION.md` (Arman's words), `PARITY.md`
 (the checklist: builder's to-do, reviewer's scorecard), `STATE.md`.
 
@@ -28,7 +28,7 @@ Notion code, fonts or logos.
 | Port | Now | Later (owner session) |
 |---|---|---|
 | `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
-| `SpacesDataPort` | live store tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
+| `SpacesDataPort` | live custom tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
 | `SpacesAiPort` | `ai/spaces-ai.ts`: `spaces.writing_assist` (useLiveAgentRun) and `spaces.ask_page` (launchAgentExecution) looked up in `MANDATE_KEYS`; a missing key = "AI is not connected yet" | — |
 
 Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color`, `background`,
@@ -45,6 +45,159 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — new-row refresh: "New" on an inline database wrote the row but the grid kept "No records yet" until a
+  reload — the records page's own-write listener re-read only the rows it held (none on an empty table). Fixed in
+  `@ai-matrx/records` (the written id joins the subset read; test `a-row-added-on-this-page-appears-without-a-reload`).
+  `data/ChartView.tsx` re-asks its aggregates on `useRecordWrites()` so charts follow every add/edit/archive too.
+- 2026-10-08 — builder round 42 (property types, PARITY F5/N20/N21): `data/NewProperty.tsx` lists Notion's types with
+  Notion's names — Status (Not started / In progress / Done in To-do / In progress / Complete), Person, Files & media,
+  Formula and Rollup (records-ui `FieldEditor` opened on that kind, `startAs`, 0.110.12), Relation (holds many; newest
+  Spaces databases first), Created / Last edited time and by, ID (numbers existing rows). An inline database's title
+  renames its table (`DatabaseBlock`); a calendar falls back to Created / Last edited time. Walk
+  `property-types.walk.mjs` (test@test.com: add, fill, board by Status, gallery, calendar, reload — 41 checks).
+- 2026-10-08 — builder round 41: media insert (Upload | Embed link via fileHandler; resize, Align, Caption, Replace;
+  `editor/media-insert.tsx`), embeds + providers (`editor/embed-providers.ts`), "/" groups Inline and Embeds, Heading 4
+  (stored level 1-4), nested numbering 1./a./i. (`editor/numbering.ts`), Shiki code colors (`editor/code-highlight.ts`),
+  simple table -> database (`data/table-to-database.ts`), page properties (`page/PageProperties.tsx`, snapshot
+  `properties`), AI block (`editor/ai-block.tsx`, block `ai`, spaces.writing_assist), Home at /spaces/home
+  (`workspace/SpacesHomeView.tsx`, door `content.space_upcoming`). Knobs `spaces.media.max_upload_mb`,
+  `spaces.media.embed_height_px`, `spaces.home.recent_count`, `spaces.home.upcoming_days` (`state/knobs.ts`). A field
+  inside a block owns its keys: the editor's capture handler skips inputs, and a field that stops keys natively handles
+  Enter itself (React never sees them). Walks: media, editor-r41, page-properties, ai-block, home.
+- 2026-10-08 — fixes round 39: (1) "Archive record" follows the `remove` rung (editor), not `write` (edit_content):
+  records-ui 0.110.9 gates it by `rights.remove` and adds `hideRefusedRowActions` on `ViewSwitcher`/`Grid` (Spaces sets
+  it in `DatabaseBlock`): a content editor's row menu has no Archive item, the admin still archives (walk
+  `archive-row.walk.mjs both`). The open row's ••• keeps the package's rule (disabled, saying why). (2) "+ New": the side
+  peek draws the title as text with an "Edit Name" press, so there was no field to focus; `SidePeek` presses it once and
+  the opened input takes the caret (typing names the row; test `side-peek-takes-focus`, walk `peek-focus-archive.walk.mjs`).
+  (3) After an archive `read_record` answered 400: a closed peek's live `useRecord` entry re-read the archived row on the
+  change announcement and on realtime's echo. @ai-matrx/records 0.84.5 marks a deleted record removed
+  (`markRecordRemoved`, lifted by restore) and the live entry skips its re-read; the walk reports no failing request.
+
+- 2026-10-08 — builder round 40 (page-level link reads): a page's links resolved one full page read each
+  (`requestLink` -> `store.get` = document + space_payload + associations per page row, link-to-page and page
+  mention): admin sample ~125 Spaces reads per load (39-42 of each + 3 `reverse_links_many`). Now the route reads
+  every linked page in ONE call, `content.space_summaries(uuid[])` (title, icon, trash state, parent; viewer
+  access per id; door row before grant), ids from `page/linked-pages.ts` (row props, nested blocks, mention
+  spans), plus `space_backlinks`, beside the page; `page/space-links.tsx` hands them to `PageRow`,
+  `PageMention` and `Backlinks` (titles in the HTML). A link added after load asks through `requestLink`,
+  batched per tick into one `space_summaries`. Also gone from load: the page's organization (now
+  `SpaceDoc.organizationId`, used by reminders and the collab cadence), the template label (read when the •••
+  menu or gallery opens), the synced-source check re-asking known ids, and the synced-block edge read on a
+  page with no synced block. `load-perf.walk.mjs` prints `spacesReads` per load. Measured: admin sample 5
+  (space_sidebar 1, synced_source 1, the grid's `reverse_links_many` 3 — records-ui, one per link field);
+  member page 1b5eb9af 2. CLS <= 0.0022, no hydration warnings. Test `page/__tests__/linked-pages.test.ts`.
+- 2026-10-08 — emoji (Arman 2026-10-08: a person may choose emoji for their own content): `SpaceMedia` gains `{ emoji }`
+  (types, schema, jsonSchema; live `content.space_snapshot_schema()` updated, drift guard OK). The icon picker opens on an
+  Emoji tab (emoji-picker-react: search, categories, recently used, skin tone) with Random; Icons / Upload / Link stay.
+  A callout stores its emoji as the icon text itself (a Lucide name is plain letters). `:` then a name offers emoji
+  inline (BlockNote emoji grid, N14). Notion imports keep emoji icons (server `notion_import` + `notion-markdown.ts`).
+  Walk `emoji.walk.mjs`. Emoji is never our own chrome: the no-emoji rule covers interface chrome only.
+- 2026-10-08 — fixes round 38: (D1) "Archive record" works: a modal's `aria-hidden` walk (Radix `hideOthers` keeps every
+  `[aria-live]`, and the grid's dnd-kit live region sits in the editor) marked the editor's blocks, ProseMirror redrew
+  the database block and the grid remounted with its confirm; `editor/aria-hidden-marks.ts` makes the editor ignore
+  those two attributes. (D2) Trash/restore go through `content.space_set_trashed` (creator or editor access): a
+  full-access editor's PATCH was refused 42501 because the owner-only trash rule hides the trashed row from them
+  (the error toast did show; it lasts 5 s). (D4) a seeded first-pass block always reads its seed through `use()`
+  (4/10 reloads logged React's conditional-use error); a room join keeps its own provider. (D5) the side peek takes
+  focus on open — focus stayed on "+ New", so typing a title pressed New per space and on Enter. (D3) checked: every
+  read carried its table's own organization. Guards: `seed-use-retry`, `aria-hidden-marks`, `side-peek-takes-focus`
+  tests, `store-db/trash-by-editor-live-proof.ts`, `archive-row.walk.mjs` (owner must archive and see the notice).
+- 2026-10-08 — builder round 38 (grid spec shared): `data/view-spec.ts` is the one `viewSpec` builder; DatabaseBlock draws
+  from it and `space-page-seed.server.ts` passes the same spec as `askTablePageSeed({ view })` (grid/list/gallery
+  views; chart, dashboard, form and a board/calendar/timeline missing its field take their default from the table's
+  fields in the browser, so they pass none). records 0.84.3, records-ui 0.110.7. Member page 1b5eb9af: record reads
+  5 -> 0 (only 2 entitlement snapshots left in the row-ish count); admin sample 4 -> 0. Left at hydration: two
+  identical `enrich_cells` (same org, same table, same 4 record ids) and `field_options`.
+- 2026-10-08 — builder round 37 (merged seed, measured): `askTablePageSeed` now gets `merged: true` (DataMount mounts the
+  merged grid). No Spaces grid is grouped (its spec never sets grouping), so reads are unchanged: member page
+  1b5eb9af 5 data reads + 2 entitlement, admin sample 4 + 2, merged on or off. What still reads: the grid's
+  per-choice-field value counts (`record_aggregate` group_by status, limit 500, records-ui `value_counts`, asked
+  at ~2s and again ~1.5s later when the org resolves), `record_headers` link words, and on the member page the
+  grid's first page itself (`firstGridOpening` needs a saved database view and that table has none; Spaces
+  draws from its own spec). All three need a records-ui change (seed value counts; seed from a spec).
+- 2026-10-08 — builder round 36 (every database block seeded, streaming): `space-page-seed.server.ts` asks, as the
+  person, exactly what each database block's first pass asks — custom tables: `where_id_opens` + `askTablePageSeed`
+  (embedded) + a chart view's two aggregates (`askTileSeed`, specs from `data/first-reads.ts` `chartTileSpecs`, the
+  ones `ChartView` sends); built-in modules: the drill describe + first page `useEntityRows` asks (recorded through
+  the records client with no organization, as the browser's first pass has none yet), `EntityChartBlock`'s
+  `drill_ask` (`askChartSeed`, asked as soon as the describe answers) and the board's `askEntityBlockSeed` (50
+  rows). One promise per block (`SpaceBlockSeeds`), no budget; gate = `data/server_rows` (bundle part for tables,
+  `platform.knob_resolve` in the remembered organization — else a page table's — for built-ins, asked beside the
+  page read). The route flushes the shell at once (Suspense around the body). Spaces' own first reads take the
+  seed synchronously (`useBlockSeedAnswers`); the package's seed provider (`BlockRecordsSeed`) sits inside the
+  block's `RecordsMount` — above it the store closed before the block's content first rendered, so
+  `EntityChartBlock` and the grid read again. Editor blocks mounted before their seed landed wait for it (8s max).
+  Member page 1b5eb9af: browser row reads 45-48 → 11 (no null-org drill reads), charts 1.9-2.1s warm. Left:
+  a grouped grid's rows (`firstGridPageArgs` declines grouping), its `record_aggregate` group counts and
+  `record_headers`, and the built-in charts' re-ask when the active organization resolves (~4-7s).
+- 2026-10-08 — builder round 35 (lazy sidebar, Notion's model): the sidebar no longer reads the whole tree. First
+  read `content.space_sidebar(p_expand, p_reveal)` = live top-level pages (kernel enumerator
+  `iam.discoverable_ids` once, top level = no discoverable ancestor, set-based) + live children of the open rows
+  (`spaces:expanded`) and of every ancestor of the open page / last page / favorites / recents. A row opening reads
+  `content.space_children` (now checks the parent once, child checks after the edges are materialized). Trash reads
+  `content.space_trash` only when its popover opens. Cmd+K, Move to, Link to page, `[[` and `@` search through
+  `content.space_search(q, limit)` (title then body text, path + snippet; "" = recently edited) — QuickFind no longer
+  fetches every page body. Export walks sub-pages from the database. Provider: `loadChildren`, `childrenLoaded`,
+  `reveal`, `loadTrash`/`trashLoaded`; `summaries`/`byId` hold only what is loaded. `content.space_list` stays for the
+  sample/template installers only. Index `platform.assoc_sub_page_live_by_parent_idx`. Cost found: `space_list` ran
+  `iam.has_access` on EVERY live sub_page edge in the database (the planner pushed the filter onto the index scan)
+  and the sidebar asked for archived pages too: 4.8–5.6 s server time → 95–245 ms.
+- 2026-10-08 — builder round 34 (load speed): `/spaces/[id]` reads the Space on the server as the person
+  (`page/space-page-seed.server.ts`, same `SupabaseSpacesStore.get`, head + snapshot + parent edge at once) and the page's
+  text is in the HTML: the body's first paint is `editor/static-body.tsx` — the stored blocks drawn read-only in the
+  editor's own DOM (classes/attributes captured from the live BlockNote editor), React blocks through the editor's own
+  components (`PageRow`, `CalloutGlyph`, `DatabaseHost` + `DatabaseBlock`). The editor is built behind it
+  (`.spaces-editor-behind`) once the room is joined and the table seed has landed, and swaps in when it paints the same
+  height (`revealWhenPainted`, 2.5 s cap). Inline custom tables: `custom.where_id_opens` + records-ui
+  `askTablePageSeed({embedded})`, rows asked only when the person's `data/server_rows` (read from the bundle,
+  `serverRowsOf`) is on, bounded at 2.5 s, streamed as a promise to `page/space-seed-context.tsx`
+  (`RecordsSeedProvider` for the first pass; `LateSeedRecords` gives each editor database node view its own live copy,
+  since a seed store dies after its provider's first effect). Title in the HTML; `useSpaceCollab` starts online and the
+  database height hold is CSS per window width in the static paint — no hydration warnings. Walk
+  `__tests__/walk/load-perf.walk.mjs` (text, per-table rows, reads, CLS, hydration; `DUMP=` writes the editor's DOM).
+  Open: built-in module blocks (entity `drill_*`) and charts (`record_aggregate`) are not seedable by this recipe;
+  a block with a store view id still asks with `p_view_id null` (matches the seed).
+- 2026-10-07 — builder round 33: (1) structure is Full access / Can edit only (`page/structure.ts`, provided by
+  `SpacePage` from `fullEdit`): an inline or built-in database offers a content editor, commenter or viewer no Add view,
+  Automations, View settings (layout, properties, group, chart), view tab rename/duplicate/delete, database title, filter
+  or sort saved for everyone, or Form builder (they answer the form); rows stay theirs. Walk `edit-content.walk.mjs` (picks
+  an organization test@test.com is not in; proves they cannot open the page before the share). (2) The grid's row-menu
+  "Archive record" is a silent no-op for everyone — NEEDS row (records-ui); walk `archive-row.walk.mjs`. (3) Form view
+  at Can view: a signed-in viewer sees the questions on a fresh load and answers (walk `form-answer.walk.mjs`, now as
+  the admin's page shared Can view + the published page signed out). (4) Main menu: walk `main-menu.walk.mjs`
+  (Content's first row, opens /spaces, admin and member). (5) New property → Relation → a database of the table's
+  organization (`data/NewProperty.tsx`); the selection colour menu has a Background row (`editor/selection-format.tsx`);
+  the by-hand walk scores a narrow left column, "All" + an added view tab, the relation and a struck-through to-do.
+  (6) Walks: calc-row real click, property-edit instant Duplicate property, byhand-r26 comes back from the opened
+  "/page", property-menu makes its own page, walk login waits out a restarting / loaded server.
+- 2026-10-07 — builder round 32: (0) block format: `synced` { sourceId }, `button` { label, icon?, actions }, span mark
+  `suggestion` { id, kind, by, at }; live `content.space_snapshot_schema` regenerated (check OK); fence guard opens
+  lib/spaces-blocks to `spaces:` commits by owner brief. (1) Form view for non-editors re-walked live
+  (`form-answer.walk.mjs` all checks pass). (2) C18 synced blocks (`editor/synced-block.tsx`, `SyncedBody.tsx`,
+  `state/synced-sources.ts`): the content is ONE source Space (a sub-page of the page it was made on, hidden from the
+  tree by the `synced_source` association); every copy holds the same `sourceId` and edits it in place (version-guarded
+  saves, re-read on others' saves); "Copy and sync" + paste makes a linked copy; `synced_block` edges per page give
+  "Editing in N pages"; Unsync turns a copy into plain blocks. (3) C19 Button (`editor/button-block.tsx`): insert blocks,
+  add a page / edit pages in a database (records client), open a page or link, send a notification
+  (`content.space_button_notify`, new door), run an agent (`launchAgentExecution`). (4) Person @mentions in the page body
+  already notify through the `space_payload` trigger (`content._space_mention_notify`, once per page per person, deep link
+  to the block) — a duplicate client door was not kept. (5) Spaces in the main menu (Content, first row). (7) N3 suggested
+  edits (`editor/suggest.tsx`): a "Suggest edits" switch in the page menu (per page, this device); typing becomes an insert
+  suggestion, deleting marks text as a delete suggestion; the card under a click accepts or rejects (editors).
+- 2026-10-07 — builder round 31: (1) N5 property menu in records-ui 0.103.7 (ccdddefded): "Wrap column" per column (kept on the
+  view as `wrapColumns`; store key `presentation.wrapColumns` added to `custom.view_keys()`; Spaces passes it both ways, ca80b9e66f)
+  and "Duplicate property" (the new-column panel starts from the original, named "<name> (1)"; values are not copied — NEEDS). Change
+  type and option rename / recolour / reorder / delete walked (`property-edit.walk.mjs`). (2) A non-editor's Form view is the forms
+  system's public form inline (`FormToAnswer`, server action `data/form-actions.ts`, cb55940755) — blocked from showing after a reload
+  because the snapshot schema refuses layout `form` (NEEDS). (3) A built-in table block saved before its "+ New page" row reads its
+  stored size with 34px added (`paintedSizesOf`, `nr` marker on new saves, 0dc23598bf). (4) The advanced-filter popover is opaque
+  (solid surface, white, no backdrop). (5) N9 Automations (`data/Automations.tsx`, b614bdc129) on `@ai-matrx/records` 0.77.1's
+  automation doors: trigger (page added / property edited [to] / form answered; schedule shown unavailable), condition, actions
+  (set with value / now / me / empty / copy-from, add page, edit pages, notify author or a person property, webhook, agent), on/off,
+  archive / restore, run history with each step (count = knob `spaces.automation_runs_shown`); walk `automations.walk.mjs`.
+  (6) Width drag fixed in design-system 0.73.1 (3ca9d4ef31): the grip sat half outside its clipping header cell. NEEDS rows: N3
+  suggested edits, N11 "Can edit content" + share wording, Form layout in the snapshot schema, duplicate values door.
 - 2026-10-07 — builder round 30: (1) built-in tables: a magnifier search holds still (rows held dimmed while the read
   runs, the grid remounts per answer, the body keeps its height while a term is on, the count keeps its width; CLS 0.21 -> 0,
   walk `entity-search.walk.mjs`); the "70 unrelated rows" were the page's other tables counted page-wide; built-in tables get
@@ -236,7 +389,7 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   print window); K2 `io/import.ts` + `sidebar/ImportMenu.tsx`. C22/B12 `useLinkPreview` cards and mention titles. M1/M2/M4 `ai/` (Ask AI box,
   Ask about this page; disclosed through `useDeclaredSurfaceMandates`). Data: `ViewSwitcher embedded` + `sortOverride` + "New page" line;
   built-in boards on `TablePage source`, built-in charts on `EntityChartBlock`, New adds task / project rows.
-- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL store tables in the active org
+- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL custom tables in the active org
   (`data/agency-install.ts`: `template_declare` upsert on catalogue id `T-SPACES-1` + `runTemplateDoor("template_install")`,
   the same door as the template gallery's Install; a second add answers `already` with the same tables) and points the
   page's ring and client blocks at them (`{kind:"table", tableId, viewId}`, no `sample`); an older copy is repointed in

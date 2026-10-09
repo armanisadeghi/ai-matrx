@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -31,6 +33,7 @@ function LazyPreviewCard({
   onOpenPage: (pageId: string, e?: React.MouseEvent) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const previewSandbox = usePageSandbox(page.url, "allow-scripts allow-same-origin");
   const [visible, setVisible] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
@@ -80,7 +83,7 @@ function LazyPreviewCard({
           <iframe
             title={`Preview of ${page.meta_title}`}
             src={page.url}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox={previewSandbox}
             loading="lazy"
             onLoad={() => setIframeLoaded(true)}
             className="pointer-events-none absolute top-0 left-0 max-w-none origin-top-left border-0"

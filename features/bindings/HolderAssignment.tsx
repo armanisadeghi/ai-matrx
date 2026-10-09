@@ -52,13 +52,14 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Workflow } from "lucide-react";
+import { ExternalLink, Plus, Workflow } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -79,6 +80,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ArchivedHolderNotice } from "./ArchivedHolderNotice";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { isAdminLanePath } from "@/utils/supabase/adminLane";
+import { intelligenceGoHref } from "@/features/mandates/go/intelligenceGo";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
 export const LATEST_VERSION_VALUE = "latest";
@@ -146,9 +149,12 @@ export interface HolderAssignmentProps {
    * job. `"try"` is the Test tab choosing a candidate to run once — nothing is
    * bound, so the labels drop "Mandate Holder" / "Assigned", and the agent
    * version control is absent because a try always runs the agent's latest
-   * version (the try door takes no agent version).
+   * version (the try door takes no agent version). `"pick"` is the Runs tab
+   * choosing a holder to place and run once: try's labels, but agent AND
+   * workflow versions stay (the test-run door takes `version_id`). Nothing is
+   * ever saved by this component in any purpose — the host decides.
    */
-  purpose?: "assign" | "try";
+  purpose?: "assign" | "try" | "pick";
   /** Dropdown consumer slot, when a page mounts this more than once. */
   consumerId?: string;
 }
@@ -197,8 +203,23 @@ export function HolderAssignment({
   onUseRestored = null,
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
+  // OPEN IN A NEW TAB — the pinned version when there is one, else the
+  // record. The go route resolves system vs user, agent vs workflow and
+  // version ids server-side; the admin section opens system agents in the
+  // System Agents tree (features/mandates/go/intelligenceGo.ts).
+  const pathname = usePathname();
+  const openId = isWorkflow
+    ? (holder.workflowVersionId ?? holder.workflowId)
+    : holder.useLatest
+      ? holder.agentId
+      : (holder.agentVersionId ?? holder.agentId);
+  const openHref = openId
+    ? intelligenceGoHref(openId, isAdminLanePath(pathname) ? "admin" : "user")
+    : null;
+  const openLabel = isWorkflow ? "Open workflow in new tab" : "Open agent in new tab";
   const isTry = purpose === "try";
-  const typeLabel = isTry ? "Run with" : "Mandate Holder Type";
+  const unbound = purpose !== "assign";
+  const typeLabel = unbound ? "Run with" : "Mandate Holder Type";
 
   return (
     <div className="space-y-2.5">
@@ -261,7 +282,7 @@ export function HolderAssignment({
           was the id this screen used to print. */}
       <Row
         label={
-          isTry
+          unbound
             ? isWorkflow
               ? "Workflow"
               : "Agent"
@@ -278,7 +299,7 @@ export function HolderAssignment({
             placeholder="Choose a workflow"
             wantedOutputKind={outputKind}
             disabled={disabled}
-            className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
+            className={CONFIGURATION_CHOICE_SIZE}
             // A different workflow's version id means nothing here: a new
             // pick starts on Latest, exactly as a new agent pick does.
             onSelect={(id) =>
@@ -293,7 +314,7 @@ export function HolderAssignment({
             initialTab={agentTabs?.initialTab}
             includeSystemInAll={agentTabs?.includeSystemInAll}
             systemTabLabel="System"
-            className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
+            className={CONFIGURATION_CHOICE_SIZE}
             // THE NAME IS THE LABEL. Not "Change agent" — the trigger IS the
             // statement of who holds this job, and the dropdown resolves the
             // name itself when the host has not got one yet.
@@ -311,6 +332,23 @@ export function HolderAssignment({
             }
           />
         )}
+
+        {openHref ? (
+          <Button
+            asChild
+            variant="quiet"
+            icon={<ExternalLink aria-hidden />}
+            data-testid="holder-open-new-tab"
+          >
+            <a
+              href={openHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={openLabel}
+              title={openLabel}
+            />
+          </Button>
+        ) : null}
 
         {/* "+ Agent" sits INSIDE the assignment row: it is a way of answering
             the same question — who holds this — not a fourth control, so the

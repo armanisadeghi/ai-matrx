@@ -45,7 +45,6 @@ import {
   Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system/controls";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -62,7 +61,13 @@ import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-in
 import { SmartAgentResourcePickerButton } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourcePickerButton";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import {
+  setBuilderAdvancedSettings,
+  setSubmitOnEnter,
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { AgentTextarea } from "@ai-matrx/chat/agents/components/inputs/smart-input/AgentTextarea";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { readTypedRefusal } from "@/features/access-gate/service/serverRefusal";
@@ -203,7 +208,29 @@ function ComposerBody({
     INITIAL_LOCAL_CAPABILITY,
   );
   const [localFolder, setLocalFolder] = useState<string>("");
-  const [requestText, setRequestText] = useState("");
+  // ── The request text lives where every package composer keeps it: the run
+  //    instance's input slot. Before the instance exists (a saved request
+  //    opened on arrival) it is held here, and carried over the moment the
+  //    instance appears — or changes with the expert system.
+  const [pendingText, setPendingText] = useState("");
+  const sliceText = useAppSelector((state) =>
+    conversationId ? selectUserInputText(conversationId)(state) : "",
+  );
+  const requestText = conversationId ? sliceText : pendingText;
+  const lastText = useRef("");
+  lastText.current = requestText;
+  const setRequestText = (text: string) => {
+    if (conversationId) dispatch(setUserInputText({ conversationId, text }));
+    else setPendingText(text);
+  };
+  useEffect(() => {
+    if (!conversationId) return;
+    // Enter in this box is a line break: Run is the deliberate, reviewed step.
+    dispatch(setSubmitOnEnter({ conversationId, value: false }));
+    if (lastText.current) {
+      dispatch(setUserInputText({ conversationId, text: lastText.current }));
+    }
+  }, [conversationId, dispatch]);
   const [homes, setHomes] = useState<SavedRequestHome[]>([]);
   const [openStep, setOpenStep] = useState<number>(2);
   const [launching, setLaunching] = useState(false);
@@ -677,12 +704,15 @@ function ComposerBody({
             </div>
           </div>
         ) : null}
-        <Textarea
-          value={requestText}
-          onChange={(event) => setRequestText(event.target.value)}
-          rows={6}
-          placeholder="For example: Read the three attached contracts and list every deadline, who owns it, and what happens if we miss it."
-        />
+        {conversationId ? (
+          <AgentTextarea
+            conversationId={conversationId}
+            surfaceKey="ai-work-composer"
+            disableSend
+            initiallyExpanded
+            placeholder="For example: Read the three attached contracts and list every deadline, who owns it, and what happens if we miss it."
+          />
+        ) : null}
         <p className="mt-1.5 text-xs text-muted-foreground">
           Plain language is enough. You never have to write a system prompt.
         </p>

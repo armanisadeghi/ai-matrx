@@ -29,6 +29,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -143,7 +144,7 @@ export function PlanTree({
   const [filters, setFilters] = useState<TreeFilters>(EMPTY_TREE_FILTERS);
   const [sortMode, setSortMode] = useState<TreeSortMode>("tree");
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
 
   // Same dimension the workbench/map read — React Query dedupes the fetch.

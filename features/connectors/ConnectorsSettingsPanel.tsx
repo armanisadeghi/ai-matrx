@@ -57,10 +57,17 @@ import {
   anyProductConnected,
   revokeConsequence,
   type ConnectorAccount,
+  type ConnectorCapabilityRollout,
   type ConnectorProductHealth,
 } from "./health";
-import { buildConsentPlan, consentOutcomes, emptyPlanAnswer } from "./consent-plan";
 import {
+  buildConsentPlan,
+  buildPermissionsReviewPlan,
+  consentOutcomes,
+  emptyPlanAnswer,
+} from "./consent-plan";
+import {
+  consentRunOwnerForAccount,
   consentFailureAnswer,
   useGoogleConnectorState,
   useGoogleConsentRunner,
@@ -298,6 +305,60 @@ function ProviderConnectorsPanel({
     );
   };
 
+  const reviewPermissions = async (accountId: string, inThisTab = false) => {
+    const account = state.accounts.find((row) => row.id === accountId);
+    if (!account) return;
+    const review = buildPermissionsReviewPlan({
+      provider,
+      account,
+      rollout: state.rollout,
+    });
+    if (!review.request) {
+      setFailure({ sentence: review.refusal, details: null });
+      return;
+    }
+    const request = review.request;
+    const owner = consentRunOwnerForAccount(account);
+    if (!owner) {
+      setFailure({
+        sentence: "This shared connection has no organization owner to approve changes.",
+        details: null,
+      });
+      return;
+    }
+    const pressed = { accountId, productKey: null } satisfies ConnectorBusyAction;
+    setBusy((running) =>
+      running.some((entry) => busyActionKey(entry) === busyActionKey(pressed))
+        ? running
+        : [...running, pressed],
+    );
+    setFailure(null);
+    try {
+      if (!(await confirmGmailReadDisclosure(request))) return;
+      if (!(await confirmGmailChangesDisclosure(request))) return;
+      if (inThisTab) {
+        await runner.runInThisTab(request, { owner, loginHint: account.label });
+        return;
+      }
+      await runner.run(request, { owner, loginHint: account.label });
+      await state.refetch();
+      toast.success("Permissions reviewed.");
+    } catch (cause) {
+      if (isGoogleAuthorizationCancelled(cause)) {
+        toast.info("Authorization cancelled — nothing changed.");
+        return;
+      }
+      setFailure(consentFailureAnswer(cause));
+      await state.refetch();
+    } finally {
+      setBusy((running) =>
+        running.filter(
+          (entry) => busyActionKey(entry) !== busyActionKey(pressed),
+        ),
+      );
+    }
+  };
+
   const revoke = async (accountId: string) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
@@ -416,12 +477,15 @@ function ProviderConnectorsPanel({
                 account,
                 rollout: state.rollout,
               })}
+              rollout={state.rollout}
               organizationName={org?.name ?? null}
               orgRole={org?.role ?? null}
               onReconnect={(productKey) =>
                 void reconnect(account.id, productKey)
               }
               onReconnectAccount={() => reconnectAccount(account.id)}
+              onReviewPermissions={() => void reviewPermissions(account.id)}
+              onReviewPermissionsInThisTab={() => void reviewPermissions(account.id, true)}
               onRevoke={() => void revoke(account.id)}
               busy={busy}
               revoking={revokingId === account.id}
@@ -455,12 +519,15 @@ function ProviderConnectorsPanel({
                     account,
                     rollout: state.rollout,
                   })}
+                  rollout={state.rollout}
                   organizationName={org?.name ?? null}
                   orgRole={org?.role ?? null}
                   onReconnect={(productKey) =>
                     void reconnect(account.id, productKey)
                   }
                   onReconnectAccount={() => reconnectAccount(account.id)}
+                  onReviewPermissions={() => void reviewPermissions(account.id)}
+                  onReviewPermissionsInThisTab={() => void reviewPermissions(account.id, true)}
                   onRevoke={() => void revoke(account.id)}
                   busy={busy}
                   revoking={revokingId === account.id}
@@ -531,10 +598,13 @@ function AccountCard({
   provider,
   account,
   health,
+  rollout,
   organizationName,
   orgRole,
   onReconnect,
   onReconnectAccount,
+  onReviewPermissions,
+  onReviewPermissionsInThisTab,
   onRevoke,
   busy,
   revoking,
@@ -542,10 +612,13 @@ function AccountCard({
   provider: ConnectorProviderConfig;
   account: ConnectorAccount;
   health: readonly ConnectorProductHealth[];
+  rollout: readonly ConnectorCapabilityRollout[];
   organizationName: string | null;
   orgRole: OrgRole | null;
   onReconnect: (productKey: string) => void;
   onReconnectAccount: () => void;
+  onReviewPermissions: () => void;
+  onReviewPermissionsInThisTab: () => void;
   onRevoke: () => void;
   busy: readonly ConnectorBusyAction[];
   revoking: boolean;
@@ -565,6 +638,11 @@ function AccountCard({
           knobValue: memberLevel,
         })
       : MANAGEMENT_ALLOWED;
+  const permissionsReview = buildPermissionsReviewPlan({
+    provider,
+    account,
+    rollout,
+  });
 
   return (
     <>
@@ -578,6 +656,19 @@ function AccountCard({
       organizationName={organizationName}
       onReconnect={onReconnect}
       onReconnectAccount={onReconnectAccount}
+      onReviewPermissions={
+        permissionsReview.request
+          ? onReviewPermissions
+          : undefined
+      }
+      onReviewPermissionsInThisTab={
+        permissionsReview.request
+          ? onReviewPermissionsInThisTab
+          : undefined
+      }
+      permissionsReviewUnavailableReason={
+        account.usable ? permissionsReview.refusal : null
+      }
       onRevoke={onRevoke}
       busy={busy}
       revoking={revoking}

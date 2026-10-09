@@ -1,7 +1,7 @@
 import {
   SaveTapButton,
   LoadingTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
 

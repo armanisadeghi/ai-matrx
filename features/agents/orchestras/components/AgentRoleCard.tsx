@@ -15,12 +15,12 @@ import { useState } from "react";
 import { ChevronDown, GripVertical, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { accentClasses } from "./accents";
 import { Button } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import type { OrchestraAccent } from "../constants";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface AgentRoleCardProps {
   agentId: string;
@@ -51,7 +51,7 @@ export function AgentRoleCard({
   showDragHandle,
   className,
 }: AgentRoleCardProps) {
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
   const a = accentClasses(accent);
   const [expanded, setExpanded] = useState(false);
 

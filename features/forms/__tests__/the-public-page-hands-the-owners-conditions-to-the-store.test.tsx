@@ -86,9 +86,12 @@ describe("the public form page hands the owner's conditions to the store", () =>
     const port = seen.at(-1)!["whichAsked"] as (v: Record<string, unknown>) => Promise<unknown>;
     expect(typeof port).toBe("function");
     const told = await port({ injury_related: "No" });
-    expect(calls[0]!.url).toBe(`/api/forms/${FORM.form_id}/asks`);
-    expect(calls[0]!.body).toEqual({ values: { injury_related: "No" } });
-    expect(told).toEqual({ ok: true, asks: answer.asks });
+    // The page also counts its visit (`/visit`, TYPEFORM-DUP); the asks call is the one under test.
+    const asked = calls.filter((c) => c.url.endsWith("/asks"));
+    expect(asked[0]!.url).toBe(`/api/forms/${FORM.form_id}/asks`);
+    expect(asked[0]!.body).toEqual({ values: { injury_related: "No" } });
+    // TYPEFORM-DUP: the store's route also names the ending reached and the score.
+    expect(told).toEqual({ ok: true, asks: answer.asks, ending: null, score: null });
   });
 
   it("a refused door is a sentence, never a silent hide", async () => {

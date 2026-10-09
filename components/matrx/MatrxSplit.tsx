@@ -8,7 +8,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import type { MarkdownStreamProps } from "@/components/MarkdownStream";
+import type { MarkdownStreamProps } from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Eye, PenLine } from "lucide-react";
@@ -26,6 +26,7 @@ import type {
 import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import type { MarkdownImageUpload } from "@ai-matrx/rich-editor/format/markdown-image-upload";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
@@ -48,6 +49,8 @@ export interface MatrxSplitProps {
   textareaRef?: React.Ref<HTMLTextAreaElement>;
   /** Placeholder text shown when the editor is empty */
   placeholder?: string;
+  /** A pasted or dropped image uploads and lands as `![name](url)` at the caret. */
+  uploadImage?: MarkdownImageUpload;
   /**
    * Render the editor pane read-only. Sets `readOnly` on the underlying
    * <textarea> so keystrokes are blocked natively (a swallowed `onChange`
@@ -182,6 +185,7 @@ export function MatrxSplit({
   onChange,
   textareaRef,
   placeholder = "Start writing...",
+  uploadImage,
   readOnly = false,
   className,
   singlePane = false,
@@ -345,7 +349,7 @@ export function MatrxSplit({
   // (chords + the selection toolbar's buttons) owns it, whichever textarea
   // this split renders (the ProTextarea below opts out so it never runs twice).
   const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
-  useTextareaFormatting(formatElement, !readOnly);
+  useTextareaFormatting(formatElement, !readOnly, { uploadImage });
 
   const mergedTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {

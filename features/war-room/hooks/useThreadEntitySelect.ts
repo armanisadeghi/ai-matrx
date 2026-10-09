@@ -29,7 +29,6 @@ import {
   selectSessionsById,
 } from "@/features/transcript-studio/redux/selectors";
 import { updateSessionThunk } from "@/features/transcript-studio/redux/thunks";
-import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import {
   selectActiveAudioSessionId,
@@ -55,6 +54,7 @@ import {
   setThreadActiveConversation,
   setThreadActiveNote,
 } from "@/features/war-room/redux/thunks";
+import { useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 export function useThreadNoteSelectAdapter(
   threadId: string,
@@ -225,7 +225,7 @@ export function useThreadConversationSelectAdapter(
   const boundId = useAppSelector(selectAssistantConversationId(sessionId));
   const listById = useAppSelector((s) => s.conversationList.byConversationId);
   const roster = useAppSelector(selectAssistantConversations(sessionId));
-  const agentsById = useAppSelector(selectAllAgents);
+  const agentsById = useAgentsById();
 
   // A just-minted chat's edge write is in flight for a moment — surface the
   // bound conversation immediately so the label never blanks.
@@ -296,7 +296,7 @@ export function useRoomConversationSelectAdapter(
   const activeEdgeId = useAppSelector(selectActiveConversationIdForRoom(roomId));
   const rows = useAppSelector(selectAssignmentsForContainer("room", roomId));
   const listById = useAppSelector((s) => s.conversationList.byConversationId);
-  const agentsById = useAppSelector(selectAllAgents);
+  const agentsById = useAgentsById();
 
   // A just-started chat has no edge until its first turn commits — surface it
   // anyway so the switcher shows what the panel is actually bound to.

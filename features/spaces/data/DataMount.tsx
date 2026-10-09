@@ -8,10 +8,12 @@
 
 import { RecordsMount } from "@ai-matrx/records-ui";
 import type { RecordsConfig } from "@ai-matrx/records";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { recordsUiHostFor, useAppRecordsConfig, useRecordsDataSource, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import { primeObjectOrganization, readObjectOrganizationAnswer, useObjectOrganization } from "@/features/unified-data/objectOrganization";
+
+import { useSeededWhere } from "../page/space-seed-context";
 
 import { usePublishedRows } from "./published-rows";
 import { agencySample } from "./sources";
@@ -51,7 +53,17 @@ function LiveBound({ organizationId, children }: { organizationId: string; child
 }
 
 function LiveMount({ tableId, children, held }: { tableId: string; children: ReactNode; held: (line: string, retry?: () => void) => ReactNode }) {
-  const opens = useObjectOrganization(useRecordsDataSource(), tableId);
+  // Round 34: the server already asked where this table opens (the page's seed) — drawn in the first
+  // pass, and handed to the kept store so the browser asks nothing.
+  const seeded = useSeededWhere(tableId);
+  const primed = useRef<string | null>(null);
+  // Never on the server: the kept store is module state there, shared by every request.
+  if (seeded && primed.current !== tableId && typeof window !== "undefined") {
+    primed.current = tableId;
+    primeObjectOrganization(tableId, Promise.resolve(readObjectOrganizationAnswer(seeded, tableId)));
+  }
+  const asked = useObjectOrganization(useRecordsDataSource(), tableId);
+  const opens = asked.state === "resolving" && seeded ? { ...readObjectOrganizationAnswer(seeded, tableId), retry: asked.retry } : asked;
   if (opens.state === "found") return <LiveBound organizationId={opens.organizationId}>{children}</LiveBound>;
   if (opens.state === "resolving") return <>{held("")}</>;
   return <>{held(opens.state === "unavailable" ? "This database can’t be opened right now." : "This database isn’t shared with you.", opens.retry)}</>;

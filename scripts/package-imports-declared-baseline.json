@@ -1,0 +1,146 @@
+{
+  "app/(core)/data/__tests__/route-mount.live.test.tsx": [
+    "undici"
+  ],
+  "app/(dev)/demos/general/code-generator/components/DynamicComponentRenderer.tsx": [
+    "axios"
+  ],
+  "app/api/image-proxy/route.ts": [
+    "undici"
+  ],
+  "components/animated/demos/bento-grids/BentoGridExampleThree.tsx": [
+    "cobe"
+  ],
+  "features/agents/redux/applets/selectors.ts": [
+    "reselect"
+  ],
+  "features/canvas/social/ScoreSubmissionDialog.tsx": [
+    "canvas-confetti"
+  ],
+  "features/code-editor/config/syntax-themes.ts": [
+    "monaco-editor"
+  ],
+  "features/code/agent-context/useDiagnosticHoverActions.ts": [
+    "monaco-editor"
+  ],
+  "features/content-ir/sandbox/generate-class-safelist.ts": [
+    "@tailwindcss/oxide"
+  ],
+  "features/documents/hooks/useUniverDocSurfaceTheme.ts": [
+    "@univerjs/engine-render"
+  ],
+  "features/documents/univer-doc-canvas-colors.ts": [
+    "@univerjs/engine-render"
+  ],
+  "features/hr/shared/__tests__/validate-hr-session.test.ts": [
+    "@supabase/auth-js"
+  ],
+  "features/item-presentation/ItemPresentationBlock.tsx": [
+    "framer-motion"
+  ],
+  "features/masterwork/__tests__/copy-never-loses-a-space.test.ts": [
+    "glob"
+  ],
+  "features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx": [
+    "framer-motion"
+  ],
+  "features/notes/__tests__/mode-click-never-writes-the-default.test.tsx": [
+    "immer"
+  ],
+  "features/notes/__tests__/note-save-one-door.test.ts": [
+    "immer"
+  ],
+  "features/notes/__tests__/one-note-many-views.test.tsx": [
+    "immer"
+  ],
+  "features/notes/__tests__/working-copy-no-lost-update.test.ts": [
+    "immer"
+  ],
+  "features/notes/components/FolderQuickPick.legacy-collision.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/NoteContentEditor.bodyGate.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/NoteContentEditor.transition.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/NoteSyncStatusStrip.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/mobile/MobileNoteEditor.canonical.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/mobile/MobileNoteEditor.transition.test.tsx": [
+    "immer"
+  ],
+  "features/notes/components/noteSaveCaptureBoundary.test.tsx": [
+    "immer"
+  ],
+  "features/notes/redux/conflictDetection.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/draftInitialization.control.integration.test.tsx": [
+    "immer"
+  ],
+  "features/notes/redux/listPreviewRead.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/noteLifecycleThunks.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/notesListProjection.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/saveFailureEscalation.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/saveNote.receipt.integration.test.ts": [
+    "immer"
+  ],
+  "features/notes/redux/unsavedDraftNeverNotFound.test.ts": [
+    "immer"
+  ],
+  "features/notes/richDocumentSource.test.ts": [
+    "immer"
+  ],
+  "features/record-change-approvals/__tests__/harness.ts": [
+    "undici"
+  ],
+  "features/rich-document/__tests__/chatStudioSurfaceParity.test.tsx": [
+    "immer"
+  ],
+  "features/rich-document/actions/handlers/preparedActions.bridge.integration.test.tsx": [
+    "immer"
+  ],
+  "features/war-room/hooks/useThreadEntitySelect.test.tsx": [
+    "immer"
+  ],
+  "features/whatsapp-clone/modals/ModalShell.tsx": [
+    "@radix-ui/react-visually-hidden"
+  ],
+  "features/whatsapp-clone/modals/media/TabbedGalleryModal.tsx": [
+    "@radix-ui/react-visually-hidden"
+  ],
+  "jest.setup.ts": [
+    "immer"
+  ],
+  "lib/code-runtime/__tests__/compile-stored.test.ts": [
+    "sandbox-theme"
+  ],
+  "lib/redux/selectors/userSelectors.ts": [
+    "reselect"
+  ],
+  "lib/redux/store.ts": [
+    "immer"
+  ],
+  "next.config.js": [
+    "webpack"
+  ],
+  "utils/next-config/webpackConfig.js": [
+    "webpack"
+  ],
+  "utils/supabase/__tests__/projectSigningKeys.authority.test.ts": [
+    "@supabase/auth-js"
+  ]
+}

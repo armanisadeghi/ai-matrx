@@ -36,7 +36,7 @@ import type {
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
 
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

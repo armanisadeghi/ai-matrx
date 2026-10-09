@@ -40,8 +40,8 @@ import { cn } from "@/lib/utils";
 import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { GitHubInstallation } from "./types";
 import { useGitHubConnection } from "./useGitHubConnection";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 function coverageLabel(installation: GitHubInstallation): string {
   if (installation.suspended) return "Suspended on GitHub";

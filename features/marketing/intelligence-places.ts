@@ -127,7 +127,6 @@ export const MARKETING_PLACES: FeaturePlaces = {
       id: "reputation-crisis",
       label: "Reputation",
       trigger: "Draft a crisis holding statement",
-      urlPattern: null,
       mandateKeys: [K.seo__reputation_crisis_holding],
       sources: ["features/marketing/components/reputation/crisis/CrisisHoldingDialog.tsx"],
     },

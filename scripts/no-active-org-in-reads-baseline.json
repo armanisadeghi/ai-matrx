@@ -71,11 +71,6 @@
       "owner": "drill-explorer",
       "note": "active org only used for saveDrillView; saved_view read is not org-filtered unless a homeOrganizationId is named"
     },
-    "features/agent-apps/components/CreateAgentAppFormWrapper.tsx::CreateAgentAppFormWrapper::selectOrganizationId#1": {
-      "class": "write-target",
-      "owner": "agent-apps",
-      "note": "selectedOrganizationId → POST /api/agent-apps org header for create"
-    },
     "../aidream/apps/shared/chat/src/agents/components/chat/SandboxPanel.tsx::SandboxPanel::selectOrganizationId#1": {
       "class": "write-target",
       "owner": "agents",
@@ -105,16 +100,6 @@
       "class": "not-a-list",
       "owner": "agents",
       "note": "orgId → selectScopeTypeLabelMap to label bound variables; display labels, not a list the person browses"
-    },
-    "../aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgent::selectOrganizationId#1": {
-      "class": "write-target",
-      "owner": "agents",
-      "note": "selectOrganizationId → tool-assignment update .eq(organization_id) and agx_duplicate_agent copy home"
-    },
-    "../aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgentVersion::selectOrganizationId#1": {
-      "class": "write-target",
-      "owner": "agents",
-      "note": "selectOrganizationId → tool-assignment update .eq(organization_id) and agx_duplicate_agent copy home"
     },
     "../aidream/apps/shared/chat/src/agents/redux/conversation-list/conversation-trash.thunks.ts::fetchTrashedConversations::selectActiveOrganizationId#1": {
       "class": "not-a-list",
@@ -376,11 +361,6 @@
       "owner": "sandbox",
       "note": "organizationId → createInstance explicit org; list not narrowed by it"
     },
-    "features/rich-document/annotations/useAnnotationSidecar.ts::reload::listEdgeItems(src, (token, ids) => titles.fetch(token, ids))#1": {
-      "class": "not-a-list",
-      "owner": "rich-document",
-      "note": "false positive from the wrapper rule: getAssociationsStore() is a 'carrier' only because its host object hands ensureOrgId to create paths (features/scopes/host/associationsStore.ts); the titles fetch takes no organization. Remove when the carrier rule ignores callbacks passed down for writes."
-    },
     "features/scopes/hooks/useKindCounts.ts::useKindCounts::fetchKindCounts(stableScope, tokens, showSystemFiles)#1": {
       "class": "not-a-list",
       "owner": "scopes (V5-B inventory)",
@@ -395,6 +375,26 @@
       "class": "not-a-list",
       "owner": "scopes (V5-B inventory)",
       "note": "active org only resolves the page-size and show_system_files knobs; the list is scoped by the caller's explicit KindScope, not narrowed by the active org"
+    },
+    "features/education/tutor/components/EducationTutorClient.tsx::EducationTutorClientInner::fetchAgentExecutionMinimal(agentId)#1": {
+      "class": "unclassified",
+      "owner": "education",
+      "note": "Newly visible 2026-10-07 (lane I): SCAN_DIRS named ../aidream/apps/shared/chat/src but this repo's git never lists a ../ path, so the chat package was never scanned; a chat-package hook that reads the active organization is now seen as a carrier here. Census owed: fix the read or annotate the write/server-call site."
+    },
+    "features/education/tutor/components/EducationTutorClient.tsx::EducationTutorClientInner::loadConversation({ conversationId: conversationIdProp, surfaceKey, signal: ctrl.signal, })#1": {
+      "class": "unclassified",
+      "owner": "education",
+      "note": "Newly visible 2026-10-07 (lane I): SCAN_DIRS named ../aidream/apps/shared/chat/src but this repo's git never lists a ../ path, so the chat package was never scanned; a chat-package hook that reads the active organization is now seen as a carrier here. Census owed: fix the read or annotate the write/server-call site."
+    },
+    "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/composer/ComposerPlusMenu.tsx::ComposerPlusMenu::useKnowledgeAttachSearch({ conversationId, onResourceSelected: (resource: Resource) => attachResource(resource), onResourceDeselected: detachResource, attachmentCapabilities, })#1": {
+      "class": "unclassified",
+      "owner": "chat",
+      "note": "Newly visible 2026-10-07 (lane I): SCAN_DIRS named ../aidream/apps/shared/chat/src but this repo's git never lists a ../ path, so the chat package was never scanned; the read is in the chat package itself. Census owed: fix the read or annotate the write/server-call site."
+    },
+    "../aidream/apps/shared/chat/src/context/sources/scopes.tsx::<module>::selectActiveOrganizationId#1": {
+      "class": "unclassified",
+      "owner": "chat",
+      "note": "Newly visible 2026-10-07 (lane I): SCAN_DIRS named ../aidream/apps/shared/chat/src but this repo's git never lists a ../ path, so the chat package was never scanned; the read is in the chat package itself. Census owed: fix the read or annotate the write/server-call site."
     }
   }
 }

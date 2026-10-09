@@ -50,6 +50,17 @@ export interface DisplayPreferences {
   markdownStudioPreviewUpdates?: "live" | "manual";
   /** Markdown Studio: editor and preview scroll together. */
   markdownStudioScrollSync?: boolean;
+  /**
+   * THE PERSON'S TIME ZONE (IANA, e.g. "America/Los_Angeles"): the zone every
+   * "today" and "now" for this person is read in, and the zone the database's
+   * `custom.day_zone` reads first. Captured from the browser while
+   * `timeZoneFollowsDevice` is on; never overwritten once the person pins one.
+   * "" = nothing saved yet. Read it through `usePersonTimeZone()`, never
+   * `Intl.DateTimeFormat().resolvedOptions()` at a call site.
+   */
+  timeZone?: string;
+  /** Default on: the saved zone follows this device. Off = the person pinned `timeZone`. */
+  timeZoneFollowsDevice?: boolean;
   darkMode: boolean;
   theme: string;
   dashboardLayout: string;
@@ -104,6 +115,12 @@ export interface AssistantPreferences {
    * `UserOverrides.apply_policy` on every turn when not `"default"`.
    */
   directiveApplyPolicy: DirectiveApplyPolicy;
+  /**
+   * The creator panel above an agent's variables (the agent's creator or a
+   * system admin). Saved, so it opens the way the person last left it
+   * (Arman, 2026-10-08).
+   */
+  showCreatorPanel: boolean;
 }
 
 // Suggested preferences for email management (you can adjust or remove as needed)
@@ -400,11 +417,11 @@ export interface AgentContextPreferences {
  * context — unless empty. Null = none yet; the first open/type creates one.
  */
 /**
- * Notes (Arman, 2026-09-27). `defaultEditorMode` is the mode a note opens in on
- * a desktop when the person has not typed in that note before — Split (the quick
- * plain textarea left, the formatted note live right) by default; the modes are
- * split · plain · write (the one editor) · preview. `defaultPhoneEditorMode` is
- * the phone's — Plain by default; the phone has plain · write. Picking a mode
+ * Notes (Arman, 2026-09-27; Write the default 2026-10-07). `defaultEditorMode` is
+ * the mode a note opens in on a desktop when the person has not typed in that note
+ * before — Write (the one editor) by default; the modes are write · split · plain ·
+ * preview. `defaultPhoneEditorMode` is the phone's — Write by default; the phone
+ * has write · plain. Picking a mode
  * saves it for that device. `noteModes` remembers, per note, whether the person
  * last typed it in Write ("write") or as text ("plain"), newest last, bounded —
  * a note last edited in Write reopens in Write. Values stored before the one
@@ -541,10 +558,10 @@ export interface ListsPreferences {
   /** The data home's last opened rows (`DataHomeRow.id`), newest first, at most ten. */
   dataHomeRecent?: string[];
   /**
-   * The data home's "Show app tables" (Filters): also list the tables the app keeps — a choice
+   * The data home's "Show platform tables" (Filters): also list the tables the app keeps — a choice
    * column's Lists, an agent's outputs. A person's own choice; absent = off.
    */
-  dataHomeShowAppTables?: boolean;
+  dataHomeShowPlatformTables?: boolean;
 }
 
 /**
@@ -591,20 +608,30 @@ export interface ConnectorsPreferences {
  * guided the next few, plain after — and it is synced, so a person taught on their laptop is not
  * taught again on their phone. Undo never lowers it. Shape = kit's `ReversibleCounts`.
  */
+/**
+ * The bell's memory of this person (features/notifications), synced so it follows them to every
+ * device. Notices carry their own server-side `seen_at`; these are for the bell's SOURCES (approvals,
+ * record-store work, workflows waiting …), which have no "seen" of their own:
+ *   - `sourcesSeen` / `sourcesSeenIds`       — each place's count (and item ids, where it has them)
+ *     when the bell was last opened; the badge counts what is new since
+ *   - `sourcesCleared` / `sourcesClearedIds` — the same, when the person last cleared the place
+ *   - `hiddenSources` — places the person took out of the bell ("Hide from bell"); default none
+ * Marks move only on open or clear (features/notifications/badge.ts).
+ */
+export interface InboxPreferences {
+  sourcesSeen: Record<string, number>;
+  sourcesSeenIds: Record<string, string[]>;
+  sourcesCleared: Record<string, number>;
+  sourcesClearedIds: Record<string, string[]>;
+  hiddenSources: string[];
+}
+
 export interface ReversiblePreferences {
   verbs: Record<string, number>;
   pairs: Record<string, number>;
 }
 
 export interface OrganizationPreferences {
-  /**
-   * RETIRED (2026-10-01): the picker's old single star. Nothing selects an
-   * organization from it (the resolver stopped reading it 2026-09-19); it is
-   * read once by features/organizations/hooks/useOrganizationFavorites to carry
-   * that star into the canonical favorites store, then never again.
-   */
-  defaultOrganizationId: string | null;
-
   /**
    * "Switch organization when a link asks" — DEFAULT ON.
    *
@@ -620,7 +647,7 @@ export interface OrganizationPreferences {
    * 🚨 It never governs a link's organization when the person is working in
    * NO organization: there is no switch to refuse there, and the alternative
    * is the "Select an organization first" dead end this whole rung exists to
-   * end. And it is not a default-organization preference — nothing reads it to
+   * end. And it is not a preselected organization preference — nothing reads it to
    * CHOOSE an organization; it only decides whether a link that already named
    * one is obeyed.
    */
@@ -829,6 +856,7 @@ export interface UserPreferences {
   assists: AssistsPreferences;
   connectors: ConnectorsPreferences;
   reversible: ReversiblePreferences;
+  inbox: InboxPreferences;
 }
 
 /**
@@ -1129,6 +1157,8 @@ export const initializeUserPreferencesState = (
     display: {
       markdownStudioPreviewUpdates: "live",
       markdownStudioScrollSync: true,
+      timeZone: "",
+      timeZoneFollowsDevice: true,
       darkMode: false,
       theme: "default",
       dashboardLayout: "default",
@@ -1193,6 +1223,7 @@ export const initializeUserPreferencesState = (
       preferredProvider: "default",
       preferredModel: "default",
       directiveApplyPolicy: "default",
+      showCreatorPanel: false,
     },
     email: {
       primaryEmail: "",
@@ -1341,8 +1372,6 @@ export const initializeUserPreferencesState = (
       preferredFacingMode: "",
     },
     organization: {
-      // null = no default chosen → header reminder nudges the user.
-      defaultOrganizationId: null,
       // Default ON: a link that names an organization is obeyed.
       switchWhenALinkAsks: true,
     },
@@ -1351,8 +1380,8 @@ export const initializeUserPreferencesState = (
       activeId: null,
     },
     notes: {
-      defaultEditorMode: "split",
-      defaultPhoneEditorMode: "plain",
+      defaultEditorMode: "write",
+      defaultPhoneEditorMode: "write",
       noteModes: {},
     },
     siteWorkbench: {
@@ -1372,6 +1401,8 @@ export const initializeUserPreferencesState = (
     connectors: { promptDismissedAt: {} },
     // Nothing done yet: the first reversible action teaches.
     reversible: { verbs: {}, pairs: {} },
+    // Nothing seen, cleared or hidden yet: every source shows in the bell.
+    inbox: { sourcesSeen: {}, sourcesSeenIds: {}, sourcesCleared: {}, sourcesClearedIds: {}, hiddenSources: [] },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1469,6 +1500,13 @@ export const initializeUserPreferencesState = (
     reversible: {
       verbs: { ...defaultPreferences.reversible.verbs, ...preferences.reversible?.verbs },
       pairs: { ...defaultPreferences.reversible.pairs, ...preferences.reversible?.pairs },
+    },
+    inbox: {
+      sourcesSeen: { ...preferences.inbox?.sourcesSeen },
+      sourcesSeenIds: { ...preferences.inbox?.sourcesSeenIds },
+      sourcesCleared: { ...preferences.inbox?.sourcesCleared },
+      sourcesClearedIds: { ...preferences.inbox?.sourcesClearedIds },
+      hiddenSources: [...(preferences.inbox?.hiddenSources ?? [])],
     },
   };
 
@@ -1905,6 +1943,7 @@ const PERSISTED_PREFERENCE_MODULES: Record<keyof UserPreferences, true> = {
   assists: true,
   connectors: true,
   reversible: true,
+  inbox: true,
 };
 
 const PREFERENCE_MODULE_KEYS = Object.keys(
@@ -1961,14 +2000,11 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     },
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server state
-      const { supabase } = await import("@/utils/supabase/client");
-      const { data, error } = await supabase
-        .schema("users")
-        .from("user_preferences")
-        .select("preferences")
-        .eq("user_id", identity.userId)
-        .abortSignal(signal)
-        .maybeSingle();
+      // One shared read of the account row (SHELL-DEDUPE): the load ladder takes its two
+      // organization columns from the same answer instead of asking again.
+      const { readAccountPreferencesRow } = await import("@/lib/account/accountPreferencesRow");
+      const { data, error } = await readAccountPreferencesRow(identity.userId);
+      if (signal.aborted) throw new DOMException("aborted", "AbortError");
       // A failed read THROWS — the engine turns that into the slice's
       // `failed` load status. Returning null here used to make a failure look
       // exactly like "this person saved nothing", and every settings page
@@ -1991,28 +2027,34 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       // the CURRENT row under compare-and-swap on `version`. Never
       // `update({ preferences: body })`: that put a stale tab's whole cached
       // record back over every newer change (2026-09-27, an agent's
-      // default-organization write reverted 15s later). Guard:
+      // preselected organization write reverted 15s later). Guard:
       // lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts
       const table = () => supabase.schema("users").from("user_preferences");
-      await savePreferencePatch({
-        base,
-        body,
-        modules: PREFERENCE_MODULE_KEYS,
-        fetchCurrent: () =>
-          table()
-            .select(PREFERENCES_ROW_COLUMNS)
-            .eq("user_id", identity.userId)
-            .abortSignal(signal)
-            .maybeSingle(),
-        applyUpdate: ({ value, expectedVersion, nextVersion }) =>
-          table()
-            .update({ preferences: value, version: nextVersion })
-            .eq("user_id", identity.userId)
-            .eq("version", expectedVersion)
-            .select(PREFERENCES_ROW_COLUMNS)
-            .abortSignal(signal)
-            .maybeSingle(),
-      });
+      // The row changed (or may have): the next shared read of it asks the database again.
+      const { forgetAccountPreferencesRow } = await import("@/lib/account/accountPreferencesRow");
+      try {
+        await savePreferencePatch({
+          base,
+          body,
+          modules: PREFERENCE_MODULE_KEYS,
+          fetchCurrent: () =>
+            table()
+              .select(PREFERENCES_ROW_COLUMNS)
+              .eq("user_id", identity.userId)
+              .abortSignal(signal)
+              .maybeSingle(),
+          applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+            table()
+              .update({ preferences: value, version: nextVersion })
+              .eq("user_id", identity.userId)
+              .eq("version", expectedVersion)
+              .select(PREFERENCES_ROW_COLUMNS)
+              .abortSignal(signal)
+              .maybeSingle(),
+        });
+      } finally {
+        forgetAccountPreferencesRow();
+      }
     },
   },
 });

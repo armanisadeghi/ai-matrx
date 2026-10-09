@@ -37,7 +37,8 @@ jest.mock("@/features/administration/kg-inspector/components/KgInspectorColumnHe
 jest.mock("@/features/administration/kg-inspector/components/ValueListFilterPopover", () => ({
   ValueListFilterPopover: () => null,
 }));
-jest.mock("@/components/read-state/ReadFailure", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ReadFailure: () => <div role="alert">Read failed</div>,
 }));
 

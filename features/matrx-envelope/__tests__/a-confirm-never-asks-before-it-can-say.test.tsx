@@ -136,7 +136,8 @@ describe("a confirm never asks before it can say what it will do", () => {
     expect(settled).toBe(false);
     const before = q.read();
     expect(before.description).toContain("Reading this Note");
-    expect(before.loadingName).toBe(true);
+    // While the name is read the title is a whole sentence — never "Update Note ?" (G11B).
+    expect(before.title).toBe("Update this Note?");
     expect(before.title).not.toMatch(/ae33f4e0|its organization/);
     expect(before.description).not.toMatch(/its organization/);
 
@@ -192,6 +193,52 @@ describe("a confirm never asks before it can say what it will do", () => {
   });
 });
 
+describe("G11B: no orphan punctuation, and nothing to change is said", () => {
+  const ORPHAN = /\s[?!.,:;]/;
+  for (const [slug, noun] of [
+    ["directive_v1_update_note", "Note"],
+    ["directive_v1_delete_task", "Task"],
+  ] as const) {
+    for (const again of [false, true]) {
+      it(`${slug}${again ? " (again)" : ""}: the title has no stray space before punctuation, loading or read`, async () => {
+        const row = deferred<Record<string, unknown> | null>();
+        readDirectiveRecord.mockReturnValue(row.promise);
+        resolveReferenceName.mockResolvedValue("G11B named");
+        const q = await openQuestion(request(slug, [{ id: NOTE_ID, label: "G11B v2" }], noun, again));
+        expect(q.read().title).not.toMatch(ORPHAN);
+        expect(q.read().title.length).toBeGreaterThan(0);
+        row.resolve({ id: NOTE_ID, label: "G11B named", organization_id: "org-bellweather" });
+        await q.settle();
+        expect(q.read().title).not.toMatch(ORPHAN);
+        await q.done();
+      });
+    }
+  }
+
+  for (const again of [false, true]) {
+    it(`an update whose record already holds every value says Nothing to change${again ? " (Run again)" : ""}`, async () => {
+      readDirectiveRecord.mockResolvedValue({ id: NOTE_ID, label: "G11B same", organization_id: "org-bellweather" });
+      resolveReferenceName.mockResolvedValue("G11B same");
+      const q = await openQuestion(request("directive_v1_update_note", [{ id: NOTE_ID, label: "G11B same" }], "Note", again));
+      await q.settle();
+      const after = q.read();
+      expect(after.description).toContain("Nothing to change");
+      expect(after.description).not.toMatch(/Overwrites|Writes these fields again/);
+      await q.done();
+    });
+  }
+
+  it("an update with one field that changes does not say Nothing to change", async () => {
+    readDirectiveRecord.mockResolvedValue({ id: NOTE_ID, label: "G11B old", organization_id: "org-bellweather" });
+    resolveReferenceName.mockResolvedValue("G11B old");
+    const q = await openQuestion(request("directive_v1_update_note", [{ id: NOTE_ID, label: "G11B new" }], "Note", true));
+    await q.settle();
+    expect(q.read().description).not.toContain("Nothing to change");
+    expect(q.read().description).toContain("Writes these fields again");
+    await q.done();
+  });
+});
+
 describe("a record link never shows a raw id", () => {
   it("shows a neutral placeholder while the name loads, then the name", async () => {
     labelStatus = "loading";
@@ -208,6 +255,33 @@ describe("a record link never shows a raw id", () => {
       root.render(<DirectiveRecordLink noun="task" id={TASK_ID} fallback="Task 9e11b091" context="row" />);
     });
     expect(host.textContent).toContain("G8A weekly review");
+    await act(async () => root.unmount());
+  });
+});
+
+describe("G11C: a create opens at once, and a record name wraps instead of cutting off", () => {
+  it("a create's question is never held behind a read — it opens complete on the click", async () => {
+    // Nothing a create names exists yet, so there is nothing to read first:
+    // the dialog must not carry `ready` (a held yes, a "Reading…" line).
+    const q = await openQuestion(request("directive_v1_create_task", [{ title: "G11C created task" }], "Task"));
+    expect(q.opts.ready).toBeUndefined();
+    expect(confirmDialog).toHaveBeenCalledTimes(1);
+    expect(q.read().title).toBe("Create Task G11C created task?");
+    await q.done();
+  });
+
+  it("a long record name wraps to two lines on a phone — never `truncate`", async () => {
+    labelStatus = "ready";
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<DirectiveRecordLink noun="task" id={TASK_ID} fallback="Task" context="row" />);
+    });
+    const name = host.querySelector("[data-record-name]");
+    expect(name?.textContent).toBe("G8A weekly review");
+    expect(name?.className).toContain("line-clamp-2");
+    expect(host.querySelector(".truncate")).toBeNull();
     await act(async () => root.unmount());
   });
 });

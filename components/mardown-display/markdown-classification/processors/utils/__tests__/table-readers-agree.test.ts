@@ -18,7 +18,7 @@ import { parseMarkdownTable as tableDataParser } from "@ai-matrx/rich-content/di
 import { parseMarkdownContent } from "@/components/mardown-display/markdown-classification/processors/custom/dynamic-markdown";
 import { parseFirstMarkdownTable } from "@ai-matrx/rich-content/rich-document/actions/markdownTable";
 import { hasConvertibleContent } from "@ai-matrx/chat/agents/components/messages-display/message-options/convertibleContent";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import { getProtectedRegions } from "@/lib/content-cleanup/segment";
 import { parseTextSegments } from "@/components/markdown-studio/lab/sync-scroll";
 

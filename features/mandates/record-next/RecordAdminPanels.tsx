@@ -25,8 +25,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { fetchAgentOutputSchemas } from "@ai-matrx/chat/mandates/output-contract";
 import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-health";
@@ -46,7 +44,10 @@ import { MandateHealthSummary } from "./MandateHealthSummary";
 import { usePathname } from "next/navigation";
 import { isAdminLanePath } from "@/utils/supabase/adminLane";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
+import { RunsTable } from "@/features/mandates/run-history/RunsTable";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -91,7 +92,7 @@ export function RecordAdminPanels({
 }) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || enabled;
-  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const lineageIndex = useAgentLineageIndex();
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
     Record<string, MandateCodeTruth>
@@ -139,7 +140,7 @@ export function RecordAdminPanels({
   useEffect(() => {
     if (!wanted) return;
     load();
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [dispatch, wanted, load]);
 
   useEffect(() => {
@@ -232,6 +233,17 @@ export function RecordAdminPanels({
           className="mb-4"
         />
       ) : null}
+      {/* PAST RUNS — the Test tab opens on how this job has actually run. */}
+      {section === "test" ? (
+        <div className="mb-4">
+          <RunsTable
+            scope={{ mandateKey: (mandate ? storedMandateKey(mandate.mandate_key) : undefined) ?? mandateKey }} // key-is-the-subject: the runs read's scope, never rendered as a name
+            view={onAdminSeat ? "platform" : "mine"}
+            audience={onAdminSeat ? "admin" : "product"}
+            urlId="mandate-runs"
+          />
+        </div>
+      ) : null}
       {loadError ? (
         <div role="alert" className="flex items-center gap-2 type-body text-destructive">
           {loadError}
@@ -251,15 +263,13 @@ export function RecordAdminPanels({
         <>
         {codeTruthFailed ? (
           <p className="mb-2 type-secondary text-muted-foreground">
-            What the code declares for this job could not be read, so the code
-            diagnostics below are incomplete.
+            Code declarations unavailable
             <ErrorAlchemyMenu />
           </p>
         ) : null}
         {schemasFailed ? (
           <p className="mb-2 type-secondary text-muted-foreground">
-            The agent&apos;s output contract could not be read, so the contract
-            check below is incomplete.
+            Output contract unavailable
             <ErrorAlchemyMenu />
           </p>
         ) : null}

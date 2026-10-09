@@ -51,7 +51,7 @@ import {
   type DecisionQuestionRow,
   isAnswered,
 } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const WEIGHT_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 

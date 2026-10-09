@@ -42,7 +42,7 @@ import { readHrLawValidation, saveHrOrgLawRule } from "../service";
 import { isHrDenied, type HrDenied, type HrLawRuleClass, type HrLawValidationFinding, type HrOrgLawRule } from "../types";
 import { LawCitationLine } from "./LawRuleRow";
 import { flatParameterFields, type LawParamField } from "./law-parameters";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type LawJurisdictionOption = { key: string; name: string };

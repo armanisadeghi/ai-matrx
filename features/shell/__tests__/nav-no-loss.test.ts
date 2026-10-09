@@ -19,7 +19,7 @@ import {
 
 /** Every href reachable from the menu on 2026-10-02, before the domain reorganization. */
 const HREFS_BEFORE_DOMAIN_TREE: readonly string[] = [
-  "/agent-apps",
+  "/applets",
   "/agent-connections",
   "/agent-connections/plugins",
   "/agent-connections/render-blocks",
@@ -339,7 +339,7 @@ function isDestination(node: Node): boolean {
 
 /** Every row a guest could see before. Each must still be visible to a guest. */
 const GUEST_VISIBLE_BEFORE_DOMAIN_TREE: readonly string[] = [
-  "/agent-apps",
+  "/applets",
   "/agent-connections",
   "/agent-connections/plugins",
   "/agent-connections/render-blocks",
@@ -568,7 +568,7 @@ const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
   "/education/game/solo",
   "/education/learn",
   "/education/library/community",
-  "/education/start",
+  "/education/kits/new",
   "/features",
   "/knowledge/about",
   "/legal/ca-wc",

@@ -4,8 +4,11 @@ import { Globe } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { useSetting, useSettingReset } from "../hooks/useSetting";
 import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
+import { readDeviceTimeZone, isValidTimeZone } from "@/lib/time/personTimeZone";
+import { useMemo } from "react";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /**
@@ -23,6 +26,22 @@ export default function LanguageTab() {
   const voiceReset = useSettingReset<string>("userPreferences.voice.language");
   const textReset = useSettingReset<string>("userPreferences.textGeneration.language");
 
+  const [zone, setZone] = useSetting<string>("userPreferences.display.timeZone");
+  const [follows, setFollows] = useSetting<boolean>(
+    "userPreferences.display.timeZoneFollowsDevice",
+  );
+  const zoneOptions = useMemo(() => {
+    let names: string[] = [];
+    try {
+      names = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] })
+        .supportedValuesOf?.("timeZone") ?? [];
+    } catch {
+      names = [];
+    }
+    if (isValidTimeZone(zone) && !names.includes(zone)) names = [zone, ...names];
+    return names.map((n) => ({ value: n, label: n.replace(/_/g, " ") }));
+  }, [zone]);
+
   return (
     <>
       <SettingsSubHeader
@@ -30,6 +49,35 @@ export default function LanguageTab() {
         description="Each feature keeps its own language; there is no single app language."
         icon={Globe}
       />
+
+      <PreferencesLoadGate what="your time zone">
+        <SettingsSection title="Time zone">
+          <SettingsSwitch
+            label="Use my device's time zone"
+            checked={follows !== false}
+            onCheckedChange={(on) => {
+              setFollows(on);
+              if (on) {
+                const device = readDeviceTimeZone();
+                if (device) setZone(device);
+              }
+            }}
+          />
+          <SettingsSelect
+            label="Time zone"
+            description="Where today starts for you."
+            value={zone || readDeviceTimeZone() || "UTC"}
+            onValueChange={(next) => {
+              setFollows(false);
+              setZone(next);
+            }}
+            options={zoneOptions}
+            searchable
+            searchPlaceholder="Search city or zone"
+            last
+          />
+        </SettingsSection>
+      </PreferencesLoadGate>
 
       <PreferencesLoadGate what="your language defaults">
         <SettingsSection title="Language defaults">

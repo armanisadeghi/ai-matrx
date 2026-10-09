@@ -1,24 +1,12 @@
 "use client";
 
-import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, History, SquareStack } from "lucide-react";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
-  ChevronDown,
-  ChevronRight,
-  MessageSquare,
-  Loader2,
-  History,
-  SquareStack,
-} from "lucide-react";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentConversations } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
+  AgentVersionGroupedList,
+  useAgentConversationList,
+} from "@ai-matrx/chat/agents/components/conversation-history/AgentConversationList";
 import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
@@ -33,158 +21,6 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "agent-advanced-editor-history-tab";
-
-interface VersionGroup {
-  versionNumber: number;
-  conversations: ConversationListItem[];
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-  if (diffDays === 0)
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
-function groupByVersion(conversations: ConversationListItem[]): VersionGroup[] {
-  const map = new Map<number, ConversationListItem[]>();
-  for (const conv of conversations) {
-    const v = conv.agentVersionNumber ?? 0;
-    const group = map.get(v);
-    if (group) {
-      group.push(conv);
-    } else {
-      map.set(v, [conv]);
-    }
-  }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => b - a)
-    .map(([versionNumber, convs]) => ({
-      versionNumber,
-      conversations: [...convs].sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      ),
-    }));
-}
-
-function VersionGroupRow({
-  group,
-  agentId,
-  selectedId,
-  onSelect,
-  defaultOpen,
-}: {
-  group: VersionGroup;
-  agentId: string;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  defaultOpen: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const hasActive = group.conversations.some(
-    (c) => c.conversationId === selectedId,
-  );
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex items-center gap-1.5 w-full px-2 py-1.5 text-left transition-colors",
-          "hover:bg-muted/40",
-          hasActive && "text-primary",
-        )}
-      >
-        {open ? (
-          <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-        )}
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex-1 min-w-0 truncate">
-          Version {group.versionNumber}
-        </span>
-        <span className="text-[10px] text-muted-foreground/60 shrink-0 ml-1">
-          {group.conversations.length}
-        </span>
-      </button>
-
-      {open && (
-        <div className="pl-2">
-          {group.conversations.map((conv) => (
-            <VersionConversationRow
-              key={conv.conversationId}
-              conv={conv}
-              agentId={agentId}
-              isActive={conv.conversationId === selectedId}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function VersionConversationRow({
-  conv,
-  agentId,
-  isActive,
-  onSelect,
-}: {
-  conv: ConversationListItem;
-  agentId: string;
-  isActive: boolean;
-  onSelect: (id: string) => void;
-}) {
-  const dispatch = useAppDispatch();
-  const date = formatDate(conv.updatedAt);
-
-  return (
-    <ItemRow
-      sourceFeature="agents-other"
-      label={conv.title?.trim() || "Untitled"}
-      active={isActive}
-      size="sm"
-      onOpen={() => onSelect(conv.conversationId)}
-      menu={() =>
-        buildConversationMenu({
-          conversationId: conv.conversationId,
-          title: conv.title,
-          isFavorite: conv.isFavorite ?? false,
-          isArchived: conv.status === "archived",
-          excludeFromKg: conv.excludeFromKg ?? false,
-          href: `/agents/go/${agentId}/run?conversationId=${conv.conversationId}`,
-          dispatch,
-        })
-      }
-      rename={{
-        value: conv.title ?? "",
-        emptyFallback: "Untitled",
-        onCommit: (next) =>
-          void dispatch(
-            renameConversation({
-              conversationId: conv.conversationId,
-              title: next,
-            }),
-          ),
-      }}
-      trailing={
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-          <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
-          {conv.messageCount}
-          {date ? ` · ${date}` : ""}
-        </span>
-      }
-    />
-  );
-}
 
 interface AgentContentHistoryPanelProps {
   /** Initial agent whose history to show. May be changed by the in-panel picker. */
@@ -238,44 +74,8 @@ export function AgentContentHistoryPanel({
     [onAgentChange],
   );
 
-  const canonicalAgentId = useAppSelector((state: RootState) => {
-    const agent = selectAgentById(state, agentId);
-    return agent?.parentAgentId ?? agent?.id ?? agentId;
-  });
-
-  const agentName = useAppSelector((state: RootState) => {
-    const agent = selectAgentById(state, agentId);
-    return agent?.name ?? null;
-  });
-
-  const selectConversations = useMemo(
-    () => makeSelectAgentConversations(canonicalAgentId, null),
-    [canonicalAgentId],
-  );
-
-  const conversationState = useAppSelector(selectConversations);
-  const status = conversationState?.status ?? "idle";
-  const conversations = conversationState?.conversations ?? [];
-  const archived = conversationState?.archived ?? [];
-  const error = conversationState?.error ?? null;
-  const [showArchived, setShowArchived] = useState(false);
-
-  useEffect(() => {
-    if (canonicalAgentId && status === "idle") {
-      dispatch(
-        fetchAgentConversations({
-          agentId: canonicalAgentId,
-          versionFilter: null,
-        }),
-      );
-    }
-  }, [canonicalAgentId, status, dispatch]);
-
-  const versionGroups = useMemo(
-    () => groupByVersion(conversations),
-    [conversations],
-  );
-  const archivedGroups = useMemo(() => groupByVersion(archived), [archived]);
+  const list = useAgentConversationList(agentId);
+  const { agentName, status, error, conversations, archived } = list;
 
   const handleSelect = useCallback(
     async (conversationId: string) => {
@@ -355,33 +155,13 @@ export function AgentContentHistoryPanel({
               </div>
             )}
 
-            {versionGroups.map((group, i) => (
-              <VersionGroupRow
-                key={group.versionNumber}
-                group={group}
-                agentId={agentId}
-                selectedId={selectedConversationId}
-                onSelect={handleSelect}
-                defaultOpen={i === 0}
-              />
-            ))}
-            <ArchivedDisclosure
-              count={archived.length}
-              open={showArchived}
-              onOpenChange={setShowArchived}
-              className="mx-1 mt-1"
-            >
-              {archivedGroups.map((group) => (
-                <VersionGroupRow
-                  key={group.versionNumber}
-                  group={group}
-                  agentId={agentId}
-                  selectedId={selectedConversationId}
-                  onSelect={handleSelect}
-                  defaultOpen={false}
-                />
-              ))}
-            </ArchivedDisclosure>
+            <AgentVersionGroupedList
+              agentId={agentId}
+              list={list}
+              selectedId={selectedConversationId}
+              onSelect={handleSelect}
+              sourceFeature="agents-other"
+            />
           </div>
         </div>
       </ResizablePanel>

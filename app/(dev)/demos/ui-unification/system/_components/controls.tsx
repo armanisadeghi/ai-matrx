@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
-import { ArrowDownUpTapButton, LayoutGridTapButton, ListTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
+import { ArrowDownUpTapButton, LayoutGridTapButton, ListTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { MeasuredBare, UnifiedToolbar } from "../../_components/one-control";
 import { Group, Section } from "./kit";
 import { Button, ControlRow, Field, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";

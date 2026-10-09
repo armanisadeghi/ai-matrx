@@ -80,7 +80,7 @@ on purpose:
 
 - To change or delete an item, send the person to its page (`library_rows[].href`). Every one
   of those pages has its own tools.
-- To create study material, send them to `/education/start` ("Create kit").
+- To create study material, send them to `/education/kits/new` ("Create kit").
 - To browse other people's public decks and save copies, send them to the Community Library,
   `/education/library/community`.
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageTapButton } from "@ai-matrx/tap-target/buttons";
+import { MessageTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { SHELL_CHAT_TOGGLE_EVENT } from "@ai-matrx/chat/canvas/workspace/shell-chat-route";
 
 /**

@@ -19,6 +19,8 @@ import { registerKindCorrector } from "@ai-matrx/rich-content/kinds/registry/kin
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { matrxContentIrHost } from "@/features/content-ir/host/ContentIrHostBoundary";
+// Fills the content-ir host's directive slot (Apply / open / copy on every directive card) before any kind renders.
+import "@/features/matrx-envelope/directiveHost";
 import { reportKindComponentIncident } from "@/features/content-ir/react/db-component/kindComponentIncident";
 import { correctDraftCritique, type DraftCritique } from "@/features/crm/draft-critique/draftCritique";
 

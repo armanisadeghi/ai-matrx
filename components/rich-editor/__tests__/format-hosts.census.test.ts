@@ -131,29 +131,109 @@ describe("every long-form editing host is wired to the formatting command layer"
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// VISIBLE, not just wired (2026-10-07 live review: Source mode and notes Split
-// / Plain answered ⌘B but showed no format button). Each plain-text host
-// renders THE compact buttons (`@ai-matrx/rich-editor/format/FormatButtons`)
-// inside its EXISTING toolbar row, gated on its plain modes; and a rendered
-// host's buttons really reach its wired textarea.
+// VISIBLE in EVERY editable mode (2026-10-07: notes Write — the visual editor —
+// had no formatting buttons at all; they showed only in Plain and Split). Each
+// editor host renders THE toolbar (`@ai-matrx/rich-editor/format/FormatButtons`)
+// inside its EXISTING toolbar row in every editable mode, never in Read; the
+// visual editor registers as a format target, so the buttons drive Write too.
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Host file → the plain modes its toolbar row must show the buttons in. */
+/** Host file → how its toolbar row renders the toolbar in every editable mode. */
 const VISIBLE_BUTTONS: Record<string, RegExp> = {
-  // notes page header row (beside the mode pill): Plain and Split
-  "features/notes/components/NotesView.tsx": /editorMode === "plain" \|\| editorMode === "split"\) && \(\s*<FormatButtons\b/,
+  // notes page header row (beside the mode switch): Write, Split, Plain — not Read
+  "features/notes/components/NotesView.tsx": /editorMode !== "preview" && \(\s*<FormatButtons\b/,
   // a note in a window: the mode-switch row
-  "features/notes/components/NoteWorkspace.tsx": /editorMode === "plain" \|\| editorMode === "split"\) && \(\s*<FormatButtons\b/,
-  // the editor's own toolbar row, Source view (edit in place, documents, prompts)
-  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js": /view === "source" && !readOnly[\s\S]{0,200}FormatButtons/,
+  "features/notes/components/NoteWorkspace.tsx": /editorMode !== "preview" && \(\s*<FormatButtons\b/,
+  // the phone: the note dock's essential set, in every editing mode
+  "features/notes/components/mobile/NoteEditorDock.tsx": /<FormatButtons\s+variant="essential"/,
+  "features/notes/components/mobile/MobileNoteEditor.tsx": /formatResolve=\{effectiveMode !== "preview" && !readOnly \?/,
+  // the full-screen editor: its footer row, in Write, Source and Plain
+  "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": /activeTab === "wysiwyg" \|\| activeTab === "markdown" \|\| activeTab === "write" \? \(\s*<FormatButtons\b/,
+  // ContentEditor: its header row (mode selector), every mode but Preview
+  "components/official/content-editor/ContentEditor.tsx": /currentMode !== "preview" && !isCollapsed \? \([\s\S]{0,200}<FormatButtons\b/,
+  // the html-pages full-screen editor: its footer row, every tab but Read
+  "features/html-pages/components/HtmlPreviewFullScreenEditor.tsx": /activeTab !== "preview" \? \(\s*<FormatButtons\b/,
+  // a task's description (2026-10-08): Write / Split / Plain, the toolbar in the field's one row, every mode
+  "features/tasks/components/editor/TaskDescriptionField.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(frameRef/,
+  "features/tasks/components/editor/TaskEditorBody.tsx": /<TaskDescriptionField\b/,
+  // every other task description box (2026-10-08): the same field through THE shared wrapper, never a bare textarea
+  "features/tasks/components/editor/TaskDescriptionEditor.tsx": /<TaskDescriptionField\b/,
+  "features/tasks/components/TaskDetailsPanel.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/mobile/MobileTaskDetails.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/QuickTasksSheet.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/TaskContentNew.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/TaskDetails.tsx": /<TaskDescriptionEditor\b/,
+  // a message template's body: the toolbar beside its label row; the field's chips ride the same target
+  "features/message-templates/components/TemplateViewPage.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(messageBlockRef/,
+  // a record's body: the editor's slim format row
+  "features/data-tables/records-ui-host/RecordBodyEditor.tsx": /chrome="format"/,
+  // the editor's own toolbar row (chrome "full"), Visual and Source alike: Markdown Studio, documents, prompts
+  // ... and chrome "format" (a host with no row of its own: a record's body) — its one slim row
+  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js":
+    /^(?=[\s\S]*const editable = view !== "preview" && !readOnly;[\s\S]{0,400}FormatButtons)(?=[\s\S]*chrome === "format" && editable[\s\S]{0,300}FormatButtons)/,
 };
 
-describe("plain-text hosts SHOW the format buttons", () => {
+/** Gates that hid the toolbar from Write (the defect): a host must never bring one back. */
+const PLAIN_ONLY_GATE = /\(editorMode === "plain" \|\| editorMode === "split"\) && \(\s*<FormatButtons\b/;
+
+export function plainOnlyHosts(root: string, files: readonly string[]): string[] {
+  return files.filter((rel) => PLAIN_ONLY_GATE.test(fs.readFileSync(path.join(root, rel), "utf8")));
+}
+
+describe("every editor host SHOWS the formatting toolbar in every editable mode", () => {
   test.each(Object.entries(VISIBLE_BUTTONS))("%s renders FormatButtons in its toolbar row", (rel, rendered) => {
     expect(rendered.test(fs.readFileSync(path.join(ROOT, rel), "utf8"))).toBe(true);
   });
 
-  test("render: a wired textarea's container shows the six buttons and Bold formats its selection", () => {
+  test.each(["components/markdown-studio/StudioEditorMode.tsx", "components/markdown-studio/AnnotateView.tsx"])(
+    "Markdown Studio (%s) keeps the editor's own toolbar row, where the toolbar lives",
+    (rel) => {
+      const src = fs.readFileSync(path.join(ROOT, rel), "utf8");
+      expect(src).toMatch(/<RichEditor\b/);
+      expect(src).not.toMatch(/chrome="bare"/);
+    },
+  );
+
+  test("every chrome=\"bare\" RichEditor host renders the toolbar in its own row (or is listed above)", () => {
+    const dirs = ["features", "components", "app"];
+    const offenders: string[] = [];
+    const walkAll = (dir: string) => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (["node_modules", "__tests__", ".next"].includes(entry.name)) continue;
+          walkAll(full);
+        } else if (entry.name.endsWith(".tsx") && !/\.test\./.test(entry.name)) {
+          const src = fs.readFileSync(full, "utf8");
+          if (/<RichEditor\b[\s\S]{0,600}?chrome="bare"/.test(src)) offenders.push(path.relative(ROOT, full).split(path.sep).join("/"));
+        }
+      }
+    };
+    for (const d of dirs) walkAll(path.join(ROOT, d));
+    // A bare editor is fine only where its host's row carries the toolbar (a VISIBLE_BUTTONS host),
+    // or the host's parent does (the html-pages tabs; the notes cores under NotesView / NoteWorkspace).
+    const HOST_ROW_ELSEWHERE: Record<string, string> = {
+      "features/html-pages/components/tabs/MarkdownWysiwygTab.tsx": "HtmlPreviewFullScreenEditor's footer row",
+      "features/html-pages/components/tabs/MarkdownSplitViewTab.tsx": "HtmlPreviewFullScreenEditor's footer row",
+      "features/notes/components/NoteEditorCore.tsx": "NotesView / NoteWorkspace header row",
+      "features/notes/components/mobile/MobileNoteEditor.tsx": "the note dock",
+    };
+    expect(offenders.filter((f) => !VISIBLE_BUTTONS[f] && !HOST_ROW_ELSEWHERE[f])).toEqual([]);
+  });
+
+  test("no host gates the toolbar to the plain modes (Write must have it)", () => {
+    expect(plainOnlyHosts(ROOT, Object.keys(VISIBLE_BUTTONS).filter((f) => f.endsWith(".tsx")))).toEqual([]);
+  });
+
+  test("the plain-only detector goes red on the old gate (self-proof)", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "format-gate-"));
+    fs.writeFileSync(path.join(tmp, "Old.tsx"), '{(editorMode === "plain" || editorMode === "split") && (\n  <FormatButtons resolve={r} />\n)}');
+    expect(plainOnlyHosts(tmp, ["Old.tsx"])).toEqual(["Old.tsx"]);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  test("render: a wired textarea's container shows the toolbar and Bold formats its selection", () => {
     /* eslint-disable @typescript-eslint/no-require-imports -- jsdom render inside a node-path census */
     const React = require("react") as typeof import("react");
     const { act } = require("react") as typeof import("react");
@@ -178,14 +258,50 @@ describe("plain-text hosts SHOW the format buttons", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     act(() => root.render(React.createElement(Host)));
-    const buttons = Array.from(container.querySelectorAll("[data-format-buttons] button"));
-    expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Bold (⌘B)", "Italic (⌘I)", "Inline code (⌘E)", "Link (⌘K)", "Heading", "Bulleted list (⌘⇧8)"]);
+    const commands = Array.from(container.querySelectorAll("[data-format-buttons] button[data-format-command]")).map((b) => b.getAttribute("data-format-command"));
+    for (const verb of ["undo", "redo", "bold", "italic", "strike", "code", "bulletList", "orderedList", "taskList", "quote", "link", "codeBlock", "table", "horizontalRule"]) {
+      expect(commands).toContain(verb);
+    }
     const textarea = container.querySelector("textarea")!;
     textarea.focus();
     textarea.setSelectionRange(10, 14);
     act(() => (container.querySelector('[data-format-command="bold"]') as HTMLButtonElement).click());
     expect(textarea.value).toBe("make this **bold**");
     act(() => root.unmount());
+    container.remove();
+  });
+
+  test("render: in WRITE (the visual editor) the toolbar's Bold is there and bolds the selection", () => {
+    /* eslint-disable @typescript-eslint/no-require-imports -- jsdom render inside a node-path census */
+    const React = require("react") as typeof import("react");
+    const { act } = require("react") as typeof import("react");
+    const { createRoot } = require("react-dom/client") as typeof import("react-dom/client");
+    const { Editor } = require("@tiptap/core") as typeof import("@tiptap/core");
+    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
+    const { FormatButtons } = require("@ai-matrx/rich-editor/format/FormatButtons") as typeof import("@ai-matrx/rich-editor/format/FormatButtons");
+    const { formatTargetWithin, registerFormatElement } = require("@ai-matrx/rich-editor/format/format-target") as typeof import("@ai-matrx/rich-editor/format/format-target");
+    const { editorFormatTarget } = require("@ai-matrx/rich-editor/visual/format-actions") as typeof import("@ai-matrx/rich-editor/visual/format-actions");
+    const { createRichEditorExtensions } = require("@ai-matrx/rich-editor/core/extensions") as typeof import("@ai-matrx/rich-editor/core/extensions");
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    // The Write host: the visual editor's zone registered exactly as VisualEditor registers it.
+    const container = document.createElement("div");
+    const zone = document.createElement("div");
+    document.body.appendChild(container);
+    const editor = new Editor({ element: zone, extensions: createRichEditorExtensions(), content: "<p>make this bold</p>" });
+    const off = registerFormatElement(zone, editorFormatTarget(editor, () => undefined));
+    const bar = document.createElement("div");
+    container.append(bar, zone);
+    const root = createRoot(bar);
+    act(() => root.render(React.createElement(FormatButtons, { resolve: () => formatTargetWithin(container) })));
+    const bold = container.querySelector('[data-format-command="bold"]') as HTMLButtonElement | null;
+    expect(bold).not.toBeNull();
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 11, 15)));
+    act(() => bold!.click());
+    expect(editor.getHTML()).toContain("<strong>bold</strong>");
+    act(() => root.unmount());
+    off();
+    editor.destroy();
     container.remove();
   });
 });

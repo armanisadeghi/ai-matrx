@@ -12,7 +12,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { newSoftMandateHref, orgMandateListHref } from "./routes";
 

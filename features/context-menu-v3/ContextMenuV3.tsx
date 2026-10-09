@@ -152,6 +152,39 @@ const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent
   ssr: false,
 });
 
+/**
+ * Warm THAT SAME chunk once per tab, when the browser is idle after the first
+ * menu shell mounts — so the first right-click draws at once instead of
+ * fetching (and, in dev, compiling) the engine under the pointer (G11A review,
+ * 2026-10-07: the first open after a page load took 1–2 s). It is the same
+ * specifier as the `dynamic()` above, so it adds no chunk and no boundary
+ * (code-splitting rule 3); it only moves WHEN the browser fetches it. The
+ * menu still renders only on open.
+ */
+let menuContentWarm: Promise<unknown> | null = null;
+export function warmMenuContent(): Promise<unknown> {
+  if (!menuContentWarm) {
+    menuContentWarm = import("./components/AlchemyMenuContent").catch((error: unknown) => {
+      menuContentWarm = null;
+      console.error("[ContextMenuV3] could not warm the menu; the first open will load it", error);
+    });
+  }
+  return menuContentWarm;
+}
+
+/** Schedules the warm-up for an idle moment (never during the page's own load work). */
+function useWarmMenuContentWhenIdle(): void {
+  useEffect(() => {
+    if (menuContentWarm) return;
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => void warmMenuContent(), { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(() => void warmMenuContent(), 1500);
+    return () => window.clearTimeout(id);
+  }, []);
+}
+
 // One advertised key combo pressed → that shortcut runs through the SAME
 // engine and launch handler as its menu item; mounted for one press only.
 const ShortcutKeyRunner = dynamic(() => import("./components/ShortcutKeyRunner"), {
@@ -310,6 +343,7 @@ export function ContextMenuV3({
   // counter so every open mounts a fresh engine over a fresh click target.
   const [menuPoint, setMenuPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [openSeq, setOpenSeq] = useState(0);
+  useWarmMenuContentWhenIdle();
 
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
@@ -681,7 +715,7 @@ export function ContextMenuV3({
     }
   };
 
-  // Opened from the ONE selection toolbar's "AI and more" (components/selection-
+  // Opened from the ONE selection toolbar's "Ask AI" (components/selection-
   // toolbar; it replaced the floating selection icon): the same menu over the
   // selected text — a panel under the selection on desktop, the sheet on a phone.
   const openFromSelection = () => {

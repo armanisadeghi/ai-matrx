@@ -8,7 +8,7 @@
 import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useEffect, useState } from "react";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAppSelector } from "@/lib/redux/hooks";

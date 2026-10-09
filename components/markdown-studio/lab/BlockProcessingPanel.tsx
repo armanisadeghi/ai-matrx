@@ -10,7 +10,7 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import { CheckCircle2, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { requestRaw } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";

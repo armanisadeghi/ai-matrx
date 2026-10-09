@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { beginBoardCreate, isBoardError } from "./boardsService";
 
@@ -32,11 +31,16 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
   // disabled and ignores clicks, so a slow route change never invites a second, empty board.
   const [opening, setOpening] = useState<string | null>(null);
   const busy = useRef(false);
+  // THE BOARD MADE AND NOT YET REACHED (2026-10-08). The give-up below re-enables the button, and
+  // on a cold compile slower than it a second press made a SECOND board. Until the page reaches the
+  // board this hook made, a press opens that board again — it never makes another.
+  const unopened = useRef<string | null>(null);
 
   useEffect(() => {
     if (opening === null) return;
     if (pathname === `/board/${opening}`) {
       busy.current = false;
+      unopened.current = null;
       setOpening(null);
       return;
     }
@@ -54,6 +58,16 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
   const newBoard = async () => {
     if (busy.current) return;
     busy.current = true;
+    const pending = unopened.current;
+    if (pending) {
+      if (pathname === `/board/${pending}`) {
+        unopened.current = null;
+      } else {
+        router.push(`/board/${pending}`);
+        setOpening(pending);
+        return;
+      }
+    }
     setCreating(true);
     let stayBusy = false;
     try {
@@ -61,17 +75,16 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
       // (a failed insert is reported on that page with Retry). Held for the organization gate when
       // none is selected: the person picks, THIS request proceeds once and opens the new board.
       const { id } = await beginBoardCreate({ organizationId });
+      unopened.current = id;
       router.push(`/board/${id}`);
       stayBusy = true;
       setOpening(id);
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(
+      toast.error(
           isBoardError(error)
             ? error.message
             : `The board could not be created: ${error instanceof Error ? error.message : String(error)}`,
         );
-      }
     } finally {
       setCreating(false);
       if (!stayBusy) busy.current = false;

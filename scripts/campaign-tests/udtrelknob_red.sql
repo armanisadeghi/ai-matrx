@@ -12,7 +12,7 @@
 --
 --   ARM 2 — THE RESOLVER IS ASKED WITH THE WRONG ORGANIZATION. Hand it organization A's id while
 --           standing in organization B and B is told it has a feature nobody there turned on.
---           This is the shape of every default-organization defect the platform has already been
+--           This is the shape of every preselected-organization defect the platform has already been
 --           bitten by, and it is why the reader carries the TABLE's organization and never a
 --           remembered one.
 --

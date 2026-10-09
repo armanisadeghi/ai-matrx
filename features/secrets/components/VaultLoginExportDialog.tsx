@@ -38,7 +38,7 @@ import {
   type VaultVerifiedExportActor,
 } from "../vault-service";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 const DEFAULT_CSV_PROFILE = "matrx_login_csv_v1" as const;

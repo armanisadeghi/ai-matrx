@@ -112,7 +112,8 @@ jest.mock("../useInbox", () => ({
   }),
   // the redesigned bell
   useInboxFeed: () => ({ rows: ROWS, triage: true, isLoading: false, error: null, refetch: () => undefined, hasMore: false, loadMore: () => undefined, loadingMore: false }),
-  useInboxActions: () => ({ act: noop, undo: noop, canUndo: false, markAllRead: noop }),
+  useInboxActions: () => ({ act: noop, undo: noop, canUndo: false, markAllRead: noop, clear: () => Promise.resolve(0) }),
+  useInboxKinds: () => ({ data: [{ eventKey: "hr.workflow.request_submitted", label: "Request submitted", bucket: "needs_you", notices: 56, unseen: 0 }] }),
   useWorkWaiting: () => ({ data: [{ organization_id: "o1", organization_name: "Acme", waiting: 4, snoozed: 1, overdue: 0 }], isLoading: false, isError: false }),
   belongsIn: () => true,
 }));

@@ -3,13 +3,12 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import {
   selectAgentAccessResolved,
   selectAgentById,
   selectAgentIsReadOnly,
-  selectAllAgentsArray,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
@@ -44,7 +43,8 @@ import {
 } from "./agentSettingsDraftRegistry";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 interface AgentSettingsFormProps {
   agentId: string;
@@ -88,7 +88,7 @@ export function AgentSettingsForm({
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const modelId = agent?.modelId || "";
-  const allAgents = useAppSelector(selectAllAgentsArray);
+  const allAgents = useCatalogAgents();
 
   const [draft, setDraft] = useState<Partial<AgentDefinition>>({});
   const [tagsInput, setTagsInput] = useState("");

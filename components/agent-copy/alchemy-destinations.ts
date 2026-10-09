@@ -63,12 +63,10 @@ export function createAlchemyDestinationPorts(host: Host) {
     openAttachment: (target) => { host.dispatch(openOverlay({ overlayId: "contextAssignment", instanceId: `alchemy-attach:${target.id}`, data: { subject: { entityType: "note", entityId: target.id, title: target.label } } })); },
     openChat: async (content, mode, current) => {
       const { resolveMandateAsking } = await import("@ai-matrx/chat/mandates/resolve-asking");
-      const { isOrganizationSelectionCancelled } = await import("@ai-matrx/chat/host/org");
       let mandate;
       try {
         mandate = await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY);
       } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) return;
         throw error;
       }
       identity();

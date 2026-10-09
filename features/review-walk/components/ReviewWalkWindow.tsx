@@ -16,7 +16,7 @@
  * 404/403 stops are ANSWERS, rendered honestly in place.
  */
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -33,7 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { reviewWalkUrlId } from "@/features/review-walk/address";
+import { reviewWalkUrlArgs, reviewWalkUrlId } from "@/features/review-walk/address";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -80,6 +80,8 @@ export interface ReviewWalkWindowProps {
   agentId?: string | null;
   agentName?: string | null;
   roleLabel?: string | null;
+  /** What tells this walk from a sibling with the same role ("Pair 3"). */
+  detailLabel?: string | null;
 }
 
 const UNIT_LABELS: Record<string, string> = {
@@ -116,6 +118,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     agentId = null,
     agentName = null,
     roleLabel = null,
+    detailLabel = null,
   } = props;
 
   const [layers, setLayers] = useState<WalkLayer[]>([]);
@@ -412,18 +415,20 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   return (
     <WindowPanel
       id={instanceId}
-      title={walkTitle({ unitKind, agentName, roleLabel })}
+      title={walkTitle({ unitKind, agentName, roleLabel, detailLabel })}
       initialRect={rect}
       onClose={onClose}
       overlayId="reviewWalkWindow"
       overlayInstanceId={instanceId}
       urlSyncId={reviewWalkUrlId({ unitKind, unitId })}
+      urlSyncArgs={reviewWalkUrlArgs({ agentId, agentName, roleLabel, detailLabel })}
       onCollectData={() => ({
         unitKind,
         unitId,
         agentId,
         agentName,
         roleLabel,
+        detailLabel,
         stackIndex,
       })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"

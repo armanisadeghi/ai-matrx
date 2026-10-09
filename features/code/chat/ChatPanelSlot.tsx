@@ -17,6 +17,7 @@ import { AVATAR_RESERVE } from "../styles/tokens";
 import { AgentPicker } from "./AgentPicker";
 import { ContextChip } from "../agent-context/ContextChip";
 import { useSyncEditorContext } from "../agent-context/useSyncEditorContext";
+import { useSyncActiveFileToVariable } from "../agent-context/useSyncActiveFileToVariable";
 import { useBindAgentToSandbox } from "../agent-context/useBindAgentToSandbox";
 import {
   selectActiveSandboxId,
@@ -40,10 +41,20 @@ interface ChatPanelSlotProps {
   /** If `?agentId=` isn't already in the URL when this slot first mounts,
    *  inject this id so the chat panel boots with a sensible coding agent
    *  instead of showing the empty-state picker. Used by focused-edit
-   *  surfaces (e.g. the agent-apps editor) to prefer a specific
+   *  surfaces (e.g. the applets editor) to prefer a specific
    *  prompt-app-development assistant. The user can still pick a
    *  different agent after mount. */
   defaultAgentId?: string;
+  /** The agent a MANDATE resolved for this host (the Applet editor). Used
+   *  when the URL pins none, and never written into the URL — the address
+   *  carries no agent id; the mandate is the identity. */
+  mandateAgentId?: string;
+  /** Show the "Show History" toggle. Off where the host renders no history
+   *  column (a focused editor whose chat is about one record). */
+  historyToggle?: boolean;
+  /** Name of an agent variable (e.g. `current_code`) filled from the open file
+   *  when the focused agent declares it. Named variable, never `user_input`. */
+  activeFileVariable?: string;
 }
 
 const CODE_WORKSPACE_SETTINGS_TAB = "editor.codeWorkspace";
@@ -61,12 +72,15 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   className,
   rightmost = false,
   defaultAgentId,
+  mandateAgentId,
+  historyToggle = true,
+  activeFileVariable,
 }) => {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const agentId = searchParams.get("agentId");
+  const agentId = searchParams.get("agentId") ?? mandateAgentId ?? null;
   const conversationIdFromUrl = searchParams.get("conversationId");
 
   // If the host supplied a `defaultAgentId` and the URL doesn't already
@@ -115,6 +129,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   // tab set and a chat instance are live. The hook is a no-op when
   // `conversationId` is null, so it's safe to call unconditionally.
   useSyncEditorContext(conversationId);
+  useSyncActiveFileToVariable(conversationId, activeFileVariable);
 
   // Sandbox-mode binding: when the editor is attached to a sandbox AND the
   // orchestrator surfaced a per-sandbox proxy URL, redirect THIS conversation's
@@ -145,23 +160,25 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
       pathname,
       searchParams,
       agentId,
+      agentInUrl: !mandateAgentId || Boolean(searchParams.get("agentId")),
     });
-  }, [agentId, dispatch, pathname, router, searchParams]);
+  }, [agentId, dispatch, pathname, router, searchParams, mandateAgentId]);
 
   // Code workspace lives at `${basePath}?agentId=X` — no nested `/run` segment.
   // Override the runner's default URL builder so fork / retry navigation
   // stays inside whichever surface mounted this slot. `basePath` defaults
   // to `/code` for the canonical workspace; embedded surfaces (e.g. the
-  // agent-apps editor) pass their own pathname so forks stay in-route.
+  // applets editor) pass their own pathname so forks stay in-route.
   const buildConversationUrl = useMemo(() => {
     if (!agentId) return undefined;
     return (conversationId: string) => {
       const next = new URLSearchParams(searchParams.toString());
-      next.set("agentId", agentId);
+      // A mandate-pinned host keeps the agent out of the address.
+      if (!mandateAgentId || searchParams.get("agentId")) next.set("agentId", agentId);
       next.set("conversationId", conversationId);
       return `${basePath}?${next.toString()}`;
     };
-  }, [agentId, basePath, searchParams]);
+  }, [agentId, basePath, searchParams, mandateAgentId]);
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>
@@ -183,12 +200,14 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
               label="Chat settings"
               onClick={openSettings}
             />
-            <SidePanelAction
-              icon={farRightOpen ? PanelRightOpen : PanelRight}
-              label={farRightOpen ? "Hide History" : "Show History"}
-              active={farRightOpen}
-              onClick={() => dispatch(setFarRightOpen(!farRightOpen))}
-            />
+            {historyToggle && (
+              <SidePanelAction
+                icon={farRightOpen ? PanelRightOpen : PanelRight}
+                label={farRightOpen ? "Hide History" : "Show History"}
+                active={farRightOpen}
+                onClick={() => dispatch(setFarRightOpen(!farRightOpen))}
+              />
+            )}
           </div>
         }
         className={rightmost ? AVATAR_RESERVE : undefined}

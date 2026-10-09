@@ -12,7 +12,8 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { CanvasPresentation } from "@ai-matrx/canvas";
+import { canvasActions, createCanvasStore, type CanvasPresentation } from "@ai-matrx/canvas";
+import { CanvasColumn, CanvasProvider, registerCanvasKind } from "@ai-matrx/canvas/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -23,6 +24,19 @@ jest.mock("@ai-matrx/canvas/react", () => ({
   ...jest.requireActual("@ai-matrx/canvas/react"),
   useCanvasPresentation: () => mockPresentation,
 }));
+jest.mock("@ai-matrx/rich-content/display/blocks/canvas-fit", () => {
+  const actual = jest.requireActual<typeof import("@ai-matrx/rich-content/display/blocks/canvas-fit")>(
+    "@ai-matrx/rich-content/display/blocks/canvas-fit",
+  );
+  const actualCanvas = jest.requireActual<typeof import("@ai-matrx/canvas/react")>("@ai-matrx/canvas/react");
+  return {
+    ...actual,
+    useCanvasFit: () => {
+      const providerPresentation = actualCanvas.useCanvasPresentation();
+      return actual.canvasFitFor(mockPresentation ?? providerPresentation);
+    },
+  };
+});
 
 jest.mock("next/dynamic", () => {
   const react = jest.requireActual("react") as typeof React;
@@ -141,6 +155,26 @@ import { CanvasFlashcardsView } from "@/features/flashcards/components/CanvasFla
 import { canvasFitFor } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+const TABLE = [
+  "| Yard | Material | Price per ton | Note |",
+  "| --- | --- | --- | --- |",
+  "| North | Steel | $210 | weighed on arrival |",
+  "| South | Aluminum | $1,450 | clean only |",
+].join("\n");
+const TABLE_KIND = "canvas-narrow-table-test";
+const unregisterTableKind = registerCanvasKind({
+  id: TABLE_KIND,
+  label: "Table test",
+  surface: "dom",
+  icon: () => null,
+  component: () => (
+    <MarkdownStreamingProvider value={false}>
+      <StreamingTableRenderer content={TABLE} isStreamActive={false} />
+    </MarkdownStreamingProvider>
+  ),
+});
+afterAll(() => unregisterTableKind());
+
 function pane(width: number, height: number, isFullscreen = false): CanvasPresentation {
   return {
     host: "canvas",
@@ -179,6 +213,46 @@ async function show(node: React.ReactElement, presentation: CanvasPresentation |
   });
 }
 
+async function showPackageTable(width: number, height: number, isFullscreen = false) {
+  // CanvasProvider owns its controller for its first render. Unmount between
+  // scenarios so each one exercises the store and presentation passed here.
+  await act(async () => {
+    root.render(null);
+  });
+  mockPresentation = null;
+  const store = createCanvasStore();
+  store.dispatch(canvasActions.open({ kind: TABLE_KIND, key: "table" }));
+  const getRect = HTMLElement.prototype.getBoundingClientRect;
+  HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains("mxc-pane-slot")) {
+      return {
+        x: 0, y: 0, left: 0, top: 0, right: width, bottom: height,
+        width, height, toJSON: () => ({}),
+      } as DOMRect;
+    }
+    return getRect.call(this);
+  };
+  try {
+    await act(async () => {
+      root.render(
+        <CanvasProvider store={store} persistence={null} hotkeys={false}>
+          <CanvasColumn placement="fill" />
+        </CanvasProvider>,
+      );
+    });
+    if (isFullscreen) {
+      await act(async () => {
+        store.dispatch(canvasActions.setFullscreen(true));
+      });
+    }
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  } finally {
+    HTMLElement.prototype.getBoundingClientRect = getRect;
+  }
+}
+
 describe("canvasFitFor", () => {
   it("is outside without a presentation, narrow under 480, tight under 768, wide when full screen", () => {
     expect(canvasFitFor(null)).toBe("outside");
@@ -190,12 +264,6 @@ describe("canvasFitFor", () => {
 });
 
 describe("table", () => {
-  const TABLE = [
-    "| Yard | Material | Price per ton | Note |",
-    "| --- | --- | --- | --- |",
-    "| North | Steel | $210 | weighed on arrival |",
-    "| South | Aluminum | $1,450 | clean only |",
-  ].join("\n");
   const render = () => (
     <MarkdownStreamingProvider value={false}>
       <StreamingTableRenderer content={TABLE} isStreamActive={false} />
@@ -208,7 +276,7 @@ describe("table", () => {
     // The card list is ONE container query (`.phone-stack`): the labels are always
     // in the markup, and only the wrapper's own width turns them into cards.
 
-    await show(render(), NARROW);
+    await showPackageTable(360, 900);
     expect(container.querySelector("table")?.getAttribute("data-canvas-fit")).toBe("narrow");
     const labels = Array.from(container.querySelectorAll("tbody tr:first-child td[data-label]")).map(
       (td) => td.getAttribute("data-label"),
@@ -219,9 +287,9 @@ describe("table", () => {
   });
 
   it("pins the first column in a tight pane and not when that pane is full screen", async () => {
-    await show(render(), pane(630, 900));
+    await showPackageTable(630, 900);
     expect(container.querySelector("tbody td")?.className).toContain("sticky");
-    await show(render(), pane(630, 900, true));
+    await showPackageTable(630, 900, true);
     expect(container.querySelector("tbody td")?.className).not.toContain("sticky");
   });
 });
@@ -356,8 +424,8 @@ describe("tasks", () => {
 
 describe("quiz", () => {
   const QUIZ = {
-    quiz_title: "Yard safety",
-    multiple_choice: [
+    quizTitle: "Yard safety",
+    multipleChoice: [
       {
         id: 1,
         question: "What do you wear on the scale deck?",

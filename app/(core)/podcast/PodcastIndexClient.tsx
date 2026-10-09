@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { AudioLines, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";

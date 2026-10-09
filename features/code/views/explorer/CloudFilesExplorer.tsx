@@ -34,6 +34,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import { setActiveFileId, setActiveFolderId } from "@/features/files/redux/slice";
@@ -164,7 +165,7 @@ function CloudFilesTree({
   // draggables. Without PointerSensor distance, bare DndContext swallows
   // clicks. readOnly disables row drag here — explorer has no move handler.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
 
   return (

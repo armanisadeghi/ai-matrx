@@ -59,7 +59,7 @@ Glass is a first-class part of this app. Use it; just use ours.
 
 - Imperative confirm: `confirm({...})` from `components/dialogs/confirm/ConfirmDialogHost.tsx` → returns `Promise<boolean>`.
 - Inline destructive confirm with busy state: `<ConfirmDialog />` from `@/components/ui/confirm-dialog`.
-- Single-string input: `components/dialogs/text-input/TextInputDialog.tsx` (drawer on mobile, dialog on desktop).
+- Single-string input: `TextInputDialog` from `@ai-matrx/design-system` (drawer on mobile, dialog on desktop).
 - Toast: `toast.success/.error/.info` (sonner) via `providers/toast-context.tsx`.
 
 ## Buttons & controls

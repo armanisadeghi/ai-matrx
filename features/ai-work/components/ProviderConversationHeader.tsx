@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 
 export function ProviderConversationHeader({ title }: { title: string }) {

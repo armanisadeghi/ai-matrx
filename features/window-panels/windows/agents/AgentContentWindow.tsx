@@ -30,7 +30,6 @@ import {
   selectAgentDefinition,
   selectAgentIsDirty,
   selectAgentIsEditable,
-  selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
@@ -92,6 +91,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ function FooterControls({
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isDirty = useAppSelector((state) => selectAgentIsDirty(state, agentId));
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  const agentName = useAgentName(agentId);
 
   const activeTabDef = activeTabs.find((t) => t.id === activeTab);
   const showSaveControls = !activeTabDef?.inlineSave && isDirty;
@@ -672,9 +672,7 @@ export default function AgentContentWindow({
   const isDirty = useAppSelector((state) =>
     selectAgentIsDirty(state, agentId ?? ""),
   );
-  const agentName = useAppSelector((state) =>
-    selectAgentName(state, agentId ?? ""),
-  );
+  const agentName = useAgentName(agentId ?? "");
   const agent = useAppSelector((state) =>
     selectAgentById(state, agentId ?? ""),
   );

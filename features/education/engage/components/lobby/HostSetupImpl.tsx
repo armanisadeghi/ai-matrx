@@ -12,8 +12,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRead } from "@/components/read-state/useRead";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useRead } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {

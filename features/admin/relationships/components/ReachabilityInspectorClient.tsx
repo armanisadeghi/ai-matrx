@@ -17,7 +17,7 @@
 // Audit) can reach the actual containers instead of just naming them.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { Layers, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 

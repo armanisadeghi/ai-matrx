@@ -114,6 +114,18 @@ it("a store without the door says so in the section, with Retry - never hidden",
   expect(reload).toHaveBeenCalled();
 });
 
+it("another organization's record is a plain state, never the store's door name (DRILL-LIVE-FIX-2 #7)", async () => {
+  hook.mockReturnValue(
+    state({ error: { code: "door", message: "You are not a member of that organization, so custom.entity_back_links has nothing to do there." } }),
+  );
+  await mount();
+  const section = host.querySelector('[data-section="back-links"]');
+  expect(section?.getAttribute("data-state")).toBe("walled");
+  expect(section?.textContent).toContain("Only its organization's members see these");
+  expect(section?.textContent).not.toContain("custom.");
+  expect([...host.querySelectorAll("button")].some((b) => b.textContent === "Retry")).toBe(false);
+});
+
 it("asks nothing until the row's organization is known", async () => {
   hook.mockReturnValue(state());
   await mount(null);

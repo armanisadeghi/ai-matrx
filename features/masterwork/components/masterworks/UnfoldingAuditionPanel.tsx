@@ -19,8 +19,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { useRead } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { FileLock2 } from "lucide-react";
 

@@ -8,7 +8,7 @@
 //
 //   SEAT=admin|member  WIDTH=1600|390  ORIGIN=http://<you>.localhost:3001  node scripts/scopes-reads-web-walk.mjs
 //
-// Screens land in common-docs/operations/for-arman/2026-09-29/scopes-reads-web/. Read-only: it opens
+// Screens land in /tmp/matrx-evidence/2026-09-29/scopes-reads-web/. Read-only: it opens
 // pages and panels and never writes.
 
 import { chromium } from "playwright";
@@ -20,7 +20,7 @@ const ORIGIN = process.env.ORIGIN ?? "http://scopes-reads-web.localhost:3001";
 const SEAT = process.env.SEAT ?? "admin";
 const WIDTH = Number(process.env.WIDTH ?? 1600);
 const SHOTS =
-  process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/scopes-reads-web";
+  process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-29/scopes-reads-web";
 mkdirSync(SHOTS, { recursive: true });
 
 // Castellano & Reyes, LLP — the law firm the scope system was built around: a Matter (Reyes v.

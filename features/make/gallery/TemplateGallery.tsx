@@ -264,6 +264,40 @@ function Failed({ why, retry }: { why: string; retry: () => void }) {
   );
 }
 
+/**
+ * "Made from your descriptions": the one-offs a describe run installed here and nobody removed.
+ * The gallery's own cards and `TemplatePreview` (Show what it made · Remove · Save as my template)
+ * serve it unchanged, so a thing the describe box made can be taken back after its result card is gone.
+ */
+export function InstalledOneOffs() {
+  // org-filter: write-target — the installs of the organization they were made in
+  const active = useOrganizationRequired();
+  const organizationId = active.organizationState === "ready" ? active.organizationId : null;
+  const read = useCatalogue(
+    organizationId ? `one-offs:${organizationId}` : null,
+    galleryFilter({}, { installedIn: organizationId, installedOneOffs: true }),
+  );
+  if (!organizationId || read.phase !== "read" || read.data.cards.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2" aria-labelledby="make-one-offs" data-make-one-offs="">
+      <h2 id="make-one-offs" className="text-sm font-medium text-muted-foreground">
+        Made from your descriptions
+      </h2>
+      <ul className="flex flex-col gap-2">
+        {read.data.cards.map((card) => (
+          <li key={card.id} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3" data-make-one-off={card.id}>
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+              <span className="truncate text-sm font-medium text-foreground">{card.name}</span>
+              {card.footprint?.line ? <span className="truncate text-xs text-muted-foreground">{card.footprint.line}</span> : null}
+            </div>
+            <TemplatePreview templateId={card.id} bare installedOneOff />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // The preview page: what it installs, then one-click install with live progress.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -305,8 +339,14 @@ export function TemplatePreview({
   autoInstall = false,
   onInstalled,
   productName,
+  installLabel = "Install",
+  installedOneOff = false,
 }: {
   templateId: string;
+  /** A one-off a describe run already installed (/make's "Made from your descriptions"): no Install, no gallery-template actions; Show what it made, Remove, Save as my template stay. */
+  installedOneOff?: boolean;
+  /** The install button's name where the host calls the act something else (an Applet template: "Use this template"). */
+  installLabel?: string;
   bare?: boolean;
   /** What the person installed, when it is not the data template itself (an Applet template's own name). */
   productName?: string;
@@ -519,9 +559,9 @@ export function TemplatePreview({
                 </Button>
               ) : null}
             </>
-          ) : (
+          ) : installedOneOff && !stuck && run.phase !== "running" ? null : (
             <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install={stuck ? "finish" : ""}>
-              {stuck ? "Finish install" : "Install"}
+              {stuck ? "Finish install" : installLabel}
             </Button>
           )}
           {installId ? (
@@ -536,7 +576,7 @@ export function TemplatePreview({
           ) : null}
           <SavesTo />
           {card.scope === "org" && card.ephemeral ? <KeepOneOff templateId={card.id} kept={read.reload} /> : null}
-          {card.scope === "org" ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
+          {card.scope === "org" && !installedOneOff ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
         </div>
 
         {askOrganization && !organizationId ? (

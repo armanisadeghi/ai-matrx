@@ -37,7 +37,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   PropertyRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 

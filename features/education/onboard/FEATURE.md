@@ -6,7 +6,8 @@
 
 ## What it is
 
-**Front door — the Study Kit hero** (`/education/start`): drop/paste/link ANY input → a full,
+**Front door — THE create page** (`/education/kits/new`; `/education/start` forwards there): Build
+with AI or bundle Saved aids (`kits/components/SavedAidsKitForm`). Build with AI: drop/paste/link ANY input → a full,
 grounded study kit in one flow. **Back door — Your data** (`/education/data`): export everything
 in open formats, import your existing library, and a plain-English ownership pledge.
 
@@ -17,11 +18,11 @@ source file's associations — no new table.
 
 ## 🚨 Material comes in through THE one Source input
 
-`/education/start` (and `/education/kits/new`) take material only through the unified Source input
+`/education/kits/new` (both modes) takes material only through the unified Source input
 (`features/resource-manager/source-input`, the same input as `/education/flashcards/new`): Add new =
 Upload · Paste text · Web page · YouTube · Recording · Image; Use existing = the organization page's
 Sources + Sources & Outputs kinds; cards with version/parts; review above the knob; picks kept
-across a reload (`wizardDraft`, key `source-input:education:start` / `source-input:education:kits:new`).
+across a reload (`wizardDraft`, key `source-input:education:start` — one key for both modes).
 "Topic" is not offered — a kit is grounded in material; the focus line carries a topic. Delivery
 is `["direct"]` (the generators read the resolved text only, like flashcards). There is no local
 input UI here and no client-side reader: every way new material becomes a Source is the Source
@@ -42,7 +43,7 @@ Source's `### Chunk` text joined in pick order — the deck generator's join) an
 Every artifact's `source` edge (written by `convert/recordSourceLineage.ts`) points at the anchor.
 A Source the server left out, or read raw, is listed on the kit board (`meta.notes`).
 
-`/education/start` has ONE address (`startRoutes.ts` `EDU_START_HREF`); the Education home's
+Creating a kit has ONE address (`startRoutes.ts` `NEW_KIT_HREF` = `/education/kits/new`); the Education home's
 **Study a file you have** link opens it — Use existing sits beside every Add new door, so there is
 no tab to open.
 
@@ -76,7 +77,7 @@ Source input ─SourceSet─▶ POST /sources/resolve ─useIngest─▶ { text,
 
 | Route | What |
 |---|---|
-| `/education/start` | The study-kit front door (`StartHero`) — the one Source input, then what to make. Hub landing leads with it. |
+| `/education/kits/new` | THE create page (`StartHero`) — the one Source input, then Build with AI or Saved aids. Hub landing leads with it. `/education/start` forwards here. |
 | `/education/data` | Your data: export/import + ownership pledge (`DataOwnershipPage`). |
 | `/education/summaries/[id]` | Grounded study-summary viewer (`SummaryDetail`). |
 
@@ -198,6 +199,11 @@ with the stated vision.
   `### Chunk cN` markers before sending so cards ground + cite.
 
 ## Change log
+
+- **2026-10-07** — **One create page.** `StartHero` now renders at `/education/kits/new` with a
+  mode switch (Build with AI · Saved aids); `/education/start` redirects there keeping
+  `?source=`/`?from=`. `StartHero` reads `?source=` (pre-picks a file; an existing kit forwards to
+  its page) and takes `onMade` for the Board tile.
 
 - **2026-10-03** — **A kit build is never lost with its tab.** `useKitGeneration` runs as a
   tab-bound run (`lib/wizard-draft/useTabBoundRun`, key `run:education:start:kit`) with a JOURNAL:

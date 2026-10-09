@@ -18,7 +18,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface EntitlementRow {
   capability: string;

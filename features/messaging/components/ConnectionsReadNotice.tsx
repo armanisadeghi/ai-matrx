@@ -7,8 +7,8 @@
  *   and a StaleDataNotice names who is missing — never a silently short list.
  * Renders nothing when the read was whole.
  */
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   describeConnectionFailures,
   type ConnectionReadFailure,

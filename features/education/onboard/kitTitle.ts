@@ -40,7 +40,7 @@ export const NAMER_DEADLINE_MS = 20_000;
 export const NAMER_LATE_MS = 120_000;
 
 /** How much of the material the namer reads. A title needs the opening, not the book. */
-const NAMER_SAMPLE_CHARS = 4_000;
+export const NAMER_SAMPLE_CHARS = 4_000;
 
 /** Words a filename carries that are never part of a title. */
 const JUNK_TOKENS = new Set([
@@ -168,6 +168,17 @@ function usableTitle(candidate: string): boolean {
 }
 
 /**
+ * What the namer reads: the opening of the material, or, for several Sources,
+ * an equal share of each so the title covers all of them, not the first.
+ */
+export function balancedSample(text: string, samples?: readonly string[]): string {
+  const parts = (samples ?? []).map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 2) return text.slice(0, NAMER_SAMPLE_CHARS).trim();
+  const share = Math.floor(NAMER_SAMPLE_CHARS / parts.length);
+  return parts.map((p) => p.slice(0, share)).join("\n\n---\n\n");
+}
+
+/**
  * Resolve the kit's name. NEVER throws and never returns an empty title — a
  * failed or slow namer degrades to the humanized filename, because the kit
  * itself is what the learner is waiting for.
@@ -187,6 +198,8 @@ export async function resolveKitTitle(
     rawTitle: string;
     /** Every Source's own name — a kit of four Sources is named from all four. */
     sourceTitles?: readonly string[];
+    /** The opening of each Source's text: the namer reads a share of every one. */
+    sourceSamples?: readonly string[];
     focus?: string;
     orgId?: string;
   },
@@ -194,7 +207,7 @@ export async function resolveKitTitle(
   const floorTitle = humanizeSourceTitle(input.rawTitle) || "Study material";
   const floor: KitTitle = { title: floorTitle, subjectHint: "", named: false };
 
-  const sample = input.text.slice(0, NAMER_SAMPLE_CHARS).trim();
+  const sample = balancedSample(input.text, input.sourceSamples);
   if (!sample) return floor;
 
   const controller = new AbortController();

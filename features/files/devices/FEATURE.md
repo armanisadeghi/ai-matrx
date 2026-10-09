@@ -29,6 +29,18 @@ local mechanics only.
 | `app/(admin)/administration/applications/sync/` | The admin page over `files.sync_mapping_admin_status`. |
 | `platform.tsx` | Platform glyph, OS line, "last seen" — one copy for every device surface. |
 
+## Admin fleet surface
+
+`admin/SyncFleetClient.tsx` consumes a successful server read of at most 1000 path-free mappings;
+a failed read throws to the route error boundary before this client mounts. Never label an
+unobserved or failed read as an empty fleet. The `admin-sync-fleet.manifest.ts` contract emits
+loaded rows, overlapping health segments and their counts, unique accounts over quota, the
+classification clock and each canonical table's query/processed rows. Segment searches are view
+state and never change the loaded health totals. The canonical read-only menu uses the `files`
+product; it reads current scope without another request. This page has no mutation handler or
+fixed AI worker. Keep readiness partial pending browser proof, header source mapping and
+independent certification.
+
 ## The device console (`/devices`, `/devices/[deviceId]`) — Matrx 2 lane E
 
 Drive a Matrx 2 computer from any browser, phone first: terminal, files, info. Spec:
@@ -37,7 +49,7 @@ Drive a Matrx 2 computer from any browser, phone first: terminal, files, info. S
 | File (`console/`) | What it owns |
 |---|---|
 | `useDeviceClient.ts` | ONE `createDesktopClient` per device page, straight to the relay (token in the subprotocol, re-read every dial; `relay.reauth` on every session refresh; `useDesktopWake`). |
-| `relay.ts` | `NEXT_PUBLIC_MATRX_RELAY_URL` (production default `relay.matrxserver.com`; clone previews get `relay-test`, paired in `scripts/clone-preview/clone-preview-env.cjs`), `/status` reads. |
+| `relay.ts` | `NEXT_PUBLIC_MATRX_RELAY_URL` (production default `relay.matrxserver.com`), `/status` reads. |
 | `connection.ts` | The status pill's honest states (Live / Connecting… / Reconnecting… / Offline / refusals), tested. |
 | `TerminalPanel.tsx` | Shell chips (`exec.list`), `+`, close (kill, confirmed), one live shell in `@ai-matrx/terminal`; `?t=` holds the shell. |
 | `FilesPanel.tsx` / `FilePreview.tsx` / `paths.ts` | Breadcrumb, rows, pull to refresh, swipe Rename / Move / Trash (+ Undo), `…` New folder / Upload / Show hidden; `?path=`. |
@@ -128,31 +140,3 @@ metered to the organization.
 | `pnpm check:user-visible-parity` | The one visibility rule: the TS mirror equals the live SQL functions, and the browser's rendered set equals the predicate's set (needs `AI_ADMIN_*`). Set-based — 4,945 paths in under a second through `files.is_user_visible_paths`. Knobs: `PARITY_PATH_BATCH`, `PARITY_MAX_PATHS`. |
 | `npx jest features/files/devices/console` | The console's status-pill states. Terminal's keys, Ctrl latch, gestures, selection and viewport math are tested in `aidream/apps/shared/terminal` (`pnpm test`). |
 | `npx jest features/files/storage-meter features/files/devices features/files/utils/user-visible.test.ts` | The meter's honest states, the one-sentence-per-row rule, and the visibility unit covers. |
-
-## Change log
-
-- **2026-10-02** — The device console (`/devices`, `/devices/[deviceId]`, Matrx 2 lane E) on
-  `@ai-matrx/desktop-protocol` and `@ai-matrx/terminal`; platform helpers moved to `platform.tsx`
-  (the relative-time twin now delegates to the kit's `formatRelativeTime`).
-
-- **2026-09-21** — Verification findings L5-1…L5-4 fixed. The meter is
-  rebuilt on billing (see above) and no longer reads `files.account_tiers`; a
-  folder row derives ONE sentence from the state enum AND `last_seen_at`
-  (`describeMappingReport`), so a six-day-old `syncing` can no longer say
-  "Files are moving" beside "Silent since 6 days ago"; the knowledge toggle
-  says what it actually does (it writes the C11 knob, and the file service does
-  not honour it yet); and both parity guards are wired to `check:*` scripts
-  that CI and the release gates run.
-
-- **2026-09-18** — Each `DeviceCard` gained a **Home connection** row, and the
-  tab gained an **Other computers** section for a computer that lends its
-  internet connection but syncs no folders (the standalone helper registers no
-  `app_instances` row, so no device card can carry it). Both render
-  `features/residential-egress/components/HomeConnectionRow.tsx`; the list is
-  read ONCE here through `useHomeConnections` and handed down, never re-read per
-  card. The live sentence at the top is now the SLOWER of the two channels —
-  "Live" while half the page polls would be a lie. Contract:
-  `common-docs/systems/web/residential-egress/FEATURE.md`.
-- **2026-09-15** — Created (FS-L5): the Devices & sync tab, the honest storage
-  meter, the admin page, and the deletion of the browser's second copy of the
-  visibility rule.

@@ -35,11 +35,9 @@ import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import {
-  selectLiveAgents,
   selectAgentExecutionPayload,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  fetchAgentsListFull,
   fetchAgentExecutionMinimal,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -78,13 +76,11 @@ import { VariablePreview } from "./VariablePreview";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
-/** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
 const RESEARCH_SURFACE_NAME = "matrx-user/research";
-
-const DEFAULT_INSTRUCTION =
-  "Produce your standard output using the research provided in the variables. Ground every claim in that material and name what is missing rather than filling gaps.";
 
 export default function ContextBuilder() {
   const { topicId, topic } = useTopicContext();
@@ -279,7 +275,7 @@ export default function ContextBuilder() {
   };
 
   useEffect(() => {
-    void dispatch(fetchAgentsListFull());
+    void ensureAgentCatalog();
   }, [dispatch]);
 
   if (builder.loading) {
@@ -525,7 +521,7 @@ function AgentRunnerBody({
   const store = useAppStore();
   const { topicId } = useTopicContext();
   const { launchAgent, launchMandate } = useAgentLauncher();
-  const liveAgents = useAppSelector(selectLiveAgents);
+  const liveAgents = useCatalogAgents();
   const setAgentId = onSelectAgent;
   const [launching, setLaunching] = useState(false);
   /**
@@ -533,7 +529,7 @@ function AgentRunnerBody({
    * the two are not interchangeable — a user who wants "focus on the founders,
    * skip the offerings" has nowhere else to say it.
    */
-  const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
+  const [instruction, setInstruction] = useState("");
 
   const payload = useAppSelector((s: RootState) =>
     agentId ? selectAgentExecutionPayload(s, agentId) : null,
@@ -592,7 +588,9 @@ function AgentRunnerBody({
           ...(Object.keys(resolved.contextRefs).length > 0
             ? { context: resolved.contextRefs }
             : {}),
-          userInput: instruction.trim() || DEFAULT_INSTRUCTION,
+          // Typed text only — the agent's authored user message carries the
+          // research variables; code never writes the turn.
+          ...(instruction.trim() ? { userInput: instruction.trim() } : {}),
           surfaceName: RESEARCH_SURFACE_NAME,
         },
       };
@@ -751,7 +749,7 @@ function AgentRunnerBody({
             onChange={(e) => setInstruction(e.target.value)}
             rows={2}
             className="w-full rounded border border-border/60 bg-transparent px-2 py-1 text-[11px] text-foreground resize-y"
-            placeholder={DEFAULT_INSTRUCTION}
+            placeholder="Optional focus"
           />
         </label>
       )}

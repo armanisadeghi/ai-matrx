@@ -8,7 +8,7 @@
 // Tables: Cedar Ridge Physical Therapy's Departments (a scope type copied into the store, Team lead /
 // Team members → its Team Member Records); Titanium's Department (read only — never written); admin's
 // Workspace's Model Picks (an entity reference to AI models, the picker). Screens land in
-// common-docs/operations/for-arman/2026-09-28/reference-carry/.
+// /tmp/matrx-evidence/2026-09-28/reference-carry/.
 
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -18,7 +18,7 @@ import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://reference-carry.localhost:3001";
 const PHASE = process.env.PHASE ?? "before";
 const SHOTS =
-  process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-28/reference-carry";
+  process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-28/reference-carry";
 mkdirSync(SHOTS, { recursive: true });
 const T = {
   cedarRidgeDepartments: "41ae4b2d-46e7-463d-94d9-b26c46b6f451",

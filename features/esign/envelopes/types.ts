@@ -25,6 +25,8 @@ export interface EnvelopeListRow {
   signer_count: number;
   signed_count: number;
   signer_names: string | null;
+  /** Every recipient with their own status (empty for a draft: recipients live in the draft). */
+  signers?: { name: string; status: string; role: string }[];
 }
 
 /** Where a row opens: the envelope page for whoever may manage it, the signing door for a signer. */

@@ -3,7 +3,6 @@ import {
   compileRowAction,
   describeRowAction,
   readRowActions,
-  stepsFromRow,
   validateRowActions,
   type RowAction,
   type RowActionField,
@@ -116,14 +115,6 @@ describe("row actions", () => {
       fields,
     ).map((p) => p.message);
     expect(empty).toEqual(['Type the value for "Status", or choose Clear.']);
-  });
-
-  it("captures a template row as value/clear steps, never a computed column", () => {
-    const steps = stepsFromRow({ data: { account: "Main", total: 0, fable: null, days_left: 9 } }, fields);
-    expect(steps.map((s) => s.field)).toEqual(["account", "status", "total", "fable", "reset_date"]);
-    expect(steps[0]).toEqual({ field: "account", set: "value", value: "Main" });
-    expect(steps[1]).toEqual({ field: "status", set: "clear" });
-    expect(steps[2]).toEqual({ field: "total", set: "value", value: 0 });
   });
 
   it("describes an action in plain English", () => {

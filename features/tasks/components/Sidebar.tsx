@@ -43,7 +43,7 @@ import TaskScopeFilter from "./TaskScopeFilter";
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 const Circle = ({ size }: { size: number }) => (

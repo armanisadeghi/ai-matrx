@@ -85,6 +85,9 @@ import {
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { withSharedRpcReads } from "@/lib/supabase/sharedRpcReads";
+import { getUserId } from "@/utils/auth/getUserId";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
 import { MESSAGE_ACTION_SURFACES } from "@/features/messaging/actions/messageActionSurfaces";
 import {
   MessagingConversationRowChrome,
@@ -97,6 +100,20 @@ import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import { captureMessagingError } from "@/lib/diagnostics/captureMessagingError";
 import { diagnosticToastCopy } from "@/lib/toast/diagnostic-copy";
 
+// SHELL-DEDUPE: the engine asks the member's conversation list and soft expiries once per engine
+// start; an engine restart a moment after boot (the organization question answering) must share
+// the first read, not repeat it. Person-keyed, so one member's list is never another's.
+const messagingClient = withSharedRpcReads(supabase, {
+  rpcs: ["get_dm_conversations_with_details", "get_dm_pending_soft_expiries"],
+  person: getUserId,
+});
+
+/**
+ * Realtime postgres_changes carry no request headers, so on the admin seat
+ * (/administration reading a thread the admin is not a member of) no live row
+ * ever arrives. The package's incremental observer refresh backfills missed
+ * messages on an interval and window focus, only while the browser is in that lane.
+ */
 export interface MessagingHostProps {
   children: ReactNode;
 }
@@ -109,7 +126,12 @@ export function MessagingHost({ children }: MessagingHostProps) {
   // wrong person's preference, which the knob system's own reads answer for; it
   // never reaches a messaging table or RPC.
   const settingsScopeUserId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectActiveOrganizationId);
+  // The engine starts on the organization the load ladder ANSWERED — not on the one the browser
+  // cache painted into an empty tab a moment earlier (appContextSlice: a painted cache "only
+  // paints, no request leaves on it"). Until then the provider stays inert, as with no organization.
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  const organizationResolved = useAppSelector((state) => (state as { appContext?: { orgBootstrapResolved?: boolean } }).appContext?.orgBootstrapResolved ?? true);
+  const organizationId = organizationResolved ? activeOrganizationId : null;
   // THE ARCHIVED-ITEMS LAW clause 6 (`common-docs/policies/archived-items.md`):
   // the archive filter's starting state is the PERSON's setting, never this
   // file's taste. `lists.archivedDefault` is the same knob `useEntityList` and
@@ -259,7 +281,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
       <MessagingProvider
         // The client IS the identity: messaging reads the acting user from its
         // session (DD-241). There is no userId prop to pass, on purpose.
-        client={supabase}
+        client={messagingClient}
         organizationId={organizationId}
         // The AI seam: the transport, WHO fulfils each job (from Mandates, both
         // halves), how much history an organization is willing to send, and the
@@ -274,6 +296,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         // Seeds the engine at creation; `<MessagingArchiveKnob>` below owns
         // every later value of the same setting (see its comment).
         archiveFilter={archiveKnob}
+        observerRefresh={{ intervalMs: 5_000, active: browserAdminLaneOpen }}
         actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
         // App chrome around the package's own surfaces: the data attributes the

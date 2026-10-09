@@ -19,7 +19,7 @@
 // used to apply a rung order — stated default-org preference, then the
 // person's own own organization — and dispatch that selection itself, so a
 // note could be filed in an organization nobody named. Both rungs are gone: a
-// "default organization" is at most a per-client display preference that only
+// "preselected organization" is at most a per-client display preference that only
 // the picker may read, and nothing may choose an organization for the person
 // from a preference or their own org.
 //
@@ -42,7 +42,7 @@ import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -103,22 +103,9 @@ export async function resolveNewNoteOrganization(
 
     const resolved = selectOrgBootstrapResolved(state);
     if (resolved) {
-      // Boot has looked and settled with nothing selected. It used to apply a
-      // rung order here — stated default → own own org → sole membership
-      // — and SELECT one silently, "the same choice
-      // `useActiveOrganizationAutoSelect` makes". Both of the first two rungs
-      // were deleted on 2026-09-19: a default organization is at most a
-      // display preference, and nothing may pick an organization for the
-      // person from a preference or their own organization. The sole
-      // membership case never reaches here — boot itself takes it, because
-      // there is nothing to choose.
-      //
-      // So the note asks, through the ONE gate every held action uses: the
-      // picker opens, the person SETS an organization, that becomes the active
-      // organization globally, and the note is created in it. Cancelling
-      // throws `OrganizationSelectionCancelled`, which every caller treats as
-      // "nothing happened" — no note, no toast, no lost title.
-      return ensureOrganizationContext();
+      // The load ladder has answered: the note acts in the active organization (or
+      // `ensureOrgId` states the honest reason there is none).
+      return ensureOrgId(null);
     }
 
     const remaining = deadline - now();

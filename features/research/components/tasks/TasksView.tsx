@@ -44,7 +44,7 @@ import type {
 } from "../../types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 // ============================================================================
 // Capture-ladder metadata

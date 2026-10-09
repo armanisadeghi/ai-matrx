@@ -13,13 +13,12 @@
 //   result     = {summary, root_space_id, space_ids[], table_ids[]} → open /spaces/<root_space_id> and
 //                read the tree again; a change re-opens the current page on its stored content.
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -27,6 +26,7 @@ import { toast } from "@/lib/toast";
 import { useSpaces } from "../state/SpacesProvider";
 import { BUILD_KEY, useSpaceBuilderDisclosure } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /** The open page, when the request is to change it. */
 export interface BuilderPage {
   spaceId: string;
@@ -93,7 +93,7 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
     setOpen(false);
     setTyped("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const result = await run({
         mandateKey: BUILD_KEY,
         ...buildRequest(words, target),
@@ -112,7 +112,6 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
       else if (result.root_space_id) spaces.open(result.root_space_id);
       toast.success(target ? "Page updated" : "Your Space is ready", result.summary ? { description: result.summary.slice(0, 140) } : undefined);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(target ? "The page could not be changed" : "The Space could not be built", { description: err instanceof Error ? err.message : undefined });
     }
   };
@@ -130,7 +129,7 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={4}
               value={typed}

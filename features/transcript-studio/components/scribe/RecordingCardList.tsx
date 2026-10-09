@@ -13,8 +13,8 @@ import {
   deleteRecordingSegmentThunk,
   fetchRecordingSegmentsThunk,
 } from "../../redux/thunks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { RecordingCard } from "./RecordingCard";
 import type { TranscriptSection } from "./FullTranscriptDrawer";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";

@@ -56,6 +56,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
 import { noteWorkingCopy } from "../utils/noteLiveContent";
 import { useKeptTextSelection } from "@/lib/working-copy/useKeptTextSelection";
+import { useKeptRichCaret } from "@/lib/working-copy/useKeptRichCaret";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -76,8 +77,8 @@ import { getDiffRange, type DiffRange } from "../utils/diffRange";
 import { noteFolderReference, type FolderReference } from "../types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
-// Floating outline panel — imports WindowPanel, so it MUST stay behind this
-// lazy boundary (window-panels bundle invariant). Mounted only while open.
+// The docked outline column — loaded only while open (it is beside the note,
+// never over it: it shares the editor's row).
 const NoteOutlinePanel = dynamic(
   () => import("@/features/notes/components/NoteOutlinePanel"),
   { ssr: false },
@@ -242,6 +243,14 @@ export function NoteContentEditor({
     noteWorkingCopy.key(noteId),
     textareaRef,
     Boolean(noteExists) && bodyLoaded && !richMode,
+  );
+  // Same for the Write / Source editor (the one editor): its caret as text
+  // around the ends, put back without taking focus on wake and remount.
+  useKeptRichCaret(
+    noteWorkingCopy.key(noteId),
+    richEditorRef,
+    editorRootRef,
+    Boolean(noteExists) && bodyLoaded && richMode,
   );
   // The record's last value this view saw — only to tell an outside change
   // (realtime, undo) from this note's own commit, for the recent-change flash.
@@ -695,6 +704,8 @@ export function NoteContentEditor({
           this provider (null while read-only / access loading — the Detach
           chrome then simply doesn't render). */}
       <UnbindSurfaceContext.Provider value={unbindSurface}>
+        {/* The note and its docked outline share one row. */}
+        <div className="relative flex flex-1 min-h-0 min-w-0">
         <EditableContextMenu
           {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
           extraSections={notesExtras}
@@ -841,21 +852,22 @@ export function NoteContentEditor({
               )}
           </div>
         </EditableContextMenu>
+        {outlineOpen && (
+          <NoteOutlinePanel
+            instanceId={instanceId}
+            noteId={noteId}
+            content={localContent}
+            editorMode={effectiveEditorMode}
+            textareaRef={textareaRef}
+            previewContainerRef={previewContainerRef}
+            editorRootRef={editorRootRef}
+            onJumpInEditor={(offset) => richEditorRef.current?.jumpToOffset(offset)}
+            onClose={handleOutlineClose}
+          />
+        )}
+        </div>
       </UnbindSurfaceContext.Provider>
 
-      {outlineOpen && (
-        <NoteOutlinePanel
-          instanceId={instanceId}
-          noteId={noteId}
-          content={localContent}
-          editorMode={effectiveEditorMode}
-          textareaRef={textareaRef}
-          previewContainerRef={previewContainerRef}
-          editorRootRef={editorRootRef}
-          onJumpInEditor={(offset) => richEditorRef.current?.jumpToOffset(offset)}
-          onClose={handleOutlineClose}
-        />
-      )}
 
       <MoveNoteDialog
         open={moveDialogOpen}

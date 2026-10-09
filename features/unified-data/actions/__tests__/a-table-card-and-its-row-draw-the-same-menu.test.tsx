@@ -17,7 +17,7 @@ import { MatrxTableRowAlchemyProvider } from "@ai-matrx/design-system/data-table
 import { tableActions } from "@ai-matrx/records-ui/object-actions";
 import { whatYouMayDo } from "@ai-matrx/records-ui";
 
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { toItemMenuConfig } from "../tableActionAdapters";
 import { DataHomeCards, dataHomeRowCopy } from "@/features/unified-data/home/DataHomeViews";
 import { row as homeRow } from "@/features/unified-data/home/__tests__/fixtures";

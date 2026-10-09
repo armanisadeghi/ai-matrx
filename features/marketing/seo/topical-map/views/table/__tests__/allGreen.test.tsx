@@ -61,7 +61,8 @@ jest.mock("@/lib/layout/useClippedContentGuard", () => ({
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   TextInputDialog: () => null,
 }));
 jest.mock("@/components/ui/confirm-dialog", () => ({ ConfirmDialog: () => null }));

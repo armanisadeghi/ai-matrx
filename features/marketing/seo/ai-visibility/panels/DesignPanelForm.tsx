@@ -19,7 +19,6 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useBrand } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -27,6 +26,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { startPanelDesign } from "./panel-api";
 import type { DesignRunView } from "./types";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export function DesignPanelForm({
   site,
   brandId,
@@ -98,7 +98,7 @@ export function DesignPanelForm({
         <Label htmlFor="panel-design-description" className="text-xs">
           What the business does
         </Label>
-        <Textarea minHeight={80}
+        <ProTextarea minHeight={80}
           id="panel-design-description"
           value={description}
           onChange={(event) => setTypedDescription(event.target.value)}

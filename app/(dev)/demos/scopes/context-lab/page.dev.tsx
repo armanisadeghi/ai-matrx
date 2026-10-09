@@ -106,8 +106,8 @@ import type {
   ContextItemValue,
 } from "@/features/scopes/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 interface DemoFile {
   id: string;
@@ -1872,7 +1872,7 @@ export default function ContextLabPage() {
               </Note>
               <Note>
                 <b>Org is default-but-changeable</b> (your 2026-06-10 decision):
-                surfaces pass <code>defaultOrganizationId</code>; the field
+                surfaces pass <code>initialOrganizationId</code>; the field
                 falls back to the active org, and the user can always switch.
               </Note>
               <Note tone="warn">

@@ -11,10 +11,9 @@ import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllTools, selectToolsStatus } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@ai-matrx/design-system/controls";
+import { loadAvailableTools, selectAllTools, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 export function ToolNamesInput({
   value,
@@ -26,13 +25,13 @@ export function ToolNamesInput({
   label: string;
 }) {
   const dispatch = useAppDispatch();
-  const tools = useAppSelector(selectAllTools);
-  const status = useAppSelector(selectToolsStatus);
+  const tools = useToolCatalog(selectAllTools);
+  const status = useToolCatalog(selectToolsStatus);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (open && status === "idle") void dispatch(fetchAvailableTools());
+    if (open && status === "idle") void loadAvailableTools();
   }, [open, status, dispatch]);
 
   const add = (name: string) => {

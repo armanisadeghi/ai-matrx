@@ -182,8 +182,8 @@ block renderer `DiffCanvas` — not previously inventoried) are all migrated off
 Attach `useOpenDiffViewerWindow()` / RichDocument Compare to these:
 
 `B1` file versions (`FileVersionsList`) · `B2` note version timeline (`DiffHistory`) ·
-`B3` `NoteVersionDiffPage` content-window action · `B4` agent-app version page ·
-`B5` `AgentAppVersionsContent` rows · `B6` `ContextVersionHistory` · `B7` canvas
+`B3` `NoteVersionDiffPage` content-window action · `B4` applet version page ·
+`B5` `AppletVersionsContent` rows · `B6` `ContextVersionHistory` · `B7` canvas
 artifact versions ·
 `B9` `AgentEditHistory` rows · `B10`–`B13` RAG raw↔cleaned panes / library preview /
 detail sheet / ingest preview · `B14` git source-control rows · `B15` chunking draft↔saved ·
@@ -195,7 +195,7 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 `B27` PD-ratings draft↔saved · `B28` content-templates/skills body edits ·
 `B29` `PromptGenerator` generated↔current · `B30` `stringTransformDisplay` util result.
 
-**✓ Shipped (2026-06-27 rollout):** `B4` agent-app version code · `B6`
+**✓ Shipped (2026-06-27 rollout):** `B4` applet version code · `B6`
 ContextVersionHistory · `B7` canvas artifact versions · `B10`/`B11`/`B12` RAG
 raw↔cleaned — plus surfaces not in the original list: **Quick Save overwrite
 confirms** (note + code, compare-before-apply), **transcript CleanupPad**,
@@ -285,7 +285,7 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
   A5 → re-export (duplicate LCS render gone, ~200 lines); `NoteConflictWindow`
   A9 → canonical diff tab + new per-hunk **Merge** tab; `CodePreviewCanvas` A14
   stats → `computeTextDiff`. **New Compare surfaces:** `ContextItemForm`
-  (compare-with-saved by the required change summary), agent-app version page B4
+  (compare-with-saved by the required change summary), applet version page B4
   (client island → Monaco diff of version vs current code), content
   `TemplateEditor` (saved↔draft), podcast `EpisodeContentStudio`
   (saved↔regenerated). A1/A2 LCS utils kept (still have consumers — see table).

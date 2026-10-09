@@ -19,12 +19,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import {
   UntrustedCount,
   countReadState,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 import Link from "next/link";
 import {
   BookOpenCheck,
@@ -44,7 +44,7 @@ import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {

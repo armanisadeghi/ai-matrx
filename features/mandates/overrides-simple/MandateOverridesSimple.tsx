@@ -21,7 +21,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -35,7 +35,6 @@ import { fetchAgentVersionSnapshot, resolveAgentVersionId } from "@/features/age
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,
-  selectBuiltinAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
@@ -55,18 +54,15 @@ import {
   resetModelChoice,
   setOfferingPin,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
-import {
-  fetchModelById,
-  selectAllModels,
-  selectModelFullyLoaded,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectAllModels, selectModelFullyLoaded } from "@ai-matrx/agents/models";
+import { getModelRecords, readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
+import { useModelClassControls } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
-import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
+import { SettingControlInput } from "@ai-matrx/agents/settings/react";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
 import {
@@ -109,6 +105,7 @@ import {
 import { agentSettingDisplay } from "./format-setting-value";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 export type {
   OverridesLevel,
@@ -207,7 +204,7 @@ function OverridesBody({
   // Admin feature "mandate.system-seat": the system answer of a SYSTEM mandate.
   const holdsSystemSeat = useMandateSystemSeat(data.mandate);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || holdsSystemSeat;
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const { organizations } = useUserOrganizations();
 
   const ownHolder =
@@ -398,7 +395,7 @@ function OverridesBody({
   const hasOffer = Boolean(data.offer ?? describedOffer);
 
   // ── The model's controls, for whichever model is effective ────────────────
-  const models = useAppSelector(selectAllModels);
+  const models = useModelRecords(selectAllModels);
   const base = (entry?.baseSettings ?? {}) as Record<string, unknown>;
   const overrides = (entry?.overrides ?? {}) as Record<string, unknown>;
   const removals = entry?.removals ?? [];
@@ -407,13 +404,13 @@ function OverridesBody({
     : (overrides.model ?? base.model);
   const effectiveModelId =
     typeof effectiveModel === "string" ? effectiveModel : "";
-  const isFull = useAppSelector((s) =>
+  const isFull = useModelRecords((s) =>
     selectModelFullyLoaded(s, effectiveModelId),
   );
-  const registryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
+  const registryLoading = useModelRecords((s) => s.isLoading);
   useEffect(() => {
     if (effectiveModelId && !isFull && !registryLoading) {
-      dispatch(fetchModelById(effectiveModelId));
+      getModelRecords().loadModel(effectiveModelId);
     }
   }, [dispatch, effectiveModelId, isFull, registryLoading]);
   const classControls = useModelClassControls(

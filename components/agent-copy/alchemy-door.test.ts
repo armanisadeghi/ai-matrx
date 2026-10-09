@@ -31,8 +31,8 @@ const mockKindVerdict = jest.fn((value: unknown, kind: string): Verdict => {
   const ok = Boolean(value && typeof value === "object" && "mode" in (value as object));
   return { kind, checked: true, ok, errors: ok ? [] : ["mode is required"] };
 });
-jest.mock("@ai-matrx/chat/host/content-ir-slots", () => ({
-  ...jest.requireActual("@ai-matrx/chat/host/content-ir-slots"),
+jest.mock("@ai-matrx/chat/host/app-data-slots", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/app-data-slots"),
   contentIrKindValidator: () => ({
     validate: (value: unknown, kind: string) => {
       const verdict = mockKindVerdict(value, kind);

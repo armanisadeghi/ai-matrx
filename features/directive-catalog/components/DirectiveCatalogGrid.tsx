@@ -28,6 +28,7 @@ import {
 } from "@/features/directive-catalog/components/StateCell";
 import {
   DIRECTIVE_VERBS,
+  directiveVerbWord,
   type DirectiveCatalog,
   type DirectiveVerb,
   type NounDirectives,
@@ -42,6 +43,9 @@ function isWritable(noun: NounDirectives): boolean {
     noun.create === "yes" || noun.update === "yes" || noun.delete === "yes"
   );
 }
+
+/** Rows per page of the type table (the pager offers more). */
+export const DIRECTIVE_CATALOG_PAGE_SIZE = 50;
 
 export function DirectiveCatalogGrid({
   catalog,
@@ -139,7 +143,7 @@ export function DirectiveCatalogGrid({
       matrixColumns.push({
         id: verb,
         accessorKey: verb,
-        header: verb[0].toUpperCase() + verb.slice(1),
+        header: directiveVerbWord(verb),
         label: verb,
         width: 80,
         align: "center",
@@ -167,7 +171,10 @@ export function DirectiveCatalogGrid({
         columns={columns}
         getRowId={(noun) => noun.noun}
         defaultSort={{ id: "noun", direction: "asc" }}
-        pageSize={0}
+        // PAGED, never "show all" (G10B review, 2026-10-02): all 1,089 types
+        // put ~69,000 nodes on the page, so every dialog's scroll lock cost a
+        // ~800 ms style pass and the first confirm opened late.
+        pageSize={DIRECTIVE_CATALOG_PAGE_SIZE}
         // Keep the catalog-wide count that the old toolbar exposed, inside the
         // one canonical footer. Decision: table owner applying Arman's footer rule.
         paginationLabelFormat={(start, end, total) =>
@@ -198,7 +205,7 @@ export function DirectiveCatalogGrid({
               />
               <Select value={familyFilter} onValueChange={setFamilyFilter}>
                 <SelectTrigger
-                  className="w-auto min-w-0 flex-1 sm:w-56 sm:flex-none"
+                  className="w-full sm:w-56"
                   aria-label="Filter directive nouns by family"
                 >
                   <SelectValue placeholder="All families" />
@@ -314,7 +321,9 @@ function DirectiveStateCell({
   const writeVerb = verb === "create" || verb === "update" || verb === "delete";
   const canToggle = writeVerb && state !== "no";
   const enabled = noun.create === "yes" || noun.update === "yes";
-  const schema = noun.schemas?.[verb];
+  // The summary carries no schemas (G12): a write cell that is not `no` has a
+  // published or prospective shape, loaded when it is inspected.
+  const inspectable = writeVerb && state !== "no";
 
   return (
     <StateCell
@@ -327,7 +336,7 @@ function DirectiveStateCell({
           : undefined
       }
       onInspect={
-        schema ? () => onInspect({ kind: "directive", noun, verb }) : undefined
+        inspectable ? () => onInspect({ kind: "directive", noun, verb }) : undefined
       }
       inspectLabel={`Inspect ${verb}:${noun.noun} shape`}
     />

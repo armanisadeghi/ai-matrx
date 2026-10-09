@@ -137,6 +137,8 @@ export function useConversationReceipts(conversationId: string | null) {
   );
   return {
     receipts: read.data ?? NO_RECEIPTS,
+    /** The ledger has answered at least once (an empty list is then a real "none"). */
+    loaded: read.hasData,
     loadError: read.error,
     refresh: read.refresh,
   };

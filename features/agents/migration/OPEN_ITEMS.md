@@ -30,7 +30,7 @@ Last updated: 2026-04-21
 - [ ] `/administration/agents/system-agents` — admin CRUD end-to-end (renamed from `agent-shortcuts` on 2026-04-22)
 - [ ] `/agents/shortcuts` — user CRUD end-to-end
 - [ ] `/org/[slug]/shortcuts` — member sees read-only; owner/admin sees full CRUD
-- [ ] `/administration/agents/agent-apps` — admin table + feature/verify + rate-limit override
+- [ ] `/administration/applets` — admin table + feature/verify + rate-limit override
 
 ## ⏳ In-flight work
 
@@ -40,10 +40,10 @@ Last updated: 2026-04-21
 
 - `as unknown as any` casts in:
   - `app/api/agent-context-menu/route.ts`
-  - `app/api/public/agent-apps/[slug]/execute/route.ts`
-  - `app/api/agent-apps/[id]/*`
+  - `app/api/public/applets/[slug]/execute/route.ts`
+  - `app/api/applets/[id]/*`
   - `app/(public)/p/[slug]/page.tsx`
-  - `lib/services/agent-apps-admin-service.ts`
+  - `lib/services/applets-admin-service.ts`
 - Phase 1 task 1.9 — full per-role RLS tests (currently only pre-flight)
 - SSR notes menu still couples to `features/prompt-builtins` (flagged in `INVENTORY.md`)
 - `features/cx-chat/` + `../aidream/apps/shared/chat/src/public-chat/` still import from `features/prompts/**` (types + 4 components; Phase 18 cleanup)

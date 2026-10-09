@@ -29,7 +29,7 @@ import {
   useDocumentDataStores,
 } from "@/features/rag/hooks/useDataStores";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface DataStoreBindPanelProps {
   processedDocumentId: string;

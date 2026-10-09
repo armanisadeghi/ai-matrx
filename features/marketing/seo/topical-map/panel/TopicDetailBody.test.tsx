@@ -206,7 +206,8 @@ jest.mock("@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog", () 
   __esModule: true,
   ClipboardFallbackDialog: () => null,
 }));
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   __esModule: true,
   TextInputDialog: () => null,
 }));

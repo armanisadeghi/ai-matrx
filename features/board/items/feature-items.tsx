@@ -27,8 +27,8 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { ReadGate, readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { ReadGate, readOf, type ReadOutcome } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -67,7 +67,6 @@ import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
 import { useBoardCameraStore } from "../engine/react";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 // Workflow run
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
@@ -108,6 +107,7 @@ import {
   type FeatureEntityKey,
 } from "./feature-items.logic";
 import { useMeetingStatus, useTaskStatus, useWorkflowRunStatus } from "./item-status";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ─── Shared pieces ───────────────────────────────────────────────────────────
 
@@ -590,7 +590,7 @@ function MeetingCreateDialog({ onPick, onCancel }: PickerProps) {
   useEffect(() => {
     if (ready || asked.current) return;
     asked.current = true;
-    ensureOrganizationContext().catch(() => onCancel());
+    ensureOrgId(null).catch(() => onCancel());
   }, [ready, onCancel]);
   if (!ready) return null;
   return (

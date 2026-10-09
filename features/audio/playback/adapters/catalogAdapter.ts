@@ -11,16 +11,16 @@
  * (HTMLMediaElement.setSinkId, Chromium) and supports live playback-rate change.
  */
 
-import { applySinkToMediaElement } from "@/features/audio/audioOutputSink";
-import { getPrimedMediaElement } from "@/features/audio/unlock";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { applySinkToMediaElement } from "@ai-matrx/media/speech";
+import { getPrimedMediaElement } from "@ai-matrx/media/speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import { generateSpeech, previewVoice } from "@/features/audio/services/speechApi";
 import type {
   ActivePlayback,
   PlaybackAdapter,
   PlaybackAdapterCallbacks,
   PlaybackItem,
-} from "../types";
+} from "@ai-matrx/media/speech";
 
 export const catalogAdapter: PlaybackAdapter = {
   provider: "catalog",

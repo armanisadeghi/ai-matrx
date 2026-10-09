@@ -39,7 +39,7 @@ export function row(partial: Partial<DataHomeRow> & { name: string }): DataHomeR
     publicHref: null,
     publicLabel: null,
     trouble: null,
-    keptByTheApp: false,
+    platformOwned: false,
     foundation: false,
     syncedFrom: null,
   };

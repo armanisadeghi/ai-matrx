@@ -115,7 +115,7 @@ jest.mock("../../service", () => ({
 
 // The heavy canonical renderer is dynamic and client-only; under test it only
 // has to put the words on screen, which is the whole assertion.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));

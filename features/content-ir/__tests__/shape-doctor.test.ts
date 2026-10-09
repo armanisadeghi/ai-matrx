@@ -1455,3 +1455,61 @@ describe("registry↔host surface reconciliation (surface-token-undetectable)", 
     ).toHaveLength(0);
   });
 });
+
+describe("derived-schema-rejects-example — the browser's field model must accept what the JSON Schema accepts", () => {
+  const OPTIONAL_KIND = { type: "string", description: "The registered kind this payload is an instance of, when it is one." };
+  // The live applet_build_result shape (2026-10-07): pydantic's AppletRecord is a
+  // plain nested model — its `__kind` is an optional free string, never pinned.
+  const APPLET_SCHEMA = {
+    type: "object",
+    additionalProperties: false,
+    $defs: {
+      AppletRecord: {
+        type: "object",
+        title: "AppletRecord",
+        required: ["name"],
+        properties: { __kind: OPTIONAL_KIND, name: { type: "string" } },
+      },
+    },
+    required: ["applet", "note"],
+    properties: {
+      __kind: { type: "string", const: "applet_build_result" },
+      applet: { $ref: "#/$defs/AppletRecord" },
+      note: { type: "string" },
+    },
+  };
+  // A child that DOES declare its kind: an instance without `__kind` is refused
+  // by the parser even though the JSON Schema (kind keys stripped) accepts it.
+  const DECLARED_CHILD_SCHEMA = {
+    type: "object",
+    $defs: {
+      plan_page_draft: { type: "object", properties: { __kind: { const: "plan_page_draft" }, h1: { type: "string" } } },
+    },
+    required: ["revised"],
+    properties: { __kind: { const: "plan_page_review" }, revised: { $ref: "#/$defs/plan_page_draft" } },
+  };
+
+  function reds(kind: DoctorKindDefinition): string[] {
+    return runShapeDoctor(baseInput({ kinds: [kind] }))
+      .findings.filter((f) => f.code === "derived-schema-rejects-example")
+      .map((f) => f.kind ?? "");
+  }
+
+  it("does not flag a plain nested pydantic model (an undeclared $def converts in place)", () => {
+    expect(
+      reds(makeKind({ kind: "applet_build_result", isActive: true, emittedJsonSchema: APPLET_SCHEMA, sampleData: { applet: { name: "Favourite Movies" }, note: "Built it." } })),
+    ).toEqual([]);
+  });
+
+  it("flags an ACTIVE kind whose derived model refuses an example its JSON Schema accepts", () => {
+    expect(
+      reds(makeKind({ kind: "plan_page_review", isActive: true, emittedJsonSchema: DECLARED_CHILD_SCHEMA, sampleData: { revised: { h1: "Pricing" } } })),
+    ).toEqual(["plan_page_review"]);
+  });
+
+  it("stays quiet for an inactive kind", () => {
+    expect(
+      reds(makeKind({ kind: "plan_page_review", isActive: false, emittedJsonSchema: DECLARED_CHILD_SCHEMA, sampleData: { revised: { h1: "Pricing" } } })),
+    ).toEqual([]);
+  });
+});

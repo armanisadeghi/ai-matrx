@@ -9,6 +9,7 @@
 // removed. Filter/sort values come from ./fields.ts, the one reader.
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -48,7 +49,6 @@ import {
 import { ShieldCheck } from "lucide-react";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { invalidateMandateAdminList } from "./store";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import {
@@ -63,6 +63,10 @@ import {
   adminMandateRecordHref,
   adminMandateSupportRecordHref,
 } from "@/features/mandates/admin-routes";
+import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { AdminPoints } from "@/components/cost/AdminCost";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { modelCellOf } from "./spend";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -133,6 +137,48 @@ function HolderCell({ row }: { row: MandateAdminRow }) {
   );
 }
 
+/** The default Holder's model, and "+N" for the other models bindings run on. */
+function ModelCell({ row }: { row: MandateAdminRow }) {
+  const cell = modelCellOf(row.models);
+  if (!cell) return <Muted>—</Muted>;
+  return (
+    <span className="flex min-w-0 items-center gap-1 whitespace-nowrap">
+      <span className="min-w-0 truncate type-secondary" title={cell.primary}>
+        {cell.primary}
+      </span>
+      {cell.others.length > 0 ? (
+        // The platform tooltip, anchored to the badge; the badge never shrinks
+        // (it used to clip to "+." when the model name was long).
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="shrink-0">
+              <Badge variant="outline" className="shrink-0 whitespace-nowrap">
+                +{cell.others.length}
+              </Badge>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            Bindings also run on {cell.others.join(", ")}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
+    </span>
+  );
+}
+
+/** The period's cost, in dollars or points. Points follow the platform rate. */
+function SpendCell({ row, unit }: { row: MandateAdminRow; unit: "usd" | "points" }) {
+  if (row.spendPending) return <Checking what="the cost" />;
+  if (row.spendUsd === null) return <Muted>—</Muted>;
+  return (
+    <span className="block text-right type-secondary tabular-nums">
+      {unit === "usd" ? formatAdminUsd(row.spendUsd) : <AdminPoints usd={row.spendUsd} />}
+    </span>
+  );
+}
+
+const SPEND_SORT_WORDS = { asc: "cheapest first", desc: "costliest first" };
+
 function BlockerCell({ row }: { row: MandateAdminRow }) {
   const actions = useMandateAdminListActions();
   if (!row.defaultVerdict && row.workflowVerdicts.length > 0) {
@@ -154,7 +200,7 @@ function BlockerCell({ row }: { row: MandateAdminRow }) {
  * import; a save reloads the list and the server reports it reads.
  */
 function HealthCell({ row }: { row: MandateAdminRow }) {
-  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const lineageIndex = useAgentLineageIndex();
   const twin = row.agentId ? (lineageIndex[row.agentId]?.systemTwin ?? null) : null;
   const reload = () => invalidateMandateAdminList(true);
   // The code declarations decide the worst health a row can have, so until
@@ -162,7 +208,7 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
   if (row.factsPending.codeTruth) return <Checking what="the code declarations" />;
   return (
     <div
-      className="flex flex-wrap items-center gap-1"
+      className="flex min-w-0 flex-nowrap items-center gap-1 whitespace-nowrap"
       onClick={(event) => event.stopPropagation()}
     >
       <Badge
@@ -191,7 +237,7 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
         </Badge>
       ) : null}
       {row.health === "code ↔ agent drift" && row.codeTruth && (
-        <span className="basis-full type-meta leading-tight text-rose-600">
+        <span className="min-w-0 truncate type-meta leading-tight text-rose-600">
           code: {row.codeTruth.code_variables.join(", ") || "none"}
           {" · "}agent:{" "}
           {row.codeTruth.bound_agent?.declared_variables.join(", ") || "none"}
@@ -413,6 +459,40 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       {row.pinText}
     </Badge>
   )),
+  // THE MODEL (Arman, 2026-10-08): what the default Holder runs on, "Workflow"
+  // for a workflow Holder. The filter matches a mandate using ANY chosen model
+  // — its default Holder's or any binding's (database `vals.model`).
+  facetColumn("model", "Model", 170, (row) => <ModelCell row={row} />),
+  // THE COST over the header's period, from the usage ledger (./spend.ts).
+  // Sorted by the database across every page; no number filter is served.
+  {
+    id: "spendUsd",
+    label: "Cost (USD)",
+    sortWords: SPEND_SORT_WORDS,
+    column: {
+      id: "spendUsd",
+      header: "Cost (USD)",
+      filter: false,
+      align: "right",
+      defaultSortDirection: "desc",
+      width: 100,
+      cell: (row) => <SpendCell row={row} unit="usd" />,
+    },
+  },
+  {
+    id: "spendPoints",
+    label: "Points",
+    sortWords: SPEND_SORT_WORDS,
+    column: {
+      id: "spendPoints",
+      header: "Points",
+      filter: false,
+      align: "right",
+      defaultSortDirection: "desc",
+      width: 120,
+      cell: (row) => <SpendCell row={row} unit="points" />,
+    },
+  },
   facetColumn("coverage", "Coverage", 110, (row) => {
     if (!row.coverage) {
       return row.factsPending.coverage ? (
@@ -435,7 +515,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   facetColumn(
     "impactGrade",
     "Grade",
-    120,
+    240,
     (row) =>
       !row.defaultVerdict && row.workflowVerdicts.length > 0 ? (
         <WorkflowImpactGradeCell
@@ -451,7 +531,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       />
     ),
   ),
-  facetColumn("impactBlocker", "Blocker", 190, (row) => (
+  facetColumn("impactBlocker", "Blocker", 250, (row) => (
     <BlockerCell row={row} />
   )),
   facetColumn("health", "Health", 190, (row) => <HealthCell row={row} />),
@@ -673,6 +753,9 @@ export const MANDATE_OWNER_COLUMN: Spec = facetColumn(
  * the system copy's verdict for the same key — neither is true of that row.
  */
 export const SYSTEM_ONLY_REPORT_COLUMNS: readonly string[] = [
+  // A tenant's mandate can share a system key, and the ledger tags runs by key.
+  "spendUsd",
+  "spendPoints",
   "impactGrade",
   "impactBlocker",
   "health",

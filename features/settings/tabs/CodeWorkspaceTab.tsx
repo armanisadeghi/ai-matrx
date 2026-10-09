@@ -20,13 +20,13 @@ import {
   useAgentCatalogRows,
   useAgentCatalogState,
 } from "@ai-matrx/agents/catalog/react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { selectActiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type {
   CodeAgentFilter,
   ConversationHistoryGrouping,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
+import { useActiveAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 /**
  * Settings tab for the /code workspace. Covers the agent filter that seeds
@@ -64,7 +64,7 @@ export default function CodeWorkspaceTab() {
   }, [catalog]);
   const allTags = selectAllAgentTags(agentRows);
   const allCategories = selectAllAgentCategories(agentRows);
-  const allAgents = useAppSelector(selectActiveAgents);
+  const allAgents = useActiveAgents();
 
   const tagOptions = useMemo(
     () => allTags.map((t) => ({ value: t, label: t })),

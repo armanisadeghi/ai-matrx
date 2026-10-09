@@ -2,15 +2,15 @@
 
 // features/start/useStartPage.ts — read and set this person's start page (the newest choice wins).
 // Must sit under a records provider; writes go to that provider's organization.
-import { useAppTable } from "@ai-matrx/records/react";
+import { useTypedTable } from "@ai-matrx/records/react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { startPageChoice } from "./startPage.app-table";
+import { startPageChoice } from "./startPage.typed-table";
 
 export function useStartPage() {
   const userId = useAppSelector(selectUserId);
-  const table = useAppTable(startPageChoice);
+  const table = useTypedTable(startPageChoice);
   const mine = table.rows
     .filter((r) => r.person === userId)
     .sort((a, b) => (b.chosen_at ?? "").localeCompare(a.chosen_at ?? ""));

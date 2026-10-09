@@ -45,7 +45,7 @@ const T = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
   updated_at: "2026-09-29T00:00:00Z",
   mine: false,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   created_by: "u-sam",
   ...extra,
@@ -63,7 +63,7 @@ const I = (kind: string, item_id: string, item_row: Record<string, unknown>, tab
 const ANSWER: DataHomeAnswer = {
   tables: [
     T("t-recall", "Patient Recall", { mine: true }),
-    T("t-choices", "Status choices", { kind: "list", kept_by_the_app: true }),
+    T("t-choices", "Status choices", { kind: "list", platform_owned: true }),
     T("t-shared", "Job Board", { organization_id: "o-rincon", organization_name: "Rincon Plumbing Co", member: false, shared_with_me: true }),
   ] as DataHomeAnswer["tables"],
   items: [
@@ -173,7 +173,7 @@ describe("census items that are wiring", () => {
 
   it("11 · one call for the whole home", () => {
     const corpus = read("dataHomeCorpus.ts");
-    // one read of the home; "Show app tables" (CHAIR-DOORS-2) rides the same call as its third argument
+    // one read of the home; "Show platform tables" (CHAIR-DOORS-2) rides the same call as its third argument
     expect(corpus.match(/\bdataHome\(dataSource, null[,)]/g)).toHaveLength(1);
     expect(list).not.toMatch(/doors\.dataHome\(/);
   });
@@ -187,7 +187,11 @@ describe("census items that are wiring", () => {
     // the list: mounted there it made /data scroll twice — the page and the table, 2026-10-05).
     expect(page).toContain('overlayId: "workInboxWindow"');
     expect(page).not.toContain("<ActionInbox");
-    for (const port of ["realtime:", "members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
+    for (const port of ["members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
+    // Realtime rides the app's one records config (2026-10-05): the page takes it, the host builds the port.
+    expect(page).toContain("useAppRecordsConfig(organizationId)");
+    const host = readFileSync(join(__dirname, "../../../data-tables/records-ui-host/recordsUiHost.tsx"), "utf8");
+    expect(host).toContain("realtime: realtimePortFor(organizationId)");
   });
 
   it("14 · the archive is the list's Archived filter, and each archived table restores", () => {

@@ -17,8 +17,8 @@ import {
 import { toast } from "@/lib/toast";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
-import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu, ItemContextMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { Button } from "@/components/ui/button";
 
 interface ComponentDisplayProps {
@@ -138,8 +138,8 @@ const demoConfig: ItemMenuConfig = {
   ],
 };
 
-const code = `import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+const code = `import { ItemMenu, ItemContextMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 
 const config: ItemMenuConfig = {
   header: { title: "Project Phoenix" },

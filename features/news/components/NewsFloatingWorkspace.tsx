@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useRead } from "@/components/read-state/useRead";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useRead } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const CATEGORIES = [
   "general",

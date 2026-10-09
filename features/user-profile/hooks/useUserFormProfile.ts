@@ -13,10 +13,6 @@
 
 "use client";
 
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -27,6 +23,7 @@ import {
   type UserFormProfileData,
   type UserFormProfilePatch,
 } from "@/features/user-profile/types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -144,9 +141,8 @@ export function useUserFormProfile(): UseUserFormProfileReturn {
         let requestOrganizationId = organizationId;
         if (!requestOrganizationId) {
           try {
-            requestOrganizationId = await ensureOrganizationContext();
+            requestOrganizationId = await ensureOrgId(null);
           } catch (error) {
-            if (isOrganizationSelectionCancelled(error)) return false;
             throw error;
           }
         }

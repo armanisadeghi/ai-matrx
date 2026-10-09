@@ -11,7 +11,7 @@ import { validateSnapshot } from "@/lib/spaces-blocks/schema";
 import type { SpaceDoc } from "../contract";
 import { contentKey } from "./content-key";
 
-type Body = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
+type Body = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks" | "properties">;
 
 /** One kept copy: the page body and the stored version it was edited from. */
 export interface UnsavedCopy {
@@ -37,7 +37,7 @@ export function deviceStorage(): KeepStorage | null {
 
 export function keepUnsaved(storage: KeepStorage | null, spaceId: string, doc: Body, baseVersion: number): void {
   if (!storage) return;
-  const copy: UnsavedCopy = { v: 1, spaceId, baseVersion, keptAt: Date.now(), doc: { title: doc.title, icon: doc.icon, cover: doc.cover, settings: doc.settings, blocks: doc.blocks } };
+  const copy: UnsavedCopy = { v: 1, spaceId, baseVersion, keptAt: Date.now(), doc: { title: doc.title, icon: doc.icon, cover: doc.cover, settings: doc.settings, properties: doc.properties, blocks: doc.blocks } };
   try {
     storage.setItem(key(spaceId), JSON.stringify(copy));
   } catch {
@@ -118,7 +118,7 @@ export function restoreDecision(args: {
 
 /** What the database would refuse in this body (BLOCK-SCHEMA's rules, mirrored by validateSnapshot). */
 export function snapshotProblems(doc: Body): string[] {
-  return validateSnapshot({ v: 1, icon: doc.icon ?? null, cover: doc.cover ?? null, settings: doc.settings, blocks: doc.blocks });
+  return validateSnapshot({ v: 1, icon: doc.icon ?? null, cover: doc.cover ?? null, settings: doc.settings, ...(doc.properties?.length ? { properties: doc.properties } : {}), blocks: doc.blocks });
 }
 
 /** A refusal (ours or the database's) in plain words. */

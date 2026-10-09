@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
-import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast, recordToast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
@@ -52,7 +51,7 @@ import {
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_BUNDLES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-bundles.manifest";
 import {
@@ -72,7 +71,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 type Filter = "active" | "all";
@@ -366,6 +365,7 @@ function NewBundleDialog({
     try {
       const result = await createBundleWithLister({
         name,
+        // org-filter: write-target the new bundle is created in the organization the person works in
         organizationId: await ensureOrgId(null),
         description,
         isSystem,
@@ -391,7 +391,6 @@ function NewBundleDialog({
       );
       onCreated(result.bundle_id);
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) return;
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
       setBusy(false);

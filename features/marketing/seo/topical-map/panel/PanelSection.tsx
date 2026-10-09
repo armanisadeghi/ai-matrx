@@ -12,7 +12,7 @@
 import type { ReactNode } from "react";
 
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { topicalMapErrorText } from "../errors";

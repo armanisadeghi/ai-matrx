@@ -38,6 +38,19 @@ jest.mock("../service", () => {
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/lib/api/typed-client", () => ({ apiPost: jest.fn(), buildPath: jest.fn() }));
 
+// ProTextarea needs the app's Redux store (its agent actions); this suite tests the host, so the
+// writing box renders as the plain textarea it wraps.
+jest.mock("@/components/official/ProTextarea", () => {
+  const ReactLib: typeof import("react") = jest.requireActual("react");
+  const ProTextarea = ReactLib.forwardRef<HTMLTextAreaElement, Record<string, unknown>>(function ProTextarea(
+    { surfaceName: _s, getApplicationScope: _g, autoGrow: _a, minHeight: _min, maxHeight: _max, wrapperClassName: _w, ...rest },
+    ref,
+  ) {
+    return ReactLib.createElement("textarea", { ...rest, ref });
+  });
+  return { ProTextarea };
+});
+
 import { VoicePage } from "../VoicePage";
 
 const SOURCES = Array.from({ length: 6 }, (_, i) => ({

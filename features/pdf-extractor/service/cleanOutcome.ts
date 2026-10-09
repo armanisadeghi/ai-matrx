@@ -109,3 +109,49 @@ export function preferAggregateClean(
   const pagesChars = pageCleanedTexts.reduce((n, t) => n + t.trim().length, 0);
   return aggregate > pagesChars * 1.1;
 }
+
+export const USAGE_LIMIT_MESSAGE = "AI usage limit reached";
+const USAGE_LIMIT_PATTERN = /usage[\s_-]*limit|limit[\s_-]*reached|quota|rate[\s_-]*limit|insufficient[\s_-]*(credits|points|balance)|\b402\b/i;
+
+/**
+ * A short, readable reason for a failed run, from the run record's error
+ * column. A usage limit reads as one fixed sentence; otherwise the first
+ * message with a real reason, minus the machine code prefix
+ * ("pdfclean_error: …") and any dangling colon. Null when nothing readable
+ * is left — the banner then shows just "Failed".
+ */
+export function describeRunError(
+  error: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!error) return null;
+  const texts: string[] = [];
+  for (const key of ["user_message", "message", "detail", "reason", "error", "code", "error_type"]) {
+    const v = error[key];
+    if (typeof v === "string" && v.trim()) texts.push(v.trim());
+  }
+  if (texts.some((t) => USAGE_LIMIT_PATTERN.test(t))) return USAGE_LIMIT_MESSAGE;
+  for (const raw of texts) {
+    const cleaned = raw
+      .replace(/^[a-z][a-z0-9]*(?:_[a-z0-9]+)+\s*:\s*/i, "")
+      .replace(/[\s:;,-]+$/, "")
+      .trim();
+    // A bare machine code ("pdfclean_error") is not a reason.
+    if (!cleaned || /^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(cleaned)) continue;
+    return cleaned.length > 120 ? `${cleaned.slice(0, 117)}…` : cleaned;
+  }
+  return null;
+}
+
+/**
+ * Is the doc really cleaned? Page rows are the truth: a page with
+ * `cleaned_text` or a `section_kind` was cleaned. With no page rows at all
+ * (legacy doc) the aggregate `clean_content` is all there is. A `clean_content`
+ * beside page rows that were never cleaned is NOT cleaned.
+ */
+export function isDocCleaned(
+  pages: ReadonlyArray<{ cleanedText: string; sectionKind: string | null }>,
+  docCleanContent: string | null | undefined,
+): boolean {
+  if (pages.length === 0) return Boolean(docCleanContent && docCleanContent.trim());
+  return pages.some((p) => p.cleanedText.trim().length > 0 || Boolean(p.sectionKind));
+}

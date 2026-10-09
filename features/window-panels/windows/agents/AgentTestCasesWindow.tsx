@@ -11,9 +11,9 @@ import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/men
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import type { RootState } from "@/lib/redux/store";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentTestCasesWindowProps {
   isOpen: boolean;
@@ -32,7 +32,7 @@ export default function AgentTestCasesWindow({
   conversationId,
 }: AgentTestCasesWindowProps) {
   const dispatch = useAppDispatch();
-  const agentName = useAppSelector((s: RootState) => selectAgentName(s, agentId) ?? null);
+  const agentName = useAgentName(agentId) ?? null;
   const openAgentContentWindow = useOpenAgentContentWindow();
 
   const agentSection = buildAgentMenuSection({

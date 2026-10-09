@@ -143,7 +143,10 @@ export interface CanvasArtifactRow {
   conversation_id: string | null;
   source_message_id: string | null;
   artifact_index: number | null;
+  /** Row-revision token (bumped on every UPDATE) — never a chain order. */
   version: number;
+  /** The row's number in its version chain (assigned at INSERT). */
+  chain_version?: number | null;
   parent_canvas_id: string | null;
   source_type: string;
   /** Domain-record link (R6/R7): e.g. "ctx_tasks", "code_files". */
@@ -534,7 +537,17 @@ export const canvasArtifactService = {
         );
         return null;
       }
-      return data as CanvasArtifactRow;
+      const saved = data as CanvasArtifactRow;
+      // A saved page version publishes its OWN page (one page per version).
+      if (input.type === "html" && typeof input.content === "string") {
+        const { publishHtmlCanvasVersion } = await import(
+          "@/features/html-pages/services/canvasVersionPage"
+        );
+        void publishHtmlCanvasVersion(saved.id).catch((err: unknown) =>
+          console.error("[canvasArtifactService.saveUserVersion] publish failed:", err),
+        );
+      }
+      return saved;
     } catch (err) {
       console.error("[canvasArtifactService.saveUserVersion] Error:", err);
       return null;
@@ -586,7 +599,18 @@ export const canvasArtifactService = {
         console.error("[canvasArtifactService.createManual] RPC error:", error);
         return null;
       }
-      return data as CanvasArtifactRow;
+      const created = data as CanvasArtifactRow;
+      // A new page is its v1: it publishes its own page on save, exactly as
+      // `saveUserVersion` does for every later version (rendered-output ruling 1).
+      if (input.type === "html" && input.content.trim()) {
+        const { publishHtmlCanvasVersion } = await import(
+          "@/features/html-pages/services/canvasVersionPage"
+        );
+        void publishHtmlCanvasVersion(created.id).catch((err: unknown) =>
+          console.error("[canvasArtifactService.createManual] publish failed:", err),
+        );
+      }
+      return created;
     } catch (err) {
       // The person declined to pick an organization: an answer, not a failure.
       // Propagate it so the caller's org-refusal handling shows it honestly.

@@ -71,8 +71,8 @@ const MasterAgentWindow = dynamic(
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 

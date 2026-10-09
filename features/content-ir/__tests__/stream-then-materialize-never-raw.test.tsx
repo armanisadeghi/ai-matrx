@@ -26,7 +26,7 @@ import activeRequestsReducer, {
   upsertRenderBlock,
 } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 import { materializeBlocks } from "@/features/canvas/materialization/materializeBlocks";
 import { chunkText } from "./seeded-random";
 

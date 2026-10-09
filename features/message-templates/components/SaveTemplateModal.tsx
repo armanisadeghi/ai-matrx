@@ -16,10 +16,7 @@ import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { createTemplate, clearTemplateCache } from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface SaveTemplateModalProps {
     isOpen: boolean;
@@ -93,7 +90,7 @@ export function SaveTemplateModal({
             setIsSaving(true);
             
             await createTemplate({
-                organization_id: await ensureOrganizationContext(),
+                organization_id: await ensureOrgId(null),
                 label: label.trim(),
                 content: content.trim(),
                 role: role,
@@ -115,7 +112,6 @@ export function SaveTemplateModal({
         } catch (error) {
             // Declining the organization question is an answer, not a failure:
             // nothing was written and nothing is said.
-            if (isOrganizationSelectionCancelled(error)) return;
             console.error('Error saving template:', error);
             toast({
                 title: "Error",

@@ -6,10 +6,6 @@ import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import type { ClientSiteSummary } from "@/features/cms/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -43,8 +39,8 @@ import {
   Users,
 } from "lucide-react";
 import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
-import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { PlusTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubContextMenuProps";
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";
@@ -59,6 +55,7 @@ import {
   isValidCmsSiteSlug,
 } from "@/features/cms/utils/siteSlug";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export default function SitesListPage() {
   const router = useRouter();
@@ -224,17 +221,13 @@ export default function SitesListPage() {
     // created, nothing is cleared, and the dialog is exactly as they left it.
     let organizationId: string;
     try {
-      organizationId = await ensureOrganizationContext({
-        organizationId: activeOrganizationId,
-      });
+      organizationId = await ensureOrgId(null);
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) {
-        setError(
+      setError(
           err instanceof Error
             ? err.message
             : "We could not work out which organization this site belongs to.",
         );
-      }
       return;
     }
     setIsCreating(true);

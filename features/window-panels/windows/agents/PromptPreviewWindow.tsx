@@ -16,12 +16,12 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PromptPreviewContent } from "@ai-matrx/chat/agents/prompt-preview/PromptPreviewContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceAgentId } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface PromptPreviewWindowProps {
   isOpen: boolean;
@@ -39,9 +39,7 @@ export default function PromptPreviewWindow({
 }: PromptPreviewWindowProps) {
   const dispatch = useAppDispatch();
   const agentId = useAppSelector(selectInstanceAgentId(conversationId));
-  const agentName = useAppSelector((s) =>
-    agentId ? (selectAgentName(s, agentId) ?? null) : null,
-  );
+  const agentName = useAgentName(agentId) ?? null;
   const agentSection = buildAgentMenuSection({
     agentId: agentId ?? "",
     agentName,

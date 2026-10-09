@@ -10,7 +10,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { cn } from "@/lib/utils";

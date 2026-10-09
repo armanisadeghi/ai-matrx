@@ -308,7 +308,7 @@ export type CapturedErrorSource =
  */
  | "mandate-fast-path"
 /**
- * Component code stored in the database (a tool display, an agent-app slot
+ * Component code stored in the database (a tool display, an applet slot
  * or app, an emit renderer, a kind component) imported a name the sandbox
  * allowlist could not supply. It still renders, with a visible stand-in in
  * that spot; this row names the import path and the origin (`relation`).

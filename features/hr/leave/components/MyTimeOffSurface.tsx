@@ -32,7 +32,7 @@ import { hrMeTimeOffPolicyHref } from "../hrefs";
 import { LeaveBalanceBlock } from "./LeaveBalanceBlock";
 import { LeaveRequestForm } from "./LeaveRequestForm";
 import { LeaveRequestList } from "./LeaveRequestList";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function MyTimeOffSurface() {
   return (

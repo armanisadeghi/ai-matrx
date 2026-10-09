@@ -29,6 +29,7 @@ import {
 import type { ResourceType } from "@/utils/permissions/registry";
 import type { PermissionLevel } from "@/utils/permissions/types";
 
+// org-filter: write-target the files engine files uploads in the organization the person works in
 type AppContextState = Parameters<typeof selectOrganizationId>[0];
 
 if (!isFilesHostConfigured()) configureFilesHost({
@@ -42,19 +43,19 @@ if (!isFilesHostConfigured()) configureFilesHost({
       | (Partial<AppContextState> & { userAuth?: { id?: string | null } })
       | null
       | undefined;
+    // org-filter: write-target the files engine files uploads in the organization the person works in
     const ctx = s?.appContext ? (s as AppContextState) : null;
     return {
       userId: s?.userAuth?.id ?? null,
+      // org-filter: write-target the files engine files uploads in the organization the person works in
       organizationId: ctx ? selectOrganizationId(ctx) : null,
       projectId: ctx ? selectProjectId(ctx) : null,
       taskId: ctx ? selectTaskId(ctx) : null,
     };
   },
   ensureOrganizationContext: async (options) => {
-    const { ensureOrganizationContext } = await import(
-      "@/lib/organization/organization-gate"
-    );
-    return ensureOrganizationContext(options);
+    const { ensureOrgId } = await import("@/lib/organizations/ensureOrgId");
+    return ensureOrgId(options?.organizationId ?? null);
   },
   shareLinks: {
     shareLinkUrl: (token) => shareLinks.shareLinkUrl(token),

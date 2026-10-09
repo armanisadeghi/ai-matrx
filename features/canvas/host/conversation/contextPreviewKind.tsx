@@ -31,6 +31,7 @@ export function readContextPreviewTab(data: CanvasJson | undefined | null): Cont
 
 export const contextPreviewKind = defineCanvasKind<CanvasJson>({
   id: CONTEXT_PREVIEW_KIND,
+  surface: "dom",
   label: TITLE,
   icon: ScanEye,
   load: () => import("./ContextPreviewCanvasView"),

@@ -3,6 +3,8 @@ import { AgentRunnerPage } from "@ai-matrx/chat/agents/components/run/AgentRunne
 import { AgentRunHeader } from "@ai-matrx/chat/agents/components/run/AgentRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ConversationSpendDialog } from "@/features/admin/agent-spend/ConversationCost";
+import { Suspense } from "react";
 
 export const metadata = { title: "System Agent Runner | Admin" };
 
@@ -44,6 +46,10 @@ export default async function AdminSystemAgentRunPage({
           currentPath={`${ADMIN_BASE_PATH}/[id]/run`}
         />
       </PageHeader>
+      {/* The open conversation's cost opens from the agent's ⋮ menu (no header footprint). */}
+      <Suspense fallback={null}>
+        <ConversationSpendDialog agentId={id} />
+      </Suspense>
       <AgentRunnerPage
         agentId={id}
         sourceFeature={sourceFeature}

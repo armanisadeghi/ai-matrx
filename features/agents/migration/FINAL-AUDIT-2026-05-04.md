@@ -12,8 +12,8 @@ This report focuses on **gaps not already documented in `INVENTORY.md`** plus an
 
 | # | Surface | What's lost on delete | Replacement state |
 |---|---|---|---|
-| 1 | **Public chat (`/p/chat`, `/p/chat/a/[id]`, `/p/chat/c/[id]`)** | Multi-agent public chat picker, public conversation recovery, guest agent picker UI | **No agent equivalent** — `agent-apps` only covers `/p/[slug]` (single-app URLs). Generic public chat surface needs a new design before deletion. |
-| 2 | **`/applets`, `/apps/custom/[slug]`, `/apps/custom/[slug]/[appletSlug]`** | Live parent-child applet pattern with shared working memory; landing page is linked from `MatrixFloatingMenu`; backed by `custom_app_configs` / `custom_applet_configs` (349+ refs) | **Phase 10 blocked on 5 design questions** — no migration to agent-apps yet. |
+| 1 | **Public chat (`/p/chat`, `/p/chat/a/[id]`, `/p/chat/c/[id]`)** | Multi-agent public chat picker, public conversation recovery, guest agent picker UI | **No agent equivalent** — `applets` only covers `/p/[slug]` (single-app URLs). Generic public chat surface needs a new design before deletion. |
+| 2 | **`/applets`, `/apps/custom/[slug]`, `/apps/custom/[slug]/[appletSlug]`** | Live parent-child applet pattern with shared working memory; landing page is linked from `MatrixFloatingMenu`; backed by `custom_app_configs` / `custom_applet_configs` (349+ refs) | **Phase 10 blocked on 5 design questions** — no migration to applets yet. |
 | 3 | **Quick Actions menu (header ⚡)** | Header dropdown on every authenticated page (Quick Notes / Tasks / Chat / Data + Utilities Hub), and floating sheets attached to context-menu / window-panels registry | **Phase 4 blocked** on design decision (hardcoded vs. `app_actions` table). The feature is consolidated into `features/quick-actions/` (Aug 2025) but still dispatches to legacy execution under the hood. |
 | 4 | **Code editor V2/V3/Compact + Multi-File HTML editor** | Live AI code editing inside `/prompt-apps/[id]` (`PromptAppEditor` → `AICodeEditor`) and HTML-page editing tab (`HtmlCodeFilesTab`) | **Phase 6 blocked**: V2 was swapped to `useAgentLauncher` but no `agx_agent` IDs exist for `prompt-app-ui-editor`, `generic-code-editor`, `code-editor-dynamic-context`. The live `/prompt-apps/[id]` path uses `useAICodeEditor` directly and is unaffected by Phase 6 — **but is still an open Phase-18 blocker**. |
 | 5 | **`submitChatFastAPI` (Socket.IO gateway thunk)** | Active chat (`features/chat/hooks/useExistingChat.ts`), admin prompt generators (`GeneratePromptForBuiltinModal`, `GeneratePromptForSystemModal`) | Routes already to `/api/ai/agents/{agentId}` — agent-capable but lives in `lib/redux/socket-io/`. Must be either preserved as infrastructure or replaced with `useAgentLauncher` at every call site. **Not in INVENTORY.** |
@@ -129,7 +129,7 @@ Routes whose page.tsx currently imports a legacy feature and **has no agent-syst
 | `/p/chat`, `/p/chat/a/[id]`, `/p/chat/c/[id]` | `../aidream/apps/shared/chat/src/public-chat/` | ❌ — `/p/[slug]` is single-app, not a chat picker |
 | `/applets`, `/applets/[category]/[subcategory]` | `features/applet/` + DB tables | ❌ — Phase 10 blocked |
 | `/apps/custom/[slug]`, `/apps/custom/[slug]/[appletSlug]` | `features/applet/` | ❌ — Phase 10 blocked |
-| `/prompt-apps`, `/prompt-apps/[id]`, `/prompt-apps/new`, `/prompt-apps/templates`, `/prompt-apps/templates/[mode]` | `features/prompt-apps/` | Partial — `/agent-apps` admin exists but the public `/p/[slug]` resolves agent-apps first; `/prompt-apps/[id]` editor still uses `AICodeEditor` (Phase 6 blocker) |
+| `/prompt-apps`, `/prompt-apps/[id]`, `/prompt-apps/new`, `/prompt-apps/templates`, `/prompt-apps/templates/[mode]` | `features/prompt-apps/` | Partial — `/applets` admin exists but the public `/p/[slug]` resolves applets first; `/prompt-apps/[id]` editor still uses `AICodeEditor` (Phase 6 blocker) |
 | `/ai/prompts*` (list, new, edit, run, view, templates, compare, edit-redux, experimental/*) | `features/prompts/` | `/agents` covers list/new/edit/run; experimental routes have no equivalent |
 | `/ssr/prompts/*` | SSR mirror of `/ai/prompts/` | `/demos/chat/a/[agentId]` only covers chat |
 | `/administration/prompt-builtins/*`, `/administration/shortcut-categories/`, `/administration/prompt-apps/` | `features/prompt-builtins/` | `/administration/agents/system-agents/shortcuts` covers shortcut admin; builtins admin has no agent equivalent |
@@ -161,7 +161,7 @@ Ordered by dependency:
 1. **Decide Phase 4** (quick actions design). Without this, the header ⚡ menu's dispatch path is unclear and we cannot remove the legacy quick-actions execution thunks.
 2. **Decide Phase 6** (which `agx_agent` IDs back the V2/V3/Compact code editors). Block on a 10-minute decision; without it, both `/prompt-apps/[id]` editing and Multi-File HTML editing block Phase 18.
 3. **Decide Phase 10** (applets — 5 design questions). Without this, `/applets` and `/apps/custom/*` cannot redirect/sunset.
-4. **Decide `/p/chat`'s fate** (this audit's new question). Either build a multi-agent agent-apps chat picker, or sunset `/p/chat` with a 302 to `/p/[slug]/...`. Today there is no migration target.
+4. **Decide `/p/chat`'s fate** (this audit's new question). Either build a multi-agent applets chat picker, or sunset `/p/chat` with a 302 to `/p/[slug]/...`. Today there is no migration target.
 5. **Port shared types out of `features/prompts/types/`** to `../aidream/apps/shared/chat/src/agents/types/` (or `lib/types/`): `PromptVariable`, `Resource`, `PromptSettings`. Six features import from there (§2.4-2.6, plus chat features).
 6. **Port `useAgentConsumer`** from `features/prompts/hooks/` into `../aidream/apps/shared/chat/src/agents/hooks/`. Used by both `cx-chat` and `public-chat`.
 7. **Port `mapScopeToVariables`** from `features/prompt-builtins/utils/execution.ts` to `features/agent-shortcuts/utils/` (already noted in `INVENTORY.md §3`). SSR notes parallel menu still imports it.
@@ -177,7 +177,7 @@ Ordered by dependency:
 - `../aidream/apps/shared/chat/src/conversation/` (the stub) — 1-line re-export, safe to delete now.
 - `features/chat/` — only used by `app/(legacy)/legacy/chat/`. Light coupling. Delete with Phase 18.
 - `components/file-system/context-menu.tsx` — distinct `UnifiedContextMenu` for file ops, zero prompt coupling. Leave alone.
-- Phase 8 `/p/[slug]` agent-app resolver — primary path; legacy fallback only for the 7 unmigrated rows.
+- Phase 8 `/p/[slug]` applet resolver — primary path; legacy fallback only for the 7 unmigrated rows.
 
 ---
 

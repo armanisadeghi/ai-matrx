@@ -60,6 +60,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
   ),
 }));
 jest.mock("@ai-matrx/agents/models/react", () => ({
+  ...jest.requireActual("@ai-matrx/agents/models/react"),
   ModelListDropdown: () => null,
 }));
 jest.mock("./DecisionQuestionEditor", () => ({

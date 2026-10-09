@@ -27,7 +27,7 @@ import { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { GitHubRepositoryPicker } from "@/features/github-integration/GitHubRepositoryPicker";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CloneRepoDialogProps {

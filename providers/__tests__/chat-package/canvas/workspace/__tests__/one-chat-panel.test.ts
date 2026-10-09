@@ -16,6 +16,9 @@ const REPO = process.cwd();
 const ALLOWED_HOSTS = new Set([
   `${CHAT_SRC_REL}/canvas/workspace/ShellChatDock.tsx`,
   "features/board/items/work-items.tsx",
+  // The board's agent-form tile (board lane, 9f582f28af/3c6a290bc1): a tile that runs one agent and
+  // shows its result inside the board item - content on the board, not a page-level chat panel.
+  "features/board/items/AgentFormItemBody.tsx",
   // The composer's own demo pages: a composer specimen, not a page chat panel.
   "app/(dev)/demos/composer/ComposerPlayground.tsx",
   "app/(dev)/demos/composer/all/ComposerGallery.tsx",

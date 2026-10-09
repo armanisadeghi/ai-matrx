@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Brain, ExternalLink, Globe, Gauge, Coins, CheckCircle2, XCircle, RefreshCw, Loader2, Hammer, ChevronLeft, ArrowUpRight, AlertCircle, MinusCircle } from "lucide-react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -32,7 +32,7 @@ import {
 import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string =>

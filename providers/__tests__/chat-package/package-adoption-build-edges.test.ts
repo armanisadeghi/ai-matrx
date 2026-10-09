@@ -27,7 +27,8 @@ test.each([
   expect(importsName(`const example = 'import { ${name} } from "clipboard"';`, name)).toBe(false);
 });
 
-test.each(["components/mermaid/export.ts", "features/scraper/utils/scraper-utils.js"])(
+// components/mermaid/export.ts moved into @ai-matrx/rich-content (4e5e37d345); its source lives in the aidream checkout.
+test.each(["../aidream/apps/shared/rich-content/src/mermaid/export.ts", "features/scraper/utils/scraper-utils.js"])(
   "%s keeps its client boundary before imports",
   (file) => {
     const source = read(file);
@@ -40,7 +41,8 @@ test.each(["components/mermaid/export.ts", "features/scraper/utils/scraper-utils
 test("Notes uses the one rich-copy door (agent-copy/copy-commands)", () => {
   const note = read("features/notes/components/NoteTabItem.tsx");
   expect(note).toContain('from "@ai-matrx/rich-content/copy/copy-commands"');
-  expect(read("components/agent-copy/copy-commands.ts")).toContain("export async function copyRichContent(");
+  // copy-commands.ts moved into @ai-matrx/rich-content (4e34ec7e5f).
+  expect(read("../aidream/apps/shared/rich-content/src/copy/copy-commands.ts")).toContain("export async function copyRichContent(");
 });
 
 test("the context preview copies through the CopyButtons host slot; no InlineCopyButton slot exists", () => {

@@ -1,4 +1,4 @@
-// Headless proof for lane TAILS item 2: /data/<record-store table id> no longer
+// Headless proof for lane TAILS item 2: /data/<custom table id> no longer
 // answers "We couldn't open this dataset" — it lands the person on /data/<id>.
 //
 // Ironline Fitness's `members` table, 60df8b1e-…, owned by admin@admin.com.
@@ -23,7 +23,7 @@ await page.goto(LOGIN, { waitUntil: "domcontentloaded", timeout: 120000 });
 await page.waitForTimeout(3000);
 say("after login, url =", page.url());
 
-// Put the session in Ironline Fitness. The app has no default organization to
+// Put the session in Ironline Fitness. The app has no preselected organization to
 // lean on (2026-09-19 ruling), so the choice is MADE — through the same cookie
 // the org picker writes: `matrx-active-org = <user id>:<organization id>`.
 const USER = "87a6e699-3622-4869-8843-d0867456c0dd";

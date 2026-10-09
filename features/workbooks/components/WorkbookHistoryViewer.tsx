@@ -36,7 +36,7 @@ import {
 } from "@/features/workbooks/workbook-service";
 import { isServiceFailure, type WorkbookSnapshot } from "@/features/data-tables/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 type Props = {
   workbookId: string | null | undefined;

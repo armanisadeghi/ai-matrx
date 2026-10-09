@@ -38,7 +38,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useToolAction } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
 import type { ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
 import type { MapMarker } from "@/components/mardown-display/blocks/map/MapCanvas";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useBusinessLocations } from "@/features/marketing/data/hooks";
@@ -59,10 +59,11 @@ import {
   runArgs,
   shortDate,
   sourceLine,
-  usd,
+  costText,
   type CompareRow,
   type GridState,
 } from "./grid-model";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { readSeoLocalPrice } from "./prices";
 import { RankGridMap } from "./RankGridMap";
 import {
@@ -147,6 +148,7 @@ function BusinessStep({
   business: ConfirmedBusiness | null;
   onConfirm: (b: ConfirmedBusiness | null) => void;
 }) {
+  const { format } = useCostDisplay();
   const find = useToolAction<ToolEnvelope<FindBusinessData>>(SEO_LOCAL_TOOL);
   const price = useQuery({
     queryKey: ["seo_local", "price", "find_business"],
@@ -171,7 +173,7 @@ function BusinessStep({
     event.preventDefault();
     if (canSearch) void search(false);
   };
-  const cost = price.data?.costUsd != null ? usd(price.data.costUsd) : "cost unknown";
+  const cost = costText(format, price.data?.costUsd);
 
   if (business) {
     return (
@@ -235,7 +237,7 @@ function BusinessStep({
           <Badge tone={state.reused ? "neutral" : "info"} className="self-start">
             {state.reused
               ? `Reused from ${shortDate(state.observedAt)}`
-              : `Bought ${shortDate(state.observedAt)}${state.chargedUsd != null ? ` · ${usd(state.chargedUsd)}` : ""}`}
+              : `Bought ${shortDate(state.observedAt)}${state.chargedUsd != null ? ` · ${costText(format, state.chargedUsd)}` : ""}`}
           </Badge>
           <CandidatesTable rows={state.data.candidates} onPick={(b) => onConfirm(b)} />
         </>
@@ -442,6 +444,7 @@ function PreviewView({
   running: boolean;
   onRun: (centerConfirmed: string) => void;
 }) {
+  const { format } = useCostDisplay();
   const matched = data.matched_business;
   const free = data.estimate_usd === 0;
   const total = data.points.length;
@@ -482,7 +485,7 @@ function PreviewView({
           disabled={running}
           onClick={() => onRun(data.center_confirmed_value)}
         >
-          {free ? "Open stored grid · free" : `Run grid · ${usd(data.estimate_usd)}`}
+          {free ? "Open stored grid · free" : `Run grid · ${costText(format, data.estimate_usd)}`}
         </Button>
       </div>
       {extra.map((n) => (
@@ -500,9 +503,10 @@ function ResultView({
   envelope: Extract<GridState, { kind: "result" }>["envelope"];
   business: ConfirmedBusiness;
 }) {
+  const { format } = useCostDisplay();
   const data = envelope.data;
   const s = data.summary;
-  const source = sourceLine(envelope);
+  const source = sourceLine(envelope, format);
   const markers: MapMarker[] = gridPoints(data).map((p) => {
     const b = bubbleFor(p, data.depth);
     return {

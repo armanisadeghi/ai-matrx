@@ -35,7 +35,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { matchesSearch as matchesSearchScoring } from "@ai-matrx/kit/search-scoring";
 
 import { DisclosureHeader } from "@ai-matrx/design-system/controls";
@@ -92,13 +92,12 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        collection.title.replace(/\s+/g, "-").toLowerCase() || "resources",
-        "portrait",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = collection.title.replace(/\s+/g, "-").toLowerCase() || "resources";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "portrait" }), "application/pdf");
     } catch (err) {
       console.error("[ResourceCollectionBlock] Print failed:", err);
     } finally {

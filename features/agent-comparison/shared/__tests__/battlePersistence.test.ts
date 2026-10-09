@@ -1,5 +1,4 @@
 import type { RootState } from "@/lib/redux/store";
-import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
 const createComparisonSet = jest.fn();
 const replaceEntries = jest.fn();
@@ -152,12 +151,5 @@ describe("persistForRun", () => {
       cancelled: false,
       error: "Could not reach the database.",
     });
-  });
-
-  it("resolves {cancelled:true,error:null} when the organization picker was cancelled", async () => {
-    const result = await persistForRun(async () => {
-      throw new OrganizationSelectionCancelled();
-    });
-    expect(result).toEqual({ cancelled: true, error: null });
   });
 });

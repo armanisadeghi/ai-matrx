@@ -21,10 +21,10 @@ import { MessageSquareQuote, X } from "lucide-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { useToolAction } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
 import type { ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
-import { Badge, Button, Chip, Select, Textarea } from "@ai-matrx/design-system/controls";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { Badge, Button, Chip, Select } from "@ai-matrx/design-system/controls";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
 import { toast } from "@/lib/toast";
 import { PROBE_MAX_COST_USD } from "../../domain-research/section-state";
@@ -39,18 +39,17 @@ import {
 import { ANSWER_ENGINES, engineStatesFromOutcome, toAsk, type EngineState } from "./engine-state";
 import { readFullAnswer } from "./full-answer";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 type States = Partial<Record<AnswerEngine, EngineState>>;
 
 const engineLabel = (engine: string) =>
   AI_VISIBILITY_ENGINES.find((e) => e.id === engine)?.label ?? engine;
 
-const usd = (value: number | null) =>
-  value == null ? "cost unknown" : formatUsd(value, { digits: "trim" });
-
 function StatusText({ state }: { state: EngineState | undefined }) {
+  const { format } = useCostDisplay();
   if (!state || state.kind === "checking") return <span className="text-muted-foreground">Checking price…</span>;
   if (state.kind === "asking") return <span className="text-muted-foreground">Asking…</span>;
-  if (state.kind === "priced") return <span className="tabular-nums">{usd(state.estimateUsd)}</span>;
+  if (state.kind === "priced") return <span className="tabular-nums">{state.estimateUsd == null ? "cost unknown" : format(state.estimateUsd)}</span>;
   if (state.kind === "error")
     return (
       <ErrorNotice
@@ -71,6 +70,7 @@ export function TryOnePrompt({
   questions: string[];
   onClose: () => void;
 }) {
+  const { format } = useCostDisplay();
   const tool = useToolAction<ToolEnvelope<TryPromptData>>(SEO_AI_VISIBILITY_TOOL);
   const canvas = useOptionalCanvas();
   const first = (questions[0] ?? "").trim();
@@ -178,7 +178,7 @@ export function TryOnePrompt({
           aria-label="Panel question"
         />
       ) : null}
-      <Textarea
+      <ProTextarea
         aria-label="Prompt"
         placeholder="Type a buyer question"
         value={draft}
@@ -246,7 +246,7 @@ export function TryOnePrompt({
           >
             {plan.engines.length === 0
               ? "Nothing to ask"
-              : `Ask ${plan.engines.length} engine${plan.engines.length === 1 ? "" : "s"} · ${usd(plan.totalUsd)}`}
+              : `Ask ${plan.engines.length} engine${plan.engines.length === 1 ? "" : "s"} · ${plan.totalUsd == null ? "cost unknown" : format(plan.totalUsd)}`}
           </Button>
           <Badge tone="neutral" title="One question at one moment. It writes no panel data and is not a panel metric.">
             One moment, not a measurement

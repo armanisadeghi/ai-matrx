@@ -387,20 +387,20 @@ export function WebhooksManager() {
   const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(
     null,
   );
-  // ONE RECORD-STORE TABLE (lane INTEG-CLIENTS, F19): a record-store table's changes reach a
+  // ONE CUSTOM TABLE (lane INTEG-CLIENTS, F19): a custom table's changes reach a
   // webhook only when the webhook names that table, so "what to listen to" is either the
-  // catalogue below or one table. The list holds every record-store table the person can open, in ANY of
+  // catalogue below or one table. The list holds every custom table the person can open, in ANY of
   // their organizations (never narrowed by the active one); the webhook is filed in the chosen
   // table's OWN organization.
   const ALL_EVENTS_SCOPE = "__catalogue__";
   const [scope, setScope] = useState<string>(ALL_EVENTS_SCOPE);
-  const [storeTables, setStoreTables] = useState<UserTableListItem[] | null>(null);
+  const [customTables, setCustomTables] = useState<UserTableListItem[] | null>(null);
   useEffect(() => {
-    if (!creating || storeTables !== null) return;
+    if (!creating || customTables !== null) return;
     void listTablesEverywhere().then((listed) =>
-      setStoreTables(listed.success ? listed.data.filter((t) => t.store === "records") : []),
+      setCustomTables(listed.success ? listed.data.filter((t) => t.store === "records") : []),
     );
-  }, [creating, storeTables]);
+  }, [creating, customTables]);
   const tableScoped = scope !== ALL_EVENTS_SCOPE;
 
   const reload = useCallback(async () => {
@@ -426,7 +426,7 @@ export function WebhooksManager() {
     }
     setSubmitting(true);
     try {
-      const scopedTable = tableScoped ? storeTables?.find((t) => t.id === scope) : undefined;
+      const scopedTable = tableScoped ? customTables?.find((t) => t.id === scope) : undefined;
       const tableOrganizationId = scopedTable?.organization_id ?? null;
       if (tableScoped && tableOrganizationId) {
         const made = await declareTableWebhook({
@@ -541,7 +541,7 @@ export function WebhooksManager() {
               </Label>
             </div>
           )}
-          {storeTables && storeTables.length > 0 && (
+          {customTables && customTables.length > 0 && (
             <div>
               <Label htmlFor="wh-scope">Listen to</Label>
               <Select
@@ -556,7 +556,7 @@ export function WebhooksManager() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_EVENTS_SCOPE}>Your events (files, sharing, jobs, older tables)</SelectItem>
-                  {storeTables.map((t) => (
+                  {customTables.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       Every change to the table “{t.table_name}”
                       {t.organization_name ? ` (${t.organization_name})` : ""}

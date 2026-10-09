@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ProcessAdapter } from "../../adapters/ProcessAdapter";
 import { executeRepositoryGit } from "./repositoryService";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const MANUAL_STASH_MESSAGE = "Matrx saved changes";
 

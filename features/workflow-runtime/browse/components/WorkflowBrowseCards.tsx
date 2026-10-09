@@ -19,8 +19,8 @@ import {
   Star,
   Workflow as WorkflowIcon,
 } from "lucide-react";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -31,8 +31,10 @@ import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPre
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import {
+  useWorkflowsBasePath,
   workflowDesignHref,
   workflowRunHref,
+  workflowRunPermalinkHref,
 } from "../workflowActionRegistry";
 import type { WorkflowBrowseRow } from "../types";
 
@@ -77,6 +79,7 @@ export function WorkflowBrowseCards({
   onToggleFavorite,
   hrefFor,
 }: Props) {
+  const basePath = useWorkflowsBasePath();
   return (
     <div
       className={cn(
@@ -96,7 +99,7 @@ export function WorkflowBrowseCards({
             tabIndex={0}
             onClick={(e) => {
               if (shouldOpenInNewTab(e)) {
-                openInNewTab(workflowRunHref(row.id));
+                openInNewTab(workflowRunHref(row.id, basePath));
                 return;
               }
               onOpenRow(row);
@@ -211,7 +214,7 @@ export function WorkflowBrowseCards({
               </span>
               {row.last_run_at && row.last_run_id ? (
                 <Link
-                  href={`/workflows/runs/${row.last_run_id}`}
+                  href={workflowRunPermalinkHref(row.last_run_id, basePath)}
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1 hover:text-foreground"
                   title={`Open the run from ${new Date(row.last_run_at).toLocaleString()}`}
@@ -226,12 +229,12 @@ export function WorkflowBrowseCards({
 
             <div className="mt-auto flex items-center gap-1 border-t border-border px-2 py-1">
               <CardAction
-                href={workflowRunHref(row.id)}
+                href={workflowRunHref(row.id, basePath)}
                 icon={Play}
                 label="Run it"
               />
               <CardAction
-                href={workflowDesignHref(row.id)}
+                href={workflowDesignHref(row.id, basePath)}
                 icon={LayoutTemplate}
                 label="Design"
               />

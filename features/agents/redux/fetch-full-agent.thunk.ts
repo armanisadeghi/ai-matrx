@@ -15,7 +15,6 @@ import {
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { dbRowToAgentDefinition } from "@ai-matrx/chat/agents/redux/agent-definition/converters";
 import { agentNameTakenError } from "@ai-matrx/chat/agents/redux/agent-definition/agentNameTaken";
-import { overlayAgentFavoritesThunk } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
@@ -44,6 +43,5 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
     }
 
     dispatch(upsertAgent(dbRowToAgentDefinition(data)));
-    await dispatch(overlayAgentFavoritesThunk([agentId]));
   },
 );

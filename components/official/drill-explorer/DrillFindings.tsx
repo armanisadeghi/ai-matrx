@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 
-import { doorWindow, drillRowOf } from "./useDrillExplorer";
+import { doorWindow, drillRowOf, drillWindowKey } from "./useDrillExplorer";
 import { findingQuestion, type DrillFinding } from "./types";
 import { formatCount } from "@ai-matrx/kit/format";
 import { InfoHint } from "@/components/official/InfoHint";
@@ -112,7 +112,7 @@ export function DrillFindings({
       void client
         .drillAsk({
           source: JSON.parse(sourceKey) as DrillSource,
-          question: { ...finding.question, lane, ...doorWindow(asked) },
+          question: { ...finding.question, lane, ...doorWindow(asked, { key: drillWindowKey(dimensions) }) },
         })
         .then((got) => {
           if (cancelled) return;

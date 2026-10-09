@@ -7,7 +7,7 @@ import {
   MetricNavigation,
   type MetricNavigationItem,
 } from "@/components/navigation/MetricNavigation";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import {
   selectFullContextError,

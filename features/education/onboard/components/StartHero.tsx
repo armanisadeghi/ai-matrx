@@ -2,7 +2,14 @@
 
 // features/education/onboard/components/StartHero.tsx
 //
-// The study-kit front door of the Education Hub (P9). The person picks their
+// THE one page that creates a study kit (/education/kits/new — the agents
+// pattern: list → New → one create route → the kit page). Two modes over ONE
+// Source input: "Build with AI" (below) and "Saved aids" (`SavedAidsKitForm`:
+// bundle study aids already saved, nothing generated). Both make the same
+// multi-source kit (kitScope.ts). `?source=<fileId>` pre-picks that file; a link
+// naming an existing kit forwards to the kit page, where adding happens.
+//
+// Build with AI: the person picks their
 // material in the ONE Source input (`features/resource-manager/source-input`,
 // the same input as /education/flashcards/new: Upload · Paste text · Web page ·
 // YouTube · Recording · Image, and Use existing) → picks what to make → one
@@ -12,12 +19,12 @@
 // (useContentConverter); this component owns the flow + progressive UI.
 // Targets light up as their generators register (isTargetAvailable).
 
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
   CheckCircle2,
   ArrowRight,
-  PackageOpen,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +32,7 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
@@ -43,7 +50,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { KitBoard } from "./KitBoard";
 import { KitDepthPicker } from "./KitDepthPicker";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { RunStoppedNotice } from "@/lib/wizard-draft/RunStoppedNotice";
 import { filesDb } from "@/features/files/filesDb";
@@ -54,6 +61,16 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { EDUCATION_START_SURFACE_NAME } from "@/features/surfaces/manifests/education-start.manifest";
 import { parseKitRequestDraftValue } from "../startAgentWrites";
 import { buildEducationStartScope } from "../startSurfaceScope";
+import { SavedAidsKitForm } from "@/features/education/kits/components/SavedAidsKitForm";
+import { isManualKitSourceType, kitHref, readKit } from "@/features/education/kits/kitService";
+import { KIT_TOKEN } from "@/features/education/kits/kitScope";
+import { getFileMetadata } from "@/features/files/api/files";
+
+type CreateMode = "ai" | "saved";
+const CREATE_MODES: { value: CreateMode; label: string }[] = [
+  { value: "ai", label: "Build with AI" },
+  { value: "saved", label: "Saved aids" },
+];
 
 /** The Source input's key on this page — picks are held and kept under it. */
 export const EDUCATION_START_SOURCES_KEY = "education:start";
@@ -127,8 +144,16 @@ const DEFAULT_TARGETS: TargetKind[] = [
   "notes",
 ];
 
-export function StartHero() {
+export function StartHero({
+  onMade,
+}: {
+  /** A Board tile takes the made kit (either mode); the page itself opens or shows it. */
+  onMade?: (kit: { sourceType: string; sourceId: string; title: string }) => void;
+} = {}) {
   const kit = useKitGeneration();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<CreateMode>("ai");
   const ingestGuard = useEntitlementGuard("education.ingest_document");
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
@@ -149,6 +174,36 @@ export function StartHero() {
     deliveries: KIT_SOURCE_DELIVERIES,
   });
   const intake = useSourceIntake(set, {});
+
+  // `?source=<id>&from=<type>` (default file): a source that already has a kit
+  // opens that kit (adding happens there); a file without one is pre-picked.
+  const requestedSource = searchParams.get("source");
+  const requestedFrom = searchParams.get("from") ?? "file";
+  const [pickError, setPickError] = useState<string | null>(null);
+  const seedFile = useEffectEvent((fileId: string, name: string) => {
+    if (set.hasRef("file", fileId)) return;
+    set.addReady({ kind: "files", label: name, ref: createSourceRef("file", fileId), fileId });
+  });
+  useEffect(() => {
+    if (!requestedSource) return;
+    let active = true;
+    void (async () => {
+      const existing = isManualKitSourceType(requestedFrom)
+        ? await readKit(requestedFrom, requestedSource)
+        : null;
+      if (!active) return;
+      if (existing) {
+        router.replace(kitHref(existing.sourceType, existing.sourceId));
+        return;
+      }
+      if (requestedFrom !== "file") throw new Error("This kit no longer exists.");
+      const file = await getFileMetadata(requestedSource);
+      if (active) seedFile(requestedSource, file.data.file_name);
+    })().catch((cause: unknown) => {
+      if (active) setPickError(describeFailure(cause, { action: "opening this material", read: true, fallback: "Could not open this material." }).sentence);
+    });
+    return () => { active = false; };
+  }, [requestedSource, requestedFrom, router]);
   const [holdingForClean, setHoldingForClean] = useState(false);
 
   const [selected, setSelected] = useState<Set<TargetKind>>(
@@ -289,6 +344,18 @@ export function StartHero() {
       organizationState === "required" ||
       organizationState === "unavailable");
 
+  // A Board tile becomes the kit once the AI build is done.
+  const madeKitId = kit.phase === "done" ? kit.source?.ref?.kitId ?? null : null;
+  const reportedKit = useRef<string | null>(null);
+  const reportMade = useEffectEvent((kitId: string) => {
+    onMade?.({ sourceType: KIT_TOKEN, sourceId: kitId, title: kit.kitTitle?.title ?? "Study kit" });
+  });
+  useEffect(() => {
+    if (!madeKitId || reportedKit.current === madeKitId) return;
+    reportedKit.current = madeKitId;
+    reportMade(madeKitId);
+  }, [madeKitId]);
+
   // The board goes up the INSTANT the run starts — ingest included. Hiding it
   // until generation began is what left a multi-minute upload+extract behind a
   // single button spinner with nothing to read.
@@ -366,6 +433,7 @@ export function StartHero() {
         for (const p of adding) {
           p.catch((err: unknown) => console.error("[StartHero] agent-added Source failed:", err));
         }
+        setMode("ai");
         if (fields.outputs !== undefined) setSelected(new Set(fields.outputs));
         if (fields.depth !== undefined) setDepth(fields.depth);
         if (fields.count !== undefined) {
@@ -414,14 +482,20 @@ export function StartHero() {
       contentSource={{ type: "raw" }}
     >
     <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-2 text-center">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-          <PackageOpen className="h-3.5 w-3.5 text-primary" />
-          One upload → a full study kit
-        </div>
+      <header className="space-y-3 text-center">
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-          Turn your material into a grounded study kit
+          Create a study kit
         </h1>
+        {!showResults && (
+          <div className="flex justify-center">
+            <SegmentedControl
+              aria-label="How to make the kit"
+              value={mode}
+              onValueChange={(value) => setMode(value as CreateMode)}
+              data={CREATE_MODES}
+            />
+          </div>
+        )}
       </header>
 
       {!showResults && (
@@ -436,6 +510,16 @@ export function StartHero() {
               deliveries={KIT_SOURCE_DELIVERIES}
             />
           </div>
+          {pickError && (
+            <ErrorNotice size="inline" message={pickError} error={pickError} operation="Open material for a study kit" />
+          )}
+        </>
+      )}
+
+      {!showResults && mode === "saved" && <SavedAidsKitForm set={set} onMade={onMade} />}
+
+      {!showResults && mode === "ai" && (
+        <>
 
           {kit.stopped && !autoContinue && (
             <RunStoppedNotice

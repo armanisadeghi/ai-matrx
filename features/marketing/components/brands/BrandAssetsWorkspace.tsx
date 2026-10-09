@@ -39,7 +39,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Globe2, Images, Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {

@@ -26,7 +26,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useStore } from "react-redux";
 import { cn } from "@/lib/utils";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import type { AppStore } from "@/lib/redux/store";
 import {
   selectSnapshotsForConversation,

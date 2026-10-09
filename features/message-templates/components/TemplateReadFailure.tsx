@@ -7,7 +7,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function TemplateReadFailure({ error }: { error: string }) {
   const router = useRouter();

@@ -19,13 +19,12 @@ import { useEffect, useRef, useState } from "react";
 import { ListChecks } from "lucide-react";
 import { BasicInput } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { createList } from "@/features/data-tables/pick-lists/service";
 import { listAddress } from "@/features/data-tables/pick-lists/where-lists-live";
 import { readPickListIndex, type PickListEntry } from "@/features/data-tables/pick-lists/pick-list-index";
@@ -117,9 +116,6 @@ async function makeList(name: string, userId: string): Promise<{ id: string } | 
     if (!id) throw new Error("The list was made but its address did not come back. It is on the Pick lists page.");
     return { id };
   } catch (err) {
-    if (isOrganizationSelectionCancelled(err)) {
-      return { failure: { reason: "Choose the workspace this pick list belongs to, then try again.", cancelled: true } };
-    }
     console.error("[board/list] could not create the pick list", err);
     return { failure: { reason: err instanceof Error ? err.message : String(err), cancelled: false } };
   }

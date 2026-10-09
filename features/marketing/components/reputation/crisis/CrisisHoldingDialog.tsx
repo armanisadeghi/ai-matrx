@@ -33,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useBrand, useBusinessFacts } from "@/features/marketing/data/hooks";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -58,6 +57,7 @@ import {
 } from "./crisis-intake";
 import { CrisisHoldingView } from "./CrisisHoldingView";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 function Field({
   id,
   label,
@@ -116,7 +116,7 @@ export function CrisisIntakeForm({
 }) {
   const set = <K extends keyof IntakeForm>(key: K, value: IntakeForm[K]) => setForm({ ...form, [key]: value });
   const text = (key: keyof IntakeForm, rows = 3) => (
-    <Textarea
+    <ProTextarea
       id={`crisis-${key}`}
       value={String(form[key] ?? "")}
       onChange={(e) => set(key, e.target.value as never)}

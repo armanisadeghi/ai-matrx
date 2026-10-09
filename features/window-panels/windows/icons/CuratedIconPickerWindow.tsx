@@ -19,8 +19,8 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { IconResolver,
   getCuratedIconIdsForPicker,
 } from "@ai-matrx/icons";
-import { TapTargetButton } from "@ai-matrx/tap-target";
-import { TapTargetLabeled } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
+import { TapTargetLabeled } from "@ai-matrx/design-system/tap-target";
 import {
   CURATED_PICKER_AI_ACTIONS,
   CURATED_PICKER_AI_BRANDS,

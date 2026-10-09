@@ -18,10 +18,10 @@ import { AGENT_SETTINGS_SURFACE_NAME } from "@ai-matrx/chat/agents/constants/age
 import { useAgentSettingsSurface } from "./useAgentSettingsSurface";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 type PanelView = "info" | "surface";
 
@@ -98,9 +98,7 @@ export default function AgentSettingsWindow({
     boundSurfaceName: surfaceName,
   });
 
-  const activeAgentName = useAppSelector((s) =>
-    activeTabId ? (selectAgentName(s, activeTabId) ?? null) : null,
-  );
+  const activeAgentName = useAgentName(activeTabId) ?? null;
   const openAgentContentWindow = useOpenAgentContentWindow();
   const agentSection = buildAgentMenuSection({
     agentId: activeTabId ?? "",

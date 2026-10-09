@@ -45,6 +45,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 
+import { installSpeechHost } from "@/features/audio/service/speechHost";
+
+// THE one speech engine (@ai-matrx/media/speech) gets the website's ports before any speak.
+installSpeechHost();
+
 const AudioSystemHostImpl = dynamic(() => import("./AudioSystemHostImpl"), {
   ssr: false,
   loading: () => null,

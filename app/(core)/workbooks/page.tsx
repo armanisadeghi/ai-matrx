@@ -17,7 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import {
   BottomSheet,
   BottomSheetHeader,
@@ -48,12 +48,9 @@ import { ImportRouteDialog } from "@/features/data-tables/components/ImportRoute
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Pre-flight import file check. We deliberately do NOT use the `accept`
@@ -129,13 +126,10 @@ export default function WorkbooksLandingPage() {
     setCreating(true);
     let capturedOrganizationId: string;
     try {
-      capturedOrganizationId = await ensureOrganizationContext({
-        organizationId,
-      });
+      capturedOrganizationId = await ensureOrgId(organizationId);
     } catch (error) {
       setCreating(false);
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast({
+      toast({
           title: "Could not create workbook",
           description:
             error instanceof Error
@@ -143,7 +137,6 @@ export default function WorkbooksLandingPage() {
               : "Select an organization before creating a workbook.",
           variant: "destructive",
         });
-      }
       return;
     }
     const res = await createWorkbook({
@@ -181,9 +174,7 @@ export default function WorkbooksLandingPage() {
       setImporting(true);
       let selectionCancelled = false;
       try {
-        const capturedOrganizationId = await ensureOrganizationContext({
-          organizationId,
-        });
+        const capturedOrganizationId = await ensureOrgId(organizationId);
         // Parse first — if the file is malformed, we surface the error
         // BEFORE creating an empty workbook the user would have to delete.
         const { xlsxToUniverWorkbook } =
@@ -244,7 +235,7 @@ export default function WorkbooksLandingPage() {
         });
         router.push(`/workbooks/${created.data.id}`);
       } catch (err) {
-        selectionCancelled = isOrganizationSelectionCancelled(err);
+        selectionCancelled = false;
         if (!selectionCancelled) {
           toast({
             title: "Could not import workbook",

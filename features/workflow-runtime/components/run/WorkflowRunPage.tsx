@@ -21,8 +21,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarClock, PenLine, RotateCcw } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
@@ -42,6 +42,13 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { useRunViewPreference } from "../board/useRunViewPreference";
+import {
+  useWorkflowsBasePath,
+  workflowDesignHref,
+  workflowRunHref,
+  workflowsListHref,
+  workflowTriggersHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 /**
  * The Board view — one `ssr:false` edge, fetched only when a viewer picks it
@@ -84,6 +91,8 @@ export function WorkflowRunPage({
   /** Known on the permalink; carried in `?run=` on /workflows/[id]. */
   runId?: string;
 }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const router = useRouter();
   const searchParams = useSearchParams();
   const runId = runIdProp ?? searchParams.get("run") ?? null;
@@ -178,9 +187,9 @@ export function WorkflowRunPage({
       setShowForm(false);
       toast.success("Off it goes.");
       // The run id rides the URL so a refresh re-adopts and resumes.
-      replaceAddressOrNavigate(router, `/workflows/${definitionId}?run=${started}`);
+      replaceAddressOrNavigate(router, `${workflowRunHref(definitionId, workflowsBase)}?run=${started}`);
     },
-    [definitionId, router],
+    [definitionId, router, workflowsBase],
   );
 
   /**
@@ -193,15 +202,15 @@ export function WorkflowRunPage({
   const runAgain = useCallback(() => {
     if (!definitionId) return;
     setShowForm(true);
-    replaceAddressOrNavigate(router, `/workflows/${definitionId}`);
-  }, [definitionId, router]);
+    replaceAddressOrNavigate(router, workflowRunHref(definitionId, workflowsBase));
+  }, [definitionId, router, workflowsBase]);
 
   const header = (
     <RouteHeader
       left={
         <div className="flex min-w-0 items-center">
           <ChevronLeftTapButton
-            href="/workflows/all"
+            href={workflowsListHref(workflowsBase)}
             ariaLabel="All workflows"
           />
           <span className="ml-1 min-w-0 truncate text-sm font-medium text-foreground">
@@ -240,14 +249,14 @@ export function WorkflowRunPage({
             <TapTargetButton
               icon={<CalendarClock />}
               ariaLabel="Run it without me"
-              href={`/workflows/${definitionId}/triggers`}
+              href={workflowTriggersHref(definitionId, workflowsBase)}
             />
           ) : null}
           {definitionId ? (
             <TapTargetButton
               icon={<PenLine />}
               ariaLabel="Design this workflow"
-              href={`/workflows/${definitionId}/design`}
+              href={workflowDesignHref(definitionId, workflowsBase)}
             />
           ) : null}
         </div>
@@ -263,7 +272,7 @@ export function WorkflowRunPage({
         id={failure.id}
         error={failure.error}
         onRetry={retryLoad}
-        fallbackHref="/workflows/all"
+        fallbackHref={workflowsListHref(workflowsBase)}
         fallbackLabel="Your workflows"
       />
     );
@@ -302,7 +311,7 @@ export function WorkflowRunPage({
             onStarted={adopt}
             onCancel={() => {
               if (runId) setShowForm(false);
-              else router.push("/workflows/all");
+              else router.push(workflowsListHref(workflowsBase));
             }}
           />
         </div>

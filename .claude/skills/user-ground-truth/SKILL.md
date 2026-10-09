@@ -38,8 +38,8 @@ text verbatim. `--include-injected` keeps the dropped records, labelled, to audi
 Never do this step by hand or by reading the transcript into an agent — it costs nothing as a
 script and a fortune as context, and an agent "extracting" his words will tidy them.
 
-Where the file goes: something the owner is meant to keep lives under
-`common-docs/operations/for-arman/<date>/`; a working copy for a session lives in the scratchpad.
+Where the file goes: the scratchpad; his words worth keeping go to the node's VISION.md
+([§4](/skills/docs/SKILL.md#4-clean-up-as-you-go)).
 
 ## 2. Summarize — a fresh agent, his instruction verbatim, appended below the raw text
 

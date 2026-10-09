@@ -31,7 +31,7 @@ export interface NotionMarkdownContext {
   resolvePerson?: (ref: string, name: string) => string | null | undefined;
   /** A Notion file / image URL → our file id (preferred) or a URL to keep. Null = not imported. */
   resolveFile?: (url: string, kind: NotionMediaKind) => { fileId: string } | { url: string } | null | undefined;
-  /** A Notion database (URL, id or exported `.csv` path) → the store table (and view) it became. */
+  /** A Notion database (URL, id or exported `.csv` path) → the custom table (and view) it became. */
   resolveDatabase?: (ref: string, title: string) => { tableId: string; viewId?: string } | null | undefined;
   /** A Notion icon (emoji or URL) → a Lucide icon name; defaults to `emojiToIcon`. */
   resolveIcon?: (icon: string) => string | null | undefined;
@@ -282,8 +282,9 @@ class Converter {
 
   private icon(raw: string | undefined): string {
     if (!raw) return "";
-    const named = this.ctx.resolveIcon?.(raw) ?? emojiToIcon(raw);
+    const named = this.ctx.resolveIcon?.(raw);
     if (named) return named;
+    if (/\P{ASCII}/u.test(raw)) return raw.trim(); // the emoji itself (a callout's icon text)
     this.warnings.push(`callout icon "${raw}" has no matching Spaces icon; used Lightbulb`);
     return "Lightbulb";
   }
@@ -399,7 +400,7 @@ class Converter {
       // ---- headings (incl. toggle headings: {toggle="true"} or the older "▶#")
       const heading = /^(▶\s*)?(#{1,6})\s+(.*)$/.exec(body);
       if (heading) {
-        const level = Math.min(3, heading[2].length);
+        const level = Math.min(4, heading[2].length);
         const toggleable = Boolean(heading[1]) || attrs.toggle === "true";
         const { kids, next } = childLines(lines, i);
         const p = at();
@@ -574,7 +575,7 @@ class Converter {
         const allColors = { ...colors, ...this.colors(sumAttrs) };
         out.push(
           heading
-            ? this.block(p, "heading", { text: this.spans(heading[2]), props: { level: Math.min(3, heading[1].length), toggleable: true }, children, ...allColors })
+            ? this.block(p, "heading", { text: this.spans(heading[2]), props: { level: Math.min(4, heading[1].length), toggleable: true }, children, ...allColors })
             : this.block(p, "toggle", { text: this.spans(sumText.trim()), children, ...allColors }),
         );
         return next;
@@ -696,8 +697,10 @@ export function notionMediaToSpace(raw: string | null | undefined, ctx: NotionMa
     return hit ?? { url: raw };
   }
   if (kind === "icon") {
-    const named = ctx.resolveIcon?.(raw) ?? emojiToIcon(raw);
-    return named ? { icon: named } : null;
+    const named = ctx.resolveIcon?.(raw);
+    if (named) return { icon: named };
+    // Emoji a person chose are kept as they are (Arman 2026-10-08), never mapped to a stand-in glyph.
+    return raw.trim() && /\P{ASCII}/u.test(raw) ? { emoji: raw.trim() } : null;
   }
   return null;
 }

@@ -13,7 +13,7 @@ import { provideAppScopeModules } from "./app-scope";
 
 export interface CompileStoredArgs {
   code: string;
-  /** `tool:<name>`, `agent-app:<id>:slot:<s>`, `emit:<ref>`, `kind:<slug>`… — every gap is filed under it. */
+  /** `tool:<name>`, `applet:<id>:slot:<s>`, `emit:<ref>`, `kind:<slug>`… — every gap is filed under it. */
   origin: string;
   /** Scope entries from the stored row (`allowed_imports`). */
   allowedImports?: string[] | Json | null;

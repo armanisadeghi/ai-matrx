@@ -58,6 +58,15 @@ function fromRules(id) {
 
 export const FINDINGS_CHECKS = [
   {
+    // THE ONE-VERSION LAW (Arman, 2026-10-05): one chat input, one variables
+    // form, one Enter-to-send… A box a person types a message into that is not
+    // SmartAgentInput is the first thing it names (2026-10-08: /make).
+    id: "one-version-of-each-canonical-piece",
+    watch: /\.tsx?$|^scripts\/one-version\//,
+    fix: "Render the canonical piece the item names (a message box → SmartAgentInput; a headless one-shot run → SmartAgentInput + adoptHeadlessAgentJson). Never add to scripts/one-version/baseline.json.",
+    ...fromRules("one-version-of-each-canonical-piece"),
+  },
+  {
     id: "visibility-vocabulary",
     watch: /(\.tsx?$)|^scripts\/visibility-vocab\//,
     // One remedy per class of finding, each proven importable and accepted by the check

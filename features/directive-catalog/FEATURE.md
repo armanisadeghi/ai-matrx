@@ -11,7 +11,8 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 ## Backend contract (do NOT rebuild)
 
-- `GET /directives/catalog` on the Python brain. In-app path is **bare** (`/directives/catalog`); the public URL adds `/api` (stripped server-side). Non-sensitive, unauthenticated GET.
+- `GET /directives/catalog` on the Python brain — the SUMMARY (every noun's cells + identity, actions, aliases; NO item schemas; ~32 KB gzip, cached server-side, `ETag` = `catalog_version`). In-app path is **bare** (`/directives/catalog`); the public URL adds `/api` (stripped server-side). Non-sensitive, unauthenticated GET.
+- `GET /directives/catalog/{noun}` — ONE noun's write item schemas (`DirectiveNounSchemas.schemas[class]`), fetched only when a form/inspector for that noun opens: `catalogCache.ts::loadNounSchemas` (one request per noun per tab) via `hooks/useNounSchemas.ts`. Never read schemas off a summary row — it has none.
 - Base URL is resolved from the canonical `apiConfigSlice` (`selectResolvedBaseUrl`) — the admin server toggle routes this too. NEVER hardcoded.
 - Response shape aliased from OpenAPI in `types.ts` (`components["schemas"]["DirectiveCatalog"]` / `NounDirectives`; states `"yes" | "planned" | "no"`).
 
@@ -55,8 +56,8 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 
 - **Write forms are generated from the server's item schema — never hand-authored per noun.**
-  `schemaFields.ts::deriveSchemaFields` maps every property of `noun.schemas[verb]` to a typed
-  field (text, number, yes/no, pick-list, date/time, record search, JSON); required + the
+  `schemaFields.ts::deriveSchemaFields` maps every property of the noun's `schemas[verb]` (`useNounSchemas`) to a typed
+  field (text, number, yes/no, pick-list, date/time via the package `DateField`, record search, JSON); required + the
   noun's `title_column` lead, the rest sit under "More fields" ordered by kind. Id fields
   resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo` (`assignee_id` →
   a people search). A **blank field is never sent** — not `""`, not `null`: an update schema
@@ -93,8 +94,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 The catalog is COMPUTED server-side from `platform.entity_types` + the envelope shape
 registry, and the payload is enriched: per-noun `label` / `title_column` /
-`identity_fields` (required fields of the registered reference item model) / per-verb
-write `schemas`, plus an `actions` section (registered Kind Actions) and the server's
+`identity_fields` (required fields of the registered reference item model), plus an `actions` section (registered Kind Actions) and the server's
 alias map. Consequences here:
 
 - `buildEnvelope.ts::refFieldsForNoun(noun, catalogNoun)` derives identity fields from
@@ -108,6 +108,14 @@ alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-10-07 — **G18: the admin builder's run, confirm and layout.** The run (progress, receipts, error, sent title) lives in `builderRunStore.ts` outside the panel (`useSyncExternalStore`, the cards' `applyOutcomes` pattern): a re-render or remount mid-run keeps it, and a panel that mounts later reopens on that run's verb + type with its outcome. The same store remembers which exact blocks (slug + items) applied on this page, so a repeat asks "This already ran once." and a yes sends `force` — the card's Run-again rule. The confirm is `askDirective(request, { surface: "admin" })` — the one question, without "not just this text". Update/Delete with no record chosen says "Choose a task" beside the button and the confirm reads "No Task chosen"; a server "id is required" reads "Task is required" (`wordServerFieldNames` `recordLabel`); any input change clears the old outcome. Verb and noun pickers are one `OptionCombobox` geometry with display words (`directiveVerbWord`); on a phone the builder comes first. `StateCell`: no native `title` on a passive cell, an inert toggle is `aria-disabled` (the stuck "No" tooltip). The record trigger in `SchemaFieldsForm` fills the row. Guards: `builderRunStore.test.ts`, `components/StateCell.test.tsx`, `../matrx-envelope/__tests__/g18-admin-confirm-says-what-it-means.test.tsx` (red before, green after).
+- 2026-10-07 — **G17: the write form is one control family.** `SchemaFieldsForm` drew 36px one-row textareas and an `h-9` number box beside 28px dates and pick-lists. Text and numbers are now the controls `Field`, JSON the controls `Textarea` (the only multi-line field), pick-lists and Yes/No the controls `SelectTrigger` door (tri-state, so not a `Switch` — a Switch cannot say "Unchanged"), the record trigger, reset, remove and "More fields" the controls `Button`. The people and repeat pickers are app components: `SCHEMA_PICKER_GEOMETRY` puts their trigger on the control tokens (28px, half-gap, capsule, 13px; `max-lg:` beats the repeat picker's own 44px). Guard: `__tests__/the-write-form-is-one-control-family.test.tsx` (raw tags / borrowed `@/components/ui/*` / `h-9` in source, and every rendered control inside the family; red before, green after).
+- 2026-10-07 — **G16: dates are the package `DateField`.** `SchemaFieldsForm` date / date-and-time / time fields render `DateField` from `@ai-matrx/design-system/controls` (mode `date` | `datetime` | `time`): typed entry, calendar popover (sheet on a phone), Clear, keyboard, ISO in and out, the same 28px as the form's pickers. The borrowed `TaskDueDatePicker` and the native time box are gone from the form; Update still reads "Unchanged". Guard `__tests__/an-update-form-says-unchanged.test.tsx` (G16 case: red on the borrowed picker, green on `DateField`).
+- 2026-10-07 — **G15: dates use the app's date control.** `SchemaFieldsForm` date fields are the task editor's Calendar popover (`TaskDueDatePicker` variant `field`, new `id`/`emptyLabel`/`clearLabel` props); date-and-time adds a time box beside it; time stays a time box. Untouched Update fields still read "Unchanged". No date control exists in `@ai-matrx/design-system/controls` yet. Guard `__tests__/an-update-form-says-unchanged.test.tsx` (G15 case red on the native boxes, green now).
+- 2026-10-07 — **G12 catalog speed.** The summary carries no schemas (live before: 2.41 MB, 5.4–7.6 s; now ~292 KB raw / ~32 KB gzip, served from a server-side cache with ETag/304). Each form loads ONE noun's schemas: `service.ts::fetchDirectiveNounSchemas` → `catalogCache.ts::loadNounSchemas`/`peekNounSchemas` → `hooks/useNounSchemas.ts`, read by the picker's `WriteStep`, the builder (skeleton while loading) and the grid's Inspect (offered on every non-`no` write cell; `DirectiveCatalogClient` loads the schema, then opens the canvas tab). The mirrored manifest carries `noun_schemas` ({noun: {class: schema}}); `gen-directive-nouns.mjs` and the snapshot tests read it there (generated output unchanged). Live (local aidream): "Change…" for Task showed Create/Update/Delete 28 ms after the press on a cold tab; the Create form and the admin builder rendered every field.
+
+- 2026-10-07 — G10B review closed (resumed lane). Phone-first page: below lg the body is the one scroll area (type table at 70dvh, then Other actions, then the builder) and takes the shell's floating-clearance runway (`data-matrx-page-scroll`), so the builder's last line ends clear of the floating chips (dev `[floating-clearance]` guard fired on this scroller before). The family filter is full width on a phone (it had collapsed to a dot). The type table is PAGED (`DIRECTIVE_CATALOG_PAGE_SIZE` = 50): "show all" put ~69,000 nodes on the page, so every dialog's scroll lock cost an ~800 ms style pass — the builder's confirm opened ~950 ms after the click; now ~75 ms. The jargon header is "Other actions". Confirms come from the directive host's `ask` (Create a Task with no title? / Create Task X?).
 
 - 2026-10-02 — G10A review: every untouched Update control says "Unchanged" — Assignee said "Unassigned" (reads as "this will unassign") and dates showed "mm/dd/yyyy". ONE source for every field kind: `emptyFieldLabel(field, mode, isPerson)` in `schemaFields.ts` (Update → "Unchanged" except `id`; Create → default / "Not set" / "Unassigned" / "Does not repeat" / the control's own prompt). Dates and times draw the word over the native mask until focused (`DateTimeControl`). No working control looks disabled: `TaskRecurrencePicker`'s empty state is full muted text (was 50%), and `TaskAssigneePicker` takes `emptyLabel` + `labelClassName` so the form's Assignee matches its siblings' height and text size. Guard: `__tests__/an-update-form-says-unchanged.test.tsx` (one field of every kind, both modes; red on Assignee and Repeat before).
 

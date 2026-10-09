@@ -7,7 +7,7 @@
 
 import { ArrowDownUp, Boxes, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import {

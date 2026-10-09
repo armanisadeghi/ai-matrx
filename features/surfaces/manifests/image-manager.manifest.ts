@@ -48,7 +48,13 @@ const groups: SurfaceValueGroup[] = [
   },
 ];
 
+export interface ImageHubLink { href: string; label: string; description: string }
+export interface ImageHubSection { title: string; landing: string; links: ImageHubLink[] }
+
 const surfaceSpecific: SurfaceValue[] = [
+  { name: "image_hub_sections", label: "Hub sections", description: "Navigation groups rendered on the Images landing, each with its title, home route, and complete link catalog. Absent on other hub tabs.", valueType: "array", alwaysAvailable: false, typicalCharCount: 3000, group: "hub_location", sortOrder: 110 },
+  { name: "image_hub_links", label: "Hub links", description: "Every tool link shown on the landing, with its label, description and route. Absent on other tabs.", valueType: "array", alwaysAvailable: false, typicalCharCount: 2600, group: "hub_location", sortOrder: 120 },
+  { name: "image_hub_link_count", label: "Hub link count", description: "Number of tool links rendered on the landing. Absent on other tabs.", valueType: "number", alwaysAvailable: false, typicalCharCount: 3, group: "hub_location", sortOrder: 130 },
   {
     name: "image_hub_tab",
     label: "Hub tab",
@@ -64,9 +70,9 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_image_ids",
     label: "Selected image IDs",
     description:
-      "Durable `file_id`s of the images the user has selected on the current tab. Always populated — empty array when nothing is selected. Never a URL: bytes are re-minted from the id.",
+      "Durable `file_id`s of the images the user has selected on the current tab. Absent on navigation-only landings; empty array when a selectable tab has loaded with nothing selected. Never a URL: bytes are re-minted from the id.",
     valueType: "array",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 200,
     sortOrder: 200,
     group: "selection",
@@ -91,9 +97,9 @@ export const imageManagerManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description:
     "The image hub and its tabs (tools, branded, profile photo, public search, studio library).",
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Narrow hub vocabulary declared 2026-08-17 so the previously unmapped /images/** tab routes resolve to a real surface. Each tab's own data is not yet declared, and no emitter is wired.",
+    "The /images landing emits its complete navigation catalog. Other shared hub routes and outside-helper attribution/binding proof remain to be completed; this is not fleet certification.",
   label: "Image Manager",
   urlPattern: "/images",
   intro: `<surface_intro>
@@ -108,7 +114,11 @@ The dedicated image workspaces (library, studio, generate, edit, annotate) are s
 /** Type-safe payload helper — required keys mirror `alwaysAvailable: true`. */
 export function createImageManagerScope(values: {
   image_hub_tab: string;
-  selected_image_ids: string[];
+  selected_image_ids?: string[];
+  image_hub_sections?: ImageHubSection[];
+  image_hub_links?: ImageHubLink[];
+  image_hub_link_count?: number;
+  content?: string;
   selection?: string;
   context?: Record<string, unknown>;
   focused_image_id?: string;

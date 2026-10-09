@@ -23,7 +23,7 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
 import { BattleHeader } from "@/features/agent-comparison/shared/BattleHeader";
 import { reportBattleSubmit } from "@/features/agent-comparison/shared/reportBattleSubmit";

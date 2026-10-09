@@ -59,7 +59,7 @@ import {
   type LeaveBalanceRow,
 } from "./api/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NOTE_MIN = 20;

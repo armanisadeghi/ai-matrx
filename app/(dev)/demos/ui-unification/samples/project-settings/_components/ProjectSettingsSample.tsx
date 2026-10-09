@@ -30,7 +30,7 @@ import {
 } from "@/features/projects/hooks";
 import type { Project, ProjectMemberWithUser, ProjectPriority, ProjectRole, ProjectStatus } from "@/features/projects/types";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SampleTitle } from "../../_components/kit";
 import { Badge, Button, ControlRow, ControlScope, DeleteButton, EmptyState, Field, RegionSkeleton, RowGroup, Select, SettingRow, Tabs, Textarea, type BadgeTone } from "@ai-matrx/design-system/controls";
 
@@ -69,7 +69,11 @@ export function ProjectSettingsSample() {
   const { references } = useProjectReferences(id);
   const [section, setSection] = useState<Section>("general");
 
-  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name, meta: p.role }));
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.name,
+    meta: p.role ?? undefined,
+  }));
   const linked = references.reduce((n, r) => n + r.rowCount, 0);
 
   return (

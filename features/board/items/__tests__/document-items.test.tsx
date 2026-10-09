@@ -3,7 +3,7 @@
  * entity form and the older `{ kind: "document" }` shape, so no tile shows
  * "Unavailable"), what "New document" places, where Open goes — and that the
  * document is created only when the person presses Create, through the
- * /documents create path and its organization gate.
+ * /documents create path and `ensureOrgId` (which never prompts).
  */
 
 import { act } from "react";
@@ -20,14 +20,13 @@ import {
 } from "../document-items.logic";
 
 const createDocument = jest.fn();
-const ensureOrganizationContext = jest.fn();
+const ensureOrgId = jest.fn();
 
 jest.mock("@/features/documents/document-service", () => ({
   createDocument: (...args: unknown[]) => createDocument(...args),
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: (...args: unknown[]) => ensureOrganizationContext(...args),
-  isOrganizationSelectionCancelled: (err: unknown) => err instanceof Error && err.message === "cancelled",
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: (...args: unknown[]) => ensureOrgId(...args),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-active",
@@ -35,7 +34,8 @@ jest.mock("@/lib/redux/hooks", () => ({
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-active" }));
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: ({ title, message }: { title: string; message: string }) => (
     <div role="alert">
       {title}: {message}
@@ -92,7 +92,7 @@ describe("starting a new document on the board", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     createDocument.mockReset();
-    ensureOrganizationContext.mockReset();
+    ensureOrgId.mockReset();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -106,20 +106,20 @@ describe("starting a new document on the board", () => {
   const createButton = () =>
     [...container.querySelectorAll("button")].find((b) => /Create document|Try again/.test(b.textContent ?? ""));
 
-  it("creates nothing on mount, then one document on Create through the organization gate", async () => {
-    ensureOrganizationContext.mockResolvedValue("org-chosen");
+  it("creates nothing on mount, then one document on Create through ensureOrgId", async () => {
+    ensureOrgId.mockResolvedValue("org-chosen");
     createDocument.mockResolvedValue({ success: true, data: { id: "doc-new", document_name: "Untitled document" } });
     const onSource = jest.fn();
 
     act(() => root.render(<DocumentDraftBody onSource={onSource} />));
-    expect(ensureOrganizationContext).not.toHaveBeenCalled();
+    expect(ensureOrgId).not.toHaveBeenCalled();
     expect(createDocument).not.toHaveBeenCalled();
 
     await act(async () => {
       createButton()?.click();
     });
 
-    expect(ensureOrganizationContext).toHaveBeenCalledWith({ organizationId: "org-active" });
+    expect(ensureOrgId).toHaveBeenCalledWith("org-active");
     expect(createDocument).toHaveBeenCalledTimes(1);
     expect(createDocument).toHaveBeenCalledWith({ name: "Untitled document", organizationId: "org-chosen" });
     expect(onSource).toHaveBeenCalledWith(
@@ -128,8 +128,8 @@ describe("starting a new document on the board", () => {
     );
   });
 
-  it("says so when no workspace was chosen, and creates nothing", async () => {
-    ensureOrganizationContext.mockRejectedValue(new Error("cancelled"));
+  it("says why when there is no organization to act in (it never asks), and creates nothing", async () => {
+    ensureOrgId.mockRejectedValue(new Error("You don't belong to an organization yet. Create one to continue."));
     const onSource = jest.fn();
     act(() => root.render(<DocumentDraftBody onSource={onSource} />));
     await act(async () => {
@@ -137,12 +137,12 @@ describe("starting a new document on the board", () => {
     });
     expect(createDocument).not.toHaveBeenCalled();
     expect(onSource).not.toHaveBeenCalled();
-    expect(container.textContent).toMatch(/No workspace chosen/);
+    expect(container.textContent).toMatch(/could not be created: You don't belong to an organization yet/);
     expect(createButton()?.textContent).toMatch(/Try again/);
   });
 
   it("shows the create failure instead of swallowing it", async () => {
-    ensureOrganizationContext.mockResolvedValue("org-chosen");
+    ensureOrgId.mockResolvedValue("org-chosen");
     createDocument.mockResolvedValue({ success: false, error: "permission denied" });
     const onSource = jest.fn();
     act(() => root.render(<DocumentDraftBody onSource={onSource} />));

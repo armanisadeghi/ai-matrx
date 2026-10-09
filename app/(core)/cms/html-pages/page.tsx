@@ -9,7 +9,7 @@ import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
 import {
   LoadingTapButton,
   PlusTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -84,7 +84,6 @@ function HtmlPagesListBody() {
         metaTitle: "New Page",
         metaDescription: "",
         metaFields: { isIndexable: false },
-        forceNew: true,
       });
       toast.success("Page created");
       openPage(result.pageId, { tab: "meta" });

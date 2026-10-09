@@ -35,7 +35,7 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export function TableImpactPanel() {
   const searchParams = useSearchParams();

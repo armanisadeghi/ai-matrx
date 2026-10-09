@@ -24,10 +24,10 @@ import {
   MoreHorizontal,
   Webhook,
 } from "lucide-react";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { Badge } from "@/components/ui/badge";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { cn } from "@/lib/utils";
 import {
   shouldOpenInNewTab,

@@ -58,7 +58,7 @@ import type {
 } from "./dbKindComponentCache";
 import { reportKindComponentIncident } from "./kindComponentIncident";
 import type { KindSandboxCeilings } from "./useKindSandboxKnob";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */

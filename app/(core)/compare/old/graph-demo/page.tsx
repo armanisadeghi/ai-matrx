@@ -7,7 +7,7 @@
 // itself is still live and unchanged.
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
 import { OldPageBanner } from "../_components/OldPageBanner";
 

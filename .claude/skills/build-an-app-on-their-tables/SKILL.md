@@ -1,18 +1,18 @@
 ---
 name: build-an-app-on-their-tables
-description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/apps/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
+description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/applets/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineTypedTable)."
 ---
 
 # Build an Applet on a person's tables
 
 The person's data already lives in the store (tables they made in /data, imported from Notion, or made
 through the Table API). The app is an **Applet**: one `app.definition` row holding its files, pages,
-data sources and jobs. **No app code goes in this repo.** `/apps/<slug>` reads the row and renders it
+data sources and jobs. **No app code goes in this repo.** `/applets/<slug>` reads the row and renders it
 through `@ai-matrx/applets` under the **viewer's own seat** — the store decides who reads and changes
 what. Never copy data, never add a table the app needs "for itself" when the person's table can hold
 it, never read with a service key.
 
-**The person builds it herself first.** `/agent-apps/build` takes one sentence ("a page where I see my
+**The person builds it herself first.** `/applets/build` takes one sentence ("a page where I see my
 clients and approve their posts"): it reads the **catalogue** as her, runs the mandate `applets.build`
 (the builder; `applets.fix` for "Fix it"), saves the record as a draft, previews it with her real rows
 and every write held back, and "Use it" publishes. "Change it" on the same page saves a new version.
@@ -52,6 +52,10 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
    ```
    **A job's run renders ONLY through `<JobOutput job>`** — never `job.text`, never a spinner, never
    `<Kind>` on `job.result`. No room inline → `<JobOutput job={job} mode="window" />` or `job.open()`.
+   **A box a person writes words in is `<WritingBox value={text} onValueChange={setText} label="Notes" />`**
+   (from `@ai-matrx/applets/react`) — never `Textarea`: it carries the platform's microphone and read-aloud.
+   A chat with a job is `useConversation` + `<ConversationOutput>` + `<ConversationComposer>` (it writes
+   through `<WritingBox>`).
    Rows are keyed by field key; a link field answers ids or `{ id }` refs — read both.
    Pages: `<Pages layout="tabs" />` in the entry file, `usePage().params`, `<Link to="/clients/123">`.
 3. **Insert the record** in her organization (explicit `organization_id`; slugs are unique
@@ -65,17 +69,21 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
 4. **A change is an UPDATE** of `files` / `pages` / `sources` / `mandates` — the trigger snapshots the
    new version into `app.definition_version`. Never insert a second row for a change.
 5. **Save its surface** as a member: `select ui.save_applet_surface('<id>', '{"actions":[…]}')`.
-6. **Check in a browser:** `/apps/<slug>` signed in as a member (test@test.com is a member of the
+6. **Check in a browser:** `/applets/<slug>` signed in as a member (test@test.com is a member of the
    proof organization); switch pages, change one real value and re-read it from a second session, run
    the job. Restore any value you changed.
 
+## Before writing a row
+
+Run `pnpm -s tsx scripts/applets/applet-render-sweep.ts --against-live [--files <dir>]` before writing or updating any row. A row may use a new `@ai-matrx` export only once the DEPLOYED site has it: the plain sweep compiles against the local install and says ok while https://www.aimatrx.com (`/api/version` commit, its lockfile) may still serve an older package. Any `breaks_on_live` row means wait for the deploy.
+
 ## Who can open it
 
-Signed-in people only (`app/(link)/apps/[app]/[[...path]]`): a signed-out visitor is sent to sign in
+Signed-in people only (`app/(link)/applets/[slug]/[[...path]]`): a signed-out visitor is sent to sign in
 and brought back; a slug they cannot read gets the access gate. Each viewer sees what the store lets
 them see. The Applet never decides access.
 
 ## Not here
 
-- A table the PLATFORM keeps for one of its own features → `defineAppTable` (records README `/app-table`).
+- A table the PLATFORM keeps for one of its own features → `defineTypedTable` (records README `/typed-table`).
 - A brand-new table for the person → make it first (Table API / MCP `tables` / the SQL door), then step 2.

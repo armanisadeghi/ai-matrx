@@ -22,7 +22,7 @@ export const EDUCATION_NAV_ITEMS = [
   },
   {
     name: "Create kit",
-    href: "/education/start",
+    href: "/education/kits/new",
     icon: FilePlus2,
   },
   {

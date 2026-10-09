@@ -13,7 +13,7 @@
 // used by the `/hr` routes, `_CARRIES_EMPLOYER` in aidream's notification
 // service). This module is the client half.
 //
-// 🚨 THIS IS NOT A DEFAULT-ORGANIZATION RUNG, AND THE DISTINCTION IS THE WHOLE
+// 🚨 THIS IS NOT A preselected organization RUNG, AND THE DISTINCTION IS THE WHOLE
 // POINT. `scripts/check-no-default-organization.ts` exists because NOTHING may
 // PICK an organization for a person out of a stored preference, a cookie, or
 // "their first organization":

@@ -23,28 +23,30 @@ export function adminCostColumns<T>({
   return [
     {
       id,
-      header: `${label} (USD)`,
+      header: label === "Cost" ? "Cost (USD)" : label,
       accessorFn: value,
       filter,
       sortable,
       defaultSortDirection: "desc",
       align: "right",
+      compact: true,
       width: 110,
       mobileHidden,
       cell: (row) => formatAdminUsd(value(row)),
     },
     {
       id: `${id}_points`,
-      header: label === "Cost" ? "Points" : `${label} (points)`,
+      header: /\bcost\b/i.test(label) ? label.replace(/\bcost\b/i, (m) => (m[0] === "C" ? "Points" : "points")) : `${label} (points)`,
       // sorting and filtering run on interaction, after the rate has landed; the cell subscribes
       accessorFn: (row) => adminCostPoints(value(row), currentPointsRate()),
       filter,
       sortable,
       defaultSortDirection: "desc",
       align: "right",
-      width: 140,
+      compact: true,
+      width: 110,
       mobileHidden,
-      cell: (row) => createElement(AdminPoints, { usd: value(row) }),
+      cell: (row) => createElement(AdminPoints, { usd: value(row), bare: true }),
     },
   ];
 }

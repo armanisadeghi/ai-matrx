@@ -5,7 +5,7 @@
 // with no active organization, so "New table" was gone and nothing said why. Making an
 // organization is the person's own explicit choice (Notion, Slack and Linear all put you in the
 // workspace you just made), so the one act that creates it also makes it active — never a
-// default picked for her, which is the only thing the no-default-organization law forbids.
+// default picked for her, which is the only thing the no-preselected-organization law forbids.
 //
 // TWO HALVES, both red before the fix:
 //   1. every client call of the creating door (`custom` RPC `org_create`) sits in a file that also

@@ -96,8 +96,8 @@ it("the eye opens the agent's unsaved-changes tab with the diff; again closes it
 });
 
 it("the save status's eye toggles the canvas tab — no docked panel", () => {
-  const src = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src");
-  const source = readFileSync(join(src, "agents/components/shared/AgentSaveStatus.tsx"), "utf8");
+  // AgentSaveStatus is a host slot implemented in this repo.
+  const source = readFileSync(join(__dirname, "..", "..", "agents/components/shared/AgentSaveStatus.tsx"), "utf8");
   expect(source).not.toContain("MatrxDynamicPanelHost");
   expect(source).not.toContain("<UnsavedChangesDiff");
   expect(source).toContain("kind: AGENT_UNSAVED_CHANGES_KIND, key: agentId");

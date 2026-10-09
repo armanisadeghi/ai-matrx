@@ -24,7 +24,6 @@ import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versio
 import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAgentById,
-  selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
@@ -34,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { ToolNamesInput } from "./ToolNamesInput";
 import type { MatrixPatch, MatrixSettings } from "../types";
 import { Button } from "@ai-matrx/design-system/controls";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 type FieldKey =
   | "agent"
@@ -421,7 +421,7 @@ function AgentField({
   onChange: (next: Pick<MatrixPatch, "agent_id" | "agent_version_id" | "agent_version_number">) => void;
 }) {
   const dispatch = useAppDispatch();
-  const agentName = useAppSelector((s) => (agentId ? selectAgentName(s, agentId) : null));
+  const agentName = useAgentName(agentId) ?? null;
   const versionAgent = useAppSelector((s) =>
     versionAgentId ? selectAgentById(s, versionAgentId) : undefined,
   );

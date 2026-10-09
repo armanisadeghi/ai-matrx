@@ -27,7 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { IconResolver } from "@ai-matrx/icons";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { CardLoading } from "@/components/matrx/LoadingComponents";

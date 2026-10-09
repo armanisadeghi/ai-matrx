@@ -5,7 +5,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import type {
   ClientComponent,
   ClientPageSummary,
@@ -19,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import { itemMenuConfigToExtraSections } from "@/features/context-menu-v3/item/itemMenuToV3";
 import { buildDefaultTableRowMenuDescriptor, createTableRowMenuDescriptor } from "@/features/context-menu-v3/table-row-item";
 import { buildCmsPageMenu } from "@/features/cms/actions/buildCmsPageMenu";
 import {

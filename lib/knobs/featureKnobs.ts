@@ -87,13 +87,53 @@ async function loadAll(): Promise<Map<string, KnobValue>> {
   return next;
 }
 
+/**
+ * THE SAME 60 s WINDOW SURVIVES A RELOAD (lane PAGE-BUNDLE-2). The catalogue is ~3,500 rows read in
+ * four pages, and every hard load of any page read it again — even a reload a second after the last.
+ * The window is kept in this tab's sessionStorage with the moment it was read, so the contract
+ * ("live within a minute, everywhere") is unchanged: a stored window older than TTL_MS is never used.
+ */
+const STORED_KEY = "matrx.featureKnobs.v1";
+
+function readStoredWindow(): { at: number; map: Map<string, KnobValue> } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(STORED_KEY);
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as { at?: unknown; rows?: unknown };
+    if (typeof stored.at !== "number" || !Array.isArray(stored.rows)) return null;
+    if (Date.now() - stored.at >= TTL_MS || stored.at > Date.now()) return null;
+    return { at: stored.at, map: new Map(stored.rows as Array<[string, KnobValue]>) };
+  } catch {
+    return null;
+  }
+}
+
+function storeWindow(at: number, map: Map<string, KnobValue>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(STORED_KEY, JSON.stringify({ at, rows: [...map.entries()] }));
+  } catch {
+    // A full or blocked sessionStorage only means the next reload reads the catalogue again.
+  }
+}
+
 async function ensureLoaded(): Promise<Map<string, KnobValue>> {
   if (cache && Date.now() - cachedAt < TTL_MS) return cache;
+  if (!cache) {
+    const stored = readStoredWindow();
+    if (stored) {
+      cache = stored.map;
+      cachedAt = stored.at;
+      return cache;
+    }
+  }
   if (!inFlight) {
     inFlight = loadAll()
       .then((next) => {
         cache = next;
         cachedAt = Date.now();
+        storeWindow(cachedAt, next);
         return next;
       })
       .finally(() => {
@@ -107,6 +147,13 @@ async function ensureLoaded(): Promise<Map<string, KnobValue>> {
 export function invalidateFeatureKnobs(): void {
   cache = null;
   cachedAt = 0;
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(STORED_KEY);
+    } catch {
+      // nothing stored to forget
+    }
+  }
 }
 
 async function readKnob(feature: string, key: string): Promise<KnobValue> {

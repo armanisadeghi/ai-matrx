@@ -16,7 +16,7 @@
  * package), so it can never disagree with the tab's own list.
  */
 
-import { MessageTapButton } from "@ai-matrx/tap-target/buttons";
+import { MessageTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useConversations } from "@ai-matrx/messaging/react";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useMessagesToggle } from "@/features/messaging/canvas/messagesKind";

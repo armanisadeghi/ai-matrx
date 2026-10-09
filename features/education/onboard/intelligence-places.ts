@@ -21,7 +21,7 @@ export const MEDIA_PLACES: FeaturePlaces = {
       id: "study-kit-youtube",
       label: "Study Kit start",
       trigger: "Paste a YouTube link",
-      urlPattern: "/education/start",
+      urlPattern: "/education/kits/new",
       mandateKeys: [K.media__youtube_analyzer],
       // Start's Source input hands the link to the shared intake, which calls the
       // transcript endpoint; the server names and runs the job.

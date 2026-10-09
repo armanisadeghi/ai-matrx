@@ -30,7 +30,6 @@ import {
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
@@ -90,6 +89,7 @@ import {
   type QueuedSaveThunk,
   type SaveResultAction,
 } from "./noteRecordWrite";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -684,7 +684,7 @@ export const copyNote = createAsyncThunk<
   // pressing Duplicate with no organization selected asks, then this same
   // copy continues, instead of a bare refusal.
   const copyOrganizationId = record._sharedWithMe
-    ? await ensureOrganizationContext()
+    ? await ensureOrgId(null)
     : requireOrganizationContext(record.organization_id);
 
   const { data, error } = await supabase

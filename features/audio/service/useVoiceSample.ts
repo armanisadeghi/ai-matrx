@@ -16,7 +16,7 @@ import {
   LIVE_CONVERSATION_SAMPLE_MODEL,
   type VoiceSetId,
 } from "@/lib/voices/voiceSets";
-import { speak } from "./speak";
+import { speak } from "@ai-matrx/media/speech";
 
 /** The line every sample speaks. Short, and the same one every time. */
 export const VOICE_SAMPLE_LINE =

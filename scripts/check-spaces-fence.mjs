@@ -39,6 +39,12 @@ export function insideFence(path) {
 }
 
 const SELF = "scripts/check-spaces-fence.mjs";
+// The stored block format and its live schema (lib/spaces-blocks/**): a `spaces:` commit may change it by owner
+// brief (rounds 31-32, 2026-10-07: "Changes to lib/spaces-blocks ... are allowed this round"), so the format and the
+// editor that writes it land in step. Nothing else outside the fence is opened.
+// Adopting a package the Spaces change uses (owner, 2026-10-07): package.json + pnpm-lock.yaml may ride a
+// `spaces:` commit, so the import and the version that carries it land together (never import before install).
+const OWNER_OPENED = [/^lib\/spaces-blocks\//, /^package\.json$/, /^pnpm-lock\.yaml$/];
 const SCRATCH = /(?:^|\/)[^/]*\.tmp\.[^/]+$/;
 
 /** Tracked paths → violations for scratch (`*.tmp.*`) files inside the fence. */
@@ -51,7 +57,7 @@ export function judgeCommits(commits) {
   const out = [];
   for (const c of commits) {
     if (!SUBJECT.test(c.subject)) continue;
-    for (const f of c.files) if (!insideFence(f) && f !== SELF) out.push(`${c.sha.slice(0, 10)} "${c.subject}" touches ${f}`);
+    for (const f of c.files) if (!insideFence(f) && f !== SELF && !OWNER_OPENED.some((re) => re.test(f))) out.push(`${c.sha.slice(0, 10)} "${c.subject}" touches ${f}`);
   }
   return out;
 }

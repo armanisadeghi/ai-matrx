@@ -16,7 +16,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock(
-  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@ai-matrx/chat/ui/markdown-stream/useBoundAgentOutputSchema",
   () => ({
     useBoundAgentOutputSchema: () => schema,
   }),
@@ -68,7 +68,7 @@ jest.mock("../FullScreenMarkdownEditor", () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock("../internal-handlers/ToolHandlers", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/ToolHandlers", () => ({
   InlineToolCard: () => null,
   DbToolCard: () => null,
   InlineToolBatch: () => null,
@@ -77,14 +77,14 @@ jest.mock("../internal-handlers/ToolHandlers", () => ({
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator", () => ({
   InlineStatusIndicator: () => null,
 }));
-jest.mock("../internal-handlers/InlineThinkingSlot", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineThinkingSlot", () => ({
   InlineThinkingSlot: () => null,
 }));
-jest.mock("../internal-handlers/InlineAssistantError", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineAssistantError", () => ({
   InlineAssistantError: () => null,
 }));
 
-import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 
 const payload = {
   answer:

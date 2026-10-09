@@ -17,7 +17,7 @@
 import { NextResponse } from "next/server";
 
 import { bucketFor, confirmBooking, publicBooking } from "@/features/booking/service";
-import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
+import { typedAnswersFor } from "@ai-matrx/records/forms";
 
 export const dynamic = "force-dynamic";
 

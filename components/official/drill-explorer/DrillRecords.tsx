@@ -16,9 +16,9 @@
 //
 // Lane DRILL-LIVE-FIXES (VERIFY-DRILL-LIVE F3, F4, F8): the count's noun is the records' own grain
 // ("one row per execution …" → 1,026 executions, never the host's `rowNoun` "requests" of the number
-// above it); the header row carries what the rows add up to (the door's first-page `measures`) and,
-// when a late cost moved them off the counted number, a "Settling" badge whose tooltip has both; the
-// table is source-paged (controlled-append) so its pager reads the TRUE total; every moment column
+// above it); the header row carries what the rows add up to (the door's first-page `measures`) and
+// their moment as ONE "As of" chip — the records are the same counted rows as the number (lane
+// DRILL-FACTS), so nothing settles between them; the table is source-paged (controlled-append) so its pager reads the TRUE total; every moment column
 // (any ISO timestamp, whichever Dimension it feeds or none) prints as a date and time in the calendar
 // the numbers are cut in, and an id nothing names prints short, whole in its tooltip.
 
@@ -31,28 +31,25 @@ import type { MatrxDataTableQueryState, MatrxDrillDimension, MatrxDrillMeasure, 
 
 import AppLink from "@/components/navigation/AppLink";
 import { InfoHint } from "@/components/official/InfoHint";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
-import { doorWindow } from "./useDrillExplorer";
+import { doorWindow, drillWindowKey } from "./useDrillExplorer";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import type { DrillSiblingDefinition } from "./drillSiblings";
 import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, type DrillRecordsDeclaration } from "./types";
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
 import { plainWords } from "./dimensionWords";
-import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId } from "./explorerWords";
+import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId, drillFailureWords } from "./explorerWords";
 import { formatCount } from "@ai-matrx/kit/format";
 
-import { Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 const PAGE = 100;
 /** Sums the header row names at most (the first Measures the question shows). */
 const SUMS_SHOWN = 3;
 type Row = Record<string, unknown> & { __row: string };
-type Settling = NonNullable<DrillRowsPageSums["settling"]>;
 interface DrillRowsPageSums {
   measures?: Record<string, number | string | null>;
-  counted?: Record<string, number | string | null>;
-  settling?: Record<string, { counted: number | string | null; now: number | string | null; difference: number }>;
 }
 
 /**
@@ -81,8 +78,8 @@ export function useRecordsNoun(
 export const DRILL_ALL_TIME_FROM = "2020-01-01T00:00:00Z";
 
 /** "All time" as a window with a start (the door lists records for a window). */
-export function allTimeWindow(now: Date = new Date()): { key: string; from: string; to: string } {
-  return { key: "at", from: DRILL_ALL_TIME_FROM, to: now.toISOString() };
+export function allTimeWindow(key: string, now: Date = new Date()): { key: string; from: string; to: string } {
+  return { key, from: DRILL_ALL_TIME_FROM, to: now.toISOString() };
 }
 
 export function DrillRecords({
@@ -154,7 +151,9 @@ export function DrillRecords({
     // RECORDS ARE LISTED FOR A WINDOW (the door requires a start): "All time" is every record there is,
     // so it is asked as the whole span from the platform's first day to now — never a refusal on screen
     // (lane DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL N2).
-    const win = doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }).window ?? allTimeWindow();
+    // along the definition's own time Dimension (lane DRILL-LIVE-FIX-2 #1); none = no window at all
+    const along = drillWindowKey(dimensions, carried);
+    const win = along ? (doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }, { key: along }).window ?? allTimeWindow(along)) : undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -172,7 +171,7 @@ export function DrillRecords({
         if (cancelled) return;
         setLoading(false);
         if (!got.ok) {
-          setError(got.error.message || `The ${rowNoun}s could not be read.`);
+          setError(drillFailureWords(got.error.message, `The ${rowNoun}s could not be read.`));
           return;
         }
         const page = got.data!;
@@ -211,11 +210,7 @@ export function DrillRecords({
         // the sums ride the FIRST page only: a later page keeps them
         if (offset === 0) {
           const withSums = page as DrillRowsPageSums;
-          setSums({
-            ...(withSums.measures ? { measures: withSums.measures } : {}),
-            ...(withSums.counted ? { counted: withSums.counted } : {}),
-            ...(withSums.settling ? { settling: withSums.settling } : {}),
-          });
+          setSums(withSums.measures ? { measures: withSums.measures } : {});
         }
       });
     return () => {
@@ -280,14 +275,6 @@ export function DrillRecords({
   };
   // what these records add up to, for the Measures the question shows (the header's own first)
   const sumKeys = question.show.filter((k) => sums.measures && k in sums.measures).slice(0, SUMS_SHOWN);
-  const settling: Settling | undefined = sums.settling && Object.keys(sums.settling).length > 0 ? sums.settling : undefined;
-  const settlingTip = settling
-    ? Object.entries(settling)
-        .filter(([k]) => sumKeys.includes(k) || sumKeys.length === 0)
-        .slice(0, 2)
-        .map(([k, s]) => `${measureOf(k)?.label ?? k}: counted ${fmtSum(k, s.counted)}, now ${fmtSum(k, s.now)}`)
-        .join(" · ")
-    : "";
 
   const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: PAGE, search: "", anyOf: "", columnFilters: {}, sort: null });
 
@@ -308,18 +295,7 @@ export function DrillRecords({
               </span>
             ))
           : null}
-        {asOf ? (
-          <span className="whitespace-nowrap">
-            <span aria-hidden="true">· </span>
-            {`as of ${momentWords(asOf, timeZone)}`}
-          </span>
-        ) : null}
-        {settling ? (
-          <span data-drill-explorer-records-settling className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 type-meta font-medium text-amber-700 dark:text-amber-300">
-            Settling
-            <InfoHint text={settlingTip || "A late cost moved these records off the counted number."} label="Why these differ" />
-          </span>
-        ) : null}
+        {asOf ? <Badge data-drill-explorer-records-as-of>{`As of ${momentWords(asOf, timeZone)}`}</Badge> : null}
         {says ? <InfoHint text={says} label="About these records" /> : null}
       </div>
       <MatrxDataTable

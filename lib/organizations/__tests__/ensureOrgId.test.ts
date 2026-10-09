@@ -27,6 +27,7 @@ import appContextReducer, {
 } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { buildRehydrateAction } from "@/lib/sync/engine/rehydrate";
 
 interface RpcResult {
   data: string | null;
@@ -117,28 +118,53 @@ describe("ensureOrgId", () => {
 
     expect(isOrganizationRequiredError(caught)).toBe(true);
     expect((caught as Error).message).toBe(
-      "Select an organization before sending this request.",
+      "You don't belong to an organization yet. Create one to continue.",
     );
   });
 
   // Break caught: not AWAITING hydration. Boot selects the org only after an
   // async hop; a resolver that does not wait would refuse a legitimate write.
-  it("waits for warm-cache hydration before refusing", async () => {
-    boot.mockImplementation(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      store.dispatch(setOrganization({ id: SELECTED }));
-    });
+  it("never sends on a PAINTED cache — it waits for the ladder, and the account's answer wins", async () => {
+    resetOrgBootstrapGate(); // a fresh load: the ladder has not answered
+    // The browser cache paints the organization this browser last held…
+    store.dispatch(
+      buildRehydrateAction("appContext", { organization_id: OTHER, organization_name: "Old" }, { fromRehydrate: true }),
+    );
+    expect(store.getState().appContext.organization_id).toBe(OTHER);
+    let answer: unknown;
+    const pending = ensureOrgId(undefined).then(
+      (id) => (answer = id),
+      (err) => (answer = err),
+    );
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    expect(answer).toBeUndefined(); // nothing left on the painted value
 
-    await expect(ensureOrgId(undefined)).resolves.toBe(SELECTED);
-    expect(boot).toHaveBeenCalledTimes(1);
-    expect(rpc).not.toHaveBeenCalled();
+    // …then the ladder answers from the account (last active elsewhere).
+    store.dispatch(
+      buildRehydrateAction(
+        "appContext",
+        { organization_id: SELECTED, organization_name: "New", orgBootstrapResolved: true, orgBootstrapFailure: null },
+        { fromRehydrate: true },
+      ),
+    );
+    markOrgBootstrapResolved();
+    await pending;
+    expect(answer).toBe(SELECTED);
+    expect(store.getState().appContext.organization_id).toBe(SELECTED);
   });
 
-  // Break caught: refusing on a FIRST-EVER session before anyone has looked.
-  // There is no warm cache and no cookie, so the only answer comes from the
-  // boot path's remote fetch; a resolver that does not join
-  // `orgBootstrapGate` refuses a write the app was milliseconds from being
-  // able to make. "Nobody has looked yet" is not "there is none".
+  it("a tab that HOLDS an organization keeps it when a later ladder answer differs", async () => {
+    store.dispatch(setOrganization({ id: SELECTED, name: "Mine" }));
+    store.dispatch(
+      buildRehydrateAction(
+        "appContext",
+        { organization_id: OTHER, organization_name: "Elsewhere", orgBootstrapResolved: true, orgBootstrapFailure: null },
+        { fromRehydrate: true },
+      ),
+    );
+    await expect(ensureOrgId(undefined)).resolves.toBe(SELECTED);
+  });
+
   it("waits for the boot path's answer before refusing on a cold session", async () => {
     resetOrgBootstrapGate(); // nobody has answered yet
     let refusalOrId: unknown;

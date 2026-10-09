@@ -13,6 +13,8 @@ import type { components } from "@ai-matrx/agents/generated/api-types";
 /** OpenAPI schemas — source of truth */
 export type NounDirectives = components["schemas"]["NounDirectives"];
 export type DirectiveCatalog = components["schemas"]["DirectiveCatalog"];
+/** ONE noun's write schemas (`GET /directives/catalog/{noun}`); the summary carries none. */
+export type DirectiveNounSchemas = components["schemas"]["DirectiveNounSchemas"];
 export type DirectiveReceipt = components["schemas"]["DirectiveReceipt"];
 export type DirectiveApplyResult =
   components["schemas"]["DirectiveApplyResult"];
@@ -78,6 +80,11 @@ export const DIRECTIVE_VERBS = [
 
 const DIRECTIVE_VERB_SET: ReadonlySet<string> = new Set(DIRECTIVE_VERBS);
 
+/** A verb as a person reads it ("Create", never "create") — grid, builder, readout. */
+export function directiveVerbWord(verb: string): string {
+  return verb ? verb[0].toUpperCase() + verb.slice(1) : verb;
+}
+
 export function isDirectiveVerb(value: string): value is DirectiveVerb {
   return DIRECTIVE_VERB_SET.has(value);
 }
@@ -93,6 +100,20 @@ export function isDirectiveCatalog(value: unknown): value is DirectiveCatalog {
   return (
     typeof v.directive_version === "number" &&
     Array.isArray(v.nouns)
+  );
+}
+
+/** Runtime guard for one noun's schemas. */
+export function isDirectiveNounSchemas(
+  value: unknown,
+): value is DirectiveNounSchemas {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.noun === "string" &&
+    typeof v.schemas === "object" &&
+    v.schemas !== null &&
+    !Array.isArray(v.schemas)
   );
 }
 

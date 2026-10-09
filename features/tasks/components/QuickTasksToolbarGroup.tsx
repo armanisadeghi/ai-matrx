@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Check } from "lucide-react";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import {
   PanelLeftTapButton,
   ArrowDownUpTapButton,
@@ -10,7 +10,7 @@ import {
   PlusTapButton,
   ExternalLinkTapButton,
   XTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,

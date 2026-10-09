@@ -64,7 +64,6 @@ async function request<T>(
       ...(body === undefined ? {} : { body: body as never }),
       scopeOverrides: { organization_id: organizationId },
       // Reads and polls never open the workspace picker.
-      interactiveOrganization: method === "POST",
     }),
   );
   if (result.error) {

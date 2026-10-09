@@ -44,7 +44,7 @@ import TaskSortControl from "./TaskSortControl";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 export default function TaskContentNew() {
@@ -354,16 +354,10 @@ export default function TaskContentNew() {
                     />
 
                     {showQuickAddDescription && (
-                      <ProTextarea
+                      <TaskDescriptionEditor
                         value={quickAddDescription}
-                        onChange={(e) => setQuickAddDescription(e.target.value)}
-                        placeholder="Add a description (optional)..."
-                        autoGrow
-                        minHeight={60}
-                        maxHeight={180}
-                        showCopyButton={false}
-                        className="text-sm resize-y min-h-[60px]"
-                        wrapperClassName="w-full"
+                        onChange={setQuickAddDescription}
+                        bodyClassName="h-44"
                       />
                     )}
 

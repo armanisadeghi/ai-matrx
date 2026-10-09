@@ -41,18 +41,26 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => organizationId,
 }));
-jest.mock("@ai-matrx/chat/agents/redux/tools/tools.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/identity/tool-catalog", () => ({
   selectAllTools: () => tools(),
   selectToolsStatus: () => toolsStatus(),
   selectToolsError: () => toolsError(),
+  useToolCatalog: (select: (s: unknown) => unknown) => select({}),
+  loadAvailableTools: jest.fn(async () => undefined),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAgentById: (_state: unknown, id: string) => agent(id),
   selectAgentReadyForCustomExecution: (_state: unknown, id: string) =>
     agentReady(id),
 }));
-jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => ({
-  fetchModelById: jest.fn((id: string) => ({ type: "model", id })),
+jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({
+  useModelRecords: (select: (s: unknown) => unknown) => select({}),
+  readModelRecords: () => ({}),
+  getModelRecords: () => ({ loadModel: jest.fn(async () => undefined) }),
+}));
+jest.mock("@ai-matrx/agents/models", () => ({
+  ...jest.requireActual("@ai-matrx/agents/models"),
   selectModelById: (_state: unknown, id: string) => model(id),
   selectModelDetailError: (_state: unknown, id: string) => modelError(id),
   selectModelFullyLoaded: (_state: unknown, id: string | null) =>
@@ -64,9 +72,6 @@ jest.mock("@/features/agents/redux/builder-tier.thunks", () => ({
     type: "assignment",
     input,
   })),
-}));
-jest.mock("@ai-matrx/chat/agents/redux/tools/tools.thunks", () => ({
-  fetchAvailableTools: jest.fn(() => ({ type: "tools" })),
 }));
 jest.mock("@ai-matrx/chat/agents/hooks/useModelControls", () => ({
   resolveModelControls: () => ({ normalizedControls: { tools: {} } }),

@@ -259,7 +259,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
   //
   // Fan out `/knowledge/ingest` calls (non-streaming — bulk is fire-and-forget;
   // per-file streaming progress would crowd the UI). Skip:
-  //   - virtual-source files (notes/code/agent-app rows are ingested
+  //   - virtual-source files (notes/code/applet rows are ingested
   //     via their own `source_kind`, not the cld_file path)
   //   - obviously non-ingestable mimes (images / video / audio)
   // Report skipped counts in the same transient note we already use for

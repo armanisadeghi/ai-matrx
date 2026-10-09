@@ -36,7 +36,7 @@ import KindAgentButton from "@/features/content-ir/studio/components/KindAgentBu
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const KindGateTab = dynamic(
   () => import("@/features/content-ir/admin/KindGateTab"),

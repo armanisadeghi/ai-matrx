@@ -28,13 +28,13 @@ import { cn } from "@/lib/utils";
 import {
   TapTargetButtonSolid,
   TapTargetButtonTransparent,
-} from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target";
 import {
   ChevronRightTapButton,
   LoadingTapButton,
   PlusTapButton,
   XTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
 

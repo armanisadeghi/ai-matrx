@@ -11,7 +11,7 @@
  */
 
 import { ExternalLink, MessageSquare, MessageSquarePlus, PanelLeft } from "lucide-react";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { defineCanvasKind, type CanvasKindProps, type CanvasMenuItem } from "@ai-matrx/canvas/react";
 import type { CanvasController, CanvasItemId, CanvasJson } from "@ai-matrx/canvas";
 import { canvasRecord, canvasText, useToolOpener, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
@@ -95,6 +95,7 @@ function quickChatMenu({ data }: CanvasKindProps): readonly CanvasMenuItem[] {
 
 export const quickChatKind = defineCanvasKind<QuickChatTabData>({
   id: QUICK_CHAT_KIND,
+  surface: "dom",
   label: TITLE,
   icon: MessageSquare,
   load: () => import("./QuickChatCanvasView"),

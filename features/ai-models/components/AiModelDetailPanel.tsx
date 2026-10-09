@@ -4,8 +4,8 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,9 @@ import {
   PanelRight,
 } from "lucide-react";
 import AiModelForm from "./AiModelForm";
+import ModelTierStrip from "./ModelTierStrip";
+import { tierConfirmFor } from "../maxTier";
+import { costRatingTier } from "../format";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_AI_MODELS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-models.manifest";
 import {
@@ -906,6 +909,13 @@ export default function AiModelDetailPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showDirtyDialog, setShowDirtyDialog] = useState(false);
+  // Moving a model into or out of the MAX tier (rating 6, "5+") waits for an explicit yes.
+  const [tierConfirm, setTierConfirm] = useState<{
+    from: number | null;
+    to: number | null;
+    closeAfter: boolean;
+  } | null>(null);
+  const tierConfirmedRef = useRef(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const formIsDirty = (
@@ -1039,6 +1049,20 @@ export default function AiModelDetailPanel({
       // Unknown fields are safe — we strip them before the API call
     }
 
+    // The rating the save would write, and whether it crosses the MAX-tier line.
+    if (!tierConfirmedRef.current) {
+      const crossing = tierConfirmFor({
+        rawJson: rawJsonDirty ? rawJsonText : null,
+        formRating: formData.cost_rating,
+        current: isNew ? null : (model?.cost_rating ?? null),
+      });
+      if (crossing) {
+        setTierConfirm({ ...crossing, closeAfter: closeAfterSave.current });
+        return null;
+      }
+    }
+    tierConfirmedRef.current = false;
+
     setSaving(true);
     try {
       let saved: AiModel;
@@ -1138,8 +1162,11 @@ export default function AiModelDetailPanel({
     }
   };
 
+  const closeAfterSave = useRef(false);
   const handleSaveAndClose = async () => {
+    closeAfterSave.current = true;
     const saved = await handleSave();
+    closeAfterSave.current = false;
     if (saved) onClose();
   };
 
@@ -1336,6 +1363,8 @@ export default function AiModelDetailPanel({
             </TooltipProvider>
           )}
         </div>
+
+        {!isNew && model && <ModelTierStrip model={model} onChanged={onSaved} />}
 
         {/* Tab content area */}
         {isNew ? (
@@ -1675,6 +1704,33 @@ export default function AiModelDetailPanel({
       </div>
 
       {/* Dirty-check confirmation dialog */}
+      <AlertDialog open={tierConfirm !== null} onOpenChange={(next) => !next && setTierConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {tierConfirm?.to === 6 ? "Move into" : "Move out of"} the MAX tier?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Cost rating goes from ${costRatingTier(tierConfirm?.from ?? null) ?? "none"} to ${costRatingTier(tierConfirm?.to ?? null) ?? "none"}. The change is recorded under your name.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const close = tierConfirm?.closeAfter ?? false;
+                setTierConfirm(null);
+                tierConfirmedRef.current = true;
+                const saved = await handleSave();
+                tierConfirmedRef.current = false;
+                if (saved && close) onClose();
+              }}
+            >
+              Confirm change
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={showDirtyDialog} onOpenChange={setShowDirtyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

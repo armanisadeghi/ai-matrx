@@ -9,6 +9,7 @@
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const ORIGIN = process.env.ORIGIN ?? "http://localhost:3001";
 const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-10-01/drill-d1";
@@ -49,11 +50,11 @@ try {
     },
     60000,
   ).catch((e) => ({ v: null, error: e.message }));
-  const seconds = ((Date.now() - opened) / 1000).toFixed(1);
+  const elapsed = formatDurationMs(Date.now() - opened, { style: "compact" });
   const rows = await rowsText();
   out.rows = rows;
   await page.screenshot({ path: `${SHOTS}/01-findings-named.png` });
-  check(`every Findings row is named (${rows.length} rows, ${seconds}s)`, Boolean(settled?.v) && rows.every((t) => !/Reading the name/.test(t)), rows.slice(0, 40).join(" | "));
+  check(`every Findings row is named (${rows.length} rows, ${elapsed})`, Boolean(settled?.v) && rows.every((t) => !/Reading the name/.test(t)), rows.slice(0, 40).join(" | "));
   const asked = out.requests_after_open.filter((u) => /ai_usage_names/.test(u)).length;
   check("the names door is asked after the panel opens", asked > 0, `${asked} ai_usage_names reads; ${out.requests_after_open.length} rpc calls`);
   const uuidRows = rows.filter((t) => /[0-9a-f]{8}-[0-9a-f]{4}-/.test(t));

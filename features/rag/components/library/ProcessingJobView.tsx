@@ -56,7 +56,7 @@ import { STAGE_META, StageHero } from "./StageAnimations";
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const formatDuration = (sec: number): string =>
   formatDurationSeconds(sec, { style: "compact" });

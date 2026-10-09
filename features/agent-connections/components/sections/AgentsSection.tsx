@@ -9,13 +9,14 @@ import { SectionFooter } from "../SectionFooter";
 import { ListRow } from "../ListRow";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { useAgents } from "../../hooks/useAgents";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
-import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { AgentSummary } from "@ai-matrx/agents/catalog";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export function AgentsSection() {
   const dispatch = useAppDispatch();
@@ -28,7 +29,7 @@ export function AgentsSection() {
     if (!q) return agents;
     return agents.filter(
       (a) =>
-        a.name.toLowerCase().includes(q) ||
+        (a.name ?? "").toLowerCase().includes(q) ||
         a.id.toLowerCase().includes(q) ||
         (a.description ?? "").toLowerCase().includes(q),
     );
@@ -98,10 +99,10 @@ export function AgentsSection() {
 }
 
 function AgentDetail({
-  agent,
+  agent: summary,
   onBack,
 }: {
-  agent: AgentDefinitionRecord;
+  agent: AgentSummary;
   onBack: () => void;
 }) {
   // The detail pane names the model the agent USES — with its class when the
@@ -109,9 +110,12 @@ function AgentDetail({
   // the agent's execution payload (skipped when already loaded).
   const dispatch = useAppDispatch();
   useEffect(() => {
-    void dispatch(fetchAgentExecutionFull(agent.id));
-  }, [dispatch, agent.id]);
-  const { label: modelLabel } = useAgentModelLabel(agent.id);
+    void dispatch(fetchAgentExecutionFull(summary.id));
+  }, [dispatch, summary.id]);
+  const { label: modelLabel } = useAgentModelLabel(summary.id);
+  // The catalog row completed by the agent's loaded record (tools, servers, messages).
+  const agent = useAgentView(summary.id);
+  if (!agent) return null;
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-border/40">

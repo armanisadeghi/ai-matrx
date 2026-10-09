@@ -42,7 +42,7 @@ import { toast } from "@/lib/toast";
 import { acknowledgeHrCorrectiveAction } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function HrCorrectiveAckPanel({
   correctiveActionId,

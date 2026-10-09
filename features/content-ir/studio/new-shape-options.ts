@@ -88,18 +88,6 @@ export const NEW_SHAPE_RENDER_STYLES: ReadonlyArray<
   },
 ];
 
-const RENDER_STYLE_BRIEF: Record<NewShapeRenderStyle, string> = {
-  card: "Render it as a single self-contained CARD — a clear headline with its details grouped beneath.",
-  list: "Render it as a LIST OR TABLE — repeated rows of the same thing, optimized for scanning and comparison.",
-  steps:
-    "Render it as ORDERED STEPS OR A TIMELINE — sequence is the point, so make the order and progression visually obvious.",
-  document:
-    "Render it as a WRITTEN DOCUMENT — headings and prose, tuned for reading rather than scanning.",
-  metrics:
-    "Render it as a METRICS PANEL — the key figures large and first, supporting detail secondary.",
-  auto: "The user did not pick a layout — choose the one their description actually calls for, and say which you chose and why.",
-};
-
 // -------------------------------------------------------------- cardinality
 
 export type NewShapeCardinality = "single" | "collection";
@@ -118,13 +106,6 @@ export const NEW_SHAPE_CARDINALITIES: ReadonlyArray<
     description: "Each one holds a group of items together.",
   },
 ];
-
-const CARDINALITY_BRIEF: Record<NewShapeCardinality, string> = {
-  single:
-    "Each instance is ONE item — model the shape around a single subject, not a wrapper around a list.",
-  collection:
-    "Each instance is a COLLECTION — the shape carries a titled group and an array of the repeated items inside it.",
-};
 
 // -------------------------------------------------------------- disposition
 
@@ -191,15 +172,6 @@ export const NEW_SHAPE_DEFAULT_ASSETS: ReadonlyArray<NewShapeAsset> = [
   "sample",
 ];
 
-const ASSET_BRIEF: Record<NewShapeAsset, string> = {
-  component:
-    "Build a purpose-built output component for it (do not leave it on the generic viewer).",
-  teaching_block:
-    "Write its teaching content block so agents know exactly how to emit it.",
-  sample:
-    "Author a realistic canonical example and pin it, so the shape can pass the activation gate and the user can preview it immediately.",
-};
-
 // --------------------------------------------------------------- the answers
 
 export interface NewShapeAnswers {
@@ -242,46 +214,25 @@ export function newShapeAnswersReady(answers: NewShapeAnswers): boolean {
  * THE USER-INPUT LAW (common-docs/systems/agents/agent-variable-binding):
  *   - `userInput` is the person's OWN sentence, verbatim — what they typed
  *     into "what does one of these hold". Nothing composed, nothing added.
- *   - `task_brief` is the machine-composed directive: every structured answer
- *     from the form, spelled out so the agent never has to guess which
- *     checkbox was ticked.
+ *   - Every structured answer rides as its own NAMED variable holding the raw
+ *     choice (`single`, `card`, `published_to_web`, ...). What each choice
+ *     MEANS is written once, on the builder agent's authored user message —
+ *     code composes no prose.
  *   - `user_data_sample` carries the pasted data on its own variable, so the
  *     platform can cap, diff or swap it independently of the instruction.
  */
 export function composeNewShapeBrief(answers: NewShapeAnswers): {
   userInput: string;
-  variables: Record<string, string>;
+  variables: Record<string, string | string[]>;
 } {
-  const name = answers.name.trim();
-  const assets = answers.assets.length
-    ? answers.assets.map((asset) => `- ${ASSET_BRIEF[asset]}`).join("\n")
-    : "- The user asked for NOTHING beyond the shape itself — create the definition and stop there.";
-
-  const brief = [
-    `Create a new Shape (kind) for this user and call it "${name}".`,
-    "",
-    "They filled in the studio's create form. These are their answers — treat every one as a decision they made, not a hint:",
-    "",
-    CARDINALITY_BRIEF[answers.cardinality],
-    answers.disposition
-      ? `What each one IS: pass disposition "${answers.disposition}" to kind_create, exactly. Any nested item kind you create states its own in child_dispositions.`
-      : "What each one IS was not chosen — stop and ask the user before creating anything.",
-    RENDER_STYLE_BRIEF[answers.renderStyle],
-    answers.web === "published_to_web"
-      ? "Published to the web: yes — it goes into the shared Shapes library, which anyone can open."
-      : "Published to the web: no — it stays inside their organization.",
-    "",
-    "Then build what they asked for alongside it:",
-    assets,
-    "",
-    answers.sample.trim()
-      ? "They pasted real data — it is in your data sample. Design the structure around THAT, not around a guess, and keep their field names wherever they are sensible."
-      : "They pasted no sample data. Derive the structure from their description, and tell them what fields you chose.",
-    "",
-    "Pick the slug yourself in lower_snake_case from the name. Their own description of the contents is the message they sent you — read it as the specification.",
-  ].join("\n");
-
-  const variables: Record<string, string> = { task_brief: brief };
+  const variables: Record<string, string | string[]> = {
+    shape_name: answers.name.trim(),
+    shape_cardinality: answers.cardinality,
+    shape_render_style: answers.renderStyle,
+    shape_visibility: answers.web,
+    shape_assets: answers.assets.length ? [...answers.assets] : "none",
+  };
+  if (answers.disposition) variables.shape_disposition = answers.disposition;
   if (answers.sample.trim()) variables.user_data_sample = answers.sample.trim();
 
   return { userInput: answers.contents.trim(), variables };

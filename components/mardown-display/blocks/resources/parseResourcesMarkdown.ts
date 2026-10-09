@@ -121,6 +121,15 @@ export function parseResourcesMarkdown(content: string): ResourceCollectionData 
   };
 }
 
+/** `[https://x]` / `[www.x.com]` — a bracketed address, never a type. */
+const URL_IN_BRACKETS = /^\[\s*(?:https?:\/\/|www\.)[^\]]*\]$/i;
+
+/** A link label without the bracketed address a model sometimes repeats inside it (`Title [https://x]`). */
+function cleanResourceTitle(raw: string): string {
+  const cleaned = raw.replace(/\s*\[\s*(?:https?:\/\/|www\.)[^\]]*\]/gi, "").trim();
+  return cleaned || raw.replace(/[[\]]/g, "").trim();
+}
+
 /**
  * Parses a single resource line into a ResourceItem
  * 
@@ -137,12 +146,13 @@ function parseResourceLine(line: string, id: string): ResourceItem | null {
   const content = line.replace(/^- /, '').trim();
   
   // Extract title and URL using regex
-  const titleUrlMatch = content.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+  // The label may carry one level of nested brackets: `[Title [https://x]](https://x)`.
+  const titleUrlMatch = content.match(/^\[((?:[^[\]]|\[[^\]]*\])+)\]\(([^)]+)\)/);
   if (!titleUrlMatch) {
     return null;
   }
 
-  const title = titleUrlMatch[1].trim();
+  const title = cleanResourceTitle(titleUrlMatch[1]);
   const url = titleUrlMatch[2].trim();
   
   // Get the rest of the content after the title/URL
@@ -164,7 +174,7 @@ function parseResourceLine(line: string, id: string): ResourceItem | null {
 
   // Extract type from square brackets [video], [article], etc.
   let type: ResourceItem['type'] = 'other';
-  const typeMatch = restContent.match(/\[([^\]]+)\]/);
+  const typeMatch = [...restContent.matchAll(/\[([^\]]+)\]/g)].find((m) => !URL_IN_BRACKETS.test(m[0]));
   if (typeMatch) {
     const typeString = typeMatch[1].toLowerCase().trim();
     const validTypes = ['documentation', 'tool', 'video', 'article', 'course', 'book', 'tutorial', 'other'];

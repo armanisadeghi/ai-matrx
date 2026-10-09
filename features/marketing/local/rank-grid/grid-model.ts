@@ -12,7 +12,7 @@
 //    `competitors` summary (computed from every listing at every point); the
 //    screen never derives them from the per-point #1.
 
-import { formatAbsoluteDate, formatUsd } from "@ai-matrx/kit/format";
+import { formatAbsoluteDate } from "@ai-matrx/kit/format";
 import type { ToolActionOutcome } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
 import { isToolEnvelope, type ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
 import type {
@@ -246,8 +246,11 @@ export function shortDate(value: string | null | undefined): string {
   return formatAbsoluteDate(value, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function usd(value: number | null | undefined): string {
-  return value == null ? "cost unknown" : formatUsd(value, { digits: "trim" });
+/** A USD cost → the viewer's string (`useCostDisplay().format`); points unless an admin chose dollars. */
+export type CostFormat = (usd: number | null | undefined) => string;
+
+export function costText(format: CostFormat, value: number | null | undefined): string {
+  return value == null ? "cost unknown" : format(value);
 }
 
 /**
@@ -255,7 +258,10 @@ export function usd(value: number | null | undefined): string {
  * run, "N of M points reused" when some were, else what was bought.
  * The date is the OLDEST point's collection date — the grid is as old as that.
  */
-export function sourceLine(envelope: ToolEnvelope<GridResultData>): { reused: boolean; text: string } {
+export function sourceLine(
+  envelope: ToolEnvelope<GridResultData>,
+  format: CostFormat,
+): { reused: boolean; text: string } {
   const points = envelope.data ? gridPoints(envelope.data).filter((p) => !p.pending).length : 0;
   const reusedIds = envelope.cost?.reused_run_ids ?? [];
   const reusedSet = new Set(reusedIds);
@@ -274,7 +280,7 @@ export function sourceLine(envelope: ToolEnvelope<GridResultData>): { reused: bo
       .sort()
       .pop() ?? null;
   const charged = envelope.cost?.charged_usd;
-  const bought = `Bought ${shortDate(boughtAt)}${charged != null ? ` · ${usd(charged)}` : ""}`;
+  const bought = `Bought ${shortDate(boughtAt)}${charged != null ? ` · ${costText(format, charged)}` : ""}`;
   if (reusedIds.length > 0) {
     return { reused: true, text: `${reusedIds.length} of ${points} reused from ${shortDate(oldest)} · ${bought}` };
   }

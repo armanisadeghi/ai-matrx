@@ -15,7 +15,6 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { templatePreviewHref } from "@/features/make/gallery/galleryHref";
@@ -25,6 +24,7 @@ import { TEMPLATES_CHANGED_EVENT } from "../events";
 import { agentsReading, readSetupAgents, saveAsTemplate, tablesReadBy, type SavedTemplate, type SetupAgent } from "../saveAsTemplate";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface SaveTemplateDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -199,7 +199,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                   </label>
                 </div>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" data-save-template-name="" />
-                <Textarea value={describes} onChange={(e) => setDescribes(e.target.value)} placeholder="Who it is for" rows={2} />
+                <ProTextarea value={describes} onChange={(e) => setDescribes(e.target.value)} placeholder="Who it is for" rows={2} />
                 {orgs.size > 1 ? <p className="type-body text-destructive">These tables live in different organizations — pick agents from one</p> : null}
                 {organizationId ? <p className="type-secondary text-muted-foreground">{`Saved in ${orgName ?? "its organization"}`}</p> : null}
               </>

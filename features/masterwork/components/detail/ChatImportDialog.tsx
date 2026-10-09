@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { ExternalLink, FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";

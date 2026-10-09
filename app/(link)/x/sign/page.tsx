@@ -3,14 +3,15 @@
 // The link e-sign emails an outsider is `/x/sign#t=<secret>` (esign._notify_actionable). It lives
 // in `(link)` for that group's reason — a link somebody SENT, opened by a person who has no account
 // — so there is no marketing chrome, no app shell and never a sign-in wall: the secret plus a
-// one-time code on its own channel is the whole credential (SPEC-ESIGN §5.4).
+// one-time code when the sender asked for one is the whole credential (SPEC-ESIGN §5.4; esign-parity
+// CONTRACT §13 — the v2 signing page).
 //
 // NOTHING IS READ ON THE SERVER. The secret is in the URL FRAGMENT, which no browser sends to any
 // server; the client reads it and posts it to aidream in a request body.
 
 import type { Metadata } from "next";
 
-import { OutsiderSigning } from "@/features/esign/signing/OutsiderSigning";
+import { OutsiderEntry } from "@/features/esign/signer/OutsiderEntry";
 
 export const dynamic = "force-dynamic";
 
@@ -22,5 +23,9 @@ export const metadata: Metadata = {
 };
 
 export default function OutsiderSignPage() {
-  return <OutsiderSigning />;
+  return (
+    <div className="h-dvh">
+      <OutsiderEntry />
+    </div>
+  );
 }

@@ -18,11 +18,12 @@
 import { useRef, useState } from "react";
 import { ChevronDown, ChevronUp, GripHorizontal, Users } from "lucide-react";
 import {
-  ParticipantTile,
   orderParticipants,
   useMeetSnapshot,
   useRoom,
+  isObserverRole,
 } from "@ai-matrx/meet/react";
+import { ParticipantTile } from "@ai-matrx/meet/skins/meet";
 import { cn } from "@/lib/utils";
 
 /** How many faces the strip shows before it counts the rest. */
@@ -38,7 +39,11 @@ export function PeopleStrip() {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  const ordered = orderParticipants(room.participants, snapshot?.activeSpeakers ?? []);
+  // A silent observer (Meet MD-16) watches; it is never a face here.
+  const ordered = orderParticipants(
+    room.participants.filter((p) => !isObserverRole(p.role)),
+    snapshot?.activeSpeakers ?? [],
+  );
   const shown = ordered.slice(0, MAX_FACES);
   const overflow = ordered.length - shown.length;
 

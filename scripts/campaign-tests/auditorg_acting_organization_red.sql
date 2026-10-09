@@ -38,7 +38,7 @@ begin
     raise exception '0: the seat is not admin@admin.com -- auth.uid() is %', auth.uid();
   end if;
 
-  v_actor_org := iam.default_organization_id(c_admin);
+  v_actor_org := (select m.container_id from iam.memberships m join iam.organizations fo on fo.id = m.container_id where m.user_id = c_admin and m.container_type = 'organization' and m.status = 'active' and m.deleted_at is null and fo.archived_at is null order by m.created_at, m.container_id limit 1);
   if v_actor_org is null or v_actor_org = c_firm then
     raise exception '0: this twin needs the actor-derived organization (%) to differ from the firm (%)',
       v_actor_org, c_firm;

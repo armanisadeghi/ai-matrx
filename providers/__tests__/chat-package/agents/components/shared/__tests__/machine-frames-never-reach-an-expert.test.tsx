@@ -121,7 +121,7 @@ const MACHINE_FRAME_TAGS = ["ToolCard", "ToolBatch"];
 
 describe("every machine frame in the shared transcript renderer is gated", () => {
   const source = read(
-    "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
+    `${CHAT_SRC_REL}/ui/markdown-stream/EnhancedChatMarkdown.tsx`,
   );
 
   const mountSites = (tag: string): number[] => {
@@ -176,12 +176,13 @@ describe("thinking is gated at the one block renderer", () => {
     // persisted segment, inline <reasoning> tags — renders through
     // BlockRenderer, so the gate lives there, once.
     const renderer = read(
-      "components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx",
+      // Moved into @ai-matrx/rich-content; its source lives in the aidream checkout.
+      "../aidream/apps/shared/rich-content/src/display/chat-markdown/block-registry/BlockRenderer.tsx",
     );
     expect(renderer).toContain("const machineFramesVisible = useMachineFramesVisible();");
     expect(renderer).toMatch(/hideToolResults,\s*machineFramesVisible,/);
     const dispatch = read(
-      "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
+      "../aidream/apps/shared/rich-content/src/display/chat-markdown/block-registry/block-dispatch.tsx",
     );
     expect(dispatch).toContain("if (ctx.machineFramesVisible === false) {");
     expect(dispatch).toContain(
@@ -250,11 +251,17 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
     );
     // Since the server receipt landed, the bubble shows the receipt when one
     // exists and the snapshot strip otherwise — both branches carry the gate.
+    // The gate is `turnContextVisible`, which is the audience answer AND NOT
+    // a host-supplied context (the studio) — strictly narrower than the audience
+    // answer alone, so an Expert still never reaches either branch.
     expect(source).toContain(
-      "machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+      "const turnContextVisible = machineFramesVisible && !hostSuppliesContext;",
     );
     expect(source).toContain(
-      "{machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
+      "turnContextVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+    );
+    expect(source).toContain(
+      "turnContextVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
     );
   });
 

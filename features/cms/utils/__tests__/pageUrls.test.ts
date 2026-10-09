@@ -27,7 +27,7 @@ import { activeSiteDomain, clientPageUrl, clientPageRoute, htmlPageUrl, clientSi
  *   4. update `_FIXTURE_SHA256` in `test_cms_urls.py`
  * Never "fix" a red here by loosening the check — re-sync the copies.
  */
-const FIXTURE_SHA256 = "a596e978b936eb977d3a5595dd99204ed1997e59b37671d7e64b84c80d52f25a";
+const FIXTURE_SHA256 = "5362f523eb502fe2bc9a8520b5339dd5195ef8d375ea7489901bbb2bdf05a8c7";
 
 interface ClientCase {
   name: string;
@@ -70,7 +70,7 @@ describe("C4 URL contract — fixture parity", () => {
 
   it("base_url matches the fixture", () => {
     // The TS twin's non-domain host is the fixture base_url.
-    expect(fixture.base_url).toBe("https://mymatrx.com");
+    expect(fixture.base_url).toBe("https://www.mymatrx.com");
   });
 
   // Every case runs — no skips, no quarantine. If this count drops, a case

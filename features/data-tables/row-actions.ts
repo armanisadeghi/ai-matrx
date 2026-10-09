@@ -40,11 +40,9 @@
  * them and the action editor never offers them.
  */
 
+import { evaluateFormula, parseFormula } from "@ai-matrx/kit/formula";
 import {
-  evaluateFormula,
   isComputedColumn,
-  parseFormula,
-  withComputedColumns,
   type ComputedColumnField,
   type ResolveCell,
 } from "@ai-matrx/design-system/formulas";
@@ -94,10 +92,6 @@ export const MAX_ROW_ACTIONS = 24;
 // the authority; a change to it takes effect on the next deploy that re-mirrors
 // this line.
 export const MAX_ROW_ACTION_STEPS = 60;
-
-export function newRowActionId(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 // ─── reading what is stored ──────────────────────────────────────────────────
 
@@ -288,87 +282,6 @@ export function coerceForColumn(value: unknown, dataType: string): unknown {
     default:
       return value;
   }
-}
-
-// ─── the whole-row preview (Arman, 2026-09-21) ───────────────────────────────
-
-/** One column of the previewed row: what it holds now and what it will hold. */
-export type RowActionPreviewCell = {
-  fieldName: string;
-  displayName: string;
-  dataType: string;
-  before: unknown;
-  after: unknown;
-  /** True when the value the person reads will differ after the action runs. */
-  changed: boolean;
-  /** How the action produces the new value; null for a column the action does not name. */
-  how: RowActionStep["set"] | null;
-  /** A formula/system column: never written, recomputed from the new row. */
-  computed: boolean;
-};
-
-export type RowActionPreview =
-  | { ok: true; cells: RowActionPreviewCell[]; changedCount: number }
-  | { ok: false; error: string };
-
-/**
- * The WHOLE ROW, before and after, exactly as the grid would show it — every
- * column in column order, the cells the action changes marked. Arman,
- * 2026-09-21: "you need to show a preview of the actual row, not just the
- * individual items being updated … show the row as though it's getting live
- * changes." A formula step shows the value it works out on this row, and a
- * formula COLUMN that reads a changed cell shows its recomputed value, because
- * that is what the person will see a second after pressing the button.
- */
-export function previewRowAction(
-  action: RowAction,
-  row: { id: string; data: Record<string, unknown> },
-  fields: readonly RowActionField[],
-): RowActionPreview {
-  const compiled = compileRowAction(action, row, fields);
-  if (!compiled.ok) return compiled;
-  const how = new Map((action.steps ?? []).map((s) => [s.field, s.set] as const));
-  const ordered = [...fields].sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0));
-  const beforeRow = { id: row.id, data: { ...(row.data ?? {}) } };
-  const afterRow = { id: row.id, data: { ...(row.data ?? {}), ...compiled.patch } };
-  const [beforeComputed, afterComputed] = withComputedColumns([beforeRow, afterRow], ordered).rows;
-  const cells = ordered.map((f): RowActionPreviewCell => {
-    const before = beforeComputed.data[f.field_name] ?? null;
-    const after = afterComputed.data[f.field_name] ?? null;
-    return {
-      fieldName: f.field_name,
-      displayName: f.display_name,
-      dataType: f.data_type,
-      before,
-      after,
-      changed: JSON.stringify(before) !== JSON.stringify(after),
-      how: how.get(f.field_name) ?? null,
-      computed: isComputedColumn(f),
-    };
-  });
-  return { ok: true, cells, changedCount: cells.filter((c) => c.changed).length };
-}
-
-// ─── the "start from a row" shortcut (classes 1 and 2) ───────────────────────
-
-/**
- * Value steps for every ordinary column, captured from one row — the template
- * row. The user then removes the columns to keep as they are. Computed columns
- * are never captured (they cannot be set).
- */
-export function stepsFromRow(
-  row: { data: Record<string, unknown> },
-  fields: readonly RowActionField[],
-): RowActionStep[] {
-  return [...fields]
-    .sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0))
-    .filter((f) => !isComputedColumn(f))
-    .map((f) => {
-      const v = row.data?.[f.field_name];
-      return v === undefined || v === null || v === ""
-        ? { field: f.field_name, set: "clear" as const }
-        : { field: f.field_name, set: "value" as const, value: v };
-    });
 }
 
 // ─── plain English ───────────────────────────────────────────────────────────

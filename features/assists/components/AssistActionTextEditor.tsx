@@ -14,7 +14,7 @@ import {
 } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import type { AssistActionTextEditorDefinition } from "../runtime/action-editing";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function AssistActionTextEditor({
   definition,

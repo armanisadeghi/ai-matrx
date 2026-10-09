@@ -100,6 +100,8 @@ export interface ArtifactOrigin {
   href: string | undefined;
   /** The material's name as recorded on the edge, when it was. */
   title: string | null;
+  /** The multi-source study kit this lineage edge belongs to (`kits/kitScope.ts`). */
+  kitId?: string | null;
 }
 
 /**
@@ -127,6 +129,7 @@ export async function readArtifactOrigins(
         entityId: edge.otherId,
         href: peekHref(token, edge.otherId),
         title: metaString(edge.metadata, "sourceTitle"),
+        kitId: metaString(edge.metadata, "kitId"),
       };
     });
 }

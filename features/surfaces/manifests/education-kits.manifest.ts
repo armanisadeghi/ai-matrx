@@ -13,7 +13,11 @@
  *
  *   list    /education/kits             KitsHome — every kit the learner has
  *   detail  /education/kits/[sourceId]  KitHub   — one kit and its study path
- *   new     /education/kits/new         ManualKitCreator — create a kit or add saved aids to one
+ *   new     /education/kits/new         Saved aids mode of THE create page (SavedAidsKitForm,
+ *                                       nested inside StartHero's education-start surface)
+ *
+ * Adding saved aids to an existing kit is the detail view's Add saved aids
+ * dialog (add_kit_members), never the create page.
  *
  * This surface owns manual grouping plus association-backed rename, membership
  * changes, and delete writes. Make more remains the generation door.
@@ -57,7 +61,7 @@ const groups: SurfaceValueGroup[] = [
     label: "New kit",
     sortOrder: 400,
     description:
-      "The new view: the manual kit creator — its picked material, draft title, and the saved study aids that can join the kit.",
+      "The new view: the create page's Saved aids mode — its picked material, draft title, and the saved study aids that can join the kit.",
   },
 ];
 
@@ -66,7 +70,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      'Which view the learner is in: "list" (every kit), "detail" (one kit open), or "new" (manual creation or adding saved aids). Always present.',
+      'Which view the learner is in: "list" (every kit), "detail" (one kit open), or "new" (creating a kit from saved aids). Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
@@ -276,7 +280,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_member_candidates",
     label: "Study aids that can join",
     description:
-      'The saved study aids that can join, as { id, title, kind, subtype }. In the new view: the visible page of the picker plus any already selected. In the detail view: up to 25 of the learner\'s most recently updated saved aids NOT already in the kit (the add page has the full searchable list). Every artifact_ref sent to create_kits or add_kit_members must match one by both kind and id. Absent in the detail view until it loads.',
+      'The saved study aids that can join, as { id, title, kind, subtype }. In the new view: the visible page of the picker plus any already selected. In the detail view: up to 25 of the learner\'s most recently updated saved aids NOT already in the kit (the kit page\'s Add saved aids dialog has the full searchable list). Every artifact_ref sent to create_kits or add_kit_members must match one by both kind and id. Absent in the detail view until it loads.',
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1500,
@@ -286,8 +290,8 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 const writeTargets: SurfaceWriteTarget[] = [
-  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator once the picked material (kit_sources) is ready and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id?: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id; source_file_id is optional and, when sent, must equal kit_source_file_id. The kit anchors on the picked material. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
-  { name: "add_kit_members", label: "Add saved study aids", description: "Available on an open Kit and in existing Kit add mode. Value is an ARRAY of exactly one { title: string, source_id: string, source_type: string, expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. source_id and source_type must equal kit_source_id and kit_source_type; each artifact_ref must match a kit_member_candidate by kind and id and not already be in the kit. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
+  { name: "create_kits", label: "Create study kits", description: "Available only in the new view (the create page's Saved aids mode) once the picked material (kit_sources) is ready and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id?: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id; source_file_id is optional and, when sent, must equal kit_source_file_id. The kit anchors on the picked material. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
+  { name: "add_kit_members", label: "Add saved study aids", description: "Available on an open Kit. Value is an ARRAY of exactly one { title: string, source_id: string, source_type: string, expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. source_id and source_type must equal kit_source_id and kit_source_type; each artifact_ref must match a kit_member_candidate by kind and id and not already be in the kit. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
   { name: "remove_kit_members", label: "Remove saved study aids", description: "Available on an open Kit. Value is { expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. The complete qualified set is checked against one fresh membership snapshot before any removal. A write failure reports exactly how many removals completed. It removes or hides only the Kit membership; saved aids and generated provenance remain available elsewhere.", valueType: "object", updatesValue: "study_aids", mode: "entity", applyPolicy: "ask", group: "open_kit", sortOrder: 115 },
   {
     name: "update_kits", label: "Rename study kits",
@@ -320,7 +324,7 @@ You are on Study Kits at /education/kits. A study kit is one piece of the learne
 
 Read \`view\` first. In "list" the learner is choosing a kit: kits is every kit they have. In "detail" one kit is open: study_aids lists its aids along the page's study path (understand, make it stick, prove it), each with its real practice evidence, kit_totals the headline numbers, and next_challenge what the page suggests doing next.
 
-Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create or add to one through the manual Kit creator, which uses source and member associations. On an open kit, update_kits renames the grouping, add_kit_members and remove_kit_members change its saved-aid membership, and delete_kits removes the grouping only; none delete source material or study aids. Make more runs the generator on the same material.
+Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create one at /education/kits/new (Build with AI, or Saved aids, which create_kits fills); add to an open kit with add_kit_members. Both use source and member associations. On an open kit, update_kits renames the grouping, add_kit_members and remove_kit_members change its saved-aid membership, and delete_kits removes the grouping only; none delete source material or study aids. Make more runs the generator on the same material.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

@@ -326,7 +326,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/system-agents/apps",
     client_name: "matrx-admin",
-    description: "System agent apps admin",
+    description: "System Applets admin",
     sort_order: 300,
     is_active: false,
     group: "page",
@@ -334,7 +334,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/agent-apps/apps",
     client_name: "matrx-admin",
-    description: "Agent-app admin: app CRUD",
+    description: "Applet admin: app CRUD",
     sort_order: 310,
     is_active: false,
     group: "page",
@@ -342,7 +342,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/agent-apps/analytics",
     client_name: "matrx-admin",
-    description: "Agent-app usage analytics",
+    description: "Applet usage analytics",
     sort_order: 320,
     is_active: false,
     group: "page",
@@ -350,7 +350,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/agent-apps/categories",
     client_name: "matrx-admin",
-    description: "Agent-app categories",
+    description: "Applet categories",
     sort_order: 330,
     is_active: false,
     group: "page",
@@ -358,7 +358,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/agent-apps/executions",
     client_name: "matrx-admin",
-    description: "Agent-app execution log",
+    description: "Applet execution log",
     sort_order: 340,
     is_active: false,
     group: "page",
@@ -366,7 +366,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/agent-apps/rate-limits",
     client_name: "matrx-admin",
-    description: "Agent-app rate-limit config",
+    description: "Applet rate-limit config",
     sort_order: 350,
     is_active: false,
     group: "page",

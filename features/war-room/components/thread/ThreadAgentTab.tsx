@@ -45,7 +45,7 @@ import {
 import { useThreadConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // Code-split: ThreadAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it

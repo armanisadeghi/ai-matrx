@@ -1,1 +1,8 @@
-export * from "@ai-matrx/chat/utils/content-ir/surfaces/kind-one-line";
+export {
+  kindOneLine,
+  inlineKindText,
+  unreadableKindsAsNote,
+  catalogProseText,
+  spelledKindsAsOneLine,
+  nonJsonKindsAsCode,
+} from "@ai-matrx/content-ir/surfaces";

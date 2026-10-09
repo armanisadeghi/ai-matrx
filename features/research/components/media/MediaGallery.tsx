@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useCallback, useState, useMemo } from "react";
 import {
   ImageIcon,
@@ -59,8 +59,8 @@ import {
   hostLabel,
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   ResearchMediaImage,
   ResearchMediaOpen,

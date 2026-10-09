@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { removeAgentFromOrchestra, saveMemberMeta } from "@/features/agents/redux/orchestras/thunks";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
@@ -32,6 +31,7 @@ import {
 import type { OrchestraMember } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { InfoHint } from "@/components/official/InfoHint";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface MemberInspectorProps {
   conductorId: string;
@@ -43,7 +43,7 @@ export interface MemberInspectorProps {
 export function MemberInspector({ conductorId, member, accent, onClose }: MemberInspectorProps) {
   const dispatch = useAppDispatch();
   const a = accentClasses(accent);
-  const agent = useAppSelector((s) => selectAgentById(s, member.agentId));
+  const agent = useAgentView(member.agentId);
 
   // Seeded once from props; the parent remounts this panel via `key={agentId}`
   // when a different member is selected, so no setState-in-effect re-seed.

@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import { useEffect, useState } from "react";
 import { FileCode } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -29,6 +31,7 @@ export function HtmlPageRenderPreview({
   const sourceTab = useAppSelector(selectTabById(sourceTabId));
   const isDirty = sourceTab?.dirty === true;
   const [page, setPage] = useState<HtmlPageRecord | null>(null);
+  const previewSandbox = usePageSandbox(page?.url && !isDirty ? page.url : null, "allow-scripts allow-same-origin allow-popups allow-forms");
   // The fallback to the buffer is said, never silent.
   const [metaError, setMetaError] = useState<unknown>(null);
 
@@ -97,7 +100,7 @@ export function HtmlPageRenderPreview({
             src: `${page!.url}${page!.url.includes("?") ? "&" : "?"}preview=1`,
           }
         : { srcDoc: code })}
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+      sandbox={previewSandbox}
       className="block min-h-0 w-full flex-1 border-0 bg-white dark:bg-zinc-950"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
       allowFullScreen

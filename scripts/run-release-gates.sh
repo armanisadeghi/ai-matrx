@@ -90,6 +90,23 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
+        # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
+        # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.
+        "Every @ai-matrx import resolves in the installed packages (fast)|pnpm check:package-imports-resolve"
+        # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
+        # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
+        # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a
+        # returned object; type-check sees it buried in its backlog and against whatever is
+        # installed. This checks the files changed since the previous release tag against the
+        # exact locked tarballs and reports ONLY package-API errors, so the next release fixes it.
+        # ~2 min, npm-fetching (cached). `pnpm check:matrx-api-usage:self-test` replays the incident.
+        "Code using @ai-matrx packages type-checks against the locked versions|pnpm check:matrx-api-usage"
+        # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
+        # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
+        # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
+        # wait and the adoption rule can still fail; ~10s, offline (gh and pnpm are doubles).
+        "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests|pnpm check:sweep-resolves:self-test && pnpm test:sync-main-packages"
         # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
         # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
         # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way
@@ -129,12 +146,13 @@ if $STRICT; then
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
         "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration"
         "The demos chat registration guard can still fail|pnpm check:demos-chat-registration:self-test"
-        # Never list every table to find one: tableFind / ensureTable / defineAppTable are the doors.
+        # Never list every table to find one: tableFind / ensureTable / defineTypedTable are the doors.
         "No hand-written find-or-create of a table (list all, search by slug)|pnpm check:hand-written-find-or-create"
         "The find-or-create guard can still fail (planted in a temp dir)|pnpm check:hand-written-find-or-create:self-test"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
+        "Max cost tier held against agent/system writers (rolled-back cases)|pnpm check:cost-tier-hold:strict"
         # ACCESS LADDER T-13 2.5c: the row column retires into shown_to / published_to_web; no file
         # gains a literal reference to it (shrink-only per-file baseline). The self-test plants in memory.
         "No new code reference to the retiring row column (access ladder T-13)|pnpm check:t13-row-column"
@@ -256,6 +274,14 @@ if $STRICT; then
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A static import cycle through the content-ir host crashed every fresh note load with a
+        # TDZ ReferenceError ("Cannot access 'matrxDirectiveHost' before initialization", G13, 2026-10-07).
+        "Static import cycle through the content-ir host|pnpm check:host-cycles"
+        "Host-cycle guard self-test|pnpm check:host-cycles:self-test"
+        # Babel (2.2 MB) shipped in every signed-in route's first load through one static
+        # registration import (lane AE, 2026-10-08) — heavy modules stay out of the shell's eager set.
+        "Heavy module in the shell's eager client set|pnpm check:shell-eager-graph"
+        "Shell-eager-graph guard self-test|pnpm check:shell-eager-graph:self-test"
         # A server-only module calling a "use client" export throws when the page renders, failing
         # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
         "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"
@@ -322,6 +348,11 @@ if $STRICT; then
         # sentence under a page title. Baseline scripts/page-top/baseline.json only shrinks.
         "Page top|pnpm check:page-top:strict"
         "Page top — self-test|pnpm check:page-top:self-test"
+        # EVERY BOX A PERSON WRITES IN IS ProTextarea / ProInput (Arman, 2026-10-07): a bare Textarea /
+        # <textarea> / text Field drops the mic, read-aloud and the page's agents. Raw values carry
+        # `ui-exception:`. Baseline scripts/writing-boxes/baseline.json only shrinks.
+        "Writing boxes|pnpm check:writing-boxes:strict"
+        "Writing boxes — self-test|pnpm check:writing-boxes:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         # No blocking layers (register ARE-008): a desktop dialog forced to
         # block, or built straight on Radix, hides every AI door on the page.
@@ -853,6 +884,9 @@ if $STRICT; then
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
@@ -873,6 +907,10 @@ if $STRICT; then
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # TRANSFORM MOTION — position and motion never fight over `transform` (tooltips and
+        # toasts painted at the page corner, then jumped; Arman, 2026-10-08). Zero findings.
+        "Element positioned by transform while animating it|pnpm check:transform-motion"
+        "Transform-motion guard self-test|pnpm check:transform-motion:self-test"
         # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
         # Next's __NA marker, so the router never sees the URL and writes the old one
         # back (2026-10-04). Zero findings; advisory here.
@@ -984,8 +1022,8 @@ if $STRICT; then
         # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
-        # DECLARED APP TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
-        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
+        # DECLARED TYPED TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
+        "Declared typed tables (missing / archived / drifted / size)|pnpm check:typed-tables"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -1092,6 +1130,23 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
+        # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
+        # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.
+        "Every @ai-matrx import resolves in the installed packages (fast)|pnpm check:package-imports-resolve"
+        # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
+        # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
+        # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a
+        # returned object; type-check sees it buried in its backlog and against whatever is
+        # installed. This checks the files changed since the previous release tag against the
+        # exact locked tarballs and reports ONLY package-API errors, so the next release fixes it.
+        # ~2 min, npm-fetching (cached). `pnpm check:matrx-api-usage:self-test` replays the incident.
+        "Code using @ai-matrx packages type-checks against the locked versions|pnpm check:matrx-api-usage"
+        # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
+        # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
+        # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
+        # wait and the adoption rule can still fail; ~10s, offline (gh and pnpm are doubles).
+        "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests|pnpm check:sweep-resolves:self-test && pnpm test:sync-main-packages"
         # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
         # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
         # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way
@@ -1125,6 +1180,14 @@ else
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A static import cycle through the content-ir host crashed every fresh note load with a
+        # TDZ ReferenceError ("Cannot access 'matrxDirectiveHost' before initialization", G13, 2026-10-07).
+        "Static import cycle through the content-ir host|pnpm check:host-cycles"
+        "Host-cycle guard self-test|pnpm check:host-cycles:self-test"
+        # Babel (2.2 MB) shipped in every signed-in route's first load through one static
+        # registration import (lane AE, 2026-10-08) — heavy modules stay out of the shell's eager set.
+        "Heavy module in the shell's eager client set|pnpm check:shell-eager-graph"
+        "Shell-eager-graph guard self-test|pnpm check:shell-eager-graph:self-test"
         # A server-only module calling a "use client" export throws when the page renders, failing
         # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
         "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"
@@ -1161,6 +1224,8 @@ else
         "SSR viewport branch — self-test|pnpm check:ssr-viewport-branch:self-test"
         "UI drift|pnpm check:ui-drift"
         "One control|pnpm check:one-control"
+        "Writing boxes|pnpm check:writing-boxes"
+        "Writing boxes — self-test|pnpm check:writing-boxes:self-test"
         "Bare secret fill|pnpm check:fill-secret"
         "Bare secret fill — self-test|pnpm check:fill-secret:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
@@ -1212,6 +1277,8 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        "ID-CAST: an id is compared as an id (no id::text = in custom/platform/iam)|pnpm check:id-cast"
+        "ID-CAST self-test: RED on the pre-fix bodies, GREEN on the fixed|pnpm check:id-cast:self-test"
         # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
         # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
         # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant
@@ -1534,6 +1601,9 @@ else
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
@@ -1554,6 +1624,10 @@ else
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # TRANSFORM MOTION — position and motion never fight over `transform` (tooltips and
+        # toasts painted at the page corner, then jumped; Arman, 2026-10-08). Zero findings.
+        "Element positioned by transform while animating it|pnpm check:transform-motion"
+        "Transform-motion guard self-test|pnpm check:transform-motion:self-test"
         # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
         # Next's __NA marker, so the router never sees the URL and writes the old one
         # back (2026-10-04). Zero findings; advisory here.
@@ -1676,12 +1750,12 @@ else
         # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
-        # DECLARED APP TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.app-table.ts`
+        # DECLARED TYPED TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.typed-table.ts`
         # definition, every organization's copy: MISSING (global), ARCHIVED, DRIFTED, and SIZE at
         # 50,000 rows then every 10,000 past Arman's last acknowledgement (DECISIONS.md, custom
         # data, 2026-10-02). One [WARN] line + one ops.system_error row per finding; exits 0 on
         # findings and 2 UNMEASURED when the store cannot be read. Never blocks.
-        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
+        "Declared typed tables (missing / archived / drifted / size)|pnpm check:typed-tables"
     )
 fi
 

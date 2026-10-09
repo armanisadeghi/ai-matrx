@@ -1,7 +1,7 @@
 // Desktop suggestions manager: server-paginated canonical table.
 "use client";
 
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 import {
   Check,
   ChevronDown,

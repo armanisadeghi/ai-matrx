@@ -34,6 +34,7 @@ export function readAiAnswerData(data: unknown): AiAnswerData | null {
 
 export const AI_ANSWER_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<AiAnswerData>({
   id: AI_ANSWER_KIND,
+  surface: "dom",
   label: "Answer",
   icon: MessageSquareQuote,
   load: () => import("./AiAnswerCanvasView"),

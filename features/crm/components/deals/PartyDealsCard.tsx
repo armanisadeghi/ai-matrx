@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Handshake } from "lucide-react";
-import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlusTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { parseDealDraft } from "../../agent-context/crmRecordSurfaceWrite";

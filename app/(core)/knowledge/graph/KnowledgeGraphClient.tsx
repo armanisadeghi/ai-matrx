@@ -14,7 +14,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { KgGraphCanvas } from "@/features/kg-graph/components/KgGraphCanvas";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

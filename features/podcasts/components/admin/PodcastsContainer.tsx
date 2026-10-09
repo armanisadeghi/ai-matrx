@@ -1,6 +1,6 @@
 'use client';
 
-import { readOf } from '@/components/read-state/ReadGate';
+import { readOf } from '@ai-matrx/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
 import { PodcastsTable } from './PodcastsTable';
 import { PodcastDetailPanel } from './PodcastDetailPanel';

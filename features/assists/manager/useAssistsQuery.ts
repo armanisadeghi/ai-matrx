@@ -79,6 +79,7 @@ export interface AssistsManagerApi {
   stats: AssistStats;
   sourceSuppressions: AssistSourceSuppression[];
   loading: boolean;
+  loaded: boolean;
   error: string | null;
   refresh: () => void;
   restore: (id: string) => Promise<void>;
@@ -107,10 +108,10 @@ export function useAssistsQuery(
   const [sourceSuppressions, setSourceSuppressions] = useState<
     AssistSourceSuppression[]
   >([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const requestId = useRef(0);
+  const [settledKey, setSettledKey] = useState<string | null>(null);
 
   const { statuses, includeSnoozed, starredOnly, unseenOnly, urgency } =
     options;
@@ -141,7 +142,6 @@ export function useAssistsQuery(
       pageSize: tableState.pageSize,
     };
     // `statusKey` stands in for the array identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tableState,
     statusKey,
@@ -151,11 +151,11 @@ export function useAssistsQuery(
     urgency,
   ]);
 
+  const queryKey = JSON.stringify([userId, query, nonce]);
+
   useEffect(() => {
     if (!userId) return;
     const id = ++requestId.current;
-    setLoading(true);
-    setError(null);
     void (async () => {
       try {
         const [page, nextStats, nextSourceSuppressions] = await Promise.all([
@@ -164,6 +164,7 @@ export function useAssistsQuery(
           listMySourceSuppressions(userId),
         ]);
         if (requestId.current !== id) return;
+        setError(null);
         setRows(page.rows);
         setTotal(page.total);
         setStats(nextStats);
@@ -180,10 +181,12 @@ export function useAssistsQuery(
         setError(message);
         captureError({ source: "assists", message });
       } finally {
-        if (requestId.current === id) setLoading(false);
+        if (requestId.current === id) {
+          setSettledKey(queryKey);
+        }
       }
     })();
-  }, [userId, query, nonce]);
+  }, [userId, query, nonce, queryKey]);
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
@@ -256,8 +259,9 @@ export function useAssistsQuery(
     total,
     stats,
     sourceSuppressions,
-    loading,
-    error,
+    loading: settledKey !== queryKey,
+    loaded: settledKey === queryKey && error === null,
+    error: settledKey === queryKey ? error : null,
     refresh,
     restore,
     dismissAll,

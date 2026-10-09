@@ -92,7 +92,7 @@ export const ANONYMOUS_BY_DESIGN_DOORS: readonly AnonymousDoor[] = [
   {
     schema: "public",
     name: "check_guest_execution_limit",
-    purpose: "A guest runs a public agent app; a fingerprint stands in for an identity.",
+    purpose: "A guest runs a public Applet; a fingerprint stands in for an identity.",
   },
   {
     schema: "public",
@@ -264,7 +264,7 @@ export const ANONYMOUS_BY_DESIGN_DOORS: readonly AnonymousDoor[] = [
   {
     schema: "public",
     name: "record_guest_execution",
-    purpose: "A guest runs a public agent app; a fingerprint stands in for an identity.",
+    purpose: "A guest runs a public Applet; a fingerprint stands in for an identity.",
   },
   {
     schema: "public",

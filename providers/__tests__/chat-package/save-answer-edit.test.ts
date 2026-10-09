@@ -18,7 +18,7 @@ import { createChatTestReducer } from "@ai-matrx/chat/testing/chat-test-reducer"
 import { hydrateMessages, type MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
-import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
+import { chatMessageAdapter } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chat-message-source";
 import {
   describeDisplayChange,
   rebaseEdit,
@@ -41,6 +41,13 @@ const rpcReturns = jest.fn();
 /** What the DATABASE row holds — the adapter's truth (null = same as the Redux record). */
 let dbContent: unknown = null;
 let reduxContent: unknown = null;
+
+// A signed-in person: the single-message re-read refuses a signed-out visitor (chat 0.3.13, 39a99f057a),
+// and no host identity is configured here.
+jest.mock("@ai-matrx/chat/host/identity", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/identity"),
+  isSignedOutVisitor: async () => false,
+}));
 
 jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: {

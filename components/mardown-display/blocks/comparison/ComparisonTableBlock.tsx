@@ -37,7 +37,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 
 export type ComparisonCriterion = Omit<
@@ -102,12 +102,12 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        comparison.title.replace(/\s+/g, "-").toLowerCase() || "comparison",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = comparison.title.replace(/\s+/g, "-").toLowerCase() || "comparison";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "landscape" }), "application/pdf");
     } catch (err) {
       console.error("[ComparisonTableBlock] Print failed:", err);
     } finally {

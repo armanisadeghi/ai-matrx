@@ -1,27 +1,58 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Code2,
+  Copy,
+  Download,
   Eye,
   Loader2,
   Maximize2,
   AlertTriangle,
   Globe,
-  ChevronDown,
-  ChevronUp,
+  MoreHorizontal,
+  Printer,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { printPublishedPage } from "@/features/canvas/output/printPage";
+import { copyHtmlSource, downloadHtmlSource } from "@/features/html-pages/output/htmlSourceOutput";
+import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import {
+  onHtmlVersionPublished,
+  resolveHtmlCanvasPage,
+} from "@/features/html-pages/services/canvasVersionPage";
+import {
   analyzeHtmlForPreview,
   extractTitleFromHTML,
 } from "@/features/html-pages/utils/html-preview-utils";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
+import { HtmlAppFrame } from "@/features/html-pages/components/HtmlAppFrame";
+import { HtmlAttachToChat } from "@/features/html-pages/components/HtmlAttachToChat";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useHtmlPreviewChrome } from "@/features/html-pages/components/HtmlPreviewChrome";
+import {
+  cardFrameUrl,
+  htmlPageCanvasContent,
+  readPageError,
+  readPageHeight,
+  type PageRuntimeError,
+} from "@/features/html-pages/components/html-page-frame";
+import {
+  WIDE_FIGURE_ATTRIBUTE,
+  WIDE_FIGURE_CLASS,
+} from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
 
 /**
  * HtmlInlinePreview — auto-renders previewable HTML as a live, inline webpage
@@ -34,28 +65,30 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  *  4. Error                                      → silent code block + opt-in detail.
  *
  * What auto-previews (see analyzeHtmlForPreview):
- *  - A complete HTML document → card preview (header + iframe), height-bounded.
+ *  - A complete HTML document → card preview: ONE header (the page's <title>,
+ *    Code, Copy, Download, Open in canvas) over a frame sized to the page's
+ *    own content height (reported by the html site's frame script — see
+ *    html-page-frame.ts), capped at PAGE_MAX_HEIGHT with scroll inside beyond.
  *  - A single media embed (one YouTube/Vimeo/etc. iframe, or a lone <video>),
  *    even as a fragment → SEAMLESS preview: snug to the embed's aspect ratio,
  *    no card chrome, so a video just sits in the content.
  * Everything else stays a code block.
  *
- * Dedupe: conversion forwards `messageId` (when present) and the html-pages API
- * also dedupes by identical content, so re-renders/reloads never insert
- * duplicate pages — on any surface. Canonical `<artifact>` rewrite/materialization
- * is owned by the artifact system (see /Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md).
+ * MOUNT NEVER WRITES (rendered-output standard, ruling 1). A page's truth is its
+ * `canvas_items` version chain; each version is published once, when it is
+ * saved (materializer / user save / agent `edit_artifact`), to its own page.
+ * With `artifactId` this component only READS: the chat card serves its own
+ * version, the canvas tab (`fill`) the chain's latest, and a card whose chain has
+ * moved on shows a "newer version" marker. Without `artifactId` (a fence not yet
+ * materialized, a note) nothing is published until the person asks.
  */
 
-type Phase = "idle" | "converting" | "preview" | "error";
+type Phase = "idle" | "converting" | "preview" | "unpublished" | "error";
 
-/**
- * THE sandbox for a published html page. The page is served from the html
- * site (`NEXT_PUBLIC_HTML_SITE_URL`, mymatrx.com) — a different site from the
- * app — so `allow-same-origin` hands the page ITS OWN origin, never ours, and
- * its scripts cannot read aimatrx.com cookies or storage. The pair
- * allow-scripts + allow-same-origin is only safe while that holds, so
- * `pageSandbox` drops `allow-same-origin` if the page URL ever resolves to the
- * app's own origin (a misconfigured env), leaving an opaque origin.
+/** Published pages keep their existing capabilities only once the app origin
+ * is known and their absolute HTTP(S) URL is separate. Drafts stay opaque.
+ * usePageSandbox starts hydration with the same opaque flags as the server,
+ * then restores a separate publisher's flags. Redirect custody is separate.
  */
 const PAGE_SANDBOX =
   "allow-scripts allow-same-origin allow-popups allow-forms allow-presentation";
@@ -65,29 +98,14 @@ const PAGE_SANDBOX =
  * allow-top-navigation — an app may not navigate the app shell away.
  */
 const APP_SANDBOX = `${PAGE_SANDBOX} allow-modals allow-popups-to-escape-sandbox allow-downloads allow-pointer-lock`;
+/** Frame height before the page reports its own. */
+const PAGE_INITIAL_HEIGHT = 480;
+/** Past this the page scrolls inside its frame; the canvas shows it whole. */
+const PAGE_MAX_HEIGHT = "min(85dvh, 1200px)";
 const PAGE_ALLOW =
   "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
 
-export function pageSandbox(
-  url: string | null,
-  base: string,
-  appOrigin: string | null = typeof window === "undefined"
-    ? null
-    : window.location.origin,
-): string {
-  if (!url || !appOrigin) return base;
-  let origin: string;
-  try {
-    origin = new URL(url, appOrigin).origin;
-  } catch {
-    return base;
-  }
-  if (origin !== appOrigin) return base;
-  return base
-    .split(" ")
-    .filter((flag) => flag !== "allow-same-origin")
-    .join(" ");
-}
+export { pageSandbox } from "@/features/html-pages/utils/page-sandbox";
 
 interface HtmlInlinePreviewProps {
   code: string;
@@ -104,6 +122,8 @@ interface HtmlInlinePreviewProps {
    * canvas / Code controls (the canvas tab header owns the source toggle).
    */
   fill?: boolean;
+  /** The canvas_items version this block shows (from `<artifact id=…>`). */
+  artifactId?: string;
 }
 
 const ToolbarButton: React.FC<{
@@ -135,21 +155,28 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   conversationId,
   onCodeChange,
   fill = false,
+  artifactId,
 }) => {
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState<string | null>(null);
-  const [pageId, setPageId] = useState<string | null>(null);
+  const appSandbox = usePageSandbox(url, APP_SANDBOX);
+  const publishedSandbox = usePageSandbox(url, PAGE_SANDBOX);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  // Tracks the exact code we last converted so re-renders don't re-publish, but
-  // genuinely edited / re-streamed content does.
-  const convertedForRef = useRef<string | null>(null);
+  const [pageHeight, setPageHeight] = useState<number | null>(null);
+  const [newerVersion, setNewerVersion] = useState<number | null>(null);
+  // The HTML of the version this surface SHOWS (canvas = latest). Copy and
+  // Download hand over exactly this, never the message's older text.
+  const [shownHtml, setShownHtml] = useState<string | null>(null);
+  // The page's own runtime errors (frame script → validated postMessage).
+  const [pageErrors, setPageErrors] = useState<PageRuntimeError[]>([]);
+  const [showPageErrors, setShowPageErrors] = useState(false);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const chrome = useHtmlPreviewChrome();
 
   const analysis =
     language === "html"
@@ -161,63 +188,238 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           html: code,
         };
 
-  const shouldConvert = isComplete && analysis.previewable && !!user?.id;
+  const userId = user?.id;
+  const canShow = isComplete && analysis.previewable && !!userId;
+  const publishHtml = analysis.html;
 
+  // READ the published page of this version (card) or the chain's latest
+  // (canvas). Re-reads when a version is published; never writes.
   useEffect(() => {
-    if (!shouldConvert) return undefined;
-    if (convertedForRef.current === code) return undefined;
-
-    convertedForRef.current = code;
+    if (!canShow || !artifactId) return undefined;
     let cancelled = false;
-    setShowCode(false);
-    setShowError(false);
-    setErrorMessage(null);
-    setPhase("converting");
-
-    (async () => {
+    const read = async () => {
       try {
-        const title = extractTitleFromHTML(code) || "HTML Preview";
-        const result = await HTMLPageService.createPage(
-          analysis.html,
-          title,
-          "Generated from chat",
-          user!.id,
-          {},
-          { sourceMessageId: messageId, sourceConversationId: conversationId },
+        const resolved = await resolveHtmlCanvasPage(
+          artifactId,
+          fill ? "latest" : "self",
         );
         if (cancelled) return;
-        setUrl(result.url);
-        setPageId(typeof result.pageId === "string" ? result.pageId : null);
-        setPhase("preview");
+        const pageUrl = resolved?.shown.url ?? null;
+        setNewerVersion(
+          !fill && resolved && resolved.latest.version > resolved.shown.version
+            ? resolved.latest.version
+            : null,
+        );
+        setShownHtml(resolved?.shown.html ?? null);
+        setUrl(pageUrl);
+        setPhase(pageUrl ? "preview" : "unpublished");
       } catch (err) {
         if (cancelled) return;
-        console.error("[HtmlInlinePreview] conversion failed:", err);
         setErrorMessage(
-          err instanceof Error ? err.message : "Failed to render HTML preview",
+          err instanceof Error ? err.message : "Could not read this page",
         );
         setPhase("error");
       }
-    })();
-
+    };
+    void read();
+    const stop = onHtmlVersionPublished(() => void read());
     return () => {
       cancelled = true;
+      stop();
     };
-  }, [shouldConvert, code, analysis.html, user, messageId, conversationId]);
+  }, [canShow, artifactId, fill]);
 
-  const title = extractTitleFromHTML(code) || "HTML Preview";
+  // No artifact row yet (a fence still to be materialized, or a note): nothing
+  // publishes on mount — the person opts in.
+  useEffect(() => {
+    if (!canShow || artifactId) return;
+    setPhase((current) => (current === "preview" ? current : "unpublished"));
+  }, [canShow, artifactId]);
 
-  const handleOpenCanvas = useCallback(() => {
-    if (!url) return;
-    openCanvas({
-      type: "iframe",
-      data: url,
-      metadata: {
-        title,
-        sourceMessageId: messageId,
-        ...(pageId ? { htmlPageId: pageId } : {}),
-      },
-    });
-  }, [url, pageId, openCanvas, title, messageId]);
+  const publishOnRequest = async () => {
+    if (!userId) return;
+    setShowError(false);
+    setErrorMessage(null);
+    setPhase("converting");
+    try {
+      const result = await HTMLPageService.createPage(
+        publishHtml,
+        extractTitleFromHTML(code) || "HTML Preview",
+        "Generated from chat",
+        userId,
+        {},
+        { sourceMessageId: messageId, sourceConversationId: conversationId },
+      );
+      setUrl(result.url);
+      setPhase("preview");
+    } catch (err) {
+      console.error("[HtmlInlinePreview] publish failed:", err);
+      setErrorMessage(
+        err instanceof Error ? err.message : "Failed to render HTML preview",
+      );
+      setPhase("error");
+    }
+  };
+
+  const title = extractTitleFromHTML(code) || chrome?.title || "Web page";
+
+  // The page reports its own content height (html site frame script); only a
+  // message from THIS frame's window and the page's origin is believed.
+  useEffect(() => {
+    setPageErrors([]);
+    if (!url) return undefined;
+    const onMessage = (event: MessageEvent) => {
+      const height = readPageHeight(event, url, frameRef.current?.contentWindow);
+      if (height !== null) setPageHeight(height);
+      const pageError = readPageError(event, url, frameRef.current?.contentWindow);
+      if (pageError) setPageErrors((prev) => (prev.length >= 5 ? prev : [...prev, pageError]));
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [url]);
+
+  // ONE canvas path for every html page (html-page-frame.ts): the holder's
+  // opener when a block holds this page, else the same `html` canvas content.
+  const handleOpenCanvas = () => {
+    if (chrome?.openInCanvas) {
+      chrome.openInCanvas();
+      return;
+    }
+    openCanvas(
+      htmlPageCanvasContent({ code, title, messageId, canvasItemId: artifactId }),
+    );
+  };
+
+  const printPage = () => {
+    if (url) printPublishedPage({ canvasItemId: artifactId, version: fill ? "latest" : "self", pageUrl: url });
+  };
+
+  const header = (
+    <div
+      className="@container flex min-w-0 items-center gap-1.5 border-b border-border bg-muted/40 py-0.5 pl-3 pr-1"
+      data-html-preview-header=""
+    >
+      <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+        {title}
+      </span>
+      {pageErrors.length > 0 ? (
+        <Button
+          variant="quiet"
+          icon={<AlertTriangle />}
+          onClick={() => setShowPageErrors((v) => !v)}
+          aria-pressed={showPageErrors}
+          title={pageErrors[0].message}
+          data-html-page-errors={pageErrors.length}
+        >
+          {pageErrors.length === 1 ? "Page error" : `${pageErrors.length} page errors`}
+        </Button>
+      ) : null}
+      <div className="flex shrink-0 items-center">
+        {/* The version controls sit on the row when the card has room, behind "More" on a phone. */}
+        <span className="hidden @min-[32rem]:contents" data-html-header-version-actions="">
+          {newerVersion !== null ? (
+            <Button
+              variant="quiet"
+              onClick={handleOpenCanvas}
+              title={`A newer version (v${newerVersion}) exists — open it`}
+              data-html-newer-version={newerVersion}
+            >
+              {`v${newerVersion} available`}
+            </Button>
+          ) : null}
+          {chrome?.actions}
+        </span>
+        <HtmlAttachToChat
+          conversationId={conversationId}
+          canvasItemId={artifactId}
+          pageUrl={url}
+          title={title}
+          frame={() => frameRef.current}
+        />
+        <Button
+          variant="quiet"
+          icon={showCode ? <Eye /> : <Code2 />}
+          onClick={() => setShowCode((v) => !v)}
+          aria-pressed={showCode}
+          title={showCode ? "Show page" : "Show code"}
+          aria-label={showCode ? "Show page" : "Show code"}
+        />
+        {/* Copy / Download / Print sit on the row when the card has room, and
+            behind "More" when it does not (a phone) — never clipped off the end. */}
+        <span className="hidden @min-[32rem]:contents" data-html-header-wide-actions="">
+          <Button
+            variant="quiet"
+            icon={<Copy />}
+            onClick={() => void copyHtmlSource(shownHtml ?? code)}
+            title="Copy HTML"
+            aria-label="Copy HTML"
+          />
+          <Button
+            variant="quiet"
+            icon={<Download />}
+            onClick={() => downloadHtmlSource(title, shownHtml ?? code)}
+            title="Download .html"
+            aria-label="Download .html"
+          />
+          {url ? (
+            <Button
+              variant="quiet"
+              icon={<Printer />}
+              onClick={printPage}
+              title="Print page"
+              aria-label="Print page"
+            />
+          ) : null}
+        </span>
+        <span className="contents @min-[32rem]:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="quiet"
+                icon={<MoreHorizontal />}
+                title="More actions"
+                aria-label="More actions"
+                data-html-header-more=""
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {newerVersion !== null ? (
+                <DropdownMenuItem onSelect={handleOpenCanvas}>
+                  <Maximize2 /> {`Open v${newerVersion} (newer)`}
+                </DropdownMenuItem>
+              ) : null}
+              {chrome?.menuItems?.map((item) => (
+                <DropdownMenuItem key={item.key} onSelect={item.onSelect} disabled={item.disabled}>
+                  {item.icon} {item.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem onSelect={() => void copyHtmlSource(shownHtml ?? code)}>
+                <Copy /> Copy HTML
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => downloadHtmlSource(title, shownHtml ?? code)}>
+                <Download /> Download .html
+              </DropdownMenuItem>
+              {url ? (
+                <DropdownMenuItem onSelect={printPage}>
+                  <Printer /> Print page
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+        <span className="contents @min-[32rem]:hidden">{chrome?.menuAnchors}</span>
+        <Button
+          variant="quiet"
+          icon={<Maximize2 />}
+          onClick={handleOpenCanvas}
+          aria-pressed={chrome?.canvasOpen}
+          title="Open in canvas"
+          aria-label="Open in canvas"
+        />
+      </div>
+    </div>
+  );
 
   const renderCodeBlock = useCallback(
     () => (
@@ -233,20 +435,24 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     [code, language, onCodeChange, isComplete],
   );
 
+  const unpublishedNotice = (
+    <div className="mt-1 flex items-center gap-2" data-html-unpublished="">
+      <span className="text-xs text-muted-foreground">Not shown as a page yet</span>
+      <Button variant="quiet" icon={<Globe />} onClick={() => void publishOnRequest()}>
+        Show as page
+      </Button>
+    </div>
+  );
+
   if (fill) {
     if (isComplete && analysis.previewable && user?.id && phase === "preview") {
       return (
-        <iframe
+        <HtmlAppFrame
           src={url ?? undefined}
           title={title}
-          // The title is the frame's accessible name, not a hover tooltip:
-          // opt out of the design system's title→tooltip lift so it stays.
-          data-native-title=""
-          data-html-app-frame=""
-          className={cn("block h-full w-full border-0 bg-white", className)}
-          sandbox={pageSandbox(url, APP_SANDBOX)}
+          className={className}
+          sandbox={appSandbox}
           allow={PAGE_ALLOW}
-          allowFullScreen
         />
       );
     }
@@ -269,6 +475,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     return (
       <div className={cn("h-full overflow-auto px-3", className)}>
         {renderCodeBlock()}
+        {phase === "unpublished" ? unpublishedNotice : null}
         {phase === "error" && errorMessage ? (
           <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
             {errorMessage}
@@ -279,9 +486,29 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   }
 
-  // 1. Not ready / not previewable → plain code block.
+  // 1. Not ready / not previewable → plain code block (under the holder's
+  // header when a block holds this page, so its actions never vanish).
   if (!isComplete || !analysis.previewable || !user?.id) {
+    if (chrome && isComplete) {
+      return (
+        <div className={cn("my-3 overflow-hidden rounded-lg border border-border bg-card", className)}>
+          {header}
+          <div className="p-2">{renderCodeBlock()}</div>
+        </div>
+      );
+    }
     return renderCodeBlock();
+  }
+
+  // 2a. Not published (no version row yet, or a version saved before publishing
+  // existed) → the code, plus the person's own opt-in. Mount never writes.
+  if (phase === "unpublished") {
+    return (
+      <div className={cn("my-3", className)}>
+        {renderCodeBlock()}
+        {unpublishedNotice}
+      </div>
+    );
   }
 
   // 2. Converting → loader.
@@ -363,7 +590,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           title={title}
           className="w-full rounded-lg bg-black"
           style={{ aspectRatio: String(aspectRatio) }}
-          sandbox={pageSandbox(url, PAGE_SANDBOX)}
+          sandbox={publishedSandbox}
           allow={PAGE_ALLOW}
           allowFullScreen
           loading="lazy"
@@ -376,76 +603,50 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   }
 
-  // 3b. Success — full document → card preview (header + bounded iframe).
-  //
-  // The page is a cross-origin published URL, so we can't measure its real
-  // content height to fit it exactly. Instead of an arbitrary hard cut, we cap
-  // the inline height (a generous ~full-page default, taller when expanded) and
-  // fade the bottom edge so the truncation reads as intentional. The fade hosts
-  // the two escape hatches — Expand (more inline height) and Canvas (full view).
+  // 3b. Success — full document → ONE header over a frame sized to the page.
   return (
     <div
+      data-html-figure=""
+      {...{ [WIDE_FIGURE_ATTRIBUTE]: "" }}
       className={cn(
         "my-3 overflow-hidden rounded-lg border border-border bg-card",
+        WIDE_FIGURE_CLASS,
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Globe className="h-3.5 w-3.5 text-primary" />
-          <span>{title}</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton
-            icon={showCode ? Eye : Code2}
-            label={showCode ? "Preview" : "Code"}
-            active={showCode}
-            onClick={() => setShowCode((v) => !v)}
-          />
-          <ToolbarButton
-            icon={Maximize2}
-            label="Open in canvas"
-            onClick={handleOpenCanvas}
-          />
-        </div>
-      </div>
+      {header}
+      {showPageErrors && pageErrors.length > 0 ? (
+        <ul
+          className="border-b border-border bg-destructive/5 px-3 py-1.5 text-xs text-destructive-ink"
+          data-html-page-error-list=""
+        >
+          {pageErrors.map((e, i) => (
+            <li key={i} className="truncate" title={e.message}>
+              {e.line ? `Line ${e.line}: ` : ""}
+              {e.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
       ) : (
-        <div className="relative">
-          <iframe
-            src={url ?? undefined}
-            title={title}
-            className="block w-full bg-white"
-            // Generous default (~a full page), grows to fill available space
-            // when expanded. The canvas gives the true full-height view.
-            style={{
-              height: expanded ? "min(85dvh, 1400px)" : "min(70dvh, 720px)",
-            }}
-            sandbox={pageSandbox(url, PAGE_SANDBOX)}
-            allow={PAGE_ALLOW}
-            allowFullScreen
-            loading="lazy"
-          />
-          {/* Intentional bottom fade + escape-hatch actions. pointer-events
-              are disabled on the gradient so the iframe stays interactive,
-              and re-enabled on the button row. */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-card via-card/80 to-transparent">
-            <div className="pointer-events-auto mb-3 flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-1.5 py-1 shadow-sm backdrop-blur-sm">
-              <ToolbarButton
-                icon={expanded ? ChevronUp : ChevronDown}
-                label={expanded ? "Collapse" : "Expand"}
-                onClick={() => setExpanded((v) => !v)}
-              />
-              <span className="h-4 w-px bg-border" />
-              <ToolbarButton
-                icon={Maximize2}
-                label="Open in canvas"
-                onClick={handleOpenCanvas}
-              />
-            </div>
-          </div>
-        </div>
+        <iframe
+          ref={frameRef}
+          src={cardFrameUrl(url)}
+          title={title}
+          data-native-title=""
+          data-html-inline-frame=""
+          className="block w-full bg-white"
+          style={{
+            height: pageHeight ?? PAGE_INITIAL_HEIGHT,
+            maxHeight: PAGE_MAX_HEIGHT,
+          }}
+          sandbox={publishedSandbox}
+          allow={PAGE_ALLOW}
+          allowFullScreen
+          loading="lazy"
+        />
       )}
     </div>
   );

@@ -38,6 +38,8 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
+  { name: "reports_catalog", label: "Reports catalog", description: "Complete metadata of the reports rendered on the landing: slug, title, description, icon, routes, and live/coming-soon status. Absent on report detail routes.", valueType: "array", alwaysAvailable: false, typicalCharCount: 1500, group: "report_location", sortOrder: 130 },
+  { name: "report_count", label: "Report count", description: "Number of reports rendered on the landing, including coming-soon cards. Absent on report detail routes.", valueType: "number", alwaysAvailable: false, typicalCharCount: 3, group: "report_location", sortOrder: 140 },
   {
     name: "report_slug",
     label: "Report slug",
@@ -102,9 +104,9 @@ export const reportsManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description:
     "Read-only analyses over platform data.",
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Vocabulary declared 2026-08-17 to close the undeclared /reports module. Per-report data is not declared (only Agent Drift exists today), and no runtime emitter is wired.",
+    "The /reports landing emits the complete report catalog and live availability. Per-report drill-in values, the canonical menu after truthful source attribution is registered, outside-helper binding proof and independent certification remain.",
   label: "Reports",
   urlPattern: "/reports",
   intro: `<surface_intro>
@@ -120,6 +122,9 @@ Reports do not change anything; propose actions elsewhere, not here.
 export function createReportsScope(values: {
   available_report_slugs: string[];
   report_is_admin_scope: boolean;
+  reports_catalog?: import("@/features/reports/registry").ReportDefinition[];
+  report_count?: number;
+  content?: string;
   selection?: string;
   context?: Record<string, unknown>;
   report_slug?: string;

@@ -39,6 +39,8 @@ A **metadata-only registry** (`registry.ts`, the spirit of the feature admin map
 
 ## Invariants
 
+The `/reports` landing publishes `matrx-user/reports` with the complete catalog, rendered count, and only live report slugs as available. Its scope and copy/export text derive from the same registry that renders the cards. Per-report drill-in state is optional and is not fabricated by the landing; the administrator landing retains `matrx-admin/reporting`.
+
 - **The registry is metadata-only.** No data fetching, no JSX — just `ReportDefinition[]`. Data lives in each report's own feature.
 - **Agent Drift owns no data layer.** It reads the agent usages RPCs (`agx_usage_report` / `_admin`) via `useDriftReport` and reuses the agents `AgentUsagesEngine` for drill-in. The reports feature is the shell; the agents feature owns the drift domain. See [`features/agents/FEATURE.md`](../agents/FEATURE.md) → **Find Usages & Drift**.
 - **Admin gating is inherited from the `(admin)` route layout** (super-admin); the underlying admin RPCs also enforce `is_super_admin()`.

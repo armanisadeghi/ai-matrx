@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -32,8 +32,8 @@ import type {
   MatrxColumnDef,
   MatrxDataTableMobileCardControls,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -98,7 +98,7 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   return (

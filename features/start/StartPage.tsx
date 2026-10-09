@@ -16,7 +16,7 @@ import { RecordPageHeader } from "@/features/shell/components/header/templates/R
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { DataPage } from "@/features/agent-apps/embed/DataPage";
+import { DataPage } from "@/features/applets/embed/DataPage";
 import { useStartPage } from "./useStartPage";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 

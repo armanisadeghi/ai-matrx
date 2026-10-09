@@ -43,13 +43,14 @@ const only = (md: string) => {
 };
 
 describe("headings", () => {
-  it("maps # / ## / ### and caps deeper levels at 3", () => {
-    const { blocks } = convert("# Clients\n## Fulfillment\n### Team Boards\n#### Weekly sync");
+  it("maps # / ## / ### / #### (Notion's Heading 4) and caps deeper levels at 4", () => {
+    const { blocks } = convert("# Clients\n## Fulfillment\n### Team Boards\n#### Weekly sync\n##### Notes");
     expect(blocks.map((b) => [b.type, b.props?.level, text(b)])).toEqual([
       ["heading", 1, "Clients"],
       ["heading", 2, "Fulfillment"],
       ["heading", 3, "Team Boards"],
-      ["heading", 3, "Weekly sync"],
+      ["heading", 4, "Weekly sync"],
+      ["heading", 4, "Notes"],
     ]);
   });
 
@@ -119,25 +120,25 @@ describe("toggles, quotes, callouts, dividers", () => {
     expect(text(b)).toBe("Content is the product.\nConsistency is the marketing.");
   });
 
-  it("callout keeps icon (emoji → Lucide), color, first line as text and the rest as children", () => {
+  it("callout keeps its emoji icon, color, first line as text and the rest as children", () => {
     const b = only(
       ['<callout icon="💡" color="yellow_bg">', "\t**Rule:** every client gets a Loom recap on Fridays.", "\t- Record under 5 minutes", "</callout>"].join("\n"),
     );
-    expect(b).toMatchObject({ type: "callout", background: "yellow", props: { icon: "Lightbulb" } });
+    expect(b).toMatchObject({ type: "callout", background: "yellow", props: { icon: "💡" } });
     expect(b.text?.[0]).toEqual({ text: "Rule:", bold: true });
     expect(b.children?.[0].type).toBe("bulleted");
   });
 
   it("export <aside> callout reads the leading emoji as its icon", () => {
     const b = only("<aside>\n🚀 Launch week starts Monday.\n</aside>");
-    expect(b).toMatchObject({ type: "callout", props: { icon: "Rocket" }, background: "gray" });
+    expect(b).toMatchObject({ type: "callout", props: { icon: "🚀" }, background: "gray" });
     expect(text(b)).toBe("Launch week starts Monday.");
   });
 
-  it("an unknown callout emoji falls back to Lightbulb and says so", () => {
+  it("any callout emoji is kept as it is (no stand-in glyph, no warning)", () => {
     const { blocks, warnings } = convert('<callout icon="🦩">\n\tFlamingo campaign\n</callout>');
-    expect(blocks[0].props).toEqual({ icon: "Lightbulb" });
-    expect(warnings.join(" ")).toContain("🦩");
+    expect(blocks[0].props).toEqual({ icon: "🦩" });
+    expect(warnings).toEqual([]);
   });
 
   it("divider", () => {
@@ -198,7 +199,7 @@ describe("structure", () => {
     expect(blocks[1]).toMatchObject({ type: "database", props: { source: { kind: "table", tableId: "table-clients" }, inline: false } });
   });
 
-  it("inline and full-page databases carry the store table id and optional view id", () => {
+  it("inline and full-page databases carry the custom table id and optional view id", () => {
     const { blocks } = convert(
       [
         '<database url="https://www.notion.so/Client-Database-9f8e?v=abc" inline="true">Client Database</database>',
@@ -354,7 +355,7 @@ describe("the whole Traveling SMM™ OS page", () => {
     expect(again.blocks).toEqual(first.blocks);
     const snapshot = { v: 1, settings: DEFAULT_PAGE_SETTINGS, icon: notionMediaToSpace("🌴", ctx, "icon"), cover: notionMediaToSpace("https://images.unsplash.com/palms.jpg", ctx, "cover"), blocks: first.blocks };
     expect(validateSnapshot(snapshot)).toEqual([]);
-    expect(snapshot.icon).toEqual({ icon: "TreePalm" });
+    expect(snapshot.icon).toEqual({ emoji: "🌴" });
     expect(snapshot.cover).toEqual({ fileId: "file-image-palms.jpg" });
     expect(first.blocks.map((b) => b.type)).toEqual(["columnList", "heading", "page", "heading", "todo", "todo", "todo", "text", "toggle", "divider"]);
     expect(first.blocks[8].children?.map((c) => c.type)).toEqual(["numbered", "numbered", "numbered"]);
@@ -377,7 +378,7 @@ describe("the validator itself refuses bad shapes", () => {
       { id: "f", type: "text", text: [{ text: "x", color: "teal" }] },
     ];
     const problems = validateBlocks(bad);
-    expect(problems.join("\n")).toMatch(/level must be 1, 2 or 3/);
+    expect(problems.join("\n")).toMatch(/level must be 1, 2, 3 or 4/);
     expect(problems.join("\n")).toMatch(/used twice/);
     expect(problems.join("\n")).toMatch(/columns hold only column blocks/);
     expect(problems.join("\n")).toMatch(/exactly one of props.fileId/);

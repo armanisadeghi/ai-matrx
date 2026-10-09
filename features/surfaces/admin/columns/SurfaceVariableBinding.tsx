@@ -6,7 +6,7 @@ import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { useMemo } from "react";
 import { Rocket, Type, MessageCircleQuestion, Zap } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";

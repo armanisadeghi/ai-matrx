@@ -1,7 +1,7 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -40,8 +40,8 @@ import {
   Hammer,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAgentShortcuts } from "../hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";

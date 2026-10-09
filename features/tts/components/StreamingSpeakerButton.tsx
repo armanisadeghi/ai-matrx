@@ -32,8 +32,8 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Volume2TapButton, PauseTapButton } from '@ai-matrx/tap-target/buttons';
-import { useSpeech } from "@/features/audio/service/useSpeech";
+import { Volume2TapButton, PauseTapButton } from '@ai-matrx/design-system/tap-target/buttons';
+import { useSpeech } from "@ai-matrx/media/react";
 import type { SpeakerVariant } from '../types';
 
 export interface StreamingSpeakerButtonProps {

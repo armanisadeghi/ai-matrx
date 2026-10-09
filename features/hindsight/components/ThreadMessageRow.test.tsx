@@ -11,7 +11,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));

@@ -57,6 +57,7 @@ no table or parallel writer was added.
 
 ## Change log
 
+- **2026-10-08** — the Message field's label row carries THE formatting toolbar (`FormatButtons`, wired to the field through `formatTargetWithin`), so formatting shows without selecting first; on a phone it takes the row's second line. `{{field}}` chips survive every format action (stored text round-trips). Guard: `format-hosts.census.test.ts`.
 - **2026-09-27** — the record menu's page actions (Save / Discard / Edit / Show example / Archive) state `renderSlot: "overflow"` as a decision: each is a second door beside the header's Save/Discard, the View/Edit switch, Archive and the Show example toggle (`pnpm check:hidden-primary-actions`, rule `rich-action-no-slot`).
 - **2026-09-27** — page-pass iteration 7: a field's right-click heading comes from the field under the pointer (shared v3: a selection made elsewhere is dropped); the chip editor keeps the caret before its filler line break (Cmd/Ctrl+End no longer adds a stray line; tested); Tags has the app's editable menu; the record menu offers Save / Discard / Show example while editing; phone header: Discard beside the pinned Save and a one-tap View/Edit switch (`EntityModeHeader modeSwitchOnPhone`); Archive leaves the edit header (record menu); "Unsaved changes" shows in View too; custom fields sit inside the record card.
 - **2026-09-27** — page-pass iteration 6: the page menu acts on the DRAFT in edit mode; a menu opened inside a chip field names the field (shared v3 fix); Insert field adds a space when it would touch a word and returns the caret right after the chip; labelled Discard (X) apart from Save, with Discard wording; Save stays visible in the phone header while there are changes; info line reads "Edited N times" and never strands a "·"; the surface supplies content, selection, text around it and context.
@@ -77,3 +78,7 @@ no table or parallel writer was added.
   preserves existing drafts and automatically expands the composer.
 - **2026-08-15** — Added email-subject authoring and documented this existing feature as the
   shared frontend half of the message-template primitive.
+
+## Admin seat (2026-10-08)
+
+`fetchMessageTemplates()` with no `publishedToWeb` is the caller's own list (`created_by`) on every user page, and EVERY template on `/administration/utilities/message-templates` (no owner filter; the `platform_admin` lane admits the rows). Guard: `__tests__/admin-seat-lists-every-template.test.ts`.

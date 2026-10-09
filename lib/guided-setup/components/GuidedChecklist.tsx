@@ -18,7 +18,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useState } from "react";
 import Link from "next/link";
 import {

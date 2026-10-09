@@ -110,7 +110,6 @@ export function generateVideoMetadata(args: GenerateVideoMetadataArgs) {
         {
           mandateKey: VIDEO_METADATA_MANDATE_KEY,
           surfaceKey: args.surfaceKey,
-          userText: "Write the video metadata now.",
           variables: {
             video_context: args.videoContext,
             site_context: args.siteContext,

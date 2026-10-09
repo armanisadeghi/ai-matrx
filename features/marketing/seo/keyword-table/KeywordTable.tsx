@@ -117,7 +117,7 @@ import {
   type KeywordRowsResult,
 } from "./useKeywordRows";
 import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface KeywordTableSurface {

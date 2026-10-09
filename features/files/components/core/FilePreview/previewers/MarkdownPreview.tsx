@@ -24,7 +24,7 @@ import type { MarkdownComponents } from "@ai-matrx/rich-content/markdown-core/ma
 import { ShikiCodeView } from "@ai-matrx/rich-content/code-block/highlight/ShikiCodeView";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
-import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
+import { guardMarkdownDelimiters } from "@ai-matrx/content-ir/source";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

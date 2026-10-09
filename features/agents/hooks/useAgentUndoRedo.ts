@@ -11,8 +11,10 @@ import {
   selectAgentCanRedo,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 
-import { getPlatform, isMacLike, getUndoShortcutHint, getRedoShortcutHint, type Platform } from "@ai-matrx/chat/agents/utils/platform-keys";
-export { getPlatform, isMacLike, isTouchDevice, getUndoShortcutHint, getRedoShortcutHint, type Platform } from "@ai-matrx/chat/agents/utils/platform-keys";
+import { getPlatform, isMacLike, isTouchDevice, getUndoShortcutHint, getRedoShortcutHint, type Platform } from "@ai-matrx/chat/agents/utils/platform-keys";
+// One import, re-exported locally: an `import` plus an `export … from` of the same names
+// is turned into two declarations by the dev import transform (build error "already declared").
+export { getPlatform, isMacLike, isTouchDevice, getUndoShortcutHint, getRedoShortcutHint, type Platform };
 
 // ---------------------------------------------------------------------------
 // Hook

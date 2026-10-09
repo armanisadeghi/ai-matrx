@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import StructuredSectionCard from "@/components/official/StructuredSectionCard";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
-import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@ai-matrx/design-system";
 
 export interface ColumnConfig<T> {
     key: string;

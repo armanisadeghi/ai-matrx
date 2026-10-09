@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { RecordPanel, RecordsSkeleton, recordNameIn } from "@ai-matrx/records-ui";
 import { useRecord, useTable } from "@ai-matrx/records/react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { NO_ADDRESS, UnifiedTableBody, useUnifiedTable } from "@/features/unified-data/table-page/UnifiedTable";
 
 function RecordCrumbs({ tableId, recordId }: { tableId: string; recordId: string }) {

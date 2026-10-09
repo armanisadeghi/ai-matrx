@@ -4,7 +4,7 @@
 // sub-pages, Export. One page downloads as one file; with sub-pages it is a zip (PDF: one print window).
 
 import { Button, Select, Switch } from "@ai-matrx/design-system/controls";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
@@ -19,11 +19,15 @@ const FORMATS: Array<{ value: ExportFormat; label: string }> = [
 ];
 
 export function ExportDialog({ open, onOpenChange, spaceId, beforeExport }: { open: boolean; onOpenChange: (o: boolean) => void; spaceId: string; beforeExport: () => Promise<void> }) {
-  const { store, childrenOf, byId } = useSpaces();
+  const { store, childrenOf, byId, loadChildren } = useSpaces();
   const [format, setFormat] = useState<ExportFormat>("markdown");
   const [withChildren, setWithChildren] = useState(false);
   const [busy, setBusy] = useState(false);
   const hasChildren = childrenOf(spaceId).length > 0;
+  // The lazy tree may not hold this page's sub-pages yet: read them so "Include sub-pages" is offered.
+  useEffect(() => {
+    if (open) void loadChildren(spaceId);
+  }, [open, spaceId, loadChildren]);
 
   const run = async () => {
     setBusy(true);
@@ -31,7 +35,7 @@ export function ExportDialog({ open, onOpenChange, spaceId, beforeExport }: { op
       // What the person sees is what exports: write the pending edit first.
       await beforeExport();
       const said = await exportSpace(
-        { get: (id) => store.get(id), childrenOf: (id) => childrenOf(id), titleOf: (id) => byId.get(id)?.title ?? "Untitled" },
+        { get: (id) => store.get(id), childrenOf: (id) => store.children(id), titleOf: (id) => byId.get(id)?.title ?? "Untitled" },
         spaceId,
         format,
         withChildren && hasChildren,

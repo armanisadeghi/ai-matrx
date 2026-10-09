@@ -6,6 +6,7 @@
 // app's UI ports. Everything the picker knows lives in the package; this host binds identity:
 //
 //   isSuperAdmin   → `selectIsSuperAdmin` (admin power only while on an admin page)
+//   canUseTopTier  → `selectCanUseTopTierModels` (cost-rating-6 models are locked without it)
 //   hiddenModelIds → `userPreferences.aiModels.inactiveModels` (Settings › Models switch-offs)
 //   LinkComponent  → `next/link`
 //   settingsHref   → the Models settings page
@@ -18,7 +19,7 @@ import Link from "next/link";
 import { ModelCatalogProvider } from "@ai-matrx/agents/models/react";
 import { getModelCatalog, getModelFavorites } from "@/lib/ai-models/modelCatalog";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectCanUseTopTierModels, selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const renderErrorAction = (error: string | undefined) =>
@@ -26,12 +27,14 @@ const renderErrorAction = (error: string | undefined) =>
 
 export function ModelCatalogHost({ children }: { children: ReactNode }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const canUseTopTier = useAppSelector(selectCanUseTopTierModels);
   const hiddenModelIds = useAppSelector((state) => state.userPreferences?.aiModels?.inactiveModels);
   return (
     <ModelCatalogProvider
       catalog={getModelCatalog()}
       favorites={getModelFavorites()}
       isSuperAdmin={isSuperAdmin}
+      canUseTopTier={canUseTopTier}
       hiddenModelIds={hiddenModelIds}
       LinkComponent={Link}
       settingsHref="/user-settings/ai/models"

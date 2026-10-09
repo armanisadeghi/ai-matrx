@@ -12,7 +12,7 @@ import {
   ChevronRightTapButton,
   SquarePenTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -76,11 +76,11 @@ import {
   resolveBuiltinNames,
 } from "./service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const SYSTEM_AGENT_TAB = ["system"] as const;
 
@@ -457,7 +457,7 @@ export function TemplatesManager() {
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
   // Canonical agent listing (THE CANONICAL-SELECTION LAW): builtins come from
   // the agent-definition slice, never a raw agent.definition query.
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const builtins: PromptBuiltinRef[] = builtinAgents
     .filter((agent) => agent.isActive && !agent.isArchived && !!agent.name)
     .map((agent) => ({
@@ -467,7 +467,7 @@ export function TemplatesManager() {
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
   useEffect(() => {
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [dispatch]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);

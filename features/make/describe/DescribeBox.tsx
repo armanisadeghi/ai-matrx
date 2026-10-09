@@ -9,7 +9,7 @@
 // THE PIPE (no second path):
 //   1. the mandate `make.describe_template` (launched by mandate key, never an agent id — whoever holds
 //      it owns its quality; this file writes no instruction) answers ONE template spec;
-//   2. validateTemplate ("describe" profile) checks it — a failure is one line and a retry, never a
+//   2. the package's describeCheck (automatic fixes, then validateTemplate "describe" profile) checks it — a failure is one line and a retry, never a
 //      half-build;
 //   3. custom.template_declare('org') files it as the organization's own template, and the gallery's
 //      runTemplateDoor installs it with the gallery's own live progress and landing.
@@ -18,7 +18,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -26,7 +25,6 @@ import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAge
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@ai-matrx/design-system";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import * as doors from "@/features/unified-data/hub/doors";
@@ -38,17 +36,18 @@ import { templatePreviewHref } from "../gallery/galleryHref";
 
 import { secondsWords } from "./made";
 import {
+  applySafeReuses,
   bindReuses,
-  checkDescribeSpec,
+  checkDescribeTemplate,
   coerceDescribeAnswer,
   declareDescribeSpec,
-  describeSpec,
   describeVariables,
   readExistingTables,
   readOrganizationFacts,
   type DescribeAnswer,
 } from "./describeTemplate";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 const DESCRIBE = MANDATE_KEYS.make__describe_template;
 const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
 
@@ -104,7 +103,8 @@ export function DescribeBox() {
       const source = supabaseDataSource(client);
       const [facts, listed] = await Promise.all([readOrganizationFacts(client, organizationId), doors.dataHomeTables(source, organizationId)]);
       const own = listed.ok
-        ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.kept_by_the_app).map((t) => ({ id: t.table_id, name: t.table_name }))
+        // org-filter: server-call the app is built in this organization, so only its own tables are reused
+        ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.platform_owned).map((t) => ({ id: t.table_id, name: t.table_name }))
         : [];
       const tables = await readExistingTables(client, organizationId, own);
       lap("provision");
@@ -122,18 +122,20 @@ export function DescribeBox() {
       lap("model");
 
       // The check before anything is built: one line, and a retry.
-      const spec = describeSpec(answer.template);
-      const checked = checkDescribeSpec(spec);
+      // The package's automatic fixes run first; the person sees an error only for what REMAINS.
+      const safe = applySafeReuses(answer, tables);
+      const checked = checkDescribeTemplate(safe.template, tables);
       lap("check");
       if (!checked.ok) {
-        console.warn("[make:describe] the store's check refused the spec", checked.problems);
+        console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
         setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
         return;
       }
+      const notes = [...answer.notes, ...safe.notes, ...checked.autoFixes];
       const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(spec, answer.reuses, tables), stamp);
+      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
       lap("declare");
-      setRun({ phase: "installing", startedAt, templateId, answer: null, notes: answer.notes });
+      setRun({ phase: "installing", startedAt, templateId, answer: null, notes });
       const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
         onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),
       });
@@ -144,7 +146,7 @@ export function DescribeBox() {
         setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
         return;
       }
-      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes: answer.notes });
+      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes });
     } catch (err: unknown) {
       const detail = (err as { detail?: string } | null)?.detail;
       setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });
@@ -157,35 +159,23 @@ export function DescribeBox() {
       <h2 id="make-describe" className="sr-only">
         Describe it
       </h2>
-      <form
-        className="relative"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void start();
-        }}
-      >
-        <Textarea
-          value={sentence}
-          onChange={(e) => setSentence(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
-              e.preventDefault();
-              void start();
-            }
-          }}
-          placeholder="A patient intake form that books the first visit"
-          aria-label="Describe what to make"
-          rows={3}
-          disabled={busy}
-          className="w-full resize-none pb-12"
-          data-make-describe-input=""
-        />
-        <div className="absolute bottom-2 right-2">
-          <Button iconEnd={busy ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} data-make-describe-go="">
-            {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
-          </Button>
-        </div>
-      </form>
+      <ProTextarea
+        value={sentence}
+        onChange={(e) => setSentence(e.target.value)}
+        onSubmit={() => void start()}
+        submitOnEnter={enterSendsHere(true)}
+        submitLabel="Make it"
+        isSubmitting={busy}
+        placeholder="A patient intake form that books the first visit"
+        aria-label="Describe what to make"
+        rows={3}
+        disabled={busy}
+        enableTextStats={false}
+        data-make-describe-input=""
+      />
+      <p className="h-5 text-sm text-muted-foreground" role="status" aria-live="polite" data-make-describe-go="" data-busy={busy || undefined}>
+        {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : ""}
+      </p>
 
       {askOrganization && !organizationId ? (
         <OrganizationContextNotice
@@ -213,7 +203,7 @@ export function DescribeBox() {
         <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
           <div className="flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
-            <Button type="submit" variant="outline" onClick={() => void start()} data-make-describe-retry="">
+            <Button type="button" variant="outline" onClick={() => void start()} data-make-describe-retry="">
               Try again
             </Button>
           </div>

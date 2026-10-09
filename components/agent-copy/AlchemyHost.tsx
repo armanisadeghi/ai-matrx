@@ -1,5 +1,6 @@
 "use client";
 
+import { ItemMenuHostBinding } from "@/features/context-menu-v3/item/ItemMenuHostBinding";
 import { alchemyReferencePort } from "./alchemy-references";
 import { sendAlchemyEmail } from "./alchemy-email";
 import { alchemyPlainTextFormat } from "./alchemy-plain-text-format";
@@ -52,8 +53,19 @@ import { useOpenHtmlPreviewBridge } from "@/features/overlays/openers/htmlPrevie
 import { toast } from "@/lib/toast";
 import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
-import { ErrorActionsProvider } from "@ai-matrx/design-system";
-import { renderPackageErrorActions } from "@/components/errors/PackageErrorActions";
+import {
+  ErrorActionsProvider,
+  ErrorCardMenusProvider,
+  WritingBoxProvider,
+  type WritingBoxProps,
+} from "@ai-matrx/design-system";
+import { errorCardMenus, renderPackageErrorActions } from "@/components/errors/PackageErrorActions";
+import { ProTextarea, type ProTextareaProps } from "@/components/official/ProTextarea";
+
+/** A package box a person writes in is THE writing box (one-ui-system rule 6). */
+function PackageWritingBox(props: WritingBoxProps) {
+  return <ProTextarea {...(props as ProTextareaProps)} />;
+}
 import { SelectionToolbarRoot } from "@/components/selection-toolbar/SelectionToolbarRoot";
 
 const PREPARE_PATH = `/ai/mandates/${encodeURIComponent(
@@ -169,12 +181,21 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
         {/* Every error a package draws (ErrorBox / destructive Alert) carries the
             same Alchemy Menu the frontend's own errors carry (RC-B12). */}
         <ErrorActionsProvider render={renderPackageErrorActions}>
-          {children}
-          <AdminLaneWatcher />
-          {/* THE one selection toolbar: every selectable text's passage actions
-              come from this registry (components/selection-toolbar). */}
-          <SelectionToolbarRoot />
-          <AlchemyWindowHost controller={windows} />
+          {/* Every package error card (ErrorNotice) carries the content menu (⋯ + right-click),
+              and every package box a person writes in is ProTextarea. */}
+          <ErrorCardMenusProvider menus={errorCardMenus}>
+            <WritingBoxProvider Box={PackageWritingBox}>
+              {/* Every ItemRow / ItemContextMenu (design-system/item) right-clicks into v3. */}
+              <ItemMenuHostBinding>
+              {children}
+              </ItemMenuHostBinding>
+              <AdminLaneWatcher />
+              {/* THE one selection toolbar: every selectable text's passage actions
+                  come from this registry (components/selection-toolbar). */}
+              <SelectionToolbarRoot />
+              <AlchemyWindowHost controller={windows} />
+            </WritingBoxProvider>
+          </ErrorCardMenusProvider>
         </ErrorActionsProvider>
       </AlchemyHostSession>
       </AlchemyActionsProvider>

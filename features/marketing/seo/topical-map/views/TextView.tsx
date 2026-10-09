@@ -16,7 +16,7 @@
 import { useState } from "react";
 
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { useAppSelector } from "@/lib/redux/hooks";
 

@@ -1,7 +1,7 @@
 /**
  * THE SAME MESSAGE GETS THE SAME MENU HEADING EVERYWHERE — a forcing function.
  *
- * Reported 2026-09-28 on /agent-apps/<id>/run → Run History: a chat message's
+ * Reported 2026-09-28 on /applets/manage/<id>/run → Run History: a chat message's
  * right-click menu was headed "Content: <the whole text>" while the same kind
  * of message elsewhere read "AI answer · <time>". The per-answer registry menu
  * named its message (its content source is `chat-message`); the transcript's
@@ -19,7 +19,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { AgentUserMessage } from "@ai-matrx/chat/agents/components/messages-display/user/AgentUserMessage";
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { TranscriptAudienceProvider } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
 import { resolveMarkdownContext } from "@ai-matrx/chat/context-menu/utils/resolveMarkdownContext";
 import { chatMessageSubject, menuHeader } from "@/features/context-menu-v3/alchemy-provider";
@@ -41,9 +40,11 @@ jest.mock("@ai-matrx/chat/store/hooks", () => ({
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
-// The transcript draws its text through the host's MarkdownStream slot (P14), so the double
-// is registered there, exactly where the package reads it.
-registerChatUi({ MarkdownStream: ({ content }: { content?: string }) => <p>{content}</p> });
+// The transcript draws its text through chat's own MarkdownStream (P29a); the double replaces that module.
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => {
+  const Md = ({ content }: { content?: string }) => <p>{content}</p>;
+  return { __esModule: true, default: Md, MarkdownStream: Md };
+});
 jest.mock("@ai-matrx/chat/agents/components/messages-display/user/UserActionBar", () => ({ UserActionBar: () => null }));
 jest.mock("@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip", () => ({ MessageAttachmentStrip: () => null }));
 jest.mock("@ai-matrx/chat/agents/components/context-policies-display/ContextPolicyChipStrip", () => ({

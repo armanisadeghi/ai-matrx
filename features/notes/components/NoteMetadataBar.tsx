@@ -43,7 +43,9 @@ import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
+import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
 import { getNoteLiveContent } from "../utils/noteLiveContent";
 import {
   noteDisplayLabel,
@@ -347,6 +349,9 @@ export function NoteMetadataBar({
             label={`Note "${noteDisplayLabel(note)}"`}
             references={[{ id: note.id, label: "Copy note reference", noun: "note", items: [{ id: note.id, label: noteDisplayLabel(note) }] }]}
             className="shrink-0"
+            // Plain flips the note's Read view (its RichDocument keys the same item).
+            viewKey={richDocumentViewKey(noteIdentityContentSource(note.id), "")}
+            exportTitle={noteDisplayLabel(note)}
             // Copy / Copy as → Text and Markdown carry the NOTE: its live
             // markdown, nothing else. The record summary (metadata, save
             // state, "--- Body ---") is the AI copy below, never the person's.

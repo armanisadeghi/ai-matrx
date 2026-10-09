@@ -23,6 +23,7 @@ import type {
   SourceEntryField,
 } from "../types";
 import { RemoteConflictError } from "../types";
+import { appletState, appletVersionLabel } from "@/features/applets/lib/applet-state";
 
 const PREFIX = "aga-app:";
 const SOURCE_ID = "aga_apps";
@@ -139,7 +140,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     const { data, error } = await supabase
       .schema("app")
       .from("definition")
-      .select("id, name, slug, description, updated_at, status, version, files, entry")
+      .select("id, name, slug, description, updated_at, status, published_to_web, content_version, files, entry")
       .is("deleted_at", null)
       .eq(AGA_APP_OWNER_COLUMN, userId)
       .order("updated_at", { ascending: false })
@@ -160,7 +161,8 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
         description: row.description ?? undefined,
         updatedAt: row.updated_at,
         fields,
-        badge: row.status && row.status !== "published" ? row.status : row.version > 1 ? `v${row.version}` : undefined,
+        // THE state's word while not published, else the saved content version (never the row's write counter).
+        badge: appletState(row).kind !== "published" ? appletState(row).label : (appletVersionLabel(row.content_version) ?? undefined),
       };
     });
   },
@@ -197,7 +199,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
   /**
    * Without a file: renames the Applet. With a file: renames that file (and the entry, when it is the
    * entry). Pages naming the old file keep working only if they are edited too — the page list is the
-   * Applet editor's (`/agent-apps/<id>/settings`).
+   * Applet editor's (`/applets/manage/<id>/settings`).
    */
   async rename(supabase: SupabaseClient, args: RenameSourceArgs): Promise<RenameSourceResult> {
     const trimmed = args.newName.trim();

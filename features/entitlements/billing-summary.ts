@@ -4,6 +4,7 @@
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { billingSubscriptionSelectionPasses, terminalBillingSubscriptionStatuses } from "./billing-subscription-selection";
+import { formatMoney } from "@ai-matrx/kit/format";
 
 export type BillingScope =
   | { kind: "personal"; userId: string }
@@ -104,12 +105,7 @@ export function periodEndLabel(status: string, cancelAtPeriodEnd: boolean): "End
 
 export function priceLabel(price: BillingPrice | null): string | null {
   if (!price || price.unit_amount == null) return null;
-  const amount = new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: price.currency.toUpperCase(),
-    minimumFractionDigits: price.unit_amount % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(price.unit_amount / 100);
+  const amount = formatMoney(price.unit_amount, { currency: price.currency, unit: "minor", digits: "whole" });
   if (!price.interval) return amount;
   const count = price.interval_count > 1 ? `${price.interval_count} ${price.interval}s` : price.interval;
   return `${amount} / ${count}`;

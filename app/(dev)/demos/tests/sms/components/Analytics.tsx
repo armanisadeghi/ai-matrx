@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import { Loader2, RefreshCw, MessageSquare, Send, TrendingUp, Clock } from 'lucide-react';
 
 interface AnalyticsData {

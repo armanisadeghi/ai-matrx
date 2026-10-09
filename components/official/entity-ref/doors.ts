@@ -26,6 +26,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { adminTwinHref } from "@/features/scopes/registry/adminTwins";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
 import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
@@ -116,7 +117,7 @@ export function resolveEntityDoors(
     href:
       hrefOverride !== undefined
         ? hrefOverride
-        : (info?.hrefFor?.(id) ?? null),
+        : (adminTwinHref(token, id) ?? info?.hrefFor?.(id) ?? null),
     canPeek: hasPeek(peekKind) || hasRegistryPeek(info),
     peekKind,
     Icon: info?.Icon ?? null,

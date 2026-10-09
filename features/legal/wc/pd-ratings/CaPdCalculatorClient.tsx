@@ -19,8 +19,8 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import {
   BottomSheet,
   BottomSheetHeader,

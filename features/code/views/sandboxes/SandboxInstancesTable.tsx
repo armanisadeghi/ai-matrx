@@ -9,7 +9,7 @@ import {
 import {
   StopTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ import {
   STATUS_LABELS,
 } from "@/lib/sandbox/status";
 import type { SandboxInstance } from "@/types/sandbox";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export interface SandboxInstancesTableProps {
   instances: SandboxInstance[];

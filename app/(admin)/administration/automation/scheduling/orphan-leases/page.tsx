@@ -28,7 +28,7 @@ import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);

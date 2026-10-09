@@ -5,7 +5,7 @@ const env = Object.fromEntries(readFileSync("/Users/armanisadeghi/code/matrx-fro
 const O="http://hierarchy-cascade.localhost:3001";
 const b=await chromium.launch({headless:true}); const p=await (await b.newContext({viewport:{width:1500,height:1000}})).newPage();
 await signIn(p,O,env.AI_ADMIN_USERNAME,env.AI_ADMIN_PASSWORD,"admin");
-await p.goto(O+"/agent-apps/d9c30db7-dcce-46c3-a00e-9498342692a9/settings",{waitUntil:"domcontentloaded",timeout:240000});
+await p.goto(O+"/applets/manage/d9c30db7-dcce-46c3-a00e-9498342692a9/settings",{waitUntil:"domcontentloaded",timeout:240000});
 await p.getByRole("tab",{name:"Sharing"}).click();
 await p.waitForSelector('[data-engagement-picker="field"]',{timeout:240000});
 console.log("count", await p.locator('[data-engagement-picker="field"]').count(), JSON.stringify(await p.locator('[data-engagement-picker="field"]').first().evaluate(e=>e.outerHTML.slice(0,600))));

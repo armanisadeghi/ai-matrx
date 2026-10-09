@@ -3,7 +3,6 @@
  * check:self-tests-stay-out-of-tree — A SELF-TEST NEVER PLANTS A FIXTURE IN THE LIVE SOURCE TREE.
  *
  * Until 2026-09-26 seven check self-tests wrote their RED fixture straight into lib/, features/,
- * app/, migrations/ or scripts/ and deleted it afterwards (`check-org-refusal-honesty.ts` wrote
  * `lib/organizations/__self_test_planted__.ts`; `db:apply --self-test` six `migrations/zz_*.sql`).
  * `scripts/checks/run.mjs` runs checks six at a time, so while a fixture sat there every OTHER
  * scanner saw it: reported it as a real finding, or crashed with ENOENT when it vanished mid-scan
@@ -382,10 +381,7 @@ function report(findings: Finding[]): void {
  * shapes it was written for proves nothing.
  */
 const RECORDED: Array<{ rel: string; before: string }> = [
-  { rel: "scripts/check-org-refusal-honesty.ts", before: "16aebe6662^" },
-  { rel: "scripts/check-org-three-states.ts", before: "16aebe6662^" },
   { rel: "scripts/check-no-default-organization.ts", before: "16aebe6662^" },
-  { rel: "scripts/check-no-default-organization-sql.ts", before: "16aebe6662^" },
   { rel: "scripts/check-agent-list-reads.ts", before: "16aebe6662^" },
   { rel: "scripts/check-docs-twins.mjs", before: "16aebe6662^" },
   { rel: "scripts/apply-migration.ts", before: "261e1f45d1^" },

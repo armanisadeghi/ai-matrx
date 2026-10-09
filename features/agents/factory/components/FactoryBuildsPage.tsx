@@ -20,7 +20,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@ai-matrx/design-system/controls";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { outcomeChip, verdictChip } from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";
 import { FACTORY_BUILD_LIST_CAP, listFactoryBuilds } from "../service";
 import { STEP_LABEL, spineIsOver, type FactoryBuildRow, type FactoryStepName } from "../types";

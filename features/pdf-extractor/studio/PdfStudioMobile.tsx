@@ -38,14 +38,21 @@ import {
   MoreVertical,
   X,
   Plus,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButton } from "@ai-matrx/tap-target";
-import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
+import {
+  invalidateProcessedDocumentCache,
+  usePdfExtractor,
+  type PdfDocument,
+} from "../hooks/usePdfExtractor";
+import { usePdfDocRun } from "../hooks/usePdfDocRun";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { useProcessedDocSync } from "../hooks/useProcessedDocSync";
 import { useAutoCleanOnOpen } from "../hooks/useAutoCleanOnOpen";
@@ -282,6 +289,23 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     }
   }, [activeDoc, extractor, docsState, refreshPages, toast]);
 
+  // The open doc's server run, reconnected (same hook as the desktop shell).
+  const activeDocId = activeDoc?.id ?? null;
+  const docRun = usePdfDocRun({
+    docId: activeDocId,
+    localStreaming:
+      aiCleanRunning || pipelineRunning || extractor.batchStatus !== "idle",
+    onSettled: async () => {
+      if (!activeDocId) return;
+      invalidateProcessedDocumentCache(activeDocId);
+      const fresh = await extractor.fetchDocument(activeDocId);
+      if (fresh) setActiveDoc(fresh);
+      refreshPages();
+      docsState.refresh();
+    },
+  });
+  const docRunActive = docRun.phase === "running" && !aiCleanRunning;
+
   // A doc opened with extracted text but no clean text runs the AI clean once.
   const activeTabForDoc = activeDoc
     ? extractor.tabs.find((t) => t.id === activeDoc.id)
@@ -291,6 +315,9 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     busy:
       aiCleanRunning ||
       pipelineRunning ||
+      !docRun.answered ||
+      docRunActive ||
+      docRun.phase === "failed" ||
       extractor.batchStatus !== "idle" ||
       (activeDoc ? extractor.processingStatus[activeDoc.id] != null : false) ||
       activeTabForDoc?.status === "cleaning" ||
@@ -384,10 +411,42 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       {/* Live status strip — visible only while a run is streaming. Mirrors
           the desktop toolbar pattern so the user has a steady "the model
           is working" signal that doesn't depend on the toast lifecycle. */}
-      {liveStatus && (
+      {(liveStatus ?? (docRunActive ? docRun.label : null)) && (
         <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px] text-primary-ink">
           <Loader2 className="w-3 h-3 animate-spin" />
-          <span className="truncate">{liveStatus}</span>
+          <span className="truncate">{liveStatus ?? docRun.label}</span>
+        </div>
+      )}
+      {!liveStatus && !aiCleanRunning && docRun.phase === "unavailable" && (
+        <div className="shrink-0 border-b border-border bg-destructive/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
+          <AlertCircle className="w-3 h-3 text-destructive" />
+          <span className="font-medium text-destructive">Status unavailable</span>
+          <button
+            type="button"
+            onClick={docRun.recheck}
+            className="ml-auto font-medium text-primary"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {!liveStatus && !aiCleanRunning && docRun.phase === "failed" && (
+        <div className="shrink-0 border-b border-border bg-destructive/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
+          <AlertCircle className="w-3 h-3 text-destructive" />
+          <span className="font-medium text-destructive">Failed</span>
+          <button
+            type="button"
+            onClick={() => void handleRunAiClean()}
+            className="ml-auto font-medium text-primary"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {!liveStatus && !aiCleanRunning && docRun.phase === "done" && (
+        <div className="shrink-0 border-b border-border px-3 py-1.5 flex items-center gap-2 text-[11px]">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span className="font-medium">Done</span>
         </div>
       )}
 
@@ -455,7 +514,9 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
               tab === "clean" ? activeDoc.cleanContent : activeDoc.content
             }
             streaming={tab === "clean" && (aiCleanRunning || pipelineRunning)}
-            streamingText={tab === "clean" ? streamingCleanText : null}
+            streamingText={
+              tab === "clean" ? (streamingCleanText ?? docRun.streamingText) : null
+            }
           />
         )}
       </div>

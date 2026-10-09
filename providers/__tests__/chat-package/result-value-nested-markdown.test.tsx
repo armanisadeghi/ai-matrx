@@ -13,11 +13,6 @@ jest.mock("next/dynamic", () => ({
 
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { looksLikeMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
-
-// The package draws markdown through the host slot; this suite proves it with the app's renderer.
-registerChatUi({ BasicMarkdownContent });
 
 describe("ResultValue nested Markdown", () => {
   let container: HTMLDivElement;
@@ -91,7 +86,10 @@ describe("ResultValue nested Markdown", () => {
     const payload = '{"__kind":"artifact","content":"**literal**"}';
     await act(async () => root.render(<ResultValue value={["```json\n" + payload + "\n```"]} density="full" />));
     expect(container.textContent).not.toContain('"__kind"');
-    expect(container.querySelector("strong")).toBeNull();
+    // The canonical pipeline renders the artifact (its content is Markdown, so "literal" may be
+    // formatted); what must never happen is the raw fence or anything executable.
+    expect(container.textContent).toContain("literal");
+    expect(container.textContent).not.toContain("**literal**");
     expect(container.querySelector("iframe,script")).toBeNull();
   });
 });

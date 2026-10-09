@@ -10,6 +10,7 @@ import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { MandateCandidatesPanel } from "@/features/mandates/record-next/MandateCandidatesPanel";
 import { useCandidateCount } from "@/features/mandates/record-next/useCandidateCount";
 import { TabCount } from "@/features/mandates/record-next/RecordTabStrip";
+import { MandateRunsTab } from "@/features/mandates/runs/MandateRunsTab";
 
 // features/mandates/workspace/MandateWorkspace.tsx
 //
@@ -70,6 +71,7 @@ import {
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import { TopTierModelBadge } from "@/features/ai-models/TopTierModelBadge";
 import {
   OneBindingWorkspace,
   type BindingWorkspaceSection,
@@ -81,7 +83,7 @@ import {
   FieldHelp,
   StatusToken,
   PropertyRow,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Section } from "./Section";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -163,7 +165,9 @@ export type MandateWorkspaceTab =
   | "diagnostics"
   | "notes"
   /** Live candidates — a live read beside the saved tabs (Mandate Candidates, V1 D4). */
-  | "candidates";
+  | "candidates"
+  /** Past runs, and the same values tried against another holder (Mandate Runs). */
+  | "runs";
 
 /** The tabs `BindingSection` renders — one mounted draft owner across them. */
 const BINDING_TABS: readonly string[] = [
@@ -190,6 +194,7 @@ const WORKSPACE_TABS: {
   { id: "diagnostics", label: "Diagnostics", admin: true },
   { id: "notes", label: "Notes" },
   { id: "candidates", label: "Candidates" },
+  { id: "runs", label: "Runs" },
 ];
 
 export interface MandateWorkspaceProps {
@@ -407,9 +412,10 @@ function OneMandateWorkspace({
     window.addEventListener("matrx:open-mandate-pin", openHolder);
     if (window.location.hash === "#bind") openHolder();
     // A list's Candidates cell and a candidate notice land here with ?tab=candidates.
-    if (new URLSearchParams(window.location.search).get("tab") === "candidates") {
-      setActiveTab("candidates");
-    }
+    const tabParam = new URLSearchParams(window.location.search).get("tab");
+    if (tabParam === "candidates") setActiveTab("candidates");
+    // A selected run lives in the URL: ?tab=runs&run=<conversationId>.
+    if (tabParam === "runs") setActiveTab("runs");
     return () =>
       window.removeEventListener("matrx:open-mandate-pin", openHolder);
   }, []);
@@ -589,6 +595,7 @@ function OneMandateWorkspace({
                 label: data.mandate.label?.trim() || "Display name unavailable",
               },
             ]}
+            right={<TopTierModelBadge modelId={holderModelIdOf(data)} />}
           />
         ) : null}
         {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
@@ -604,6 +611,7 @@ function OneMandateWorkspace({
                   {data.mandate.label?.trim() || "Display name unavailable"}
                 </h2>
               </div>
+              <TopTierModelBadge modelId={holderModelIdOf(data)} />
               {authoring ? adminActions?.(data, refresh) : null}
             </div>
           )}
@@ -673,9 +681,9 @@ function OneMandateWorkspace({
           </TabsList>
           <MandateAlchemy
             data={data}
-            // Candidates is a live read, not saved mandate data — it exports as Definition.
-            activeTab={activeTab === "candidates" ? "definition" : activeTab}
-            tabs={WORKSPACE_TABS.filter((item) => (!item.admin || authoring) && item.id !== "candidates").map((item) => item.id)}
+            // Candidates and Runs are live reads, not saved mandate data — they export as Definition.
+            activeTab={activeTab === "candidates" || activeTab === "runs" ? "definition" : activeTab}
+            tabs={WORKSPACE_TABS.filter((item) => (!item.admin || authoring) && item.id !== "candidates" && item.id !== "runs").map((item) => item.id)}
             perspective={perspective}
             organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
             buildTab={(tab): MandateAlchemyCapture => tab === "definition"
@@ -875,6 +883,22 @@ function OneMandateWorkspace({
               />
             ) : null}
           </div>
+          <div
+            role="tabpanel"
+            id="mandate-panel-runs"
+            aria-labelledby="mandate-tab-runs"
+            hidden={activeTab !== "runs"}
+            className={activeTab === "runs" ? "space-y-3" : "hidden"}
+          >
+            {activeTab === "runs" ? (
+              <MandateRunsTab
+                mandateKey={storedMandateKey(data.mandate.mandate_key)}
+                outputKind={data.mandate.output_kind ?? null}
+                view={perspective === "system" ? "platform" : "mine"}
+                audience={host === "admin-route" ? "admin" : "product"}
+              />
+            ) : null}
+          </div>
         </Tabs>
         </MandateAlchemyCaptureProvider>
       </div>
@@ -955,6 +979,13 @@ export function systemRungFactsOf(
     holderSet: holderId !== null || holderIsWorkflow,
     home: scope,
   };
+}
+
+/** The model the Mandate's agent Holder runs on (a workflow Holder has no single model). */
+function holderModelIdOf(data: MandateWorkspaceData): string | null {
+  if (data.mandate.default_holder_type === "workflow") return null;
+  const holderId = holderOfMandate(data.mandate).holderId;
+  return holderId ? (data.agentsById[holderId]?.modelId ?? null) : null;
 }
 
 export function systemRungHealthOf(

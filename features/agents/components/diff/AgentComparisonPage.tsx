@@ -3,13 +3,9 @@
 import { AgentDiffViewer } from "@/features/agents/components/diff/lazy/AgentDiffViewer";
 import { useEffect, useState, useTransition } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import {
-  fetchAgentsListFull,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
-  selectAllAgentsArray,
   selectAgentById,
   selectVersionsByParentAgentId,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
@@ -25,6 +21,8 @@ import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 interface SideState {
   agentId: string | null;
   version: "current" | number | null;
@@ -83,7 +81,7 @@ export function AgentComparisonPage({
   const dispatch = useAppDispatch();
   const [, startTransition] = useTransition();
 
-  const allAgents = useAppSelector(selectAllAgentsArray);
+  const allAgents = useCatalogAgents();
   const [agentsLoading, setAgentsLoading] = useState(allAgents.length === 0);
 
   // Preselected sides start already pointed at their agent, so a deep link
@@ -131,8 +129,7 @@ export function AgentComparisonPage({
 
   useEffect(() => {
     if (allAgents.length > 0) return;
-    dispatch(fetchAgentsListFull())
-      .unwrap()
+    ensureAgentCatalog()
       .finally(() => setAgentsLoading(false));
   }, []);
 

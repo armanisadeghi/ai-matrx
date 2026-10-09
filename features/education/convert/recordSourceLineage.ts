@@ -49,6 +49,10 @@ export async function recordSourceLineage(
   source: ConvertSource,
   orgId: string | undefined,
 ): Promise<void> {
+  if (source.ref?.kitId) {
+    await recordKitLineage(result, source, source.ref.kitId, orgId);
+    return;
+  }
   const anchor = resolveAnchor(source);
   if (!anchor) return;
 
@@ -78,5 +82,53 @@ export async function recordSourceLineage(
       `[convert/lineage] source edge failed (${result.targetKind} → ${anchor.type}):`,
       edge.error,
     );
+  }
+}
+
+/**
+ * A MULTI-SOURCE KIT (`kits/kitScope.ts`): the aid joins the kit (a flagged
+ * `member` edge into the kit scope — the kit lists it from there) and links a
+ * `source` edge to EVERY Source it was read from, stamped `kitId`, so "Made
+ * from" names each one and each Source's own "generated from this" shows it.
+ * There is no merged copy to point at.
+ */
+async function recordKitLineage(
+  result: ConvertResult,
+  source: ConvertSource,
+  kitId: string,
+  orgId: string | undefined,
+): Promise<void> {
+  const shared = {
+    targetKind: result.targetKind,
+    href: result.href,
+    detail: result.detail ?? null,
+  };
+  const member = await associationsService.add({
+    sourceType: result.resourceType,
+    sourceId: result.artifactId,
+    targetType: "scope",
+    targetId: kitId,
+    role: "member",
+    orgId,
+    label: result.title,
+    metadata: { ...shared, educationKit: true, kitTitle: source.title ?? null },
+  });
+  if (!member.ok) {
+    console.error(`[convert/lineage] kit member edge failed (${result.targetKind} → kit ${kitId}):`, member.error);
+  }
+  for (const kitSource of source.ref?.kitSources ?? []) {
+    const edge = await associationsService.add({
+      sourceType: result.resourceType,
+      sourceId: result.artifactId,
+      targetType: kitSource.type as AssociationTargetType,
+      targetId: kitSource.id,
+      role: "source",
+      orgId,
+      label: result.title,
+      metadata: { ...shared, sourceTitle: kitSource.title, kitId },
+    });
+    if (!edge.ok) {
+      console.error(`[convert/lineage] source edge failed (${result.targetKind} → ${kitSource.type}):`, edge.error);
+    }
   }
 }

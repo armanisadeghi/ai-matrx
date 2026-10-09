@@ -81,7 +81,7 @@ export async function isHandleAvailable(handle: string): Promise<boolean> {
  * organization ladder by the caller. The RPC uses it only when there is no profile row yet
  * (signup provisioning failed for that user), because a profile row already carries its own
  * organization and carrying one is not choosing one. It exists because the RPC used to answer
- * that case with the caller's own organization, and a person has no default organization
+ * that case with the caller's own organization, and a person has no preselected organization
  * (DEFAULT-ORG-3, 2026-09-22; migrations/campaign/dorg3_three_doors_name_the_organization_they_act_in.sql).
  * Omitting it is legal and works for every user who has a profile row; the RPC then raises a
  * sentence naming this argument rather than inventing a workspace.

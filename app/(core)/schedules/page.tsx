@@ -2,12 +2,12 @@
 
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   PlusTapButton,
   RefreshCwTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";

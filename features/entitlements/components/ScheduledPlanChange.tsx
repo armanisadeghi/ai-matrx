@@ -7,9 +7,10 @@ import {
   Select,
 } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { formatCents } from "../catalog/format";
 import type { CatalogPlan } from "../catalog/types";
+import { formatMoney } from "@ai-matrx/kit/format";
 
 type Preview = {
   targetPlanKey: string;
@@ -336,7 +337,7 @@ export function ScheduledPlanChange({
         title="Schedule this plan change?"
         description={
           preview && selected
-            ? `${selected.name} will begin on ${dateLabel(preview.effectiveAt)} at ${new Intl.NumberFormat(undefined, { style: "currency", currency: preview.currency.toUpperCase() }).format(preview.targetAmount / 100)}. Your current plan stays active until then, and no charge is made today.`
+            ? `${selected.name} will begin on ${dateLabel(preview.effectiveAt)} at ${formatMoney(preview.targetAmount, { currency: preview.currency, unit: "minor" })}. Your current plan stays active until then, and no charge is made today.`
             : ""
         }
         confirmLabel="Schedule change"

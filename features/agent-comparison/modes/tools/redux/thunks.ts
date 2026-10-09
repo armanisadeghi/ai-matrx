@@ -13,6 +13,7 @@
  * the column's tool list with each request — no special routing.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -97,7 +98,7 @@ const EMPTY_BUNDLE: ToolBundle = {
 };
 
 function extractToolBundle(state: RootState, agentId: string): ToolBundle {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   if (!agent) return EMPTY_BUNDLE;
   return {
     tools: agent.tools ?? [],

@@ -17,6 +17,7 @@ import {
   Gauge,
   Gift,
   GraduationCap,
+  Gem,
   KeyRound,
   Loader2,
   Mail,
@@ -33,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { setTopTierAccess } from "@/features/ai-models/topTierAccess";
 import { formatCount } from "@ai-matrx/kit/format";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -70,7 +72,7 @@ import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import {
   ChangePlanDialog,
   type ChangePlanSubject,
@@ -87,7 +89,11 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
+import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
+import { DrillOrList } from "@/components/official/drill-explorer/DrillOrList";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { usageNameResolver } from "@/features/admin/usage-drill/useUsageDrill";
 import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import {
@@ -163,7 +169,7 @@ function levelBadge(level: string | null) {
 /** Organizations shown inline in the Accounts cell; the rest sit behind "+N more". */
 const ORG_CELL_VISIBLE = 3;
 
-export function AccountsTableClient() {
+function AccountsRoster() {
   const { copyText } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
@@ -368,6 +374,28 @@ export function AccountsTableClient() {
           ? `Granted full MCP access to ${row.email ?? row.id}`
           : `Revoked full MCP access from ${row.email ?? row.id}`,
       );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }, []);
+
+  // Top-tier models (cost rating 6): off for everyone; a super admin turns one person on.
+  // The RPC refuses anyone else and records who changed it and when.
+  const toggleTopTierModels = useCallback(async (row: AdminUserRow) => {
+    const next = !row.top_tier_models;
+    const who = row.email ?? row.id;
+    if (next) {
+      const ok = await confirm({
+        title: "Allow top-tier models?",
+        description: `${who} will be able to run Mythos, Fable, GPT-6 Astra and every -max model, billed at top-tier prices. Recorded under your name.`,
+        confirmLabel: "Allow",
+      });
+      if (!ok) return;
+    }
+    try {
+      await setTopTierAccess(row.id, next);
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, top_tier_models: next } : r)));
+      toast.success(next ? `Top-tier models on for ${who}` : `Top-tier models off for ${who}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
@@ -755,6 +783,19 @@ export function AccountsTableClient() {
         width: 120,
       },
       {
+        id: "top_tier_models",
+        header: "Top tier",
+        accessorFn: (row) => row.top_tier_models,
+        filter: "boolean",
+        cell: (row) =>
+          row.top_tier_models ? (
+            <Badge variant="default">On</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">Off</span>
+          ),
+        width: 96,
+      },
+      {
         id: "providers",
         header: "Providers",
         accessorFn: (r) => r.providers.join(", "),
@@ -1128,6 +1169,13 @@ export function AccountsTableClient() {
                       ? "Revoke full MCP access"
                       : "Grant full MCP access"}
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={row.is_anonymous}
+                  onClick={() => void toggleTopTierModels(row)}
+                >
+                  <Gem className="mr-2 h-4 w-4" />
+                  {row.top_tier_models ? "Turn off top-tier models" : "Allow top-tier models"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
                   <UserCog className="mr-2 h-4 w-4" />
                   {row.onboarding_completed
@@ -1387,5 +1435,37 @@ export function AccountsTableClient() {
       </Dialog>
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+// THE ROSTER COUNTED (lane DRILL-WAVE2-B): the roster is paged 50 at a time and mostly editing, so it
+// stays the first screen; one control opens the declared definition `account_roster` — accounts, AI cost
+// and requests by plan, by where they came from and by signup month, counted on the database.
+export function AccountsTableClient() {
+  return (
+    <DrillOrList
+      definition="account_roster"
+      listLabel="Accounts"
+      firstScreen="list"
+      list={<AccountsRoster />}
+      renderDrill={(extras) => (
+        <DrillExplorer
+          source={{ kind: "entity", token: "account_roster" }}
+          lane="platform"
+          // org-fallback-deliberate: the platform lane of an admin explorer asks in the platform's own organization (its calendar is UTC)
+          organizationId={SYSTEM_ORGANIZATION_ID}
+          timeZone="UTC"
+          title="Accounts"
+          rootLabel="All accounts"
+          names={{ person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person") }}
+          headline={{ measure: "accounts", also: ["cost", "requests"] }}
+          rowNoun="account"
+          countMeasure="accounts"
+          location="Administration › Users › Accounts"
+          headerExtras={extras}
+          dataAttributes={{ "data-account-roster-drill": "" }}
+        />
+      )}
+    />
   );
 }

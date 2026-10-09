@@ -2,6 +2,10 @@
  * In a canvas tab an html artifact is an APP: the iframe fills the tab body
  * edge to edge with none of the chat card's controls (Expand / Collapse /
  * Open in canvas / Code). Outside the canvas the chat card is unchanged.
+ *
+ * Mount never publishes (rendered-output standard, ruling 1): a page shows once
+ * its canvas item's version has been published, so these mount an artifact
+ * whose version resolves to a published page.
  */
 import React from "react";
 import { act } from "react";
@@ -54,6 +58,17 @@ jest.mock("@/features/html-pages/services/htmlPageService", () => ({
     createPage: jest.fn(async () => ({ url: "https://mymatrx.com/p/page-1" })),
   },
 }));
+jest.mock("@/features/html-pages/services/canvasVersionPage", () => {
+  const version = { id: "ci-1", version: 1, url: "https://mymatrx.com/p/page-1", html: null };
+  return {
+    resolveHtmlCanvasPage: jest.fn(async () => ({ shown: version, latest: version })),
+    onHtmlVersionPublished: () => () => undefined,
+  };
+});
+// The attach controls read the chat store; their own suite covers them.
+jest.mock("@/features/html-pages/components/HtmlAttachToChat", () => ({
+  HtmlAttachToChat: () => null,
+}));
 jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: () => <pre data-testid="code-block" />,
@@ -75,7 +90,7 @@ describe("html artifact in the canvas", () => {
 
   it("fills the tab with a bare app frame and no chat controls", async () => {
     presentation.value = { host: "canvas", width: 630, height: 800 };
-    await mount(<HtmlArtifact mode="canvas" data={DOC} isStreamActive={false} />);
+    await mount(<HtmlArtifact mode="canvas" data={DOC} isStreamActive={false} artifactId="ci-1" />);
     const frame = host.querySelector("iframe")!;
     expect(frame).not.toBeNull();
     expect(frame.className).toContain("h-full");
@@ -89,17 +104,25 @@ describe("html artifact in the canvas", () => {
     expect(sandbox).toContain("allow-popups-to-escape-sandbox");
     expect(sandbox).not.toContain("allow-top-navigation");
     expect(byText("Expand")).toHaveLength(0);
-    expect(byText("Open in canvas")).toHaveLength(0);
-    expect(byText("Code")).toHaveLength(0);
+    expect(host.querySelectorAll('[aria-label="Open in canvas"]')).toHaveLength(0);
+    expect(host.querySelectorAll('[aria-label="Show code"]')).toHaveLength(0);
+    expect(host.querySelectorAll("[data-html-preview-header]")).toHaveLength(0);
     // The frame is the body — no card wrapper around it.
     expect(frame.parentElement?.className ?? "").not.toContain("rounded-lg");
   });
 
-  it("keeps the chat card outside the canvas", async () => {
+  it("outside the canvas: ONE header with the page title and actions, a content-sized frame, no fade", async () => {
     presentation.value = null;
-    await mount(<HtmlArtifact mode="canvas" data={DOC} isStreamActive={false} />);
-    expect(byText("Expand")).toHaveLength(1);
-    expect(byText("Open in canvas").length).toBeGreaterThan(0);
+    await mount(<HtmlArtifact mode="canvas" data={DOC} isStreamActive={false} artifactId="ci-1" />);
+    expect(host.querySelectorAll("[data-html-preview-header]")).toHaveLength(1);
+    for (const label of ["Show code", "Copy HTML", "Download .html", "Open in canvas"]) {
+      expect(host.querySelectorAll(`[aria-label="${label}"]`)).toHaveLength(1);
+    }
+    expect(byText("Expand")).toHaveLength(0);
+    const frame = host.querySelector<HTMLIFrameElement>("iframe[data-html-inline-frame]");
+    expect(frame).not.toBeNull();
+    expect(frame?.style.maxHeight).toContain("min(");
+    expect(host.querySelector(".bg-gradient-to-t")).toBeNull();
   });
 });
 

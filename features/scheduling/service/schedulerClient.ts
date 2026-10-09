@@ -61,7 +61,7 @@ import {
 // it as the active organization, and returns it — so the request this
 // function is building for continues with the answer instead of dying and
 // making the person press Create again. See `lib/organization/organization-gate.ts`.
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
@@ -93,10 +93,7 @@ async function authHeaders(
     Authorization: `Bearer ${token}`,
   };
   if (isRead && !explicitOrganizationId) return headers;
-  const organizationId = await ensureOrganizationForRequest({
-    method,
-    organizationId: explicitOrganizationId,
-  });
+  const organizationId = await ensureOrgId(explicitOrganizationId);
   return applyOrganizationContextHeader(headers, organizationId);
 }
 

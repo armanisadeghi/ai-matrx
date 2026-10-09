@@ -6,10 +6,22 @@ export type StaticSettingsControl = {
   tabId: string;
   label: string;
   description?: string;
+  keywords?: string[];
   controlId: string;
 };
 
 export const staticSettingsControlIndex = [
+  {
+    "tabId": "general.language",
+    "label": "Use my device's time zone",
+    "controlId": "settings-control-time-zone-use-my-device-s-time-zone"
+  },
+  {
+    "tabId": "general.language",
+    "label": "Time zone",
+    "description": "Where today starts for you.",
+    "controlId": "settings-control-time-zone-time-zone"
+  },
   {
     "tabId": "general.language",
     "label": "Voice input",
@@ -435,8 +447,26 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "organizations",
+    "label": "Start-up organization",
+    "description": "Opens when you have no last-used organization",
+    "keywords": [
+      "start-up",
+      "startup",
+      "organization",
+      "open"
+    ],
+    "controlId": "settings-control-when-you-sign-in-start-up-organization"
+  },
+  {
+    "tabId": "organizations",
     "label": "Switch organization when a link asks",
     "controlId": "settings-control-links-from-notifications-and-emails-switch-organization-when-a-link-asks"
+  },
+  {
+    "tabId": "sandboxDefaults",
+    "label": "Sandbox secrets and variables",
+    "description": "Every sandbox you start reads them from your Vault.",
+    "controlId": "settings-control-environment-variables-sandbox-secrets-and-variables"
   },
   {
     "tabId": "integrations.apiKeys",

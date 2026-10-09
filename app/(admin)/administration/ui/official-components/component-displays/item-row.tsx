@@ -14,8 +14,8 @@ import {
 import { toast } from "@/lib/toast";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemRow } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -92,7 +92,7 @@ const rowMenu = (item: DemoItem, fav: boolean): ItemMenuConfig => ({
   ],
 });
 
-const code = `import { ItemRow } from "@/components/official/item/ItemRow";
+const code = `import { ItemRow } from "@ai-matrx/design-system/item";
 
 <ItemRow
       sourceFeature="system"

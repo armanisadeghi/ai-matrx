@@ -1,8 +1,8 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import React, { Suspense, lazy, useMemo } from "react";
-import { Copy, Maximize2, Unlink } from "lucide-react";
+import React, { Suspense, lazy, useMemo, useState } from "react";
+import { Copy, History, Maximize2, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { artifactContentToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
@@ -26,6 +26,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils";
 import { Button } from "@ai-matrx/design-system/controls";
+import { HtmlPreviewChromeProvider } from "@/features/html-pages/components/HtmlPreviewChrome";
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(
   () => import("@ai-matrx/rich-content/code-block/CodeBlock"),
@@ -162,6 +163,8 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     messageId,
     conversationId,
   });
+  // A phone-width html card carries version history in its "More" menu; the entry opens this.
+  const [historyFromMenu, setHistoryFromMenu] = useState(false);
 
   const handleUnbind = async () => {
     const ok = await confirm({
@@ -293,6 +296,63 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
       </div>
     );
   };
+
+  // A finished html page carries ONE header — the page preview's own (title,
+  // Code, Copy, Download, Open in canvas). This block hands it its title,
+  // its extra actions and its canvas opener instead of stacking a label row
+  // on top of it.
+  // (An `html` artifact whose body is a `{"__kind": …}` value is not a page —
+  // HtmlArtifact sends it to the kind front door — so it keeps this block's row.)
+  if (canvasType === "html" && isComplete && !/^\s*\{\s*"__kind"\s*:/.test(content)) {
+    return (
+      <HtmlPreviewChromeProvider
+        value={{
+          title: artifactTitle,
+          openInCanvas: isCanvasAvailable ? handleOpenCanvas : undefined,
+          canvasOpen: canvasToggle.isVisible,
+          actions: (
+            <>
+              {isMaterializedArtifactId(artifactId) && (
+                <ArtifactVersionHistory
+                  canvasItemId={artifactId}
+                  triggerClassName="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                />
+              )}
+              {canUnbind && (
+                <Button variant="quiet" icon={<Unlink />} onClick={() => void handleUnbind()} disabled={unbindBusy} title="Detach as text" aria-label="Detach as text" />
+              )}
+            </>
+          ),
+          menuItems: [
+            ...(isMaterializedArtifactId(artifactId)
+              ? [{
+                  key: "versions",
+                  label: "Version history",
+                  icon: <History />,
+                  // After the menu has closed and handed focus back, or its close takes the popover with it.
+                  onSelect: () => window.setTimeout(() => setHistoryFromMenu(true), 0),
+                }]
+              : []),
+            ...(canUnbind
+              ? [{ key: "detach", label: "Detach as text", icon: <Unlink />, onSelect: () => void handleUnbind(), disabled: unbindBusy }]
+              : []),
+          ],
+          menuAnchors: isMaterializedArtifactId(artifactId) ? (
+            <ArtifactVersionHistory
+              canvasItemId={artifactId}
+              anchorOnly
+              open={historyFromMenu}
+              onOpenChange={setHistoryFromMenu}
+            />
+          ) : null,
+        }}
+      >
+        <div className="relative my-2" data-artifact-type="html">
+          {renderContent()}
+        </div>
+      </HtmlPreviewChromeProvider>
+    );
+  }
 
   return (
     <div className="group/artifact relative my-2">

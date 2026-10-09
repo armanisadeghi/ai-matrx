@@ -60,7 +60,7 @@ import type {
 // second and printed "AM".
 import { getInitials } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { restoreFromTrash } from "@/features/trash/service";
 import {

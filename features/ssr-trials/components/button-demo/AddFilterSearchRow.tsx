@@ -1,11 +1,11 @@
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import {
   PlusTapButton,
   ArrowDownUpTapButton,
   MaximizeTapButton,
   SettingsTapButton,
   SearchTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 
 export default function AddFilterSearchRow() {
   return (

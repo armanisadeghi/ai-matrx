@@ -1,6 +1,6 @@
 // scripts/drill-explorer-walk.mjs — lane DRILL-EXPLORER (program DRILL-FINISH, 2026-09-30).
 //
-// Two walks, headless, screenshots + walk-<part>.json into the for-arman folder:
+// Two walks, headless, screenshots + walk-<part>.json into the evidence folder (/tmp/matrx-evidence):
 //
 //   PART=package  the design-system demo page `drill-answer-proof.html` (the package's own
 //                 source): the Pareto line (sentence, markers, the line under the cut only while

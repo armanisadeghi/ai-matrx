@@ -19,8 +19,8 @@ import type { OrgMemberResource } from "../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 interface Props {
   orgId: string;

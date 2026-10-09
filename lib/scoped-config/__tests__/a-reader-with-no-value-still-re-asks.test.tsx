@@ -32,6 +32,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import { invalidateEffectiveKnob } from "../effectiveKnobs";
 import { useEffectiveKnob } from "../effectiveKnobs.client";
+import { legacyWire } from "./legacyWire";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/client-directives/directiveRegistry", () => ({
@@ -55,7 +56,7 @@ function counting(value: unknown) {
   };
   jest.mocked(createClient).mockReturnValue({
     rpc,
-    schema: () => ({ rpc }),
+    schema: () => ({ rpc: legacyWire(rpc) }),
   } as unknown as ReturnType<typeof createClient>);
   return { asked: () => asked };
 }
@@ -108,7 +109,7 @@ it("re-asks after a notification even though its value never left undefined", as
   };
   jest.mocked(createClient).mockReturnValue({
     rpc,
-    schema: () => ({ rpc }),
+    schema: () => ({ rpc: legacyWire(rpc) }),
   } as unknown as ReturnType<typeof createClient>);
 
   await act(async () => {

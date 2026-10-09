@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +17,7 @@ import {
   LoadingTapButton,
   SaveTapButton,
   UploadTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -53,7 +55,7 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 type EditorTab = "meta" | "html" | "preview";
 
@@ -226,6 +228,7 @@ export default function HtmlPageEditor({
   const [isIndexable, setIsIndexable] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [dirty, setDirty] = useState(false);
+  const previewSandbox = usePageSandbox(dirty || !page.url ? null : page.url, "allow-scripts allow-same-origin allow-popups allow-forms");
   const [promoteOpen, setPromoteOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
@@ -657,7 +660,7 @@ export default function HtmlPageEditor({
           : {
               src: `${page.url}${page.url.includes("?") ? "&" : "?"}preview=1`,
             })}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        sandbox={previewSandbox}
         className="block w-full h-full border-0 bg-white dark:bg-zinc-950"
       />
     </NonEditableContextMenu>

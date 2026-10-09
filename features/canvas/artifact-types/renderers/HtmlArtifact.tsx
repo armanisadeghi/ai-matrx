@@ -8,6 +8,8 @@ import type { ArtifactRendererProps } from "../types";
 import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";
 import KindValueFrontDoor from "@/components/official/structured-value/KindValueFrontDoor";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { FileCode } from "lucide-react";
+import { EmptyState } from "@ai-matrx/design-system/controls";
 
 /**
  * An artifact whose subtype nobody registered (an agent's own `checklist`) falls
@@ -50,6 +52,7 @@ export default function HtmlArtifact({
   conversationId,
   isStreamActive,
   isPublic,
+  artifactId,
 }: ArtifactRendererProps) {
   // Inside a canvas tab the page is an APP: it fills the tab body edge to
   // edge, live with the pane's size. Everywhere else (chat, artifact cards)
@@ -60,6 +63,16 @@ export default function HtmlArtifact({
     typeof data === "string"
       ? data
       : ((data as { html?: string })?.html ?? raw ?? "");
+
+  // A page with no markup is never a blank pane: say so (a still-streaming one is
+  // not empty yet — it is arriving).
+  if (!html.trim() && !isStreamActive) {
+    return (
+      <div className={fill ? "flex h-full items-center justify-center" : "p-3"} data-empty-html="">
+        <EmptyState icon={<FileCode className="size-5" />} title="This page is empty" line="It has no content to show yet." />
+      </div>
+    );
+  }
 
   const kindValue = kindValueOfHtmlBody(html);
   // A `{"__kind": …` body that has not finished arriving is never shown as text.
@@ -87,6 +100,10 @@ export default function HtmlArtifact({
         messageId={messageId}
         conversationId={conversationId}
         fill={fill}
+        artifactId={
+          artifactId ??
+          (typeof metadata?.canvasItemId === "string" ? metadata.canvasItemId : undefined)
+        }
       />
     </Suspense>
   );

@@ -70,7 +70,8 @@ describe("the admin list's remove affordance", () => {
   });
 
   it("shows the service's own refusal rather than inventing a reason", () => {
-    expect(handler).toContain("error instanceof Error ? error.message");
+    // 1d3bf12dd9: every error toast shows errorSentence(error), the one readable-sentence door.
+    expect(handler).toContain("errorSentence(error)");
   });
 });
 
@@ -97,9 +98,10 @@ describe("the delete is DISCOVERABLE, not only in a row menu", () => {
 
   it("puts the status control, with Archive, in the mandate page's header", () => {
     expect(page).toContain("<MandateStatusControl");
-    expect(page).toContain("canManage={canRemove}");
+    // ab0997204b: a system mandate's status menu also opens for the system seat.
+    expect(page).toContain("canManage={canRemove || systemSeat}");
     expect(control).toContain("onSelect={() => void archive()}");
-    expect(archive).toContain("softDeleteMandate(mandateId)");
+    expect(archive).toContain("softDeleteMandate(mandateId, { systemSeat })");
     expect(archive).toContain('variant: "destructive"');
   });
 
@@ -116,7 +118,8 @@ describe("the delete is DISCOVERABLE, not only in a row menu", () => {
   });
 
   it("shows the service's own refusal rather than inventing one", () => {
-    expect(archive).toContain("error instanceof Error ? error.message");
+    // 1d3bf12dd9: every error toast shows errorSentence(error), the one readable-sentence door.
+    expect(archive).toContain("errorSentence(error)");
   });
 
   /**

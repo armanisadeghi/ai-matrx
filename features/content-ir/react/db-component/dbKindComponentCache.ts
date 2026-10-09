@@ -11,7 +11,7 @@
  *
  * What stays here is genuinely OURS — injection only:
  *  - THE compiler, `@ai-matrx/code-runtime`'s `kindComponentCompiler` (the
- *    same runtime Agent Apps and the DB tool renderer use; no second one
+ *    same runtime Applets and the DB tool renderer use; no second one
  *    exists), over the app's scope modules (`lib/code-runtime/app-scope`);
  *  - the default scope (`defaultComponentEntries`, the package's registry);
  *  - the Error Inspector sink (`captureError`);

@@ -1,14 +1,14 @@
 # Projects Feature
 
-Organization-scoped project management system. Projects mirror the Organizations feature with full member management, role-based access, and invitation system.
+Organization-scoped project management system. Projects mirror the Organizations feature with full member management, role-based access, and invitation system. A project row that is readable only through organization access has no direct project role (`role: null`); it must never be presented as a project member.
 
 ## Architecture
 
-Projects are owned by organizations (not users directly). Access is controlled via `project_members` with role-based RLS policies.
+Projects are owned by organizations (not users directly). Access is controlled by canonical `iam.memberships` through the `mbr_*` RPC services and role-based RLS policies.
 
 ```
-organizations → projects → project_members → auth.users
-                         ↘ project_invitations → auth.users
+organizations → projects → iam.memberships → auth.users
+                         ↘ iam.invitations → auth.users
                          ↘ tasks
 ```
 
@@ -16,27 +16,27 @@ organizations → projects → project_members → auth.users
 
 ### `projects`
 
-| Column            | Type  | Notes                                                                             |
-| ----------------- | ----- | --------------------------------------------------------------------------------- |
-| `id`              | uuid  | PK                                                                                |
-| `name`            | text  | Required                                                                          |
-| `slug`            | text  | URL-safe, unique per org                                                          |
-| `description`     | text  | Optional                                                                          |
-| `organization_id` | uuid  | FK → organizations. Every project has exactly one non-null org                        |
-| `created_by`      | uuid  | FK → auth.users                                                                   |
-| `settings`        | jsonb | Extensible config                                                                 |
+| Column            | Type  | Notes                                                          |
+| ----------------- | ----- | -------------------------------------------------------------- |
+| `id`              | uuid  | PK                                                             |
+| `name`            | text  | Required                                                       |
+| `slug`            | text  | URL-safe, unique per org                                       |
+| `description`     | text  | Optional                                                       |
+| `organization_id` | uuid  | FK → organizations. Every project has exactly one non-null org |
+| `created_by`      | uuid  | FK → auth.users                                                |
+| `settings`        | jsonb | Extensible config                                              |
 
 > **Every project belongs to exactly one organization, and organizations are equal** — law: `common-docs/policies/access-ladder.md`. There is no personal project and no personal organization. `createProject` writes to the organization the person selected (`ensureOrgId` holds and asks when none is selected); nothing substitutes one. Any code that still reads `organizations.is_personal` is a defect against the law and goes with the flag; never build on it.
 
-### `project_members`
+### Canonical project memberships (`iam.memberships`)
 
-| Column       | Type         | Notes                      |
-| ------------ | ------------ | -------------------------- |
-| `role`       | project_role | `owner \| admin \| member` |
-| `joined_at`  | timestamptz  | Auto-set                   |
-| `invited_by` | uuid         | FK → auth.users            |
+| Column       | Type        | Notes                                     |
+| ------------ | ----------- | ----------------------------------------- |
+| `role`       | text        | Project roles: `owner \| admin \| member` |
+| `created_at` | timestamptz | Auto-set                                  |
+| `invited_by` | uuid        | FK → auth.users                           |
 
-### `project_invitations`
+### Canonical project invitations (`iam.invitations`)
 
 Mirrors `organization_invitations` — email-based, token-based, 7-day expiry.
 
@@ -59,21 +59,21 @@ owner > admin > member
 - **projects SELECT**: project member OR org owner/admin
 - **projects INSERT**: org member, `created_by = auth.uid()`
 - **projects UPDATE/DELETE**: project admin/owner OR org owner/admin
-- **project_members**: members see all; admins manage all
-- **project_invitations**: admins manage; invitee can read/delete own
+- **iam.memberships**: members see all; admins manage all
+- **iam.invitations**: admins manage; invitee can read/delete own
 
 ## Routes
 
-| Route                                          | Description                                                                                                                                                                                                                             |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/projects`                                    | Projects hub across every organization the person belongs to (cards grouped by organization) |
+| Route                                          | Description                                                                                                                                                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/projects`                                    | Projects hub across every organization the person belongs to (cards grouped by organization)                                                                                                                              |
 | `/projects/[id]`                               | Project detail. Segment is a UUID — slug is not globally unique (DB only enforces `UNIQUE (organization_id, slug)`), so this org-less route must use the UUID. Slug-shaped values are accepted as a back-compat fallback. |
-| `/projects/[id]/settings`                      | Project settings |
-| `/org/[slug]/projects`                         | List org projects                                                                                                                                                                                                                       |
-| `/org/[slug]/projects/[project-slug]`          | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID.                                                                                                                        |
-| `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed)                                                                                                                                                                                                           |
-| `/settings/projects`                           | User's projects across all orgs (routes each card to its detail page)                                                                                                                                   |
-| `/invitations/project/accept/[token]`          | Accept project invitation                                                                                                                                                                                                               |
+| `/projects/[id]/settings`                      | Project settings                                                                                                                                                                                                          |
+| `/org/[slug]/projects`                         | List org projects                                                                                                                                                                                                         |
+| `/org/[slug]/projects/[project-slug]`          | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID.                                                                                                          |
+| `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed)                                                                                                                                                                                             |
+| `/settings/projects`                           | User's projects across all orgs (routes each card to its detail page)                                                                                                                                                     |
+| `/invitations/project/accept/[token]`          | Accept project invitation                                                                                                                                                                                                 |
 
 ## Projects hub
 
@@ -152,12 +152,12 @@ Every project write path dispatches `invalidateAndRefetchFullContext()` from `fe
 
 | Write path               | Where                                                                                                                                | Notes                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Create (canonical)       | `features/projects/service.ts createProject`                                                                                         | Writes the project row; its database trigger atomically writes the canonical `iam.memberships` owner row                                                                                                                                                                                                                                       |
+| Create (canonical)       | `features/projects/service.ts createProject`                                                                                         | Writes the project row; its database trigger atomically writes the canonical `iam.memberships` owner row                                                                                                                                                                                                                                                                                         |
 | Create modal (compat)    | `CreateProjectModal`                                                                                                                 | Now a thin wrapper over `ProjectFormSheet` — every consumer (ResearchInitForm, ProjectList) gets the Manual + Use AI experience. Preserves the old `isOpen` / `onClose` / `onSuccess(CreatedProjectInfo)` / `redirectOnSuccess` contract (`redirectOnSuccess=false` → `skipRedirect`)                                                                                                            |
 | AI create                | `ProjectCreatePanel` "Use AI" tab → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`) | The agent writes the project **directly to the DB server-side**. On the run's `running/streaming → complete` edge, `AgentRunWrapper.onRunComplete` fires; the panel dispatches `invalidateAndRefetchFullContext()` (refreshes every nav-tree-derived consumer) and calls `onAiComplete()` for self-fetching surfaces (`ProjectsHub` → its local `refresh()` via the window's `ai-created` event) |
 | Create core              | `ProjectFormCore`                                                                                                                    | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it                                                                                                                                                                                                                                                                                                      |
 | Create panel             | `ProjectCreatePanel`                                                                                                                 | Two-mode body: "Manual" → `ProjectFormCore`; "Use AI" → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Pass `enableAi={false}` for manual-only                                                                                                                                                                                                |
-| Create sheet             | `ProjectFormSheet`                                                                                                                   | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects to `/projects/...`                                                                                                                                                                                                                                             |
+| Create sheet             | `ProjectFormSheet`                                                                                                                   | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects to `/projects/...`                                                                                                                                                                                                                                                               |
 | Create window            | `CreateProjectWindow`                                                                                                                | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`). Consumers: War Room picker + the `/projects` hub "New project" button. Emits `created` (manual) and `ai-created` (AI) so self-fetching consumers refresh                                                                                                                                          |
 | Create route             | `/projects/new` (`app/(core)/projects/new/page.tsx`)                                                                                 | Full-page `ProjectCreatePanel`; routes to `/projects/{id}/settings` on success                                                                                                                                                                                                                                                                                                                   |
 | Update settings          | `GeneralSettings`                                                                                                                    | Dispatches invalidation on save                                                                                                                                                                                                                                                                                                                                                                  |

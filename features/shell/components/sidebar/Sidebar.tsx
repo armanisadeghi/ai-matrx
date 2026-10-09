@@ -27,6 +27,7 @@ import {
   settingsItem,
 } from "../../constants/nav-data";
 import { initialSidebarView } from "./sidebar-initial-view";
+import { ADMIN_FOOTER_PREPAINT_SCRIPT } from "./admin-menu/admin-footer-reserve";
 
 interface SidebarProps {
   pathname: string;
@@ -103,6 +104,9 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
       {/* Footer — admin section + Windows. Lives OUTSIDE the nav so it is never
           hidden by the route-menu view switch (e.g. on /chat). Settings is the
           account rail's first slot (ShellUserBlock), below this column. */}
+      {/* Reserves the admin block's last measured height before first paint, so the footer
+          does not grow (and shift) when admin status resolves — admin-footer-reserve.ts. */}
+      <script dangerouslySetInnerHTML={{ __html: ADMIN_FOOTER_PREPAINT_SCRIPT }} />
       <div className="shell-sidebar-footer">
         <AdminSidebarSection />
         <SidebarWindowToggleIsland />

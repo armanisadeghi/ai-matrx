@@ -32,7 +32,9 @@ export function ensureContextValues(
 
     dispatch(contextValuesActions.valuesFetchPending({ scopeId }));
 
-    const promise = (async () => {
+    // A named function, not an IIFE: its finally reads `promise`, which is
+    // assigned before the first await resumes.
+    const run = async (): Promise<void> => {
       try {
         const res = await scopesService.listContextValues(scopeId);
         if (isScopesRpcErr(res)) {
@@ -53,7 +55,8 @@ export function ensureContextValues(
       } finally {
         if (inFlight.get(scopeId) === promise) inFlight.delete(scopeId);
       }
-    })();
+    };
+    const promise = run();
 
     inFlight.set(scopeId, promise);
     return promise;
@@ -92,7 +95,9 @@ export function ensureContextValuesForScopes(
       dispatch(contextValuesActions.valuesFetchPending({ scopeId }));
     }
 
-    const promise = (async () => {
+    // A named function, not an IIFE: its finally reads `promise`, which is
+    // assigned before the first await resumes.
+    const run = async (): Promise<void> => {
       try {
         const res = await scopesService.listContextValuesForScopes(wanted);
         if (isScopesRpcErr(res)) {
@@ -113,7 +118,8 @@ export function ensureContextValuesForScopes(
           if (inFlight.get(scopeId) === promise) inFlight.delete(scopeId);
         }
       }
-    })();
+    };
+    const promise = run();
 
     for (const scopeId of wanted) inFlight.set(scopeId, promise);
     return promise;

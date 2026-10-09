@@ -404,3 +404,52 @@ export async function markAllMyNotificationsRead(): Promise<number> {
   if (error) throw operationFailed("mark your notifications read", error);
   return int(data);
 }
+
+/** One kind of notice in the Inbox, with its count (`communication.my_inbox_kinds`). */
+export interface InboxKind {
+  eventKey: string;
+  label: string | null;
+  bucket: string;
+  notices: number;
+  unseen: number;
+}
+
+/** Every kind in the person's Inbox (not Done, not snoozed), newest kind first. */
+export async function fetchInboxKinds(): Promise<InboxKind[]> {
+  const { data, error } = await rpc("my_inbox_kinds", {});
+  if (error) throw operationFailed("group your notifications", error);
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((value) => {
+    const row = value as Record<string, unknown>;
+    const eventKey = str(row.event_key);
+    if (!eventKey) return [];
+    return [{
+      eventKey,
+      label: str(row.event_label),
+      bucket: str(row.event_bucket) ?? "direct",
+      notices: int(row.notices),
+      unseen: int(row.unseen),
+    }];
+  });
+}
+
+/** What a whole-inbox clear may do. Undo goes back through `setNoticesState` with the ids. */
+export type ClearAction = "done" | "read" | "snooze";
+
+/**
+ * Done / read / snooze EVERY Inbox notice of the given kinds (null = every kind) in one call —
+ * across every page, not only the loaded rows. Returns the ids it changed (for Undo).
+ */
+export async function clearInbox(
+  action: ClearAction,
+  eventKeys: readonly string[] | null = null,
+  until?: Date,
+): Promise<string[]> {
+  const { data, error } = await rpc("clear_inbox", {
+    p_action: action,
+    p_event_keys: eventKeys ? [...eventKeys] : null,
+    p_until: until ? until.toISOString() : null,
+  });
+  if (error) throw operationFailed(action === "done" ? "clear your inbox" : `${action} your inbox`, error);
+  return Array.isArray(data) ? data.filter((id): id is string => typeof id === "string") : [];
+}

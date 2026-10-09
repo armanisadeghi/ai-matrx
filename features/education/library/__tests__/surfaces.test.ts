@@ -99,6 +99,7 @@ const row = (id: string, status: string): DeckSuggestionRow => ({
   created_at: "2026-09-27T00:00:00Z",
   custom_fields: {},
   owner_id: "o",
+  metadata: {},
   resolved_at: null,
   resource_id: "d1",
   resource_type: "fc_set",

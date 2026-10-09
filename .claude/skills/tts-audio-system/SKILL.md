@@ -116,7 +116,7 @@ app/api/cartesia/route.ts   ← Token endpoint (authenticated)
 app/api/audio/              ← TTS + STT API routes
 
 utils/supabase/resolveUser.ts  ← Shared auth resolution
-utils/markdown-processors/parse-markdown-for-speech.ts ← MD → plain text
+@ai-matrx/media/voices parseMarkdownToText ← MD → plain text
 ```
 
 ---

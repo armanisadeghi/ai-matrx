@@ -9,8 +9,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuEntry } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { PageJumperTapGroup } from "@/features/pdf/components/PageJumperTapGroup";
 import {
   Tooltip,

@@ -5,7 +5,7 @@
  * (`app/(admin)/administration/applications/`), the hub governing OUR shipped
  * client applications (desktop, extension, mobile): remote runtime
  * configuration, remote catalogs, the installed fleet, and one unified audit
- * history. "Applications" here NEVER means user-created agent apps.
+ * history. "Applications" here NEVER means user-created Applets.
  *
  * Six route-tabbed pages share one shell (`ApplicationsAdminLayoutClient.tsx`):
  *
@@ -482,7 +482,7 @@ export const adminApplicationsManifest: SurfaceManifest = {
   label: "Applications",
   urlPattern: "/administration/applications",
   intro: `<surface_intro>
-This is an ADMIN surface: the Applications hub at /administration/applications — the console governing every shipped Matrx CLIENT (desktop, browser extension, mobile), not user-created agent apps. Six tabs: Overview, Configuration, Catalogs, Installations, Packages, History.
+This is an ADMIN surface: the Applications hub at /administration/applications — the console governing every shipped Matrx CLIENT (desktop, browser extension, mobile), not user-created Applets. Six tabs: Overview, Configuration, Catalogs, Installations, Packages, History.
 
 active_tab tells you which tab the admin is on right now and is always present. On Overview, applications_overview_summary and fleet_below_minimum_total describe every known application's config/catalog/fleet standing. On Configuration, config_rows_summary lists the remote runtime config for each application and config_editor_view/config_editor_app say whether one is open for editing. On Catalogs, catalog_kind_summary breaks down remote catalog entries by kind for catalog_selected_app, and catalog_view/catalog_selected_kind/catalog_selected_entry_id track the drill-down. On Installations, the fleet is compared against installation_min_supported_version, with installation_below_min_count naming instances running unsupported builds. On Packages, npm_packages_summary reports the exact live @ai-matrx npm scope without inferring private trusted-publisher settings. On History, history_entry_count and history_fetch_limit describe the merged audit timeline window.
 

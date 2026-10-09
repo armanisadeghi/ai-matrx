@@ -15,9 +15,10 @@ const probeResult: { data: unknown; error: unknown; status: number } = {
 };
 
 jest.mock("@/utils/supabase/client", () => {
+  // `setHeader` is the admin-feature lane marker (withAdminFeature, 55e4452a40).
   // Every chain step returns the builder; awaiting it answers like PostgREST.
   const builder: Record<string, unknown> = {};
-  for (const m of ["select", "limit", "is", "eq", "order", "range"]) builder[m] = () => builder;
+  for (const m of ["select", "limit", "is", "eq", "order", "range", "setHeader"]) builder[m] = () => builder;
   builder.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
     Promise.resolve(probeResult).then(res, rej);
   return {

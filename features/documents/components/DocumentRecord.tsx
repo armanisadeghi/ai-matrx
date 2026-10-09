@@ -29,7 +29,10 @@ import { useAppStore } from "@/lib/redux/hooks";
 import { documentWorkingCopy } from "@/features/documents/document-model/documentModels";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { PlainTextView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { usePlainView } from "@ai-matrx/rich-content/copy/content-view-store";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { DocumentRulebookNotice } from "@/features/masterwork/components/DocumentRulebookNotice";
@@ -361,6 +364,16 @@ export function DocumentRecord({
     </>
   );
 
+  // Markdown WITH its markup (headings, bold, italics, lists, tables) from the live
+  // snapshot; the plain choice strips it downstream. Falls back to the bare text.
+  const documentMarkdown = () => {
+    const port = bodyPortRef.current;
+    if (!port) return "";
+    const markdown = univerDocToMarkdown(port.getSnapshot?.());
+    return markdown || bodyTextOf(port.getDataStream()).text;
+  };
+  const plainView = usePlainView(doc ? `udt-document-${doc.id}` : null);
+
   const actions = doc ? (
     <div className="flex items-center gap-0.5">
       {/* Secondary action — hidden below sm so the rename field and
@@ -368,10 +381,9 @@ export function DocumentRecord({
       <RichCopySplit
         label={doc.document_name}
         size="sm"
-        human={() => {
-          const port = bodyPortRef.current;
-          return port ? bodyTextOf(port.getDataStream()).text : "";
-        }}
+        human={documentMarkdown}
+        exportTitle={doc.document_name}
+        viewKey={`udt-document-${doc.id}`}
       />
       <span className="hidden sm:inline-flex">
         <ReferenceCopyButton
@@ -423,7 +435,10 @@ export function DocumentRecord({
             empty body. `data-board-interactive` says so — a click places the
             caret instead of selecting the tile. No effect off the board. */}
         <div className="min-h-0 flex-1" data-board-interactive="">
+          {/* The bar's Plain switch: the document's exact markdown; the editor stays mounted. */}
+          {plainView ? <PlainTextView text={documentMarkdown()} className="h-full overflow-auto rounded-none" /> : null}
           {permsResolved && doc ? (
+            <div className={plainView ? "hidden" : "contents"}>
             <DocumentEditor
               documentId={id}
               documentName={doc.document_name}
@@ -431,6 +446,7 @@ export function DocumentRecord({
               collab
               onBodyPort={lendBodyPort}
             />
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <Loader2 className="size-4 animate-spin mr-2" />

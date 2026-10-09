@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import {
   NotePickerPopover,
   invalidateNotePickerCache,
@@ -35,6 +34,7 @@ import {
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export const CONTEXT_FOLDER = "Transcription Contexts";
 
@@ -237,7 +237,7 @@ export function CleanupContextPanel({
       }
       setSavingId(blockId);
       try {
-        const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+        const capturedOrganizationId = await ensureOrgId(organizationId);
         const note = await NotesAPI.create({
           label: block.title.trim() || "Transcription Context",
           content: block.text,
@@ -259,7 +259,6 @@ export function CleanupContextPanel({
         invalidateNotePickerCache();
         toast.success("Saved as note in Transcription Contexts");
       } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) return;
         toast.error("Could not create note");
       } finally {
         setSavingId(null);

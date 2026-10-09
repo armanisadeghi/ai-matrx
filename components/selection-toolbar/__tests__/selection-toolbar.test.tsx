@@ -192,13 +192,18 @@ it("reading: the reading set shows, and a highlight saves through the sidecar ex
   await selectWord("statistical");
   expect(toolbar()?.getAttribute("data-selection-toolbar")).toBe("floating");
   expect(toolbar()?.getAttribute("data-selection-mode")).toBe("read");
-  expect(labels()).toEqual(expect.arrayContaining([
-    "Highlight yellow", "Highlight green", "Highlight blue", "Highlight pink", "Highlight purple",
-    "Comment", "Suggest an edit",
-  ]));
+  // One compact row (2026-10-07): Highlight (one button), Comment, then More — Suggest is a More row.
+  expect(labels()).toEqual(expect.arrayContaining(["Highlight", "Comment", "More actions"]));
+  expect(labels()).not.toContain("Suggest an edit");
+  expect(labels()).not.toContain("Highlight yellow");
   // Only ONE selection popup exists in the document.
+  console.log("TBDBG", [...document.querySelectorAll("[role=toolbar]")].map(e=>e.outerHTML.slice(0,400)).join("\n---\n"));
   expect(document.querySelectorAll("[role=toolbar]").length).toBe(1);
 
+  // Highlight opens the colours; a colour saves.
+  const highlight = toolbar()!.querySelector<HTMLButtonElement>("button[aria-label='Highlight']")!;
+  await act(async () => { highlight.click(); });
+  await flush();
   const yellow = toolbar()!.querySelector<HTMLButtonElement>("button[aria-label='Highlight yellow']")!;
   await act(async () => { yellow.click(); });
   await flush();
@@ -207,12 +212,13 @@ it("reading: the reading set shows, and a highlight saves through the sidecar ex
   expect(toolbar()).toBeNull();
 });
 
-it("editing: no highlight colours by default (the knob), Comment stays", async () => {
+it("editing: no highlight by default (the knob); Comment is a More row", async () => {
   await mount(true);
   await selectWord("statistical");
   expect(toolbar()?.getAttribute("data-selection-mode")).toBe("edit");
-  expect(labels()).toContain("Comment");
-  expect(labels()).not.toContain("Highlight yellow");
+  expect(labels()).not.toContain("Comment");
+  expect(labels()).toContain("More actions");
+  expect(labels()).not.toContain("Highlight");
   expect(labels()).not.toContain("Suggest an edit");
 });
 

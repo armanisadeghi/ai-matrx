@@ -21,10 +21,11 @@ import {
 import { FolderTree, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
+import { SIDEBAR_MODE_COOKIE } from "./sidebarModeCookie";
 
 export type SidebarMode = "flat" | "tree";
 
-const COOKIE_NAME = "cloud-files:sidebar-mode";
+const COOKIE_NAME = SIDEBAR_MODE_COOKIE;
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 interface SidebarModeContextValue {
@@ -93,7 +94,6 @@ function readCookie(): SidebarMode | null {
   return null;
 }
 
-export const SIDEBAR_MODE_COOKIE = COOKIE_NAME;
 
 export interface SidebarModeToggleProps {
   className?: string;

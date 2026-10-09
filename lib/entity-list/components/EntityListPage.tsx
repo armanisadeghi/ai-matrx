@@ -26,14 +26,14 @@ import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { CONTROLS_CONTAINER_NAME, ControlScope } from "@ai-matrx/design-system/controls";
-import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import { ItemContextMenu } from "@ai-matrx/design-system/item";
 import {
   effectiveHiddenColumns,
   hiddenColumnsPatch,
   uniformColumnIds,
 } from "../columnWidths";
 import { entityListDoorColumnId } from "../doors";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useListSearchParams } from "../useListSearchParams";
@@ -77,7 +77,8 @@ import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntitySourceFailures } from "./EntitySourceFailures";
 import { EntityFilterChips } from "./EntityFilterChips";
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -888,7 +889,7 @@ export function EntityListPage<TRow>({
   }, []);
   // Once React has applied the real hidden set, the server-time marks have done their job.
   useEffect(() => {
-    if (listWidth !== null && bodyRef.current) clearNoRoomMarks(bodyRef.current);
+    if (listWidth !== null && bodyRef.current) clearNoRoomMarks();
   }, [listWidth, noRoom.join("|")]);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
@@ -1243,7 +1244,9 @@ export function EntityListPage<TRow>({
         {notice && (
           // The page top (feature cards, a KPI row, a banner) is a BIG block: the block gap
           // separates it from the list's controls — the header's own 6/8px set gap included.
-          <div className="mb-[calc(var(--matrx-page-block-gap)-0.375rem)] max-h-[42dvh] overflow-y-auto sm:mb-[calc(var(--matrx-page-block-gap)-0.5rem)]">
+          // `empty:hidden`: a notice that renders nothing (an assist strip with no chips) leaves no
+          // phantom gap above the tabs (2026-10-08).
+          <div className="mb-[calc(var(--matrx-page-block-gap)-0.375rem)] max-h-[42dvh] overflow-y-auto empty:hidden sm:mb-[calc(var(--matrx-page-block-gap)-0.5rem)]">
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}
@@ -1564,7 +1567,7 @@ export function EntityListPage<TRow>({
         {view === "table" ? (
           // First paint = settled paint: hide the columns with no room while the HTML parses
           // (columnPriority.ts). Both carry suppressHydrationWarning: the script text is the
-          // same on both sides, and the marks it writes are attributes on the table's own cells.
+          // same on both sides, and the mark it writes is one attribute on <html>, never on hydrated markup.
           <>
             <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: NO_ROOM_CSS }} />
             <script
@@ -1688,7 +1691,7 @@ function LoadMoreFooter({
     <div className="flex items-center justify-center gap-3 pt-4 type-secondary text-muted-foreground">
       <span className="tabular-nums">
         {openEnded ? (
-          `${((page - 1) * pageSize + 1).toLocaleString()}-${shownThrough.toLocaleString()}`
+          `${formatCount((page - 1) * pageSize + 1)}-${formatCount(shownThrough)}`
         ) : (
           <>
             {shownThrough} of <UntrustedCount value={total} read={read} label="Total" />

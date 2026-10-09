@@ -101,6 +101,10 @@ const EXPECTED_CHECKS = [
   // route the token to them, and no removal job may still wait on the old table (SCOPES-ARCHIVE,
   // 2026-10-05: entity_soft_delete('scope', id) answered false for every scope made after the cutover).
   "retired_tables_archive_through_record_store",
+  // Every edge names a child table + column that exist and a parent that exists or is retired into the
+  // record store. An edge left on a dropped table made the census raise 42P01 and took the whole
+  // function down (2026-10-07: context.context_items) — the gate read UNMEASURED.
+  "edges_name_existing_tables",
 ] as const;
 
 const C = {
@@ -259,6 +263,13 @@ async function main(): Promise<number> {
     }
     if (row.ok) {
       console.log(`  ${TAG.ok}${key}`);
+      if (key === "deferred_cascade_draining" && row.detail) {
+        const stuck = Array.isArray(row.detail.stuck_jobs) ? row.detail.stuck_jobs.length : 0;
+        const orphans = Array.isArray(row.detail.orphans_without_job) ? row.detail.orphans_without_job.length : 0;
+        console.log(
+          `        ${C.dim}drain job state: ${stuck} stuck job(s), ${orphans} deferred edge(s) with live parts and no job (stale window ${String(row.detail.stale_minutes)} min)${C.reset}`,
+        );
+      }
       continue;
     }
     console.log(`  ${TAG.fail}${key}`);

@@ -12,6 +12,7 @@
 // Pure: the component polls the doors and calls `madeSince`; the guard tests it with no network.
 
 import type { DataHomeItemRow, DataHomeTableRow } from "@/features/unified-data/hub/doors";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export type MadeKind = "table" | "form" | "booking" | "portal" | "dashboard" | "digest" | "checklist";
 
@@ -55,7 +56,7 @@ function str(v: unknown): string | null {
 
 /**
  * What is in `after` and not in `before`, for ONE organization: the person's own new tables
- * (never the app's bookkeeping — a booking page's slots table is kept by the app) and every new
+ * (never the app's bookkeeping — a booking page's slots table is platform table) and every new
  * form, booking page, portal, dashboard, digest or checklist. A booking page IS a form in the store,
  * so an id listed as both is shown once, as the booking page. Tables first, then forms, then
  * bookings, then the rest — the order a person reads "table, form, booking".
@@ -68,7 +69,7 @@ export function madeSince(
   const made: MadeThing[] = [];
   for (const t of after.tables) {
     if (t.organization_id !== organizationId || before.tables.has(t.table_id)) continue;
-    if (t.kept_by_the_app || t.kind !== "table") continue;
+    if (t.platform_owned || t.kind !== "table") continue;
     made.push({ kind: "table", id: t.table_id, title: t.table_name, href: `/data/${t.table_id}` });
   }
   const bookingIds = new Set(
@@ -118,7 +119,7 @@ export function madeSince(
   return made.sort((a, b) => order[a.kind] - order[b.kind]);
 }
 
-/** The result's heading: "Made in 41 s". */
+/** The result's heading: "Made in 41s" — whole seconds, never under one, so a ticking count never flickers decimals. */
 export function secondsWords(ms: number): string {
-  return `${Math.max(1, Math.round(ms / 1000))} s`;
+  return formatDurationSeconds(Math.max(1, Math.round(ms / 1000)), { style: "compact" });
 }

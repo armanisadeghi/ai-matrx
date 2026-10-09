@@ -19,7 +19,7 @@ import {
   setAgentUiGates,
 } from "@/features/agents/redux/agent-builder.slice";
 import type { UiGateEditableKey } from "@ai-matrx/chat/agents/redux/agent-settings/ui-gates";
-import { InputCapabilitiesEditor } from "./InputCapabilitiesEditor";
+import { InputCapabilitiesEditor } from "@ai-matrx/agents/settings/react";
 
 interface UiGatesEditorProps {
   agentId: string;

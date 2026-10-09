@@ -17,7 +17,7 @@
  * lane, and the copy is found by its `source_rulebook_id` provenance column.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {

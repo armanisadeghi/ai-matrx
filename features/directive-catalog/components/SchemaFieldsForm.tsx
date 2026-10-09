@@ -21,19 +21,21 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 import {
-  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
+  Select as SelectRoot,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
+import {
+  Button,
+  DateField,
+  Field,
+  SelectTrigger,
+  Textarea,
+} from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
@@ -49,6 +51,7 @@ import {
   type SchemaFieldWarning,
   type SchemaFormMode,
 } from "@/features/directive-catalog/schemaFields";
+import { ProInput } from "@/components/official/ProInput";
 
 export interface SchemaFieldsFormProps {
   fields: readonly SchemaField[];
@@ -64,6 +67,18 @@ export interface SchemaFieldsFormProps {
 
 /** Radix Select forbids "" as an item value; this stands for "not set". */
 const UNSET = "__unset__";
+
+/**
+ * ONE GEOMETRY (G17, 2026-10-07). Every control in this form is a
+ * `@ai-matrx/design-system/controls` control — 28px, capsule, 13px — so text,
+ * numbers, dates and pick-lists line up. The two app pickers (people, repeat)
+ * are not package controls; this class puts their trigger on the same tokens
+ * (height, half-gap, radius, inset, label size), on a phone too
+ * (`max-lg:` beats the repeat picker's own 44px). Guard:
+ * `__tests__/the-write-form-is-one-control-family.test.tsx`.
+ */
+export const SCHEMA_PICKER_GEOMETRY =
+  "h-[var(--matrx-control-size)] max-lg:h-[var(--matrx-control-size)] mx-[var(--matrx-control-half-gap)] w-[calc(100%-var(--matrx-control-gap))] rounded-full px-[var(--matrx-control-inset-text)] text-[length:var(--matrx-control-label)] lg:text-[length:var(--matrx-control-label)] justify-start border-border";
 
 export function SchemaFieldsForm({
   fields,
@@ -106,22 +121,16 @@ export function SchemaFieldsForm({
 
       {more.length > 0 && (
         <div className="flex flex-col gap-3">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             onClick={() => setMoreOpen((v) => !v)}
             aria-expanded={moreOpen}
-            className="flex min-h-9 items-center gap-1 self-start rounded-md px-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            icon={moreOpen ? <ChevronDown /> : <ChevronRight />}
+            meta={setInMore > 0 ? `${setInMore} set` : undefined}
+            className="self-start"
           >
-            {moreOpen ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-            More fields ({more.length})
-            {setInMore > 0 && (
-              <span className="text-primary"> · {setInMore} set</span>
-            )}
-          </button>
+            {`More fields (${more.length})`}
+          </Button>
           {moreOpen && more.map(renderField)}
         </div>
       )}
@@ -149,7 +158,7 @@ function FieldRow({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex min-h-5 items-center gap-1.5">
+      <div className="flex min-h-7 items-center gap-1.5">
         <label htmlFor={id} className="text-xs font-medium text-foreground">
           {field.label}
         </label>
@@ -157,15 +166,14 @@ function FieldRow({
           <span className="text-[11px] text-muted-foreground">Required</span>
         )}
         {touched && (
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             onClick={() => onChange(null)}
             aria-label={`Reset ${field.label}`}
             title={mode === "update" ? "Leave unchanged" : "Reset"}
-            className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <RotateCcw className="h-3 w-3" />
-          </button>
+            icon={<RotateCcw />}
+            className="ml-auto"
+          />
         )}
       </div>
       <FieldControl
@@ -230,8 +238,8 @@ function FieldControl({
               onChange(userId ? { raw: userId, touched: true } : null)
             }
             emptyLabel={placeholder}
-            className="h-9"
-            labelClassName="text-base lg:text-sm"
+            className={SCHEMA_PICKER_GEOMETRY}
+            labelClassName="text-[length:var(--matrx-control-label)]"
           />
         );
       }
@@ -250,7 +258,7 @@ function FieldControl({
           value={text || null}
           onChange={(rule) => onChange(rule ? { raw: rule, touched: true } : null)}
           emptyLabel={placeholder}
-          className="h-9 w-full justify-start px-2.5 text-base lg:text-sm border-border"
+          className={SCHEMA_PICKER_GEOMETRY}
         />
       );
     case "date":
@@ -268,14 +276,13 @@ function FieldControl({
     case "number":
     case "integer":
       return (
-        <Input
+        <Field
           id={id}
           type="text"
           inputMode={field.kind === "integer" ? "numeric" : "decimal"}
           value={text}
           placeholder={placeholder}
           onChange={(e) => setText(e.target.value)}
-          className="h-9 text-base lg:text-sm"
         />
       );
     case "json":
@@ -289,14 +296,16 @@ function FieldControl({
         />
       );
     default:
+      // One line, the 28px capsule (G17): a 36px one-row textarea stood
+      // taller than every date and pick-list beside it. JSON above stays the
+      // multi-line Textarea — a structure is written over lines.
       return (
-        <Textarea minHeight={36}
+        <ProInput
           id={id}
-          rows={1}
+          type="text"
           value={text}
           placeholder={placeholder}
           onChange={(e) => setText(e.target.value)}
-          className="field-sizing-content resize-none"
         />
       );
   }
@@ -335,7 +344,11 @@ function ChoiceControl({
     : field.enumValues.map((v) => ({ value: v, label: field.enumLabels[v] ?? v }));
 
   return (
-    <Select
+    // A tri-state (not set / Yes / No), so a boolean is a Select, not a
+    // Switch: a Switch cannot say "Unchanged".
+    // The compound door of THE select (`SelectTrigger` from /controls — the
+    // same 28px capsule as `Select`), kept for the `id` its <label> points at.
+    <SelectRoot
       value={current}
       onValueChange={(next) => {
         if (next === UNSET) onChange(null);
@@ -354,7 +367,7 @@ function ChoiceControl({
           </SelectItem>
         ))}
       </SelectContent>
-    </Select>
+    </SelectRoot>
   );
 }
 
@@ -383,27 +396,20 @@ function RecordControl({
   if (!field.recordToken) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    // The row's width, like every sibling field (G18 review: a label-width
+    // pill beside full-width pickers).
+    <div className="flex w-full min-w-0 items-center" data-record-control="">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "flex min-h-9 max-w-full items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-sm hover:bg-accent",
-              !picked && "text-muted-foreground",
-            )}
+          <Button
+            variant="outline"
+            icon={Icon ? <Icon /> : <Search />}
+            className="min-w-0 flex-1 justify-start"
           >
-            {Icon ? (
-              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            ) : (
-              <Search className="h-3.5 w-3.5 shrink-0" />
-            )}
-            <span className="truncate">
-              {picked
-                ? (picked.recordTitle ?? `Chosen ${noun}`)
-                : emptyLabel || `Choose a ${noun}`}
-            </span>
-          </button>
+            {picked
+              ? (picked.recordTitle ?? `Chosen ${noun}`)
+              : emptyLabel || `Choose a ${noun}`}
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-2" align="start">
           <RecordReferencePicker
@@ -423,23 +429,24 @@ function RecordControl({
         </PopoverContent>
       </Popover>
       {picked && (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
+          removes
           onClick={() => onChange(null)}
           aria-label={`Remove ${field.label}`}
-          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+          icon={<X />}
+        />
       )}
     </div>
   );
 }
 
 /**
- * A date, time or date-and-time input. Untouched with an empty word to say
- * ("Unchanged" on an Update), it shows that word, never the browser's
- * "mm/dd/yyyy" mask; focusing it hands over the native picker.
+ * A date, time or date-and-time field: THE package date control
+ * (`DateField`, `@ai-matrx/design-system/controls`, G16 2026-10-07) — typed
+ * entry, a calendar (sheet on a phone), Clear, ISO in and out (`yyyy-mm-dd`,
+ * `yyyy-mm-ddTHH:mm`, `HH:mm`). Untouched, it says the form's empty word
+ * ("Unchanged" on an Update), never a browser mask.
  */
 function DateTimeControl({
   id,
@@ -454,32 +461,13 @@ function DateTimeControl({
   emptyLabel: string;
   onChange: (next: string) => void;
 }) {
-  const [focused, setFocused] = useState(false);
-  const showWord = !value && !focused && emptyLabel !== "";
   return (
-    <div className="relative">
-      <Input
-        id={id}
-        type={kind === "date" ? "date" : kind === "time" ? "time" : "datetime-local"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        aria-label={showWord ? emptyLabel : undefined}
-        className={cn(
-          "h-9 text-base lg:text-sm",
-          // The mask stays laid out (the picker opens where it always does) but unseen.
-          showWord && "text-transparent [&::-webkit-datetime-edit]:text-transparent",
-        )}
-      />
-      {showWord && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground lg:text-sm"
-        >
-          {emptyLabel}
-        </span>
-      )}
-    </div>
+    <DateField
+      id={id}
+      mode={kind}
+      value={value || null}
+      emptyLabel={emptyLabel || (kind === "time" ? "Pick a time" : "Pick a date")}
+      onValueChange={(next) => onChange(next ?? "")}
+    />
   );
 }

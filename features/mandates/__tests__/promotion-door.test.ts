@@ -80,7 +80,8 @@ describe("the promotion door", () => {
     expect(source).toContain("refusal.hint");
     // The admin gate on the button is CHROME. It must never be the only gate,
     // and it must never be the thing that decides the outcome.
-    expect(source).toContain("selectIsSuperAdmin");
+    // 70e56f3837: the gate is the registered admin feature "mandate.system-seat", read via selectAdminFeature.
+    expect(source).toContain("selectAdminFeature");
   });
 
   it("says that a promoted copy starts with no bindings", () => {

@@ -26,7 +26,7 @@ import {
   type VaultVerifiedExportActor,
 } from "@/features/secrets/vault-service";
 import type { TrashItem, VaultRecoveryPreview } from "./service";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 function sameActor(
   left: VaultVerifiedExportActor,

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1345,
+  "routeCount": 1374,
   "routes": [
     {
       "pattern": "/",
@@ -52,41 +52,6 @@
       "pattern": "/administration/agents",
       "status": "live",
       "source": "app/(admin)/administration/agents/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/analytics",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/apps",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/apps/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/categories",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/categories/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/edit/[id]",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/executions",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/executions/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/agent-apps/rate-limits",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/rate-limits/page.tsx"
     },
     {
       "pattern": "/administration/agents/bundles",
@@ -399,6 +364,41 @@
       "source": "app/(admin)/administration/ai/ai-tasks/page.tsx"
     },
     {
+      "pattern": "/administration/applets",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/all",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/all/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/analytics",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/analytics/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/categories",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/categories/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/edit/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/edit/[id]/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/executions",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/executions/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/rate-limits",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/rate-limits/page.tsx"
+    },
+    {
       "pattern": "/administration/applications",
       "status": "live",
       "source": "app/(admin)/administration/applications/page.tsx"
@@ -442,6 +442,16 @@
       "pattern": "/administration/automation/scheduling",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/costs",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/costs/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/costs/[kind]/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/costs/[kind]/[id]/page.tsx"
     },
     {
       "pattern": "/administration/automation/scheduling/cron-tester",
@@ -489,6 +499,11 @@
       "source": "app/(admin)/administration/automation/scheduling/templates/page.tsx"
     },
     {
+      "pattern": "/administration/automation/scheduling/triggers",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/triggers/page.tsx"
+    },
+    {
       "pattern": "/administration/automation/workflow-runs",
       "status": "live",
       "source": "app/(admin)/administration/automation/workflow-runs/page.tsx"
@@ -499,9 +514,39 @@
       "source": "app/(admin)/administration/automation/workflows/page.tsx"
     },
     {
+      "pattern": "/administration/automation/workflows/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/design",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/design/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/runs",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/runs/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/triggers",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/triggers/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/runs/[runId]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/runs/[runId]/page.tsx"
+    },
+    {
       "pattern": "/administration/billing",
       "status": "live",
       "source": "app/(admin)/administration/billing/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing/approvals",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/approvals/page.tsx"
     },
     {
       "pattern": "/administration/billing/plans",
@@ -579,6 +624,11 @@
       "source": "app/(admin)/administration/compute/sandbox-infra/page.tsx"
     },
     {
+      "pattern": "/administration/compute/sandbox/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/compute/sandbox/[id]/page.tsx"
+    },
+    {
       "pattern": "/administration/compute/server-logs",
       "status": "live",
       "source": "app/(admin)/administration/compute/server-logs/page.tsx"
@@ -637,6 +687,11 @@
       "pattern": "/administration/database/canonicalization/verify",
       "status": "live",
       "source": "app/(admin)/administration/database/canonicalization/verify/page.tsx"
+    },
+    {
+      "pattern": "/administration/database/custom-tables",
+      "status": "live",
+      "source": "app/(admin)/administration/database/custom-tables/page.tsx"
     },
     {
       "pattern": "/administration/database/data-integrity",
@@ -717,11 +772,6 @@
       "pattern": "/administration/database/sql-queries",
       "status": "live",
       "source": "app/(admin)/administration/database/sql-queries/page.tsx"
-    },
-    {
-      "pattern": "/administration/database/store-tables",
-      "status": "live",
-      "source": "app/(admin)/administration/database/store-tables/page.tsx"
     },
     {
       "pattern": "/administration/database/switch-presses",
@@ -807,6 +857,11 @@
       "pattern": "/administration/intelligence",
       "status": "live",
       "source": "app/(admin)/administration/intelligence/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/go/[...slug]",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/go/[...slug]/page.tsx"
     },
     {
       "pattern": "/administration/intelligence/mandates",
@@ -1049,6 +1104,11 @@
       "source": "app/(admin)/administration/reporting/lint-debt/page.tsx"
     },
     {
+      "pattern": "/administration/reporting/performance",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/performance/page.tsx"
+    },
+    {
       "pattern": "/administration/reporting/producer-yield",
       "status": "live",
       "source": "app/(admin)/administration/reporting/producer-yield/page.tsx"
@@ -1162,6 +1222,16 @@
       "pattern": "/administration/usage",
       "status": "live",
       "source": "app/(admin)/administration/usage/page.tsx"
+    },
+    {
+      "pattern": "/administration/usage/agents",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/agents/page.tsx"
+    },
+    {
+      "pattern": "/administration/usage/agents/detail",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/agents/detail/page.tsx"
     },
     {
       "pattern": "/administration/users",
@@ -1349,46 +1419,6 @@
       "source": "app/(admin)/administration/utilities/utils/text-cleaner/page.tsx"
     },
     {
-      "pattern": "/agent-apps",
-      "status": "live",
-      "source": "app/(core)/agent-apps/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]/code",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/code/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]/run",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/run/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]/settings",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/settings/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]/v/[version]",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/v/[version]/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/[id]/versions",
-      "status": "live",
-      "source": "app/(core)/agent-apps/[id]/versions/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/build",
-      "status": "live",
-      "source": "app/(core)/agent-apps/build/page.tsx"
-    },
-    {
       "pattern": "/agent-connections",
       "status": "live",
       "source": "app/(core)/agent-connections/page.tsx"
@@ -1502,6 +1532,11 @@
       "pattern": "/agents/[id]/run",
       "status": "live",
       "source": "app/(core)/agents/[id]/run/page.tsx"
+    },
+    {
+      "pattern": "/agents/[id]/runs",
+      "status": "live",
+      "source": "app/(core)/agents/[id]/runs/page.tsx"
     },
     {
       "pattern": "/agents/[id]/shortcuts",
@@ -1794,9 +1829,54 @@
       "source": "app/(core)/agents/templates/[id]/page.tsx"
     },
     {
-      "pattern": "/applets/[slug]",
+      "pattern": "/applets",
       "status": "live",
-      "source": "app/(public)/applets/[slug]/page.tsx"
+      "source": "app/(core)/applets/page.tsx"
+    },
+    {
+      "pattern": "/applets/[slug]/[[...path]]",
+      "status": "live",
+      "source": "app/(link)/applets/[slug]/[[...path]]/page.tsx"
+    },
+    {
+      "pattern": "/applets/build",
+      "status": "live",
+      "source": "app/(core)/applets/build/page.tsx"
+    },
+    {
+      "pattern": "/applets/build/[id]",
+      "status": "live",
+      "source": "app/(core)/applets/build/[id]/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/code",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/code/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/run",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/run/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/settings",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/settings/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/v/[version]",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/v/[version]/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/versions",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/versions/page.tsx"
     },
     {
       "pattern": "/appointment-reminder",
@@ -1807,11 +1887,6 @@
       "pattern": "/approvals",
       "status": "live",
       "source": "app/(core)/approvals/page.tsx"
-    },
-    {
-      "pattern": "/apps/[app]/[[...path]]",
-      "status": "live",
-      "source": "app/(link)/apps/[app]/[[...path]]/page.tsx"
     },
     {
       "pattern": "/artifacts",
@@ -2944,6 +3019,16 @@
       "source": "app/(core)/esign/new/page.tsx"
     },
     {
+      "pattern": "/esign/templates",
+      "status": "live",
+      "source": "app/(core)/esign/templates/page.tsx"
+    },
+    {
+      "pattern": "/esign/templates/[templateId]",
+      "status": "live",
+      "source": "app/(core)/esign/templates/[templateId]/page.tsx"
+    },
+    {
       "pattern": "/exports",
       "status": "live",
       "source": "app/(core)/exports/page.tsx"
@@ -3303,9 +3388,23 @@
     },
     {
       "pattern": "/hr/performance",
-      "status": "placeholder",
-      "source": "app/(core)/hr/performance/page.tsx",
-      "promiseKey": "hr.performance"
+      "status": "live",
+      "source": "app/(core)/hr/performance/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/[reviewId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/[reviewId]/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/[reviewId]/meeting",
+      "status": "live",
+      "source": "app/(core)/hr/performance/[reviewId]/meeting/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/respond/[trackId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/respond/[trackId]/page.tsx"
     },
     {
       "pattern": "/hr/reports",
@@ -3619,6 +3718,11 @@
       "pattern": "/intelligence/[feature]/unassigned",
       "status": "live",
       "source": "app/(core)/intelligence/[feature]/unassigned/page.tsx"
+    },
+    {
+      "pattern": "/intelligence/go/[...slug]",
+      "status": "live",
+      "source": "app/(core)/intelligence/go/[...slug]/page.tsx"
     },
     {
       "pattern": "/invitations/class/accept/[token]",
@@ -4791,6 +4895,11 @@
       "source": "app/(core)/marketing/monitoring/page.tsx"
     },
     {
+      "pattern": "/marketing/monitoring/[trackerId]",
+      "status": "live",
+      "source": "app/(core)/marketing/monitoring/[trackerId]/page.tsx"
+    },
+    {
       "pattern": "/marketing/operations/approvals",
       "status": "live",
       "source": "app/(core)/marketing/operations/approvals/page.tsx"
@@ -5242,6 +5351,36 @@
       "source": "app/(core)/organizations/[orgId]/admin/page.tsx"
     },
     {
+      "pattern": "/organizations/[orgId]/admin/ai-spend",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/ai-spend/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/ai-spend/detail",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/ai-spend/detail/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/automations/[kind]/[id]",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/automations/[kind]/[id]/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/spend-approvals",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/spend-approvals/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/triggers",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/triggers/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/triggers/[triggerId]/runs/[runId]",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/triggers/[triggerId]/runs/[runId]/page.tsx"
+    },
+    {
       "pattern": "/organizations/[orgId]/admin/users/[userId]",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/admin/users/[userId]/page.tsx"
@@ -5252,9 +5391,9 @@
       "source": "app/(core)/organizations/[orgId]/admin/users/[userId]/resources/page.tsx"
     },
     {
-      "pattern": "/organizations/[orgId]/agent-apps",
+      "pattern": "/organizations/[orgId]/applets",
       "status": "live",
-      "source": "app/(core)/organizations/[orgId]/agent-apps/page.tsx"
+      "source": "app/(core)/organizations/[orgId]/applets/page.tsx"
     },
     {
       "pattern": "/organizations/[orgId]/context-items",
@@ -5455,11 +5594,6 @@
       "pattern": "/organizations/[orgId]/workflows",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/workflows/page.tsx"
-    },
-    {
-      "pattern": "/p/[slug]",
-      "status": "live",
-      "source": "app/(link)/p/[slug]/page.tsx"
     },
     {
       "pattern": "/p/e/[resourceType]/[id]",
@@ -6307,6 +6441,11 @@
       "source": "app/(core)/spaces/duplicate/page.tsx"
     },
     {
+      "pattern": "/spaces/home",
+      "status": "live",
+      "source": "app/(core)/spaces/home/page.tsx"
+    },
+    {
       "pattern": "/staff",
       "status": "live",
       "source": "app/(core)/staff/page.tsx"
@@ -6362,9 +6501,9 @@
       "source": "app/(public)/templates/[slug]/page.tsx"
     },
     {
-      "pattern": "/templates/apps",
+      "pattern": "/templates/applets",
       "status": "live",
-      "source": "app/(public)/templates/apps/page.tsx"
+      "source": "app/(public)/templates/applets/page.tsx"
     },
     {
       "pattern": "/templates/category/[industry]",
@@ -6740,6 +6879,11 @@
       "pattern": "/x/sign",
       "status": "live",
       "source": "app/(link)/x/sign/page.tsx"
+    },
+    {
+      "pattern": "/x/sign/phone",
+      "status": "live",
+      "source": "app/(link)/x/sign/phone/page.tsx"
     }
   ]
 }

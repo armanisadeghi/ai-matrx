@@ -42,7 +42,7 @@ import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrom
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function maskKey(key: string): string {
   if (key.length <= 8) return "••••••••";

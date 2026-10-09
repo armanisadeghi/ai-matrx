@@ -1,7 +1,7 @@
 import {
   PropertyRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import type { RebindVariableImpact } from "./rebind-impact";
 import type { MandateVariableVerdict } from "./service";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

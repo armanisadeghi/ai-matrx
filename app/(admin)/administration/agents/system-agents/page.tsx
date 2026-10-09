@@ -18,10 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
-import { fetchAgentAppsAdmin } from "@/lib/services/agent-apps-admin-service";
+import { fetchAppletsAdmin } from "@/lib/services/applets-admin-service";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const SCOPE = "global" as const;
 
@@ -93,7 +93,7 @@ const TILES: Tile[] = [
     href: "/administration/agents/system-agents/apps",
     label: "Apps",
     description:
-      "Global agent apps published to all users. Distinct from user-published apps.",
+      "Global Applets published to all users. Distinct from user-published apps.",
     icon: AppWindow,
     count: (c) => c.apps,
   },
@@ -113,7 +113,7 @@ const QUICK_ACTIONS = [
     icon: FileText,
   },
   {
-    href: "/agent-apps/build",
+    href: "/applets/build",
     label: "Create App",
     description: "Build a new global app backed by a system agent.",
     icon: AppWindow,
@@ -129,14 +129,14 @@ export default function SystemAgentsDashboardPage() {
   const { shortcuts, categories, contentBlocks, isLoading, refetch } =
     useAgentShortcuts({ scope: SCOPE });
 
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const [appCount, setAppCount] = useState<number | null>(null);
   const [appsLoading, setAppsLoading] = useState(true);
 
   const refreshAppCount = async () => {
     setAppsLoading(true);
     try {
-      const rows = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
+      const rows = await fetchAppletsAdmin({ scope: "global", limit: 500 });
       setAppCount(rows.length);
     } catch {
       setAppCount(null);
@@ -146,9 +146,9 @@ export default function SystemAgentsDashboardPage() {
   };
 
   useEffect(() => {
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
     let active = true;
-    fetchAgentAppsAdmin({ scope: "global", limit: 500 })
+    fetchAppletsAdmin({ scope: "global", limit: 500 })
       .then((rows) => {
         if (active) setAppCount(rows.length);
       })
@@ -175,7 +175,7 @@ export default function SystemAgentsDashboardPage() {
 
   const handleRefresh = () => {
     refetch();
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
     void refreshAppCount();
   };
 

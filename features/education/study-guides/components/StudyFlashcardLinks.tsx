@@ -15,7 +15,7 @@ import { UniversalAssociationPicker, useContainerLinks } from "@ai-matrx/associa
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/features/notes/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChanged: () => void }) {
   const [open, setOpen] = useState(false);

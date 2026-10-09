@@ -56,7 +56,7 @@ import {
   assertGoogleAnalyticsCampaignActive,
   canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export function CollectionStatusPanel({
   site,

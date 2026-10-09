@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import { useCartesiaWithPreferences } from '@/hooks/tts/simple/useCartesiaWithPreferences';
 import {
   Play,

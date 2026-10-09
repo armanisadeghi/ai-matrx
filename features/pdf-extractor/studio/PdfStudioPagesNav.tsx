@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { PdfStudioPagesMeta } from "./PdfStudioPagesMeta";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -44,6 +44,7 @@ export function PdfStudioPagesNav({
         doc={doc}
         pageRowCount={pageRowCount}
         hasPageRows={hasPageRows}
+        pages={pages}
       />
       <div className="px-3 py-1.5 border-b border-border/60 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
         Pages
@@ -82,7 +83,8 @@ export function PdfStudioPagesNav({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium tabular-nums">
-                        Page {p.pageNumber}: {humanizeIdentifier(p.sectionKind ?? "")}
+                        Page {p.pageNumber}
+                        {p.sectionKind ? `: ${humanizeIdentifier(p.sectionKind)}` : ""}
                       </span>
                       {/* {p.sectionKind && (
                         <span className="text-xs text-foreground">

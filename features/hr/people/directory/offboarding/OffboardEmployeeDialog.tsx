@@ -58,7 +58,7 @@ import {
   type HrSeparationInitiator,
   type HrSeparationReasonCategory,
 } from "./types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function today(): string {

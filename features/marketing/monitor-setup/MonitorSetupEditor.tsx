@@ -32,7 +32,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -120,6 +119,7 @@ import {
   opportunityDraftSentence,
 } from "./model";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 const NO_PROOF_SENTENCE =
   "Without a spokesperson or proof on file, pitch-ready stories will be marked 'needs a spokesperson'.";
 
@@ -1499,7 +1499,7 @@ function MonitorSetupEditorBody({
               ).map(([key, label, placeholder]) => (
                 <div key={key}>
                   <p className="text-xs font-medium text-foreground">{label}</p>
-                  <Textarea minHeight={64}
+                  <ProTextarea minHeight={64}
                     value={draft.brief[key]}
                     placeholder={placeholder}
                     onChange={(e) =>

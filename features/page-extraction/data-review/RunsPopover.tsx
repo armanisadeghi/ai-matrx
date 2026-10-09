@@ -21,13 +21,13 @@ import {
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { HistoryTapButton } from "@ai-matrx/tap-target/buttons";
+import { HistoryTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 

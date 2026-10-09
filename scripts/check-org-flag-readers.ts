@@ -73,7 +73,6 @@ export function isExcluded(file: string): boolean {
     // Guards whose refusal lists must spell the retired names to refuse them.
     file === "scripts/check-org-fallback-shapes.ts" ||
     file === "scripts/check-no-default-organization.ts" ||
-    file === "scripts/check-no-default-organization-sql.ts" ||
     // Frozen history (like migrations) and built bundles (regenerated from their packages).
     file.startsWith("scripts/campaign-tests/") ||
     file.startsWith("public/") ||

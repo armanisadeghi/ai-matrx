@@ -16,7 +16,7 @@ import CompactTaskItem from './CompactTaskItem';
 import { ActiveScopeFilterChips } from './TaskScopeFilter';
 import { sortTasks } from '../utils/taskSorting';
 import type { Project, Task, TaskSortConfig, TaskWithProject } from '../types';
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 interface AllTasksViewProps {

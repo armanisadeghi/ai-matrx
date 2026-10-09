@@ -7,8 +7,8 @@ import {
   selectUnsortedReadError,
   selectUnsortedRecordings,
 } from "../../redux/selectors";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { fetchUnsortedRecordingsThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
 import { FullTranscriptDrawer } from "./FullTranscriptDrawer";

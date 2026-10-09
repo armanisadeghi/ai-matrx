@@ -29,6 +29,7 @@
 import { createClient } from "@/utils/supabase/client";
 
 import { ensureKnobSnapshot, invalidateEffectiveKnob, peekEffectiveKnob } from "../effectiveKnobs";
+import { legacyWire } from "./legacyWire";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/client-directives/directiveRegistry", () => ({
@@ -61,7 +62,7 @@ function deferrable(values: unknown[]) {
   };
   jest.mocked(createClient).mockReturnValue({
     rpc,
-    schema: () => ({ rpc }),
+    schema: () => ({ rpc: legacyWire(rpc) }),
   } as unknown as ReturnType<typeof createClient>);
   return {
     land: (index: number) => {

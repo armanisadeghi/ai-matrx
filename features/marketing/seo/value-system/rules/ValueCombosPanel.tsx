@@ -31,8 +31,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers2, ListFilter, Loader2, Plus, Trash2 } from "lucide-react";

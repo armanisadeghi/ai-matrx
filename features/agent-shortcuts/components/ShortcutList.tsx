@@ -45,7 +45,7 @@ import { isValidShortcutContext } from "@ai-matrx/chat/agents/utils/shortcut-con
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export interface ShortcutListProps extends ScopeProps {
   onEdit?: (shortcut: AgentShortcutRecord) => void;

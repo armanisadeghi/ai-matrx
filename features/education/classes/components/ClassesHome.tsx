@@ -8,7 +8,7 @@
 // inline header, content floats behind the shell glass. React Compiler on.
 
 import { useRef, useState, type ReactNode } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User, ArchiveRestore } from "lucide-react";
@@ -33,7 +33,6 @@ import {
   EDUCATION_CLASSES_SURFACE_NAME,
   type NewClassDraftScope,
 } from "@/features/surfaces/manifests/education-classes.manifest";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import {
   parseCreateClassesValue,
   parseDeleteClassesValue,
@@ -215,9 +214,7 @@ export function ClassesHome() {
         run: async (input) => toRef(await createClass(input)),
         nameOf: (input) => input.name,
         refusalFor: (e) =>
-          isOrganizationSelectionCancelled(e)
-            ? "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in."
-            : undefined,
+          undefined,
       },
       update: {
         parse: (value) => parseUpdateClassesValue(value, allOwned),

@@ -27,6 +27,7 @@ function topics(n: number): ResearchTopicListRow[] {
     project_id: "",
     project_name: i % 2 ? "Titanium Marketing Branding" : "",
     archived_at: "",
+    custom_fields: {},
     total_count: 31,
   }));
 }

@@ -19,7 +19,7 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { fetchPlans } from "@/features/admin/limits/service";
 import { AdminUserRef } from "./AdminUserRef";
 import { CreateCouponDialog } from "./CreateCouponDialog";

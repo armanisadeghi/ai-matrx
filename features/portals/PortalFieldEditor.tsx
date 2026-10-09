@@ -15,12 +15,12 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { RELOAD_LABEL, STALE_MOVE_LABEL, VERSION_UNREAD_LABEL } from "@/lib/records/record-versions";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export function PortalFieldEditor({
   slug,
   recordId,
@@ -103,7 +103,7 @@ export function PortalFieldEditor({
       >
         {label}
       </label>
-      <Textarea minHeight={88}
+      <ProTextarea minHeight={88}
         id={`portal-field-${fieldKey}`}
         value={value}
         rows={3}

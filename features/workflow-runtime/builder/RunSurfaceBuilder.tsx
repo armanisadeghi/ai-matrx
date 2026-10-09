@@ -3,7 +3,7 @@
 /**
  * RunSurfaceBuilder — build on the left, watch it on the right.
  *
- * The paradigm is the agent-apps LiveBuilder's, applied to a workflow's run
+ * The paradigm is the applets LiveBuilder's, applied to a workflow's run
  * page: the left column is a short flow of plain-language decisions, the right
  * column mounts the REAL run surface so every decision is visible before it is
  * saved. What it deliberately does NOT have is the thing it replaces — a
@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, MonitorPlay, Save } from "lucide-react";
 
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -42,6 +42,11 @@ import { Segmented } from "./parts";
 import { normalize, type ScreenId } from "./layout-model";
 import { describeSteps } from "./vocabulary";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import {
+  useWorkflowsBasePath,
+  workflowRunHref,
+  workflowsListHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 interface LoadedWorkflow {
   name: string;
@@ -52,6 +57,8 @@ interface LoadedWorkflow {
 type MobileView = "build" | "preview";
 
 export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const isMobile = useIsMobile();
 
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
@@ -188,7 +195,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
       left={
         <>
           <ChevronLeftTapButton
-            href={`/workflows/${definitionId}`}
+            href={workflowRunHref(definitionId, workflowsBase)}
             ariaLabel="Back to this workflow"
           />
           <span className="ml-1 max-w-[130px] truncate text-sm font-medium text-foreground sm:max-w-[260px]">
@@ -234,7 +241,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
           id={definitionId}
           error={loadFailure.error}
           onRetry={() => setReloadNonce((n) => n + 1)}
-          fallbackHref="/workflows/all"
+          fallbackHref={workflowsListHref(workflowsBase)}
           fallbackLabel="Your workflows"
         />
       </div>

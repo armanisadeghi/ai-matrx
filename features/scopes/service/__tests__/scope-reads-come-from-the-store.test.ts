@@ -5,7 +5,7 @@
  * EVERY WEB READ OF THE SCOPE SYSTEM COMES FROM THE RECORD STORE (lane SCOPES-READS-WEB,
  * SCOPES-CUTOVER-PLAN step 2.4).
  *
- * A scope type is a store Table, a scope a Record, a context item a Field, a value a key of the
+ * A scope type is a custom Table, a scope a Record, a context item a Field, a value a key of the
  * Record's document. The old `context.scope_types` / `scopes` / `context_items` /
  * `context_item_values` tables leave for the deprecated schema at the contract (step 4.3); a web read still
  * aimed at them would then fail — or, while they still exist, read an image nobody writes first.

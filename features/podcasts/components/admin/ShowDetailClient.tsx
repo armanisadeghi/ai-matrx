@@ -42,7 +42,7 @@ import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** An episode length reads at a glance: "45 min" / "1h 30m". */

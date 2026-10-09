@@ -45,7 +45,9 @@ export default async function AgentRunRoute({
           currentPath={currentPath}
         />
       </PageHeader>
-      <div className="h-full pt-[var(--shell-header-h)]">
+      {/* No top padding: the conversation column's scroll area already clears
+          the shell header itself (same as the admin run page). */}
+      <div className="h-full">
         {/* An agent is a tool the person USES: the run lands in the person's
             working organization, whatever organization owns the agent — so no
             switch-organization offer here (Arman, 2026-09-26). */}

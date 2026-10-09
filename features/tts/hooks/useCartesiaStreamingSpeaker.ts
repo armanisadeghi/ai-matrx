@@ -38,8 +38,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useCallback, useState } from "react";
-import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import { SinkAwarePlayer } from "@ai-matrx/media/speech";
+import { connectCartesiaTts } from "@ai-matrx/media/speech";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureSurfaceConfig } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import {
@@ -49,7 +49,7 @@ import {
   selectListeningSpeed,
   useListeningVoice,
 } from "@/features/audio/service/listeningConfig";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import { toast } from "@/lib/toast";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
@@ -61,14 +61,14 @@ import {
 import {
   claimPlayback,
   releasePlayback,
-} from "@/features/audio/playback/playbackLock";
+} from "@ai-matrx/media/speech";
 import {
   registerSession,
   updateSession,
   endSession,
   setSessionControls,
 } from "@/features/audio/session/audioSessionRegistry";
-import { enqueuePlayback } from "@/features/audio/playback/playbackQueue";
+import { enqueuePlayback } from "@ai-matrx/media/speech";
 import type { AudioSessionStatus } from "@/features/audio/session/types";
 
 export type SpeakerPhase =

@@ -143,7 +143,7 @@ Rules on top of the shared invariants:
   bold / italic / quotes, strip list + heading markers, straighten quotes, collapse
   spaces + blank lines, trim edges, blank-to-empty) + `clean-cells.ts` (single-value
   run, row×field scan, row patches, review cards). New shared UI at
-  `components/content-cleanup/`. First consumer: user data tables — `UserTableViewer`'s
+  `components/content-cleanup/`. First consumer: user data tables — the old grid's
   hand-rolled `cleanupHtmlText` / `containsCleanableHtml` / `handleBulkHtmlCleanup`
   are **deleted**, and both its per-cell fixer and its bulk control now run this
   engine, so a one-cell fix and a whole-table pass can never disagree about what

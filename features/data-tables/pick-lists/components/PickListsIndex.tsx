@@ -29,7 +29,6 @@ import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
 import { restoreTableIn, tableKernelId } from "@/features/unified-data/hub/doors";
@@ -112,10 +111,6 @@ export function PickListsIndex({ organizationName, userId, dataSource }: PickLis
       if (!id) throw new Error("The list was made but its address did not come back — it is on this page after a refresh.");
       router.push(listAddress(id));
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) {
-        setBusy(false);
-        return;
-      }
       setCreateError(e instanceof Error ? e.message : String(e));
       setBusy(false);
     }

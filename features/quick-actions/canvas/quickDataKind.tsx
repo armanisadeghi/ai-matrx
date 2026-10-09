@@ -20,6 +20,7 @@ export function readQuickDataTableId(data: CanvasJson | undefined | null): strin
 
 export const quickDataKind = defineCanvasKind<CanvasJson>({
   id: QUICK_DATA_KIND,
+  surface: "dom",
   label: TITLE,
   icon: Database,
   load: () => import("./QuickDataCanvasView"),

@@ -55,20 +55,19 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
     listSystemContextItems: jest.fn(),
     listContextValues: jest.fn(),
     getScopeHome: jest.fn(),
+  },
+}));
+
+// SCOPES-WRITE-THROUGH: the writes go through the one store-backed writer (scopeStore).
+jest.mock("@/features/scopes/service/scopeStore", () => ({
+  scopeStore: {
     setContextValue: jest.fn(),
     updateContextItem: jest.fn(),
   },
 }));
 
-// SCOPES-WRITE-THROUGH: the writes moved to the one store-backed writer (scopeStore); its doors are
-// stood in by the same mocked methods, so every assertion below reads the write the thunk made.
-jest.mock("@/features/scopes/service/scopeStore", () => {
-  const { scopesService } = jest.requireMock("@/features/scopes/service/scopesService");
-  return { scopeStore: scopesService };
-});
-
 const svc = jest.mocked(scopesService);
-// The writer is scopeStore (a field edit lives only there since SCOPES-OLD-WRITERS); its mock is the same object.
+// The writer is scopeStore (a field edit lives only there since SCOPES-OLD-WRITERS).
 const writer = jest.mocked(scopeStore);
 
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
@@ -232,9 +231,9 @@ describe("2. the scope-context view is derived, and its writes use the one door"
     expect(svc.listContextValues).toHaveBeenCalledTimes(1);
   });
 
-  it("a person's cell write goes through scopesService.setContextValue as `manual` and lands in the view", async () => {
+  it("a person's cell write goes through scopeStore.setContextValue as `manual` and lands in the view", async () => {
     const { store } = await storeWithView();
-    svc.setContextValue.mockResolvedValue({
+    writer.setContextValue.mockResolvedValue({
       ok: true,
       data: { id: "v2", context_item_id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", scope_id: SCOPE, version: 1, value_text: "(619) 555-0142", source_type: "manual" },
     });
@@ -243,7 +242,7 @@ describe("2. the scope-context view is derived, and its writes use the one door"
       .dispatch(setScopeContextValue({ scope_id: SCOPE, context_item_id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", value_text: "(619) 555-0142" }))
       .unwrap();
 
-    expect(svc.setContextValue).toHaveBeenCalledWith(
+    expect(writer.setContextValue).toHaveBeenCalledWith(
       expect.objectContaining({ scope_id: SCOPE, source_type: "manual", value_text: "(619) 555-0142" }),
     );
     const phone = selectValuesByScope(st(store), SCOPE)?.find((r) => r.key === "phone");
@@ -252,7 +251,7 @@ describe("2. the scope-context view is derived, and its writes use the one door"
 
   it("a refused cell write rejects with the database's sentence", async () => {
     const { store } = await storeWithView();
-    svc.setContextValue.mockResolvedValue({
+    writer.setContextValue.mockResolvedValue({
       ok: false,
       error: { code: "forbidden_org", message: "You can view this client but not edit it." },
     });

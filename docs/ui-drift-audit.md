@@ -175,7 +175,7 @@ The counts below are AST counts of individual class tokens across all overridden
 - Examples:
   - `app/(admin)/administration/database/sql-functions/components/SqlFunctionsContainer.tsx:246` — `h-7 text-xs border-slate-300 dark:border-slate-700`
   - `app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx:648` — `gap-1.5 text-xs text-destructive hover:text-destructive`
-  - `app/(admin)/administration/agents/agent-apps/categories/page.tsx:523` — `h-5 w-5 p-0`
+  - `app/(admin)/administration/applets/categories/page.tsx:523` — `h-5 w-5 p-0`
   - `features/secrets/components/VaultWorkspace.tsx:736`, `features/research/components/tasks/TasksView.tsx:639` — `size="sm"` + `h-7`
 
 **Input** (1,880 sites; **no `size` prop exists**)
@@ -183,7 +183,7 @@ The counts below are AST counts of individual class tokens across all overridden
 - Examples:
   - `features/admin/relationships/components/EntityTypeForm.tsx:183` — `h-8 font-mono`
   - `components/mermaid/outline/OutlineModePane.tsx:740` — `h-7 w-14 text-base sm:text-sm`
-  - `app/(admin)/administration/agents/agent-apps/categories/page.tsx:619` — `bg-muted text-[16px]`
+  - `app/(admin)/administration/applets/categories/page.tsx:619` — `bg-muted text-[16px]`
 - The `text-base` / `text-[16px]` overrides (262) duplicate the global iOS zoom floor in `globals.css`.
 
 **SelectTrigger** (835 triggers)
@@ -389,7 +389,7 @@ These come from real browser measurements: overflow, collapsed columns, nested s
 | features/research | 285/410 | 70% |
 | features/marketing | 1,909/2,834 | 67% |
 | features/tasks | 158/239 | 66% |
-| features/agent-apps | 243/368 | 66% |
+| features/applets | 243/368 | 66% |
 | features/data-tables | 173/261 | 66% |
 | components/matrx | 118/178 | 66% |
 | features/tool-registry | 170/267 | 64% |

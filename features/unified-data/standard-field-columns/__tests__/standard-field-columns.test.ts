@@ -13,6 +13,7 @@ import {
   displayCustomValue,
   keyOfColumnId,
   mergeFieldDefinitions,
+  optionsInDeclaredOrder,
   parseCustomFieldFilters,
   splitCustomFilters,
   type StandardFieldColumn,
@@ -161,5 +162,30 @@ describe("the CRM people list's own predicates carry the custom filter and searc
     expect(calls).toContainEqual({ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside"]] });
     const search = calls.filter((c) => c.method === "or").map((c) => c.args[0] as string);
     expect(search.some((s) => s.includes("custom_fields->>preferred_clinic_location.ilike.%Costa Mesa%"))).toBe(true);
+  });
+});
+
+describe("optionsInDeclaredOrder — the across door's choices in the order the person declared them", () => {
+  it("orders by position, not by jsonb key order, drops retired, unpositioned last", () => {
+    // The live shape of custom.choice_options (2026-10-08): keys come back shortest-first.
+    const answered = {
+      brakes: { label: "Brakes", position: 1 },
+      battery: { label: "Battery", position: 2 },
+      ac_repair: { label: "AC Repair", position: 6 },
+      legacy: { label: "Legacy", retired: true, position: 0 },
+      diagnostic: { label: "Diagnostic", position: 4 },
+      oil_change: { label: "Oil Change", position: 3 },
+      unplaced: { label: "Unplaced", position: null },
+      engine_repair: { label: "Engine Repair", position: 5 },
+    };
+    expect(optionsInDeclaredOrder(answered).map((o) => o.label)).toEqual([
+      "Brakes",
+      "Battery",
+      "Oil Change",
+      "Diagnostic",
+      "Engine Repair",
+      "AC Repair",
+      "Unplaced",
+    ]);
   });
 });

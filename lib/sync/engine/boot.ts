@@ -396,7 +396,7 @@ function scheduleColdBootFallbacks(
  * localStorage rehydrate → IDB rehydrate → cold-boot fetches for the NEW
  * identity. Without it, every `remote.fetch` that keys on `identity.type ===
  * "auth"` stays permanently short-circuited for the tab — which is exactly how
- * a signed-in user with a chosen default organization booted with no active
+ * a signed-in user with a chosen preselected organization booted with no active
  * org and got nudged to pick one.
  *
  * Never rejects.

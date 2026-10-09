@@ -1,10 +1,10 @@
 // features/transcripts/components/TranscriptsSidebar.tsx
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useState, useMemo } from "react";
 import { useTranscripts } from "../hooks/useTranscripts";
 import { Button } from "@/components/ui/button";

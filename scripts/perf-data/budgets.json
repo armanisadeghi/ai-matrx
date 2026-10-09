@@ -1,0 +1,21 @@
+{
+  "_why": "Budgets come from the champions (Linear and Notion feel): a warm page shows rows in under 1 s, a read door answers in under 300 ms at p95. Warn only; nothing here blocks a build.",
+  "doors": {
+    "custom.data_home":                       { "p95_ms": 300 },
+    "custom.read_records_page (first 50)":    { "p95_ms": 300 },
+    "custom.read_records_page (sorted+search)": { "p95_ms": 300 },
+    "custom.views":                           { "p95_ms": 300 },
+    "custom.relation_words_with_icons_many":  { "p95_ms": 300 },
+    "custom.record_aggregate":                { "p95_ms": 300 },
+    "platform.drill_rows":                    { "p95_ms": 300 },
+    "custom.record_update (one record)":      { "p95_ms": 300 },
+    "custom.template_install (first call)":   { "p95_ms": 5000, "_note": "a multi-step build of a whole workspace; Notion template duplication feels like 2-5 s" }
+  },
+  "pages": {
+    "/data":                { "ttfb_ms": 600, "lcp_ms": 2500, "rows_visible_ms": 1000, "store_calls": 4 },
+    "/data/<table> grid":   { "ttfb_ms": 600, "lcp_ms": 2500, "rows_visible_ms": 1000, "store_calls": 6 },
+    "/data/<table> board":  { "ttfb_ms": 600, "lcp_ms": 2500, "rows_visible_ms": 1000, "store_calls": 6 },
+    "record page":          { "ttfb_ms": 600, "lcp_ms": 2500, "rows_visible_ms": 1000, "store_calls": 6 },
+    "space with table":     { "ttfb_ms": 600, "lcp_ms": 2500, "rows_visible_ms": 1000, "store_calls": 6 }
+  }
+}

@@ -71,7 +71,6 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { OutputPreview } from "./bench-output-preview";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { TryItNowPanel } from "./TryItNowPanel";
 import {
   clearMandateBenchSnapshot,
@@ -101,10 +100,10 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   PropertyRow,
-  ConfigurationValueList,
-  FieldHelp,
+  ConfigurationTable,
+  ConfigurationTableRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -195,6 +194,12 @@ function candidateLabel(draft: CandidateDraft): string {
         : "Specific version";
   }
 }
+
+const CASE_INPUT_COLUMNS = [
+  { key: "name", label: "Name" },
+  { key: "value", label: "Value" },
+  { key: "source", label: "Source" },
+];
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -1048,11 +1053,7 @@ export function MandateTestBench({
           <FlaskConical className="h-4 w-4 text-muted-foreground" />
           <div className="min-w-0">
             <div className="flex items-center gap-2 type-title">
-              Compare saved test cases
-              <FieldHelp label="Saved test comparisons">
-                Each case runs through the system default and each selected
-                comparison. Runs execute as the signed-in administrator.
-              </FieldHelp>
+              Saved test cases
             </div>
           </div>
           <Button
@@ -1220,11 +1221,7 @@ export function MandateTestBench({
           </div>
         ) : exemplars.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-3 type-secondary text-muted-foreground">
-            <PropertyRow
-              label="Saved test cases"
-              value="None"
-              help="Save a successful test result, add a case manually, or use examples captured from production runs."
-            />
+            <PropertyRow label="Saved test cases" value="None" />
           </div>
         ) : (
           exemplars.map((exemplar) => {
@@ -1243,7 +1240,7 @@ export function MandateTestBench({
                 <div className="flex flex-wrap items-center gap-2 type-secondary">
                   <span className="font-semibold">{exemplar.label}</span>
                   <span className="text-muted-foreground">
-                    Source: {humanizeIdentifier(exemplar.source) || exemplar.source}
+                    {humanizeIdentifier(exemplar.source) || exemplar.source}
                   </span>
                   <Button
                     icon={<Trash2 className="text-muted-foreground" />}
@@ -1254,42 +1251,33 @@ export function MandateTestBench({
                   />
                 </div>
 
-                <ConfigurationValueList
-                  label={`${exemplar.label} inputs`}
-                  entries={[
-                    ...Object.entries(exemplar.variables ?? {}).map(
-                      ([name, value]) => ({
-                        key: `variable:${name}`,
-                        label: (humanizeIdentifier(name) || name),
-                        value:
-                            value !== null &&
-                            (typeof value === "object" ||
-                              typeof value === "string") ? (
-                              <AnswerValueView
-                                value={value}
-                                density="inline"
-                                emptyText="Empty"
-                              />
-                            ) : (
-                              <span className="whitespace-pre-wrap break-words">
-                                {value === "" ? "Empty" : String(value)}
-                              </span>
-                            ),
-                      }),
-                    ),
-                    {
-                      key: "user-message",
-                      label: "User message",
-                      value: (
-                        <span className="whitespace-pre-wrap break-words">
-                          {exemplar.user_input === ""
-                            ? "Empty"
-                            : (exemplar.user_input ?? "Not set")}
-                        </span>
-                      ),
-                    },
-                  ]}
-                />
+                <ConfigurationTable label={`${exemplar.label} inputs`} columns={CASE_INPUT_COLUMNS}>
+                  {[
+                    ...Object.entries(exemplar.variables ?? {}).map(([name, value]) => ({
+                      key: `variable:${name}`,
+                      name: humanizeIdentifier(name) || name,
+                      text: value === null ? "" : typeof value === "string" ? value : JSON.stringify(value),
+                      source: "Variable",
+                    })),
+                    { key: "user-message", name: "User message", text: exemplar.user_input ?? "", source: "User" },
+                  ].map((row) => (
+                    <ConfigurationTableRow
+                      key={row.key}
+                      columns={CASE_INPUT_COLUMNS}
+                      cells={{
+                        name: row.name,
+                        value: row.text ? (
+                          <span className="block max-w-[48rem] truncate" title={row.text.slice(0, 2000)}>
+                            {row.text}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        ),
+                        source: row.source,
+                      }}
+                    />
+                  ))}
+                </ConfigurationTable>
 
                 <div className="space-y-1.5">
                   <ReferenceRow

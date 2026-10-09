@@ -191,6 +191,28 @@ export interface PdfDocumentRendererProps {
   }) => React.ReactNode;
 
   className?: string;
+
+  /**
+   * `"paged"` (default): one page at a time inside the renderer's own
+   * scrolling viewport, with the zoom / rotate / page toolbar.
+   *
+   * `"continuous"`: EVERY page stacked top to bottom at the width of the
+   * renderer's container (times `continuousZoom`), with NO toolbar and NO
+   * scroll container of its own — the caller's page scrolls, so several
+   * documents can sit in one continuous scroll (e-sign signing, A-F15).
+   * `renderOverlay` is called once per page, sized to that page. Each
+   * page's wrapper carries `data-pdf-page="<n>"` so a caller can scroll a
+   * page into view.
+   */
+  layout?: "paged" | "continuous";
+  /** Continuous only: 1 = fit the container's width; 0.5–3. */
+  continuousZoom?: number;
+  /** Continuous only: never draw a page wider than this (CSS px). */
+  maxPageWidth?: number;
+  /** Continuous only: the document parsed, with this many pages. */
+  onDocumentLoad?: (numPages: number) => void;
+  /** Continuous only: the page's canvas has been drawn. */
+  onPageRendered?: (pageNumber: number) => void;
 }
 
 type ZoomMode =
@@ -256,6 +278,11 @@ export default function PdfDocumentRenderer({
   floatingPageControls = false,
   renderOverlay,
   className,
+  layout = "paged",
+  continuousZoom = 1,
+  maxPageWidth,
+  onDocumentLoad,
+  onPageRendered,
 }: PdfDocumentRendererProps) {
   const [numPages, setNumPages] = useState(0);
   const [internalPage, setInternalPage] = useState(1);
@@ -784,6 +811,22 @@ export default function PdfDocumentRenderer({
     );
   }
 
+  if (layout === "continuous") {
+    return (
+      <ContinuousPages
+        file={documentFile}
+        zoom={continuousZoom}
+        maxPageWidth={maxPageWidth}
+        renderOverlay={renderOverlay}
+        onDocumentLoad={onDocumentLoad}
+        onPageRendered={onPageRendered}
+        onLoadError={setLoadError}
+        className={className}
+        fileName={fileName ?? null}
+      />
+    );
+  }
+
   const pageLabelTitle =
     pageLabel.length > 0
       ? `${pageLabel[0]?.toUpperCase()}${pageLabel.slice(1)}`
@@ -993,7 +1036,7 @@ export default function PdfDocumentRenderer({
               onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
               disabled={pageNumber <= 1}
               aria-label={`Previous ${pageLabel}`}
-              className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+              className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,scale,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -1004,13 +1047,142 @@ export default function PdfDocumentRenderer({
               }
               disabled={pageNumber >= numPages}
               aria-label={`Next ${pageLabel}`}
-              className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+              className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,scale,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           </>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Continuous layout — every page in one column, sized to the container width
+// ---------------------------------------------------------------------------
+
+const CONTINUOUS_GAP_PX = 16;
+
+function ContinuousPages({
+  file,
+  zoom,
+  maxPageWidth,
+  renderOverlay,
+  onDocumentLoad,
+  onPageRendered,
+  onLoadError,
+  className,
+  fileName,
+}: {
+  file: NonNullable<React.ComponentProps<typeof Document>["file"]>;
+  zoom: number;
+  maxPageWidth?: number;
+  renderOverlay?: PdfDocumentRendererProps["renderOverlay"];
+  onDocumentLoad?: (numPages: number) => void;
+  onPageRendered?: (pageNumber: number) => void;
+  onLoadError: (message: string) => void;
+  className?: string;
+  fileName: string | null;
+}) {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  const [numPages, setNumPages] = useState(0);
+  // Natural size of each page (PDF points), so an overlay knows its page's
+  // proportions and a page not yet drawn still holds its height.
+  const [dims, setDims] = useState<
+    Record<number, { width: number; height: number }>
+  >({});
+
+  useLayoutEffect(() => {
+    const node = wrapRef.current;
+    if (!node) return undefined;
+    const measure = () => setWidth(node.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+
+  const clampedZoom = Math.min(3, Math.max(0.5, zoom));
+  const base = maxPageWidth ? Math.min(width, maxPageWidth) : width;
+  const pageWidth = Math.max(0, Math.floor(base * clampedZoom));
+
+  return (
+    <div ref={wrapRef} className={cn("w-full", className)}>
+      {numPages === 0 ? (
+        <div className="h-64">
+          <PdfLoadingState
+            fileName={fileName}
+            bytesLoaded={0}
+            bytesTotal={null}
+          />
+        </div>
+      ) : null}
+      {width > 0 ? (
+        <Document
+          file={file}
+          suspense={false}
+          loading={null}
+          onLoadSuccess={({ numPages: n }) => {
+            setNumPages(n);
+            onDocumentLoad?.(n);
+          }}
+          onLoadError={(err) => onLoadError(err.message)}
+          className="w-full"
+        >
+          {/* Wider than the container when zoomed in: the caller's scroll owns the overflow. */}
+          <div
+            className="flex w-full flex-col items-center"
+            style={{ gap: CONTINUOUS_GAP_PX, minWidth: pageWidth }}
+          >
+            {Array.from({ length: numPages }, (_, i) => {
+              const n = i + 1;
+              const dim = dims[n];
+              const height = dim
+                ? Math.round((pageWidth * dim.height) / dim.width)
+                : undefined;
+              return (
+                <div
+                  key={n}
+                  data-pdf-page={n}
+                  className="relative bg-white shadow-sm"
+                  style={{
+                    width: pageWidth,
+                    minHeight: height ?? Math.round(pageWidth * 1.294),
+                  }}
+                >
+                  <Page
+                    pageNumber={n}
+                    width={pageWidth}
+                    renderAnnotationLayer={false}
+                    renderTextLayer
+                    loading={null}
+                    onLoadSuccess={(page) => {
+                      const w = page.originalWidth ?? page.width;
+                      const h = page.originalHeight ?? page.height;
+                      setDims((prev) =>
+                        prev[n]?.width === w && prev[n]?.height === h
+                          ? prev
+                          : { ...prev, [n]: { width: w, height: h } },
+                      );
+                    }}
+                    onRenderSuccess={() => onPageRendered?.(n)}
+                  />
+                  {renderOverlay && dim
+                    ? renderOverlay({
+                        pageNumber: n,
+                        pageWidthPt: dim.width,
+                        pageHeightPt: dim.height,
+                        rotation: 0,
+                      })
+                    : null}
+                </div>
+              );
+            })}
+          </div>
+        </Document>
+      ) : null}
     </div>
   );
 }

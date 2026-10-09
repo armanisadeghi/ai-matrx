@@ -41,7 +41,6 @@ import {
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   addCrossLink,
   removeManualManager,
@@ -73,7 +72,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu/context-menu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -103,6 +102,7 @@ import { selectSeatJobs } from "@/features/agents/redux/orchestras/selectors";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 type CrossKind = Exclude<RecordedLinkKind, "reports_to">;
 
@@ -154,7 +154,7 @@ export function AgentOrgChartView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const agents = useAppSelector(selectAllAgents);
+  const agents = useAgentsById();
   // "Show only this branch" narrows the chart to one box and what hangs under it.
   const [branchRoot, setBranchRoot] = useState<string | null>(null);
   const effectiveRoots = branchRoot ? [branchRoot] : rootIds?.map((id) => boxId("agent", id));

@@ -50,7 +50,7 @@ import { sourceHref } from "@/features/sources/api/sourcesApi";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { formatElapsed } from "@/lib/progress/elapsed";
 import { sourceKindDef, sourceKindIcon, sourceKindNoun } from "../sourceKinds";
@@ -72,12 +72,10 @@ import {
   resumableInput,
   sourceCardChars,
   sourceCardMeasuredState,
+  ASKING_FOR_ORGANIZATION,
   WAITING_FOR_ORGANIZATION,
 } from "@ai-matrx/agents/sources/runtime";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
+import { retryActiveOrganization } from "@/lib/organizations/retryActiveOrganization";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -215,7 +213,7 @@ export function SourceCard({
       {card.status === "resolving" || card.status === "pending" ? (
         <p className="flex items-center gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {addingWords(card.draft.kind)}
+          {card.draft.notes?.includes(ASKING_FOR_ORGANIZATION) ? "Waiting for you to choose an organization…" : addingWords(card.draft.kind)}
         </p>
       ) : null}
 
@@ -241,7 +239,7 @@ export function SourceCard({
               className="shrink-0"
               onClick={() => void chooseOrganization()}
             >
-              Choose organization
+              Try again
             </Button>
           ) : resumableInput(card.draft) && onTryAgain ? (
             <Button
@@ -288,17 +286,17 @@ export function SourceCard({
             className="shrink-0"
             onClick={() => void chooseOrganization()}
           >
-            Choose organization
+            Try again
           </Button>
         </p>
       ) : null}
 
-      {card.draft.notes?.length ? (
+      {card.draft.notes?.some((n) => n !== ASKING_FOR_ORGANIZATION) ? (
         // One line per note: a server or package sentence can run to a
         // paragraph (verify-6 #27 printed three lines of a refusal). The full
         // sentence sits behind the hint.
         <ul className="space-y-0.5 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          {card.draft.notes.map((n) => (
+          {card.draft.notes.filter((n) => n !== ASKING_FOR_ORGANIZATION).map((n) => (
             <li key={n} className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 flex-1 truncate">{n}</span>
               {n.length > NOTE_LINE_CHARS ? <InfoHint text={n} label="Full note" /> : null}
@@ -392,13 +390,7 @@ export function SourceCard({
  * lets every waiting card go on by itself (`useSourceRecovery`); closing it is
  * "not now" and changes nothing.
  */
-async function chooseOrganization(): Promise<void> {
-  try {
-    await ensureOrganizationContext({ interactive: true });
-  } catch (err) {
-    if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : String(err));
-  }
-}
+const chooseOrganization = retryActiveOrganization;
 
 function isUploadKind(kind: SourceCardModel["draft"]["kind"]): boolean {
   return kind === "upload" || kind === "image" || kind === "audio";

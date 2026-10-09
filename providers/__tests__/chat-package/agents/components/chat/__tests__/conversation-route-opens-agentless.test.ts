@@ -45,8 +45,15 @@ describe("/chat/[conversationId] opens every readable conversation", () => {
     expect(page).toContain("resolveMandateSeed(DEFAULT_NEW_CHAT_MANDATE_KEY)");
     expect(page).not.toContain("resolveMandateServer(");
     expect(page).toContain("<ChatConversationRoom");
-    expect(room).toContain("mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}");
-    expect(room).toContain("useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)");
+    // The HOST names its default chat mandate (`useDefaultChatMandateKey()`); the room passes
+    // that key on, and the package no longer hardcodes the platform's.
+    expect(room).toContain("useDefaultChatMandateKey()");
+    expect(room).toContain("mandateKey={defaultMandateKey}");
+    // 2026-10-07 (Arman): an agent-less room resolves its mandate in the conversation ROW's
+    // own organization, never the active workspace -- so the call carries `{ organizationId }`.
+    expect(room).toMatch(
+      /useMandate\(\s*defaultMandateKey,\s*organizationId \? \{ organizationId \} : \{\}/,
+    );
     expect(room).toContain("<ChatMandateUnavailable");
   });
 

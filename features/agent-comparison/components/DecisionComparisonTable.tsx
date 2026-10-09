@@ -21,6 +21,7 @@ import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useCatalogBoundSelector } from "../shared/useCatalogBoundSelector";
 import { labelConversations } from "@/features/agents/decision-review/service";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import {
@@ -111,7 +112,7 @@ function ColumnAnswerCell({
 }
 
 export function DecisionComparisonTable() {
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   const setId = useAppSelector(selectMountedBattleSetId);
 
   // One subscription to the message map (a stable reference between message

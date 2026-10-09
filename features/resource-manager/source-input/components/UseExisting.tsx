@@ -52,9 +52,9 @@ import {
   type SourceInputEntry,
 } from "@/features/resource-manager/source-input/sourceInputKinds";
 import { MiddleTruncate } from "@/components/official/MiddleTruncate";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
-import { ReadGate, type ReadStatus } from "@/components/read-state/ReadGate";
+import { ReadGate, type ReadStatus } from "@ai-matrx/design-system";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
 

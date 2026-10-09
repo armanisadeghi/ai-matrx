@@ -96,7 +96,9 @@ export const RECORD_TABS: readonly RecordTab[] = [
   { id: "source", label: "Usage", icon: Code2, admin: true },
   { id: "diagnostics", label: "Health", icon: Activity, admin: true },
   { id: "notes", label: "Notes", icon: NotebookPen },
-  { id: "runs", label: "Runs", icon: History, member: true },
+  // Every seat: the admin route opens the try-a-new-intelligence Runs view (platform runs);
+  // member seats keep their own run history (MandateRecordBody).
+  { id: "runs", label: "Runs", icon: History },
   { id: "candidates", label: "Candidates", icon: GitCompareArrows },
 ];
 

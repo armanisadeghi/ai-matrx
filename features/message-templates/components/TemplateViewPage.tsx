@@ -12,6 +12,7 @@
 // example value (`lib/merge-fields.ts`); the raw syntax appears only in the
 // edit form, where "Insert field" writes it for the person.
 
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,7 +31,9 @@ import {
 } from "@/components/merge-field-input/MergeFieldInput";
 import { TemplateRichText } from "@/features/message-templates/components/TemplateRichText";
 import { MergeFieldTextarea } from "@/components/merge-field-input/MergeFieldTextarea";
-import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
+import { AppletTagsInput } from "@/features/applets/components/inputs/AppletTagsInput";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,15 +53,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import {
   createTemplate,
   updateTemplate,
@@ -92,6 +91,7 @@ import {
   previewParts,
 } from "@/features/message-templates/lib/merge-fields";
 import type { JsonObject } from "@/types/json";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const LIST_HREF = "/chat/message-templates";
 
@@ -306,6 +306,8 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
   const bodyRef = useRef<MergeFieldInputHandle>(null);
   const subjectRef = useRef<MergeFieldInputHandle>(null);
   const nameRef = useRef<MergeFieldInputHandle>(null);
+  // The message block: its label row carries THE formatting toolbar, which acts on the field inside.
+  const messageBlockRef = useRef<HTMLDivElement>(null);
 
   const draft: MessageTemplateDraftScope = {
     label: label.trim(),
@@ -442,7 +444,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
       setSaveError(null);
       try {
         const row = await createTemplate({
-          organization_id: await ensureOrganizationContext(),
+          organization_id: await ensureOrgId(null),
           label: draft.label,
           content,
           role: role ?? "user",
@@ -456,11 +458,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
         router.replace(`${LIST_HREF}/${row.id}`);
       } catch (err) {
         // Declining the organization question is an answer, not a failure.
-        if (!isOrganizationSelectionCancelled(err)) {
-          const message = describeWriteFailure(err, { action: "create this template" });
+        const message = describeWriteFailure(err, { action: "create this template" });
           setSaveError(`${message.title} ${message.description ?? ""}`.trim());
           toast.error(message.title);
-        }
       } finally {
         setIsSaving(false);
       }
@@ -679,7 +679,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
         onModeSelect={selectMode}
         modeSwitchOnPhone
         entityStatus={
-          mode === "edit" || isDirty ? (
+          // A new template has no saved state until its first save: an empty
+          // create form says nothing, never "Saved".
+          (mode === "edit" && (!create || created)) || isDirty || isSaving ? (
             // On a phone the pinned Save already says there are changes; the
             // words would only be clipped beside it.
             <span
@@ -784,9 +786,11 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                     {metaLine}
                   </div>
                   {viewFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
-                  <CopyButtons
+                  <RichCopySplit
                     size="sm"
                     label={`Message template ${displayLabel}`}
+                    exportTitle={displayLabel}
+                    viewKey={`message-template-${saved.id}`}
                     human={copyText}
                     json={() => saved}
                     agent={() =>
@@ -802,7 +806,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                   />
                 </div>
                 {managedNotice && <div className="border-b border-border">{managedNotice}</div>}
-                <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+                <ContentView viewKey={`message-template-${saved.id}`} text={copyText}>
+                  <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+                </ContentView>
                 <div className="border-t border-border px-3 py-2">
                   <EntityCustomFields
                     entityToken="message_template"
@@ -891,10 +897,15 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
+                <div ref={messageBlockRef} className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <Label id="template-body-label">Message</Label>
-                    <span className="flex-1" />
+                    {/* On a phone the toolbar takes the row's second line. */}
+                    <FormatButtons
+                      size="xs"
+                      className="order-last w-full sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
+                      resolve={() => formatTargetWithin(messageBlockRef.current)}
+                    />
                     {usedFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
                     <InsertFieldMenu
                       target="message"
@@ -940,7 +951,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                       contextData={{ content: tags.join(", ") }}
                     >
                       <div>
-                        <AgentAppTagsInput
+                        <AppletTagsInput
                           value={tags}
                           onChange={setTags}
                           placeholder="Add a tag and press Enter"

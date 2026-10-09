@@ -38,7 +38,7 @@ import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
 import { selectSpokenText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { speak } from "@/features/audio/service/speak";
+import { speak } from "@ai-matrx/media/speech";
 import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
 import {
   clearVoicePlaybackRequestFor,
@@ -46,8 +46,8 @@ import {
   requestVoicePlayback,
   stopVoicePlayback,
 } from "@/features/transcript-studio/state/voicePlaybackBus";
-import { skipPlayback } from "@/features/audio/playback/playbackQueue";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { skipPlayback } from "@ai-matrx/media/speech";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import { useListeningSettings } from "@/features/audio/service/useListeningSettings";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";

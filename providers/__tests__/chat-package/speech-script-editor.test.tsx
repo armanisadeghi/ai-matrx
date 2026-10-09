@@ -14,7 +14,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import {
   createSandboxTestStore,
   SandboxStoreProvider,
@@ -56,8 +56,9 @@ jest.mock("@/features/podcasts/generator/useVoices", () => ({
 }));
 
 const mockSpeak = jest.fn();
-jest.mock("@/features/audio/service/speak", () => ({
+jest.mock("@ai-matrx/media/speech", () => ({
   speak: (request: unknown) => mockSpeak(request),
+  primeAudioOutput: () => undefined,
 }));
 
 

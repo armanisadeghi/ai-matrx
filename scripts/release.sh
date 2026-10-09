@@ -373,10 +373,55 @@ ship_base_tree() {   # sets SHIP_BASE, SHIP_BASE_TREE, SHIP_PARENTS
         ship_finding "ERROR" "Git" "Local commits conflict with $REMOTE/$BRANCH — shipped $BRANCH without ${SHIP_LOCAL_HEAD:0:9}" "git pull --no-rebase origin main"
     fi
 }
+# THE LOCKFILE GUARD (2026-10-08) — the ONE pre-push stop besides GitHub itself.
+# v0.4.3013 failed on all four Vercel projects: merge 406bfce877 kept two
+# identical '@ai-matrx/records@0.84.4': blocks in pnpm-lock.yaml and pnpm
+# refuses such a file (ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key) before
+# it installs anything. Every lockfile in the release TREE is read here
+# (scripts/check-lockfile-keys.py, offline, ~0.1 s): identical duplicate blocks
+# are dropped inside the release commit itself (WARNING finding); a lockfile
+# that still cannot be read stops the release, because pushing it guarantees a
+# failed build on every project and ships nothing (scripts/checks/FEATURE.md).
+SHIP_LOCKFILE_REPAIRED=""
+ship_guard_lockfiles() {  # $1 = the temporary index holding SHIP_BASE_TREE
+    local idx="$1" checker="$SCRIPT_DIR/check-lockfile-keys.py" path out rc blob
+    if ! command -v python3 >/dev/null 2>&1 || [[ ! -f "$checker" ]]; then
+        ship_finding "WARNING" "Lockfile" "Lockfile guard could not run (python3 or $checker missing) — lockfiles NOT checked" "python3 scripts/check-lockfile-keys.py"
+        return 0
+    fi
+    while IFS= read -r path; do
+        [[ -n "$path" ]] || continue
+        out=$(mktemp)
+        rc=0
+        git cat-file -p "$SHIP_BASE_TREE:$path" \
+            | python3 "$checker" --stdin "$(basename "$path")" --fix >"$out" 2>>"${RELEASE_LOG_FILE:-/dev/null}" || rc=$?
+        case "$rc" in
+            0) ;;
+            3)
+                blob=$(git hash-object -w "$out") || { rm -f "$out"; return 1; }
+                GIT_INDEX_FILE="$idx" git update-index --cacheinfo "100644,$blob,$path" || { rm -f "$out"; return 1; }
+                if [[ "$SHIP_LOCKFILE_REPAIRED" != *"|$path|"* ]]; then
+                    SHIP_LOCKFILE_REPAIRED+="|$path|"
+                    ship_finding "WARNING" "Lockfile" "$path carried identical duplicate blocks (a merge left them) — dropped inside the release commit" "python3 scripts/check-lockfile-keys.py --fix $path"
+                fi
+                ;;
+            1)
+                rm -f "$out"
+                ship_finding "ERROR" "Lockfile" "$path on $REMOTE/$BRANCH cannot be read by a package manager — release NOT pushed" "pnpm install --lockfile-only, commit, release again"
+                fail "$path in the release tree cannot be parsed (duplicate keys that differ, or a conflict marker) — every Vercel build would fail, so nothing was pushed. Run: python3 scripts/check-lockfile-keys.py $path ; then pnpm install --lockfile-only, commit, and release again."
+                ;;
+            *)
+                ship_finding "WARNING" "Lockfile" "Lockfile guard crashed on $path (exit $rc) — not checked" "python3 scripts/check-lockfile-keys.py $path"
+                ;;
+        esac
+        rm -f "$out"
+    done < <(git ls-tree -r --name-only "$SHIP_BASE_TREE" | grep -E '(^|/)(pnpm-lock\.yaml|package-lock\.json)$' || true)
+}
 ship_build_commit() {  # uses CURRENT_VERSION NEW_VERSION RELEASE_COMMIT_MSG; sets RELEASE_SHA
     local idx blob tree
     idx=$(mktemp) && rm -f "$idx"
     GIT_INDEX_FILE="$idx" git read-tree "$SHIP_BASE_TREE" || return 1
+    ship_guard_lockfiles "$idx" || return 1
     blob=$(git cat-file -p "$SHIP_BASE_TREE:$VERSION_FILE" \
         | sed "s/^  \"version\": \"${CURRENT_VERSION}\"/  \"version\": \"${NEW_VERSION}\"/" \
         | git hash-object -w --stdin) || return 1
@@ -694,7 +739,13 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         release_lock_cleanup; RELEASE_LOCK_HELD=false
         exec "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"}
     fi
-    nohup "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"} </dev/null >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 &
+    # Its OWN session, not just nohup: an agent's shell tool kills the whole process group when
+    # its command returns, and nohup only ignores SIGHUP. v0.4.2990 and v0.4.2991 (2026-10-07)
+    # lost their after phase seconds after the push — no checks, no rollout watch — and both
+    # were the releases that shipped a crash. macOS has no setsid(1); python's os.setsid is it.
+    nohup python3 -c 'import os,sys
+if os.fork(): sys.exit(0)
+os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])' "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"} </dev/null >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 &
     disown || true
     exit 0
 fi
@@ -805,13 +856,13 @@ else
         || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
 fi
 [[ -n "$WATCH_PID" ]] && wait "$WATCH_PID"
-# Declared app tables (missing / archived / drifted / unmarked / past a 10k size step): Arman's
+# Declared typed tables (missing / archived / drifted / unmarked / past a 10k size step): Arman's
 # "scream in the app release, never block". It reads the live database, so it runs at most once an
 # hour (the 2026-09-25 release-load rule) and never fails the release; its [WARN] lines print here.
-APP_TABLES_STAMP="${TMPDIR:-/tmp}/matrx-check-app-tables.last"
-if [[ ! -f "$APP_TABLES_STAMP" ]] || [[ -n "$(find "$APP_TABLES_STAMP" -mmin +60 2>/dev/null)" ]]; then
-    touch "$APP_TABLES_STAMP"
-    ( cd "$REPO_ROOT" && pnpm -s check:app-tables 2>&1 | tee -a "${RELEASE_LOG_FILE:-/dev/null}" | grep -E '^\[(WARN|UNMEASURED)' ) || true
+TYPED_TABLES_STAMP="${TMPDIR:-/tmp}/matrx-check-typed-tables.last"
+if [[ ! -f "$TYPED_TABLES_STAMP" ]] || [[ -n "$(find "$TYPED_TABLES_STAMP" -mmin +60 2>/dev/null)" ]]; then
+    touch "$TYPED_TABLES_STAMP"
+    ( cd "$REPO_ROOT" && pnpm -s check:typed-tables 2>&1 | tee -a "${RELEASE_LOG_FILE:-/dev/null}" | grep -E '^\[(WARN|UNMEASURED)' ) || true
 fi
 # The checks' own streaks, then tell a person about anything past the threshold. A
 # crashed runner measured nothing, so its file must not clear a standing streak.

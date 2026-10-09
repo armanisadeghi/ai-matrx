@@ -88,7 +88,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** A must-fix hint shows at most this many characters; the rest is behind InfoHint. */
 const WRITING_HINT_MAX = 60;

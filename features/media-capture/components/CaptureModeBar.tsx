@@ -113,7 +113,7 @@ export function CaptureModeBar({
         aria-label="Upload photos or videos from this device"
         className={cn(
           SEGMENT_BUTTON_CLASS,
-          "text-white/80 transition-[color,transform] hover:text-white active:scale-95 active:text-white",
+          "text-white/80 transition-[color,transform,scale] hover:text-white active:scale-95 active:text-white",
         )}
       >
         <ImagePlus className="h-4 w-4 shrink-0" />

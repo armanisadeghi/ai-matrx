@@ -5,7 +5,7 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Button, Input, SearchField } from "@ai-matrx/design-system/controls";
+import { Button, Input, RegionSkeleton, SearchField } from "@ai-matrx/design-system/controls";
 import {
   ChevronDown,
   ChevronRight,
@@ -18,6 +18,7 @@ import {
   PenLine,
   Plus,
   Search,
+  House,
   SquarePen,
   Star,
   StarOff,
@@ -26,21 +27,20 @@ import {
   Undo2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { toast } from "@/lib/toast";
 
 import type { SpaceId, SpaceSummary } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
-import { useSpaces, type DropPlacement } from "../state/SpacesProvider";
+import { EXPANDED_KEY, useSpaces, type DropPlacement } from "../state/SpacesProvider";
 import { ImportButton } from "./ImportMenu";
 import { TemplateGallery } from "./TemplateGallery";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { signInHref } from "../workspace/LoadAccessState";
 
-const EXPANDED_KEY = "spaces:expanded";
 
 /** The current page's row scrolls into view when it appears (D9), without moving the page itself. */
 function scrollIntoViewOnce(el: HTMLDivElement | null) {
@@ -226,6 +226,11 @@ function TreeRow({
   const spaces = useSpaces();
   const kids = spaces.childrenOf(space.id);
   const isOpen = expanded.has(space.id);
+  const kidsLoaded = spaces.childrenLoaded(space.id);
+  // Notion's lazy tree: an open row reads its sub-pages the first time it is shown open.
+  useEffect(() => {
+    if (isOpen && !kidsLoaded) void spaces.loadChildren(space.id);
+  }, [isOpen, kidsLoaded, space.id, spaces]);
   const [renaming, setRenaming] = useState(false);
   const dropHere = drag.over === space.id && drag.id !== space.id ? drag.placement : null;
 
@@ -298,7 +303,11 @@ function TreeRow({
         </div>
       </RenamePopover>
       {isOpen ? (
-        kids.length ? (
+        !kidsLoaded && !kids.length ? (
+          <div style={{ paddingLeft: 8 + (depth + 1) * 12 }}>
+            <RegionSkeleton shape="rows" count={1} aria-label="Reading pages inside" />
+          </div>
+        ) : kids.length ? (
           kids.map((k) => <TreeRow key={k.id} space={k} depth={depth + 1} expanded={expanded} toggle={toggle} currentId={currentId} drag={drag} setDrag={setDrag} />)
         ) : (
           <div className="spaces-row-empty" style={{ paddingLeft: 8 + (depth + 1) * 12 + 22 }}>
@@ -344,11 +353,11 @@ function TemplatesButton() {
 }
 
 function TrashPopover() {
-  const { archived, restoreSpace, open } = useSpaces();
+  const { archived, restoreSpace, open, loadTrash, trashLoaded } = useSpaces();
   const [q, setQ] = useState("");
   const list = archived.filter((s) => (s.title || "Untitled").toLowerCase().includes(q.trim().toLowerCase()));
   return (
-    <Popover>
+    <Popover onOpenChange={(o) => o && loadTrash()}>
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<Trash2 size={17} />}>
           Trash
@@ -372,7 +381,8 @@ function TrashPopover() {
               />
             </div>
           ))}
-          {list.length === 0 ? <p className="py-6 text-center type-body text-muted-foreground">No pages in Trash</p> : null}
+          {!trashLoaded ? <RegionSkeleton shape="rows" count={4} aria-label="Reading Trash" /> : null}
+          {trashLoaded && list.length === 0 ? <p className="py-6 text-center type-body text-muted-foreground">No pages in Trash</p> : null}
         </div>
       </PopoverContent>
     </Popover>
@@ -382,6 +392,7 @@ function TrashPopover() {
 export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }) {
   const spaces = useSpaces();
   const pathname = usePathname();
+  const router = useRouter();
   const params = useParams<{ spaceId?: string }>();
   const currentId = params?.spaceId ?? null;
   const [expanded, setExpanded] = useState<Set<SpaceId>>(new Set());
@@ -411,6 +422,11 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
     });
   };
 
+  // The open page is not in the lazily read tree yet (opened from a link or search): read its path.
+  useEffect(() => {
+    if (currentId && spaces.ready) spaces.reveal(currentId);
+  }, [currentId, spaces]);
+
   // The tree opens down to the current page (D9).
   const pathKey = currentId ? spaces.pathTo(currentId).map((p) => p.id).join("/") : "";
   useEffect(() => {
@@ -439,6 +455,9 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       <Button variant="quiet" icon={<Search size={17} />} onClick={() => spaces.openQuickFind("jump")}>
         Search
         <span className="ml-auto type-secondary text-muted-foreground">⌘K</span>
+      </Button>
+      <Button variant="quiet" className="justify-start" icon={<House size={17} />} data-active={pathname === "/spaces/home" || undefined} onClick={() => router.push(`/spaces/home${typeof window === "undefined" ? "" : window.location.search}`)}>
+        Home
       </Button>
 
       <div className="spaces-sidebar-scroll">

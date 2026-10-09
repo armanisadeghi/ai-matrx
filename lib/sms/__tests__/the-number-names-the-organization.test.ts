@@ -3,7 +3,7 @@
  * PERSONAL WORKSPACE, AND NOT THE PLATFORM.
  *
  * Ruling (Arman, 2026-09-19): nothing but the org picker and pure UI display
- * may read a default organization, and no write may substitute one — not a
+ * may read a preselected organization, and no write may substitute one — not a
  * cookie, not a preference, not the own organization, not the system
  * organization.
  *

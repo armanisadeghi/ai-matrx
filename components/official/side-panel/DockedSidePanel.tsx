@@ -36,7 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { PANEL_MOTION_CLASS } from "@ai-matrx/design-system";
 import { clampSidePanelWidth, writeSidePanelWidth, type SidePanelSizes } from "./side-panel-width";
 
 /** Arrow-key step, and the Shift+arrow step, in px. */

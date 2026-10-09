@@ -58,26 +58,51 @@ export interface PaintedSize {
   w: number;
   h: number;
   vw: number;
+  /** Measured with the built-in table's "+ New page" row (round 30, 92ab128fa7). Absent on older saves. */
+  nr?: 1;
 }
 /** A stored size counts at a width this close to the one it was painted at. */
-const PAINTED_WIDTH_SLACK = 24;
+export const PAINTED_WIDTH_SLACK = 24;
 const PAINTED_KEEP = 4;
+/** The built-in table's "+ New page" row (`.spaces-db-newrow`, 34px), which older saved sizes do not hold. */
+export const NEW_PAGE_ROW_PX = 34;
 
-export function readPaintedSizes(raw: unknown): PaintedSize[] {
+/**
+ * A block's stored sizes. `withNewRow`: the block draws the built-in table's "+ New page" row, so a size
+ * saved before that row existed (no `nr`) is short by the row and is read back with it added — no save
+ * is needed and nothing shifts when the row lands (round 31).
+ */
+export function readPaintedSizes(raw: unknown, withNewRow = false): PaintedSize[] {
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  return list.flatMap((v: { w?: unknown; h?: unknown; vw?: unknown }) =>
-    v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0 ? [{ w: v.w, h: v.h, vw: typeof v.vw === "number" ? v.vw : 0 }] : [],
+  return list.flatMap((v: { w?: unknown; h?: unknown; vw?: unknown; nr?: unknown }) =>
+    v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0
+      ? [{ w: v.w, h: withNewRow && v.nr !== 1 ? v.h + NEW_PAGE_ROW_PX : v.h, vw: typeof v.vw === "number" ? v.vw : 0, ...(withNewRow || v.nr === 1 ? { nr: 1 as const } : {}) }]
+      : [],
   );
 }
+/** Whether a database block's props draw the built-in table's "+ New page" row (an entity source). */
+export function drawsNewPageRow(props: Record<string, unknown> | undefined): boolean {
+  const source = props?.["source"] as { kind?: unknown } | undefined;
+  return source?.kind === "entity";
+}
+/** A database block's stored sizes, read for what it draws now. */
+export function paintedSizesOf(props: Record<string, unknown> | undefined): PaintedSize[] {
+  return readPaintedSizes(props?.["paintedSize"], drawsNewPageRow(props));
+}
 /** The stored size for a block drawn `width` wide (else, before layout, in a window `vw` wide). */
-export function pickPainted(list: PaintedSize[], at: { width?: number; vw?: number }): PaintedSize | null {
+export function pickPainted(list: PaintedSize[], at: { width?: number; vw?: number }, anyWidth = false): PaintedSize | null {
   const near = (a: number, b: number | undefined) => b !== undefined && Math.abs(a - b) <= PAINTED_WIDTH_SLACK;
-  return list.find((p) => near(p.w, at.width)) ?? (at.width === undefined ? (list.find((p) => near(p.vw, at.vw)) ?? null) : null);
+  const exact = list.find((p) => near(p.w, at.width)) ?? (at.width === undefined ? (list.find((p) => near(p.vw, at.vw)) ?? null) : null);
+  // A chart tile's height does not follow the window (373px, 428px with the "Only showing" chip), so a size
+  // painted at another width still holds it at this one: a cold load at a width nobody saved at moves nothing.
+  return exact ?? (anyWidth ? (list[0] ?? null) : null);
 }
 
-function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize[]): number | undefined {
+function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize[], firstFrame = true, layout?: string): number | undefined {
   // The first frame already holds the stored size (before any effect): the block is never drawn short.
-  const [hold, setHold] = useState<number | undefined>(() => (typeof window === "undefined" ? undefined : pickPainted(painted, { vw: window.innerWidth })?.h));
+  // A block drawn on the server (the static first paint, round 34) holds it by CSS instead — the server
+  // has no window, and the hydrating pass must draw what the server drew.
+  const [hold, setHold] = useState<number | undefined>(() => (!firstFrame || typeof window === "undefined" ? undefined : pickPainted(painted, { vw: window.innerWidth }, layout === "chart")?.h));
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !blockId) return;
@@ -135,7 +160,7 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
       } catch {
         held = 0;
       }
-      if (!(held > 0)) held = pickPainted(painted, { width })?.h ?? 0;
+      if (!(held > 0)) held = pickPainted(painted, { width }, layout === "chart")?.h ?? 0;
       setHold(held > 0 ? held : undefined);
       arm();
     };
@@ -164,9 +189,9 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
 }
 
 /** The block's element. It stops nothing: every press and key reaches the table and React above it. */
-export function DatabaseHost({ children, blockId, layout, painted }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize[] }) {
+export function DatabaseHost({ children, blockId, layout, painted, serverDrawn }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize[]; serverDrawn?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const hold = useHeldHeight(blockId, ref, painted ?? []);
+  const hold = useHeldHeight(blockId, ref, painted ?? [], !serverDrawn, layout);
   return (
     <div
       ref={ref}
@@ -203,8 +228,8 @@ export function withPaintedSizes<B extends { type: string; id: string; props?: R
         // Still holding (style.height set) or loading: not its own size yet.
         const r = el && !el.style.height && !el.querySelector(".spaces-db-loading") ? el.getBoundingClientRect() : null;
         if (r && r.height > 0) {
-          const now: PaintedSize = { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth };
-          const kept = readPaintedSizes(props?.paintedSize).filter((p) => Math.abs(p.w - now.w) > PAINTED_WIDTH_SLACK);
+          const now: PaintedSize = { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth, nr: 1 };
+          const kept = paintedSizesOf(props).filter((p) => Math.abs(p.w - now.w) > PAINTED_WIDTH_SLACK);
           props = { ...props, paintedSize: [now, ...kept].slice(0, PAINTED_KEEP) };
         }
       }

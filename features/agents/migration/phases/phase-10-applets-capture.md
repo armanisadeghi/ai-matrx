@@ -2,7 +2,7 @@
 
 **Status:** design-complete
 **Owner:** _unassigned_
-**Prerequisites:** Phase 1 (context slots foundation), Phase 8 (agent-apps infra)
+**Prerequisites:** Phase 1 (context slots foundation), Phase 8 (applets infra)
 **Unblocks:** Phase 20 (sunset `features/applet/`)
 
 ## The applets vision (summary)
@@ -21,7 +21,7 @@ The agent system already has every primitive needed. The mapping:
 |---|---|
 | `CustomAppConfig` (parent) | An `agent_app` row with `kind = 'composite'` (or equivalent) — a container app whose renderer is a child-switcher, not an AI runner. |
 | `CustomAppletConfig` (child) | A normal `agent_app` row (Phase 8) bound to an agent version. |
-| Child renders AI UI via broker map | Child is the Phase 8 Babel-transformed agent-app component, called through `useAgentLauncher`. |
+| Child renders AI UI via broker map | Child is the Phase 8 Babel-transformed applet component, called through `useAgentLauncher`. |
 | Implicit cross-applet state (never delivered) | **Explicit `ContextSlot[]` declared on the parent**; every child reads/writes the same `conversationId`-scoped `instanceContext`. |
 | `SLUG_TO_COORDINATOR_MAP` routing hack | Gone. Each child's agent declares its own context slots; the parent provides the union. |
 
@@ -54,9 +54,9 @@ The `AgentContextSlotsManager` component is the author-time UI for declaring thi
 **Why a join table, not a self-FK?**
 
 1. Ordering. A self-FK forces `children.sort_index` on the child row, which is parent-global state living on a child that may (theoretically) be reused across parents.
-2. Reuse. A child agent-app may legitimately appear under more than one composite (e.g. a generic `rewriter` under both `email-assistant` and `doc-helper`). A self-FK precludes this without a second table anyway.
+2. Reuse. A child applet may legitimately appear under more than one composite (e.g. a generic `rewriter` under both `email-assistant` and `doc-helper`). A self-FK precludes this without a second table anyway.
 3. Per-link metadata. Slug, label override, and `required_slots` are properties of the **relationship**, not of either endpoint.
-4. Single-agent-app rows stay clean — no `parent_id: null` noise on 99% of rows.
+4. Single-applet rows stay clean — no `parent_id: null` noise on 99% of rows.
 
 ## Runtime model
 
@@ -79,13 +79,13 @@ Best-guess mappings (to validate against a DB dump):
 | Legacy parent/applet(s) | Proposed agent-native shape |
 |---|---|
 | App with `core-info-generator` + `applet-description-generator` | Composite `app-ideator`; children share `app_description: text`, `core_features: json`. |
-| App with `interview-transcript-analyzer` | Single agent-app (no siblings observed); port as a leaf. |
-| App with `lsi-variations` | Single agent-app (no siblings observed); port as a leaf. |
+| App with `interview-transcript-analyzer` | Single applet (no siblings observed); port as a leaf. |
+| App with `lsi-variations` | Single applet (no siblings observed); port as a leaf. |
 | `candidate-write-up-not-used` | Drop on sunset; marked unused in the source. |
 
 **Action before Phase 20:** run `select slug, applet_list from custom_app_configs where is_public = true` and the analogous private query; compare to the list above and fill in gaps. Each live parent becomes one `agent_apps` row with `app_kind = 'composite'`; each live child becomes one `agent_apps` row plus one `agent_app_children` link.
 
-If the DB survey shows **no** active composite usage (only single-applet "parents"), skip the composite migration entirely — every applet becomes a plain Phase 8 agent-app and the parent shell is dropped.
+If the DB survey shows **no** active composite usage (only single-applet "parents"), skip the composite migration entirely — every applet becomes a plain Phase 8 applet and the parent shell is dropped.
 
 ## What NOT to carry over
 
@@ -94,18 +94,18 @@ If the DB survey shows **no** active composite usage (only single-applet "parent
 - `useAppletRecipe` / `useAppletRecipeFastAPI` dual hooks and the `isFastApiPath = useFastApi || fastApiResult.hasAgent` toggle. The agent path is the only path; the toggle is dead code the day Phase 14's dual-run ends.
 - `compiledRecipeId` on `CustomAppletConfig` — recipes are dead (per 2026-04-20 DECISIONS entry). No field needed.
 - `setActiveAppletId` / per-applet Redux activation. Under the new model the active child is a URL concern; Redux tracks the conversation, not the UI position.
-- `AppletLayoutManager` / `ResponseLayoutManager` layout enums (`flat-accordion` et al.) that exist only because legacy applets had no standard result shape. Agent apps have structured outputs already; the composite renderer picks tab/wizard layout via `composite_layout`, not per-child overrides.
+- `AppletLayoutManager` / `ResponseLayoutManager` layout enums (`flat-accordion` et al.) that exist only because legacy applets had no standard result shape. Applets have structured outputs already; the composite renderer picks tab/wizard layout via `composite_layout`, not per-child overrides.
 
 ## Sunset plan for features/applet/
 
-`features/applet/` is deprecated the moment Phase 10 ships the composite agent-app schema and the first migrated composite is live (target: end of Phase 14 dual-run). Actual deletion happens in **Phase 20**, gated on: (a) a 14-day read of `custom_app_configs` / `custom_applet_configs` write traffic showing zero active authoring, (b) every live applet from the DB survey has a mapped agent-app, (c) all `/apps/custom/[slug]/...` routes either 302 to their `/p/[slug]/...` agent-app equivalent or render a hard sunset page. Phase 20's checklist should include dropping `customAppRuntimeSlice`, `customAppletRuntimeSlice`, `AppletRunComponent.tsx`, and the entire `features/applet/` directory in a single commit, plus removing `AppletListItemConfig` and `CustomAppletConfig` types.
+`features/applet/` is deprecated the moment Phase 10 ships the composite applet schema and the first migrated composite is live (target: end of Phase 14 dual-run). Actual deletion happens in **Phase 20**, gated on: (a) a 14-day read of `custom_app_configs` / `custom_applet_configs` write traffic showing zero active authoring, (b) every live applet from the DB survey has a mapped applet, (c) all `/apps/custom/[slug]/...` routes either 302 to their `/p/[slug]/...` applet equivalent or render a hard sunset page. Phase 20's checklist should include dropping `customAppRuntimeSlice`, `customAppletRuntimeSlice`, `AppletRunComponent.tsx`, and the entire `features/applet/` directory in a single commit, plus removing `AppletListItemConfig` and `CustomAppletConfig` types.
 
 ## Open questions for human review
 
-1. **Composite discoverability under `/p/[slug]`.** Phase 8's public renderer assumes `slug → single agent-app`. Should composite apps live at `/p/[parent-slug]` with children at `/p/[parent-slug]/[child-slug]`, or should composites get a distinct prefix (`/c/[slug]`) to keep the Phase 8 renderer's single-app assumption intact?
+1. **Composite discoverability under `/p/[slug]`.** Phase 8's public renderer assumes `slug → single applet`. Should composite apps live at `/p/[parent-slug]` with children at `/p/[parent-slug]/[child-slug]`, or should composites get a distinct prefix (`/c/[slug]`) to keep the Phase 8 renderer's single-app assumption intact?
 2. **Conversation persistence scope.** Does a composite conversation (`instanceContext` + message history) persist per-user forever, or expire (1d / 7d / 30d) like chat conversations do elsewhere? This drives whether we extend `conversations` or build `conversation_context_snapshots`.
 3. **Cross-child slot authoring ergonomics.** When a composite editor publishes, do we auto-validate that every child's required `context_slots` are covered by the parent's `shared_context_slots` (hard error), or only warn and let the author publish a composite with gaps (soft warn)?
-4. **Child reuse across composites.** Do we actively promote a single `rewriter` agent-app being embedded in many composites (argues for the join table as designed), or is each composite expected to fork its children (argues for a simpler self-FK)? The join-table schema is the more permissive choice, but editor UX is easier if children are 1:1.
+4. **Child reuse across composites.** Do we actively promote a single `rewriter` applet being embedded in many composites (argues for the join table as designed), or is each composite expected to fork its children (argues for a simpler self-FK)? The join-table schema is the more permissive choice, but editor UX is easier if children are 1:1.
 5. **Guest (unauthenticated) composite execution.** Phase 8 allows guest rate-limited runs on `/p/[slug]`. For composites, is the `conversationId` still minted for guests (so `draft_text` can flow across children in a single session), or are composites authenticated-only to avoid building a guest context-persistence path?
 
 ## Change log

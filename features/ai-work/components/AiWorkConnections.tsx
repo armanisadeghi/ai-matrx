@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   INITIAL_BRIDGE_CAPABILITY,
   readBridgeCapability,
@@ -43,6 +43,7 @@ import {
 } from "@/features/ai-work/conversations/bindingPlurality";
 import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
+import { CodingProjectOrganizations } from "@/features/ai-work/components/CodingProjectOrganizations";
 
 /**
  * Matrx Local ships the explicit Claude local-history importer (v1.4.22+,
@@ -226,6 +227,8 @@ export function AiWorkConnections() {
           onRefresh={refresh}
           refreshing={loading}
         />
+
+        <CodingProjectOrganizations />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">

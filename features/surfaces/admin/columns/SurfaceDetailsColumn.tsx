@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -27,7 +27,7 @@ import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definiti
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { SurfaceRolesSection } from "./SurfaceRolesSection";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const TYPE_ICONS: Record<

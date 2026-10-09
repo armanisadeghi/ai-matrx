@@ -41,7 +41,7 @@ import {
   ListFilter,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -66,7 +66,7 @@ import {
 } from "@/components/navigation/MetricNavigation";
 import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import {
   Table,
@@ -104,7 +104,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   buildProjectsContextData,
   buildProjectsListContextData,

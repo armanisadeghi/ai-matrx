@@ -1,10 +1,10 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import {
   UntrustedCount,
   countReadState,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {

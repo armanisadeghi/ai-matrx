@@ -17,7 +17,7 @@
 // the server → run again. The browser holds ids only; the answers are the
 // server's.
 
-import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractFirstJson } from "@ai-matrx/content-ir/json-extract";
 import { createClient } from "@/utils/supabase/client";
 import { fetchRunFinalResponse } from "@/features/agents/samples/service";
 import type { TargetKind } from "./types";

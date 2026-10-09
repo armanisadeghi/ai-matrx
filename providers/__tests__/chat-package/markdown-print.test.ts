@@ -22,7 +22,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
         jest.useRealTimers();
     });
 
-    it("downloads message.html and emits the exact fallback toast", () => {
+    it("downloads message.html and emits the exact fallback toast", async () => {
         jest.useFakeTimers();
         jest.spyOn(window, "open").mockReturnValue(null);
 
@@ -46,7 +46,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
                 downloadName = this.download;
             });
 
-        const outcome = printMarkdownContent("# Verified response", "Message");
+        const outcome = await printMarkdownContent("# Verified response", "Message");
 
         expect(outcome).toBe("downloaded");
         expect(clickSpy).toHaveBeenCalledTimes(1);
@@ -79,8 +79,6 @@ describe("printMarkdownContent — diagrams print as pictures (verifier round 2)
             document: { open: () => {}, write: (h: string) => writes.push(h), close: () => {} },
         };
         jest.spyOn(window, "open").mockReturnValue(fakeWin as unknown as Window);
-        // resetModules gave this test a fresh slot registry: register the app's markdown doors into it, as at startup.
-        await import("@/providers/chatMarkdownRegistration");
         const { printMarkdownContent: print } = await import("@ai-matrx/chat/conversation/utils/markdown-print");
         const outcome = await print("# Runbook\n\n```mermaid\nflowchart LR\n  A --> B\n```\n", "Runbook");
         expect(outcome).toBe("opened");

@@ -33,6 +33,7 @@ import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
+import { adminTwinHref } from "@/features/scopes/registry/adminTwins";
 import { useAgentHref } from "@ai-matrx/chat/agents/addressing/useAgentHref";
 import { useTeamHref } from "@/features/organizations/addressing/useTeamHref";
 
@@ -94,7 +95,7 @@ export function useEntityHref(
 
   const info = tryGetEntityInfo(canonicalToken);
   return {
-    href: info?.hrefFor?.(id) ?? null,
+    href: adminTwinHref(canonicalToken, id) ?? info?.hrefFor?.(id) ?? null,
     refusal: null,
     resolving: false,
   };

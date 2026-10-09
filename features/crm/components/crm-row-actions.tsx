@@ -36,12 +36,12 @@ import {
 
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { toast } from "@/lib/toast";
-import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+import { itemMenuConfigToExtraSections } from "@/features/context-menu-v3/item/itemMenuToV3";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import {
   resolveItemMenuConfig,
   type ItemMenuConfigInput,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuEntityRef,

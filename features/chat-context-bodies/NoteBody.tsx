@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from "react";
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Link } from "@ai-matrx/chat/host/navigation";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/design-system";
 import type { ContextItemBodyProps } from "@ai-matrx/chat/agents/components/context-items/types";
 import { ResourceSnapshotView } from "@ai-matrx/chat/agents/components/context-items/bodies/ResourceSnapshotView";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function notesDrawerInstanceId(noteId: string): string {
   return `ctx-drawer:${noteId}`;

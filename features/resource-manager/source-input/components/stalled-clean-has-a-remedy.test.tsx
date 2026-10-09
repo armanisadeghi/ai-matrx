@@ -16,7 +16,7 @@ import { CLEAN_STALL_MS, ProcessingLine } from "./SourceCard";
 jest.mock("@/features/rag/hooks/useStagesStatus", () => ({
   useStagesStatus: () => ({ status: null, reload: jest.fn() }),
 }));
-jest.mock("@/components/errors/ErrorNotice", () => ({ ErrorNotice: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ...jest.requireActual("@ai-matrx/design-system"), ErrorNotice: () => null }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

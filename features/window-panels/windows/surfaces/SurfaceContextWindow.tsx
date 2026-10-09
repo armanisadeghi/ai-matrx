@@ -30,7 +30,7 @@ import type { ResolvedSurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -66,7 +66,7 @@ function hasValue(value: unknown): boolean {
  * Present but empty (`[]`, `{}`, `""`, `null`). A surface emits these on
  * purpose to say "loaded, and there is nothing" — which must never read as
  * "not supplied" (an omitted key, i.e. `undefined`). A nullable value such as
- * "no default organization chosen" is `null` by contract (page-pass rule: not
+ * "no preselected organization chosen" is `null` by contract (page-pass rule: not
  * loaded → omit the key). They COUNT as supplied (the page answered — with
  * nothing), and the footer names how many of the supplied values are empty:
  * "53/63 supplied (32 empty)". Counting them as missing read "21/63 supplied"

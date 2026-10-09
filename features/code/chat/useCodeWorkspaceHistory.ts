@@ -15,7 +15,7 @@ import {
   type ConversationHistoryGrouping,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectCodingPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { makeSelectAgentIdsForFilter } from "@ai-matrx/chat/agents/redux/agent-filter/selectors";
+import { useAgentIdsForFilter } from "@ai-matrx/chat/agents/redux/agent-filter/useAgentIdsForFilter";
 import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 
 export interface UseCodeWorkspaceHistoryResult {
@@ -45,8 +45,7 @@ export function useCodeWorkspaceHistory(): UseCodeWorkspaceHistoryResult {
   const coding = useAppSelector(selectCodingPreferences);
   const filter = coding.agentFilter;
 
-  const selectIds = useMemo(() => makeSelectAgentIdsForFilter(), []);
-  const filteredAgentIds = useAppSelector((state) => selectIds(state, filter));
+  const filteredAgentIds = useAgentIdsForFilter(filter);
 
   const favoriteConversationIds = coding.favoriteConversationIds;
 

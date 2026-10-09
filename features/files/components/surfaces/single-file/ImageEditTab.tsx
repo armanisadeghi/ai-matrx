@@ -53,7 +53,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type { SaveResult } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(

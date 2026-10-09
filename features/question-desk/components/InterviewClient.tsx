@@ -70,6 +70,8 @@ import { QuestionDeskRail } from "./QuestionDeskRail";
 import { QuestionScreen } from "./QuestionScreen";
 import { ReviewTriage } from "./ReviewTriage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
+import { identityBannerText } from "../identityBanner";
 
 export interface InterviewClientProps {
   interviewId: string;
@@ -227,6 +229,7 @@ export function InterviewClient({
     userId !== interview.respondent_user_id &&
     // component-created-by-ok: the interview row is an entity — its created_by is the person who opened the interview
     userId !== interview.created_by;
+  const adminSeat = browserAdminLaneOpen();
   const identitySentence = interview
     ? `Signed in as ${userEmail ?? userId ?? "nobody"}; this interview is addressed to ${respondentEmail ?? interview.respondent_user_id}.`
     : "";
@@ -659,11 +662,7 @@ export function InterviewClient({
             className="mb-4 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 font-mono text-[11.5px] text-foreground"
           >
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
-            <span>
-              {identitySentence} Answers from this account are refused by the
-              database unless it holds an editor grant on this interview — switch
-              accounts before answering.
-            </span>
+            <span>{identityBannerText(identitySentence, adminSeat)}</span>
             <ErrorAlchemyMenu />
           </p>
         ) : null}

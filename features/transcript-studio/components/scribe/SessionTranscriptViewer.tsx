@@ -22,7 +22,7 @@ import {
   fetchCleanedSegmentsThunk,
   fetchRawSegmentsThunk,
 } from "../../redux/thunks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { WatchRunButton } from "../columns/WatchRunButton";
 
 export type SessionTranscriptMode = "raw" | "clean";

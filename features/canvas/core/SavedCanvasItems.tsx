@@ -1,10 +1,10 @@
 "use client";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import React, { useEffect, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { Archive, Search, RefreshCw } from "lucide-react";

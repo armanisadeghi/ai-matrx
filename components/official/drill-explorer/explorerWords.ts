@@ -73,3 +73,14 @@ export function measureFactWords(label: string, unit: string | null | undefined,
   if (!unit || unit === "count" || unit === "tokens" || unit === "characters") return `${formatted} ${label.toLowerCase()}`;
   return `${label} ${formatted}`;
 }
+
+/**
+ * A FAILED ASK IN WORDS (lane DRILL-PRIMITIVE-2): the database's own text never reaches the screen.
+ * A timeout says so (the person can narrow the window); anything else is the caller's plain sentence.
+ * The raw text stays with the error for the copy-for-AI details.
+ */
+export function drillFailureWords(raw: string | null | undefined, fallback: string): string {
+  const text = raw ?? "";
+  if (/statement timeout|canceling statement|timed? ?out|57014|deadline/i.test(text)) return "Took too long to count. Narrow the window.";
+  return fallback;
+}

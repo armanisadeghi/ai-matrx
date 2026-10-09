@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { OVERVIEW_CARDS } from "../../constants";
 import type { AgentConnectionsSection } from "../../types";
-import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectMcpCatalog } from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
 import { selectSkillsCount } from "@/features/skills/redux/skillsSelectors";
 import {
@@ -16,13 +15,14 @@ import {
 import { useAgentConnectionsNav } from "../AgentConnectionsNavContext";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 export function OverviewSection() {
   const { navigate } = useAgentConnectionsNav();
   const [prompt, setPrompt] = useState("");
   const [search, setSearch] = useState("");
 
-  const agentsCount = useAppSelector(selectLiveAgents).length;
+  const agentsCount = useCatalogAgents().length;
   const mcpCount = useAppSelector(selectMcpCatalog).length;
   const skillsCount = useAppSelector(selectSkillsCount);
   const renderBlocksCount = useAppSelector(selectRenderDefinitionsCount);

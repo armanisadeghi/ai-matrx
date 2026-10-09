@@ -218,8 +218,11 @@ const config: Config = {
     // components/ui/separator.tsx — which is the whole block-dispatch tree.
     // Packages that DO declare `main` (content-ir, content-ir-react) resolve
     // on their own to the CJS build and are deliberately not listed.
-    "^@ai-matrx/(design-system|agents)$":
-      "<rootDir>/node_modules/@ai-matrx/$1/dist/index.js",
+    "^@ai-matrx/design-system$":
+      "<rootDir>/node_modules/@ai-matrx/design-system/dist/index.js",
+    // @ai-matrx/agents (0.54+) builds its root as CJS only (dist/index.cjs, no index.js).
+    "^@ai-matrx/agents$":
+      "<rootDir>/node_modules/@ai-matrx/agents/dist/index.cjs",
     "^@/(.*)$": "<rootDir>/$1",
   },
   // Transform ESM-only `uuid` instead of ignoring it. The lookahead must

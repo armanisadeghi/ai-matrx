@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ---------------------------------------------------------------------------
 // Component

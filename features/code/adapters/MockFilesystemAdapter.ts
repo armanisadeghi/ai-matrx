@@ -27,7 +27,7 @@ const MOCK_PROJECT: Record<string, MockNode> = {
       `   show that sandbox's filesystem and the editor will edit real\n` +
       `   files inside it.\n\n` +
       `2. Or open the **Code Library** view (default) to browse code you\n` +
-      `   already saved (your saved files, prompt apps, agent apps, and\n` +
+      `   already saved (your saved files, prompt apps, Applets, and\n` +
       `   tool UI components).\n`,
   },
 };

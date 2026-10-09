@@ -16,10 +16,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -27,7 +27,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Network, PanelRight, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { removeAgentFromOrchestra, reorderOrchestraMembers } from "@/features/agents/redux/orchestras/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -38,6 +37,7 @@ import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 import type { OrchestraMember } from "../types";
 import { DragCursorMonitor } from "@ai-matrx/design-system";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 // The hub tile — the Grid twin of the canvas ConductorNode. NOT a member and
 // NOT sortable: it renders above the sortable list, outside the DndContext.
@@ -55,7 +55,7 @@ function ConductorTile({
   memberCount: number;
   onOpen: () => void;
 }) {
-  const agent = useAppSelector((s) => selectAgentById(s, conductorId));
+  const agent = useAgentView(conductorId);
   const a = accentClasses(accent);
   return (
     <div
@@ -197,8 +197,8 @@ export function OrchestraMemberGrid({
 }) {
   const dispatch = useAppDispatch();
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
 
   const onDragEnd = (e: DragEndEvent) => {

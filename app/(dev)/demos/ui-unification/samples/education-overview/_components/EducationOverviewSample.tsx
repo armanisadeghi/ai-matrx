@@ -54,7 +54,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -224,7 +224,7 @@ function StartHereSection() {
   return (
     <Section id="start" title="Start here">
       <Link
-        href="/education/start"
+        href="/education/kits/new"
         className="group flex cursor-pointer items-center gap-3 rounded-lg border border-primary/30 bg-gradient-to-r from-primary/[0.08] to-transparent py-2 pl-3 pr-[9px] transition-colors hover:border-primary/60"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
@@ -399,7 +399,7 @@ function KitsSection({ snapshot }: { snapshot: EducationSnapshot }) {
       title="Your study kits"
       meta={<span>{snapshot.kits.total}</span>}
       actions={
-        <Button asChild variant="quiet"><Link href="/education/start">
+        <Button asChild variant="quiet"><Link href="/education/kits/new">
           <Plus aria-hidden /> New kit
         </Link></Button>
       }
@@ -692,7 +692,7 @@ export function EducationOverviewSample() {
                       <Button asChild variant="outline"><Link href="/education/library">
                         <Library aria-hidden /> Library
                       </Link></Button>
-                      <Button asChild variant="primary"><Link href="/education/start">
+                      <Button asChild variant="primary"><Link href="/education/kits/new">
                         <Plus aria-hidden /> Create kit
                       </Link></Button>
                     </ControlRow>

@@ -141,6 +141,10 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
   const [advancing, setAdvancing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const holeRef = useRef<Rect | null>(null);
+  // The card only glides once it has been placed at a real target; the first
+  // placement is instant (no centre-to-target slide).
+  const everPlacedRef = useRef(false);
+  const [settled, setSettled] = useState(false);
 
   const step = tutorial.steps[index];
   const isLast = index === tutorial.steps.length - 1;
@@ -159,7 +163,8 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
     let el: HTMLElement | null = null;
     const started = performance.now();
     setMissing(false);
-    setHole(null);
+    // Keep the previous hole on screen until the new target is measured; only
+    // the ref resets, so the new target still gets scrolled into view.
     holeRef.current = null;
 
     const measure = () => {
@@ -185,6 +190,10 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
       if (!sameRect(holeRef.current, nextRect)) {
         holeRef.current = nextRect;
         setHole(nextRect);
+        if (!everPlacedRef.current) {
+          everPlacedRef.current = true;
+          raf = requestAnimationFrame(() => setSettled(true));
+        }
       }
       raf = requestAnimationFrame(measure);
     };
@@ -240,7 +249,7 @@ export function TutorialSpotlight({ tutorial, onClose }: TutorialSpotlightProps)
 
   const showHole = !finished && hole !== null && !missing;
   const cardPos = placeCard(showHole ? hole : null, cardH);
-  const motion = reduced ? "" : "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]";
+  const motion = reduced || !settled ? "" : "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]";
   const ActionIcon = step?.action === "copy" ? Copy : MousePointerClick;
 
   return createPortal(

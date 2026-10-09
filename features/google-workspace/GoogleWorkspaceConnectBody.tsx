@@ -69,7 +69,7 @@ import type {
 } from "@/features/files/storage-sources/types";
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SelectedFormResponsesReview } from "@/features/google-workspace/forms/SelectedFormResponsesReview";
 
 export interface GoogleWorkspaceConnectBodyProps {

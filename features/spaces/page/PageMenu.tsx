@@ -5,12 +5,14 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Switch } from "@ai-matrx/design-system/controls";
-import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
+import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, PenLine, Trash2, Type, Undo2 } from "lucide-react";
+import { setSuggesting, useSuggesting } from "../editor/suggest";
 import { useState, type ReactNode } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import type { SpaceDoc } from "../contract";
+import { formatCount } from "@ai-matrx/kit/format";
 
 type Settings = SpaceDoc["settings"];
 
@@ -57,8 +59,11 @@ export function PageMenu({
   onAskAiChange,
   isTemplate,
   onTemplate,
+  onOpen,
   updatedLabel,
   counts,
+  suggestPageId,
+  contentOnly,
 }: {
   settings: Settings;
   onSettings: (patch: Partial<Settings>) => void;
@@ -75,17 +80,30 @@ export function PageMenu({
   /** I3 — the page carries the template label (null = not known yet). */
   isTemplate: boolean | null;
   onTemplate: (on: boolean) => void;
+  /** The menu opened (round 40: the template label is read then, never on page load). */
+  onOpen?: () => void;
   updatedLabel: string;
   /** A14 — the page's words and characters, Notion's "Word count" line. */
   counts: { words: number; characters: number };
+  /** N3 — the page whose "Suggest edits" switch this menu shows (absent: the person cannot edit). */
+  suggestPageId?: string;
+  /** "Can edit content": page settings, duplicate, move and trash are not theirs (the database refuses them). */
+  contentOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const suggesting = useSuggesting(suggestPageId ?? null);
   const act = (fn: () => void) => () => {
     setOpen(false);
     fn();
   };
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen?.();
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<MoreHorizontal size={18} />} aria-label="Page options" />
       </PopoverTrigger>
@@ -109,13 +127,16 @@ export function PageMenu({
           onClick={() => onSettings({ fullWidth: !settings.fullWidth })}
           end={<Switch checked={settings.fullWidth} tabIndex={-1} aria-hidden />}
         />
-        <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />
+        {contentOnly ? null : <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />}
+        {suggestPageId ? (
+          <Row icon={<PenLine size={16} />} label="Suggest edits" onClick={() => setSuggesting(suggestPageId, !suggesting)} end={<Switch checked={suggesting} tabIndex={-1} aria-hidden />} />
+        ) : null}
         <div className="my-1 border-t border-border" />
         {onAskAiChange ? <Row icon={<AGENT_ICON size={16} />} label="Ask AI to change this page" onClick={act(onAskAiChange)} /> : null}
         <Row icon={<Link size={16} />} label="Copy link" onClick={act(onCopyLink)} />
         <Row icon={<Copy size={16} />} label="Duplicate" onClick={act(onDuplicate)} />
-        <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />
-        <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />
+        {contentOnly ? null : <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />}
+        {contentOnly ? null : <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />}
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
         <Row icon={<History size={16} />} label="Page history" onClick={act(onHistory)} />
@@ -127,8 +148,8 @@ export function PageMenu({
           end={<Switch checked={Boolean(isTemplate)} disabled={isTemplate === null} tabIndex={-1} aria-hidden />}
         />
         <Row icon={<FileUp size={16} />} label="Export" onClick={act(onExport)} />
-        <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${counts.characters.toLocaleString()} characters`}>
-          Word count: {counts.words.toLocaleString()} {counts.words === 1 ? "word" : "words"}
+        <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${formatCount(counts.characters)} characters`}>
+          Word count: {formatCount(counts.words)} {counts.words === 1 ? "word" : "words"}
         </p>
         <p className="px-2 pb-1.5 pt-0.5 type-secondary text-muted-foreground">{updatedLabel}</p>
       </PopoverContent>

@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/lib/toast";
 import {
@@ -35,6 +34,7 @@ import {
 } from "@/features/meet/lib/zoned-time";
 import type { OccurrenceRef } from "@/features/meet/components/manage/MeetingFormDialog";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export function CancelMeetingDialog({
   open,
   onOpenChange,
@@ -134,7 +134,7 @@ export function CancelMeetingDialog({
               </label>
             </RadioGroup>
           ) : null}
-          <Textarea
+          <ProTextarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (optional, guests see it)"

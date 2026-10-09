@@ -2,7 +2,15 @@
 // reload the tile reopened it and showed "Couldn't load this conversation" forever. The old
 // behaviour (save every new id at once) fails the first two cases.
 
-import { agentFormSource, agentFormSourceToSave, chatSource, chatSourceToSave } from "../work-sources";
+import {
+  DEFAULT_CHAT_TITLE,
+  agentFormSource,
+  agentFormSourceToSave,
+  chatSource,
+  chatSourceToSave,
+  chatTitleToSave,
+  removedChatResetsTile,
+} from "../work-sources";
 
 const ID = "7b1c4a52-1f0e-4c43-9a61-0d2f9c3e8a10";
 
@@ -76,5 +84,29 @@ describe("agentFormSourceToSave", () => {
     const next = agentFormSourceToSave({ ...base, savedId: "old-run", conversationId: ID, serverHasIt: true });
     expect(next).toEqual(agentFormSource(ID, "agent-1", "cards"));
     expect(next?.entity).toBe("agent-form");
+  });
+});
+
+describe("chatTitleToSave", () => {
+  it("resets an unsent chat to the default title (New conversation after another chat)", () => {
+    expect(chatTitleToSave({ serverHasIt: false, conversationTitle: null })).toBe(DEFAULT_CHAT_TITLE);
+    expect(chatTitleToSave({ serverHasIt: false, conversationTitle: "Planet Fact" })).toBe(DEFAULT_CHAT_TITLE);
+  });
+  it("adopts the server's title once the server has the conversation", () => {
+    expect(chatTitleToSave({ serverHasIt: true, conversationTitle: "Planet Fact" })).toBe("Planet Fact");
+  });
+  it("leaves the title alone when the server has not titled it yet", () => {
+    expect(chatTitleToSave({ serverHasIt: true, conversationTitle: null })).toBeUndefined();
+    expect(chatTitleToSave({ serverHasIt: true, conversationTitle: "  " })).toBeUndefined();
+  });
+});
+
+describe("removedChatResetsTile", () => {
+  it("resets the tile when the removed conversation is the one shown", () => {
+    expect(removedChatResetsTile("c1", "c1")).toBe(true);
+  });
+  it("leaves the tile alone for another row or no conversation", () => {
+    expect(removedChatResetsTile("c1", "c2")).toBe(false);
+    expect(removedChatResetsTile("c1", null)).toBe(false);
   });
 });

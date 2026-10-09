@@ -72,9 +72,25 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { emitItem, endItems } from "./checks/items.mjs";
+import {
+  clearPackageResolution,
+  findInstalled,
+  isWorkspaceSource,
+  pickRuntime,
+  pickTypes,
+  resolveRelativeJs,
+  resolveSubpath,
+  splitSpecifier,
+} from "./lib/matrx-package-resolve.mjs";
+
+export { findInstalled, isWorkspaceSource, resolveSubpath, splitSpecifier };
 
 const require = createRequire(import.meta.url);
-const ts = require("typescript");
+// TypeScript 7 (the native compiler) ships no JS API; a repo on it installs the 6.x API beside it
+// as "typescript-js-api" (npm:typescript@^6), matrx-local's desktop/ for one.
+const ts = [() => require("typescript"), () => require("typescript-js-api")]
+  .map((load) => { try { return load(); } catch { return null; } })
+  .find((m) => typeof m?.createProgram === "function") ?? require("typescript");
 
 const SCOPE = "@ai-matrx/";
 const SOURCE_EXT = /\.(ts|tsx|mts|cts|js|jsx|mjs)$/;
@@ -107,13 +123,6 @@ function listFiles(root) {
   }
 }
 
-function splitSpecifier(spec) {
-  const parts = spec.split("/");
-  const name = `${parts[0]}/${parts[1]}`;
-  const sub = parts.length > 2 ? `./${parts.slice(2).join("/")}` : ".";
-  return { name, sub };
-}
-
 /** Every @ai-matrx named import/re-export in one file. */
 export function collectImports(file, text) {
   const kind = /\.tsx$|\.jsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -133,119 +142,37 @@ export function collectImports(file, text) {
       }
     } else if (ts.isExportDeclaration(stmt) && stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
       for (const el of stmt.exportClause.elements) push((el.propertyName ?? el.name).text, stmt.isTypeOnly || el.isTypeOnly);
+    } else if (ts.isExportDeclaration(stmt) && (!stmt.exportClause || ts.isNamespaceExport(stmt.exportClause))) {
+      // `export * from "@ai-matrx/x/sub"` — a local shim (features/content-ir/kinds/
+      // kind-markdown-utils.ts, v0.4.2989). The SUBPATH must still exist; names are judged where
+      // they are imported.
+      push(WHOLE_MODULE, stmt.isTypeOnly);
     }
   }
+  // `import("@ai-matrx/…")` and `require("@ai-matrx/…")` anywhere in the file: the bundler resolves
+  // them exactly like a static import. v0.4.2984/2985 died on
+  // `require("@ai-matrx/chat/ui/markdown-stream/MarkdownStream")` after chat moved that file.
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.arguments.length >= 1 &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      node.arguments[0].text.startsWith(SCOPE) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require"))
+    ) {
+      const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+      found.push({ specifier: node.arguments[0].text, name: WHOLE_MODULE, line, typeOnly: false });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
   return found;
 }
 
+/** The "name" of a whole-module reference (export *, import(), require()): only its subpath is judged. */
+export const WHOLE_MODULE = "*";
+
 // ── installed package resolution ─────────────────────────────────────────────
-
-const pkgDirCache = new Map();
-/** The installed copy Node would resolve from `fromDir`, or null. */
-function findInstalled(fromDir, name, root) {
-  const key = `${fromDir}\0${name}`;
-  if (pkgDirCache.has(key)) return pkgDirCache.get(key);
-  let dir = fromDir;
-  let result = null;
-  for (;;) {
-    const candidate = join(dir, "node_modules", name);
-    if (existsSync(join(candidate, "package.json"))) {
-      result = candidate;
-      break;
-    }
-    const parent = dirname(dir);
-    if (parent === dir || !(dir + sep).startsWith(dirname(root) + sep)) break;
-    dir = parent;
-  }
-  pkgDirCache.set(key, result);
-  return result;
-}
-
-function isWorkspaceSource(pkgDir) {
-  try {
-    if (!lstatSync(pkgDir).isSymbolicLink()) return false;
-    return !realpathSync(pkgDir).split(sep).includes("node_modules");
-  } catch {
-    return false;
-  }
-}
-
-const TYPE_CONDITIONS = ["types", "import", "module", "default", "require", "node", "browser"];
-
-/** Resolve an exports target (string | conditions | array) to a types file. */
-function pickTypes(target) {
-  if (typeof target === "string") return target;
-  if (Array.isArray(target)) {
-    for (const t of target) {
-      const r = pickTypes(t);
-      if (r) return r;
-    }
-    return null;
-  }
-  if (target && typeof target === "object") {
-    for (const cond of TYPE_CONDITIONS) {
-      if (cond in target) {
-        const r = pickTypes(target[cond]);
-        if (r) return r;
-      }
-    }
-  }
-  return null;
-}
-
-function toDeclaration(pkgDir, file) {
-  const abs = join(pkgDir, file);
-  if (/\.d\.[cm]?ts$/.test(abs) || /\.[cm]?tsx?$/.test(abs) || /\.json$/.test(abs)) {
-    return existsSync(abs) ? abs : null;
-  }
-  if (!/\.[cm]?jsx?$/.test(abs)) return null;
-  for (const candidate of [
-    abs.replace(/\.m?js$/, ".d.ts"),
-    abs.replace(/\.cjs$/, ".d.cts"),
-    abs.replace(/\.mjs$/, ".d.mts"),
-  ]) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
-}
-
-// The RUNTIME side. A .d.ts can promise a value the shipped JavaScript does not carry (a
-// hand-written declaration, a bundler that dropped a re-export); the bundler then fails on the
-// JS, not the types. So every VALUE import is also looked up in the runtime entry's own exports.
-const RUNTIME_CONDITIONS = ["import", "module", "browser", "node", "default", "require"];
-
-/** Resolve an exports target to its runtime JS file (never the `types` condition). */
-function pickRuntime(target) {
-  if (typeof target === "string") return /\.d\.[cm]?ts$/.test(target) ? null : target;
-  if (Array.isArray(target)) {
-    for (const t of target) {
-      const r = pickRuntime(t);
-      if (r) return r;
-    }
-    return null;
-  }
-  if (target && typeof target === "object") {
-    for (const cond of RUNTIME_CONDITIONS) {
-      if (cond in target) {
-        const r = pickRuntime(target[cond]);
-        if (r) return r;
-      }
-    }
-  }
-  return null;
-}
-
-function resolveRelativeJs(fromFile, spec) {
-  const base = resolve(dirname(fromFile), spec);
-  for (const c of [base, `${base}.js`, `${base}.mjs`, join(base, "index.js"), join(base, "index.mjs")]) {
-    try {
-      if (existsSync(c) && !lstatSync(c).isDirectory()) return c;
-    } catch {
-      /* next candidate */
-    }
-  }
-  return null;
-}
 
 const runtimeCache = new Map();
 /**
@@ -304,40 +231,11 @@ export function runtimeExportsOf(file, stack = new Set()) {
   return result;
 }
 
-/** { entry } | { missingSubpath: true } | { unresolved: reason } */
-function resolveSubpath(pkgDir, manifest, sub) {
-  const exp = manifest.exports;
-  if (exp === undefined) {
-    if (sub !== ".") return { unresolved: "no exports map" };
-    const t = manifest.types ?? manifest.typings ?? manifest.module ?? manifest.main ?? "index.js";
-    const entry = toDeclaration(pkgDir, t);
-    return entry ? { entry } : { unresolved: `no declaration for ${t}` };
-  }
-  let map = exp;
-  if (typeof exp === "string" || Array.isArray(exp) || !Object.keys(exp).some((k) => k.startsWith("."))) {
-    map = { ".": exp };
-  }
-  let target = map[sub];
-  if (target === undefined) {
-    for (const [key, value] of Object.entries(map)) {
-      const star = key.indexOf("*");
-      if (star === -1) continue;
-      const pre = key.slice(0, star);
-      const post = key.slice(star + 1);
-      if (sub.startsWith(pre) && sub.endsWith(post) && sub.length >= pre.length + post.length) {
-        const mid = sub.slice(pre.length, sub.length - post.length);
-        target = JSON.parse(JSON.stringify(value).split("*").join(mid));
-        break;
-      }
-    }
-  }
-  if (target === undefined || target === null) return { missingSubpath: true };
-  const file = pickTypes(target);
-  if (!file) return { unresolved: "exports target has no usable condition" };
-  const entry = toDeclaration(pkgDir, file);
-  const runtimeRel = pickRuntime(target);
-  const runtime = runtimeRel && /\.m?js$/.test(runtimeRel) && existsSync(join(pkgDir, runtimeRel)) ? join(pkgDir, runtimeRel) : null;
-  return entry ? { entry, runtime } : { unresolved: `no declaration beside ${file}` };
+/** Forget every resolution: a long-lived caller (the dev-server rescue loader) calls this when an
+ * install changed node_modules under it, so it never judges against the bytes of the old version. */
+export function resetCaches() {
+  clearPackageResolution();
+  runtimeCache.clear();
 }
 
 // ── the run ──────────────────────────────────────────────────────────────────
@@ -384,6 +282,10 @@ export function audit(root, { only = null } = {}) {
       const rel = relative(root, file);
       if (res.missingSubpath) {
         findings.push({ file: rel, line: imp.line, pkg, version: manifest.version, sub, name: imp.name, why: "subpath" });
+        continue;
+      }
+      if (res.missingFile) {
+        findings.push({ file: rel, line: imp.line, pkg, version: manifest.version, sub, name: imp.name, why: "subpath-file", target: res.missingFile });
         continue;
       }
       if (res.unresolved) {
@@ -457,6 +359,7 @@ export function audit(root, { only = null } = {}) {
     valuesOf.set(entry, values);
   }
   for (const imp of imports) {
+    if (imp.name === WHOLE_MODULE) continue;
     const names = exportsOf.get(imp.entry);
     if (!names || names.has("*export=*")) continue;
     if (!names.has(imp.name)) {
@@ -517,6 +420,30 @@ function exportsHasSubpath(exportsField, sub) {
       return exportsField[k] !== null;
   }
   return false;
+}
+
+/** False only when the exports map MATCHES `sub` but no file it names exists (a wildcard over a deleted directory). */
+function subpathFileShipped(pkgDir, exportsField, sub) {
+  if (exportsField == null || typeof exportsField !== "object" || Array.isArray(exportsField)) return true;
+  if (!Object.keys(exportsField).some((k) => k.startsWith("."))) return true;
+  let target = exportsField[sub];
+  if (target === undefined) {
+    for (const [k, v] of Object.entries(exportsField)) {
+      const star = k.indexOf("*");
+      if (star === -1) continue;
+      const pre = k.slice(0, star);
+      const post = k.slice(star + 1);
+      if (sub.startsWith(pre) && sub.endsWith(post) && sub.length >= pre.length + post.length) {
+        target = JSON.parse(JSON.stringify(v).split("*").join(sub.slice(pre.length, sub.length - post.length)));
+        break;
+      }
+    }
+  }
+  if (target == null) return true;
+  const runtimeRel = pickRuntime(target);
+  const typesRel = pickTypes(target);
+  if (!runtimeRel && !typesRel) return true;
+  return [runtimeRel, typesRel].some((r) => r && existsSync(join(pkgDir, r)));
 }
 
 function shippedScripts(pkgDir) {
@@ -585,6 +512,8 @@ export function auditPackageGraph(root) {
       const dep = JSON.parse(readFileSync(join(depDir, "package.json"), "utf8"));
       if (!exportsHasSubpath(dep.exports, sub))
         findings.push({ file: where, line: 0, pkg: name, version: dep.version, sub, name: spec, why: "graph", importer: manifest.name });
+      else if (!subpathFileShipped(depDir, dep.exports, sub))
+        findings.push({ file: where, line: 0, pkg: name, version: dep.version, sub, name: spec, why: "graph-file", importer: manifest.name });
     }
   }
   return { packages: seen.size, specifiers, findings };
@@ -598,6 +527,9 @@ export function findingKey(f) {
 function describe(f) {
   const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
   if (f.why === "subpath") return `subpath "${f.sub}" is not in the package's exports map`;
+  if (f.why === "subpath-file") return `subpath "${f.sub}" matches the exports map but the package ships no ${f.target} (Module not found)`;
+  if (f.why === "graph-file")
+    return `${f.importer} imports "${f.name}", but the ${f.pkg}@${f.version} installed beside it ships no file for "${f.sub}"`;
   if (f.why === "not-installed") return `"${f.name}" from "${target}": ${f.pkg} is NOT INSTALLED (node_modules has no copy)`;
   if (f.why === "graph")
     return `${f.importer} imports "${f.name}", but the ${f.pkg}@${f.version} installed beside it does not export "${f.sub}"`;
@@ -733,7 +665,7 @@ function selfTest() {
 
     // RED: 0.18.6 does not ship createKindValidator (the live 2026-09-25 case), and a non-exported subpath.
     writePkg(tmp, "0.18.6", false);
-    pkgDirCache.clear();
+    clearPackageResolution();
     let r = audit(tmp);
     const miss = r.findings.find((f) => f.name === "createKindValidator");
     if (!miss) failures.push("RED: createKindValidator missing from 0.18.6 was not reported");
@@ -746,7 +678,7 @@ function selfTest() {
     // GREEN: 0.19.0 ships it; drop the bad subpath file.
     rmSync(join(tmp, "features", "subpath.ts"));
     writePkg(tmp, "0.19.0", true);
-    pkgDirCache.clear();
+    clearPackageResolution();
     r = audit(tmp);
     if (r.findings.length) failures.push(`GREEN: expected no findings, got ${JSON.stringify(r.findings)}`);
     if (r.imports !== 5) failures.push(`GREEN: expected 5 checked names, got ${r.imports}`);
@@ -759,7 +691,7 @@ function selfTest() {
       `import { Input as PackageInput, SelectTrigger, __resetControls, type ControlSize } from "@ai-matrx/design-system/controls";\nexport { PackageInput, SelectTrigger, __resetControls };\n`,
     );
     writeDesignSystem(tmp, "0.64.0", { types: false, runtime: false });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     const input = r.findings.find((f) => f.name === "Input");
@@ -771,7 +703,7 @@ function selfTest() {
 
     // RUNTIME: the types promise Input, the shipped JavaScript does not carry it.
     writeDesignSystem(tmp, "0.66.0", { types: true, runtime: false });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     if (!r.findings.some((f) => f.name === "Input" && f.why === "runtime"))
@@ -781,7 +713,7 @@ function selfTest() {
 
     // GREEN: 0.66.1 ships Input + SelectTrigger in types AND runtime (through a chunk `export *`).
     writeDesignSystem(tmp, "0.66.1", { types: true, runtime: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     if (r.findings.length) failures.push(`GREEN 0.66.1: expected no findings, got ${JSON.stringify(r.findings)}`);
@@ -789,7 +721,7 @@ function selfTest() {
 
     // RED: the half-uninstalled node_modules (frozen install died on a 404 tarball).
     rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     r = audit(tmp);
     if (!r.findings.some((f) => f.why === "not-installed" && f.pkg === "@ai-matrx/design-system"))
       failures.push("RED not-installed: an import of a package missing from node_modules was not reported");
@@ -814,7 +746,7 @@ function selfTest() {
       { "./data-table": "./dist/data-table/index.js" },
       `import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";\nimport { f } from "@ai-matrx/kit/format";\nconst m = () => import("@ai-matrx/design-system/data-table");\n`,
     );
-    pkgDirCache.clear();
+    clearPackageResolution();
     let g = auditPackageGraph(tmp);
     const ct = g.findings.find((f) => f.why === "graph" && f.sub === "./content-transfer");
     if (!ct || ct.importer !== "@ai-matrx/design-system" || ct.version !== "0.25.0" || !ct.file.startsWith("@ai-matrx/design-system@0.69.1/"))
@@ -831,14 +763,77 @@ function selfTest() {
       { "./data-table": "./dist/data-table/index.js" },
       `import { normalizeTransferJson } from "@ai-matrx/kit/transfer-json";\n`,
     );
-    pkgDirCache.clear();
+    clearPackageResolution();
     g = auditPackageGraph(tmp);
     if (g.findings.length || g.specifiers !== 1) failures.push(`GREEN 2026-10-06: expected 1 clean specifier, got ${JSON.stringify(g)}`);
     // RED: the dependency is not installed beside the importer at all.
     rmSync(join(tmp, "node_modules", "@ai-matrx", "kit"), { recursive: true, force: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-missing"))
       failures.push("RED graph-missing: an import of an uninstalled sibling package was not reported");
+
+    // ── THE 2026-10-07 CASE (v0.4.2980–2982 never deployed): chat 0.4.0 deleted
+    // dist/agents/model-registry/ while its `./agents/*` wildcard still matched the app's import.
+    const wild = (version, withSlice) => {
+      const dir = join(tmp, "node_modules", "@ai-matrx", "chat");
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(join(dir, "dist", "agents", "model-registry"), { recursive: true });
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "@ai-matrx/chat", version, type: "module", exports: { "./agents/*": { types: "./dist/agents/*.d.ts", import: "./dist/agents/*.js" } } }),
+      );
+      if (withSlice) {
+        writeFileSync(join(dir, "dist", "agents", "model-registry", "modelRegistrySlice.d.ts"), "export declare function fetchModelOptions(): void;\n");
+        writeFileSync(join(dir, "dist", "agents", "model-registry", "modelRegistrySlice.js"), "export function fetchModelOptions() {}\n");
+      }
+    };
+    rmSync(join(tmp, "components"), { recursive: true, force: true });
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
+    writeFileSync(join(tmp, "features", "probe.ts"), `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\nexport { fetchModelOptions };\n`);
+    wild("0.4.0", false);
+    clearPackageResolution();
+    runtimeCache.clear();
+    r = audit(tmp, { only: ["features"] });
+    if (!r.findings.some((f) => f.why === "subpath-file" && f.pkg === "@ai-matrx/chat" && f.version === "0.4.0"))
+      failures.push(`RED 2026-10-07: a wildcard subpath whose file the package no longer ships was not reported: ${JSON.stringify(r.findings)}`);
+    wild("0.4.1", true);
+    clearPackageResolution();
+    runtimeCache.clear();
+    r = audit(tmp, { only: ["features"] });
+    if (r.findings.some((f) => f.pkg === "@ai-matrx/chat")) failures.push(`GREEN 2026-10-07: a shipped wildcard file was reported: ${JSON.stringify(r.findings)}`);
+    // The same class between packages: another package imports the deleted wildcard file.
+    rmSync(join(tmp, "features", "probe.ts"));
+    graphPkg("design-system", "0.80.0", { "./data-table": "./dist/data-table/index.js" }, `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\n`);
+    wild("0.4.0", false);
+    clearPackageResolution();
+    if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-file" && f.importer === "@ai-matrx/design-system"))
+      failures.push("RED 2026-10-07 graph: a package importing a wildcard file its sibling no longer ships was not reported");
+    wild("0.4.1", true);
+    clearPackageResolution();
+    if (auditPackageGraph(tmp).findings.length) failures.push("GREEN 2026-10-07 graph: a shipped wildcard file was reported");
+
+    // ── v0.4.2984/2985 and v0.4.2989: the specifier sits in a require(), an import() or an
+    // `export *` shim, none of which name an import — each must still be judged, each on its own.
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
+    const whole = {
+      "stored-scope.ts": `export const loadStream = () => require("@ai-matrx/chat/agents/model-registry/modelRegistrySlice");\n`,
+      "lazy-models.ts": `export const lazyModels = () => import("@ai-matrx/chat/agents/model-registry/modelRegistrySlice");\n`,
+      "kind-markdown-utils.ts": `export * from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\n`,
+    };
+    for (const [file, text] of Object.entries(whole)) {
+      rmSync(join(tmp, "features"), { recursive: true, force: true });
+      mkdirSync(join(tmp, "features"), { recursive: true });
+      writeFileSync(join(tmp, "features", file), text);
+      wild("0.4.0", false);
+      clearPackageResolution();
+      r = audit(tmp, { only: ["features"] });
+      if (!r.findings.some((f) => f.file === `features/${file}` && f.why === "subpath-file" && f.version === "0.4.0"))
+        failures.push(`RED whole-module (${file}): a specifier to a file chat 0.4.0 no longer ships was not reported: ${JSON.stringify(r.findings)}`);
+      wild("0.4.1", true);
+      clearPackageResolution();
+      r = audit(tmp, { only: ["features"] });
+      if (r.findings.length) failures.push(`GREEN whole-module (${file}): a shipped file was reported: ${JSON.stringify(r.findings)}`);
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -847,7 +842,7 @@ function selfTest() {
     for (const f of failures) console.error(`  - ${f}`);
     return 1;
   }
-  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, runtime-only gap, uninstalled package and a broken package-to-package import; GREEN once shipped.");
+  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, wildcard subpath with no shipped file, runtime-only gap, uninstalled package, a broken package-to-package import and a require()/import()/export-* specifier; GREEN once shipped.");
   return 0;
 }
 

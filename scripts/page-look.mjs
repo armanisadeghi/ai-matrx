@@ -230,6 +230,8 @@ function measure(isPhone) {
   const smallText = [];
   const emoji = [];
   const emojiRe = /\p{Extended_Pictographic}/u;
+  // A person's own emoji (page/callout icons, typed text) is allowed (Arman 2026-10-08): only chrome is flagged.
+  const userContent = (el) => !!el.closest('[role="img"], .spaces-editor, .bn-editor, [data-user-content]');
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const node = walker.currentNode;
@@ -239,7 +241,7 @@ function measure(isPhone) {
     const size = parseFloat(s.fontSize);
     const allCaps = s.textTransform === "uppercase" || text === text.toUpperCase();
     if (size < 12 && !allCaps && smallText.length < 12) smallText.push(`${size}px "${text.slice(0, 40)}"`);
-    if (emojiRe.test(text) && emoji.length < 10) emoji.push(text.slice(0, 40));
+    if (emojiRe.test(text) && !userContent(node.parentElement) && emoji.length < 10) emoji.push(text.slice(0, 40));
   }
   // Emoji anywhere on the page (below the fold too), not just the viewport.
   const walkAll = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -247,7 +249,7 @@ function measure(isPhone) {
     const node = walkAll.currentNode;
     const text = node.textContent.trim();
     const parent = node.parentElement;
-    if (!text || !parent || !emojiRe.test(text)) continue;
+    if (!text || !parent || !emojiRe.test(text) || userContent(parent)) continue;
     const st = getComputedStyle(parent);
     if (st.display === "none" || st.visibility === "hidden") continue;
     if (parent.getBoundingClientRect().width === 0) continue;

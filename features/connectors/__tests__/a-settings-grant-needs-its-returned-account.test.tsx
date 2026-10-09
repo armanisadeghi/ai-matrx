@@ -1,8 +1,12 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { toast } from "@/lib/toast";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
+  .IS_REACT_ACT_ENVIRONMENT = true;
 
 const { makeAppContextState } = jest.requireActual<
   typeof import("@/lib/redux/slices/appContextSlice")
@@ -25,31 +29,35 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => [],
 }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
+  useEffectiveKnob: () => undefined,
+}));
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceScopeContribution: () => {},
 }));
-jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
-  confirm: async () => true,
-}));
+const confirm = jest.fn(async (_options: { title: string }) => true);
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm }));
 jest.mock("@/features/marketing/google/hooks", () => ({
   useDisconnectGoogle: () => ({ mutateAsync: async () => {} }),
 }));
 jest.mock("@/providers/google-provider/LazyGoogleAPIProvider", () => ({
   LazyGoogleAPIProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+const isGoogleAuthorizationCancelled = jest.fn(() => false);
 jest.mock("@/providers/google-provider/GoogleApiProvider", () => ({
-  isGoogleAuthorizationCancelled: () => false,
+  isGoogleAuthorizationCancelled,
   useGoogleAPI: () => ({ isGoogleLoaded: true }),
 }));
 jest.mock("../ConnectorConsentDialog", () => ({ ConnectorConsentBody: () => null }));
 
 const run = jest.fn();
+const runInThisTab = jest.fn();
 let refreshed: ConnectorAccount[];
 jest.mock("../google-adapter", () => {
   const actual = jest.requireActual("../google-adapter");
   return {
     ...actual,
-    useGoogleConsentRunner: () => ({ run, ready: true }),
+    useGoogleConsentRunner: () => ({ run, runInThisTab, ready: true }),
     useGoogleConnectorState: () => ({
       accounts: [activeAccount],
       rollout,
@@ -116,8 +124,95 @@ async function pressGmailReading(): Promise<{ container: HTMLDivElement; root: R
 
 afterEach(() => {
   run.mockReset();
+  runInThisTab.mockReset();
+  confirm.mockReset().mockResolvedValue(true);
+  isGoogleAuthorizationCancelled.mockReset().mockReturnValue(false);
   jest.mocked(toast.success).mockClear();
+  jest.mocked(toast.info).mockClear();
   activeAccount = before;
+});
+
+it("announces a cancelled same-tab authorization without claiming approval", async () => {
+  activeAccount = { ...before, grantedScopes: [GOOGLE_SCOPE.openid,
+    GOOGLE_SCOPE.gmailReadonly, GOOGLE_SCOPE.gmailModify] };
+  runInThisTab.mockRejectedValue(new Error("Authorization cancelled"));
+  isGoogleAuthorizationCancelled.mockReturnValue(true);
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<ConnectorsSettingsPanel />));
+    const action = [...container.querySelectorAll("button")].find((node) =>
+      node.textContent?.trim() === "Review in this tab",
+    );
+    expect(action).toBeDefined();
+    await act(async () => action?.click());
+    expect(toast.info).toHaveBeenCalledWith("Authorization cancelled — nothing changed.");
+    expect(toast.success).not.toHaveBeenCalled();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
+});
+
+it("redirects the healthy account with its exact held scopes only after both Gmail disclosures", async () => {
+  const heldScopes = [GOOGLE_SCOPE.profile, GOOGLE_SCOPE.gmailReadonly,
+    GOOGLE_SCOPE.openid, GOOGLE_SCOPE.gmailModify, GOOGLE_SCOPE.email];
+  activeAccount = { ...before, grantedScopes: heldScopes };
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<ConnectorsSettingsPanel />));
+    const action = [...container.querySelectorAll("button")].find((node) =>
+      node.textContent?.trim() === "Review in this tab",
+    );
+    expect(action).toBeDefined();
+    await act(async () => action?.click());
+    expect(confirm.mock.calls.map(([options]) => options.title)).toEqual([
+      "Allow AI Matrx to read Gmail?",
+      "Allow AI Matrx to change Gmail messages?",
+    ]);
+    expect(runInThisTab).toHaveBeenCalledWith(expect.objectContaining({
+      targetAccountId: before.id,
+      scopes: heldScopes,
+      addedScopes: [],
+      capabilityKeys: ["gmail_read", "gmail_modify"],
+      connectionPurpose: "google_products",
+      forceConsent: true,
+    }), { owner: { type: "user" }, loginHint: before.label });
+    expect(runInThisTab.mock.calls[0]?.[0].products.map(
+      (product: { key: string }) => product.key,
+    )).toEqual(["gmail_read", "gmail_modify"]);
+    expect(run).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
+});
+
+it("does not redirect when the second Gmail disclosure is declined", async () => {
+  activeAccount = { ...before, grantedScopes: [GOOGLE_SCOPE.openid,
+    GOOGLE_SCOPE.gmailReadonly, GOOGLE_SCOPE.gmailModify] };
+  confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<ConnectorsSettingsPanel />));
+    const action = [...container.querySelectorAll("button")].find((node) =>
+      node.textContent?.trim() === "Review in this tab",
+    );
+    expect(action).toBeDefined();
+    await act(async () => action?.click());
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(runInThisTab).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
 });
 
 it("does not offer Gmail changes on an organization-owned account in Settings", async () => {

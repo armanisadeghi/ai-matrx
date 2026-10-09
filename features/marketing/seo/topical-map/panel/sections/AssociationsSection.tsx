@@ -31,7 +31,7 @@ import { itemLabel } from "../associationGroups";
 import { attachToTopic, detachFromTopic } from "../associationWrites";
 import { PanelEmptyLine, PanelSection, ShowMoreRow } from "../PanelSection";
 import type { KindPaging } from "../useTopicAssociationPages";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface AssociationsSectionProps {
   topicName: string;

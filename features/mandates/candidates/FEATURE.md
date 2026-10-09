@@ -30,7 +30,7 @@ a window in place, a docked panel, or a page in a new tab. Plan and frozen contr
   (window by default; the person's presentation setting decides). `seed.siblings` = the ordered
   run ids of the list it was opened from, so `[` / `]` step through the runs.
 - `useOpenCandidateSummary(candidateId?)` → `(id?, seed?) => void` — opens the summary.
-- `useTranscriptUnit(conversationId)` (`transcripts.ts`) — the walkable unit for one side's chat.
+- `useTranscriptUnit({ requestId, conversationId })` (`transcripts.ts`) — the walkable unit for one side's run: the newest `chat.request` of the pair's own `chat.user_request` id; only when that id names no request (older pairs), the conversation's newest, with `runsInChat` set when the chat holds more than one run.
 
 **Services** — `api.ts`: the aidream live-candidate doors through the contract-bound typed client
 (`GET /mandate-candidate-runs/{id}`, `GET /mandate-candidates/{id}`, `POST …/agreement`,
@@ -98,9 +98,19 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   Hold recommendation is said plainly ("The review said reject.") with "Promote anyway".
 - **"What the … saw" is never dead (V2 N4).** A click before the transcript lookup answers
   resolves THIS pair's conversation on the spot (`transcripts.findTranscriptUnit`) and opens or
-  focuses its walk; the button carries `data-conversation-id`.
-- **The set dialog's "Applies to" (V2 D18)** shows no rung (and Start waits) until the live
-  holder's rung is read, and lists each rung once (`rungChoicesOf`).
+  focuses its walk; the button carries `data-conversation-id` and `data-request-id`.
+- **"What the … saw" opens THIS pair's run, not the chat's newest.** Two runs can share a chat; the
+  lookup keys on the pair's request id. The conversation fallback says "Newest of N runs in this
+  chat" rather than silently picking one (`__tests__/saw-opens-this-pairs-own-request.test.tsx`,
+  `__tests__/saw-says-when-the-chat-holds-several-runs.test.tsx`).
+- **The set dialog's "Applies to" (V2 D18, FX-D1)** shows no rung (and Start waits) until the live
+  holder's rung is read, and lists each rung once (`rungChoicesOf`). When the read cannot answer
+  (no organization selected, read failed, a verdict naming no rung) it stays EMPTY and Start is
+  unavailable until the person picks a level — never the seat's rung as a guess
+  (`appliesToDefault`; guard `__tests__/fx-d1-applies-to-never-guesses-the-level.test.tsx`).
+- **Walk windows from a pair are titled `<role> · Pair N · HH:MM · <agent>`** (FX-D2, `words.pairWalkLabel`) so two Live walks
+  from different pairs differ; the labels ride the `?panels=` token so a reload keeps them
+  (`features/review-walk/FEATURE.md` § Address).
 - **The list cell compares the list's answer by VALUE** — hosts hand a fresh row object every
   render, and an identity check reset the cell to the stale list answer (seen on the clone).
 - **One cell, every list (V1 D4):** admin list, org/person member list and `/mandates` browse all
@@ -135,3 +145,5 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
 - `2026-10-01` — FX2-F (V2 N1, N3, N4, D18): refresh until terminal-for-now + catch-up on
   visible, confirm every decision with shared words, never-dead transcript buttons, dialog rung
   right from the first frame.
+- `2026-10-07` — FX-D1/D2: Applies-to never guesses a level; pair walk titles name the pair and
+  survive a reload.

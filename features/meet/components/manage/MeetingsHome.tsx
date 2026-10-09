@@ -41,7 +41,7 @@ import {
   type MeetingRecord,
   type UpcomingOccurrence,
 } from "@ai-matrx/meet/react";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -77,7 +77,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import {
   isLiveInstant,
@@ -117,6 +116,7 @@ import type {
   MeetingPrefill,
   OccurrenceRef,
 } from "@/features/meet/components/manage/MeetingFormDialog";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** One Upcoming row: an AI Matrx occurrence, or an event from the person's other calendar. */
 type AgendaRow =
@@ -195,8 +195,9 @@ export function MeetingsHome() {
     directory.meetings.map((m) => [m.id as string, m]),
   );
 
-  // Scheduling needs an organization (a meeting belongs to one). With none
-  // chosen the organization picker opens, and the action continues once set.
+  // A meeting belongs to an organization: the ACTIVE one (no picker — the shell
+  // always has one). If the host is not ready yet the action is held until it
+  // is; if there is no organization at all, the person is told nothing started.
   const [held, setHeld] = useState<"create" | "start" | null>(null);
   const createFromEvent = (event: ExternalEvent) => {
     const at = utcToZoned(event.occurrenceStart, zone);
@@ -222,7 +223,7 @@ export function MeetingsHome() {
   const toggleExternal = async (show: boolean) => {
     try {
       const targetOrganizationId =
-        actions.organizationId ?? (await ensureOrganizationContext());
+        actions.organizationId ?? (await ensureOrgId(null));
       await planning.setShowExternalEvents(show, targetOrganizationId);
     } catch (thrown) {
       toast.error(errorSentence(thrown));
@@ -241,9 +242,11 @@ export function MeetingsHome() {
     }
     setHeld(what);
     try {
-      await ensureOrganizationContext();
-    } catch {
+      await ensureOrgId(null);
+    } catch (thrown) {
+      // Nothing started: say so, never fail silently.
       setHeld(null);
+      toast.error(errorSentence(thrown));
     }
   };
   useEffect(() => {

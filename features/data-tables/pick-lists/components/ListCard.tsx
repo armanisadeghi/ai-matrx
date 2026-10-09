@@ -78,7 +78,7 @@ export function ListCard({
         content: [list.list_name, list.description].filter(Boolean).join("\n"),
       }}
       entity={{
-        // A record-store Table is itself a custom.record kernel record (REC-1).
+        // A custom Table is itself a custom.record kernel record (REC-1).
         type: "record",
         id: list.id,
         title: list.list_name,

@@ -24,7 +24,7 @@ const reduxState = () =>
       treeFetchedAt: null,
     },
     userAuth: { id: null },
-    userPreferences: { organization: { defaultOrganizationId: null } },
+    userPreferences: { organization: { switchWhenALinkAsks: true } },
   }) as never;
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));

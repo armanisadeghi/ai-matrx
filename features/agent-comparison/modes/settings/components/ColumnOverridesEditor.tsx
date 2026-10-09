@@ -34,10 +34,8 @@ import {
   resetModelChoice,
   setOfferingPin,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
-import {
-  selectActiveModels,
-  fetchModelOptions,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectActiveModels } from "@ai-matrx/agents/models";
+import { getModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
@@ -58,12 +56,12 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
   );
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const baseSettings = (overrideState?.baseSettings ?? {}) as Record<string, unknown>;
-  const models = useAppSelector(selectActiveModels);
+  const models = useModelRecords(selectActiveModels);
 
   // Lazy-load the model registry once. Cheap if already loaded.
   useEffect(() => {
     if (models.length === 0) {
-      void dispatch(fetchModelOptions());
+      getModelRecords().loadOptions();
     }
   }, [dispatch, models.length]);
 

@@ -21,13 +21,13 @@
  */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { TapTargetButtonGroup, TapTargetButtonOutline } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup, TapTargetButtonOutline } from "@ai-matrx/design-system/tap-target";
 import {
   ArrowDownUpTapButton,
   FilterTapButton,
   MoreHorizontalTapButton,
   SettingsTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { ChevronDown, Download, Plus, Search } from "lucide-react";
 import { Button as LegacyButton } from "@/components/ui/button";
 import { Badge as LegacyBadge } from "@/components/ui/badge";

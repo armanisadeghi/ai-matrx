@@ -104,7 +104,7 @@ describe("Recents — mirror of files.is_recent_activity", () => {
       "tool-images/1/shot.png",
       "Images/Generated/cat.png",
       "Generated/a.png",
-      "Agent Apps/blocks/b.png",
+      "Applets/blocks/b.png",
       "Images/agent-blocks/c.png",
       "Transcripts/Recordings/x.m4a",
       "FastFire/sessions/s.wav",

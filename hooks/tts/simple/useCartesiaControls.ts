@@ -1,8 +1,8 @@
 "use client";
-import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import { SinkAwarePlayer } from "@ai-matrx/media/speech";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
-import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
+import { connectCartesiaTts, type CartesiaTtsSocket } from "@ai-matrx/media/speech";
 import {
     buildGenerationConfig,
     READING_VOICE_ID,

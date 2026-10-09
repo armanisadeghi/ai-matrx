@@ -48,7 +48,7 @@ import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

@@ -53,11 +53,11 @@ export function createDataHomeCorpus(
     dataHomeSearch?: typeof doors.dataHomeSearch;
     debounceMs?: number;
     /**
-     * "Show app tables": also read the tables the app keeps for agents' outputs (the door's switch)
+     * "Show platform tables": also read the tables the app keeps for agents' outputs (the door's switch)
      * AND list every table the one rule calls kept — a choice column's List above all. Off, both
      * stay out; a table a person made is listed either way.
      */
-    includeAppTables?: boolean;
+    includePlatformTables?: boolean;
   } = {},
 ): DataHomeCorpus {
   const dataHome = deps.dataHome ?? doors.dataHome;
@@ -75,15 +75,15 @@ export function createDataHomeCorpus(
   let inHand: DataHomeRow[] | undefined;
 
   const read = async (): Promise<DataHomeRow[]> => {
-    const answered = await dataHome(dataSource, null, { includeAppTables: deps.includeAppTables === true });
+    const answered = await dataHome(dataSource, null, { includePlatformTables: deps.includePlatformTables === true });
     if (!answered.ok) {
       throw new Error(`Could not read tables. ${doors.doorFailureLine(answered.error)}`, { cause: answered.error });
     }
     const built = await buildDataHomeRows({ client, dataSource, answer: answered.data });
     meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: doors.doorFailureLine(r.error) }));
-    // THE ONE RULE (`isKeptTable`, folded onto each row as `keptByTheApp`): the door answers a
-    // choice column's Lists whether or not app tables were asked for, so the home leaves them out here.
-    let rows = deps.includeAppTables === true ? built.rows : built.rows.filter((row) => !row.keptByTheApp);
+    // THE ONE RULE (`isKeptTable`, folded onto each row as `platformOwned`): the door answers a
+    // choice column's Lists whether or not platform tables were asked for, so the home leaves them out here.
+    let rows = deps.includePlatformTables === true ? built.rows : built.rows.filter((row) => !row.platformOwned);
     // THE STATED BOUND: past it the newest rows are kept and the page says so.
     meta.capped = rows.length > DATA_HOME_ROW_CAP;
     if (meta.capped) {
@@ -107,7 +107,7 @@ export function createDataHomeCorpus(
   const ask = async (search: string, organizationId: string | null, key: string) => {
     inFlight.add(key);
     const answered = await dataHomeSearch(dataSource, search, organizationId, {
-      includeAppTables: deps.includeAppTables === true,
+      includePlatformTables: deps.includePlatformTables === true,
     });
     inFlight.delete(key);
     if (!answered.ok) {

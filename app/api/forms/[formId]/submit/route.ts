@@ -23,7 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { publicForm, submitPublicForm } from "@/features/forms/service";
-import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
+import { typedAnswersFor } from "@ai-matrx/records/forms";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +44,18 @@ export async function POST(
   }
 
   const values = { ...(body.values ?? {}) };
+  // TYPEFORM-DUP: the hidden fields and the visit key ride beside the answers. They are lifted out
+  // before the answers are typed against the form's Fields and handed to the door as the two
+  // reserved keys `custom.form_submit` reads (`_hidden`, narrowed there to the declared names).
+  const hidden =
+    values["_hidden"] && typeof values["_hidden"] === "object" && !Array.isArray(values["_hidden"])
+      ? (values["_hidden"] as Record<string, unknown>)
+      : null;
+  const visit = typeof values["_visit"] === "string" ? values["_visit"] : null;
+  const timeZone = typeof values["_time_zone"] === "string" ? values["_time_zone"] : null;
+  delete values["_hidden"];
+  delete values["_visit"];
+  delete values["_time_zone"];
 
   // The form tells us the decoy's name; we take it out of the answers and hand
   // it to the door separately, so a real field can never be mistaken for it and
@@ -85,7 +97,7 @@ export async function POST(
       formId,
       origin,
       bucket,
-      values: typed.values,
+      values: { ...typed.values, ...(hidden ? { _hidden: hidden } : {}), ...(visit ? { _visit: visit } : {}), ...(timeZone ? { _time_zone: timeZone } : {}) },
       honeypot,
       clientKey: typeof body.clientKey === "string" ? body.clientKey : null,
     });

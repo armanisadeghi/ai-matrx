@@ -20,7 +20,7 @@ jest.mock("@/lib/toast", () => ({
 
 import { VaultItemDetail } from "./VaultItemDetail";
 import type { VaultActions } from "../vault-hooks";
-import type { VaultItem } from "../types";
+import type { VaultField, VaultItem } from "../types";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -124,7 +124,7 @@ async function change(node: HTMLInputElement, value: string) {
   });
 }
 
-describe("VaultItemDetail credential tags", () => {
+describe("VaultItemDetail credential editing", () => {
   let host: HTMLDivElement;
   let root: Root;
   let currentItem: VaultItem;
@@ -162,6 +162,71 @@ describe("VaultItemDetail credential tags", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
+  });
+
+  // A DevNet operator must configure an existing custom login, not duplicate it.
+  function destinationField(overrides: Partial<VaultField> = {}): VaultField {
+    return {
+      id: "destination-field",
+      credential_item_id: "credential-1",
+      field_key: "account_url",
+      execution_purpose: "general",
+      env_key: null,
+      handling: "revealable",
+      editable: true,
+      inject_into_sandbox: false,
+      value_hint: "",
+      value_version: 1,
+      is_active: true,
+      description: null,
+      created_at: "2026-09-20T00:00:00Z",
+      updated_at: "2026-09-20T00:00:00Z",
+      ...overrides,
+    };
+  }
+
+  test.each(["account_url", "site_url", "panel_url", "portal_url"])(
+    "allows explicit destination editing for the encrypted %s without automatically changing it",
+    async (field_key) => {
+      await render(item({ definition_key: "custom", fields: [destinationField({ field_key })] }));
+      await openEditor();
+      expect(host.textContent).toContain("Website destination");
+      expect(button("Add login URL").disabled).toBe(false);
+      expect(button("Use as login URL").disabled).toBe(false);
+      expect(host.textContent).toContain("unencrypted metadata");
+      expect(updateItem).not.toHaveBeenCalled();
+
+      await act(async () => button("Add login URL").click());
+      await change(input('[placeholder="example.com/login"]'), "id.cisco.com");
+      await act(async () => button("Add").click());
+      expect(updateItem).toHaveBeenCalledTimes(1);
+      expect(updateItem).toHaveBeenCalledWith("credential-1", {
+        login_urls: ["https://id.cisco.com/"],
+      });
+    },
+  );
+
+  test.each([
+    { is_active: false },
+    { handling: "sealed" as const },
+    { field_key: "api_key" },
+  ])("does not expose website controls for ineligible custom fields: %j", async (overrides) => {
+    await render(item({ definition_key: "custom", fields: [destinationField(overrides)] }));
+    await openEditor();
+    expect(host.textContent).not.toContain("Website destination");
+    expect(updateItem).not.toHaveBeenCalled();
+  });
+
+  test("shows the missing destination but no editing controls without edit authority", async () => {
+    await render(item({
+      definition_key: "custom",
+      fields: [destinationField()],
+      capabilities: { can_use: true, can_edit: false, can_reveal: false, can_manage: false },
+    }));
+    expect(host.textContent).toContain("Website destination");
+    expect(host.textContent).not.toContain("Add login URL");
+    expect(host.textContent).not.toContain("Use as login URL");
+    expect(updateItem).not.toHaveBeenCalled();
   });
 
   test("does not patch tags when saving an unrelated rename", async () => {

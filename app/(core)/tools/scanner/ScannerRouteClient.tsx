@@ -14,7 +14,7 @@
 import { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
 /** Both skins open with a back door in the header; the server draws it while

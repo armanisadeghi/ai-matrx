@@ -52,13 +52,13 @@ import {
   type RefObject,
 } from "react";
 import dynamic from "next/dynamic";
-import { TapTargetButtonTransparent, TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent, TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import {
   ExternalLinkTapButton,
   MaximizeTapButton,
   MoreHorizontalTapButton,
   XTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { buildAgentPayload } from "@ai-matrx/alchemy/operate";
 import {
   ChevronDown,

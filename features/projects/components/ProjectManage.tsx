@@ -37,7 +37,7 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ProjectContextSection } from "./ProjectContextSection";
 import type { Project } from "@/features/projects/types";
 import { GeneralSettings } from "./GeneralSettings";
@@ -47,7 +47,7 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export function ProjectManage() {

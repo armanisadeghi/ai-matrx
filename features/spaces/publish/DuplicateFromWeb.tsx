@@ -11,7 +11,6 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
 import { duplicatePublished } from "./publish-doors";
 
@@ -28,7 +27,7 @@ export function DuplicateFromWeb() {
       // A full load: the sidebar reads the new page with the rest of the tree.
       window.location.replace(`/spaces/${copyId}`);
     } catch (e) {
-      if (!isOrganizationSelectionCancelled(e)) setError(e instanceof Error ? e.message : "We couldn't duplicate this page.");
+      setError(e instanceof Error ? e.message : "We couldn't duplicate this page.");
       setBusy(false);
     }
   };

@@ -24,7 +24,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { toast } from "@/lib/toast";
@@ -43,8 +43,8 @@ import { MediaPager } from "./MediaPager";
 import { useLongPress } from "../hooks/useLongPress";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const NOTES_AUTOSAVE_MS = 800;
 

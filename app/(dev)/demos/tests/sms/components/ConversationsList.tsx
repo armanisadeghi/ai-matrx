@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, MessageSquare, RefreshCw, Phone, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 interface Conversation {
   id: string;

@@ -160,7 +160,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "App",
-    "url_path_template": "/agent-apps/{id}",
+    "url_path_template": "/applets/manage/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

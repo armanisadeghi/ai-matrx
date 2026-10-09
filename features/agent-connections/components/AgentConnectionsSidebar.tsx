@@ -7,7 +7,6 @@ import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectMcpCatalog } from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
 import { selectSkillsCount } from "@/features/skills/redux/skillsSelectors";
 import {
@@ -17,6 +16,7 @@ import {
 import { SIDEBAR_SECTIONS } from "../constants";
 import { sectionToHref, segmentToSection } from "../routing";
 import type { AgentConnectionsSection } from "../types";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 interface AgentConnectionsSidebarProps {
   /** Overlay/legacy mode — provide both to render <button>s with callbacks. */
@@ -34,7 +34,7 @@ export function AgentConnectionsSidebar({
 }: AgentConnectionsSidebarProps) {
   const [query, setQuery] = useState("");
 
-  const agentsCount = useAppSelector(selectLiveAgents).length;
+  const agentsCount = useCatalogAgents().length;
   const mcpCount = useAppSelector(selectMcpCatalog).length;
   const skillsCount = useAppSelector(selectSkillsCount);
   const renderBlocksCount = useAppSelector(selectRenderDefinitionsCount);

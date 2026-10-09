@@ -1,5 +1,6 @@
 "use client";
 
+import { chainVersionOf } from "@/features/canvas/services/versionChainOwner";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * ArtifactVersionHistory — the ONE generic version-history viewer for any
@@ -13,7 +14,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * read + the existing owner-checked `saveUserVersion` RPC — no schema coupling.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   History,
   RotateCcw,
@@ -39,7 +40,7 @@ import {
   versionReadableText,
   versionText,
 } from "./ArtifactVersionBody";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function relTime(iso: string): string {
   try {
@@ -53,11 +54,19 @@ interface ArtifactVersionHistoryProps {
   canvasItemId: string;
   /** Classes for the trigger button (so callers control the affordance look). */
   triggerClassName?: string;
+  /** Controlled open state — for opening it from a menu entry. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** No visible button: a zero-size anchor the popover opens from (the entry lives in a menu). */
+  anchorOnly?: boolean;
 }
 
 export function ArtifactVersionHistory({
   canvasItemId,
   triggerClassName,
+  open,
+  onOpenChange,
+  anchorOnly,
 }: ArtifactVersionHistoryProps) {
   const [rows, setRows] = useState<CanvasArtifactRow[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,7 +78,7 @@ export function ArtifactVersionHistory({
     setLoading(true);
     try {
       const history = await canvasArtifactService.readVersionHistory(canvasItemId);
-      const sorted = [...history].sort((a, b) => b.version - a.version);
+      const sorted = [...history].sort((a, b) => chainVersionOf(b) - chainVersionOf(a));
       setRows(sorted);
       setSelectedId(sorted[0]?.id ?? null);
       setLoadError(null);
@@ -91,7 +100,7 @@ export function ArtifactVersionHistory({
           type: row.type,
         });
         if (saved) {
-          toast.success(`Restored v${row.version} as a new version`);
+          toast.success(`Restored v${chainVersionOf(row)} as a new version`);
           window.dispatchEvent(
             new CustomEvent(CANVAS_ITEM_UPDATED_EVENT, {
               detail: { rootId: canvasItemId, latestId: saved.id },
@@ -112,21 +121,32 @@ export function ArtifactVersionHistory({
   const current = rows?.[0] ?? null;
   const openDiff = useOpenDiffViewerWindow();
 
+  // Opened from a menu entry (controlled): onOpenChange does not fire, so load here.
+  useEffect(() => {
+    if (open) void load();
+  }, [open, load]);
+
   return (
     <Popover
-      onOpenChange={(open) => {
-        if (open) void load();
+      {...(open === undefined ? {} : { open })}
+      onOpenChange={(next) => {
+        if (next) void load();
+        onOpenChange?.(next);
       }}
     >
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={triggerClassName}
-          title="Version history"
-          aria-label="Version history"
-        >
-          <History className="h-3.5 w-3.5" />
-        </button>
+        {anchorOnly ? (
+          <span aria-hidden className="block h-0 w-0" data-version-history-anchor="" />
+        ) : (
+          <button
+            type="button"
+            className={triggerClassName}
+            title="Version history"
+            aria-label="Version history"
+          >
+            <History className="h-3.5 w-3.5" />
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" className="p-0">
         <div className="flex items-center gap-1.5 border-b border-border px-3 py-2 text-xs font-medium text-foreground">
@@ -160,7 +180,7 @@ export function ArtifactVersionHistory({
               {rows.map((row, i) => {
                 const isLatest = i === 0;
                 const isOriginal =
-                  row.parent_canvas_id === null || row.version === 1;
+                  row.parent_canvas_id === null || chainVersionOf(row) === 1;
                 const isSelected = row.id === selectedId;
                 return (
                   <div
@@ -175,7 +195,7 @@ export function ArtifactVersionHistory({
                       className="min-w-0 flex-1 text-left"
                     >
                       <div className="font-medium text-foreground">
-                        v{row.version}
+                        v{chainVersionOf(row)}
                         {isLatest && (
                           <span className="ml-1 text-[10px] text-primary">
                             current
@@ -197,7 +217,7 @@ export function ArtifactVersionHistory({
                         onClick={() => restore(row)}
                         disabled={restoringId === row.id}
                         className="shrink-0 rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-                        title={`Restore v${row.version}`}
+                        title={`Restore v${chainVersionOf(row)}`}
                       >
                         {restoringId === row.id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -215,10 +235,10 @@ export function ArtifactVersionHistory({
               <div className="border-t border-border">
                 <div className="flex items-center justify-between px-3 pt-2">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {selected.version === 1 ||
+                    {chainVersionOf(selected) === 1 ||
                     selected.parent_canvas_id === null
                       ? "Originally streamed"
-                      : `Version ${selected.version}`}
+                      : `Version ${chainVersionOf(selected)}`}
                   </span>
                   {current && selected.id !== current.id && (
                     <button
@@ -227,8 +247,8 @@ export function ArtifactVersionHistory({
                         openDiff({
                           original: versionReadableText(selected),
                           modified: versionReadableText(current),
-                          originalLabel: `v${selected.version}`,
-                          modifiedLabel: `Current (v${current.version})`,
+                          originalLabel: `v${chainVersionOf(selected)}`,
+                          modifiedLabel: `Current (v${chainVersionOf(current)})`,
                           title: `${selected.title ?? "Artifact"} — compare`,
                           engine: "auto",
                           language: selected.type,

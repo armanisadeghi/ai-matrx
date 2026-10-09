@@ -50,7 +50,7 @@ import {
 } from "@/lib/redux/preferences/adminDebugSlice";
 import {
   setIsCreator,
-  toggleShowCreatorPanel,
+  setShowCreatorPanel,
 } from "@/lib/redux/preferences/creatorDebugSlice";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { RootState } from "@/lib/redux/rootReducer";
@@ -93,7 +93,7 @@ export function readAppChatPreferences(state: RootState): ChatPreferences {
     loaded: Boolean(user?._meta?.loadedPreferences),
     superAdminDebugger: state.userAuth?.adminLevel === "super_admin",
     debugMode: selectIsDebugMode(state),
-    showCreatorPanel: creator?.showCreatorPanel ?? d.showCreatorPanel,
+    showCreatorPanel: user?.assistant?.showCreatorPanel ?? d.showCreatorPanel,
     creatorSettings: creator?.settings ?? d.creatorSettings,
     desktopTargetInstanceId: admin?.desktopTargetInstanceId ?? d.desktopTargetInstanceId,
     directiveApplyPolicy: user?.assistant?.directiveApplyPolicy ?? d.directiveApplyPolicy,
@@ -107,7 +107,10 @@ export function readAppChatPreferences(state: RootState): ChatPreferences {
 }
 
 /** The package's preference write, as this app's own action (P8). */
-export function appActionForPreferenceWrite(change: ChatPreferenceWrite): { type: string } {
+export function appActionForPreferenceWrite(
+  change: ChatPreferenceWrite,
+  state?: Partial<RootState>,
+): { type: string } {
   switch (change.kind) {
     case "preference":
       return setPreference({
@@ -118,7 +121,8 @@ export function appActionForPreferenceWrite(change: ChatPreferenceWrite): { type
     case "creator-ownership":
       return setIsCreator(change.isCreator);
     case "creator-panel-toggled":
-      return toggleShowCreatorPanel();
+      // A saved preference: the flip is computed from the current value.
+      return setShowCreatorPanel(!(state?.userPreferences?.assistant?.showCreatorPanel === true));
     case "debug-mode-toggled":
       return toggleDebugMode();
     case "debug-data":
@@ -187,7 +191,10 @@ export function withAppChatHost<R extends (state: never, action: never) => unkno
   let lastSources: AppChatSources | null = null;
   const wrapped = (state: WithChatHost | undefined, incoming: unknown): WithChatHost => {
     const action = chatPreferenceWritten.match(incoming as { type: string })
-      ? appActionForPreferenceWrite((incoming as ReturnType<typeof chatPreferenceWritten>).payload)
+      ? appActionForPreferenceWrite(
+          (incoming as ReturnType<typeof chatPreferenceWritten>).payload,
+          state as unknown as Partial<RootState> | undefined,
+        )
       : incoming;
     const next = (reducer as unknown as (s: unknown, a: unknown) => WithChatHost)(state, action);
     if (

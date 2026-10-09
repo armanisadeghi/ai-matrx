@@ -80,7 +80,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
   const rootFiles = useAppSelector(selectRootFiles);
   const activeTabId = useAppSelector(selectActiveTabId);
   const openFile = useOpenLibraryFile();
-  const { focusedLibrarySourceId } = useCodeWorkspace();
+  const { focusedLibrarySourceId, focusedLibraryRowId } = useCodeWorkspace();
   // `?folder=<id>` targets a folder inside "My Files", so that root has to be
   // open for the highlighted row to be reachable — even when the host focused
   // the tree on a library source, and even if focus arrives after mount.
@@ -133,7 +133,10 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
   }
 
   const empty = topFolders.length === 0 && rootFiles.length === 0;
-  const sources = listLibrarySources();
+  const allSources = listLibrarySources();
+  // A host editing ONE row (the Applet editor) shows that row's files only.
+  const onlyRow = focusedLibrarySourceId && focusedLibraryRowId ? focusedLibraryRowId : null;
+  const sources = onlyRow ? allSources.filter((a) => a.sourceId === focusedLibrarySourceId) : allSources;
 
   return (
     <div
@@ -146,7 +149,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
           adapters below and can be stashed when the user isn't using it.
           Auto-collapsed when the host has focused the tree on a specific
           library source. */}
-      <MyFilesRoot
+      {!onlyRow && <MyFilesRoot
         depth={0}
         empty={empty}
         topFolders={topFolders}
@@ -157,7 +160,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
         forceExpanded={Boolean(focusedFolderId)}
         onCreateFile={onCreateFile}
         actions={actions}
-      />
+      />}
 
       {/* Adapter-backed source roots. Each one is lazy — entries are
           fetched when the user expands it, so the Library panel stays
@@ -169,6 +172,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
           adapter={adapter}
           depth={0}
           autoLoad={adapter.sourceId === focusedLibrarySourceId}
+          onlyRowId={onlyRow ?? undefined}
         />
       ))}
     </div>

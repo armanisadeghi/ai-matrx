@@ -16,7 +16,7 @@ import React, {
 } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";
@@ -32,6 +32,8 @@ import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -1145,7 +1147,10 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       isAdmin={isAdmin}
       context={diagnosticContext}
     >
-      {content}
+      {/* The footer's formatting toolbar acts on the editor inside this scope. */}
+      <div data-format-scope="fullscreen-markdown" className="contents">
+        {content}
+      </div>
     </TabErrorBoundary>
   );
 
@@ -1609,6 +1614,16 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
         if (retry) void settleSave(retry);
       } : undefined}
       additionalButtons={additionalButtons}
+      footerLeading={
+        // THE formatting toolbar in every editable tab (Write, Source, Plain) — in the footer row.
+        activeTab === "wysiwyg" || activeTab === "markdown" || activeTab === "write" ? (
+          <FormatButtons
+            className="flex-1"
+            {...(isMobile ? { variant: "essential" as const } : {})}
+            resolve={() => formatTargetWithin(typeof document === "undefined" ? null : document.querySelector('[data-format-scope="fullscreen-markdown"]'))}
+          />
+        ) : null
+      }
       footerContent={primaryActionFooter}
     />
   );

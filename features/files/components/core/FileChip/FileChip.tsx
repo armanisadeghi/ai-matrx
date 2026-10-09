@@ -24,7 +24,7 @@ import { truncateFilename, formatFileSize } from "@/features/files/utils/format"
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { FileIcon } from "@ai-matrx/media/react";
 import { FileDuplicateOfBadge } from "@/features/files/components/core/FileBadges/FileDuplicateOfBadge";
-import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@/components/read-state/ReadGate";
+import { ReadEmpty, ReadStaleNotice, type ReadOutcome } from "@ai-matrx/design-system";
 
 export interface FileChipProps {
   fileId: string;

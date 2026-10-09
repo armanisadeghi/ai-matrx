@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { TapTargetButtonForGroup, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonForGroup, TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { cleanContent } from "@/lib/content-cleanup/clean";

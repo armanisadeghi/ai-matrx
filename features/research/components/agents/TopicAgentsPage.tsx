@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { OverriddenCountBadge } from "@/features/mandates/components/OverriddenCountBadge";
 import { MandateResolutionRibbon } from "@/features/mandates/components/MandateResolutionRibbon";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -14,6 +13,7 @@ import { AgentRoleCard } from "./AgentRoleCard";
 import { useResearchAgentRoles } from "./useResearchAgentRoles";
 import { DeepResearchMandateCard } from "./DeepResearchMandateCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * Reads the JSONB agent_config off a topic and returns the override UUID for
@@ -49,7 +49,7 @@ export default function TopicAgentsPage() {
   // Prefetch the user's full agent catalog so override IDs render with names
   // instead of bare UUIDs. Idempotent at the slice level.
   useEffect(() => {
-    dispatch(fetchAgentsListFull()).catch(() => {
+    ensureAgentCatalog().catch(() => {
       /* names degrade to UUIDs; non-fatal */
     });
   }, [dispatch]);

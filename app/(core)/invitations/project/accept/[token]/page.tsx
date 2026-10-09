@@ -15,7 +15,7 @@ import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
 import type { ProjectRole } from '@/features/projects/types';
 import PageHeader from '@/features/shell/components/header/PageHeader';
-import { ChevronLeftTapButton } from '@ai-matrx/tap-target/buttons';
+import { ChevronLeftTapButton } from '@ai-matrx/design-system/tap-target/buttons';
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

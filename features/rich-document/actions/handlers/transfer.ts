@@ -205,6 +205,7 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
   order: 12,
   run: async (ctx) => {
     try {
@@ -229,6 +230,7 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
   order: 13,
   run: async (ctx) => {
     const toastId = toast.loading("Generating PDF…");
@@ -263,6 +265,7 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
   order: 14,
   run: async (ctx) => {
     const toastId = toast.loading("Building the Word document…");

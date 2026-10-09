@@ -74,7 +74,7 @@ interface Props {
 }
 
 export function MemberRosterTable({ orgSlug, members }: Props) {
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [query, setQuery] = useState("");
@@ -207,7 +207,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         sortable: false,
         cell: (member) => (
           <span className="text-sm text-muted-foreground">
-            {formatMcents(member.cost24hMcents, unit)}
+            {formatMcents(member.cost24hMcents, costRate, unit)}
           </span>
         ),
       },
@@ -226,7 +226,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
           ),
       },
     ],
-    [unit],
+    [unit, costRate],
   );
   const selectionCopy = useMemo<MatrxDataTableCopyConfig<OrgAdminMember>>(
     () => ({
@@ -237,7 +237,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       listKind: "org-admin-members",
       rowDescription: "One selected member from the organization roster.",
       listDescription: "The selected members from the organization roster.",
-      humanRow: (member) => rosterMemberSummary(member, unit),
+      humanRow: (member) => rosterMemberSummary(member, costRate, unit),
       agentRow: rosterMemberRow,
       rowAttributes: (member) => ({
         user_id: member.userId,
@@ -261,7 +261,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       showToolbar: false,
       showRow: false,
     }),
-    [members.length, orgSlug, query, sort, unit],
+    [members.length, orgSlug, query, sort, unit, costRate],
   );
 
   return (
@@ -317,7 +317,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
             <CopyButtons
               size="icon"
               label="Member roster"
-              human={() => rosterListHuman(members, unit)}
+              human={() => rosterListHuman(members, costRate, unit)}
               json={() => members.map(rosterMemberRow)}
               agent={() =>
                 buildRosterListPayload({
@@ -325,6 +325,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                   orgSlug,
                   searchQuery: query,
                   sort,
+                  rate: costRate,
                   unit,
                 })
               }
@@ -353,13 +354,14 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
             <CopyButtons
               size="xs"
               label={member.displayName || member.email || "Member"}
-              human={() => rosterMemberSummary(member, unit)}
+              human={() => rosterMemberSummary(member, costRate, unit)}
               json={() => rosterMemberRow(member)}
               agent={() =>
                 buildRosterMemberPayload({
                   member,
                   orgSlug,
                   totalMembers: members.length,
+                  rate: costRate,
                   unit,
                 })
               }

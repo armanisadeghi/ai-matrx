@@ -33,13 +33,12 @@ import {
   selectAgentTools,
   selectAgentDirtyFields,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { selectAllTools } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import {
   resetAgentField,
 } from "@/features/agents/redux/agent-builder.slice";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { hasField } from "@ai-matrx/agents/field-flags";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+import { loadAvailableTools, selectAllTools, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 interface AgentToolsModalProps {
   agentId: string;
@@ -63,7 +62,7 @@ export function AgentToolsModal({
   const selectedTools = useAppSelector((state) =>
     selectAgentTools(state, agentId),
   );
-  const allTools = useAppSelector(selectAllTools);
+  const allTools = useToolCatalog(selectAllTools);
   const dirtyFields = useAppSelector((state) =>
     selectAgentDirtyFields(state, agentId),
   );
@@ -111,7 +110,7 @@ export function AgentToolsModal({
     hadCustomToolsDirtyOnOpen.current = dirtyFields
       ? hasField(dirtyFields, "customTools")
       : false;
-    dispatch(fetchAvailableTools());
+    void loadAvailableTools();
     setOpen(true);
   }, [dirtyFields, dispatch]);
 

@@ -14,8 +14,8 @@
 // registries. Industries themselves have no record route (this console IS their
 // home; the left list selects one), so they stay plain by design.
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useMemo, useState } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";

@@ -112,7 +112,7 @@ export const EXTRA_WRITE_DOORS = ["create_user_list", "udt_row_words_many"] as c
  * Old modules (import specifiers) that retired with the older half of the Data tables screen. The
  * `utils/user-table-utls` helpers were folded into `features/data-tables` (lane OLD-READERS-REMOVAL);
  * a re-created import is RED. `components/user-generated-table-data` is NOT here: what is left of it
- * is the Sheet layout over the record store (`UserTableViewer` through `features/data-tables/service.ts`),
+ * is the column header menu over the record store (through `features/data-tables/service.ts`),
  * and the table and door scans above prove it reaches nothing older.
  */
 export const OLD_MODULES = ["@/utils/user-table-utls"] as const;

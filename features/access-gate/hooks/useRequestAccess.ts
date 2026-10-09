@@ -15,7 +15,6 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { submitFeedback } from "@/actions/feedback.actions";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { createSettingAccessRequest } from "@/features/access-gate/service/accessRequests";
 import { REQUEST_ACCESS_MANUAL_ACTION } from "@/features/messaging/actions/settingRequestActionRegistry";
 import {
@@ -30,6 +29,7 @@ import {
   type RequestAccessTarget,
   type RequestContext,
 } from "@/features/access-gate/service/requestAccess";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export interface RequestAccessResult {
   /** A pending ask already existed — nothing new was sent. */
@@ -63,9 +63,7 @@ export function useRequestAccess(target: RequestAccessTarget) {
         // The request is filed under an organization; with none selected yet, ASK and continue
         // (ensureOrganizationContext waits for boot and opens the picker) — never a refusal
         // spelled from a nullable id while boot is still resolving (check:org-three-states).
-        const organizationId = await ensureOrganizationContext({
-          organizationId: activeOrganizationId,
-        });
+        const organizationId = await ensureOrgId(null);
         const result = await submitFeedback({
           // The feedback vocabulary's access-request type; `metadata` carries
           // the structured target (FEATURE.md, RequestAccess).

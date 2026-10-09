@@ -43,7 +43,7 @@ import { useDeleteTopicalMap, useMapDiagnostics, useSetSiteMap } from "../hooks"
 import { useMapLinks } from "../links";
 import type { TopicalMap } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

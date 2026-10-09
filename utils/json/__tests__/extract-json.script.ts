@@ -12,13 +12,13 @@ import {
   extractFirstJson,
   extractFirstObject,
   containsJson,
-} from "@ai-matrx/kit/json-extract";
+} from "@ai-matrx/content-ir/json-extract";
 import {
   findBalancedEnd,
   findAllFencedBlocks,
   computeClosingSequence,
-} from "@ai-matrx/kit/json-extract";
-import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
+} from "@ai-matrx/content-ir/json-extract";
+import { StreamingJsonTracker } from "@ai-matrx/content-ir/json-extract";
 
 let passed = 0;
 let failed = 0;

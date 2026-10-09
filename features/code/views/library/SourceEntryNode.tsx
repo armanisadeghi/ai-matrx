@@ -38,6 +38,8 @@ import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface SourceEntryNodeProps {
+  /** Start open (the one row a focused host is editing). */
+  defaultExpanded?: boolean;
   adapter: LibrarySourceAdapter;
   entry: SourceEntry;
   depth: number;
@@ -74,8 +76,9 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
   onOpen,
   onRename,
   onRefresh,
+  defaultExpanded = false,
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(entry.name);
   const [renaming_busy, setRenamingBusy] = useState(false);

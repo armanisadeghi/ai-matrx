@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useModels } from "@/features/ai-models/hooks/useModels";
-import { useModelLabelWithClass } from "@/features/ai-models/hooks/useModelClassLabel";
+import { useModelLabelWithClass } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { settingsControlSearchId } from "@/components/official/settings/searchIdentity";
 import {

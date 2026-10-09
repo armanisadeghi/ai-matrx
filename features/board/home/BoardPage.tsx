@@ -20,9 +20,10 @@ import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/work
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { BoardOrganizationProvider } from "../items/board-organization";
+import { BoardChatsProvider, BoardHomeChatFiler } from "../items/board-chats";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
 import { BOARD_TOKEN } from "../persistence/boardsService";
 import { useCreateBoard } from "../persistence/useCreateBoard";
@@ -122,15 +123,18 @@ export function BoardPage({
                   />
                 )}
                 <BoardOrganizationProvider value={ready.board.organizationId}>
-                  <UserBoard
-                    key={ready.board.id}
-                    boardId={ready.board.id}
-                    title={ready.board.title}
-                    doc={ready.board.doc}
-                    viewerCamera={ready.board.viewerCamera}
-                    onChange={ready.save}
-                    onCamera={ready.saveCamera}
-                  />
+                  <BoardChatsProvider key={ready.board.id} boardId={ready.board.id} organizationId={ready.board.organizationId}>
+                    <BoardHomeChatFiler />
+                    <UserBoard
+                      key={ready.board.id}
+                      boardId={ready.board.id}
+                      title={ready.board.title}
+                      doc={ready.board.doc}
+                      viewerCamera={ready.board.viewerCamera}
+                      onChange={ready.save}
+                      onCamera={ready.saveCamera}
+                    />
+                  </BoardChatsProvider>
                 </BoardOrganizationProvider>
               </>
             )}

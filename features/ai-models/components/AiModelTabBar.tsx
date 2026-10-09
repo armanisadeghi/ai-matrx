@@ -59,26 +59,28 @@ export default function AiModelTabBar(props: AiModelTabBarProps) {
               >
                 <span>{tab.label}</span>
                 <span className="text-muted-foreground">{props.counts[tab.id] ?? 0}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Close ${tab.label}`}
-                  className="ml-1 rounded p-0.5 opacity-0 hover:bg-background group-hover:opacity-100"
-                  onClick={(event) => {
+              </Button>
+            )}
+            {!editing && (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`Close ${tab.label}`}
+                className="mr-1 rounded p-0.5 opacity-0 hover:bg-background group-hover:opacity-100"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  props.onCloseTab(tab.id);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
                     event.stopPropagation();
                     props.onCloseTab(tab.id);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      props.onCloseTab(tab.id);
-                    }
-                  }}
-                >
-                  <X className="size-3" />
-                </span>
-              </Button>
+                  }
+                }}
+              >
+                <X className="size-3" />
+              </span>
             )}
           </div>
         );

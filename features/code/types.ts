@@ -151,7 +151,7 @@ export interface EditorFile {
   cloudFileId?: string;
   /**
    * Remote `updated_at` captured at load time for source-backed tabs
-   * (prompt apps, agent apps, tool UIs). Used by the optimistic
+   * (prompt apps, Applets, tool UIs). Used by the optimistic
    * concurrency check inside `useSaveActiveTab`, and refreshed live
    * via `useTabRealtimeWatcher` so the conflict path can degrade to a
    * soft warning when the remote row moves under the user's feet.

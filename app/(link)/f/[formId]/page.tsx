@@ -35,7 +35,7 @@ import { notFound } from "next/navigation";
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { FormLookFrame } from "@ai-matrx/records-ui";
 import { isPortalAccent, type PortalStyle as RecordsPortalStyle } from "@ai-matrx/records";
-import { prefillFromLink, publicForm, type PublicForm } from "@/features/forms/service";
+import { prefillFromLink, publicForm, publicFormOptions, type PublicForm } from "@/features/forms/service";
 
 import { PublicFormRunner } from "./PublicFormRunner";
 
@@ -105,16 +105,38 @@ export default async function PublicFormPage({
   // ONE frame draws it — cover, logo, name, title, colour, footer — the same component the builder's
   // preview uses, so an owner sees exactly what a stranger will. Its colour becomes the primary of
   // everything inside it: the buttons, the progress line, the focus ring and the choice rows.
+  // EMBED MODE (`?embed=1`): the same form inside somebody else's page — an inline iframe or the
+  // popup / slider of /embed/form.js — without the page's own outer spacing.
+  const embedded = query["embed"] === "1";
+  // TYPEFORM-2: the owner's header and choice auto-advance — the form's override over the org's knob.
+  const options = await publicFormOptions(formId);
+
   return (
     // NOTHING ON THIS PAGE BUT THE FORM. It is somebody's clinic asking their patient four
     // questions: one column, the title and every answer box on one left edge, full width of the
     // column at any screen size (the live walk measured a 166 px box at 390 px).
-    <main className="matrx-touch-targets mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 px-4 pb-safe pt-6 sm:px-5 sm:pt-10">
-      <FormLookFrame look={recordsFormLook(form.presentation?.look ?? null)} title={form.title}>
+    <main
+      className={
+        embedded
+          ? "matrx-touch-targets mx-auto flex w-full max-w-2xl flex-col gap-4 px-3 py-3"
+          : "matrx-touch-targets mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-4 px-4 pb-safe pt-6 sm:px-5 sm:pt-10"
+      }
+      data-form-embedded={embedded ? "" : undefined}
+    >
+      <FormLookFrame
+        look={recordsFormLook(form.presentation?.look ?? null)}
+        title={form.title}
+        showOwnerHeader={options.show_owner_header}
+      >
         {/* PREFILL BY LINK (lane S7-PRIME): `?<question key>=<answer>` starts the form with
             that answer in its question. Resolved HERE, against the form's own questions and
             Field kinds, so the first paint is already filled in. */}
-        <PublicFormRunner form={form} prefill={prefillFromLink(form, query).answers} />
+        <PublicFormRunner
+          form={form}
+          prefill={prefillFromLink(form, query).answers}
+          linkQuery={query}
+          autoAdvance={options.choice_auto_advance}
+        />
       </FormLookFrame>
     </main>
   );

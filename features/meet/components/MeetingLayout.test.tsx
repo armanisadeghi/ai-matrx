@@ -4,10 +4,13 @@ import { renderToString } from "react-dom/server";
 import type { MeetingRecord, RoomName } from "@ai-matrx/meet/react";
 import { MeetingLayout } from "./MeetingLayout";
 
-let mockPhase = "connected";
+let mockPhase = "in_call";
 
+jest.mock("@/features/meet/app-panels/registry", () => ({ MEET_APP_PANELS: {} }));
 jest.mock("@ai-matrx/meet/react", () => ({
-  MeetingRoom: ({ headerControls }: { headerControls?: React.ReactNode }) => (
+  MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MeetAppPanels: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MeetingSkinRoot: ({ headerControls }: { headerControls?: React.ReactNode }) => (
     <div data-testid="package-room">
       {headerControls}
       <div className="mx-meet__controls" />
@@ -49,7 +52,7 @@ function renderLayout() {
 describe("MeetingLayout", () => {
   beforeEach(() => {
     window.localStorage.clear();
-    mockPhase = "connected";
+    mockPhase = "in_call";
   });
 
   it("defaults to the package's room, with the layout switch while connected", () => {
@@ -75,7 +78,7 @@ describe("MeetingLayout", () => {
 
   it("never replaces pre-join, lobby or the record: outside the room it is always the package's", () => {
     window.localStorage.setItem("matrx.meet.layout", "board");
-    for (const phase of ["idle", "lobby", "left", "failed"]) {
+    for (const phase of ["resolving", "prejoin", "waiting:knocking", "left", "disconnected", "refused:locked"]) {
       mockPhase = phase;
       const view = renderLayout();
       expect(view.container.querySelector('[data-testid="package-room"]')).not.toBeNull();
@@ -124,7 +127,7 @@ describe("the Room | Board switch on a phone", () => {
       observe() {}
       disconnect() {}
     };
-    mockPhase = "connected";
+    mockPhase = "in_call";
     window.localStorage.clear();
     try {
       const view = renderLayout();
@@ -173,7 +176,7 @@ describe("MeetingLayout onLeave", () => {
 
   it("fires once when the person leaves the room (connected → left)", () => {
     const onLeave = jest.fn();
-    mockPhase = "connected";
+    mockPhase = "in_call";
     const view = mount(onLeave);
     expect(onLeave).not.toHaveBeenCalled();
     mockPhase = "left";

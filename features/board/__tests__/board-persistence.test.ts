@@ -3,7 +3,7 @@ import { recordKeyOf } from "../board/document";
 // Each case fails when the behaviour it names breaks.
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: () => ({ from: () => ({}) }) } }));
-jest.mock("@/lib/organization/organization-gate", () => ({ ensureOrganizationContext: jest.fn() }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 
 import { parseBoardDocument } from "../board/document";
 import { createAutosaver } from "../persistence/autosave";

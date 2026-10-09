@@ -61,7 +61,7 @@ import { MandateStatusControl } from "@/features/mandates/status/MandateStatusCo
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 

@@ -36,7 +36,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ArrowUpRight, CircleAlert, CircleCheck, Loader2, LockKeyhole, Radar } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";

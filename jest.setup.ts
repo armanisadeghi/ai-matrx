@@ -10,7 +10,7 @@
 
 // Dummy Supabase env vars so `utils/supabase/client.ts` doesn't throw when
 // tests transitively import code that instantiates the browser client at
-// module load (e.g. Tools-grid selectors pull in modelRegistrySlice).
+// module load (e.g. Tools-grid selectors pull in chat's store slices).
 // Tests never hit real Supabase — mocks or fake-indexeddb stand in.
 //
 // Only the new sb_publishable_* env var is seeded here. The legacy
@@ -392,7 +392,15 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     /* eslint-enable @typescript-eslint/no-require-imports */
     uiSeam.registerChatUi({
       ErrorAlchemyMenu: slot("@/components/errors/ErrorAlchemyMenu", "ErrorAlchemyMenu"),
-      ErrorNotice: slot("@/components/errors/ErrorNotice", "ErrorNotice"),
+      // Package cards (RunFailureCard, ...) print the server's sentence through these two slots.
+      TextWithDoors: slot("@/components/official/entity-ref/TextWithDoors", "TextWithDoors"),
+      ServerNotes: slot("@/components/official/ServerNotes", "ServerNotes"),
+      // Function slots the package calls through (read lazily, so a test's own mock of the catalogue wins).
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      peekMandateCatalogueEntry: (...args: unknown[]) =>
+        (require("@/features/mandates/catalogue").peekMandateCatalogueEntry as (...a: unknown[]) => unknown)(...args),
+      invalidateMandateCatalogueCache: () => require("@/features/mandates/catalogue").invalidateMandateCatalogueCache(),
+      /* eslint-enable @typescript-eslint/no-require-imports */
     });
   }
   const scopes = lazy({
@@ -509,7 +517,7 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     },
     ensureOrganizationContext: (options) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require("@/lib/organization/organization-gate").ensureOrganizationContext(options),
+      require("@/lib/organizations/ensureOrgId").ensureOrgId(options?.organizationId ?? null),
     shareLinks: lazy("@/utils/permissions/shareLinks"),
     notify: {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -13,7 +13,7 @@
 //
 // THE DOOR LAW: every record named here opens.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, GitMerge, Merge, Undo2 } from "lucide-react";

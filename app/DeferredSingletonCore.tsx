@@ -12,14 +12,17 @@
 // deferred further, that logic belongs in the wrapper (or the widget's own
 // file), never in this core.
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import { useWarmup } from "@ai-matrx/agents/react";
 import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
+import { whenPrimaryContentShown } from "@/lib/boot/primaryContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
+import PersonTimeZoneCapture from "@/components/layout/PersonTimeZoneCapture";
 import { LinkOrganizationWatcher } from "@/features/organizations/components/LinkOrganizationWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
@@ -37,14 +40,13 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { ensureScopeSkeleton } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
-import { fetchEntitlementSnapshot } from "@/features/entitlements/service";
+import { fetchEntitlementSnapshot, forgetEntitlementSnapshot } from "@/features/entitlements/service";
 import { UsageGateBridge } from "@/features/entitlements/usage-gate/UsageGateBridge";
 import {
   setEntitlementSnapshot,
   clearEntitlements,
 } from "@/features/entitlements/state/entitlementsSlice";
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
-import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
 import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
 
 
@@ -52,6 +54,33 @@ export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const organizationId = useAppSelector(selectOrganizationId);
+
+  // WARM-UP (contract: common-docs systems/architecture/warm-cache/CONTRACT.md).
+  // Session ready (signed in + an active org) → warm the person's core data;
+  // the active org changing for the SAME person → re-warm core + that org.
+  // A rehydrate that re-dispatches the same id never changes `organizationId`,
+  // so it never re-warms (the same before/after rule as
+  // features/mandates/redux/org-switch-cache-middleware.ts). The primitive
+  // dedupes per person+org for 60s and is silent when the server says no.
+  const warmup = useWarmup();
+  const warmedFor = useRef<{ userId: string; organizationId: string } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!warmup || !user?.id || !organizationId) return;
+    const before = warmedFor.current;
+    if (before?.userId === user.id && before.organizationId === organizationId)
+      return;
+    warmedFor.current = { userId: user.id, organizationId };
+    if (before?.userId === user.id) {
+      warmup.warm(
+        [{ key: "core" }, { key: "org", id: organizationId }],
+        "org_change",
+      );
+    } else {
+      warmup.warm([{ key: "core" }], "session");
+    }
+  }, [warmup, user?.id, organizationId]);
 
   // NOTE: global error capture + persistence install live in the WRAPPER
   // (DeferredSingletonWrapper.tsx), not here — they must be running during
@@ -64,13 +93,17 @@ export default function DeferredSingletonCore() {
   // THE PAGED TREE (lane SCOPES-TREE-PAGED): the skeleton first (organizations, projects, scope
   // types — what every first paint draws), then the whole tree at idle for the readers that still
   // read every scope. Read switch OFF: the skeleton IS the whole tree and the second task is a no-op.
+  // Both wait for the page's own rows (`lib/boot/primaryContent`, lane PAGE-BUNDLE-2): the tree's
+  // `custom.context_tree` is ~1.2 s of database work that competed with a table page's first page.
   useIdleTask("ensure-scope-tree", 1, async () => {
     if (!user?.id) return;
+    await whenPrimaryContentShown();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dispatch(ensureScopeSkeleton() as any);
   });
   useIdleTask("ensure-scope-tree-whole", 5, async () => {
     if (!user?.id) return;
+    await whenPrimaryContentShown();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch(ensureScopeTree() as any);
   });
@@ -101,6 +134,7 @@ export default function DeferredSingletonCore() {
     let cancelled = false;
     void (async () => {
       if (!user?.id) {
+        forgetEntitlementSnapshot();
         dispatch(clearEntitlements());
         return;
       }
@@ -121,13 +155,6 @@ export default function DeferredSingletonCore() {
       <OverlayController />
       {/* G1: files any `__kind` drawn as raw text (never-raw law). */}
       <KindLeakSentinel />
-      {/* Render-free until an action needs it. The ONE app-wide answer to "you
-          have no organization selected": instead of refusing the action and
-          sending the person somewhere else to fix it, this asks which workspace
-          and then lets the blocked action finish in it. Global on purpose — the
-          question can be raised by any API call, any upload, and any AI run, so
-          it cannot live inside one feature. See lib/organization/organization-gate.ts. */}
-      <OrganizationGateDialog />
       {/* Render-free until a usage limit is hit: the usage gate's boot read,
           server notifications, near/over notice and limit dialog. */}
       <UsageGateBridge />
@@ -164,6 +191,7 @@ export default function DeferredSingletonCore() {
           a link followed while the app is already warm. */}
       <LinkOrganizationWatcher />
       <AuthSessionWatcher />
+      <PersonTimeZoneCapture />
       <AnnouncementProvider />
       <AdminFeatureProvider />
       <ErrorInspectorBadge />

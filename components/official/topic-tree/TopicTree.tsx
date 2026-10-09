@@ -26,7 +26,7 @@ import { DndContext, DragOverlay, pointerWithin, useDroppable } from "@dnd-kit/c
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { cn } from "@/lib/utils";
-import { ReadEmpty, ReadStaleNotice } from "@/components/read-state/ReadGate";
+import { ReadEmpty, ReadStaleNotice } from "@ai-matrx/design-system";
 
 import {
   TOPIC_TREE_HOVER_DELAY_MS,

@@ -60,12 +60,15 @@ export function StateCell({
   if (onToggle || onInspect) {
     return (
       <span className="flex h-11 w-full items-center gap-1 lg:h-6 lg:gap-0.5">
+        {/* A disabled <button> gets no mouseleave in Chrome, so its native
+            tooltip stuck over the table (G18 review, "No"): an inert toggle
+            is aria-disabled, and only a live one carries a tooltip. */}
         <button
           type="button"
-          title={toggleLabel ?? meta.label}
+          title={onToggle ? toggleLabel : undefined}
           aria-label={toggleLabel ?? meta.label}
-          disabled={!onToggle || busy}
-          onClick={onToggle}
+          aria-disabled={!onToggle || busy || undefined}
+          onClick={onToggle && !busy ? onToggle : undefined}
           className={cn(
             "inline-flex h-11 min-w-11 flex-1 items-center justify-center rounded-sm transition-colors lg:h-5 lg:min-w-0",
             meta.bg,
@@ -93,9 +96,13 @@ export function StateCell({
       </span>
     );
   }
+  // No native tooltip on a passive cell: the table re-renders rows under the
+  // pointer and a removed node's tooltip stays on screen (G18 review).
   return (
     <span
-      title={meta.label}
+      role="img"
+      aria-label={meta.label}
+      data-state-cell={state}
       className={cn(
         "inline-flex h-5 w-full items-center justify-center rounded-sm",
         meta.bg,

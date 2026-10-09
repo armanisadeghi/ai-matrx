@@ -1,7 +1,7 @@
 'use client';
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { aiModelService } from '../service';

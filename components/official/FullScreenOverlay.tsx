@@ -44,6 +44,8 @@ export interface FullScreenOverlayProps {
   onCancel?: () => void;
   cancelButtonLabel?: string;
   additionalButtons?: ReactNode;
+  /** Leads the footer row and takes its free width (an editor's formatting toolbar). */
+  footerLeading?: ReactNode;
   width?: string;
   height?: string;
   // New optional props for split view
@@ -146,6 +148,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   onCancel,
   cancelButtonLabel = "Cancel",
   additionalButtons,
+  footerLeading,
   width = "90vw",
   height = "95dvh",
   sidePanel,
@@ -389,17 +392,20 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
 
   // ── Shared footer ──────────────────────────────────────────────────────
   const hasFooter =
-    showSaveButton || showCancelButton || additionalButtons || footerContent;
+    showSaveButton || showCancelButton || additionalButtons || footerContent || footerLeading;
 
   const footerInner = hasFooter ? (
     <div
       className={cn(
-        "border-t flex-shrink-0 bg-background",
+        // w-full: DialogFooter is a flex row that would otherwise hug this row,
+        // squeezing the formatting toolbar (footerLeading) into its More menu.
+        "border-t flex-shrink-0 bg-background w-full",
         isMobile
           ? "flex flex-row items-center justify-between gap-1 p-1.5 pb-safe"
           : "flex items-center justify-end p-1 pr-3",
       )}
     >
+      {footerLeading && <div className="flex min-w-0 flex-1 items-center">{footerLeading}</div>}
       {additionalButtons && (
         <div
           className={cn(

@@ -43,13 +43,14 @@ import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
 import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { EditInPlaceText } from "@ai-matrx/rich-editor/in-place/EditInPlaceText";
 import { NotesView } from "@/features/notes/components/NotesView";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode, updateNoteLabel } from "@/features/notes/redux/slice";
 import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationStudyGuidesScope } from "@/features/surfaces/manifests/education-study-guides.manifest";
 import { createEducationStudyGuideScope, EDUCATION_STUDY_GUIDE_SURFACE_NAME } from "@/features/surfaces/manifests/education-study-guide.manifest";
@@ -81,7 +82,7 @@ import {
 import { AnnotationPanel } from "@/features/rich-document/annotations/AnnotationPanel";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotations/sourceSave";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
@@ -274,6 +275,8 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
   }, [jumpRequest]);
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
     <div className="absolute right-3 top-2 z-20 flex gap-1">
+      {/* THE content action set: Copy, Plain, Export, Print, Transform — one click each. */}
+      <RichCopySplit size="sm" label={`Study guide "${guide.label || "Untitled guide"}"`} human={() => guide.content ?? ""} contentFlavor="markdown" exportTitle={guide.label || "Study guide"} viewKey={richDocumentViewKey(noteIdentityContentSource(guide.id), "")} className="rounded-md border border-border bg-background" />
       <Button icon={<Search aria-hidden />} variant="outline" aria-label="Search this guide" title="Search this guide" onClick={openFind} />
       <Button icon={<Pencil aria-hidden />} variant="outline" aria-label="Edit study guide" title="Edit study guide" onClick={canEdit ? () => setEditingBody(true) : onEdit} />
       {canEdit && <Button icon={<TextCursorInput aria-hidden />} variant="outline" aria-label="Rename study guide" title="Rename study guide" onClick={() => setEditingTitle(true)} />}
@@ -420,7 +423,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
       const note = await persistGuide({ title: "Untitled study guide", content: "" });
       router.push(`/education/study-guides/${note.id}?edit=1`);
     } catch (cause) {
-      if (!isOrganizationSelectionCancelled(cause)) setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
+      setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
     } finally {
       setCreatingGuide(false);
     }
@@ -505,7 +508,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
             return { id: note.id, name: note.label };
           },
           nameOf: (plan) => plan.title,
-          refusalFor: (cause) => isOrganizationSelectionCancelled(cause) ? "The person closed the workspace picker, so no study guide was created." : undefined,
+          refusalFor: (cause) => undefined,
         },
         update: {
           parse: (value) => {

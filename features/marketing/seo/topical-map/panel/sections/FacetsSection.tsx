@@ -40,7 +40,7 @@ import { selectMapTopic, selectMapTopicFacetsWithInheritance } from "../../redux
 import type { MapFacet, MapFacetValue } from "../../types";
 import { FacetChip } from "../../ui/FacetChip";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface FacetsSectionProps {
   mapId: string;

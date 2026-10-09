@@ -47,9 +47,6 @@ import instanceResources, {
   addResource,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import Host_FloatingSheet from "@/components/official/FloatingSheet";
-
 import { AgentSidebarOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentSidebarOverlay";
 import { AgentPanelOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentPanelOverlay";
 import { AgentFullModal } from "@ai-matrx/chat/agents/components/agent-widgets/AgentFullModal";
@@ -65,10 +62,6 @@ jest.mock("@ai-matrx/chat/agents/components/smart/AgentRunner", () => ({
 jest.mock("@ai-matrx/chat/agents/components/agent-widgets/useAgentShellAddress", () => ({
   useAgentShellAddress: () => undefined,
 }));
-
-// The side drawer and side panel draw the host's FloatingSheet (a slot): this suite is about the
-// shell's Escape/outside-click rule, so it registers the real sheet, the way the app does.
-registerChatUi({ FloatingSheet: Host_FloatingSheet });
 
 const CONVERSATION_ID = "11111111-2222-3333-4444-555555555555";
 

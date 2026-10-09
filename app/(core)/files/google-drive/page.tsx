@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { GoogleDriveLibrary } from "@/features/files/google-drive/GoogleDriveLibrary";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 /** Restricted whole-Drive metadata review lives inside the authenticated Files area. */
 export default async function GoogleDriveFilesPage() {

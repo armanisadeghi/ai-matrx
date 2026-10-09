@@ -73,7 +73,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ─── Props ────────────────────────────────────────────────────────────────────

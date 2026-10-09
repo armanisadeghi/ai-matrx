@@ -54,9 +54,9 @@ import {
   type MatrxDataTableCopyConfig,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];

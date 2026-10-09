@@ -59,7 +59,10 @@ function ProjectNavItem({
   orgSlug: string;
   isActive: boolean;
 }) {
-  const RoleIcon = getRoleIcon(project.role);
+  const roleIconClassName = cn(
+    "h-3 w-3 flex-shrink-0",
+    isActive ? "text-primary" : "text-muted-foreground",
+  );
 
   return (
     <Link
@@ -76,23 +79,9 @@ function ProjectNavItem({
         <Puzzle className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
       </div>
       <span className="flex-1 truncate">{project.name}</span>
-      <RoleIcon
-        className={cn(
-          "h-3 w-3 flex-shrink-0",
-          isActive ? "text-primary" : "text-muted-foreground",
-        )}
-      />
+      {project.role === "owner" && <Crown className={roleIconClassName} />}
+      {project.role === "admin" && <Shield className={roleIconClassName} />}
+      {project.role === "member" && <UserIcon className={roleIconClassName} />}
     </Link>
   );
-}
-
-function getRoleIcon(role: string) {
-  switch (role) {
-    case "owner":
-      return Crown;
-    case "admin":
-      return Shield;
-    default:
-      return UserIcon;
-  }
 }

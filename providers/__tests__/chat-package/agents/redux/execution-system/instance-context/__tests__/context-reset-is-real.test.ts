@@ -3,8 +3,8 @@
  *
  * Defect (found 2026-09-12): `setContextEntries` upserts every incoming key and
  * never deletes one, so `setContextEntries({ conversationId, entries: [] })` —
- * which the agent-app reset path used — cleared nothing. Resetting a
- * conversation in an agent app left the previous turn's context values in
+ * which the applet reset path used — cleared nothing. Resetting a
+ * conversation in an Applet left the previous turn's context values in
  * place, and they leaked into the next conversation. The sibling instance was
  * the per-column model-override Clear chip, which "removed" a key by re-sending
  * the overrides map without it through the equally merge-only `setOverrides`.

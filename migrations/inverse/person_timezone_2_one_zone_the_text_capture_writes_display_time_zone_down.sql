@@ -1,0 +1,4 @@
+-- lane: PERSON-TIMEZONE-2
+-- lock: communication
+-- chair-step: the inverse. Re-apply aidream/db/migrations/1015_the_timezone_is_asked_once_and_never_of_the_boss.sql's record_person_timezone body
+-- and the person_notification_window body without its 'person_preference' first rung (the live body before this change used created_by, not user_id).

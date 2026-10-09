@@ -45,7 +45,7 @@ import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,8 +142,8 @@ import {
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -507,7 +507,7 @@ export function SourcesPage() {
       // Name the organization first: the scraper refuses without one, and the
       // person should be asked to choose — not told the page was unreadable.
       // org-refusal-presented-by: features/sources/addFailure.ts
-      await ensureOrgId(activeOrgId);
+      await ensureOrgId(null);
       const result = await scrapeUrl(
         /^https?:\/\//i.test(url) ? url : `https://${url}`,
       );
@@ -553,7 +553,7 @@ export function SourcesPage() {
     setAdding(true);
     setAddError(null);
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       const body = await buildPastedTextLanding({
         text: textInput,
         name: textName,

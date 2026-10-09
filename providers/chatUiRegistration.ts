@@ -17,22 +17,24 @@ import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPr
 import { AgentEditAccessBadge } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { DataRefPreviewContent } from "@/features/agents/components/previews/DataRefHoverPreview";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
-import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
 import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
-import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
+// The preview hook loads its markdown renderer (KaTeX, ~680 KB) when a preview first opens (lane AF).
+import { useHtmlPreviewStateOnDemand } from "@/features/html-pages/hooks/useHtmlPreviewStateOnDemand";
 import { fetchArtifactsForMessageThunk, updateArtifactThunk, registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import { selectHtmlPageArtifactForMessage } from "@/lib/redux/selectors/artifactSelectors";
-import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
+// The compiler (@ai-matrx/code-runtime + the ~2 MB Babel standalone) loads on the first stored
+// body a chat run actually compiles — never in the shell's eager client set (lane AE, 2026-10-08;
+// guard: pnpm check:shell-eager-graph). The package awaits this slot (@ai-matrx/chat ≥ 0.5.0).
+import type { CompileStoredArgs } from "@/lib/code-runtime/compile-stored";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { refreshNoteContent, fetchNotesList, saveNoteField } from "@/features/notes/redux/thunks";
 import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import { useRegisterChatAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
-import { useSkills } from "@/features/skills/hooks/useSkills";
 import { useAutoLabel, generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import { usePickListForSelection } from "@/features/data-tables/pick-lists/hooks/usePickListForSelection";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
@@ -45,7 +47,6 @@ import { selectEditorState } from "@/features/code-editor/redux/editor-state.sli
 import { selectActiveSandboxId, selectActiveSandboxProxyUrl, selectEditorMode } from "@/features/code/redux/codeWorkspaceSlice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
 import { loadCodeEditHistoryThunk } from "@/features/code/redux/codeEditHistoryHydration";
-import { applySkillStreamEvent, isSkillStreamEvent } from "@/features/skills/service/skillsStreamHandler";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
 import { noteBrowserActivity, selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
@@ -53,7 +54,6 @@ import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/a
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
-import { convertMarkdownToHtml } from "@/features/html-pages/utils/html-preview-utils";
 import { selectAllContentBlocksArray, selectContentBlocksByScope, selectContentBlocksByScopeRef, selectActiveContentBlocks } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { createElement } from "react";
 import { Loader2 } from "lucide-react";
@@ -72,17 +72,17 @@ registerChatUi({
   AgentEditAccessBadge,
   DataRefPreviewContent,
   BlockHoverPreview,
-  ConversationHoverPreview,
   NoteEditorCore,
   ToolResultCanvasOpener,
   CloudBrowserHandoffCanvasOpener,
   SimpleTerminal,
-  useHtmlPreviewState,
+  useHtmlPreviewState: useHtmlPreviewStateOnDemand,
   fetchArtifactsForMessageThunk,
   updateArtifactThunk,
   registerArtifactThunk,
   selectHtmlPageArtifactForMessage,
-  compileStoredComponent,
+  compileStoredComponent: async (args: CompileStoredArgs) =>
+    (await import("@/lib/code-runtime/compile-stored")).compileStoredComponent(args),
   reportCanvasOpenDrop,
   refreshNoteContent,
   fetchNotesList,
@@ -91,7 +91,6 @@ registerChatUi({
   humanLines,
   useCanvasOpenGuard,
   useRegisterChatAttachTarget,
-  useSkills,
   useAutoLabel,
   generateLabelFromContent,
   usePickListForSelection,
@@ -107,8 +106,6 @@ registerChatUi({
   selectEditorMode,
   receivedFsChange,
   loadCodeEditHistoryThunk,
-  applySkillStreamEvent,
-  isSkillStreamEvent,
   materializeMessageArtifacts,
   reconcileMessagesArtifacts,
   noteBrowserActivity,
@@ -122,7 +119,10 @@ registerChatUi({
   createSandboxFilesystemAdapter: (instanceId: string) => new SandboxFilesystemAdapter(instanceId),
   notesGetById: (id: string) => NotesAPI.getById(id),
   createHtmlPage: (...args: Parameters<typeof HTMLPageService.createPage>) => HTMLPageService.createPage(...args),
-  convertMarkdownToHtml,
+  // Loads @ai-matrx/print/markdown (KaTeX, ~680 KB) on the first share, never on every page;
+  // @ai-matrx/chat >= 0.5.2 awaits this slot.
+  convertMarkdownToHtml: async (markdown: string) =>
+    (await import("@/features/html-pages/utils/html-preview-utils")).convertMarkdownToHtml(markdown),
   sklActions: sklActions,
   selectAllContentBlocksArray,
   selectContentBlocksByScope,
@@ -132,26 +132,6 @@ registerChatUi({
   NoteVersionHistoryPanel: NoteVersionHistoryPanel,
 });
 
-
-import { ReadFailure as Host_ReadFailure } from "@/components/read-state/ReadFailure";
-registerChatUi({
-  ReadFailure: Host_ReadFailure,
-});
-
-import { ItemRow as Host_ItemRow } from "@/components/official/item/ItemRow";
-registerChatUi({
-  ItemRow: Host_ItemRow,
-});
-
-import { UntrustedCount as Host_UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-registerChatUi({
-  UntrustedCount: Host_UntrustedCount,
-});
-
-import { StaleDataNotice as Host_StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-registerChatUi({
-  StaleDataNotice: Host_StaleDataNotice,
-});
 
 import { WorkspaceGate as Host_WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 registerChatUi({
@@ -166,16 +146,6 @@ registerChatUi({
 import { JsonInspector as Host_JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 registerChatUi({
   JsonInspector: Host_JsonInspector,
-});
-
-import { ConfirmDialog as Host_ConfirmDialog } from "@/components/ui/confirm-dialog";
-registerChatUi({
-  ConfirmDialog: Host_ConfirmDialog,
-});
-
-import { ModelListDropdown as Host_ModelListDropdown } from "@ai-matrx/agents/models/react";
-registerChatUi({
-  ModelListDropdown: asSlot(Host_ModelListDropdown),
 });
 
 import { TextWithDoors as Host_TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
@@ -208,34 +178,9 @@ registerChatUi({
   ServerNotes: Host_ServerNotes,
 });
 
-import { OptionCombobox as Host_OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
-registerChatUi({
-  OptionCombobox: Host_OptionCombobox,
-});
-
-import { NumberStepper as Host_NumberStepper } from "@/components/official-candidate/NumberStepper";
-registerChatUi({
-  NumberStepper: Host_NumberStepper,
-});
-
 import { MatrxFloatingFrame as Host_MatrxFloatingFrame } from "@/components/matrx/resizable/MatrxFloatingFrame";
 registerChatUi({
   MatrxFloatingFrame: Host_MatrxFloatingFrame,
-});
-
-import { ItemMenu as Host_ItemMenu } from "@/components/official/item/ItemMenu";
-registerChatUi({
-  ItemMenu: Host_ItemMenu,
-});
-
-import { ClampedNumberInput as Host_ClampedNumberInput } from "@/components/official/ClampedNumberInput";
-registerChatUi({
-  ClampedNumberInput: Host_ClampedNumberInput,
-});
-
-import { AspectRatioSelect as Host_AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
-registerChatUi({
-  AspectRatioSelect: Host_AspectRatioSelect,
 });
 
 import { AnswerTextPreview as Host_AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
@@ -246,11 +191,6 @@ registerChatUi({
 import { AccessGate as Host_AccessGate } from "@/features/access-gate/components/AccessGate";
 registerChatUi({
   AccessGate: Host_AccessGate,
-});
-
-import { ReferenceCopyMenuItem as Host_ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
-registerChatUi({
-  ReferenceCopyMenuItem: Host_ReferenceCopyMenuItem,
 });
 
 import { ReferenceCopyButton as Host_ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
@@ -288,24 +228,9 @@ registerChatUi({
   VoiceTextarea: Host_VoiceTextarea,
 });
 
-import Host_FloatingSheet from "@/components/official/FloatingSheet";
-registerChatUi({
-  FloatingSheet: Host_FloatingSheet,
-});
-
 import Host_AppLink from "@/components/navigation/AppLink";
 registerChatUi({
   AppLink: Host_AppLink,
-});
-
-import Host_IconButton from "@/components/official/IconButton";
-registerChatUi({
-  IconButton: Host_IconButton,
-});
-
-import Host_LightSwitchToggle from "@/components/matrx/LightSwitchToggle";
-registerChatUi({
-  LightSwitchToggle: Host_LightSwitchToggle,
 });
 
 import Host_CitationChip from "@/components/official/citation-chip/CitationChip";
@@ -323,21 +248,6 @@ registerChatUi({
   ErrorBoundaryWithCapture: Host_ErrorBoundaryWithCapture,
 });
 
-import { ConfigurationTable as Host_ConfigurationTable } from "@/components/official/ConfigurationFields";
-import { ConfigurationTableRow as Host_ConfigurationTableRow } from "@/components/official/ConfigurationFields";
-import { FieldHelp as Host_FieldHelp } from "@/components/official/ConfigurationFields";
-registerChatUi({
-  ConfigurationTable: Host_ConfigurationTable,
-  ConfigurationTableRow: Host_ConfigurationTableRow,
-  FieldHelp: Host_FieldHelp,
-});
-
-import { useModelFull as Host_useModelFull } from "@/features/ai-models/hooks/useModels";
-import { useModelOptions as Host_useModelOptions } from "@/features/ai-models/hooks/useModels";
-registerChatUi({
-  useModelFull: Host_useModelFull,
-  useModelOptions: Host_useModelOptions,
-});
 
 import { useOrganizationRequired as Host_useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 registerChatUi({
@@ -349,7 +259,7 @@ registerChatUi({
   useAuthGuardedAction: Host_useAuthGuardedAction,
 });
 
-import { readOf as Host_readOf } from "@/components/read-state/ReadGate";
+import { readOf as Host_readOf } from "@ai-matrx/design-system";
 registerChatUi({
   readOf: Host_readOf,
 });
@@ -361,21 +271,9 @@ registerChatUi({
   replaceAppHref: Host_replaceAppHref,
 });
 
-import { announceComingSoon as Host_announceComingSoon } from "@/lib/coming-soon/announce";
-registerChatUi({
-  announceComingSoon: Host_announceComingSoon,
-});
-
 import { peekSystemOrgId as Host_peekSystemOrgId } from "@/lib/organizations/systemOrg";
 registerChatUi({
   peekSystemOrgId: Host_peekSystemOrgId,
-});
-
-import { toGlobalOwnershipRecord as Host_toGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
-import { fromGlobalOwnershipRecord as Host_fromGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
-registerChatUi({
-  toGlobalOwnershipRecord: Host_toGlobalOwnershipRecord,
-  fromGlobalOwnershipRecord: Host_fromGlobalOwnershipRecord,
 });
 
 
@@ -444,21 +342,8 @@ registerChatUi({
   awaitEffectiveOrganizationId: Host_awaitEffectiveOrganizationId,
 });
 
-import { getAgentCatalog as Host_getAgentCatalog } from "@/lib/agents/catalog";
-registerChatUi({
-  getAgentCatalog: Host_getAgentCatalog,
-});
 
 
-import { resolvePreferredChatModel as Host_resolvePreferredChatModel } from "@/features/ai-models/preferredChatModel";
-registerChatUi({
-  resolvePreferredChatModel: Host_resolvePreferredChatModel,
-});
-
-import { publishedToWebPatch as Host_publishedToWebPatch } from "@/lib/row-access";
-registerChatUi({
-  publishedToWebPatch: Host_publishedToWebPatch,
-});
 
 import { isUuidValue as Host_isUuidValue } from "@/components/official/entity-ref/doors";
 registerChatUi({
@@ -484,20 +369,8 @@ registerChatUi({
   CreatorRunPanel: Host_CreatorRunPanel,
 });
 
-import { AgentSettingsCore as Host_AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
-registerChatUi({
-  AgentSettingsCore: Host_AgentSettingsCore,
-});
 
-import { SettingControlInput as Host_SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
-registerChatUi({
-  SettingControlInput: Host_SettingControlInput,
-});
 
-import { InputCapabilitiesEditor as Host_InputCapabilitiesEditor } from "@/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
-registerChatUi({
-  InputCapabilitiesEditor: Host_InputCapabilitiesEditor,
-});
 
 import { CustomDataBindingSummary as Host_CustomDataBindingSummary } from "@/features/agents/components/variables-management/custom-data/CustomDataBindingSummary";
 registerChatUi({
@@ -509,17 +382,6 @@ registerChatUi({
   CustomDataBindingPreview: Host_CustomDataBindingPreview,
 });
 
-import { AiModelRef as Host_AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
-import { AiToolRef as Host_AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
-registerChatUi({
-  AiModelRef: Host_AiModelRef,
-  AiToolRef: Host_AiToolRef,
-});
-
-import { TextInputDialog as Host_TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-registerChatUi({
-  TextInputDialog: Host_TextInputDialog,
-});
 
 import { ProInput as Host_ProInput } from "@/components/official/ProInput";
 registerChatUi({
@@ -565,3 +427,8 @@ registerChatUi({
   useCostDisplay: Host_useCostDisplay,
 });
 
+
+import { CanvasItemCard as Host_CanvasItemCard } from "@/features/canvas/components/CanvasItemCard";
+registerChatUi({
+  CanvasItemCard: Host_CanvasItemCard,
+});

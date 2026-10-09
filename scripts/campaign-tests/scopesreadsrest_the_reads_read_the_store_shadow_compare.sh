@@ -3,7 +3,7 @@
 #
 # THE USE CASE. Castellano & Reyes files Matters, Clients and Practice Areas; Titanium files its work
 # under 933 Tags; Harbor Dental Group keeps clinic locations. Every one of those is a scope on the
-# older context tables AND a Record of a store Table since the press. The fourteen database readers
+# older context tables AND a Record of a custom table since the press. The fourteen database readers
 # this lane moved (the dictionary, Trash, the dashboard's scope count, create_tasks_bulk's scope check,
 # id links, search's filed-tag words, table facts, the agent's scope references) and the five
 # suggestion views must answer every member exactly what they answered from context.*.

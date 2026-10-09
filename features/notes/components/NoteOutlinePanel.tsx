@@ -1,10 +1,11 @@
 "use client";
 
-// NoteOutlinePanel — floating, draggable document outline for the active note.
+// NoteOutlinePanel — the document outline, DOCKED beside the note (Notion's
+// table of contents, Docs' outline): a column inside the note's own editor
+// row, so it never floats over the note, the Versions tab, or anything else.
 //
-// A page-local WindowPanel (inline close binding — no overlay slice entry, no
-// persistence) rendered by NoteContentEditor when the per-instance
-// `outlineOpen` flag is set. It parses the live editor buffer's markdown
+// Rendered by NoteContentEditor while the per-instance `outlineOpen` flag is
+// set; Escape or its × closes it. It parses the live editor buffer's markdown
 // headings (debounced — never per keystroke; freeze-loop doctrine) and each
 // row jumps the editor to that section:
 //   - plain/split → measure the heading's offset in the textarea via a
@@ -13,20 +14,9 @@
 //   - preview → scroll the preview container to the matching rendered h1–h6;
 //   - write / source (the one editor) → the editor's own heading jump
 //     inside the editor root.
-// Free-form drag/resize come from WindowPanel; the header adds two one-click
-// shape presets (compact / tall) via updateWindowRect.
-//
-// IMPORTANT: this file must stay behind the `dynamic({ ssr: false })` boundary
-// in NoteContentEditor — it imports WindowPanel (bundle invariant).
 
-import React, { useCallback, useMemo } from "react";
-import { Heading1, RectangleHorizontal, RectangleVertical } from "lucide-react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  updateWindowRect,
-  selectWindowRect,
-} from "@/lib/redux/slices/windowManagerSlice";
+import React, { useCallback, useEffect, useMemo } from "react";
+import { Heading1, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@ai-matrx/kit/hooks";
@@ -38,11 +28,6 @@ import type { EditorMode } from "./NoteEditorCore";
 const OUTLINE_PARSE_DEBOUNCE_MS = 400;
 /** Padding above a jumped-to heading so it doesn't sit flush at the top. */
 const JUMP_TOP_PAD_PX = 12;
-
-const SHAPE_PRESETS = {
-  compact: { width: 240, height: 300 },
-  tall: { width: 260, height: 620 },
-} as const;
 
 const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6";
 
@@ -109,9 +94,20 @@ export function NoteOutlinePanel({
   onJumpInEditor,
   onClose,
 }: NoteOutlinePanelProps) {
-  const dispatch = useAppDispatch();
-  const windowId = `note-outline-${instanceId}`;
-  const rect = useAppSelector(selectWindowRect(windowId));
+  // Escape closes the outline (an open dialog or menu keeps the key).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      // The editor swallows Escape (ProseMirror prevents it), so the key is read in the capture
+      // phase; an open dialog, menu or picker closes first and keeps the key.
+      const target = event.target as Element | null;
+      if (target?.closest?.("[role='dialog'], [role='menu'], [role='listbox']")) return;
+      if (document.querySelector("[role='dialog'][data-state='open'], [role='menu'][data-state='open']")) return;
+      onClose();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [onClose]);
 
   // Parse on a debounce so a fast typist never pays an O(lines) scan per
   // keystroke; the outline settling ~400ms behind the buffer is invisible.
@@ -125,15 +121,6 @@ export function NoteOutlinePanel({
   const minLevel = useMemo(
     () => outline.reduce((min, i) => Math.min(min, i.level), 6),
     [outline],
-  );
-
-  const applyShape = useCallback(
-    (preset: keyof typeof SHAPE_PRESETS) => {
-      dispatch(
-        updateWindowRect({ id: windowId, rect: SHAPE_PRESETS[preset] }),
-      );
-    },
-    [dispatch, windowId],
   );
 
   const handleJump = useCallback(
@@ -184,50 +171,27 @@ export function NoteOutlinePanel({
   );
 
   return (
-    <WindowPanel
-      id={windowId}
-      onClose={onClose}
-      title="Outline"
-      width={SHAPE_PRESETS.compact.width}
-      height={SHAPE_PRESETS.compact.height}
-      minWidth={180}
-      minHeight={140}
-      position="top-right"
-      mobilePresentationOverride="drawer"
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      actionsRight={
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            title="Compact shape"
-            aria-label="Compact shape"
-            onClick={() => applyShape("compact")}
-            className={cn(
-              "flex h-5 w-5 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-              rect &&
-                rect.height <= SHAPE_PRESETS.compact.height &&
-                "text-foreground",
-            )}
-          >
-            <RectangleHorizontal className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            title="Tall shape"
-            aria-label="Tall shape"
-            onClick={() => applyShape("tall")}
-            className={cn(
-              "flex h-5 w-5 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-              rect &&
-                rect.height >= SHAPE_PRESETS.tall.height &&
-                "text-foreground",
-            )}
-          >
-            <RectangleVertical className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      }
+    <aside
+      aria-label="Outline"
+      data-note-outline-panel={instanceId}
+      className={cn(
+        "flex w-56 shrink-0 flex-col border-l border-border/40 bg-background",
+        // A phone-width note: the outline covers the note's right side instead of squeezing it.
+        "max-sm:absolute max-sm:inset-y-0 max-sm:right-0 max-sm:z-20 max-sm:w-[min(16rem,85%)] max-sm:shadow-lg",
+      )}
     >
+      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/40 pl-3 pr-1">
+        <span className="flex-1 truncate text-xs font-medium text-muted-foreground">Outline</span>
+        <button
+          type="button"
+          aria-label="Close outline"
+          title="Close (Esc)"
+          onClick={onClose}
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
       {outline.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center">
           <Heading1 className="h-5 w-5 text-muted-foreground/60" />
@@ -263,7 +227,7 @@ export function NoteOutlinePanel({
           ))}
         </div>
       )}
-    </WindowPanel>
+    </aside>
   );
 }
 

@@ -29,7 +29,7 @@ export function provideStoredComponentScopeModules(): void {
   // copy of it — and of the design system — into the frame bundle beside the
   // ESM one (measured: 6.5 MB with require, 5.7 MB with these imports).
   const kindKit = () => KindKit;
-  const markdown = () => require("@/components/MarkdownStream");
+  const markdown = () => require("@ai-matrx/chat/ui/markdown-stream/MarkdownStream");
   provideScopeModules({
     "@/components/MarkdownStream": markdown,
     "@/components/Markdown": markdown,

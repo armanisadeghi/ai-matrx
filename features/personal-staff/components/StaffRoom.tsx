@@ -24,6 +24,7 @@
  * banner, never a repeated toast.
  */
 
+import { retryActiveOrganization } from "@/lib/organizations/retryActiveOrganization";
 import { useEffect, useState } from "react";
 import { CircleAlert, HardDrive } from "lucide-react";
 import Link from "next/link";
@@ -315,41 +316,18 @@ function StaffRefusalAction({
   );
 }
 
-/**
- * The organization hold, answered the way every other held request in this app
- * answers it: the person is shown their memberships, SETS one, and the request
- * proceeds. Nothing is substituted for them.
- */
+/** No organization is available: re-run the one load ladder, then re-open the door. */
 function ChooseOrganizationAction({ onChosen }: { onChosen: () => void }) {
-  const [asking, setAsking] = useState(false);
   return (
     <button
       type="button"
       className={ACTION_CLASS}
-      disabled={asking}
-      onClick={async () => {
-        setAsking(true);
-        // Imported here so a visitor who never meets this refusal does not
-        // pull the picker's graph into this chunk.
-        const gate = await import("@/lib/organization/organization-gate");
-        try {
-          await gate.ensureOrganizationContext();
-          // The selection is global; the effect above re-opens the door with
-          // it as soon as Redux carries it, and this nudge covers the case
-          // where the person re-picks the organization they already had.
-          onChosen();
-        } catch (error) {
-          // "Not now" is an ANSWER, not a failure: leave the screen as it is,
-          // with the same button still offering the same choice.
-          if (!gate.isOrganizationSelectionCancelled(error)) {
-            console.error("[/staff] choosing an organization failed:", error);
-          }
-        } finally {
-          setAsking(false);
-        }
+      onClick={() => {
+        retryActiveOrganization();
+        onChosen();
       }}
     >
-      {asking ? "Choosing…" : "Choose an organization"}
+      Try again
     </button>
   );
 }

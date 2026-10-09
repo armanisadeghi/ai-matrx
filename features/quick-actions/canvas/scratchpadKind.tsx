@@ -13,7 +13,7 @@
  */
 
 import { ChevronsUpDown, NotebookPen } from "lucide-react";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { ScratchpadSwitcherMenu } from "@ai-matrx/chat/agents/components/working-document/ScratchpadSwitcherMenu";
@@ -39,6 +39,7 @@ function ScratchpadHeaderAction() {
 
 export const scratchpadKind = defineCanvasKind<CanvasJson>({
   id: SCRATCHPAD_KIND,
+  surface: "dom",
   label: SCRATCHPAD_TITLE,
   icon: NotebookPen,
   load: () => import("./ScratchpadCanvasView"),

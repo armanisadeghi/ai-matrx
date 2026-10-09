@@ -32,7 +32,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
+import { typedAnswersFor } from "@ai-matrx/records/forms";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { PortalStyle } from "@/features/portals/service";
@@ -71,6 +71,9 @@ export interface PublicFormQuestion {
   required?: boolean | null;
   /** The question's condition, as the store holds it. Answered by the store, never here. */
   showIf?: Record<string, unknown> | null;
+  /** TYPEFORM-DUP: logic jumps and points, as the store holds them. Judged by the store's route. */
+  jumps?: Array<Record<string, unknown>> | null;
+  points?: Record<string, number> | null;
 }
 
 /** What `custom.form_public` answers, exactly. */
@@ -82,7 +85,21 @@ export interface PublicForm {
   presentation: {
     intro?: string | null;
     flow?: "one-at-a-time" | "single-page" | null;
-    theme?: { accent?: string | null; align?: "left" | "center" | null } | null;
+    theme?: {
+      accent?: string | null;
+      align?: "left" | "center" | null;
+      font?: string | null;
+      button?: string | null;
+      background?: string | null;
+      /** TYPEFORM-DUP: the background picture, resolved by `custom.form_public` to a public address. */
+      background_url?: string | null;
+    } | null;
+    /** TYPEFORM-DUP: the welcome screen; its picture resolved to `picture_url`. */
+    welcome?: Record<string, unknown> | null;
+    /** TYPEFORM-DUP: the endings; pictures resolved, redirects only while still the organization's own. */
+    endings?: Array<Record<string, unknown>> | null;
+    /** TYPEFORM-DUP: names read from the link and kept on the submission, never shown. */
+    hidden_fields?: string[] | null;
     /**
      * What the person sees after sending. `redirect_url` is only ever present when it is a
      * secure page on the organization's own sites — `custom.form_public` drops it otherwise
@@ -303,3 +320,78 @@ export async function readFormDraft(formId: string, secret: string): Promise<Dra
   return (row as DraftRead | undefined) ?? null;
 }
 
+
+
+/** TYPEFORM-DUP: the store's route through a public form (`custom.form_public_route`). */
+export interface PublicRoute {
+  asks: Array<{ field_key: string; asked: boolean; decided: boolean; said: string | null }>;
+  ending: string | null;
+  score: number | null;
+}
+
+/**
+ * WHICH QUESTIONS ARE ASKED, WHICH ENDING IS REACHED AND THE SCORE (lane TYPEFORM-DUP) — showIf and
+ * logic jumps walked by the STORE (`custom._form_route`), the same walk `custom.form_submit` checks
+ * required answers against. Null is `publicForm`'s null: missing, unpublished, closed or off.
+ */
+export async function publicFormRoute(formId: string, values: Record<string, unknown>): Promise<PublicRoute | null> {
+  if (!isUuidShape(formId)) return null;
+  const { data, error } = await storeDoors().rpc("form_public_route", { p_form_id: formId, p_values: values });
+  if (error) {
+    const err = new Error(error.message) as Error & { hint?: string };
+    if (error.hint) err.hint = error.hint;
+    throw err;
+  }
+  return (data as PublicRoute | null) ?? null;
+}
+
+/**
+ * COUNT A VISIT, HONESTLY (lane TYPEFORM-DUP). `view` when the page opens, `start` at the first
+ * answer, `reach` as each question is shown — keyed by a random per-visit key the page holds in
+ * memory (the store keeps only its hash). No cookie and no third party; `custom.form_results` reads it.
+ */
+export async function markFormVisit(args: {
+  formId: string;
+  visit: string;
+  event: "view" | "start" | "reach";
+  field: string | null;
+}): Promise<string> {
+  if (!isUuidShape(args.formId)) return "ignored";
+  const { data, error } = await storeDoors().rpc("form_visit", {
+    p_form_id: args.formId,
+    p_visit: args.visit,
+    p_event: args.event,
+    p_field: args.field,
+  });
+  if (error) throw new Error(error.message);
+  return String(data ?? "ignored");
+}
+
+/**
+ * TYPEFORM-2: may this client address add one more visit count to this form this minute? One hit
+ * from the store's anonymous rate window (`custom.form_visit_admit`, knob forms/visit_rate_per_minute).
+ */
+export async function admitFormVisit(formId: string, bucket: string): Promise<boolean> {
+  if (!isUuidShape(formId)) return true;
+  const { data, error } = await storeDoors().rpc("form_visit_admit", { p_form_id: formId, p_bucket: bucket });
+  if (error) throw new Error(error.message);
+  return data !== false;
+}
+
+/** TYPEFORM-2: how a published form is drawn — the form's own override over the organization's knob. */
+export interface PublicFormOptions {
+  show_owner_header: boolean;
+  choice_auto_advance: boolean;
+}
+
+export async function publicFormOptions(formId: string): Promise<PublicFormOptions> {
+  const fallback: PublicFormOptions = { show_owner_header: true, choice_auto_advance: true };
+  if (!isUuidShape(formId)) return fallback;
+  const { data, error } = await storeDoors().rpc("form_public_options", { p_form_id: formId });
+  if (error) throw new Error(`custom.form_public_options refused: ${error.message}`);
+  const row = (data ?? null) as Partial<PublicFormOptions> | null;
+  return {
+    show_owner_header: row?.show_owner_header !== false,
+    choice_auto_advance: row?.choice_auto_advance !== false,
+  };
+}

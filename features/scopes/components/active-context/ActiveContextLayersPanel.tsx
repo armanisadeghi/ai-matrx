@@ -13,7 +13,7 @@
 // when a host wants both "choose context" and "see what's in it".
 
 import Link from "next/link";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Building2, Briefcase, ExternalLink, Layers } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {

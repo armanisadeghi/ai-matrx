@@ -42,7 +42,7 @@ So the fix has two halves: **regroup** (below) **and restore the section tier in
 4. **Overlapping analytics.** `/administration/users/usage` is described in the catalog as "the CX usage analytics surfaced inside user management" — the same job as `/administration/chat/cx-dashboard/usage`.
 5. **Five legacy redirect stubs** under `/administration/agents/system-agents/shortcuts/{agents,apps,categories,content-blocks,lineage}` — 14-line `redirect()` pages, hidden from the menu. Shims; the no-legacy policy says delete.
 6. **Hub-of-one.** `/administration/utilities/utils` exists only to hold `text-cleaner`.
-7. **Seven dead intermediate URLs** — truncating any of these 404s: `/administration/agents/relationships`, `/administration/agents/reports`, `/administration/agents/agent-apps/edit`, `/administration/agents/system-agents/edit`, `/administration/documentation/feature-docs/view`, `/administration/ui/official-components/to-be-added`, `/administration/utilities/kind-registry/findings`. The first two are invented nesting holding exactly one leaf each.
+7. **Seven dead intermediate URLs** — truncating any of these 404s: `/administration/agents/relationships`, `/administration/agents/reports`, `/administration/applets/edit`, `/administration/agents/system-agents/edit`, `/administration/documentation/feature-docs/view`, `/administration/ui/official-components/to-be-added`, `/administration/utilities/kind-registry/findings`. The first two are invented nesting holding exactly one leaf each.
 8. **A query-string row.** `/administration/ui/surfaces?drift=1` is a second menu row onto the same page.
 9. **24 admin surfaces are unreachable from the admin panel.** Every Tier 1 feature ships an admin map at `/[feature]/admin` (`features/admin/FEATURE.md` documents them), and **not one** is linked from the administration registry: `/agents/admin`, `/camera/admin`, `/cms/admin`, `/commerce/intake/admin`, `/commerce/review/admin`, `/crm/admin`, `/dictionary/admin`, `/education/admin`, `/education/flashcards/admin`, `/education/learn/admin`, `/files/admin`, `/knowledge/extractions/admin`, `/marketing/admin`, `/masterwork/admin`, `/messages/admin`, `/rag/admin`, `/reports/admin`, `/shapes/admin`, `/tool-call-visualization/admin`, `/tools/pdf-extractor/admin`, `/tools/product-capture/admin`, `/transcripts/admin`, `/war-room/admin`, `/work/admin`. This is the "missing routes" gap.
 
@@ -58,7 +58,7 @@ So the fix has two halves: **regroup** (below) **and restore the section tier in
 | `/administration/mandates` | 21 |
 | `/administration/users` | 10 |
 | `/administration/utilities/kind-registry` | 8 |
-| `/administration/agents/agent-apps/apps` | 8 |
+| `/administration/applets/all` | 8 |
 | `/administration/chat/cx-dashboard` | 7 |
 
 `getAdminNavigationArchitectureErrors()` currently requires every destination to equal or descend from `/administration/<domain-slug>`, so **any** cross-domain regroup forces a physical route move today. That invariant is the single thing that makes this restructure expensive.
@@ -76,7 +76,7 @@ Two independent reviewers attacked the first draft. Corrections adopted:
 | Mandates → a section of Automation | **REJECTED** | `admin-navigation.ts:206-209` records a dated decision ("PEER of Agents, not a child", 2026-08-30) and `features/mandates/FEATURE.md` rule 8 makes the admin route the authoring home. A mandate is a binding layer, not scheduled work. **Moved into Agents** (which matches the peer reasoning) or left top-level — Arman's call. |
 | HR under Knowledge | **REJECTED** | HR is a product module with ten `(core)` route families, five CI guards and its own `(kiosk)` group. Knowledge is defined by `admin-knowledge.manifest.ts:4-8` as an AI-substrate domain. **HR stays its own domain.** |
 | Scopes & Context under Knowledge | **REJECTED** | `system-context` is a super-admin write surface configuring what every agent receives → **Agents**. `context-inspector` is a debugger → **Diagnostics**. |
-| One "Operations" domain (CX + AI tasks + executions + compute + clients + caches) | **REJECTED as a junk drawer** | Split. CX stays its own domain; `ai-tasks` stays in AI; `agent-apps/executions` **stays in Agents** (it is one tab of a tabbed hub — `agent-apps/layout.tsx` — moving it lands the user on a page wearing the Agents tab strip); `proof-runs` is assurance, not a run log → **Insights**. What remains — Infrastructure + Shipped Clients + Diagnostics — is coherent. |
+| One "Operations" domain (CX + AI tasks + executions + compute + clients + caches) | **REJECTED as a junk drawer** | Split. CX stays its own domain; `ai-tasks` stays in AI; `applets/executions` **stays in Agents** (it is one tab of a tabbed hub — `applets/layout.tsx` — moving it lands the user on a page wearing the Agents tab strip); `proof-runs` is assurance, not a run log → **Insights**. What remains — Infrastructure + Shipped Clients + Diagnostics — is coherent. |
 | `message-templates` under "Content & Rendering" | **REJECTED** | Its consumer is the email/outreach flow (`features/message-templates/FEATURE.md`) → **Users › Communications**. |
 | `kind-registry` under "Content & Rendering" | **REJECTED** | It is the Shape System registry with its own manifest, deliberately excluded from Utilities. Put it with the other registry (`taxonomy`) → **Registries & Docs**. |
 | `persistence-test` + `unified-management` as "Windowing & Preview" | **REJECTED** | Grouped on a pun. `persistence-test` is a diagnostic → **Diagnostics**. `unified-management` previews a Job Board unifying mandates/bindings/shortcuts → **Agents**, and it must be reconciled with this restructure, not filed under it. |
@@ -102,7 +102,7 @@ Governing rule, so this cannot rot again: **a top-level domain is a distinct ope
 
 1. **Launchpad** `launchpad` — Dashboard, Launchpad, All Routes, Experimental Routes *[2 moves]*
 2. **AI** `ai` — Models (6) · Health (3) · Operations: ai-tasks *[0]*
-3. **Agents** `agents` — Agents · Shortcuts & Blocks · Agent Apps (incl. Executions) · Skills · Tools & MCP · Health & Drift · **Mandates** (list/new/advanced + unified-management preview) · **Context** (system-context) *[3 moves]*
+3. **Agents** `agents` — Agents · Shortcuts & Blocks · Applets (incl. Executions) · Skills · Tools & MCP · Health & Drift · **Mandates** (list/new/advanced + unified-management preview) · **Context** (system-context) *[3 moves]*
 4. **Automation** `automation` — Scheduling (8) *[0]*
 5. **Chat & CX** `chat` — CX Conversations (5) *[0]*
 6. **Knowledge** `knowledge` — Knowledge Graph (2) · Research (1) · Podcasts (3) · Shared Knowledge (1) *[1 move]*

@@ -61,7 +61,7 @@ import {
   cardWords,
   useRecordLabels } from "@ai-matrx/records-ui";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
-import { PanelRightTapButton } from "@ai-matrx/tap-target/buttons";
+import { PanelRightTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import InfoHint from "@/components/official/InfoHint";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import {

@@ -6,7 +6,7 @@
 //
 //   SEAT=admin|member ORIGIN=http://<you>.localhost:3001 SEAT_PASSWORD=… node scripts/scopes-tree-paged-walk.mjs
 //
-// Output: common-docs/operations/for-arman/2026-09-30/scopes-tree-paged/<seat>-*.{png,json}
+// Output: /tmp/matrx-evidence/2026-09-30/scopes-tree-paged/<seat>-*.{png,json}
 import { chromium } from "playwright";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";

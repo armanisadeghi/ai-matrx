@@ -50,7 +50,7 @@ import {
   type HrVerificationKind,
   type HrVerificationSource,
 } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);

@@ -11,7 +11,7 @@
 //               (`notionMarkdownToBlocks`), a `[[database:N]]` line becomes that table's database block, and the
 //               new page opens.
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
@@ -19,16 +19,17 @@ import { createContext, useContext, useRef, useState, type ReactNode } from "rea
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { notionMarkdownToBlocks } from "@/lib/spaces-blocks/notion-markdown";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import type { SpaceBlock } from "../contract";
 import { createDesignedDatabase, readDesign } from "../data/designed-database";
+import { adoptPageDatabase } from "../data/new-database";
 import { useSpaces } from "../state/SpacesProvider";
 import { MOVE_IN_KEY } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface MovedPage {
   title: string;
   icon: string;
@@ -123,7 +124,7 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
     setText("");
     setFileName("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const page = await run({
         mandateKey: MOVE_IN_KEY,
         variables: { notion_content: content, ...(source ? { source_name: source } : {}) },
@@ -150,12 +151,13 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
       }
       const { blocks, warnings } = movedBlocks(page.markdown, tables);
       const doc = await spaces.store.create({ parentId: null, title: page.title, blocks });
+      // The moved-in page owns the databases made for it (sharing the page shares them).
+      for (const t of tables) if (t) await adoptPageDatabase(doc.id, t.tableId).catch((err: unknown) => toast.warning(`${t.name}: not shared with the page`, { description: err instanceof Error ? err.message : undefined }));
       spaces.retryLoad();
       spaces.open(doc.id);
       const left = [...page.notes, ...warnings];
       toast.success(`${page.title} moved in`, left.length ? { description: left.slice(0, 2).join(" · ").slice(0, 140) } : undefined);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error("The page could not be moved in", { description: err instanceof Error ? err.message : undefined });
     }
   };
@@ -173,7 +175,7 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={10}
               value={text}

@@ -66,8 +66,9 @@ import {
 } from "./tiles";
 import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrganizations } from "./recent";
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
-import { TemplateGallerySection } from "./gallery/TemplateGallery";
+import { InstalledOneOffs, TemplateGallerySection } from "./gallery/TemplateGallery";
 import { DescribeBox } from "./describe/DescribeBox";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
@@ -115,7 +116,7 @@ function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T 
 
 /**
  * RECENT: the data home's one call (`custom.data_home`), built into rows by the home's own builder,
- * archived and app-kept rows taken out first (recent.ts). It starts the moment the page mounts — it
+ * archived and platform-owned rows taken out first (recent.ts). It starts the moment the page mounts — it
  * waits on nothing else; test organizations are dropped from the built rows at render, once the
  * person's organizations are known. Shared-with-me is not asked: an accepted share is already a
  * table row, and that listing costs two more round trips after the home answers.
@@ -233,6 +234,8 @@ export default function MakeHome() {
             </ul>
           </section>
 
+          <InstalledOneOffs />
+
           <RecentSection recent={recent} />
 
           <TemplateGallerySection />
@@ -327,15 +330,7 @@ export function recentFacts(row: Pick<DataHomeRow, "kind" | "parentName" | "orga
 }
 
 function whenWords(at: string | null): string {
-  if (!at) return "—";
-  const ms = Date.now() - Date.parse(at);
-  const min = Math.round(ms / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.round(h / 24);
-  return d < 30 ? `${d}d ago` : new Date(at).toLocaleDateString();
+  return formatRelativeTime(at, { style: "short" });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -536,7 +531,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
   // The person's own tables in every organization she reaches (never the app's bookkeeping), the
   // most recently changed first and test organizations last; each names its organization.
   const tables = tablesRead.data
-    .filter((t) => t.kind === "table" && !t.kept_by_the_app)
+    .filter((t) => t.kind === "table" && !t.platform_owned)
     .slice()
     .sort(
       (a, b) =>

@@ -13,7 +13,7 @@ import {
   ConvertContentDialog,
   type ConvertOrigin,
 } from "@/features/education/convert/ConvertContentDialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { DocumentAgentReview } from "./DocumentAgentReview";

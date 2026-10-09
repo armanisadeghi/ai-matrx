@@ -47,9 +47,9 @@ import {
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";

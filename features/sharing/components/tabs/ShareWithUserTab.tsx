@@ -27,6 +27,12 @@ import type {
   ResourceType,
   ShareActionResult,
 } from "@/utils/permissions/types";
+import {
+  PERMISSION_LEVEL_HINTS,
+  PERMISSION_LEVEL_LABELS,
+  PERMISSION_LEVEL_SHORT_LABELS,
+  PERMISSION_LEVELS,
+} from "@/utils/permissions/levels";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -81,6 +87,11 @@ interface ShareWithUserTabProps {
   ) => Promise<ShareActionResult>;
   /** People who already hold a grant; "Add everyone" shows them and skips them. */
   alreadySharedUserIds?: string[];
+  /**
+   * "notion": the level picker reads the ladder's sentence labels, highest first — Full access · Can edit ·
+   * Can edit content · Can comment · Can view (Spaces copies Notion's Share menu). Default: the role words.
+   */
+  levelWording?: "roles" | "notion";
 }
 
 type StatusType = "idle" | "loading" | "success" | "error";
@@ -109,6 +120,7 @@ const SOURCE_LABELS: Record<ConnectionUser["source"], string> = {
  * for quick selection, with a manual email input fallback.
  */
 export function ShareWithUserTab({
+  levelWording = "roles",
   onShare,
   onSuccess,
   resourceType,
@@ -595,17 +607,32 @@ export function ShareWithUserTab({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              {levelWording === "notion"
+                ? [...PERMISSION_LEVELS].reverse().map((level) => (
+                    <SelectItem key={level} value={level} title={PERMISSION_LEVEL_HINTS[level]}>
+                      {PERMISSION_LEVEL_LABELS[level]}
+                    </SelectItem>
+                  ))
+                : (
+                  <>
               <SelectItem value="viewer">Viewer</SelectItem>
               {/* VIS-17b: `commenter` is the FOURTH rung of the one ladder — it has been in
                   `public.permission_level` since G0 and every policy and RPC accepts it, and
                   this picker was the one place a person could not choose it (lane SHARE,
                   2026-09-19). A ladder with a rung nobody can reach is not one ladder. */}
               <SelectItem value="commenter">Commenter</SelectItem>
+              {/* `edit_content` — Notion's "Can edit content": rows and page content, never structure or sharing.
+                  Label and tooltip come from the one ladder (utils/permissions/levels.ts). */}
+              <SelectItem value="edit_content" title={PERMISSION_LEVEL_HINTS.edit_content}>
+                {PERMISSION_LEVEL_SHORT_LABELS.edit_content}
+              </SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
               {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading
                   above is "Permission Level", which names no item, so the bare "Admin" is
                   qualified here. */}
               <SelectItem value="admin">Admin (this item)</SelectItem>
+                  </>
+                )}
             </SelectContent>
           </Select>
           <PermissionLevelDescription level={permissionLevel} />

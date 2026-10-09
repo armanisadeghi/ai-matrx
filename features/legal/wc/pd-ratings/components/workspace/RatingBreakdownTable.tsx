@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toDelimited } from "@ai-matrx/kit/delimited";
 import * as React from "react";
 import {
   AlertTriangle,
@@ -135,8 +136,27 @@ function num(v: number | null | undefined): string {
   return v.toFixed(2);
 }
 
-function injuryRowToTsv(row: InjuryDetailRow): string {
-  const cells = [
+const TSV_HEADER = [
+  "#",
+  "Impairment",
+  "AMA Code",
+  "Side",
+  "WPI",
+  "Pain",
+  "FinalWPI",
+  "FEC",
+  "WPI Adj",
+  "Group",
+  "Letter",
+  "OccupAdj",
+  "AgeAdj",
+  "Industrial",
+  "Final PD",
+  "Notes",
+];
+
+function injuryRowToCells(row: InjuryDetailRow): string[] {
+  return [
     String(row.index + 1),
     row.impairment.name,
     row.impairment.impairment_number ?? "—",
@@ -154,7 +174,6 @@ function injuryRowToTsv(row: InjuryDetailRow): string {
     num(row.finalPd),
     row.warnings.join(" · "),
   ];
-  return cells.join("\t");
 }
 
 function buildExportText(
@@ -196,28 +215,14 @@ function buildExportText(
 
   lines.push("Per-injury detail");
   lines.push(
-    [
-      "#",
-      "Impairment",
-      "AMA Code",
-      "Side",
-      "WPI",
-      "Pain",
-      "FinalWPI",
-      "FEC",
-      "WPI Adj",
-      "Group",
-      "Letter",
-      "OccupAdj",
-      "AgeAdj",
-      "Industrial",
-      "Final PD",
-      "Notes",
-    ].join("\t"),
+    toDelimited(
+      [
+        TSV_HEADER,
+        ...rows.map(injuryRowToCells),
+      ],
+      { format: "tsv" },
+    ),
   );
-  for (const row of rows) {
-    lines.push(injuryRowToTsv(row));
-  }
 
   return lines.join("\n");
 }

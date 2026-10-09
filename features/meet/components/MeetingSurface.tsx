@@ -29,9 +29,12 @@ import {
 } from "react";
 import {
   MeetProvider,
+  MeetRoot,
   asMeetingId,
   createMeetRepository,
+  refusalPhase,
   useMeetHost,
+  type MeetPhase,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
@@ -68,7 +71,14 @@ const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 type Resolution =
   | { readonly state: "loading" }
   | { readonly state: "ready"; readonly meeting: MeetingRecord }
-  | { readonly state: "failed"; readonly message: string; readonly remedy: string; readonly detail: string };
+  | {
+      readonly state: "failed";
+      readonly message: string;
+      readonly remedy: string;
+      readonly detail: string;
+      /** The observation contract's phase for this dead end (HARNESS-CONTRACT §2). */
+      readonly phase: MeetPhase;
+    };
 
 /**
  * EMBEDDED — the room runs inside a host's box (a meeting tile on the Board)
@@ -79,7 +89,9 @@ type Resolution =
  */
 const EmbeddedContext = createContext<{ onLeave: () => void } | null>(null);
 
-const CONTAINED: CSSProperties = { "--mx-meet-height": "100%" } as CSSProperties;
+const CONTAINED: CSSProperties = {
+  "--mx-meet-height": "100%",
+} as CSSProperties;
 
 /** The box every room screen draws into: the viewport, or the host's box. */
 function Stage({ children }: { children: React.ReactNode }) {
@@ -98,7 +110,12 @@ function BackToMeeting() {
   const embedded = useContext(EmbeddedContext);
   if (!embedded) return null;
   return (
-    <Button icon={<ArrowLeft aria-hidden="true" />} type="button" variant="outline" onClick={embedded.onLeave}>
+    <Button
+      icon={<ArrowLeft aria-hidden="true" />}
+      type="button"
+      variant="outline"
+      onClick={embedded.onLeave}
+    >
       Details
     </Button>
   );
@@ -141,7 +158,8 @@ export function MeetingSurface({
   /** Embedded: the person left the room or went back to the meeting's home. */
   onLeave?: () => void;
 }) {
-  const embedded = chrome === "embedded" && onLeave !== undefined ? { onLeave } : null;
+  const embedded =
+    chrome === "embedded" && onLeave !== undefined ? { onLeave } : null;
   return (
     <EmbeddedContext.Provider value={embedded}>
       <MeetingSurfaceBody slug={slug} isAuthenticated={isAuthenticated} />
@@ -157,7 +175,9 @@ function MeetingSurfaceBody({
   isAuthenticated: boolean;
 }) {
   const embedded = useContext(EmbeddedContext) !== null;
-  const [resolution, setResolution] = useState<Resolution>({ state: "loading" });
+  const [resolution, setResolution] = useState<Resolution>({
+    state: "loading",
+  });
   // The page's server auth value is a safe first-render snapshot, not a
   // permanent client identity. GlobalAuthSync resolves the browser session
   // after hydration into the canonical reactive Redux state.
@@ -175,57 +195,100 @@ function MeetingSurfaceBody({
     // never uuid-shaped, so a uuid here is an id: read it (the invitee's grant
     // is what lets RLS answer) and put the durable slug link in the address bar.
     const byId = isUuidValue(slug);
-    void (byId ? repository.meeting(asMeetingId(slug)) : repository.meetingBySlug(slug))
+    void (
+      byId
+        ? repository.meeting(asMeetingId(slug))
+        : repository.meetingBySlug(slug)
+    )
       .then((meeting) => {
         if (!live) return;
         // Embedded, the address bar belongs to the host (the Board).
-        if (byId && !embedded) window.history.replaceState(null, "", `/meet/${meeting.slug}`);
+        if (byId && !embedded)
+          window.history.replaceState(null, "", `/meet/${meeting.slug}`);
         setResolution({ state: "ready", meeting });
       })
       .catch((thrown: unknown) => {
         if (!live) return;
         // The person reads the sentence, never the operation tag a server
-        // error carries ("meet_meeting_by_slug: no meeting for that link");
+        // error carries ("meet_meeting_by_slug: ...");
         // the untouched text still reaches the error menu below.
         const raw = (thrown as Error)?.message ?? "";
         const sentence = raw.replace(/^[A-Za-z_.]+(\([^)]*\))?:\s*/, "");
+        const reason = (thrown as { reason?: string | null }).reason ?? null;
         const message =
-          sentence.length > 0
-            ? sentence.charAt(0).toUpperCase() + sentence.slice(1)
-            : "This meeting link could not be opened.";
+          reason === "not_found"
+            ? "No meeting matches that link."
+            : sentence.length > 0
+              ? sentence.charAt(0).toUpperCase() + sentence.slice(1)
+              : "This meeting link could not be opened.";
         // A link that matches no meeting is not transient: "retry in a
         // moment" (the generic server remedy) would send them in circles.
         const linkRemedy =
           "Check the link — meeting links exclude the characters people mishear " +
-            "(no 0/O, no 1/l). If it was shared with you, ask the organizer to resend it.";
-        const remedy = /no meeting for that link/i.test(raw)
-          ? linkRemedy
-          : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
-        setResolution({ state: "failed", message, remedy, detail: raw || message });
+          "(no 0/O, no 1/l). If it was shared with you, ask the organizer to resend it.";
+        // THE SCREEN IS DECIDED BY THE REASON CODE the package attached (one
+        // vocabulary with the server, CORE-DESIGN §2.5) - never by the message text.
+        const remedy =
+          reason === "not_found"
+            ? linkRemedy
+            : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
+        // One rule with the core's machine: `ended` → `ended`, a gate reason → `refused:*`,
+        // anything else → `disconnected` (CORE-DESIGN §3.1).
+        const phase = refusalPhase(reason ?? null);
+        setResolution({
+          state: "failed",
+          message,
+          remedy,
+          detail: raw || message,
+          phase,
+        });
       });
     return () => {
       live = false;
     };
   }, [slug, embedded]);
 
+  // Every screen here carries the package's ONE observation root (S0), so the
+  // scenario harness reads this page the same way before and inside the room.
   if (resolution.state === "loading") {
     return (
-      <Centered>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          Opening this meeting…
-        </div>
-      </Centered>
+      <MeetRoot phase="resolving">
+        <Centered>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Opening this meeting…
+          </div>
+        </Centered>
+      </MeetRoot>
     );
   }
 
   if (resolution.state === "failed") {
+    const reason = resolution.phase.startsWith("refused:")
+      ? resolution.phase.slice("refused:".length)
+      : null;
     return (
-      <Centered>
-        <h1 className="text-base font-semibold">This meeting did not open</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{resolution.message} <ErrorAlchemyMenu error={resolution.detail} /></p>
-        <p className="mt-2 text-sm text-muted-foreground">{resolution.remedy}</p>
-      </Centered>
+      <MeetRoot phase={resolution.phase} reason={reason}>
+        <Centered>
+          <h1 className="text-base font-semibold">This meeting did not open</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {resolution.message} <ErrorAlchemyMenu error={resolution.detail} />
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {resolution.remedy}
+          </p>
+          {/* A link that opened nothing is never a dead end: back to the
+              meetings list (where codes and links are opened) or home. */}
+          <div className="mt-4 flex gap-2">
+            <Button asChild variant="primary">
+              <a href="/meetings">Back to meetings</a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="/">Go home</a>
+            </Button>
+          </div>
+        </Centered>
+      </MeetRoot>
     );
   }
 
@@ -249,7 +312,8 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
   const host = useMeetHost();
   const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const organizations = useAppSelector(selectOrganizations);
-  const memberOfMeetingOrg = organizations[meeting.organizationId] !== undefined;
+  const memberOfMeetingOrg =
+    organizations[meeting.organizationId] !== undefined;
   // 🚨 A MEETING LINK NEVER ASKS FOR AN ORGANIZATION (verifier, 2026-09-27).
   // The app-wide `<MeetHost>` is scoped to the ACTIVE organization and stays
   // inert without one — so a person with no active organization was stopped
@@ -288,19 +352,23 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
   if (host === null) {
     if (!gaveUp) {
       return (
-        <Centered>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Preparing your meeting…
-          </div>
-        </Centered>
+        <MeetRoot phase="resolving">
+          <Centered>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Preparing your meeting…
+            </div>
+          </Centered>
+        </MeetRoot>
       );
     }
     // 🚨 YOU DO NOT NEED AN ORGANIZATION TO JOIN A MEETING (Arman, 2026-10-01).
     // A signed-in person outside the meeting's organization with no active
     // organization yet is never stopped at the door: they join through the
     // guest lane — the same rules every link-holder has — instead of a prompt.
-    return <GuestRoom meeting={meeting} slug={meeting.slug} offerAccount={false} />;
+    return (
+      <GuestRoom meeting={meeting} slug={meeting.slug} offerAccount={false} />
+    );
   }
 
   return <MemberRoomBody meeting={meeting} />;
@@ -337,7 +405,7 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
           `ended_at` is set, and this prop is how it knows before — or without —
           a durable-feed read. */}
       {/* Room or Board — the viewer's choice while connected; everything
-          before and after the room is still `<MeetingRoom>` (MeetingLayout). */}
+          before and after the room is still `<MeetingSkinRoot>` (MeetingLayout). */}
       <MeetingLayout
         key={claimGeneration}
         roomName={meeting.roomName}
@@ -387,6 +455,9 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
  * The name is asked for BEFORE the provider mounts because `guestName` is part
  * of the provider's identity — changing it later would rebuild every channel.
  */
+/** Where this device remembers a guest's display name (per viewer, CORE-DESIGN §3.5). */
+const GUEST_NAME_KEY = "matrx.meet.guest-name";
+
 function GuestRoom({
   meeting,
   slug,
@@ -406,7 +477,22 @@ function GuestRoom({
   // sentences it renders when the database refuses a link-follower are the
   // whole point of that lane.
   const ended = meeting.endedAt !== null;
-  const [guestName, setGuestName] = useState<string | null>(ended ? "Guest" : null);
+  // The guest's name is remembered on this device (CORE-DESIGN §3.5, per viewer, local
+  // storage): a reload or a second visit never asks again. `undefined` = not read yet
+  // (rendered as `resolving`, never as the name step, so a reload never flashes it).
+  const [guestName, setGuestName] = useState<string | null | undefined>(
+    ended ? "Guest" : undefined,
+  );
+  useEffect(() => {
+    if (guestName !== undefined) return;
+    let remembered: string | null = null;
+    try {
+      remembered = window.localStorage.getItem(GUEST_NAME_KEY);
+    } catch {
+      remembered = null;
+    }
+    setGuestName(remembered !== null && remembered.trim().length > 0 ? remembered : null);
+  }, [guestName]);
   const baseUrl = useMemo(() => meetBaseUrl(store.getState()), [store]);
   const noSession = useCallback(async () => null, []);
   const onDiagnostic = useCallback((event: MeetDiagnostic) => {
@@ -418,38 +504,56 @@ function GuestRoom({
     else console.info(line);
   }, []);
 
+  if (guestName === undefined) {
+    return <MeetRoot phase="resolving">{null}</MeetRoot>;
+  }
+
   if (guestName === null) {
+    // The contract has no guest-name phase yet (CORE-DESIGN §3.7 C1): `prejoin`.
     return (
-      <Centered>
-        <h1 className="text-base font-semibold">{meeting.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {meeting.lobbyEnabled ? "No account needed · the host lets you in" : "No account needed"}
-        </p>
-        <form
-          className="mt-4 space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const trimmed = typedName.trim();
-            if (trimmed.length === 0) return;
-            setGuestName(trimmed);
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="meet-guest-name">Your name</Label>
-            <Input
-              id="meet-guest-name"
-              value={typedName}
-              onChange={(event) => setTypedName(event.target.value)}
-              placeholder="How should we announce you?"
-              autoComplete="name"
-              autoFocus
-            />
-          </div>
-          <Button variant="primary" type="submit" disabled={typedName.trim().length === 0}>
-            Continue
-          </Button>
-        </form>
-      </Centered>
+      <MeetRoot phase="prejoin">
+        <Centered>
+          <h1 className="text-base font-semibold">{meeting.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {meeting.lobbyEnabled
+              ? "No account needed · the host lets you in"
+              : "No account needed"}
+          </p>
+          <form
+            className="mt-4 space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const trimmed = typedName.trim();
+              if (trimmed.length === 0) return;
+              try {
+                window.localStorage.setItem(GUEST_NAME_KEY, trimmed);
+              } catch {
+                // Private mode: the name lives for this visit only.
+              }
+              setGuestName(trimmed);
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="meet-guest-name">Your name</Label>
+              <Input
+                id="meet-guest-name"
+                value={typedName}
+                onChange={(event) => setTypedName(event.target.value)}
+                placeholder="How should we announce you?"
+                autoComplete="name"
+                autoFocus
+              />
+            </div>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={typedName.trim().length === 0}
+            >
+              Continue
+            </Button>
+          </form>
+        </Centered>
+      </MeetRoot>
     );
   }
 
@@ -472,11 +576,17 @@ function GuestRoom({
           meeting={meeting}
           // A guest can pass the link on too; granting needs an account, so
           // the panel shows them the link, the invitation and the calendar.
-          headerControls={<MeetingInviteButton meeting={meeting} signedIn={false} />}
+          headerControls={
+            <MeetingInviteButton meeting={meeting} signedIn={false} />
+          }
           preJoinControls={
             <>
               <BackToMeeting />
-              <MeetingInviteButton meeting={meeting} signedIn={false} look="row" />
+              <MeetingInviteButton
+                meeting={meeting}
+                signedIn={false}
+                look="row"
+              />
             </>
           }
           // After the meeting: an offer to keep the notes, never a gate.

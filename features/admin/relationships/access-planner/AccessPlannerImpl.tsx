@@ -22,8 +22,8 @@ import { useEffect, useState } from "react";
 import {
   UntrustedCount,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+} from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   AlertCircle,
   ArrowDownToLine,

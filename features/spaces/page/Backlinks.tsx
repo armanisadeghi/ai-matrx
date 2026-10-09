@@ -10,6 +10,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { SpaceMedia } from "../contract";
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "./SpaceIcon";
+import { useSeededBacklinks } from "./space-links";
 
 interface Backlink {
   id: string;
@@ -21,10 +22,13 @@ type BacklinkRpc = (fn: "space_backlinks", args: { p_space_id: string }) => Prom
 
 export function Backlinks({ spaceId }: { spaceId: string }) {
   const { open } = useSpaces();
-  const [rows, setRows] = useState<Backlink[]>([]);
+  // Round 40: the route read them beside the page (in the HTML, no shift); asked here only when it did not.
+  const seeded = useSeededBacklinks(spaceId) as Backlink[] | undefined;
+  const [rows, setRows] = useState<Backlink[]>(seeded ?? []);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (seeded) return;
     let live = true;
     const content = supabase.schema("content") as unknown as { rpc: BacklinkRpc };
     void Promise.resolve(content.rpc("space_backlinks", { p_space_id: spaceId })).then(({ data }) => {
@@ -33,7 +37,7 @@ export function Backlinks({ spaceId }: { spaceId: string }) {
     return () => {
       live = false;
     };
-  }, [spaceId]);
+  }, [spaceId, seeded]);
 
   if (rows.length === 0) return null;
   return (

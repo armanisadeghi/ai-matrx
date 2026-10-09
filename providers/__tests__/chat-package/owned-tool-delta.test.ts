@@ -9,7 +9,7 @@ import {
   applyOwnedAgentToolDelta,
 } from "@/features/agents/redux/builder-tier.thunks";
 import { supabase } from "@ai-matrx/chat/host/db";
-import { selectModelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelById } from "@ai-matrx/agents/models";
 import {
   resolveModelControls,
   supportsTools,
@@ -21,9 +21,11 @@ import {
 jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: { schema: jest.fn() },
 }));
-jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => ({
+jest.mock("@ai-matrx/agents/models", () => ({
+  ...jest.requireActual("@ai-matrx/agents/models"),
   selectModelById: jest.fn(),
 }));
+jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({ readModelRecords: () => ({}) }));
 jest.mock("@ai-matrx/chat/agents/hooks/useModelControls", () => ({
   resolveModelControls: jest.fn(),
   supportsTools: jest.fn(),

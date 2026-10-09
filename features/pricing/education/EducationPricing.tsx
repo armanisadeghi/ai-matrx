@@ -73,7 +73,7 @@ const PREMIUM_PLUS = [
   "No 5-hour pacing",
 ];
 
-const STUDY_HOME = "/education/start";
+const STUDY_HOME = "/education/kits/new";
 const CTA = "w-full gap-2";
 
 // Both cards share one row template on desktop (CSS subgrid): header · action ·

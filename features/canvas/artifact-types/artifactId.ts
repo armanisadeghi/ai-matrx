@@ -1,1 +1,1 @@
-export * from "@ai-matrx/chat/agents/utils/artifactId";
+export * from "@ai-matrx/rich-content/utils/lifted/artifactId";

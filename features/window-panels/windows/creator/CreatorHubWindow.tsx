@@ -55,13 +55,13 @@ import CreatorRunTabContent, {
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { StreamDebugPanel } from "@ai-matrx/chat/agents/components/debug/StreamDebugPanel";
 import { RoutingPanel } from "@ai-matrx/chat/agents/components/debug/RoutingPanel";
 import { SandboxInsightPanel } from "@ai-matrx/chat/agents/components/debug/SandboxInsightPanel";
 import { ObservationalMemoryCore } from "@ai-matrx/chat/agents/components/observational-memory/ObservationalMemoryCore";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface CreatorHubTabDef {
   id: CreatorHubTabId;
@@ -141,9 +141,7 @@ function CreatorHubContextStatus() {
   const surfaceEntity = entityFromSurfaceKey(surfaceKey);
   const activeAgentId =
     surfaceEntity?.token === "agent" ? surfaceEntity.id : null;
-  const activeAgentName = useAppSelector((state) =>
-    activeAgentId ? selectAgentName(state, activeAgentId) : null,
-  );
+  const activeAgentName = useAgentName(activeAgentId) ?? null;
 
   return (
     <div

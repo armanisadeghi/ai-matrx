@@ -23,13 +23,9 @@ import {
   selectAgentCustomTools,
   selectAgentMcpServers,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import {
-  selectAllTools,
-  selectToolsReady,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
+import { loadAvailableTools, selectAllTools, selectToolsReady, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 interface Props {
   syntheticAgentId: string;
@@ -46,14 +42,14 @@ export function ToolsSummaryPanel({ syntheticAgentId }: Props) {
     selectAgentMcpServers(s, syntheticAgentId),
   );
 
-  const toolsReady = useAppSelector(selectToolsReady);
-  const allTools = useAppSelector(selectAllTools);
+  const toolsReady = useToolCatalog(selectToolsReady);
+  const allTools = useToolCatalog(selectAllTools);
 
   // The modal lazy-loads the tools list when it opens, but the
   // summary needs it eagerly so we can resolve ids → names.
   useEffect(() => {
     if (!toolsReady) {
-      dispatch(fetchAvailableTools());
+      void loadAvailableTools();
     }
   }, [toolsReady, dispatch]);
 

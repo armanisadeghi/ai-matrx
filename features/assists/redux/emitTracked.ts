@@ -75,6 +75,8 @@ export async function emitAssistTracked(
     decided_by: null,
     decision_note: null,
     evidence: (input.evidence ?? null) as Json,
+    // emitAssist writes no evidence kind; the column is nullable with no default.
+    evidence_kind: null,
     first_seen_at: now,
     is_starred: false,
     occurrences: 1,

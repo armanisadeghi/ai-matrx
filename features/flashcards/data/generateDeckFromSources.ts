@@ -46,6 +46,7 @@ import { foldDepthIntoRequest } from "./enhanceCard";
 import { fcService } from "./fcService";
 import { FC_MANDATES } from "./mandates";
 import type { NewCardInput } from "./types";
+import { resolveKitTitle, NAMER_SAMPLE_CHARS } from "@/features/education/onboard/kitTitle";
 import { sectionRunTitle } from "@/features/education/convert/coverage";
 
 /**
@@ -266,9 +267,8 @@ export function defaultDeckName(sources: ResolvedSource[]): string {
   const first =
     sources[0]?.label?.trim().replace(/\.(pdf|docx?|pptx?|txt|md|csv|xlsx?)$/i, "") ||
     "Study deck";
-  return sources.length > 1
-    ? `${first} and ${sources.length - 1} more`
-    : first;
+  // Several Sources are named from the material (`nameFromSources`); this is the floor.
+  return first;
 }
 
 export interface CardsFromSourcesInput
@@ -457,6 +457,20 @@ export function deckLineageResult(
   };
 }
 
+/** A deck of several Sources is titled by THE kit namer, from all of them. */
+async function nameFromSources(live: ResolvedSource[], ctx: ConvertContext): Promise<string> {
+  const floor = defaultDeckName(live);
+  if (live.length < 2) return floor;
+  const named = await resolveKitTitle(ctx.dispatch, ctx.store, {
+    text: live.map((s) => s.text).join("\n\n"),
+    rawTitle: floor,
+    sourceTitles: live.map((s) => s.label),
+    sourceSamples: live.map((s) => s.text.slice(0, NAMER_SAMPLE_CHARS)),
+    orgId: ctx.orgId,
+  });
+  return named.title;
+}
+
 export async function generateDeckFromSources({
   resolved,
   count,
@@ -470,7 +484,7 @@ export async function generateDeckFromSources({
   continues,
 }: DeckFromSourcesInput): Promise<DeckFromSourcesOutcome> {
   const live = resolved.sources.filter((s) => s.text.trim().length > 0);
-  const baseTitle = name?.trim() || defaultDeckName(live);
+  const baseTitle = name?.trim() || (await nameFromSources(live, ctx));
   const covered = await generateCardsFromSources({
     resolved,
     count,

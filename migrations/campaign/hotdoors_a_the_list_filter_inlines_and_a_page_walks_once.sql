@@ -1,0 +1,240 @@
+-- lane: HOT-DOORS
+-- based-on: platform.shown_to_lists(platform.shown_to, platform.visibility, uuid, uuid, uuid, jsonb) b8ae46ddefec2638d6c0f02c702897bab6f0fc80ff52a887ef7058d34ea2f99e
+-- based-on: custom.read_records_page(uuid, uuid, jsonb, text, jsonb, uuid, boolean, integer, integer, text) 3c99e57e4b4fd3002ed238a37031863ade8ba4907bd2512c95909f00d4c86ccb
+--
+-- HOT-DOORS (2026-10-08). The two slowest data doors, per caller (edge logs, 24 h to 2026-10-08 15:30Z):
+--   nearly every call comes from the two test seats (test@test.com in 1,532 organizations, admin@admin.com in
+--   159), and inside them the hot rows were the per-row "shown to" filter and a page that walked its Table
+--   twice. Both fixed here, same answers:
+--   a) platform.shown_to_lists is inlinable (it was a function call per row; see its comment).
+--   b) custom.read_records_page counts and pages in one statement (platform.drill_rows rides it).
+-- Function bodies only: any hour. Inverse: migrations/inverse/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once_down.sql
+
+set local statement_timeout = '60s';
+
+CREATE OR REPLACE FUNCTION platform.shown_to_lists(p_shown_to platform.shown_to, p_visibility platform.visibility, p_created_by uuid, p_organization_id uuid, p_viewer uuid, p_ctx jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+  -- HOT-DOORS (2026-10-08): THE SAME ANSWER, INLINED. Every list door calls this once per row. The old body
+  -- cast the context's default word to platform.shown_to (enum_in is STABLE), so the planner refused to
+  -- inline an IMMUTABLE function whose body is not immutable, and each row paid a function call (~8 us:
+  -- 25,000 rows, 240 ms). Here the stored word is compared as text and the column as itself; every piece is
+  -- immutable, so the planner inlines it (25,000 rows: 26 ms). Who sees what is unchanged: the row's own
+  -- shown_to wins; none, a personal row is Only me; none, the organization's default (ctx -> org -> d);
+  -- none, Everyone. Only me hides, My team shows a teammate's row (ctx -> org -> t), anything else shows.
+  -- The maker always sees her own. (Checked over every shown_to x visibility x maker x default x team x
+  -- null-context case: 1,125 cases, 0 differences.)
+  select p_created_by is not distinct from p_viewer
+      or case
+           when p_shown_to is not null then
+             case p_shown_to
+               when 'only_me'::platform.shown_to then false
+               when 'my_team'::platform.shown_to then coalesce((p_ctx -> p_organization_id::text -> 't') ? p_created_by::text, false)
+               else true
+             end
+           when p_visibility = 'personal'::platform.visibility then false
+           else
+             case p_ctx -> p_organization_id::text ->> 'd'
+               when 'only_me' then false
+               when 'my_team' then coalesce((p_ctx -> p_organization_id::text -> 't') ? p_created_by::text, false)
+               else true
+             end
+         end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.read_records_page(p_organization_id uuid, p_table_id uuid, p_filter jsonb DEFAULT '{}'::jsonb, p_search text DEFAULT NULL::text, p_sort jsonb DEFAULT '[]'::jsonb, p_view_id uuid DEFAULT NULL::uuid, p_by_id boolean DEFAULT false, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0, p_time_zone text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me        uuid := auth.uid();
+  v_level     public.permission_level;
+  v_mask      jsonb;
+  v_visible   text[];
+  v_computed  text[];
+  v_choices   jsonb;
+  v_limit     integer;
+  v_offset    integer := greatest(coalesce(p_offset, 0), 0);
+  v_where     text;
+  v_order     text := '';
+  v_term      text := nullif(btrim(coalesce(p_search, '')), '');
+  v_sort      jsonb;
+  v_key       text;
+  v_dir       text;
+  v_as        text;
+  v_expr      text;
+  v_labels    jsonb;
+  v_view      record;
+  v_positions jsonb := null;
+  v_total     bigint;
+  v_ids       uuid[];
+  v_rows      jsonb;
+  v_ignored   jsonb := '[]'::jsonb;
+  v_plain     boolean;   -- CHAIR-ACCESS b: a page that asks nothing of the rows' values
+begin
+  if v_me is null then
+    raise exception 'Nobody is signed in, so there is nothing to read.'
+      using errcode = '42501',
+            hint = 'DOOR-1: the read door resolves the reader from the session and takes no principal argument. Sign in, or call it from a lane that carries a person.';
+  end if;
+  -- THE ORGANIZATION WALL, THEN THE TABLE — the same two questions, in the same order, that
+  -- custom.read_records_matching asks on its first lines.
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.read_records_page');
+  perform custom.assert_may_know_table(p_organization_id, p_table_id, 'custom.read_records_page');
+  v_limit := custom.page_size(p_organization_id, 'custom.read_records_page', p_limit, 50);
+
+  -- The field question, once: which columns this reader may see (search and sort read ONLY these).
+  v_level := custom.effective_level(v_me, p_organization_id, p_table_id);
+  v_mask := custom.read_mask_for(v_me, p_organization_id, p_table_id, v_level, 'read');
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_visible
+    from jsonb_array_elements(v_mask -> 'visible') x;
+  -- A column worked out on every read keeps no value in the record, so nothing can sort by it.
+  select coalesce(array_agg(k.key), '{}'::text[]) into v_computed
+    from jsonb_each_text(coalesce(v_mask -> 'all_key_ids', '{}'::jsonb)) k
+    join custom.record f on f.id = k.value::uuid
+   where f.data ->> 'type' = 'formula'
+     and coalesce(f.data ->> 'compute_on', 'read') = 'read';
+  v_choices := coalesce(custom.choice_field_map(p_organization_id, p_table_id), '{}'::jsonb);
+
+  -- ── the rows this reader may see that answer the question ──
+  -- CHAIR-ACCESS b: on a PLAIN page (no search, no filter, no sort, no view) a row of a Confidential
+  -- Table this person may not open, but which is listed for her ("Shown to"), is a row of the page
+  -- too - as its HEADER only, {id, exists: true, submitted_at} (HR proof gap 4). Never when the page
+  -- asks a question of the rows: a search hit, a filter match or a sort position on a row she may
+  -- not read would say something about its values.
+  v_plain := v_term is null
+             and coalesce(p_filter, '{}'::jsonb) = '{}'::jsonb
+             and (p_sort is null or jsonb_typeof(p_sort) <> 'array' or jsonb_array_length(p_sort) = 0)
+             and p_view_id is null;
+  v_where := format($w$
+      from custom.record r
+     where r.organization_id = %L::uuid
+       and r.table_id = %L::uuid
+       and r.deleted_at is null
+       and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
+       and ((%s) or (%s))
+       and %s$w$,
+    p_organization_id, p_table_id,
+    custom.listed_predicate_sql(v_me, p_organization_id, p_table_id,
+                                 'viewer'::public.permission_level, 'r'),
+    case when v_plain
+         -- (the second argument of shown_to_lists is the row column T-13 retires - a legacy fallback
+         -- for rows with no shown_to; this door never read it and does not start now: null)
+         then format('custom.confidential_header(%L::uuid, r.id) is not null and platform.shown_to_lists(r.shown_to, null, r.created_by, r.organization_id, %L::uuid, %L::jsonb)',
+                     v_me, v_me, custom._record_shown_to_ctx(array[p_organization_id], p_table_id))
+         else 'false' end,
+    custom.record_filter_sql(p_organization_id, p_table_id,
+      case when custom.filter_is_rule(coalesce(p_filter, '{}'::jsonb)) then p_filter
+           else custom.choice_filter_normalize(v_choices, coalesce(p_filter, '{}'::jsonb)) end));
+
+  -- ── the search: THE ONE SHARED PREDICATE (CHAIR-GRID). custom.record_search_sql is this door's own older
+  -- ILIKE over the visible columns and the choice words, plus the typed matches (a date as a person writes
+  -- it, a phone by its digits, an amount as the grid shows it), judged for this reader. custom.record_aggregate
+  -- asks the same function with the same arguments, so a footer counts exactly the rows this page shows.
+  if v_term is not null then
+    v_where := v_where || ' and ' || custom.record_search_sql(p_organization_id, p_table_id, p_search, 'r', p_time_zone);
+  end if;
+
+  -- ── the order ──
+  if p_sort is not null and jsonb_typeof(p_sort) = 'array' and jsonb_array_length(p_sort) > 0 then
+    for v_sort in select s from jsonb_array_elements(p_sort) s loop
+      v_key := v_sort ->> 'field';
+      v_dir := case when lower(coalesce(v_sort ->> 'direction', 'asc')) = 'desc' then 'desc' else 'asc' end;
+      v_as  := lower(coalesce(v_sort ->> 'as', 'text'));
+      -- MONITOR-TRIAGE (2026-10-01): a sort on a column this reader cannot see — removed, or masked
+      -- from their seat — is SKIPPED and named in `sort_ignored`, never a refused page. Ordering by
+      -- it would leak the masked values' order, so it is not applied; the rest of the sort stands.
+      if v_key is null or not (v_key = any (v_visible)) then
+        v_ignored := v_ignored || to_jsonb(coalesce(v_key, ''));
+        continue;
+      end if;
+      if v_key = any (v_computed) then
+        raise exception 'The column "%" is worked out each time it is read, so the store keeps no value to sort the whole table by.', v_key
+          using errcode = '0A000',
+                hint = 'Sort by one of the columns it is worked out from, or have the column worked out when a record is saved (compute_on: write) so its value is kept. Nothing was read.';
+      end if;
+      if v_choices ? v_key then
+        select coalesce(jsonb_object_agg(o.key, o.value ->> 'label'), '{}'::jsonb) into v_labels
+          from jsonb_each(coalesce(v_choices -> v_key -> 'options', '{}'::jsonb)) o;
+        v_expr := format('lower(coalesce(%L::jsonb ->> (r.data ->> %L), r.data ->> %L))', v_labels, v_key, v_key);
+      elsif v_as in ('number', 'integer') then
+        v_expr := format($x$case when (r.data ->> %L) ~ '^-?[0-9]+\.?[0-9]*$' then (r.data ->> %L)::numeric end$x$, v_key, v_key);
+      elsif v_as in ('date', 'datetime') then
+        -- An ISO date or instant sorts as its own text; anything else is not a date and sorts last.
+        v_expr := format($x$case when (r.data ->> %L) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' then (r.data ->> %L) end$x$, v_key, v_key);
+      else
+        v_expr := format('lower(r.data ->> %L)', v_key);
+      end if;
+      v_order := v_order || v_expr || ' ' || v_dir || ' nulls last, ';
+    end loop;
+    -- Every key skipped: the read door's own order, exactly as if no sort was asked.
+    v_order := case when v_order = '' then 'r.created_at desc, r.id' else v_order || 'r.id' end;
+  elsif p_view_id is not null then
+    select sv.* into v_view from platform.saved_view sv
+     where sv.id = p_view_id and sv.organization_id = p_organization_id
+       and sv.surface_key = 'custom/records' and sv.deleted_at is null
+       and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = p_table_id;
+    if v_view.id is null then
+      raise exception 'There is no such saved view on this table.' using errcode = '23503',
+              hint = 'It may have been removed, or it may belong to another table or organization. Nothing was read.',
+            detail = jsonb_build_object('view_id', p_view_id)::text;
+    end if;
+    if v_view.definition ->> 'order' is distinct from 'manual' then
+      raise exception 'This view is ordered by its sort, not by hand.' using errcode = '22023',
+        hint = 'Ask for its sort in p_sort instead of naming the view. Nothing was read.';
+    end if;
+    v_positions := coalesce(v_view.metadata -> 'record_positions', '{}'::jsonb);
+    v_order := '($1 ->> r.id::text)::numeric nulls last, r.created_at, r.id';
+  else
+    -- No question about order: the read door's own order.
+    v_order := 'r.created_at desc, r.id';
+  end if;
+
+  -- HOT-DOORS (2026-10-08): THE COUNT AND THE PAGE IN ONE PASS. The rows the page may show are found once
+  -- (every predicate above, the visible-set walk inside it included) and both the total and this page's ids
+  -- are read from that one set. Asked as two statements, custom.query_visible_ids walked the whole Table
+  -- twice per page (a 25,000-row Table: 2 x 25,000 rows through the "shown to" filter). Same total, same
+  -- ids in the same order. mx.read_page_one_pass = off: the two statements as before (the proofs compare
+  -- both on one snapshot).
+  if coalesce(current_setting('mx.read_page_one_pass', true), '') = 'off' then
+    execute 'select count(*) ' || v_where into v_total;
+
+    execute format('select array_agg(q.id order by q.n) from (select r.id, row_number() over (order by %s) as n %s order by n limit %s offset %s) q',
+                   v_order, v_where, v_limit, v_offset)
+       into v_ids
+      using v_positions;
+  else
+    execute format('with m as materialized (select r.id, row_number() over (order by %s) as n %s) '
+                   'select (select count(*) from m), '
+                   '(select array_agg(q.id order by q.n) from (select m.id, m.n from m order by m.n limit %s offset %s) q)',
+                   v_order, v_where, v_limit, v_offset)
+       into v_total, v_ids
+      using v_positions;
+  end if;
+
+  if v_ids is null then
+    v_rows := '[]'::jsonb;
+  else
+    -- CHAIR-ACCESS b: an id the read door does not open is a header row (a Confidential row this
+    -- person is not named on); an id that is neither is simply not a row of the page.
+    select coalesce(jsonb_agg(x.row order by x.n), '[]'::jsonb)
+      into v_rows
+      from (select o.n,
+                   case when d.id is not null
+                        then jsonb_build_object('id', d.id, 'document', d.document, 'level', d.level)
+                        when h.hdr is not null
+                        then jsonb_build_object('id', o.rid, 'document', h.hdr, 'level', null) end as row
+              from unnest(v_ids) with ordinality o(rid, n)
+              left join custom.read_records_by_ids(p_organization_id, p_table_id, v_ids, coalesce(p_by_id, false)) d on d.id = o.rid
+              left join lateral (select custom.confidential_header(v_me, o.rid) as hdr) h on d.id is null) x
+     where x.row is not null;
+  end if;
+
+  return jsonb_build_object('total', v_total, 'limit', v_limit, 'offset', v_offset, 'rows', v_rows,
+                            'sort_ignored', v_ignored);
+end;
+$function$;

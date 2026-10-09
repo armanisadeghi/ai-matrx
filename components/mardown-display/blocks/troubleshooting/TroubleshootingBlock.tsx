@@ -94,14 +94,12 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        troubleshooting.title.replace(/\s+/g, "-").toLowerCase() ||
-          "troubleshooting",
-        "portrait",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = troubleshooting.title.replace(/\s+/g, "-").toLowerCase() || "troubleshooting";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "portrait" }), "application/pdf");
     } catch (err) {
       console.error("[TroubleshootingBlock] Print failed:", err);
     } finally {

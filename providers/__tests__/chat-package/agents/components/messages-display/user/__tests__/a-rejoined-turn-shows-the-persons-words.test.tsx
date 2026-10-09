@@ -68,8 +68,9 @@ jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppStore: () => ({ getState: () => mockState }),
 }));
 
-jest.mock("@ai-matrx/chat/host/markdown-slots", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
+  default: ({ content }: { content: string }) => <div>{content}</div>,
   MarkdownStream: ({ content }: { content: string }) => <div>{content}</div>,
 }));
 jest.mock("@ai-matrx/chat/agents/components/messages-display/user/UserActionBar", () => ({ UserActionBar: () => null }));

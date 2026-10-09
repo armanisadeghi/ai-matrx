@@ -23,7 +23,7 @@
  *   control except itself, the recording timer and the QR confirmation.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import React, {
   useCallback,
   useEffect,

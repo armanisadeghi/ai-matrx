@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import React, { useState, useEffect } from "react";
 import {
   Save,
@@ -30,6 +32,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
   const previewUrl = actions.getCurrentPreviewUrl();
+  const previewSandbox = usePageSandbox(previewUrl, "allow-same-origin");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [iframeKey, setIframeKey] = useState(0); // Force iframe refresh
@@ -449,7 +452,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
               src={`${previewUrl}?t=${iframeKey}`}
               className="w-full h-full"
               title="Page Preview"
-              sandbox="allow-same-origin"
+              sandbox={previewSandbox}
             />
           ) : (
             <PreviewPlaceholder isLoading={state.isCreating} />

@@ -457,7 +457,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       for (const t of tables) console.log(`    [new-table] ${t}`);
       console.log(
         "  Remedy: an organization's own data → the record store (custom.* via @ai-matrx/records); data the app " +
-          "relies on → a declared app table (defineAppTable); kinds → content_ir. Give a feature payload its own " +
+          "relies on → a declared typed table (defineTypedTable); kinds → content_ir. Give a feature payload its own " +
           "named columns beside the jsonb, or a non-generic name.",
       );
     }

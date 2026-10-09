@@ -11,7 +11,7 @@
  *   3. Restore on the page brings it back (and the parent with it);
  *   4. Organization settings -> Trash does the same for a child folder.
  * Credentials come from .env.local and are never printed. Screenshots:
- *   common-docs/operations/for-arman/2026-09-26/trash-coverage-2/
+ *   /tmp/matrx-evidence/2026-09-26/trash-coverage-2/
  *
  *   node scripts/trashcoverage2-walk.mjs
  */

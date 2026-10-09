@@ -38,6 +38,7 @@ import { chatMiddlewares } from "@ai-matrx/chat/store/middlewares";
 import { setStoreSingleton as setChatStoreSingleton } from "@ai-matrx/chat/store/store-singleton";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
+import { tabOrganizationMiddleware } from "@/lib/organizations/tabOrganization";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import { overlayRenderWatchdogMiddleware } from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
 import { windowPersistenceCloseMiddleware } from "@/features/window-panels/persistence/windowPersistenceCloseMiddleware";
@@ -171,8 +172,8 @@ function resolveUserPreferencesForBootstrap(
  * Builds slim preloaded state from optional partial bootstrap data.
  * Does NOT include `globalCache` — the slim store has no entity reducers.
  *
- * `modelRegistry` and the SMS unread total are NOT preloaded here.
- * `modelRegistry` hydrates via `SsrShellHydrator` (action-based) and
+ * Model records (the core model catalog, not Redux) and the SMS unread total are NOT preloaded here.
+ * Model records hydrate via `getModelRecords().hydrate` (DeferredShellData) and
  * SMS counts via `PostPaintHydrator` dispatch.
  */
 export function resolveStoreBootstrapState(
@@ -289,6 +290,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         ...chatMiddlewares(),
         mandateOrgSwitchCacheMiddleware,
         activeOrgCookieMiddleware,
+        tabOrganizationMiddleware,
         scopeTreeInvalidationMiddleware,
         windowPersistenceCloseMiddleware,
         overlayRenderWatchdogMiddleware,

@@ -10,7 +10,7 @@
 //   result    = {name, title_property, properties[], views[], rows[], summary} → data/designed-database.ts makes
 //               the table, its rows and the block's views (a redesign adds the missing properties and swaps views).
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
@@ -18,16 +18,17 @@ import { createContext, useContext, useRef, useState, type ReactNode } from "rea
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import { applyRedesign, createDesignedDatabase, readDesign } from "../data/designed-database";
+import { adoptPageDatabase } from "../data/new-database";
 import type { SpaceDbView } from "../data/sources";
 import type { PickedSource } from "../data/SourcePicker";
 import { DESIGN_DATABASE_KEY } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface DesignPage {
   spaceId: string | null;
   title: string;
@@ -92,7 +93,7 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
     setOpen(false);
     setTyped("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const design = await run({
         mandateKey: DESIGN_DATABASE_KEY,
         userInput: words,
@@ -114,6 +115,8 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
       pending.current = null;
       if (p.kind === "design") {
         const made = await createDesignedDatabase(design, p.page.spaceId, activeOrg, userId);
+        // The page that asked owns the database it designed (sharing the page shares it).
+        if (p.page.spaceId) await adoptPageDatabase(p.page.spaceId, made.table.tableId).catch((err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined }));
         p.resolve(made);
         toast.success(`${design.name} is ready`, design.summary ? { description: design.summary.slice(0, 140) } : undefined);
       } else {
@@ -124,7 +127,6 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
     } catch (err) {
       p.resolve(null);
       pending.current = null;
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(p.kind === "design" ? "The database could not be designed" : "The database could not be redesigned", { description: err instanceof Error ? err.message : undefined });
     }
   };
@@ -154,7 +156,7 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={3}
               value={typed}

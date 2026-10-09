@@ -2,7 +2,7 @@
 
 import { cloneElement, isValidElement } from "react";
 
-import { TapTargetButtonSolid, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid, TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import type { TableToolbarActionProps } from "@ai-matrx/design-system/data-table/host";
 
 type TableToolbarActionWithActiveProps = TableToolbarActionProps & { active?: boolean };

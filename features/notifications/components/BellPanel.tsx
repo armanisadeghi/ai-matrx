@@ -20,8 +20,10 @@
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
+  Archive,
   Bell,
   CheckCheck,
+  ListX,
   Inbox as InboxIcon,
   MoreHorizontal,
   Settings2,
@@ -33,6 +35,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -40,12 +46,17 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { groupNotices, type NoticeGroup } from "../grouping";
-import { timeBucketOf, type TimeBucket } from "../presentation";
-import { useInboxActions, useInboxCounts, useInboxFeed } from "../useInbox";
+import { noticeTitle, timeBucketOf, type TimeBucket } from "../presentation";
+import { useInboxActions, useInboxCounts, useInboxFeed, useInboxKinds } from "../useInbox";
 import { useNoticeHandlers } from "../useNoticeHandlers";
 import { openInNewTab } from "../openNotice";
 import { NoticeRow } from "./NoticeRow";
 import { PlacesStrip } from "./PlacesStrip";
+import { placeReadings, usePlaceStates, visibleSources } from "../sources/registry";
+import { useInboxMemory } from "../useInboxMemory";
+import { markPlaces } from "../badge";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 
 export const NOTIFICATIONS_ROUTE = "/notifications";
 const NEEDS_YOU_SHOWN = 3;
@@ -77,6 +88,13 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
   const counts = useInboxCounts();
   const feed = useInboxFeed({ state: "inbox" });
   const actions = useInboxActions(feed.triage);
+  // Every kind in the Inbox with its count: each clears in one click (Arman, 2026-10-07).
+  const kinds = useInboxKinds(feed.triage);
+  const memory = useInboxMemory();
+  // Every place, read once here — the strip shows them and Clear all clears ALL of them, the ones
+  // folded under More included.
+  const placeStates = usePlaceStates();
+  const isAdmin = useAppSelector(selectIsAdminPerson);
   const [tab, setTab] = useState<BellTab>("for_you");
   const [expanded, setExpanded] = useState<string | null>(null);
   const handlers = useNoticeHandlers(actions, {
@@ -238,6 +256,28 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
           {tabButton("updates", "Updates", counts.updatesDot)}
         </div>
         <span className="flex-1" />
+        {feed.triage ? (
+          <button
+            type="button"
+            data-inbox-clear-all
+            onClick={() => {
+              // One click to zero: every notice Done AND every place's number cleared.
+              const before = memory.cleared;
+              if (memory.ready) {
+                const shown = Object.fromEntries(
+                  visibleSources(Boolean(isAdmin)).map((source) => [source.key, placeStates[source.key]]),
+                );
+                memory.saveCleared(markPlaces(before, placeReadings(shown)));
+              }
+              void actions.clear(null, "Cleared", () => memory.saveCleared(before));
+            }}
+            title="Clear all"
+            className="flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
+          >
+            <Archive className="h-3.5 w-3.5" />
+            Clear all
+          </button>
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -254,6 +294,30 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
               <CheckCheck className="mr-2 h-4 w-4" />
               Mark all read
             </DropdownMenuItem>
+            {feed.triage && (kinds.data?.length ?? 0) > 0 ? (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger data-inbox-clear-kind-menu>
+                  <ListX className="mr-2 h-4 w-4" />
+                  Clear a kind
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-80 w-64 overflow-y-auto">
+                  {(kinds.data ?? []).map((kind) => {
+                    const label = noticeTitle({ subject: null, event_label: kind.label, event_key: kind.eventKey });
+                    return (
+                      <DropdownMenuItem
+                        key={kind.eventKey}
+                        data-inbox-clear-kind={kind.eventKey}
+                        onSelect={() => void actions.clear([kind.eventKey], `Cleared: ${label}`)}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
+                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{kind.notices}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ) : null}
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={() => {
                 dispatch(
@@ -284,7 +348,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
       <div className="min-h-24 flex-1 overflow-y-auto overscroll-contain py-1">{body}</div>
 
       <div className="min-h-0 shrink overflow-y-auto overscroll-contain">
-        <PlacesStrip onOpened={onNavigate} columns={touch ? 1 : 2} />
+        <PlacesStrip states={placeStates} onOpened={onNavigate} columns={touch ? 1 : 2} />
       </div>
 
       <div className={cn("shrink-0 border-t border-border px-1 py-1", touch ? "pb-safe" : undefined)}>

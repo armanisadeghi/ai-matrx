@@ -30,8 +30,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import agentDefinitionReducer from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   useRunControlCounts,
-  type ResourcePickerCounts,
-} from "../useRunControlCounts";
+  type RunControlCounts,
+} from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useRunControlCounts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -96,7 +96,7 @@ describe("run-control counts come from the run tier", () => {
 
   it("shows Tools and Skills on load without fetching the definition", async () => {
     const store = makeStore();
-    const seen: { current: ResourcePickerCounts } = { current: {} };
+    const seen: { current: RunControlCounts } = { current: {} };
     function Probe() {
       seen.current = useRunControlCounts(CONVERSATION_ID);
       return null;

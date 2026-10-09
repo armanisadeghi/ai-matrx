@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { AlertTriangle, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -49,7 +49,7 @@ import {
   findRelation,
   relationKey,
 } from "./tables";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 type Row = Record<string, unknown>;
 

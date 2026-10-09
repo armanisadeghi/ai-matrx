@@ -6,7 +6,7 @@
 // inline forms) and by `NoteWorkspace`, so every host has the same buttons.
 
 import { useCallback } from "react";
-import { HistoryTapButton, ListTapButton } from "@ai-matrx/tap-target/buttons";
+import { HistoryTapButton, ListTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setInstanceOutlineOpen } from "../redux/slice";
 import { selectInstanceOutlineOpen } from "../redux/selectors";

@@ -19,7 +19,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { WORKFLOW_BROWSE_COLUMNS, workflowTypeLabel } from "./columns";
 import {
   fetchWorkflowBrowsePage,
@@ -28,6 +28,7 @@ import {
   saveWorkflowRowEdits,
 } from "./service";
 import { useWorkflowRowActions } from "./useWorkflowRowActions";
+import { currentWorkflowsBasePath, workflowRunHref } from "./workflowActionRegistry";
 import { runStatusLabel } from "../run-status";
 import { WorkflowBrowseCards } from "./components/WorkflowBrowseCards";
 import { WorkflowBrowseRows } from "./components/WorkflowBrowseRows";
@@ -140,7 +141,11 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
   // THE DOOR LAW: the Name cell is a real anchor to /workflows/[id], resolved
   // from the entity registry — so cmd-click, middle-click and keyboard focus
   // all reach the record. Row click goes to the same place.
-  door: { token: "workflow" },
+  // On an admin page the door stays inside the admin system (the admin seat).
+  door: {
+    token: "workflow",
+    hrefFor: (row) => workflowRunHref(row.id, currentWorkflowsBasePath()),
+  },
   useRowActions: useWorkflowListRowActions,
   favorite: {
     isFavorite: (row) => row.is_favorite,

@@ -21,7 +21,8 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { KIT_KNOB_FEATURE } from "@/features/education/convert/coverage";
-import { kitFileAnchor, kitMaterialFromSources } from "./kitSources";
+import { NAMER_SAMPLE_CHARS } from "./kitTitle";
+import { kitFileAnchor, kitMaterialFromSources, kitSourceRefs } from "./kitSources";
 import type { NormalizedIngest, IngestProgress } from "./types";
 
 /**
@@ -71,6 +72,12 @@ export interface UseIngestResult {
      * artifact stays in the one kit.
      */
     keepAnchor?: NormalizedIngest["ref"],
+    /**
+     * `false`: keep NO merged `.md` copy — a multi-source kit holds each
+     * Source itself (`kits/kitScope.ts`). Default `true` (the manual kit
+     * creator still anchors on one file).
+     */
+    options?: { copyAnchor?: boolean },
   ) => Promise<NormalizedIngest>;
 }
 
@@ -156,6 +163,7 @@ export function useIngest(): UseIngestResult {
       resolve: () => Promise<ResolvedSourceSet>,
       onProgress?: (p: IngestProgress) => void,
       keepAnchor?: NormalizedIngest["ref"],
+      options?: { copyAnchor?: boolean },
     ): Promise<NormalizedIngest> => {
       onProgress?.({ phase: "extracting", message: "Reading your sources…" });
       const resolved = await resolve();
@@ -169,19 +177,20 @@ export function useIngest(): UseIngestResult {
       ];
       const anchor = kitFileAnchor(resolved);
       let fileId = keepAnchor ? keepAnchor.fileId : anchor?.fileId;
-      if (!fileId && !keepAnchor) {
+      if (!fileId && !keepAnchor && options?.copyAnchor !== false) {
         onProgress?.({ phase: "uploading", message: "Saving the material…" });
         fileId = await anchorText(material.text, material.title, onProgress);
       }
       const { text, truncated } = await clampToKnob(material.text);
+      const kitSources = kitSourceRefs(resolved);
       return {
         text,
         title: material.title,
         ref: keepAnchor
-          ? keepAnchor
+          ? { ...keepAnchor, kitSources: keepAnchor.kitSources ?? kitSources }
           : anchor
-            ? { kind: "file", fileId, processedDocumentId: anchor.processedDocumentId }
-            : { kind: "paste", fileId },
+            ? { kind: "file", fileId, processedDocumentId: anchor.processedDocumentId, kitSources }
+            : { kind: "paste", ...(fileId ? { fileId } : {}), kitSources },
         meta: {
           chars: text.length,
           pages: material.pages,
@@ -190,6 +199,7 @@ export function useIngest(): UseIngestResult {
           sourceCount: material.sourceCount,
           notes,
           sourceTitles: material.sources.map((src) => src.label),
+          sourceSamples: material.sources.map((src) => src.text.slice(0, NAMER_SAMPLE_CHARS)),
         },
       };
     },

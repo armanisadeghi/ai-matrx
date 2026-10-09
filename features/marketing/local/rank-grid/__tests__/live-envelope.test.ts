@@ -61,7 +61,7 @@ it("draws every point and reads not-found from the result count", () => {
 it("says the grid was reused, from its collection date", () => {
   const envelope = result();
   const observed = envelope.evidence?.[0]?.observed_at ?? null;
-  expect(sourceLine(envelope)).toEqual({ reused: true, text: `Reused from ${shortDate(observed)}` });
+  expect(sourceLine(envelope, (u) => `<${u}>`)).toEqual({ reused: true, text: `Reused from ${shortDate(observed)}` });
   expect(shortDate(observed)).toMatch(/^Oct [56], 2026$/);
 });
 

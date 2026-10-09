@@ -33,7 +33,7 @@
  * reported as exactly that.
  */
 import { useEffect, useRef, useState } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,

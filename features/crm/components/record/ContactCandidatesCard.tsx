@@ -22,7 +22,7 @@
  *    exists" — and that is what it says.
  */
 
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,

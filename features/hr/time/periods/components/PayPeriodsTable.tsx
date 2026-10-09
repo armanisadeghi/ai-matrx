@@ -28,7 +28,7 @@ import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow, PayPeriodState } from "../../api/types";
 import { PERIOD_STATE_LABEL, rowProgressSentence } from "../periodStateMachine";
 import { StateBadge } from "./StateBadge";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 const PERIOD_STATES: PayPeriodState[] = [
   "open",

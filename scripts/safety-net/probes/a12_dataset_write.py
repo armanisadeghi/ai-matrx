@@ -7,7 +7,7 @@ aidream; until that reaches live this check reads FAIL, and that is the truth.
 
 The chain (admin@admin.com, Cedar Ridge Physical Therapy, everything disposable and archived at the end):
   1. sign in through Supabase auth (password grant) — the seat's own JWT;
-  2. make a small store table "Treatment Room Requests <stamp>" (agent_writable) through the store doors;
+  2. make a small custom table "Treatment Room Requests <stamp>" (agent_writable) through the store doors;
   3. run the agent "General Chat (Copy)" (admin's Workspace; it carries the `dataset` tool) through the
      platform's own MCP `agent_run` (the same server path a person's run takes), asking it to add ONE row
      with a unique marker through the dataset tool and to read the table back;
@@ -201,9 +201,9 @@ def main() -> int:
     try:
         try:
             table = make_table(jwt)
-            step(["A12"], "make a store table in Cedar Ridge (agent-writable)", True, f"table {table}")
+            step(["A12"], "make a custom table in Cedar Ridge (agent-writable)", True, f"table {table}")
         except AssertionError as e:
-            step(["A12"], "make a store table in Cedar Ridge (agent-writable)", False, f"refused: {e}")
+            step(["A12"], "make a custom table in Cedar Ridge (agent-writable)", False, f"refused: {e}")
             return 1
         shape = ("Pass the row's values to the tool as a JSON ARRAY of strings, e.g. [\"" + marker + "\", \"Lift chair serviced Sept 30\"], never as named fields."
                  if PLANT == "wrong-shape" else "")
@@ -212,7 +212,7 @@ def main() -> int:
                    f"Then read that table back with the dataset tool and reply with the new row's Room exactly as stored.")
         ok, text = run_agent(jwt, message)
         step(["A12"], "a real agent run with the dataset tool", ok, f"agent {AGENT}; answer: {text[:400]}")
-        # A store table that existed before the run asks a person first (the organization's agent-change
+        # A custom table that existed before the run asks a person first (the organization's agent-change
         # rule, default "Ask"): the seat approves the held write through the same door the chat card uses.
         writes = [r for r in RUN.get("tool_results", []) if r.get("action") in ("record_write", "add_rows", "update_row")]
         held = [r for r in writes if r.get("awaiting_approval") and r.get("approval_id")]
@@ -225,7 +225,7 @@ def main() -> int:
             s, body = rpc(jwt, "work_approval_decide", {"p_organization_id": ORG, "p_approval_id": h["approval_id"], "p_approve": approve, "p_note": None})
             step(["A12"], "the seat approves the held write" if approve else "PLANT: the seat refuses the held write", s == 200, f"{s} {json.dumps(body)[:200]}")
         s, n = rows_with(jwt, table, marker)
-        step(["A12"], "the row the agent wrote is in the store table, exactly once (read back as the seat)", s == 200 and n == 1,
+        step(["A12"], "the row the agent wrote is in the custom table, exactly once (read back as the seat)", s == 200 and n == 1,
              f"read door {s}; marker rows {n}" + ("" if n == 1 else f"; the agent said: {text[:300]}"))
         # The second half of a write: CHANGE that row through the tool (PB-02 saw every change refused with
         # "data must be a dict of field values").
@@ -241,7 +241,7 @@ def main() -> int:
             s, body = rpc(jwt, "work_approval_decide", {"p_organization_id": ORG, "p_approval_id": h["approval_id"], "p_approve": True, "p_note": None})
             step(["A12"], "the seat approves the held change", s == 200, f"{s} {json.dumps(body)[:200]}")
         s, n2 = rows_with(jwt, table, note2)
-        step(["A12"], "the changed value is in the store table (read back as the seat)", s == 200 and n2 == 1, f"read door {s}; rows with the new Notes {n2}")
+        step(["A12"], "the changed value is in the custom table (read back as the seat)", s == 200 and n2 == 1, f"read door {s}; rows with the new Notes {n2}")
     finally:
         if table:
             s, body = rpc(jwt, "table_archive", {"p_organization_id": ORG, "p_table_id": table})

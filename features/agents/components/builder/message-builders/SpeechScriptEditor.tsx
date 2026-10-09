@@ -37,10 +37,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_4, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -58,11 +58,11 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { useVoices } from "@/features/podcasts/generator/useVoices";
 import { voicesForModel } from "@/features/podcasts/generator/voiceCatalog";
-import { speak } from "@/features/audio/service/speak";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { speak } from "@ai-matrx/media/speech";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import {
   MAX_PAUSE_MS,
   conflictingSpeakers,
@@ -296,10 +296,8 @@ export function SpeechScriptEditor({
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_4),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
   const ids = turns.map((_, i) => `speech-turn-${i}`);
   const handleDragEnd = (event: DragEndEvent) => {

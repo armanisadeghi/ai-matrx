@@ -27,8 +27,15 @@ it('identifies an unavailable store without pretending the user chose no workspa
 it('admits a real arriving selection and removes deadline and listener', async () => {
   const pending = waitForOrganizationAdmission();
   organizationId = 'selected-org';
+  resolved = true;
   for (const fn of listeners) fn();
   await expect(pending).resolves.toBe('ready');
   expect(listeners.size).toBe(0);
   expect(jest.getTimerCount()).toBe(0);
+});
+it('does not admit an organization the browser cache only painted — no request leaves before the ladder answers', async () => {
+  organizationId = 'painted-org';
+  const pending = waitForOrganizationAdmission();
+  await jest.advanceTimersByTimeAsync(8000);
+  await expect(pending).resolves.toBe('timed-out');
 });

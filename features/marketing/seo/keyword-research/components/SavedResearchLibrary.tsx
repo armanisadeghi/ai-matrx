@@ -38,7 +38,7 @@ import {
 } from "@/features/marketing/seo/keyword-research/data/queries";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 /**
  * The list's cache key. Omitting `archiveFilter` yields the PREFIX, which is

@@ -4,7 +4,7 @@
 // does (the login form, headless Playwright, never the in-app browser pane) as admin@admin.com
 // and as test@test.com, opens /data in the organization each is working in, and records:
 // whether any store-off or could-not-check sentence is on the screen, what the hub shows, the
-// console errors and every response >= 400. A screenshot per seat lands in for-arman.
+// console errors and every response >= 400. A screenshot per seat lands in /tmp/matrx-evidence.
 //
 //   node scripts/store-on/seat-proof.mjs [origin]      # default http://store-on.localhost:3001
 import { chromium } from "playwright";

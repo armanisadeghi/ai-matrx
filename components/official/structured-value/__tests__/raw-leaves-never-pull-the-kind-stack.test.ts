@@ -52,7 +52,7 @@ function staticClosure(start: string): Set<string> {
 }
 
 const LEAVES = [
-  "features/code-editor/components/code-block/CodeBlock.tsx",
+  "../aidream/apps/shared/rich-content/src/code-block/CodeBlock.tsx",
   "components/ui/JsonComponents/JsonViewerComponent.tsx",
   "components/official/json-explorer/JsonTreeViewer.tsx",
   "components/official/json-explorer/RawJsonExplorer.tsx",
@@ -60,11 +60,10 @@ const LEAVES = [
   "../aidream/apps/shared/chat/src/tool-call-visualization/result-fields/ResultValue.tsx",
   "../aidream/apps/shared/chat/src/tool-call-visualization/result-fields/ToolResultValue.tsx",
   "../aidream/apps/shared/chat/src/tool-call-visualization/registry/GenericRenderer.tsx",
-  "components/mardown-display/chat-markdown/BasicMarkdownContent.tsx",
+  "../aidream/apps/shared/rich-content/src/display/chat-markdown/BasicMarkdownContent.tsx",
   "components/mardown-display/MarkdownRenderer.tsx",
-  "components/message-display/MarkdownWithPlugins.tsx",
   "components/mardown-display/blocks/data-events/UnknownDataEventBlock.tsx",
-  "components/mardown-display/blocks/json/JsonBlock.tsx",
+  "../aidream/apps/shared/rich-content/src/display/blocks/json/JsonBlock.tsx",
   "components/official/structured-value/KindDataGate.tsx",
 ];
 const KIND_STACK = [

@@ -32,7 +32,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { evaluateFormula, parseFormula } from "@ai-matrx/design-system/formulas";
+import { evaluateFormula, parseFormula } from "@ai-matrx/kit/formula";
 import {
   branchRefOverride,
   cloneRefOverride,

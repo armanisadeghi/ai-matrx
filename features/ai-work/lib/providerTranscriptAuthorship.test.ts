@@ -25,6 +25,7 @@ function turn(
     agentName: null,
     carriedFrom: null,
     ...overrides,
+    toolsAfter: overrides.toolsAfter ?? [],
   };
 }
 

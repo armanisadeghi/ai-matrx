@@ -9,11 +9,11 @@ import {
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
 import type { CrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Feed every scraper-boundary failure to the admin Error Inspector.
@@ -423,7 +423,7 @@ async function organizationContextHeaders(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Starting, re-scraping or
   // cancelling a crawl with no organization selected asks, then continues
   // this same request instead of a bare refusal.
-  const organizationId = await ensureOrganizationForRequest(request);
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(base, organizationId);
 }
 

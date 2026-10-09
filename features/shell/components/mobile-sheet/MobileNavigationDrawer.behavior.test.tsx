@@ -25,7 +25,7 @@ jest.mock("../account-rail/ShellSettingsMenu", () => ({ ShellSettingsMenu: () =>
 jest.mock("../account-rail/ShellOrgSwitcher", () => ({ ShellOrgSwitcher: () => null }));
 jest.mock("../user-block/MobileDrawerUserRow", () => ({ __esModule: true, default: () => null }));
 jest.mock("../sidebar/admin-menu/AdminMobileMenuItem", () => ({ __esModule: true, default: () => null }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({ XTapButton: () => null }));
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({ XTapButton: () => null }));
 jest.mock("@/components/navigation/AppLink", () => ({
   __esModule: true,
   default: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => <a {...props} />,

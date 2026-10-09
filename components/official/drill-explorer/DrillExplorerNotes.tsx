@@ -12,7 +12,6 @@
 //   By day          the auto grain, when the person grouped by time          (tooltip: why)
 //   Model calls 80% the reconciliation, measured                             (tooltip: the two numbers)
 //   View: <name> ✕  the open Saved view's extra conditions                   (tooltip: the conditions)
-//   Behind          the door's as_of is past the stale knob                  (tooltip: counted through …)
 //   Defaults        a setting that could not be read (package line in use)   (tooltip: which)
 //   Notes (n)       the door's sentences + a name lookup that failed          (popover)
 //   Recount failed  the host's recount error                                 (tooltip)

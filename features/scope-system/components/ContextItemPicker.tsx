@@ -79,7 +79,7 @@ import {
 } from "@/features/scopes/lib/scopeRoutes";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { ContextItemAddForm } from "./ContextItemAddForm";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoadedForOrg,

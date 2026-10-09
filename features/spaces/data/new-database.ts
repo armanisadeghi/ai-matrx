@@ -15,7 +15,7 @@ const NAME_FIELD = { key: "name", label: "Name", type: "text", sort: 10, require
 
 export async function createPageDatabase(spaceId: string | null, activeOrg: string | null, userId: string | null, name = "Untitled database"): Promise<PickedSource> {
   // org-filter: write-target the page's organization; the active one only for a page not saved yet.
-  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(activeOrg));
+  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(null));
   const client = createRecordsClient({
     dataSource: supabaseDataSource(createClient()),
     actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },
@@ -24,5 +24,29 @@ export async function createPageDatabase(spaceId: string | null, activeOrg: stri
   // A unique address per table: two "Untitled database" tables are two tables.
   const made = await declareTable(client, { name, slug: `${tokenFor(name)}_${Date.now().toString(36)}`, titleField: "name", fields: [NAME_FIELD] });
   if (!made.ok) throw new Error(made.error.message || "The database could not be made.");
+  // The shape Spaces relies on: `data` IS the table's id. A package change that wraps it fails here by name, not as a 404 later.
+  if (typeof made.data !== "string" || !made.data) throw new Error("The database was made, but its table id did not come back.");
   return { tableId: made.data, name };
+}
+
+/** The association that makes a table its page's own (Notion: an inline database is part of its page). */
+export const PAGE_DATABASE = "page_database";
+
+/**
+ * The page owns the table it made: one conveying edge `document → record` (`page_database`, editor max,
+ * trash follows the page). Whoever the page is shared with then opens the table and its rows at the
+ * page's level (the access ladder's "children inherit their parent"). Only for a table THIS page made —
+ * a linked view of a table that lives elsewhere never calls this. Throws with the reason when refused.
+ */
+export async function adoptPageDatabase(spaceId: string, tableId: string, db: { rpc: (fn: "assoc_link", args: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> } = createClient() as never): Promise<void> {
+  if (!tableId) throw new Error("The database has no table id to share with the page.");
+  const { error } = await db.rpc("assoc_link", {
+    p_source_type: "document",
+    p_source_id: spaceId,
+    p_target_type: "record",
+    p_target_id: tableId,
+    p_role: PAGE_DATABASE,
+    p_label: PAGE_DATABASE,
+  });
+  if (error) throw new Error(`The database was made, but sharing this page won't share it: ${error.message}`);
 }

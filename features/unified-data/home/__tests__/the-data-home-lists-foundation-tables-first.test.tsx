@@ -88,7 +88,7 @@ function table(id: string, name: string, updatedAt: string, foundation: boolean)
     updated_at: updatedAt,
     mine: true,
     shared_with_me: false,
-    kept_by_the_app: false,
+    platform_owned: false,
     kind: "table",
     team: false,
     system: false,
