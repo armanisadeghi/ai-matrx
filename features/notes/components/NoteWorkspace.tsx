@@ -4,18 +4,24 @@
  * NoteWorkspace — ONE note with everything /notes gives that note, for a host
  * that shows a note outside the notes app's own shell (a Board tile).
  *
- * It is the /notes main column for one note, made of the same components:
- * the mode switch (`NoteModeSwitch`), the note's tools — outline, versions,
- * clean-up (`NoteRecordTools`) — presence, the editor (`NoteContentEditor`,
- * which carries the toolbar, context menu, AI actions, find/replace,
- * undo/redo, conflict handling, the mic and "…" menu, and mounts the
- * `matrx-user/notes` agent surface itself), the note's chip (`NoteTabItem`,
- * standalone: title rename, mic, the "…" menu), the metadata bar (folder,
- * context, tags — `NoteMetadataBar`), the save/stats strip
- * (`NoteStatsFooter`); the versions button opens the note's history as a
- * canvas tab beside it. Only the
- * app's navigation — the note sidebar and the tab strip of OTHER notes — is
- * left out.
+ * It is the /notes main column for one note, made of the same components,
+ * in TWO rows of chrome and no more:
+ *   - top: [title] · the mode switch (`NoteModeSwitch`) · the formatting
+ *     buttons · the note's tools — outline, versions, clean-up
+ *     (`NoteRecordTools`) — · mic + "…" (`NoteTabItem` standalone, actions
+ *     only; its rows also join the right-click menu on the content);
+ *   - bottom: the note's one row (`NoteMetadataBar`: folder, context, tags …
+ *     saved · counts · copy).
+ * Between them: presence and the editor (`NoteContentEditor`, which carries
+ * the context menu, AI actions, find/replace, undo/redo, conflict handling,
+ * and mounts the `matrx-user/notes` agent surface itself). There is no tab
+ * strip: one note has no tabs. Only the app's navigation — the note sidebar
+ * and the tabs of OTHER notes — is left out.
+ *
+ * `title`: `"inline"` (default) puts the click-to-rename title
+ * (`NoteTitleField`) at the start of the top row; `"host"` leaves it out for a
+ * host that already names the note in its own header (a Board tile renders
+ * `NoteTitleField` there).
  *
  * The host owns the notes instance id (one per place the note is shown); this
  * component registers it with the note as its only, active tab, and removes it
@@ -50,17 +56,19 @@ import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
 import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteRecordTools } from "./NoteRecordTools";
-import { NoteStatsFooter } from "./NoteStatsFooter";
 import { NoteTabItem } from "./NoteTabItem";
+import { NoteTitleField } from "./NoteTitleField";
 
 export interface NoteWorkspaceProps {
   /** The notes instance this host shows the note in — unique per host. */
   instanceId: string;
   noteId: string;
+  /** Where the note's title is shown — see the header comment. */
+  title?: "inline" | "host";
   className?: string;
 }
 
-export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspaceProps) {
+export function NoteWorkspace({ instanceId, noteId, title = "inline", className }: NoteWorkspaceProps) {
   const dispatch = useAppDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
   const editorMode = useNoteEditorMode(noteId);
@@ -111,7 +119,8 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
         className={cn("@container flex h-full min-h-0 w-full min-w-0 flex-col bg-card", className)}
         onKeyDown={onKeyDown}
       >
-        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/40 px-1.5">
+        <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border/40 px-1.5">
+          {title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[12rem] shrink-0" />}
           {/* The four modes never reach into the tools beside them: centred while
               they fit, start-aligned and scrollable below ~18rem (a narrow tile),
               so the capsule can not overlap the outline / versions group. */}
@@ -127,23 +136,15 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
               noteId={noteId}
             />
           </TapTargetButtonGroup>
-        </div>
-        {/* The note's own chip, exactly as /notes shows its active tab: the
-            title (click to rename), the mic and the "…" menu (share, move,
-            duplicate, about, knowledge, export, delete…), whose rows also
-            join the right-click menu on the content. Standalone: there is no
-            other tab, so no close. */}
-        <div className="flex h-8 min-h-8 shrink-0 items-stretch overflow-hidden border-b border-border">
-          <div className="flex min-w-0 max-w-full items-stretch">
-            <NoteTabItem noteId={noteId} instanceId={instanceId} standalone />
-          </div>
+          {/* Mic + "…" (share, move, duplicate, about, knowledge, export,
+              delete…) — the note's own actions, no tab around them. */}
+          <NoteTabItem noteId={noteId} instanceId={instanceId} standalone showTitle={false} />
         </div>
         <NotePresenceBanner instanceId={instanceId} />
         <div className="flex min-h-0 flex-1 flex-col">
           <NoteContentEditor noteId={noteId} embedded tabCarriesActions />
         </div>
         <NoteMetadataBar noteId={noteId} />
-        <NoteStatsFooter noteId={noteId} standalone />
       </div>
     </NotesInstanceProvider>
   );

@@ -1090,6 +1090,7 @@ function BoardItemTile({
         onThrow={onThrow}
         throwActions={BOARD_THROWS}
         sleeps={type?.sleeps ?? false}
+        titleSlot={type?.TitleField ? <type.TitleField tileId={id} source={source} title={title} /> : undefined}
         actions={
           <>
             {type?.HeaderAction && <type.HeaderAction tileId={id} source={source} width={tile.rect.w} onSource={onSource} />}

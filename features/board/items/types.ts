@@ -49,6 +49,14 @@ export interface ItemBodyProps {
   onSource: (next: NodeSource, title?: string) => void;
 }
 
+/** What a type's `TitleField` receives: the tile header's title slot. */
+export interface TitleFieldProps {
+  tileId: string;
+  source: NodeSource;
+  /** The tile's title (what the header shows when the field has nothing better). */
+  title: string;
+}
+
 /** What a type's `HeaderAction` receives: the tile's header button slot. */
 export interface HeaderActionProps {
   tileId: string;
@@ -240,6 +248,12 @@ export interface BoardItemType {
   Keep?: ComponentType<{ tileId: string; source: NodeSource }>;
   /** A button in the tile's EXISTING header (never a new row): the chat's conversation-list toggle. */
   HeaderAction?: ComponentType<HeaderActionProps>;
+  /**
+   * The title in the tile's header, when the record can be renamed there (the
+   * note's click-to-rename title). The body then leaves its own title out —
+   * a tile names its content once. Default: the plain title.
+   */
+  TitleField?: ComponentType<TitleFieldProps>;
   /** The body reads `tier` (pauses media, paces streams). Others get a constant,
    * so a zoom across a tier boundary never re-renders their content. */
   usesTier?: boolean;

@@ -1,0 +1,46 @@
+"use client";
+
+// NoteTitleField — a note's title, click to rename. For a host that shows ONE
+// note and names it in its own header (a Board tile) or at the start of the
+// note's tool row (NoteWorkspace `title="inline"`). The /notes tab renders the
+// same behaviour inside its tab (both use useNoteTitleEditing).
+//
+// The field sizes to its text, so the rest of a host header stays a drag
+// handle.
+
+import { cn } from "@/lib/utils";
+import { useNoteTitleEditing } from "../hooks/useNoteTitleEditing";
+
+export interface NoteTitleFieldProps {
+  noteId: string;
+  className?: string;
+}
+
+export function NoteTitleField({ noteId, className }: NoteTitleFieldProps) {
+  const title = useNoteTitleEditing(noteId);
+  return (
+    <input
+      className={cn(
+        "field-sizing-content min-w-8 max-w-full truncate rounded-sm border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none",
+        title.titleEditing ? "cursor-text ring-1 ring-ring" : "hover:bg-accent/50",
+        className,
+      )}
+      readOnly={!title.titleEditing}
+      value={title.localLabel}
+      onChange={title.onChange}
+      onClick={() => title.setTitleEditing(true)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          if (title.titleEditing) e.currentTarget.blur();
+          else title.setTitleEditing(true);
+        }
+        if (e.key === "Escape" && title.titleEditing) e.currentTarget.blur();
+      }}
+      onFocus={title.onFocus}
+      onBlur={title.onBlur}
+      aria-label="Note title"
+      title="Rename note"
+      spellCheck={false}
+    />
+  );
+}

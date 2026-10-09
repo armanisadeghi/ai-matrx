@@ -1,10 +1,10 @@
 "use client";
 
-// Layer 2: NoteMetadataBar — editor CHROME only (folder, context, tags).
-//
-// Content metrics + save status live in NoteStatsFooter (WindowPanel footer /
-// /notes bottom strip). Do NOT reintroduce a stats bar here — that was the
-// double-footer / mid-pane hover bug.
+// Layer 2: NoteMetadataBar — THE bottom row of every note host: folder,
+// context, tags … save status + counts (NoteStatsFooter, rendered here) … the
+// note's copy pair. ONE row in every host (/notes, the notes window, a Board
+// tile, education): a host never adds a second stats strip below it (two
+// stacked rows cost ~35px of writing space and drew the same facts twice).
 //
 // Props: noteId only (+ optional variant). Everything from Redux.
 
@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
+import { NoteStatsFooter } from "./NoteStatsFooter";
 import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
@@ -64,17 +65,11 @@ interface NoteMetadataBarProps {
    * top border. `slot` — for rare cases where a parent already frames it.
    */
   variant?: "chrome" | "slot";
-  /**
-   * Rendered at the row's right end, before the copy pair — the page passes
-   * the save status + word count here so the editor has ONE footer row.
-   */
-  trailing?: React.ReactNode;
 }
 
 export function NoteMetadataBar({
   noteId,
   variant = "chrome",
-  trailing,
 }: NoteMetadataBarProps) {
   const dispatch = useAppDispatch();
 
@@ -230,7 +225,7 @@ export function NoteMetadataBar({
 
       <div
         className={cn(
-          "relative z-10 flex min-h-0 shrink-0 items-center gap-1.5 overflow-hidden px-2 py-0.5",
+          "@container/notemeta relative z-10 flex h-7 min-h-0 shrink-0 items-center gap-1.5 overflow-hidden px-2",
           variant === "chrome" && "border-t border-border/20 bg-background",
         )}
       >
@@ -332,9 +327,11 @@ export function NoteMetadataBar({
           )}
         </div>
 
-        {/* Clipped: when the row is crowded the counts step down (the metrics
-            bar measures this box), and never paint over the copy pair. */}
-        {trailing && <div className="ml-auto flex min-w-0 shrink items-center overflow-hidden">{trailing}</div>}
+        {/* Save status + counts. Clipped: in a crowded row the counts step
+            down (container query) and never paint over the copy pair. */}
+        <div className="ml-auto flex min-w-0 shrink items-center overflow-hidden">
+          <NoteStatsFooter noteId={noteId} />
+        </div>
 
         {/*
          * The note RECORD pair. A note's body is the highest-value AI capture

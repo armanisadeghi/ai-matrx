@@ -140,7 +140,7 @@ export function NotesWindowView({
                 <FolderQuickPick instanceId={instanceId} />
               )}
             </div>
-            {/* Chrome only — stats live in WindowPanel footer (NoteStatsFooter). */}
+            {/* The note's one bottom row (folder · tags … saved · counts · copy). */}
             {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
           </div>
         </div>

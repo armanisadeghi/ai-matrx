@@ -32,7 +32,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   setInstanceActiveTab,
   removeInstanceTab,
-  updateNoteLabel,
   updateNoteContent,
   markTabInteraction,
   toggleInstanceTabPinned,
@@ -40,9 +39,8 @@ import {
 } from "../redux/slice";
 import { useToolOpener } from "@/features/canvas/host/toolCanvas";
 import { noteHistoryInput } from "../canvas/noteHistoryKind";
-import { setNoteLabelEditing } from "../utils/labelEditing";
+import { useNoteTitleEditing } from "../hooks/useNoteTitleEditing";
 import {
-  selectNoteLabel,
   selectNoteIsDirtyById,
   selectNoteIsSavingById,
   selectNoteContent,
@@ -88,16 +86,21 @@ interface NoteTabItemProps {
   noteId: string;
   instanceId: string;
   standalone?: boolean;
+  /**
+   * Standalone only. `false` renders just the note's actions (mic + "…") —
+   * for a host that names the note itself (a Board tile header, or
+   * `NoteTitleField` at the start of NoteWorkspace's tool row).
+   */
+  showTitle?: boolean;
 }
 
 const actionBtnClass =
   "flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5";
 
-export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabItemProps) {
+export function NoteTabItem({ noteId, instanceId, standalone = false, showTitle = true }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
   // ── Redux state ────────────────────────────────────────────────────
-  const label = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
   const isActive = useAppSelector(
@@ -120,31 +123,13 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   const ingest = useNoteIngestStatus(isActive ? noteId : null);
 
   // ── Local UI state ─────────────────────────────────────────────────
-  const [localLabel, setLocalLabel] = useState(label);
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [titleFocused, setTitleFocused] = useState(false);
-  // Edit INTENT, not focus: right-click also focuses the input, and a focused
-  // live input makes the v3 menu yield to the native one — so readOnly must
-  // survive focus and lift only on a left click (or Enter) in the field.
-  const [titleEditing, setTitleEditing] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
-  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-
-  // Sync Redux label → local — NEVER while the user is typing the title.
-  // Auto-label (the note's working-copy save) and realtime merges land in Redux; if
-  // this sync runs mid-typing it clobbers the user's in-progress name (the
-  // "system freaks out about naming" bug). While focused, the input buffer
-  // is authoritative; blur commits it (handleTitleBlur).
-  const [lastSyncedLabel, setLastSyncedLabel] = useState(label);
-  if (!titleFocused && label !== lastSyncedLabel) {
-    setLastSyncedLabel(label);
-    setLocalLabel(label);
-  }
 
   // ── Handlers ───────────────────────────────────────────────────────
   // Tag the user as actively interacting with the tab strip. Callers wire
@@ -154,6 +139,18 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   const bumpTabInteraction = useCallback(() => {
     dispatch(markTabInteraction({ instanceId }));
   }, [dispatch, instanceId]);
+
+  // The rename rules live in ONE hook (shared with NoteTitleField).
+  const {
+    label,
+    localLabel,
+    titleFocused,
+    titleEditing,
+    setTitleEditing,
+    onChange: handleTitleChange,
+    onFocus: handleTitleFocus,
+    onBlur: handleTitleBlur,
+  } = useNoteTitleEditing(noteId, bumpTabInteraction);
 
   const handleClick = useCallback(() => {
     bumpTabInteraction();
@@ -169,65 +166,12 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
     [bumpTabInteraction, dispatch, instanceId, noteId],
   );
 
-  const handleTitleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setLocalLabel(value);
-      bumpTabInteraction();
-      if (labelTimerRef.current) clearTimeout(labelTimerRef.current);
-      labelTimerRef.current = setTimeout(() => {
-        labelTimerRef.current = null;
-        // Never push an empty label mid-typing — a cleared input commits
-        // (or reverts) on blur, not on the debounce.
-        if (!value.trim()) return;
-        setLastSyncedLabel(value);
-        dispatch(updateNoteLabel({ id: noteId, label: value }));
-      }, 500);
-    },
-    [bumpTabInteraction, dispatch, noteId],
-  );
-
-  // Unmount while focused (tab closed mid-rename) must not leave the
-  // editing flag stuck — a stuck flag permanently disables auto-label.
   useEffect(() => {
     return () => {
-      setNoteLabelEditing(noteId, false);
       if (copiedResetTimerRef.current)
         clearTimeout(copiedResetTimerRef.current);
     };
   }, [noteId]);
-
-  const handleTitleFocus = useCallback(() => {
-    setTitleFocused(true);
-    setNoteLabelEditing(noteId, true);
-    bumpTabInteraction();
-  }, [bumpTabInteraction, noteId]);
-
-  // Blur commits the naming rule: a non-empty entry is saved immediately
-  // (flushing the debounce); an emptied input means "changed my mind" —
-  // revert to the label already assigned in Redux. Either way, the
-  // Redux→local sync re-arms.
-  const handleTitleBlur = useCallback(() => {
-    setTitleFocused(false);
-    setTitleEditing(false);
-    setNoteLabelEditing(noteId, false);
-    if (labelTimerRef.current) {
-      clearTimeout(labelTimerRef.current);
-      labelTimerRef.current = null;
-    }
-    const trimmed = localLabel.trim();
-    if (trimmed) {
-      setLastSyncedLabel(trimmed);
-      if (trimmed !== label) {
-        dispatch(updateNoteLabel({ id: noteId, label: trimmed }));
-      }
-      if (trimmed !== localLabel) setLocalLabel(trimmed);
-    } else {
-      // Empty on blur → keep the existing (possibly auto-generated) label.
-      setLastSyncedLabel(label);
-      setLocalLabel(label);
-    }
-  }, [dispatch, noteId, localLabel, label]);
 
   // The delete confirmation is NOT rendered here — `requestDelete` opens the
   // canonical package confirm (see useNoteDelete). `deleteConfirmOpen` is read
@@ -603,21 +547,25 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
       >
         <div
           ref={tabRef}
-          draggable
+          draggable={!standalone}
           onDragStart={(e) => {
             bumpTabInteraction();
             e.dataTransfer.effectAllowed = "move";
             e.dataTransfer.setData("text/plain", noteId);
           }}
           className={cn(
-            "group flex items-center gap-0 h-8 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
-            isActive
-              ? "max-w-[340px] bg-accent/60 text-foreground"
-              : "max-w-[160px] bg-transparent text-muted-foreground hover:bg-accent/30 cursor-pointer",
+            "group flex items-center gap-0 h-8 font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
+            // Standalone is not a tab: the note's own title + actions in a
+            // tool row, no tab surface.
+            standalone
+              ? "max-w-[16rem] text-xs text-foreground"
+              : isActive
+                ? "max-w-[340px] bg-accent/60 px-[6px] text-[0.6875rem] text-foreground"
+                : "max-w-[160px] bg-transparent px-[6px] text-[0.6875rem] text-muted-foreground hover:bg-accent/30 cursor-pointer",
           )}
-          role="tab"
+          role={standalone ? undefined : "tab"}
           data-active={isActive ? "true" : undefined}
-          aria-selected={isActive}
+          aria-selected={standalone ? undefined : isActive}
           onClick={handleClick}
           // The active tab IS the note on screen: its right-click opens the
           // note's one menu (the content's), not a second one — unless the
@@ -643,7 +591,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
             <Pin className="w-2.5 h-2.5 shrink-0 mr-1 text-muted-foreground" aria-label="Pinned tab" />
           )}
 
-          {isActive ? (
+          {standalone && !showTitle ? null : isActive ? (
             <input
               className="bg-transparent outline-none border-none min-w-0 w-full text-[0.6875rem] font-medium text-foreground truncate cursor-text"
               // readOnly until focus: a live (editable) text input makes the v3
@@ -675,7 +623,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
           {/* Active tab action buttons: copy | share | context | mic | … */}
           {isActive && (
             <div
-              className="flex items-center gap-px shrink-0 ml-1"
+              className={cn("flex items-center gap-px shrink-0", !(standalone && !showTitle) && "ml-1")}
               onClick={(e) => {
                 e.stopPropagation();
                 bumpTabInteraction();

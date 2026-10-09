@@ -103,7 +103,6 @@ import { NotesDraftRecoveryList } from "./NotesDraftRecoveryList";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
-import { NoteStatsFooter } from "./NoteStatsFooter";
 import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
@@ -701,12 +700,8 @@ export function NotesView({
         {/* Layer 2: chrome (folder/context/tags) + stats footer (metrics only) */}
         {activeTabId && (
           <>
-            {/* ONE footer row: folder · context · tags … save status · counts · copy
-                (two stacked rows cost ~70px of editor height). */}
-            <NoteMetadataBar
-              noteId={activeTabId}
-              trailing={<NoteStatsFooter noteId={activeTabId} className="px-0 py-0" />}
-            />
+            {/* ONE footer row: folder · context · tags … save status · counts · copy. */}
+            <NoteMetadataBar noteId={activeTabId} />
           </>
         )}
       </div>

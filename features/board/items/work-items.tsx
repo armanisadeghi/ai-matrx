@@ -44,7 +44,7 @@ import { FILE_SURFACE_NAME } from "@/features/surfaces/manifests/file.manifest";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
-import { NoteItemBody } from "./NoteItemBody";
+import { NoteItemBody, NoteTileTitle } from "./NoteItemBody";
 import { AGENT_FORM_PLACEHOLDER_TITLE, AgentFormItemBody } from "./AgentFormItemBody";
 import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
@@ -581,6 +581,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 560, h: 620 },
     matches: (s) => isEntity(s, "note"),
     Body: NoteItemBody,
+    TitleField: NoteTileTitle,
     startNew: {
       label: "Note",
       create: (): PlacedItem => ({ title: "Note", source: { kind: "entity", entity: "note", id: null } }),

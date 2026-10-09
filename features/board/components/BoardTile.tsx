@@ -106,6 +106,10 @@ export interface BoardTileProps {
   /** Where the status dot and overview card read from. Read in leaf
    * components only, so progress never re-renders the body. */
   statusFrom?: StatusFrom;
+  /** Replaces the plain title in the header (an item type's `TitleField`,
+   * e.g. click to rename the note). Sized to its text, so the rest of the
+   * header still moves the tile. */
+  titleSlot?: ReactNode;
   /** Header actions (screen-sized buttons live in world space too). */
   actions?: ReactNode;
   /** Moves the tile, in world px. Header drag calls it; omit to pin the tile. */
@@ -172,6 +176,7 @@ export function BoardTile({
   typeLabel,
   renderStatus,
   statusFrom = IDLE_STATUS,
+  titleSlot,
   actions,
   onMove,
   onResize,
@@ -498,8 +503,8 @@ export function BoardTile({
       >
         <StatusDot from={statusFrom} animate={tier === "read"} />
         {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        <div className="flex min-w-0 flex-1">
+          {titleSlot ?? <p className="truncate text-sm font-medium text-foreground">{title}</p>}
         </div>
         {!overview && <TileStatus id={id} variant="header" animate={tier === "read"} renderStatus={renderStatus} />}
         {subtitle && (
