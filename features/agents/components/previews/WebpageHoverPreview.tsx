@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, Copy, ExternalLink, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 
 function parseDomain(url: string): string | null {
   try {

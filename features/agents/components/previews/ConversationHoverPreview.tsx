@@ -33,7 +33,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const STATUS_COLORS: Record<string, string> = {

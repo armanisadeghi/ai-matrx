@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Database, Filter, Hash, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 import type { DataRef } from "@ai-matrx/agents/message-parts";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { tryGetEntityInfoByUniqueTableName } from "@/features/scopes/registry/entityRegistry";

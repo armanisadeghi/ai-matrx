@@ -59,7 +59,6 @@ import {
 import { cn } from "@/lib/utils";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
 import { AgentPeekDuplicateButton } from "@/features/agents/components/shared/AgentPeekDuplicateButton";
 import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";

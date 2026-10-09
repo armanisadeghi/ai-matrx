@@ -23,7 +23,6 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
-import { toast } from "@ai-matrx/chat/host/notify";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";

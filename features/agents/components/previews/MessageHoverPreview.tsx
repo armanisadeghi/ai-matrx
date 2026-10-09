@@ -35,7 +35,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 
 const MESSAGE_PREVIEW_CHARS = 600;
 

@@ -2187,9 +2187,18 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
 }
 
 /* A copy that landed: the pressed control swaps its content for a check for a moment
-   (lib/clipboard/copy-notify.ts). Layout is untouched — the content only fades. */
+   (lib/clipboard/copy-notify.ts). Layout is untouched — the content only fades.
+   `position: relative` sits in the base layer so a control's own `absolute` /
+   `fixed` utility still wins (an unlayered rule made overlay copy buttons jump).
+   Text-only controls hide their text with text-fill so currentColor still paints
+   the check. */
+@layer base {
+  [data-copy-flash] {
+    position: relative;
+  }
+}
 [data-copy-flash] {
-  position: relative;
+  -webkit-text-fill-color: transparent;
 }
 [data-copy-flash] > * {
   opacity: 0;
