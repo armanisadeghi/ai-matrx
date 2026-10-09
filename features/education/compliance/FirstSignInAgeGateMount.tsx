@@ -91,10 +91,15 @@ export function FirstSignInAgeGateMount() {
   useEffect(() => {
     if (onPortal) return;
     if (loading) return;
-    // Signed-in AND undeclared is the only case this mount owns. A declared
-    // account, a guest, or a still-loading gate is a no-op.
-    if (!verdict || verdict.ageBand !== null || verdict.reason !== "age_undeclared")
+    // A declared band never goes back to undeclared: nothing is left to ask this session, so a
+    // reload in this tab does not read the gate again.
+    if (verdict && verdict.ageBand !== null) {
+      markAskedThisSession();
       return;
+    }
+    // Signed-in AND undeclared is the only case this mount owns. A guest or a
+    // still-loading gate is a no-op.
+    if (!verdict || verdict.reason !== "age_undeclared") return;
     if (alreadyAskedThisSession()) return;
 
     let cancelled = false;
