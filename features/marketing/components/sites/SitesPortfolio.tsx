@@ -234,8 +234,6 @@ export function SitesPortfolio({
       }),
       // The canonical seven-action menu owns row copy; the shell header below
       // owns list copy. Suppress duplicate controls while retaining one config.
-      showRow: false,
-      showToolbar: false,
     },
     mobileCards: renderSiteListMobileCard,
     emptyState: {

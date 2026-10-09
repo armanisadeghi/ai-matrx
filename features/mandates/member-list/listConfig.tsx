@@ -249,8 +249,6 @@ export function memberMandateListConfig(
       listKind: "mandate-list",
       humanRow: (row) =>
         `${row.name} (${row.mandateKey}) — ${row.featureLabel}; runs ${row.holderName} (${row.pinText}), decided by ${row.decidedBy}`,
-      showRow: false,
-      showToolbar: false,
     },
     emptyState: {
       title: "No mandates here",

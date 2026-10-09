@@ -398,8 +398,6 @@ export function RunsTable({
       pageSize={pageSize}
       hidePagination={hidePagination}
       cellLines="one"
-      // Row copy was an Actions column of its own beside Open; copy stays on the right-click menu and the toolbar.
-      copyControls={{ row: false }}
       getRowHref={(run) => outputHrefOf(run, audience) ?? undefined}
       {...(onSelectRun
         ? {

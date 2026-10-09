@@ -49,8 +49,6 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
     listKind: "board-list",
     humanRow: (row) =>
       `${row.title}${row.archived ? " (deleted)" : ""} — ${row.tile_count} tiles, edited ${formatRelativeTime(row.updated_at)}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No boards yet",

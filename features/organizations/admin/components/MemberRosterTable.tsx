@@ -258,8 +258,6 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       // The roster header owns all-member human/JSON/CSV exports; each row
       // owns its richer member-specific menu. Keep those controls and add
       // only the table's selected-row Alchemy copy.
-      showToolbar: false,
-      showRow: false,
     }),
     [members.length, orgSlug, query, sort, unit, costRate],
   );

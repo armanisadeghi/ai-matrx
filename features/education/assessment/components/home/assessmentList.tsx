@@ -487,8 +487,6 @@ export function buildAssessmentListConfig(input: {
         ]
           .filter(Boolean)
           .join(" · "),
-      showRow: false,
-      showToolbar: false,
     },
     emptyState: {
       // Per lane, not absolute: an empty Mine can sit beside a full My Orgs.

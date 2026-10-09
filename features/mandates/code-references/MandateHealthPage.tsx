@@ -290,8 +290,6 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
       listKind: "mandate-health-list",
       humanRow: (row) =>
         `[${SEVERITY_LABEL[row.severity]}] ${row.mandateName || noMandateWord(row)} — ${row.problem}${row.detail ? ` (${row.detail})` : ""}; ${row.location || "no code location"}; fix: ${row.fix}`,
-      showRow: false,
-      showToolbar: false,
     },
     emptyState: {
       title: "No open findings",

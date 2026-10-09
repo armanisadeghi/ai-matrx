@@ -385,8 +385,6 @@ export function OutcomesPanel({ campaignId }: { campaignId: string }) {
           listKind: "platform-outcome-event-list",
           humanRow: (row) =>
             `${outcomeVerdict(row).headline} — ${row.status}, confidence ${row.confidence}`,
-          showRow: false,
-          showToolbar: false,
         }}
         read={readOf({ isLoading, error }, { what: "outcomes", onRetry: () => void refresh() })}
         emptyState={{

@@ -464,8 +464,6 @@ export function buildFlashcardSetListConfig(input: {
         ]
           .filter(Boolean)
           .join(" · "),
-      showRow: false,
-      showToolbar: false,
     },
     emptyState: {
       title: "No flashcard decks yet",

@@ -993,8 +993,6 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   listKind: "crm-outreach-list-member-list",
                   humanRow: (row) =>
                     `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
-                  showRow: false,
-                  showToolbar: false,
                 }}
                 emptyState={{
                   icon: <ListPlus className="h-5 w-5" />,

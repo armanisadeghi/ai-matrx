@@ -479,6 +479,7 @@ export function SourceResultsTable({
             },
           }
         : {})}
+      // table-copy-optout: non-interactive ranked preview only (interactive keeps the toolbar); row Alchemy stays
       hideToolbar={!interactive}
       {...(!interactive
         ? {
@@ -486,7 +487,6 @@ export function SourceResultsTable({
             // The preview is a caller-owned ranked subset, so its receipt
             // keeps the shared footer but offers no alternate page size.
             pageSizeOptions: [],
-            copy: false,
             zebra: false,
             paginationLabelFormat: (start: number, end: number, total: number) => {
               const shown = end - start + 1;

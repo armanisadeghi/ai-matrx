@@ -1330,7 +1330,6 @@ export function CrmListPage({
                   listKind: "crm-party-list",
                   humanRow: (row) =>
                     `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
-                  showRow: false,
                   // The toolbar's "Copy or export" — the table's one export, over the
                   // WHOLE result the list selects, columns on screen (lane 7 W2).
                   showToolbar: true,
