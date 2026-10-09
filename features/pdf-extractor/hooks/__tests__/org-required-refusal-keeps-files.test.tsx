@@ -47,7 +47,7 @@ describe("organization-required upload refusal", () => {
     await act(async () => root.render(<Probe />));
 
     const file = new File(["%PDF-1.4"], "report.pdf", { type: "application/pdf" });
-    await act(async () => api.setSelectedFiles([file]));
+    await act(async () => api.addFiles([file]));
     expect(api.selectedFiles).toHaveLength(1);
 
     await act(async () => {
