@@ -39,6 +39,8 @@ export function RailMenuHeader({
     "flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors";
   return href ? (
     <AppLink
+      // The header of a menu mounted (hidden) on every page: never prefetch its destination.
+      prefetch={false}
       href={href}
       onClick={onNavigate}
       className={`${className} hover:bg-[var(--matrx-glass-bg-hover)]`}
