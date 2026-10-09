@@ -1553,6 +1553,80 @@ export function callConversationForkAndRun(
   });
 }
 
+// ─── Conversation: settings, delete, sandbox binding (THE ADMIN SEAT's doors) ──
+//
+// PATCH /cx/conversations/{id} (title / status / exclude_from_kg), DELETE /cx/conversations/{id}
+// (soft delete), PUT|DELETE /ai/conversations/{id}/sandbox. On user pages the chat package writes
+// these straight to Supabase; on an admin page (`adminSeatOpen`) it calls these, and callApi binds
+// the platform tenant + the admin-lane header, which the server's require_owned_conversation admits.
+
+export type ConversationSettingsBody = components["schemas"]["ConversationSettingsUpdate"];
+export type ConversationSettingsResult = components["schemas"]["ConversationSettingsResponse"];
+export type ConversationDeleteResult = components["schemas"]["ConversationDeleteResponse"];
+export type SandboxBindBody = components["schemas"]["SandboxBindRequest"];
+type SandboxBindingStateResult = components["schemas"]["SandboxBindingState"];
+
+interface ConversationDoorOptions<B = never> {
+  conversationId: string;
+  body?: B;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+}
+
+export function callConversationUpdate(
+  options: ConversationDoorOptions<ConversationSettingsBody> & { body: ConversationSettingsBody },
+): ThunkAction<Promise<ApiCallResult<ConversationSettingsResult>>, RootState, unknown, Action> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}",
+    method: "PATCH",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+  }) as ThunkAction<Promise<ApiCallResult<ConversationSettingsResult>>, RootState, unknown, Action>;
+}
+
+export function callConversationDelete(
+  options: ConversationDoorOptions,
+): ThunkAction<Promise<ApiCallResult<ConversationDeleteResult>>, RootState, unknown, Action> {
+  return callApi({
+    path: "/cx/conversations/{conversation_id}",
+    method: "DELETE",
+    pathParams: { conversation_id: options.conversationId },
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+  }) as ThunkAction<Promise<ApiCallResult<ConversationDeleteResult>>, RootState, unknown, Action>;
+}
+
+export function callConversationSandboxBind(
+  options: ConversationDoorOptions<SandboxBindBody> & { body: SandboxBindBody },
+): ThunkAction<Promise<ApiCallResult<SandboxBindingStateResult>>, RootState, unknown, Action> {
+  return callApi({
+    path: "/ai/conversations/{conversation_id}/sandbox",
+    method: "PUT",
+    pathParams: { conversation_id: options.conversationId },
+    body: options.body,
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+  }) as ThunkAction<Promise<ApiCallResult<SandboxBindingStateResult>>, RootState, unknown, Action>;
+}
+
+export function callConversationSandboxUnbind(
+  options: ConversationDoorOptions,
+): ThunkAction<Promise<ApiCallResult<SandboxBindingStateResult>>, RootState, unknown, Action> {
+  return callApi({
+    path: "/ai/conversations/{conversation_id}/sandbox",
+    method: "DELETE",
+    pathParams: { conversation_id: options.conversationId },
+    stream: false,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+  }) as ThunkAction<Promise<ApiCallResult<SandboxBindingStateResult>>, RootState, unknown, Action>;
+}
+
 // ─── Messages: Batch delete with tool-pair cascade ───────────────────────────
 //
 // POST /cx/conversations/{id}/messages/delete — moves messages to Trash
