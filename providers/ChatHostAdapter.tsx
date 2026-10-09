@@ -78,6 +78,7 @@ import {
   sameChatPreferences,
 } from "@/lib/redux/chat-host-from-app";
 import { createWebPrefs } from "@ai-matrx/chat/host";
+import { chatRequestHeaders } from "@ai-matrx/chat/host/request-headers";
 import {
   getSessionKnob,
   useSessionKnob,
@@ -457,13 +458,15 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
     server: {
       baseUrl: () =>
         selectResolvedBaseUrl(store.getState()) ?? DEFAULT_SERVER_URL,
+      // THE ONE header builder (the chat package's): credential, organization, admin lane.
       async headers() {
-        const headers: Record<string, string> = {};
-        const token = await identity.getAccessToken();
-        if (token) headers.Authorization = `Bearer ${token}`;
-        const active = org.active();
-        if (active) headers["X-Organization-Id"] = active.id;
-        return headers;
+        return chatRequestHeaders(
+          {
+            accessToken: await identity.getAccessToken(),
+            fingerprintId: identity.current().fingerprintId,
+          },
+          org.active()?.id ?? null,
+        );
       },
       // Every package server call runs this app's own lib/api (P9).
       api: appChatServerApi,
