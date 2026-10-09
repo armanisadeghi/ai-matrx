@@ -41,6 +41,9 @@ export function installSpeechHost(): void {
     },
     reportProviderFailure: async (failure) =>
       (await import("@/lib/api/provider-session-failure")).reportBrowserProviderFailureFromStore(failure),
+    reportProviderUsage: (usage) => {
+      void import("@/lib/api/provider-session-failure").then((m) => m.reportBrowserProviderUsage(usage));
+    },
     notifyError: (title, description) => {
       void import("@/lib/toast").then(({ toast }) => toast.error(title, { description }));
     },
