@@ -55,6 +55,24 @@ describe("the assists control moves off a control", () => {
     expect(dockPlacementVar("--assist-dock-lift")).toBe("");
   });
 
+  it("moves off a narrow icon that sits between the old three columns (a row's copy icon, 2026-10-09)", () => {
+    // The 155 px pill's old samples sat at x = left+2, the middle and right-2 (77 px apart). A 20 px
+    // copy icon at 120–140 px into the pill slipped between them and the pill rested on it.
+    const icon = document.createElement("button");
+    document.body.appendChild(icon);
+    const dock = document.createElement("div");
+    dock.setAttribute("data-assists-dock", "");
+    document.body.appendChild(dock);
+    dock.getBoundingClientRect = () => rect(700, 730, 1000, 1155);
+    const blank = document.createElement("div");
+    document.body.appendChild(blank);
+    (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = (x, y) =>
+      x >= 1120 && x <= 1140 && y > 680 && y < 736 ? [dock, icon] : [dock, blank];
+
+    applyAssistDockLift();
+    expect(dockPlacementVar("--assist-dock-lift")).not.toBe("");
+  });
+
   it("never moves for a toast: a toast's close button under the dock is not a control to clear", () => {
     // 2026-10-08, owner: "toasts … moving the UI around". The dock lifted off a toast's button,
     // which moved the floating clearance, which moved the toast stack — a loop.

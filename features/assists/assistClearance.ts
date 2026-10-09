@@ -326,8 +326,17 @@ function attentionRects(cache: PassCache): DOMRect[] {
   return cache.attention!;
 }
 
+/**
+ * The widest gap between two sample columns. A row's copy / menu icon is ~20 px wide, so a gap of
+ * 14 px can never step over one (2026-10-09: three columns across a 155 px pill sat 77 px apart and
+ * the pill rested on a row's copy icon at 800 px, "over no control" by the samples' count).
+ */
+const SAMPLE_COLUMN_GAP_PX = 14;
+
 function samplePoints(r: DockRect): [number, number][] {
-  const xs = [r.left + 2, (r.left + r.right) / 2, r.right - 2];
+  const span = Math.max(0, r.right - r.left - 4);
+  const columns = Math.max(3, Math.ceil(span / SAMPLE_COLUMN_GAP_PX) + 1);
+  const xs = Array.from({ length: columns }, (_, i) => r.left + 2 + (span * i) / (columns - 1));
   const ys = [r.bottom - 2, (r.top + r.bottom) / 2, r.top + 2];
   const out: [number, number][] = [];
   for (const y of ys) for (const x of xs) out.push([x, y]);
