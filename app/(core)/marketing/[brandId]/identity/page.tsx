@@ -6,6 +6,8 @@ import {
   Images,
   ScrollText,
   Users,
+  Megaphone,
+  ShieldCheck,
   type LucideIcon,
   Compass,
   PenLine,
@@ -13,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -56,7 +57,6 @@ export default async function BrandIdentityPage({
     description: string;
     href: string;
     icon: LucideIcon;
-    comingSoon?: boolean;
   }> = [
     {
       name: "Media",
@@ -94,6 +94,19 @@ export default async function BrandIdentityPage({
       icon: ScrollText,
     },
     {
+      name: "Messaging",
+      description:
+        "Mission, vision, story, pitches, messaging and content pillars, hashtags.",
+      href: `${identity}/messaging`,
+      icon: Megaphone,
+    },
+    {
+      name: "Claims",
+      description: "Approved and forbidden claims, and the disclaimers that go with them.",
+      href: `${identity}/claims`,
+      icon: ShieldCheck,
+    },
+    {
       name: "Voice",
       description:
         "How this brand actually writes, measured from its real writing. Every pitch, reply, subject line and statement in its name is checked against it.",
@@ -110,10 +123,9 @@ export default async function BrandIdentityPage({
     {
       name: "Audience",
       description:
-        "Segments, ICPs, and personas defined once, so every brief and agent writes for a named audience instead of a guess.",
+        "Named personas — goals, pain points, objections, channels.",
       href: `${identity}/audience`,
       icon: Users,
-      comingSoon: true,
     },
   ];
 
@@ -145,7 +157,6 @@ export default async function BrandIdentityPage({
                       <span className="text-sm font-medium text-foreground">
                         {room.name}
                       </span>
-                      {room.comingSoon ? <ComingSoonBadge /> : null}
                     </span>
                     <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                       {room.description}

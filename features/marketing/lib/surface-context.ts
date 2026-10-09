@@ -22,6 +22,7 @@ import type {
   MarketingSite,
 } from "@/features/marketing/types";
 import { isJsonRecord, parseBrandProfile } from "@/features/marketing/types";
+import { personaDemographics, type BrandPersona } from "@/features/marketing/lib/persona-model";
 import type { SiteConnectionStatus } from "@/features/marketing/lib/site-status";
 import { escapeXml } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 
@@ -56,6 +57,7 @@ export interface BrandContextInput {
   facts?: readonly BusinessFact[];
   assets?: readonly BrandAsset[];
   sites?: readonly MarketingSite[];
+  personas?: readonly BrandPersona[];
 }
 
 /**
@@ -64,7 +66,7 @@ export interface BrandContextInput {
  * assets, social/website properties, and every managed site.
  */
 export function buildBrandContextXml(input: BrandContextInput): string {
-  const { brand, properties = [], facts = [], assets = [], sites = [] } = input;
+  const { brand, properties = [], facts = [], assets = [], sites = [], personas = [] } = input;
   const sections: string[] = [];
 
   if (brand.description?.trim()) {
@@ -80,12 +82,19 @@ export function buildBrandContextXml(input: BrandContextInput): string {
     ["service_area", profile.service_area],
     ["content_guidelines", profile.content_guidelines],
     ["notes", profile.notes],
+    ["mission", profile.mission],
+    ["vision", profile.vision],
+    ["story", profile.story],
   ];
   const profileLists: Array<[string, string[] | undefined]> = [
     ["value_props", profile.value_props],
     ["offerings", profile.offerings],
     ["competitors", profile.competitors],
     ["target_keywords", profile.target_keywords],
+    ["values", profile.values],
+    ["approved_claims", profile.approved_claims],
+    ["forbidden_claims", profile.forbidden_claims],
+    ["disclaimers", profile.disclaimers],
   ];
   for (const [tag, value] of profileText) {
     if (value) profileParts.push(element(tag, value));
@@ -97,8 +106,76 @@ export function buildBrandContextXml(input: BrandContextInput): string {
       );
     }
   }
+  if (profile.messaging_pillars?.length) {
+    profileParts.push(
+      `<messaging_pillars>${profile.messaging_pillars
+        .map(
+          (pillar) =>
+            `<pillar title="${escapeXml(pillar.title)}">${pillar.proof_points
+              .map((point) => element("proof_point", point))
+              .join("")}</pillar>`,
+        )
+        .join("")}</messaging_pillars>`,
+    );
+  }
+  if (profile.elevator_pitches) {
+    const pitches = profile.elevator_pitches;
+    profileParts.push(
+      `<elevator_pitches>${[
+        ["ten_second", pitches.ten_second],
+        ["thirty_second", pitches.thirty_second],
+        ["sixty_second", pitches.sixty_second],
+      ]
+        .flatMap(([tag, text]) => (text ? [element(tag, text)] : []))
+        .join("")}</elevator_pitches>`,
+    );
+  }
+  if (profile.content_pillars?.length) {
+    profileParts.push(
+      `<content_pillars>${profile.content_pillars
+        .map(
+          (pillar) =>
+            `<pillar name="${escapeXml(pillar.name)}">${escapeXml(pillar.description ?? "")}</pillar>`,
+        )
+        .join("")}</content_pillars>`,
+    );
+  }
+  if (profile.hashtags?.length) {
+    profileParts.push(
+      `<hashtags>${profile.hashtags
+        .map((entry) => `<hashtag use="${escapeXml(entry.use)}">#${escapeXml(entry.tag)}</hashtag>`)
+        .join("")}</hashtags>`,
+    );
+  }
   if (profileParts.length) {
     sections.push(`<profile>${profileParts.join("")}</profile>`);
+  }
+
+  if (personas.length) {
+    const personaXml = personas
+      .map((persona) => {
+        const demographics = personaDemographics(persona);
+        const parts = [
+          ...(persona.summary ? [element("summary", persona.summary)] : []),
+          ...Object.entries(demographics).map(([tag, text]) => element(tag, text)),
+          ...(
+            [
+              ["goals", persona.goals],
+              ["pain_points", persona.pain_points],
+              ["objections", persona.objections],
+              ["channels", persona.channels],
+            ] as const
+          ).flatMap(([tag, items]) =>
+            items.length
+              ? [`<${tag}>${items.map((item) => element("item", item)).join("")}</${tag}>`]
+              : [],
+          ),
+        ];
+        const attrs = [attr("name", persona.name), ...(persona.is_primary ? [attr("primary", true)] : [])];
+        return `<persona ${attrs.join(" ")}>${parts.join("")}</persona>`;
+      })
+      .join("");
+    sections.push(`<audience_personas>${personaXml}</audience_personas>`);
   }
 
   if (facts.length) {

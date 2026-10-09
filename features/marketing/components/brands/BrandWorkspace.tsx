@@ -1,5 +1,6 @@
 "use client";
 
+import { useBrandPersonas } from "@/features/marketing/data/personas";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import Link from "next/link";
@@ -384,6 +385,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const sites = useBrandSites(brandId);
   // access-errors: ok — cockpit section list under the gated brand primary
   const properties = useBrandProperties(brandId);
+  const personas = useBrandPersonas(brandId);
   // access-errors: ok — cockpit section list under the gated brand primary
   const assets = useBrandAssets(brandId);
   // access-errors: ok — cockpit section list under the gated brand primary
@@ -449,6 +451,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       brand_context: buildBrandContextXml({
         brand: current,
         properties: properties.data ?? [],
+        personas: personas.data ?? [],
         facts: factRows,
         assets: assetRows,
         sites: websiteSites,

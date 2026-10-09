@@ -243,7 +243,11 @@ function BrandEditorDialogBody({
               ? publishedToWebPatch(draft.publishedToWeb, userId)
               : {}),
             // Merged, never replaced: keys this editor does not own survive.
-            profile: mergeBrandProfile(brand.profile, profileFromDraft(draft)),
+            // The Messaging / Claims pages own the fundamentals; carry them through.
+            profile: mergeBrandProfile(brand.profile, {
+              ...parseBrandProfile(brand.profile),
+              ...profileFromDraft(draft),
+            }),
           },
         });
         toast.success("Brand saved");

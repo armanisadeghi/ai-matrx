@@ -300,7 +300,6 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   comingSoonId: string;
   subRoute: string;
 }[] = [
-  { comingSoonId: "marketing.audience", subRoute: "identity/audience" },
   // The route renders the PR calendar today; the cross-channel timeline it promises is
   // still unbuilt and is announced on that page (features/marketing/pr/calendar).
   { comingSoonId: "marketing.calendar", subRoute: "planning/calendar" },

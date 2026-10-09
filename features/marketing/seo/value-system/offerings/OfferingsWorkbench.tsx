@@ -62,6 +62,10 @@ import {
   moveBrandOffering,
   removeSiteOffering,
   saveSiteOffering,
+  listBrandOfferingPrices,
+  setBrandOfferingPrice,
+  NO_OFFERING_PRICE,
+  type OfferingPrice,
   setOfferingWorth,
   setSiteOfferingAvailability,
   type AvailabilityChange,
@@ -107,6 +111,15 @@ function parseStripTarget(value: string | null): StripTarget | null {
   }
 }
 
+function priceDraft(price: OfferingPrice | undefined) {
+  return {
+    priceAmount: price?.amount == null ? "" : String(price.amount),
+    priceCurrency: price?.currency ?? "USD",
+    priceUnit: price?.unit ?? "",
+    priceNote: price?.note ?? "",
+  };
+}
+
 export function OfferingsWorkbench() {
   const { site, brandId } = useMarketingSite();
   const siteId = site.id;
@@ -142,6 +155,10 @@ export function OfferingsWorkbench() {
   const catalog = useQuery({
     queryKey: [...OFFERINGS_KEY, "catalog", siteId],
     queryFn: ({ signal }) => listBrandOfferingCatalog(siteId, signal),
+  });
+  const prices = useQuery({
+    queryKey: [...OFFERINGS_KEY, "prices", brandId],
+    queryFn: ({ signal }) => listBrandOfferingPrices(brandId, signal),
   });
   const stats = useQuery({
     queryKey: [...OFFERINGS_KEY, "stats", siteId, window28.start, window28.end],
@@ -282,8 +299,8 @@ export function OfferingsWorkbench() {
   });
 
   const save = useMutation({
-    mutationFn: (draft: OfferingEditDraft) =>
-      saveSiteOffering({
+    mutationFn: async (draft: OfferingEditDraft) => {
+      const id = await saveSiteOffering({
         organizationId,
         siteId,
         offeringId: draft.offeringId,
@@ -291,7 +308,23 @@ export function OfferingsWorkbench() {
         kind: draft.kind,
         description: draft.description,
         parentId: draft.parentId,
-      }),
+      });
+      const amount = draft.priceAmount === "" ? null : Number(draft.priceAmount);
+      const stored = prices.data?.[id] ?? NO_OFFERING_PRICE;
+      const next = {
+        amount,
+        currency: draft.priceCurrency || null,
+        unit: draft.priceUnit || null,
+        note: draft.priceNote || null,
+      };
+      const changed =
+        amount !== stored.amount ||
+        (amount !== null && next.currency !== stored.currency) ||
+        next.unit !== stored.unit ||
+        next.note !== stored.note;
+      if (changed) await setBrandOfferingPrice(id, next);
+      return id;
+    },
     onSuccess: (id, draft) => {
       setEditDraft(null);
       setSelectedId(id);
@@ -435,9 +468,17 @@ export function OfferingsWorkbench() {
         kind: node.offering.kind,
         description: node.offering.description ?? "",
         parentId: node.offering.parentId,
+        ...priceDraft(prices.data?.[node.offering.id]),
       }),
     onAddChild: (node) =>
-      setEditDraft({ offeringId: null, name: "", kind: node.offering.kind, description: "", parentId: node.offering.id }),
+      setEditDraft({
+        offeringId: null,
+        name: "",
+        kind: node.offering.kind,
+        description: "",
+        parentId: node.offering.id,
+        ...priceDraft(undefined),
+      }),
     onViewKeywords: (node) =>
       openDrilldown({
         siteId,

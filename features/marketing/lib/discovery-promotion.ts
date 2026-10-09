@@ -26,6 +26,9 @@ export function inferDiscoveredPropertyType(
     if (host === "youtube.com" || host === "youtu.be") return "youtube";
     if (host === "linkedin.com") return "linkedin";
     if (host === "pinterest.com" || host === "pin.it") return "pinterest";
+    if (host === "threads.net" || host === "threads.com") return "threads";
+    if (host === "reddit.com" || host === "old.reddit.com") return "reddit";
+    if (host === "snapchat.com") return "snapchat";
   } catch {
     // Malformed URLs are still reviewable as a labeled Other property.
   }

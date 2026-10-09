@@ -1,9 +1,9 @@
 import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
-import { BrandAudiencePage } from "@/features/marketing/components/brand/BrandAudiencePage";
+import { BrandClaimsPage } from "@/features/marketing/components/brand/BrandProfilePages";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 
-/** Who this brand sells to — named personas every brief and agent writes for. */
-export default async function BrandAudienceRoute({
+/** What this brand may say, what it never may, and the disclaimers that go with it. */
+export default async function BrandClaimsPageRoute({
   params,
 }: {
   params: Promise<{ brandId: string }>;
@@ -11,11 +11,5 @@ export default async function BrandAudienceRoute({
   const { brandId } = await params;
   const brand = await resolveBrandParam(brandId);
   if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
-  return (
-    <BrandAudiencePage
-      brandId={brand.id}
-      brandName={brand.name}
-      organizationId={brand.organization_id}
-    />
-  );
+  return <BrandClaimsPage brandId={brand.id} />;
 }

@@ -312,9 +312,23 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/identity/audience",
       label: "Audience & Personas",
       description:
-        "RESERVED — renders <MarketingComingSoon comingSoonId=\"marketing.audience\">; the URL is permanent.",
+        "BrandAudiencePage — named personas (web.brand_persona): goals, pain points, objections, channels.",
       filePath: "app/(core)/marketing/[brandId]/identity/audience/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+    },
+    {
+      url: "/marketing/[brandId]/identity/messaging",
+      label: "Messaging",
+      description: "Mission, vision, values, story, elevator pitches, messaging and content pillars, hashtags.",
+      filePath: "app/(core)/marketing/[brandId]/identity/messaging/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/[brandId]/identity/claims",
+      label: "Claims & compliance",
+      description: "Approved and forbidden claims and disclaimers, inherited by every agent.",
+      filePath: "app/(core)/marketing/[brandId]/identity/claims/page.tsx",
+      status: "Live",
     },
     {
       url: "/marketing/[brandId]/websites",

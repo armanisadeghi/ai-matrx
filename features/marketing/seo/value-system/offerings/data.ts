@@ -418,3 +418,52 @@ export async function saveSiteOffering(input: {
   });
   return assertGoverned(response.data, response.error, "save that offering");
 }
+
+/** The published price of one brand offering (all null = no published price). */
+export interface OfferingPrice {
+  amount: number | null;
+  currency: string | null;
+  unit: string | null;
+  note: string | null;
+}
+
+export const NO_OFFERING_PRICE: OfferingPrice = { amount: null, currency: null, unit: null, note: null };
+
+/** Published prices for a brand's live offerings, keyed by offering id. */
+export async function listBrandOfferingPrices(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<Record<string, OfferingPrice>> {
+  const response = await (await webDb())
+    .from("brand_offering")
+    .select("id, price_amount, price_currency, price_unit, price_note")
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read this brand's offering prices");
+  const out: Record<string, OfferingPrice> = {};
+  for (const row of rows ?? []) {
+    out[row.id] = {
+      amount: row.price_amount === null ? null : Number(row.price_amount),
+      currency: row.price_currency,
+      unit: row.price_unit,
+      note: row.price_note,
+    };
+  }
+  return out;
+}
+
+/** Set (or clear, with all-null) the published price on one brand offering. Direct write, RLS-governed. */
+export async function setBrandOfferingPrice(offeringId: string, price: OfferingPrice): Promise<void> {
+  const response = await (await webDb())
+    .from("brand_offering")
+    .update({
+      price_amount: price.amount,
+      price_currency: price.amount === null ? null : (price.currency?.trim().toUpperCase() || "USD"),
+      price_unit: price.unit?.trim() || null,
+      price_note: price.note?.trim() || null,
+    })
+    .eq("id", offeringId)
+    .select("id");
+  assertGoverned(response.data, response.error, "save that offering's price");
+}

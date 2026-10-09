@@ -182,15 +182,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     // email and paid publishes on the same timeline are what is still promised.
     surfaces: ["/marketing hub card", "/marketing/[brand]/planning/calendar — below the PR calendar"],
   },
-  "marketing.audience": {
-    id: "marketing.audience",
-    label: "Audience & Personas",
-    owner: "marketing",
-    promise:
-      "Define segments, ICPs, and personas once so every brief, initiative, and agent writes for a named audience instead of a guess.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/audience route"],
-  },
   "marketing.content-studio": {
     id: "marketing.content-studio",
     label: "Content Studio",

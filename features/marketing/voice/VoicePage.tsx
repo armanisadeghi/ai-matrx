@@ -43,6 +43,7 @@ import {
   type VoiceSurface,
   type VoiceTextOutcome,
 } from "./service";
+import { SpokespeoplePanel } from "./SpokespeoplePanel";
 import { formatCount } from "@ai-matrx/kit/format";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -190,6 +191,8 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
             and the AI tells are rewritten before you see the draft.
           </p>
         </header>
+
+        {scope === "brand" ? <SpokespeoplePanel brandId={ownerId} brandName={ownerName} /> : null}
 
         <Card className="p-4" data-testid="voice-current">
           <h2 className="text-sm font-medium text-foreground">Current voice</h2>

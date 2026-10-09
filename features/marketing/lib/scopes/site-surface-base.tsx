@@ -22,6 +22,7 @@
  * happens here beyond the brand row React Query cache (`useBrand`).
  */
 
+import type { BrandPersona } from "@/features/marketing/lib/persona-model";
 import { useCallback, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -99,6 +100,10 @@ export function useMarketingSiteSurfaceBase(): {
       ...brandKey,
       "properties",
     ]);
+    const personas = queryClient.getQueryData<BrandPersona[]>([
+      ...brandKey,
+      "personas",
+    ]);
     const brandSites = queryClient.getQueryData<MarketingSite[]>([
       ...brandKey,
       "sites",
@@ -113,6 +118,7 @@ export function useMarketingSiteSurfaceBase(): {
             facts,
             assets,
             properties,
+            personas,
             sites: brandSites?.length ? brandSites : [site],
           })
         : undefined,
