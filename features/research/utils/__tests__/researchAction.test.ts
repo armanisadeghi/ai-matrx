@@ -11,15 +11,22 @@ const mockToastError = jest.fn();
 jest.mock("@/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => mockToastError(...a) },
 }));
-// The refusal is shown through the chat host's notify port (7bff33803f); the host here is the toast the test spies on.
-jest.mock("@ai-matrx/chat/host/configure", () => ({
-  ...jest.requireActual("@ai-matrx/chat/host/configure"),
-  isChatHostConfigured: () => true,
-  getChatHost: () => ({
-    notify: { error: (...a: unknown[]) => mockToastError(...a) },
-  }),
-}));
-
+// The platform's refusal is shown through the chat host's notify port. The jest setup already loaded the
+// package's org module bound to the REAL host, so a mock of the host's configure module never reaches it;
+// the test swaps the presenter (real predicate, real sentence) to put the toast where it can be spied on.
+jest.mock("@ai-matrx/chat/host/org", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/host/org");
+  return {
+    ...actual,
+    presentOrganizationRefusal: (error: unknown, options: object = {}) => {
+      if (!actual.isOrganizationRequiredError(error)) return false;
+      mockToastError("Choose an organization first", {
+        description: actual.organizationRefusalMessage(options),
+      });
+      return true;
+    },
+  };
+});
 
 import { OrganizationContextError } from "@/lib/api/organization-context";
 import { runResearchAction } from "../researchAction";
