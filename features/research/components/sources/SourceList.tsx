@@ -52,6 +52,8 @@ import {
 } from "../../hooks/useResearchState";
 import { VideoSourceMeta } from "../shared/VideoSourceMeta";
 import { SocialSourceSignal } from "../shared/SocialSourceSignal";
+import { sourceRowMode } from "../../utils/socialSource";
+import { SocialOpenPost } from "../shared/SocialOpenPost";
 import type { YouTubeVideoIdentity } from "../../service";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
@@ -541,7 +543,9 @@ function SourceRow({
               isExpanded ? "h-full" : "min-h-[4.5rem]",
             )}
           >
-            <PriorityCell source={source} topicScores={topicPriorityScores} />
+            {sourceRowMode(source) === "captured" ? null : (
+              <PriorityCell source={source} topicScores={topicPriorityScores} />
+            )}
           </div>
         </td>
 
@@ -633,16 +637,20 @@ function SourceRow({
           className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col items-start gap-1.5">
-            <ScrapeOutcomeCell status={source.scrape_status} />
-            <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
-            <ActionTrigger
-              label={needsScrape ? "Read" : "Re-read"}
-              busy={scraping}
-              disabled={anyNavigating}
-              onClick={(e) => onScrape(source, e)}
-            />
-          </div>
+          {sourceRowMode(source) === "captured" ? (
+            <SocialOpenPost url={source.url} />
+          ) : (
+            <div className="flex flex-col items-start gap-1.5">
+              <ScrapeOutcomeCell status={source.scrape_status} />
+              <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
+              <ActionTrigger
+                label={needsScrape ? "Read" : "Re-read"}
+                busy={scraping}
+                disabled={anyNavigating}
+                onClick={(e) => onScrape(source, e)}
+              />
+            </div>
+          )}
         </td>
 
         {/* Analysis — status + an ALWAYS-VISIBLE trigger, the matched pair to
@@ -1691,6 +1699,7 @@ export default function SourceList() {
                   )}
 
                   <div className="flex items-center gap-2 flex-wrap type-meta tabular-nums text-muted-foreground">
+                    {sourceRowMode(source) === "pipeline" && (
                     <span className="type-body font-bold tabular-nums">
                       {PRIORITY_SCORE_LABEL}{" "}
                       <span
@@ -1704,6 +1713,7 @@ export default function SourceList() {
                         {scores.priority}
                       </span>
                     </span>
+                    )}
                     <span>Best {scores.best}</span>
                     <span>
                       {QUALITY_SCORE_LABEL} {scores.quality}
@@ -1742,12 +1752,16 @@ export default function SourceList() {
                       e.stopPropagation();
                     }}
                   >
-                    <ActionTrigger
-                      label={needsScrape ? "Read" : "Re-read"}
-                      busy={scrapingIds.has(source.id)}
-                      disabled={anyNavigating}
-                      onClick={(e) => handleScrapeSource(source, e)}
-                    />
+                    {sourceRowMode(source) === "captured" ? (
+                      <SocialOpenPost url={source.url} />
+                    ) : (
+                      <ActionTrigger
+                        label={needsScrape ? "Read" : "Re-read"}
+                        busy={scrapingIds.has(source.id)}
+                        disabled={anyNavigating}
+                        onClick={(e) => handleScrapeSource(source, e)}
+                      />
+                    )}
                     <ActionTrigger
                       label={
                         analysisStateFor(source) === "none"

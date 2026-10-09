@@ -189,3 +189,13 @@ export function socialCaptureOf(
     ),
   };
 }
+
+export type SourceRowMode = "pipeline" | "captured";
+
+/**
+ * How a source row presents. A social-capture source is already captured (engagement and outlier
+ * data come from the platform), so the read / fetch-odds / priority affordances do not apply.
+ */
+export function sourceRowMode(source: { origin?: string | null } | null | undefined): SourceRowMode {
+  return source?.origin === "social_capture" ? "captured" : "pipeline";
+}
