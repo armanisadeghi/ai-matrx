@@ -71,6 +71,7 @@ Each time a step finishes, in the same commit:
 - **Evidence:** say how to rerun it (the command); keep only what a later decision needs.
   Censuses, scans, logs and batch-by-batch verification notes are not kept once read.
 - **Arman's words** go to the node's VISION.md (§5). Anything for him is shown in the chat.
+- **Clean-up-later notes:** working material you must keep for now gets one line at its top saying when and how to cut it ("Once Meet ships, cut to what the spec lacks"). The daily sweep honors and acts on these notes.
 - **Finished work** shrinks to a status phrase ("Gmail: live"); finished projects, closed
   handoffs and stale plans are deleted, never archived. Git holds history.
 
