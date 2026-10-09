@@ -17,6 +17,7 @@
  */
 
 import { BackendClient } from "@/lib/api/backend-client";
+import { BackendApiError } from "@/lib/api/errors";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { createClient } from "@/utils/supabase/client";
@@ -88,6 +89,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Wait before the one retry of a capture the server could not serve (a busy browser pool). */
+export const CAPTURE_RETRY_BACKOFF_MS = 2_500;
+
+/** A busy or briefly unreachable engine (502/503/504, a dropped connection) is worth ONE retry. */
+function isTransientCaptureFailure(error: unknown): boolean {
+  if (error instanceof BackendApiError) {
+    return error.status === null || error.status === 502 || error.status === 503 || error.status === 504;
+  }
+  return error instanceof TypeError; // fetch's network failure
+}
+
 /** Capture a record on the server engine; the image is stored as a cloud file. */
 export async function captureRecordOnServer(
   request: ServerCaptureRequest,
@@ -105,7 +117,7 @@ export async function captureRecordOnServer(
     // The request model forbids extra fields; the org rides the header.
     sendScopeInBody: false,
   });
-  const body = await client.postJson("/rendered-output/capture", {
+  const payload = {
     record_type: request.recordType,
     record_id: request.recordId,
     width: Math.max(240, Math.min(3840, Math.round(request.width))),
@@ -116,7 +128,16 @@ export async function captureRecordOnServer(
         : Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
     include_image: request.includeImage === true,
     ...(request.fileName ? { file_name: request.fileName } : {}),
-  });
+  };
+  let body: unknown;
+  try {
+    body = await client.postJson("/rendered-output/capture", payload);
+  } catch (error) {
+    if (!isTransientCaptureFailure(error)) throw error;
+    console.warn("[capture] the capture engine was busy — retrying once", error);
+    await new Promise((resolve) => setTimeout(resolve, CAPTURE_RETRY_BACKOFF_MS));
+    body = await client.postJson("/rendered-output/capture", payload);
+  }
   if (
     !isRecord(body) ||
     typeof body.file_id !== "string" ||
