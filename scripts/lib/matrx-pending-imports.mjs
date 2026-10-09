@@ -344,6 +344,12 @@ export function rescuePendingImports(file, text, root) {
   const call = (inf, name) => `__matrxPending(${inf}, ${JSON.stringify(name)})`;
   const ns = (inf) => `__matrxPending.namespace(${inf})`;
   const edits = []; // { start, end, text }
+  // Names the rewritten IMPORTS now declare as `const`, and the `export const` declarations the
+  // rewritten RE-EXPORTS produce. `import { X } from "@ai-matrx/p"` + `export { X } from "@ai-matrx/p"`
+  // is legal source (a re-export binds nothing locally) but became two declarations of X and 500'd
+  // every route (2026-10-08). Collisions are resolved after the loop.
+  const importLocals = new Set();
+  const exportDecls = []; // { edit, local, value, decl }
   // Text inside a comment or template literal is never a statement (a code sample, a fixture).
   const hidden = scanCode(text)?.hidden ?? [];
   const skip = (m, end) => inside(hidden, m.index + m[1].length) || ATTRIBUTES_FOLLOW.test(text.slice(end));
@@ -364,14 +370,20 @@ export function rescuePendingImports(file, text, root) {
       if (!clause) continue;
       let keepDefault = null;
       if (clause.defaultName) {
-        if (isPending("default")) out.push(`const ${clause.defaultName} = ${call(info(j, "default", line, specifier), "default")};`);
+        if (isPending("default")) {
+          importLocals.add(clause.defaultName);
+          out.push(`const ${clause.defaultName} = ${call(info(j, "default", line, specifier), "default")};`);
+        }
         else keepDefault = clause.defaultName;
       }
+      if (clause.namespace && all) importLocals.add(clause.namespace);
       if (clause.namespace && all) out.push(`const ${clause.namespace} = ${ns(info(j, "*", line, specifier))};`);
       const keep = [];
       for (const el of clause.named) {
-        if (!el.typeOnly && isPending(el.imported)) out.push(`const ${el.local} = ${call(info(j, el.imported, line, specifier), el.imported)};`);
-        else if (!all) keep.push(el.text);
+        if (!el.typeOnly && isPending(el.imported)) {
+          importLocals.add(el.local);
+          out.push(`const ${el.local} = ${call(info(j, el.imported, line, specifier), el.imported)};`);
+        } else if (!all) keep.push(el.text);
       }
       if (!out.length) continue;
       if (!all) {
@@ -400,7 +412,9 @@ export function rescuePendingImports(file, text, root) {
         for (const el of named) {
           if (!el.typeOnly && isPending(el.imported)) {
             const value = call(info(j, el.imported, line, specifier), el.imported);
-            out.push(el.local === "default" ? `export default ${value};` : `export const ${el.local} = ${value};`);
+            const decl = el.local === "default" ? `export default ${value};` : `export const ${el.local} = ${value};`;
+            if (el.local !== "default") exportDecls.push({ local: el.local, value, decl });
+            out.push(decl);
           } else if (!all) keep.push(el.text);
         }
         if (!out.length) continue;
@@ -409,7 +423,14 @@ export function rescuePendingImports(file, text, root) {
     }
     // Same line count as the original statement, so every later line keeps its number.
     const pad = "\n".repeat((whole.match(/\n/g) ?? []).length);
-    edits.push({ start: m.index, end: m.index + whole.length, text: `${indent}${out.join(" ")}${pad}` });
+    const edit = { start: m.index, end: m.index + whole.length, text: `${indent}${out.join(" ")}${pad}` };
+    for (const d of exportDecls) d.edit ??= edit;
+    edits.push(edit);
+  }
+  for (const d of exportDecls) {
+    if (!importLocals.has(d.local)) continue;
+    const tmp = `__matrxPendingExport_${d.local}`;
+    d.edit.text = d.edit.text.replace(d.decl, `const ${tmp} = ${d.value}; export { ${tmp} as ${d.local} };`);
   }
 
   for (const m of text.matchAll(SIDE_EFFECT)) {
@@ -572,6 +593,13 @@ function selfTest() {
     if (e.pending.length !== 1 || e.pending[0].line !== 5) failures.push(`RED edge: expected only the second statement on line 5 rescued, got ${JSON.stringify(e.pending)}`);
     for (const k of [0, 1, 2, 3, 5]) if (!e.code.includes(edge.split("\n")[k])) failures.push(`RED edge: line ${k + 1} was touched:\n${e.code}`);
     if (!eLines[4].startsWith(`import { Tool } from "@ai-matrx/chat"; const PERMISSION_LEVEL_HINTS = __matrxPending(`)) failures.push(`RED edge: same-line statement not rescued:\n${eLines[4]}`);
+
+    // import { X } + export { X } from the same package: one binding, one export, never two `const X`.
+    const both = `import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\nexport { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\nexport const use = PERMISSION_LEVEL_HINTS;\n`;
+    const b = rescuePendingImports(file, both, tmp);
+    const declCount = (b.code.match(/\bconst PERMISSION_LEVEL_HINTS\b/g) ?? []).length;
+    if (declCount !== 1) failures.push(`RED: import + re-export of one name declared it ${declCount} times:\n${b.code}`);
+    if (!/export \{ __matrxPendingExport_PERMISSION_LEVEL_HINTS as PERMISSION_LEVEL_HINTS \}/.test(b.code)) failures.push(`RED: re-export lost its export:\n${b.code}`);
 
     // A file with no directive gets the helper at the very top.
     const plain = `import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\nexport const x = PERMISSION_LEVEL_HINTS;\n`;
