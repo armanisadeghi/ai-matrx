@@ -291,3 +291,26 @@ export function postCardModelFromOutlierRow(
     percentile: num(value.percentile),
   };
 }
+
+/** An outlier-feed row from a post card (the card already carries the post's own numbers). */
+export function outlierRowKindFromCard(card: PostCardModel, role?: string | null): OutlierRowKind | null {
+  if (card.outlierScore === null || !card.profileId) return null;
+  return {
+    post_id: card.postId,
+    platform: card.platform,
+    profile_id: card.profileId,
+    outlier_score: card.outlierScore,
+    handle: card.handle,
+    role: role ?? null,
+    url: card.url,
+    format: card.format,
+    caption: card.hookLine,
+    posted_at: card.postedAt,
+    thumbnail_url: card.thumbnailUrl,
+    views: card.views,
+    baseline_views: card.outlier.baselineViews,
+    percentile: card.percentile,
+    velocity_24h: null,
+    engagement_rate: null,
+  };
+}
