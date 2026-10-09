@@ -23,7 +23,7 @@ function deferred<T>() {
 
 let current: AssistsManagerApi;
 const options = { statuses: ["pending" as const], includeSnoozed: false, starredOnly: false, unseenOnly: false, urgency: null };
-const initialQuery: MatrxDataTableQueryState = { search: "", columnFilters: {}, sort: { id: "created_at", direction: "desc" }, page: 1, pageSize: 25 };
+const initialQuery: MatrxDataTableQueryState = { search: "", columnFilters: {}, anyOf: "", sort: { id: "created_at", direction: "desc" }, page: 1, pageSize: 25 };
 function Probe({ query }: { query: MatrxDataTableQueryState }) {
   const result = useAssistsQuery(query, options);
   useEffect(() => { current = result; }, [result]);
@@ -47,7 +47,7 @@ describe("current-query assists availability", () => {
     jest.mocked(queryAssists).mockReturnValue(read.promise);
     await act(async () => root.render(<Probe query={initialQuery} />));
     expect(current.loading).toBe(true); expect(current.loaded).toBe(false);
-    await act(async () => read.resolve({ rows: [], total: 0 }));
+    await act(async () => read.resolve({ rows: [], total: 0, unreadable: 0 }));
     expect(current.loading).toBe(false); expect(current.loaded).toBe(true); expect(current.total).toBe(0);
   });
 
@@ -57,14 +57,14 @@ describe("current-query assists availability", () => {
     jest.mocked(queryAssists).mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
     await act(async () => root.render(<Probe query={initialQuery} />));
     await act(async () => root.render(<Probe query={{ ...initialQuery, search: "new search" }} />));
-    await act(async () => next.resolve({ rows: [], total: 0 }));
+    await act(async () => next.resolve({ rows: [], total: 0, unreadable: 0 }));
     expect(current.loaded).toBe(true);
-    await act(async () => old.resolve({ rows: [], total: 99 }));
+    await act(async () => old.resolve({ rows: [], total: 99, unreadable: 0 }));
     expect(current.total).toBe(0); expect(current.loaded).toBe(true);
   });
 
   it("a failed replacement query never presents the prior success as current", async () => {
-    jest.mocked(queryAssists).mockResolvedValueOnce({ rows: [], total: 7 });
+    jest.mocked(queryAssists).mockResolvedValueOnce({ rows: [], total: 7, unreadable: 0 });
     const next = deferred<Awaited<ReturnType<typeof queryAssists>>>();
     jest.mocked(queryAssists).mockReturnValueOnce(next.promise);
     await act(async () => root.render(<Probe query={initialQuery} />));

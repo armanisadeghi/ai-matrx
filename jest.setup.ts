@@ -392,7 +392,6 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     /* eslint-enable @typescript-eslint/no-require-imports */
     uiSeam.registerChatUi({
       ErrorAlchemyMenu: slot("@/components/errors/ErrorAlchemyMenu", "ErrorAlchemyMenu"),
-      ErrorNotice: slot("@ai-matrx/design-system", "ErrorNotice"),
       // Package cards (RunFailureCard, ...) print the server's sentence through these two slots.
       TextWithDoors: slot("@/components/official/entity-ref/TextWithDoors", "TextWithDoors"),
       ServerNotes: slot("@/components/official/ServerNotes", "ServerNotes"),

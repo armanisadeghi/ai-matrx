@@ -155,7 +155,13 @@ export function ResourcePickerMenu({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   // Run-state counts for the "This run" rows only — see useRunControlCounts.
-  const counts = useRunControlCounts(conversationId);
+  const runCounts = useRunControlCounts(conversationId);
+  // The package types the counts as an interface (tools, skills); the tiles take a
+  // keyed lookup, so name the two keys instead of leaning on an index signature.
+  const counts: Partial<Record<string, number>> = {
+    tools: runCounts.tools,
+    skills: runCounts.skills,
+  };
 
   // Helper to switch views and carry over the URL
   const switchToView = (view: ResourcePickerViewId, url: string) => {
