@@ -28,8 +28,9 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 | 3c | Probe: stub the 3 context-menu lazy edges added Sep 26–Oct 5 (upper bound of their cost) | **done — leave them** | RSS −2.2 GB at most, compile within noise (7.3 min) |
 | 6 | Static page generation 6 s (Sep 22) → 37–48 s | **done 2026-10-09** | cause: 192 `templates_public` reads (every prerendered template page re-read the paged catalogue). Shared process read + guard test. Vercel static gen 48 s → 8 s. |
 | 7 | Generate workers 1 → 8 (generate process only first) | **done 2026-10-09** | tree peak 9.2 GB; page-data ~61 s → ~20 s |
-| 8 | One `next build` pass with 8 workers instead of compile + generate processes | **shipped locally, commit blocked** by another lane's unpublished chat export (commit hook); lands when chat publishes | lab: whole-tree peak 32.8 GB of 60; post-compile ~2.9 → ~1.3 min |
-| 9 | `@ai-matrx/chat` in `transpilePackages` (added Oct 1, dist is already compiled; React Compiler may re-run over 490 files) | lab run H running | |
+| 8 | One `next build` pass with 8 workers instead of compile + generate processes | **live 2026-10-09 01:43** (first green 1-pass release, no memory problems) | lab whole-tree peak 32.8 GB of 60; Vercel post-compile ~2.4 → ~1.5 min |
+| 9 | `@ai-matrx/chat` in `transpilePackages` | **done — leave it** | lab H: −0.9 GB RSS, no chunk change (noise) |
+| 10 | THE TRACE LAW: server functions shipping source folders (admin layout 573 files × 275 functions; /data/try-everything 3,451; check-findings ~22,000 incl. migrations/docs/scripts) | **done 2026-10-09** (cfb8899f8) | build-time route tree + `appDir()`; check-findings reads pure JSON; guard `check-server-trace-scope` (post-build, self-tested) → 1,644 bundles clean. Lab build of main: compile 3.1 min, whole build 3m58s, RSS 25 GB |
 | 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
