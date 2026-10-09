@@ -551,9 +551,17 @@ export async function runOverSegments<T>(
   segments: SourceSegment[],
   worker: (segment: SourceSegment) => Promise<T>,
   concurrency: number,
-): Promise<{ results: (T | null)[]; missed: SourceSegment[] }> {
+  /**
+   * A failure that will fail every section the same way (a usage limit, a
+   * refused request): once one section hits it, the rest are not attempted —
+   * paying for (or waiting on) calls that cannot succeed is never the answer.
+   */
+  stopsRun?: (error: unknown) => boolean,
+): Promise<{ results: (T | null)[]; missed: SourceSegment[]; reasons: string[] }> {
   const results: (T | null)[] = new Array(segments.length).fill(null);
   const missed: SourceSegment[] = [];
+  const reasons: string[] = [];
+  let stopped: unknown = null;
   let cursor = 0;
 
   const lanes = Array.from(
@@ -562,10 +570,17 @@ export async function runOverSegments<T>(
       for (;;) {
         const i = cursor++;
         if (i >= segments.length) return;
+        if (stopped !== null) {
+          missed.push(segments[i]);
+          reasons.push(errorMessage(stopped));
+          continue;
+        }
         try {
           results[i] = await worker(segments[i]);
         } catch (e) {
           missed.push(segments[i]);
+          reasons.push(errorMessage(e));
+          if (stopsRun?.(e)) stopped = e;
           console.error(
             `[convert/coverage] segment ${segments[i].id} (${segments[i].label}) failed:`,
             e,
@@ -575,7 +590,11 @@ export async function runOverSegments<T>(
     },
   );
   await Promise.all(lanes);
-  return { results, missed };
+  return { results, missed, reasons };
+}
+
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
 }
 
 /** The concurrency ceiling for a segmented run (a knob, never a constant). */

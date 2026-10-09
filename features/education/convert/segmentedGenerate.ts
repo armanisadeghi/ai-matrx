@@ -110,6 +110,12 @@ export interface SegmentedGenerateResult<T> {
   gapNote: string | null;
   /** Sections that produced nothing. */
   missedCount: number;
+  /**
+   * Why sections failed, in the words the failure gave (a usage limit, a
+   * refusal) — null when nothing failed or every failure was a timeout. A run
+   * that made nothing says THIS, never a guess (see `emptyRunMessage`).
+   */
+  failureReason: string | null;
   /** The `groups` index a kept item was made from (undefined without groups). */
   groupOf: (item: T) => number | undefined;
 }
@@ -287,7 +293,7 @@ export async function segmentedGenerate<T>({
     }
   };
 
-  const { results, missed } = await runOverSegments(
+  const { results, missed, reasons } = await runOverSegments(
     plan.segments,
     async (segment) => {
       let extracted: { value: unknown; conversationId: string } | null = null;
@@ -313,7 +319,7 @@ export async function segmentedGenerate<T>({
             extracted = { value, conversationId: ran };
             break;
           }
-          if (n >= SECTION_MAX_ATTEMPTS) {
+          if (n >= SECTION_MAX_ATTEMPTS || isRefusal(error)) {
             if (n > 1) retrying -= 1;
             settled += 1;
             failed += 1;
@@ -347,6 +353,7 @@ export async function segmentedGenerate<T>({
       return items;
     },
     concurrency,
+    isRefusal,
   );
 
   // An explicit count is a promise (THE COUNT LAW); a source-scaled run keeps
@@ -366,6 +373,7 @@ export async function segmentedGenerate<T>({
     firstValue,
     gapNote: describeGaps(missed),
     missedCount: missed.length,
+    failureReason: pickFailureReason(reasons),
     groupOf: (item) => madeIn.get(item),
   };
 }
@@ -435,4 +443,48 @@ export function mergeSectionItems<T>(
     admit(item);
   }
   return kept.slice(0, Math.max(0, limit));
+}
+
+/**
+ * A failure every remaining section would hit the same way: the person is out
+ * of AI usage, or the request was refused (age/consent gate, no access). It is
+ * neither retried nor repeated across sections.
+ */
+export function isRefusal(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === "ExpectedRequestConflictError") return true;
+  return /usage limit|usage_limit_reached|not allowed|consent|forbidden|permission/i.test(error.message);
+}
+
+/** The deadline message this module throws for a stalled section. */
+const DEADLINE_PREFIX = "No answer within ";
+
+/** The most telling failure: a refusal first, else the commonest non-timeout message. */
+export function pickFailureReason(reasons: readonly string[]): string | null {
+  const real = reasons.filter((r) => !r.startsWith(DEADLINE_PREFIX) && !/aborted/i.test(r));
+  if (real.length === 0) return null;
+  const refusal = real.find((r) => isRefusal(new Error(r)));
+  if (refusal) return refusal;
+  const tally = new Map<string, number>();
+  for (const r of real) tally.set(r, (tally.get(r) ?? 0) + 1);
+  return [...tally.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+/**
+ * The one sentence a run that made NOTHING shows. Every section failed →
+ * the failure's own words (a usage limit says so), or "did not answer in
+ * time" only when timeouts were the cause. Sections answered but nothing new
+ * survived → `nothingNew`.
+ */
+export function emptyRunMessage(
+  outcome: { missed: number; sections: number; failureReason: string | null },
+  noun: "cards" | "questions",
+  nothingNew: string,
+): string {
+  const allFailed = outcome.missed > 0 && outcome.missed >= outcome.sections;
+  if (outcome.failureReason && (allFailed || isRefusal(new Error(outcome.failureReason)))) {
+    return `No ${noun} were made: ${outcome.failureReason}`;
+  }
+  if (allFailed) return `The AI did not answer in time, so no ${noun} were made. Try again.`;
+  return nothingNew;
 }

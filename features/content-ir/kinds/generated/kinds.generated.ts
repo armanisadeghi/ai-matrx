@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "97504b5729a7";
+export const KIND_REGISTRY_FINGERPRINT = "31388cdc0861";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2871,7 +2871,13 @@ export interface GatherHole {
   /**
    * Structured error carried with the hole when available. A user-skip clears the failed attempt's error, so this is usually None.
    */
-  error?: Record<string, JsonValue> | null;
+  error?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  } | null;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -11861,7 +11867,7 @@ export interface Gate1MarketEvidence {
 }
 
 /**
- * Kind `gather_result` (registry v9).
+ * Kind `gather_result` (registry v10).
  */
 export interface GatherResult {
   /**
@@ -11888,6 +11894,10 @@ export interface GatherResult {
    * For AI items: each gathered result's `final_text`, index-aligned with `values` (empty string where an item has none).
    */
   final_texts?: string[];
+  /**
+   * For each entry of `values`, the position of the dispatched item it came from — so a hole never shifts what a value pairs with in the list that was fanned out.
+   */
+  item_indexes?: number[];
   /**
    * How many gathered values looked like an AI step result (carried `final_text` or `structured_output`). 0 means the two collections above are all-empty by construction, not by loss.
    */

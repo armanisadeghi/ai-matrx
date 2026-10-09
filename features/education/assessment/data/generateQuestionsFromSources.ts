@@ -70,6 +70,8 @@ export interface QuestionsFromSourcesOutcome {
   gapNote: string | null;
   sections: number;
   missed: number;
+  /** Why sections failed, in the failure's own words (see `emptyRunMessage`). */
+  failureReason: string | null;
   singlePass: boolean;
   conversationId: string | null;
 }
@@ -174,6 +176,7 @@ export async function generateQuestionsFromSources({
     gapNote: covered.gapNote,
     sections: covered.plan.segments.length,
     missed: covered.missedCount,
+    failureReason: covered.failureReason,
     singlePass: covered.plan.singlePass,
     conversationId: covered.conversationId,
   };

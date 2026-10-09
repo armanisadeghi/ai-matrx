@@ -40,6 +40,14 @@ import type {
   ListAssessmentsFilter,
 } from "./types";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { BATCH_KEY } from "@/features/education/kits/outline/types";
+
+/** An item's metadata without the run batch it was added in (a copy is not that run). */
+function withoutBatch(meta: unknown): Record<string, unknown> {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
+  const { [BATCH_KEY]: _batch, ...rest } = meta as Record<string, unknown>;
+  return rest;
+}
 
 const EDU = () => supabase.schema("education");
 
@@ -368,6 +376,9 @@ export const assessmentService = {
         points: it.points ?? 1,
         topic: it.topic ?? null,
         trust: (it.trust ?? null) as never,
+        // Run batch + outline section ride the item's metadata (living-kit:
+        // coverage counts by section id; "Undo last add" finds its batch).
+        metadata: (it.metadata ?? {}) as never,
       }));
       const { data, error } = await EDU()
         .from("assessment_item")
@@ -571,6 +582,8 @@ export const assessmentService = {
             points: Number(it.points ?? 1),
             topic: it.topic,
             position: it.position,
+            // A copy keeps what each question covers, never the batch it was added in.
+            metadata: withoutBatch(it.metadata),
           })),
         );
       }

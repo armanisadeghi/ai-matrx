@@ -21,6 +21,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback.
 
+import { emptyRunMessage } from "@/features/education/convert/segmentedGenerate";
 import { cardCount, cardProgressLine, makeMoreCardsLabel } from "@/features/flashcards/components/create/cardProgressLine";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
@@ -371,10 +372,12 @@ function AddMoreCardsDialog({
         });
         if (made.cards.length === 0) {
           throw new Error(
-            made.missed > 0 && made.missed >= made.sections
-              ? "The AI did not answer in time, so no cards were made. Try again."
-              : (made.gapNote ??
-                  "Nothing new came out of this material — the deck already covers it. Add other material and try again."),
+            emptyRunMessage(
+              made,
+              "cards",
+              made.gapNote ??
+                "Nothing new came out of this material — the deck already covers it. Add other material and try again.",
+            ),
           );
         }
         setStatus("Adding them to your deck…");

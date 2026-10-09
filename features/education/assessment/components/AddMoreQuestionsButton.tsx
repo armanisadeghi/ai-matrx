@@ -15,6 +15,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback.
 
+import { emptyRunMessage } from "@/features/education/convert/segmentedGenerate";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -312,10 +313,11 @@ function AddMoreQuestionsDialog({
           });
           if (made.questions.length === 0) {
             throw new Error(
-              made.missed > 0 && made.missed >= made.sections
-                ? "The AI did not answer in time, so no questions were made. Try again."
-                : (made.gapNote ??
-                    "Nothing new came out of this material. Add other material or change the focus."),
+              emptyRunMessage(
+                made,
+                "questions",
+                made.gapNote ?? "Nothing new came out of this material. Add other material or change the focus.",
+              ),
             );
           }
           setStatus("Adding them to your list…");
