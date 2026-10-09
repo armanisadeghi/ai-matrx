@@ -70,7 +70,7 @@ function sourceLabel(source: "DOMAIN_CONTACT" | "DOMAIN_PROFILE"): string {
     : "Workspace contact";
 }
 
-type DirectoryPerson = DirectoryPreview["people"][number];
+type DirectoryPerson = NonNullable<DirectoryPreview["people"]>[number];
 
 const PEOPLE_COLUMNS: MatrxColumnDef<DirectoryPerson>[] = [
   {
