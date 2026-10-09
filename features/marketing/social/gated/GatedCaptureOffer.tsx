@@ -15,6 +15,7 @@ import { Globe } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system/controls";
 
+import { CloudCaptureButton } from "./CloudCaptureButton";
 import { GuidedCaptureButton } from "./GuidedCaptureButton";
 import { startBackgroundCapture } from "./backgroundCapture";
 import type { GuidedCaptureTarget } from "./guidedApi";
@@ -87,6 +88,13 @@ export function GatedCaptureOffer({
         ) : null}
       </div>
       {line ? <p className={`text-xs ${line.failed ? "text-destructive" : "text-muted-foreground"}`}>{line.text}</p> : null}
+      {compact ? null : (
+        <CloudCaptureButton
+          organizationId={organizationId}
+          target={target}
+          {...(onCaptured ? { onCaptured } : {})}
+        />
+      )}
     </div>
   );
 }
