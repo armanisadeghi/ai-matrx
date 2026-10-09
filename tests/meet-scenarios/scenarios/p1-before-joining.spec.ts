@@ -125,7 +125,8 @@ scenario("browser-unsupported", async ({ cast }) => {
   await guest.page.waitForTimeout(8000);
   expect(await rawPhase(guest.page), "the contract phase for a browser that cannot join").toBe("unsupported");
   const text = await bodyText(guest.page);
-  expect(/open (this|it|the link)? ?in|use (chrome|safari|firefox|edge)|try (chrome|safari|firefox|edge)|different browser/i.test(text), `it must say what to open instead; saw: ${text.slice(0, 220)}`).toBe(true);
+  expect(/not compatible with your browser/i.test(text), `Meet's own wording ("Meet is not compatible with your browser yet"); saw: ${text.slice(0, 220)}`).toBe(true);
+  expect(/open (this |the )?(link |it )?in|use (chrome|safari|firefox|edge)|try (chrome|safari|firefox|edge)|different browser/i.test(text), `it must say what to open instead; saw: ${text.slice(0, 220)}`).toBe(true);
   expect(await guest.page.getByRole("button", { name: /^Join now$/ }).isVisible().catch(() => false), "no Join button that cannot work").toBe(false);
   void host;
 });

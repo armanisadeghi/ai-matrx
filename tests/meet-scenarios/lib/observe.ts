@@ -129,7 +129,7 @@ function readInPage(): Observation {
         role: p.getAttribute("data-meet-participant-role"),
         self: p.getAttribute("data-meet-participant-self") === "true",
       })),
-      text: text.slice(0, 600),
+      text,
     };
   }
 
@@ -192,7 +192,7 @@ function readInPage(): Observation {
       .filter((s) => s.length > 0)
       .slice(0, 12),
     participants,
-    text: text.slice(0, 600),
+    text,
   };
 }
 

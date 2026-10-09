@@ -21,9 +21,9 @@ export interface MediaFaults {
 declare global {
   interface Window {
     __meetHarness?: {
-      faults: MediaFaults & { goneKinds: string[] };
+      faults: MediaFaults & { goneKinds: string[]; goneIds: string[] };
       setFaults(next: Partial<MediaFaults>): void;
-      unplug(kind: "audioinput" | "videoinput"): number;
+      unplug(kind: "audioinput" | "videoinput"): Promise<number>;
       liveTrackCount(): number;
     };
   }
@@ -32,13 +32,13 @@ declare global {
 /** Runs in the page before any app script. Keep it dependency-free. */
 export function mediaFaultsInit(initial: MediaFaults): void {
   const KEY = "__meetHarnessFaults";
-  let stored: Partial<MediaFaults & { goneKinds: string[] }> = {};
+  let stored: Partial<MediaFaults & { goneKinds: string[]; goneIds: string[] }> = {};
   try {
     stored = JSON.parse(sessionStorage.getItem(KEY) ?? "{}");
   } catch {
     stored = {};
   }
-  const faults: MediaFaults & { goneKinds: string[] } = { goneKinds: [], ...initial, ...stored };
+  const faults: MediaFaults & { goneKinds: string[]; goneIds: string[] } = { goneKinds: [], goneIds: [], ...initial, ...stored };
   const persist = () => {
     try {
       sessionStorage.setItem(KEY, JSON.stringify(faults));
@@ -64,6 +64,12 @@ export function mediaFaultsInit(initial: MediaFaults): void {
       throw new DOMException("Requested device not found", "NotFoundError");
     if (wantsAudio && faults.goneKinds.includes("audioinput"))
       throw new DOMException("Requested device not found", "NotFoundError");
+    for (const part of [c?.audio, c?.video]) {
+      const want = typeof part === "object" && part !== null ? (part as MediaTrackConstraints).deviceId : undefined;
+      const ids = typeof want === "string" ? [want] : Array.isArray(want) ? want : want && typeof want === "object" ? [(want as ConstrainDOMStringParameters).exact, (want as ConstrainDOMStringParameters).ideal].flat() : [];
+      if (ids.some((id) => typeof id === "string" && faults.goneIds.includes(id)))
+        throw new DOMException("Requested device not found", "NotFoundError");
+    }
     const stream = await nativeGUM(c);
     for (const t of stream.getTracks()) {
       live.add(t);
@@ -73,7 +79,7 @@ export function mediaFaultsInit(initial: MediaFaults): void {
   };
   md.enumerateDevices = async () => {
     const all = await nativeEnum();
-    return all.filter((d) => !faults.goneKinds.includes(d.kind));
+    return all.filter((d) => !faults.goneKinds.includes(d.kind) && !faults.goneIds.includes(d.deviceId));
   };
   if (faults.noScreenShare) {
     (md as unknown as { getDisplayMedia?: unknown }).getDisplayMedia = undefined;
@@ -101,14 +107,37 @@ export function mediaFaultsInit(initial: MediaFaults): void {
       Object.assign(faults, next);
       persist();
     },
-    /** A device disappears: its live tracks end (as on unplug) and it leaves the device list. */
-    unplug(kind) {
-      if (!faults.goneKinds.includes(kind)) faults.goneKinds.push(kind);
-      persist();
+    /**
+     * A device disappears (headset unplugged). Only the device IN USE goes while another of that kind
+     * remains, so the product can switch to it; when it was the last one of its kind, the kind is gone.
+     * Its live tracks end and it leaves the device list. Returns how many live tracks ended.
+     */
+    async unplug(kind) {
       const trackKind = kind === "audioinput" ? "audio" : "video";
+      const remaining = (await nativeEnum()).filter((d) => d.kind === kind && !faults.goneKinds.includes(kind) && !faults.goneIds.includes(d.deviceId));
+      const inUse = Array.from(live)
+        .filter((t) => t.kind === trackKind && t.readyState !== "ended")
+        .map((t) => t.getSettings().deviceId)
+        .filter((id): id is string => typeof id === "string");
+      const goneNow = new Set<string>();
+      if (remaining.length > 1) {
+        const picked = remaining.find((d) => inUse.includes(d.deviceId)) ?? remaining[0]!;
+        goneNow.add(picked.deviceId);
+        // "default" is an alias of a real entry: that real one goes too (when others remain), so the switch lands on a different device.
+        if (picked.deviceId === "default") {
+          const alias = remaining.find((d) => d.deviceId !== "default" && d.groupId === picked.groupId);
+          if (alias && remaining.length > 2) goneNow.add(alias.deviceId);
+        }
+        for (const id of goneNow) if (!faults.goneIds.includes(id)) faults.goneIds.push(id);
+      } else if (!faults.goneKinds.includes(kind)) {
+        faults.goneKinds.push(kind);
+      }
+      persist();
       let ended = 0;
       for (const t of Array.from(live)) {
         if (t.kind !== trackKind || t.readyState === "ended") continue;
+        const id = t.getSettings().deviceId;
+        if (goneNow.size > 0 && !(typeof id === "string" && goneNow.has(id))) continue;
         t.stop();
         t.dispatchEvent(new Event("ended"));
         live.delete(t);
