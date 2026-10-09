@@ -14,6 +14,7 @@
 // reopened it both wait for the same answer; whichever moves the entry out of "running" first saves it
 // (`claimBuildEntry`), the other stands down and re-reads the row.
 import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
+import { readBuildReferences, type BuildReference } from "./build-references";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
@@ -58,6 +59,8 @@ export interface BuildRecord {
   /** False while the draft holds no app yet (its first request has not landed). */
   hasContent: boolean;
   requests: BuildEntry[];
+  /** What she attached to the build (`metadata.build.references`, lane A1). */
+  references: BuildReference[];
 }
 
 const OPEN: ReadonlySet<BuildEntryState> = new Set(["starting", "running", "saving"]);
@@ -132,6 +135,7 @@ export function toRecord(row: RecordRow): BuildRecord {
     organizationId: row.organization_id,
     hasContent: Boolean(row.entry),
     requests: readBuildRequests(row.metadata),
+    references: readBuildReferences(row.metadata),
   };
 }
 
@@ -154,7 +158,7 @@ export const UNTITLED_APPLET = "Untitled Applet";
  * Press Build on a new app: the draft Applet is born NOW, carrying the request, before the builder
  * runs — it is the build's identity and its URL. Its slug is a placeholder the first answer replaces.
  */
-export async function startBuildRecord(client: Client, input: { organizationId: string; entry: BuildEntry }): Promise<BuildRecord> {
+export async function startBuildRecord(client: Client, input: { organizationId: string; entry: BuildEntry; references?: BuildReference[] }): Promise<BuildRecord> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const slug = `draft-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const { data, error } = await client
@@ -165,7 +169,7 @@ export async function startBuildRecord(client: Client, input: { organizationId: 
         slug,
         name: UNTITLED_APPLET,
         status: "draft",
-        metadata: { build: { requests: [input.entry] } },
+        metadata: { build: { requests: [input.entry], ...(input.references?.length ? { references: input.references } : {}) } },
       })
       .select(RECORD_COLUMNS)
       .single();
@@ -185,6 +189,27 @@ class NothingToWrite extends Error {}
  * `edit` to write nothing — the outcome is then "skipped" with the row as it stands.
  */
 async function editRequests(client: Client, appletId: string, edit: (requests: BuildEntry[]) => BuildEntry[] | null): Promise<MergeOutcome> {
+  return editBuild(client, appletId, (metadata) => {
+    const next = edit(readBuildRequests(metadata));
+    return next === null ? null : withRequests(metadata, next);
+  });
+}
+
+/**
+ * Write what she attached (lane A1) — the whole list, through the same guarded merge as the requests, so a
+ * request written by another tab at the same moment is never lost.
+ */
+export async function saveBuildReferences(client: Client, appletId: string, references: BuildReference[]): Promise<BuildRecord> {
+  return (
+    await editBuild(client, appletId, (metadata) => {
+      const build = isRecord(metadata.build) ? metadata.build : {};
+      return { ...metadata, build: { ...build, references } };
+    })
+  ).record;
+}
+
+/** Rewrite `metadata` with `edit` (null = write nothing); re-run on a lost race. */
+async function editBuild(client: Client, appletId: string, edit: (metadata: Record<string, unknown>) => Record<string, unknown> | null): Promise<MergeOutcome> {
   const db = client.schema("app");
   let latest: RecordRow | null = null;
   const result = await mergeJsonColumn<RecordRow>({
@@ -195,9 +220,9 @@ async function editRequests(client: Client, appletId: string, edit: (requests: B
     },
     readColumn: (row) => row.metadata,
     merge: (current) => {
-      const next = edit(readBuildRequests(current));
+      const next = edit(asJsonObject(current) as Record<string, unknown>);
       if (next === null) throw new NothingToWrite();
-      return withRequests(current, next);
+      return next;
     },
     applyUpdate: async ({ value, expectedVersion, nextVersion }) => {
       const res = await db
