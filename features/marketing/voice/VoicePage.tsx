@@ -192,7 +192,7 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
           </p>
         </header>
 
-        {scope === "brand" ? <SpokespeoplePanel brandId={ownerId} brandName={ownerName} /> : null}
+        {scope === "brand" ? <SpokespeoplePanel brandId={ownerId} brandName={ownerName} organizationId={organizationId} /> : null}
 
         <Card className="p-4" data-testid="voice-current">
           <h2 className="text-sm font-medium text-foreground">Current voice</h2>

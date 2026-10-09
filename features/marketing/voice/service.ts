@@ -49,6 +49,7 @@ export interface FingerprintRow {
   confirmed_at: string | null;
   fingerprint: Record<string, unknown>;
   brand_id?: string | null;
+  organization_id?: string | null;
   person_user_id?: string | null;
 }
 
@@ -59,7 +60,7 @@ export interface SourceOption {
 }
 
 const FINGERPRINT_COLUMNS =
-  "id, label, status, confidence, register_label, sample_count, sample_word_count, last_extracted_at, refresh_due_at, confirmed_at, fingerprint, brand_id, person_user_id";
+  "id, label, status, confidence, register_label, sample_count, sample_word_count, last_extracted_at, refresh_due_at, confirmed_at, fingerprint, brand_id, person_user_id, organization_id";
 
 /** Every live fingerprint of one person or one brand, newest first. */
 export async function listFingerprints(

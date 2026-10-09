@@ -21,7 +21,16 @@ import {
   type FingerprintRow,
 } from "./service";
 
-export function SpokespeoplePanel({ brandId, brandName }: { brandId: string; brandName: string }) {
+export function SpokespeoplePanel({
+  brandId,
+  brandName,
+  organizationId,
+}: {
+  brandId: string;
+  brandName: string;
+  /** The brand's organization: a voice can only be linked within the same organization. */
+  organizationId: string | null;
+}) {
   const userId = useAppSelector(selectUserId);
   const [linked, setLinked] = useState<FingerprintRow[] | null>(null);
   const [mine, setMine] = useState<FingerprintRow[]>([]);
@@ -60,6 +69,8 @@ export function SpokespeoplePanel({ brandId, brandName }: { brandId: string; bra
     }
   };
 
+  const eligible = mine.filter((row) => !organizationId || row.organization_id === organizationId);
+
   return (
     <Card className="p-4" data-testid="voice-spokespeople">
       <h2 className="text-sm font-medium text-foreground">Spokespeople</h2>
@@ -89,11 +100,16 @@ export function SpokespeoplePanel({ brandId, brandName }: { brandId: string; bra
           </li>
         ))}
       </ul>
-      {mine.length ? (
+      {mine.length - eligible.length > 0 ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {mine.length - eligible.length} of your voices are filed in another organization and cannot be linked here.
+        </p>
+      ) : null}
+      {eligible.length ? (
         <div className="mt-3 border-t border-border pt-3">
           <p className="text-xs text-muted-foreground">Your voices</p>
           <ul className="mt-1 divide-y divide-border">
-            {mine.map((row) => (
+            {eligible.map((row) => (
               <li key={row.id} className="flex items-center gap-2 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate text-foreground">{row.label}</span>
                 <Button variant="quiet" icon={<Link2 />} disabled={busyId === row.id} onClick={() => void change(row, brandId)}>
