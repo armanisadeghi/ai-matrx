@@ -24,6 +24,7 @@ import {
   useDeleteBrandPersona,
   useUpdateBrandPersona,
 } from "@/features/marketing/data/personas";
+import { brandKindCopy, type BrandKindCopy } from "@/features/marketing/lib/brand-kind";
 import {
   PERSONA_DEMOGRAPHIC_FIELDS,
   personaDemographics,

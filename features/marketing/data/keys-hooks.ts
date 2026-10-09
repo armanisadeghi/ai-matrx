@@ -23,6 +23,8 @@ export interface BrandSegmentRow {
   slug: string | null;
   name: string;
   organization_id: string;
+  /** company | person — the sidebar words and orders itself by it (`lib/brand-kind.ts`). */
+  kind: string | null;
 }
 
 export interface SiteSegmentRow {
@@ -42,7 +44,7 @@ async function fetchBrandBySegment(
   const base = () =>
     db
       .from("brand")
-      .select("id, slug, name, organization_id")
+      .select("id, slug, name, organization_id, kind")
       .is("deleted_at", null);
   const isKey = !isUuidShape(segment) && isPossibleMarketingKey(segment);
   if (!isUuidShape(segment) && !isKey) return null;

@@ -217,8 +217,6 @@ export function BrandCompetitorDirectory() {
     [brand.id, brand.organizationId, siteIds, queryClient, patchJob],
   );
 
-  const toSearch = useMemo(() => rowsToSearch(rows, searched), [rows, searched]);
-
   /** Read each website in turn (three at a time); results land in the same per-row state. */
   async function findAll() {
     const targets = toSearch;
@@ -253,6 +251,8 @@ export function BrandCompetitorDirectory() {
     const pendingNames = new Set(jobs.map((j) => j.name.trim().toLowerCase()));
     return [...jobs, ...realRows.filter((r) => !pendingNames.has(r.name.trim().toLowerCase()))];
   }, [jobs, realRows]);
+  // After `rows`: a const read before its declaration throws on the first render.
+  const toSearch = useMemo(() => rowsToSearch(rows, searched), [rows, searched]);
   const platforms = useMemo(() => {
     const present = new Set(realRows.flatMap((r) => r.accounts.map((a) => a.platform)));
     const ordered = [...CORE_PLATFORMS, ...[...present].filter((p) => !CORE_PLATFORMS.includes(p)).sort()];
