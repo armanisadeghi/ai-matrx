@@ -62,7 +62,7 @@ export function OutlierBadge({ input, model, className }: OutlierBadgeProps) {
       data-outlier-tier={m.tier}
       className={cn("h-[18px] shrink-0 px-1.5 py-0 leading-none tabular-nums", TIER_CLASS[m.tier], className)}
     >
-      {m.bars > 0 ? <Bars count={m.bars} /> : null}
+      {m.bars === 1 || m.bars === 2 || m.bars === 3 ? <Bars count={m.bars} /> : null}
       {m.text}
     </Badge>
   );

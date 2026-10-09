@@ -154,11 +154,11 @@ export function TemplateCard({
           {(isArchived ? onRestore : onArchive) && (
             <Button
               variant="outline"
-              size="icon"
               icon={isArchived ? <ArchiveRestore /> : <Archive />}
               aria-label={isArchived ? "Restore template" : "Archive template"}
               title={isArchived ? "Restore" : "Archive"}
               disabled={isDisabled}
+              className="h-7 w-7 p-0"
               onClick={() => (isArchived ? onRestore?.(id, name) : onArchive?.(id, name))}
             />
           )}

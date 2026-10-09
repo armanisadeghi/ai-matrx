@@ -128,9 +128,15 @@ export async function ensureMeetingNotes(
  * knob meet.confidential_capture allows it.
  */
 export async function linkMeetingCaptureToNotes(reviewId: string, notesId: string): Promise<R360<number>> {
-  const { data, error } = await supabase
-    .schema("communication")
-    .rpc("meet_link_capture_to_notes", { p_review_id: reviewId, p_notes_id: notesId });
+  // This migration-only RPC is newer than the generated Supabase client types.
+  const rpc = supabase.schema("communication").rpc as unknown as (
+    name: string,
+    args: { p_review_id: string; p_notes_id: string },
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  const { data, error } = await rpc("meet_link_capture_to_notes", {
+    p_review_id: reviewId,
+    p_notes_id: notesId,
+  });
   if (error) return no(`The meeting could not be tied to its notes: ${error.message}`);
   return { ok: true, data: typeof data === "number" ? data : 0 };
 }

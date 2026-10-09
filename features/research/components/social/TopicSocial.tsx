@@ -265,7 +265,7 @@ export default function TopicSocial() {
 
         {brandId === null && handles.length > 0 && (
           <div className="flex justify-end">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={marketingRoutes.brands()}>Choose a brand to track in</Link>
             </Button>
           </div>

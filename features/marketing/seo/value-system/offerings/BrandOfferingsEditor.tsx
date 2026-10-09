@@ -154,7 +154,7 @@ export function BrandOfferingsEditor() {
           </p>
         </div>
         {offerings.length === 0 ? (
-          <Button variant="primary" size="sm" onClick={() => setDraft(NEW_DRAFT)}>
+          <Button variant="primary" onClick={() => setDraft(NEW_DRAFT)}>
             <Plus className="mr-1 h-3.5 w-3.5" />
             Add offering
           </Button>

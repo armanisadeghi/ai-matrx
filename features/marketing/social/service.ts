@@ -714,6 +714,7 @@ export interface AgencyAccountRow {
   profileId: string;
   platform: string;
   handle: string;
+  profileUrl: string | null;
   displayName: string;
   role: TrackedRole;
   followers: number | null;
@@ -725,6 +726,7 @@ export interface AgencyOutlierRow {
   brandName: string;
   platform: string;
   handle: string;
+  profileUrl: string | null;
   url: string;
   hookLine: string;
   views: number | null;
@@ -776,6 +778,7 @@ export async function readAgencySocial(args: { outlierWindowDays: number; minSco
       profileId: p.id,
       platform: p.platform,
       handle: p.handle,
+      profileUrl: p.profile_url,
       displayName: t.label?.trim() || p.display_name?.trim() || p.handle,
       role: isTrackedRole(t.role) ? t.role : "inspiration",
       followers: num(p.follower_count),
@@ -796,6 +799,7 @@ export async function readAgencySocial(args: { outlierWindowDays: number; minSco
       brandName: owner.brandName,
       platform: row.platform,
       handle: owner.handle,
+      profileUrl: owner.profileUrl,
       url: row.url,
       hookLine: hookLineOf(row),
       views: num(stat?.views),

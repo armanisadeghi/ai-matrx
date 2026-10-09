@@ -431,6 +431,7 @@ function BenchmarkTable({
           handle: a.handle,
           displayName: a.displayName,
           role: a.role,
+          profileUrl: a.profileUrl,
           followers: a.followers,
           growth: growth.fraction,
           growthNote: growth.note,
