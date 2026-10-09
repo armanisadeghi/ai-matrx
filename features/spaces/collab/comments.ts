@@ -25,7 +25,8 @@ export {
 export { mentionedUserIds } from "@/features/rich-document/annotations/mentions";
 
 type Seam = (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
-const seam = associationsDataSource.rpc as unknown as Seam;
+const seam = ((fn: string, args: Record<string, unknown>) =>
+  associationsDataSource.rpc(fn as never, args as never)) as unknown as Seam;
 
 /** A Space as the comment door names it: a `content.document`. */
 export function spaceCommentSource(spaceId: string, title: string): AnnotationSource {
