@@ -33,6 +33,7 @@ import {
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
 import { usageColumns } from "@/lib/entity-list/usageColumns";
+import { AgentProofBadge } from "@/features/agents/factory/components/AgentProofBadge";
 import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { AgentBrowseRow } from "./types";
 
@@ -260,6 +261,22 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
           {row.access_level}
         </Badge>
       ),
+    },
+  },
+  {
+    id: "proof",
+    label: "Proof",
+    column: {
+      id: "proof",
+      accessorKey: "id",
+      header: "Proof",
+      // Read per loaded page from the agent's own metadata (ONE batched read for the
+      // page, features/agents/factory/proof-status) — not a column agx_list_scoped can
+      // sort or filter on. Honest `false`, never a sort that lies. Empty for an agent
+      // that was never saved unproven.
+      sortable: false,
+      width: 110,
+      cell: (row) => <AgentProofBadge agentId={row.id} />,
     },
   },
   {
