@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {
   useState,
   useEffect,
@@ -195,8 +196,7 @@ export default function FeedbackDetailDialog({
   onOpenFeedback,
 }: FeedbackDetailDialogProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // Live local copy of the feedback item — updated from server responses
   const [item, setItem] = useState<UserFeedback>(feedback);

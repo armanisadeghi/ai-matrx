@@ -13,6 +13,7 @@
 // destination preserved, and the token matches on the invited email.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRef, useState } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
@@ -50,8 +51,7 @@ export function InviteStudentsSheet({
   onRosterChanged?: () => void;
 }) {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const inv = useClassInvites(classId, open);
   const [emailText, setEmailText] = useState("");

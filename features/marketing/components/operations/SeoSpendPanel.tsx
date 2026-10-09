@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * SEO provider spend rollup panel (M-9 / WS-7 UI tranche) — the third
@@ -28,7 +29,6 @@ import {
 } from "@/features/marketing/data/spend";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { toast } from "@/lib/toast";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -71,8 +71,7 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 
 export function SeoSpendPanel() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { unit, rate: costRate } = useCostDisplay();
   // THE PAGE'S ORGANIZATION FILTER (`?org_filter=`, default All organizations — never the active

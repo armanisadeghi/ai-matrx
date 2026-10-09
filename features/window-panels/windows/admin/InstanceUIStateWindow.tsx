@@ -16,6 +16,7 @@
 // inside the instance-detail view branch, never as a window-level header bar.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useState } from "react";
 import { LayoutDashboard, X, Code2, Copy, Check } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -44,8 +45,7 @@ type TabId = string;
 
 function useCopyText(text: string) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = () => {
@@ -353,7 +353,7 @@ function InstanceUIStateWindowInner({
           if (!activeInstance) return;
           void copyContent(formatJson(activeInstance, 2), {
             formatJson: false,
-            onSuccess: () => toast.success("Instance state copied"),
+            onSuccess: () => copyNotify("Instance state copied", "success"),
             onError: () => toast.error("Could not copy instance state"),
           });
         },
@@ -366,7 +366,7 @@ function InstanceUIStateWindowInner({
         onSelect: () => {
           void copyContent(state.sliceJson, {
             formatJson: false,
-            onSuccess: () => toast.success("Full slice copied"),
+            onSuccess: () => copyNotify("Full slice copied", "success"),
             onError: () => toast.error("Could not copy slice"),
           });
         },

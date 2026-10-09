@@ -47,6 +47,7 @@ import { toast } from "@/lib/toast";
 
 import { credentialIdentity } from "../credential-identity";
 import type { CredentialDefinition, VaultItem } from "../types";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 /** Row anchor the delegated menu resolves the clicked credential from. */
 export const VAULT_ITEM_ATTR = "data-vault-item-id";
@@ -176,7 +177,7 @@ export function VaultContextMenu({
           if (!clicked) return;
           void copyContent(clicked.display_name, {
             formatJson: false,
-            onSuccess: () => toast.success("Name copied"),
+            onSuccess: () => copyNotify("Name copied", "success"),
             onError: () => toast.error("Could not copy the name"),
           });
         },

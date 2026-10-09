@@ -14,6 +14,7 @@ import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { getErrorMessage, serializeError, contentForDestination } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 registerAction({
   id: "html-preview",
@@ -121,7 +122,7 @@ registerAction({
             onError: () => {},
           });
         },
-        onSuccess: () => toast.success("HTML page copied"),
+        onSuccess: () => copyNotify("HTML page copied", "success"),
         onError: (error) =>
           toast.error(getErrorMessage(error, "Failed to copy HTML")),
       });

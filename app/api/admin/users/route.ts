@@ -99,7 +99,7 @@ function readAccountFacts(admin: AdminClient): Promise<AccountFactsRow[]> {
 /**
  * Each account's effective plan and AI-points usage state, one pass
  * (users.admin_account_plans: billing.user_effective_plan +
- * billing._points_usage_state, ~0.65 s for ~570 accounts on 2026-10-03).
+ * billing._points_usage_state, ~1.1 s for ~725 accounts on 2026-10-08, after the CTE was MATERIALIZED).
  */
 function readAccountPlans(admin: AdminClient): Promise<AccountPlanRow[]> {
   return readAllRows<AccountPlanRow>(
@@ -244,9 +244,10 @@ export async function GET() {
   const planById = new Map<string, AccountPlanRow>();
   const pointsById = new Map<string, AccountPointsRow>();
   try {
+    // One retry each: a statement timeout or lock wait on a heavy RPC is usually gone a moment later.
     const [planRows, pointRows] = await Promise.all([
-      readAccountPlans(admin),
-      readAccountPoints(admin),
+      readAccountPlans(admin).catch(() => readAccountPlans(admin)),
+      readAccountPoints(admin).catch(() => readAccountPoints(admin)),
     ]);
     for (const row of planRows) planById.set(row.user_id, row);
     for (const row of pointRows) pointsById.set(row.user_id, row);

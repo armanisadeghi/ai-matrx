@@ -4,6 +4,7 @@
 // Private sections, the page tree (expand, hover + and •••, drag to reorder / nest), Trash.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, RegionSkeleton, SearchField } from "@ai-matrx/design-system/controls";
 import {
@@ -36,6 +37,7 @@ import type { SpaceId, SpaceSummary } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { EXPANDED_KEY, useSpaces, type DropPlacement } from "../state/SpacesProvider";
 import { ImportButton } from "./ImportMenu";
+import { SitesPopover } from "./SitesPopover";
 import { TemplateGallery } from "./TemplateGallery";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { useSpaceBuilder } from "../ai/SpaceBuilder";
@@ -75,8 +77,7 @@ function NewPageMenu({ onNewPage }: { onNewPage: () => void }) {
 
 function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => void }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const spaces = useSpaces();
   const [open, setOpen] = useState(false);
@@ -502,6 +503,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
 
       <div className="spaces-sidebar-foot">
         <TemplatesButton />
+        <SitesPopover />
         <ImportButton />
         <TrashPopover />
       </div>

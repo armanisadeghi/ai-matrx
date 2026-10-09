@@ -1,7 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {useState, useCallback, useMemo} from 'react';
 import {Card} from '@/components/ui/card';
 import { Button } from "@ai-matrx/design-system";
@@ -43,8 +43,7 @@ const JsonViewerBody: React.FC<JsonViewerProps> = (
         ...props
     }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
     const [isCopied, setIsCopied] = useState(false);
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());

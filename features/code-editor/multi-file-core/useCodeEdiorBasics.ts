@@ -1,5 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
@@ -39,8 +40,7 @@ export function useCodeEditorBasics({
   height = "600px",
 }: UseCodeEditorBasicsProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // Measures the exact height of the Monaco editor wrapper div so we can give
   // Monaco an explicit pixel height whether or not the toolbar shows.

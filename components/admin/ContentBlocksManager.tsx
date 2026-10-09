@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { ReadFailure } from "@ai-matrx/design-system";
@@ -205,8 +205,7 @@ interface Category {
 
 export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   // State
   const [contentBlocks, setContentBlocks] = useState<ContentBlockDB[]>([]);

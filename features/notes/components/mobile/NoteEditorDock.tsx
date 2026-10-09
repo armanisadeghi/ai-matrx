@@ -50,6 +50,7 @@ import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { CopyMenuButton } from "@ai-matrx/rich-content/copy/CopyMenuButton";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -514,7 +515,7 @@ export function NoteEditorDock({
                 void copyReferenceFence(
                   buildRecordReferenceFence({ type: "note", id: noteId, label: noteLabel }),
                 ).then((ok) => {
-                  if (ok) toast.success("Reference copied — paste it into any agent chat");
+                  if (ok) copyNotify("Reference copied — paste it into any agent chat", "success");
                 }),
               moveToTrash: onDelete,
             }).map((action) => {

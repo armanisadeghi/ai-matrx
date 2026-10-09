@@ -37,11 +37,12 @@ import {
   type ConfigurationDifference,
 } from "@/lib/scoped-config/history";
 import { copyText } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 async function copyConfiguration(text: string, title: string) {
   // The manual-copy dialog is the failure surface here, so no error toast is injected.
   if (await copyText(text)) {
-    toast.success(`${title} copied.`);
+    copyNotify(`${title} copied.`, "success");
     return;
   }
   showManualCopy({ text, title, description: "Your browser blocked the clipboard; copy it from here." });

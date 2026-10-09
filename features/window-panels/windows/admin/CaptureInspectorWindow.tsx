@@ -25,6 +25,7 @@ import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { useCapturedExchange } from "@/lib/diagnostics/stream-capture/useCapturedExchanges";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 // context-menu-exempt: entity — a state dump of the fetch-tap buffer, not an app record; the selected exchange is copyable/exportable content, never an attachable entity
 
 interface CaptureInspectorWindowProps {
@@ -82,7 +83,7 @@ function CaptureInspectorWindowInner({
           if (!selectedExchange) return;
           void copyContent(JSON.stringify(selectedExchange, null, 2), {
             formatJson: false,
-            onSuccess: () => toast.success("Exchange copied"),
+            onSuccess: () => copyNotify("Exchange copied", "success"),
             onError: () => toast.error("Could not copy exchange"),
           });
         },

@@ -11,6 +11,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
@@ -96,8 +97,7 @@ export default function ShapeTestTab({
   emittedJsonSchema,
 }: ShapeTestTabProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);

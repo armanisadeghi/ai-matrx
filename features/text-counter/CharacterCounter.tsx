@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import {
   BrushCleaning,
@@ -78,8 +79,7 @@ export function CharacterCounter({
   compact = false,
 }: CharacterCounterProps) {
   const { copyText: copyTextKit, pasteText: pasteClipboardText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [text, setText] = useState(initialText);
   const [limit, setLimit] = useState<number | null>(null);

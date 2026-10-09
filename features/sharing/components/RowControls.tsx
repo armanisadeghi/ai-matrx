@@ -18,7 +18,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -74,8 +74,7 @@ export function RowControls({
   onStopPublishing,
 }: RowControlsProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const { toast } = useToast();
   const [caps, setCaps] = useState<ShareCapabilities | null>(null);

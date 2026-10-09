@@ -1,7 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Copy, Check, FileText, Hash, Type, List, Minus } from 'lucide-react';
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
@@ -48,8 +48,7 @@ const isValidContentData = (data: unknown): data is ContentSection[] => {
 const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) => {
   const [copied, setCopied] = useState(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   
   const handleCopy = async () => {
@@ -269,8 +268,7 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [copiedData, setCopiedData] = useState<boolean>(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
 
   // Safety check: if data is not in expected format, show JSON fallback

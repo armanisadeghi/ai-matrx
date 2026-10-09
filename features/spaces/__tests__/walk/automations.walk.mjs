@@ -68,7 +68,14 @@ await act(page, async () => {
     await panel.getByRole("button", { name: "New automation" }).click();
     const ed = page.getByTestId("spaces-automation-editor");
     await ed.getByRole("textbox", { name: "Automation name" }).fill(NAME);
-    check("a schedule is shown unavailable", await ed.getByRole("button", { name: "Every…" }).isDisabled());
+    // AUTOMATION-TIME: the time triggers are real choices now; each opens its own controls.
+    check("a schedule is a choice", await ed.getByRole("button", { name: "Every…" }).isEnabled());
+    await ed.getByRole("button", { name: "Every…" }).click();
+    check("the schedule controls show", await ed.getByTestId("spaces-automation-schedule-trigger").isVisible());
+    check("a schedule has no Set property", (await ed.getByRole("button", { name: "Set property" }).count()) === 0);
+    await ed.getByRole("button", { name: "Date arrives" }).click();
+    check("the date controls show", await ed.getByTestId("spaces-automation-date-trigger").isVisible());
+    await page.screenshot({ path: `${SHOT}/automation-time-triggers.png` });
     await ed.getByRole("button", { name: "Property edited" }).click();
     await ed.getByRole("button", { name: "Status", exact: true }).first().click();
     await ed.getByRole("textbox", { name: "Edited to" }).fill("Done");

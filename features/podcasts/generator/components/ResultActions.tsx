@@ -10,6 +10,7 @@
 //   • Download the audio, copy the share link, native share
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -60,8 +61,7 @@ export function ResultActions({
   hasVideo,
 }: ResultActionsProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [published, setPublished] = useState(false);
   const [publishing, setPublishing] = useState(false);

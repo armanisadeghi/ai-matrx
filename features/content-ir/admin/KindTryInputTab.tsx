@@ -14,6 +14,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -25,8 +26,7 @@ interface KindTryInputTabProps {
 
 export default function KindTryInputTab({ kind }: KindTryInputTabProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [submitted, setSubmitted] = useState<string | null>(null);
 

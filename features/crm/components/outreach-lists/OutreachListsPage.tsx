@@ -8,6 +8,7 @@
 // sort/filter over the loaded set.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -60,8 +61,7 @@ function memberCount(row: OutreachListWithCount): number {
 
 export function OutreachListsPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const searchParams = useSearchParams();

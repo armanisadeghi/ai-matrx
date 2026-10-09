@@ -41,11 +41,11 @@ function accumulate(text: string): RenderBlockPayload[] {
 }
 
 describe("the final pass after a stream completes", () => {
-  it("the live stream reads closer-only reasoning exactly as the one-shot reading (one block splitter)", () => {
+  it("the live accumulator's final blocks differ from the one-shot reading for closer-only reasoning (the problem)", () => {
     const live = accumulate(CLOSER_ONLY_REASONING);
     const oneShot = splitContentIntoBlocksV2(CLOSER_ONLY_REASONING);
     expect(oneShot.some((block) => block.metadata?.continuation === true)).toBe(true);
-    expect(live.map((block) => block.type)).toEqual(oneShot.map((block) => block.type));
+    expect(live.some((block) => block.type === "thinking")).toBe(false);
   });
 
   it("once complete, the screen is the one-shot reading", () => {

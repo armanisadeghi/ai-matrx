@@ -2,6 +2,7 @@ import { toast } from "@/lib/toast";
 import { Copy } from "lucide-react";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 export interface TranscriptsExtraSectionsArgs {
   /** Full transcript text the "Copy transcript" item writes to the clipboard. */
@@ -39,7 +40,7 @@ export function createTranscriptsExtraSections(
               return;
             }
             void copyContent(text, {
-              onSuccess: () => toast.success("Transcript copied"),
+              onSuccess: () => copyNotify("Transcript copied", "success"),
               onError: () => toast.error("Failed to copy"),
             });
           },

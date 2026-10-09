@@ -29,6 +29,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {
   useCallback,
   useEffect,
@@ -877,8 +878,7 @@ function ExternalUrlBanner({
   disabled?: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -1222,8 +1222,7 @@ function VariantCard({
   isPrimary: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {

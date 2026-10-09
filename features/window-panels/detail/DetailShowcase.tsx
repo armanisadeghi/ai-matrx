@@ -50,6 +50,7 @@ import { detailPageHref } from "@/features/window-panels/detail/DetailHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { InfoHint } from "@/components/official/InfoHint";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 type FileRow = { id: string; file_name: string; mime_type: string | null };
 
@@ -153,7 +154,7 @@ export function DetailShowcase() {
 
   const copy = async (text: string) => {
     const ok = await copyContent(text, { formatJson: false });
-    if (ok) toast.success("Link copied");
+    if (ok) copyNotify("Link copied", "success");
     else toast.error("Could not copy the link");
   };
 

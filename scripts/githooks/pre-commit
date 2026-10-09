@@ -3,8 +3,11 @@
 # (git config core.hooksPath scripts/githooks), the same mechanism aidream already uses.
 # Review before changing.
 #
-# ONE JOB: a migration file production has already run may not enter a commit. (It also prints
-# the shared-index warning below, which never refuses.)
+# TWO JOBS: (1) a migration file production has already run may not enter a commit; (2) a staged
+# file may not import a name from an @ai-matrx/* package that the INSTALLED version does not ship
+# (feedback fdf6b0a6: the consumer edit landed before the package was published and the shared
+# dev server answered 500 on every route). (It also prints the shared-index warning below, which
+# never refuses.)
 # See scripts/lib/ledger-snapshot.mjs for why this is a COMMIT-time guard and not
 # another release-time report.
 set -u
@@ -30,5 +33,21 @@ fi
 # receipt is what carries the exemption here (prepare-commit-msg turns it into the
 # trailer that ends up in the commit). Both are the runner's, never a lane's sentence.
 RECEIPT="$(git rev-parse --git-common-dir)/matrx-amend-idempotent"
-exec node "$ROOT/scripts/check-ledgered-files-unedited.mjs" --staged --root "$ROOT" \
-    --message-file "$RECEIPT"
+node "$ROOT/scripts/check-ledgered-files-unedited.mjs" --staged --root "$ROOT" \
+    --message-file "$RECEIPT" || exit $?
+
+# JOB 2 — installed-package import guard, narrowed to the staged code files (~1s). With NO staged
+# candidates it must not run at all: an empty narrowing means a full 60s scan in that script.
+# A staged package.json / pnpm-lock.yaml widens the script to a full scan on its own.
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.jsx' '*.mjs' package.json pnpm-lock.yaml)
+if [ -n "$STAGED" ]; then
+    # shellcheck disable=SC2086
+    if ! (cd "$ROOT" && printf '%s\n' "$STAGED" | xargs node scripts/check-matrx-imports.mjs); then
+        echo "COMMIT REFUSED: a staged file imports an @ai-matrx/* name the INSTALLED package does not ship." >&2
+        echo "  The consumer must not land before the package. Publish the package (aidream npm train)," >&2
+        echo "  then 'pnpm update \"@ai-matrx/<pkg>\" --latest', confirm 'pnpm check:matrx-imports', and commit again." >&2
+        echo "  Never pin, never delete the import to go green." >&2
+        exit 1
+    fi
+fi
+exit 0

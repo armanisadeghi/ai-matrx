@@ -11,6 +11,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Brush, Loader2, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -51,8 +52,7 @@ export default function TranscriptionCleanup({
   instanceId,
 }: TranscriptionCleanupProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const store = useAppStore();

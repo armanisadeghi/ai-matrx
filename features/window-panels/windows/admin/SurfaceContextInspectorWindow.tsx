@@ -12,6 +12,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -99,8 +100,7 @@ function charCount(v: unknown): number {
 
 function useCopyText() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copy = useCallback((text: string, key: string) => {
@@ -619,7 +619,7 @@ function SurfaceContextInspectorWindowInner({
             JSON.stringify(scope[activeItemName], null, 2),
             {
               formatJson: false,
-              onSuccess: () => toast.success("Value copied"),
+              onSuccess: () => copyNotify("Value copied", "success"),
               onError: () => toast.error("Could not copy value"),
             },
           );
@@ -633,7 +633,7 @@ function SurfaceContextInspectorWindowInner({
         onSelect: () => {
           void copyContent(JSON.stringify(scope, null, 2), {
             formatJson: false,
-            onSuccess: () => toast.success("Scope copied"),
+            onSuccess: () => copyNotify("Scope copied", "success"),
             onError: () => toast.error("Could not copy scope"),
           });
         },
@@ -651,7 +651,7 @@ function SurfaceContextInspectorWindowInner({
             JSON.stringify(getRawManifest(surfaceName), null, 2),
             {
               formatJson: false,
-              onSuccess: () => toast.success("Manifest copied"),
+              onSuccess: () => copyNotify("Manifest copied", "success"),
               onError: () => toast.error("Could not copy manifest"),
             },
           );

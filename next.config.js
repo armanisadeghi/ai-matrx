@@ -488,10 +488,6 @@ const nextConfig = {
       // The retired /settings/* pages → /user-settings (2026-10-01). Links to
       // them live in sent email and DM rows, so these never go away.
       ...legacySettingsRedirects,
-      // 2026-10-04 (Arman: "use 'data' instead of data-v2"): the record store's
-      // pages moved from /data-v2 to /data. Saved links, sent notifications and
-      // DB-built hrefs keep working; the query string carries over untouched.
-      // THE ONLY place "/data-v2" may appear in source (scripts/check-no-data-v2.ts).
       // 2026-10-07: "agent apps" became Applets. Saved links, bookmarks and sent links to the old
       // addresses open the same Applet or owner tool (an id after /applets/ resolves to the Applet).
       { source: "/agent-apps", destination: "/applets", permanent: true },
@@ -501,6 +497,10 @@ const nextConfig = {
       { source: "/apps/:slug/:path*", destination: "/applets/:slug/:path*", permanent: true },
       { source: "/p/:slug", destination: "/applets/:slug", permanent: true },
       { source: "/templates/apps", destination: "/templates/applets", permanent: true },
+      // 2026-10-04 (Arman: "use 'data' instead of data-v2"): the record store's
+      // pages moved from /data-v2 to /data. Saved links, sent notifications and
+      // DB-built hrefs keep working; the query string carries over untouched.
+      // THE ONLY place "/data-v2" may appear in source (scripts/check-no-data-v2.ts).
       { source: "/data-v2", destination: "/data", permanent: true },
       { source: "/data-v2/:path*", destination: "/data/:path*", permanent: true },
       // The old "New table" page; a table is made on the Data home itself.

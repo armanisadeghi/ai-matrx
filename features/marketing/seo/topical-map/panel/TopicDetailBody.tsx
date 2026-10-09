@@ -35,7 +35,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRef, useState } from "react";
 
 import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
@@ -152,8 +152,7 @@ function TopicDetailBodyInner({
 }: Required<Pick<TopicDetailBodyProps, "mapId" | "slug" | "siteId" | "host" | "readOnly">> &
   Pick<TopicDetailBodyProps, "onClose">) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const links = useMapLinks();

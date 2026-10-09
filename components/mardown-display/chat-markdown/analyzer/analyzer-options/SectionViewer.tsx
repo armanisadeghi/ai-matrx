@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Copy, Check, FileText, CheckSquare } from 'lucide-react';
 import { 
   JsonFallback, 
@@ -143,8 +143,7 @@ const renderContent = (section: ClassifiedSection) => {
 const SectionViewer = ({ data }: { data: unknown }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = async (text: string): Promise<boolean> => {

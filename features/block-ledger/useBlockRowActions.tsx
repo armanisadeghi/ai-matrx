@@ -11,6 +11,7 @@
 // exactly what the platform holds. Never a row you can see and cannot follow.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import {
   ClipboardCopy,
@@ -44,8 +45,7 @@ export function useBlockRowActions(
   list: EntityListController<AcquisitionBlock>,
 ): EntityRowActionsResult<AcquisitionBlock> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [detailed, setDetailed] = useState<AcquisitionBlock | null>(null);
 

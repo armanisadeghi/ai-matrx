@@ -7,7 +7,7 @@ import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -83,8 +83,7 @@ const STATUS_TONE_CLASS: Record<
  */
 function CopyRawButton({ rawContent }: { rawContent: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   return (
     <Button variant="quiet" icon={<Copy />} aria-label="Copy raw JSON" onClick={(event) => {

@@ -6,8 +6,8 @@
 // stripped) so only the real speaker turns show. RTL-aware for Persian.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
-import { toast } from "@/lib/toast";
 import { FileText, ChevronDown, Copy, Check, Clock } from "lucide-react";
 import {
   Collapsible,
@@ -24,8 +24,7 @@ interface TranscriptPanelProps {
 
 export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);

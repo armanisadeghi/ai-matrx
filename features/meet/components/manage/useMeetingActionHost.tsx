@@ -30,6 +30,7 @@ import {
   useMeetingActions,
 } from "@/features/meet/hooks/useMeetingActions";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 export function meetingHref(
   meeting: Pick<MeetingRecord, "id">,
@@ -135,7 +136,7 @@ export function useMeetingActionHost({ onChanged }: { onChanged: () => void }) {
         return;
       case "copy": {
         const outcome = await copy(link, { title: "Copy meeting link" });
-        if (outcome === "copied") toast.success("Meeting link copied.");
+        if (outcome === "copied") copyNotify("Meeting link copied.", "success");
         return;
       }
       case "invite":

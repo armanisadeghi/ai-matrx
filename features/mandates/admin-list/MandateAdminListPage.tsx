@@ -68,6 +68,8 @@ import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-i
 import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { adminMandateListConfig, supportMandateListConfig } from "./listConfig";
+import { withCodeLocationColumn } from "@/features/mandates/code-location/CodeLocationCell";
+import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { MandateAdminLane } from "./rpc";
 import { MandateAdminPagesNav } from "./MandateAdminPagesNav";
 import {
@@ -117,6 +119,8 @@ export function MandateAdminListPage({
   const systemAgentCount = useBuiltinAgents().length;
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
+  // The Code column (repo · file:lines) is confidential: super admins only (Arman, 2026-10-09).
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const organizationId = useServerOrganizationId();
   // The server reports ride the organization header: when a workspace is
   // chosen (or changed) after the rows loaded, they are asked again.
@@ -338,6 +342,13 @@ export function MandateAdminListPage({
       <EntityListPage
         config={{
           ...(support ? supportMandateListConfig : adminMandateListConfig),
+          ...(isSuperAdmin
+            ? {
+                columns: withCodeLocationColumn(
+                  (support ? supportMandateListConfig : adminMandateListConfig).columns,
+                ),
+              }
+            : {}),
           service,
           serviceKey: `${lane}:${userId ?? ""}:${listState.version}`,
           // The batch actions work on grades, which measure system holders

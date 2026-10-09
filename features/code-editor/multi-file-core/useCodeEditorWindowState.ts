@@ -19,7 +19,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useMeasure } from "@ai-matrx/kit/hooks";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
@@ -72,8 +72,7 @@ export function useCodeEditorWindowState({
   initialIsEditing = false,
 }: UseCodeEditorWindowStateProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const isPersisted = Array.isArray(fileIds) && fileIds.length > 0;

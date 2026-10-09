@@ -18,6 +18,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { useState } from "react";
 import Link from "next/link";
@@ -36,7 +37,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
 import { checklistSteps } from "../engine";
 import { useGuidedChecklist } from "../useGuidedChecklist";
 import type {
@@ -67,8 +67,7 @@ function StepIcon({ step }: { step: ResolvedStep }) {
 
 function CopyRow({ value }: { value: CopyValue }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = async () => {

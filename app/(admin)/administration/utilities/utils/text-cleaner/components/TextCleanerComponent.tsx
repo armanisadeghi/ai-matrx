@@ -26,6 +26,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 
 import { toast } from "@/components/ui/use-toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { PatternConfig } from "@/app/(admin)/administration/utilities/utils/configs/patterns";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -70,8 +71,7 @@ export const TextCleanerComponent: React.FC = () => {
   } = useTextCleaner();
 
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      toast(kind === "error" ? { title: message, variant: "destructive" } : { title: message }),
+    notify: copyNotify,
   });
 
   const handleRefresh = useCallback(() => {

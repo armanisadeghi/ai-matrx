@@ -13,6 +13,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useMemo, useState } from "react";
 import { Braces, Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,8 +65,7 @@ export default function KindContentBlockGenerator({
   storeLabel,
 }: KindContentBlockGeneratorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [tier, setTier] = useState<ContentBlockTier>("detailed");
   const [saving, setSaving] = useState(false);

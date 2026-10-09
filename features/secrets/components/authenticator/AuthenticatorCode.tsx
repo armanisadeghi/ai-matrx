@@ -1,13 +1,13 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { Copy, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
 import { fetchAuthenticatorCode } from "../../authenticator-service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -23,8 +23,7 @@ export function AuthenticatorCode({
   presentation?: "compact" | "large";
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [code, setCode] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);

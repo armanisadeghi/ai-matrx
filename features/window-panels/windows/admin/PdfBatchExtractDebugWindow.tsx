@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {
   useCallback,
   useEffect,
@@ -33,8 +34,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function useCopyText(text: string) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = useCallback(() => {
@@ -401,7 +401,7 @@ function PdfBatchExtractDebugWindowInner({
                           JSON.stringify(selectedSession, null, 2),
                           {
                             formatJson: false,
-                            onSuccess: () => toast.success("Session copied"),
+                            onSuccess: () => copyNotify("Session copied", "success"),
                             onError: () => toast.error("Could not copy session"),
                           },
                         );

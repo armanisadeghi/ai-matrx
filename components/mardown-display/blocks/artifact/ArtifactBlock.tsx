@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { Suspense, lazy, useMemo, useState } from "react";
 import { Copy, History, Maximize2, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -84,8 +85,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   taskId,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { open } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();

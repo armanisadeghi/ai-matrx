@@ -1,5 +1,6 @@
 // Task Item Component
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React from "react";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
@@ -44,8 +45,7 @@ export default function TaskItem({
   depth?: number;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const showAllProjects = useAppSelector(selectShowAllProjects);

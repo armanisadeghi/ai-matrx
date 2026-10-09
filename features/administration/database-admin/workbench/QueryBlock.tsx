@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
@@ -25,7 +26,6 @@ import {
   Files,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { interpolateQuery } from "./utils/interpolate";
 import { ResultPreview } from "./ResultPreview";
@@ -109,8 +109,7 @@ export function QueryBlock({
   onMove,
 }: QueryBlockProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [resultExpanded, setResultExpanded] = useState(true);
   const [showResolved, setShowResolved] = useState(false);

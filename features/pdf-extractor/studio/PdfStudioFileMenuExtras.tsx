@@ -7,6 +7,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Link as LinkIcon, Archive } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -28,8 +29,7 @@ export function PdfStudioFileMenuExtras({
   onRemoveFromExtractor,
 }: PdfStudioFileMenuExtrasProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const studioHref = `/knowledge/sources/${encodeURIComponent(doc.id)}`;
 

@@ -25,7 +25,7 @@
 // and the store marks the place sent in the same transaction.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FormRunner,
@@ -141,8 +141,7 @@ export function PublicFormRunner({
     count("view");
   }, [count]);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [secret, setSecret] = useState<string | null>(null);
   const [resumed, setResumed] = useState<Resumed>({ kind: "none" });

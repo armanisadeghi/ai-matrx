@@ -20,6 +20,7 @@ import {
   selectUsageGateFetchedAt,
   selectUsageGateLevel,
   selectUsageGatePlanName,
+  selectUsageGateFreePeriod,
   selectUsageGateWindows,
 } from "../state/selectors";
 import { refreshUsageInBackground } from "./usageGate";
@@ -131,6 +132,17 @@ export function MyUsageCard({ className }: { className?: string }) {
   const userId = useAppSelector(selectUserId);
   const level = useAppSelector(selectUsageGateLevel);
   const planName = useAppSelector(selectUsageGatePlanName);
+  // The effective plan can be a FREE grant above what the person buys (the
+  // more generous plan wins); say so, or the purchased-plan line above reads
+  // as a contradiction (feedback f2200b05).
+  const freePeriod = useAppSelector(selectUsageGateFreePeriod);
+  const freeUntil =
+    freePeriod?.status === "active" && freePeriod.endsAt
+      ? new Date(freePeriod.endsAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })
+      : null;
   const windows = useAppSelector(selectUsageGateWindows);
   const fetchedAt = useAppSelector(selectUsageGateFetchedAt);
   const readFor = useRef<string | null>(null);
@@ -201,6 +213,7 @@ export function MyUsageCard({ className }: { className?: string }) {
           {planName ? (
             <p className="mt-0.5 type-secondary text-muted-foreground">
               {planName} plan
+              {freeUntil ? ` · free until ${freeUntil}` : ""}
             </p>
           ) : null}
         </div>

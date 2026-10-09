@@ -1,10 +1,10 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toDelimited } from "@ai-matrx/kit/delimited";
 import * as React from "react";
 import { Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,8 +163,7 @@ function InjuryTableRow({
   onDelete: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { injury, definition, warnings } = row;
   const acceptsSide = definition?.attributes?.side ?? true;

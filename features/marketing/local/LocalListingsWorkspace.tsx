@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -1353,8 +1354,7 @@ function ObservedVerdictLine({
 
 function JsonLdCard({ location }: { location: BusinessLocation }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const script = useMemo(

@@ -36,6 +36,7 @@ import { TextInputDialog } from "@ai-matrx/design-system";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist } from "@/features/assists/types";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -59,8 +60,7 @@ export interface FindingRemedyCardProps {
 function CopyInstructionButton({ instruction }: { instruction: string }) {
   const [copied, setCopied] = useState(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   return (
     <Button

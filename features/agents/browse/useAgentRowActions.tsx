@@ -12,6 +12,7 @@
 // code path.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { dismissRecordToasts, toast } from "@/lib/toast";
@@ -83,8 +84,7 @@ export function useAgentRowActions({
   refresh,
 }: UseAgentRowActionsArgs): AgentRowActionsHost {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const dispatch = useAppDispatch();

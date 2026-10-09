@@ -9,8 +9,8 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
-import { toast } from "@/lib/toast";
 import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -84,8 +84,7 @@ export interface FileActionHandlers {
 
 export function useFileActions(fileId: string): FileActionHandlers {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const store = useAppStore();

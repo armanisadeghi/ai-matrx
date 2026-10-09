@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState } from "react";
 import {
   AlignLeft,
@@ -85,8 +86,7 @@ const MODE_TABS: ModeTab[] = [
 
 export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));

@@ -31,6 +31,7 @@ import {
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 export function ItemDetailFrame({
   ctx,
@@ -80,7 +81,7 @@ export function ItemDetailFrame({
         onSelect: () => {
           void copyContent(ref.id, {
             formatJson: false,
-            onSuccess: () => toast.success("Record ID copied"),
+            onSuccess: () => copyNotify("Record ID copied", "success"),
             onError: () => toast.error("Could not copy record ID"),
           });
         },
@@ -94,7 +95,7 @@ export function ItemDetailFrame({
         onSelect: () => {
           void copyContent(JSON.stringify(recordFields, null, 2), {
             formatJson: false,
-            onSuccess: () => toast.success("Fields copied"),
+            onSuccess: () => copyNotify("Fields copied", "success"),
             onError: () => toast.error("Could not copy fields"),
           });
         },

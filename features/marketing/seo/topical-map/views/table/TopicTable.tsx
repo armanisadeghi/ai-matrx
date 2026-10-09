@@ -26,6 +26,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRef, useState } from "react";
 import { Columns3, RotateCcw } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -141,8 +142,7 @@ export interface TopicTableProps extends MapViewProps {
 
 export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const links = useMapLinks();

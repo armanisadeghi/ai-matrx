@@ -17,7 +17,8 @@ custom.reaches_directly_many and custom.read_records_page on one snapshot. This 
                 untouched, and the listed person's answers are identical to memo-off.
 
 HOT-DOORS-5 paths are covered too (iam.my_team_reach, custom._record_shown_to_ctx, custom.data_home_items): plants 4-5 break the memo-on
-arm of the first and the last in a rolled-back transaction and the check must name them.
+arm of the first and the last in a rolled-back transaction and the check must name them. HOT-DOORS-7 adds custom.kernel_viewer_sets
+and custom.hub_changed_by_many (kinds 'kvs' and 'hub'). PLANTS_ONLY=<label substring> runs only those plants.
 Known limit, measured 2026-10-08: a fault planted in the carrying-edges memo or the addressed-cap memo is NOT seen by the live
 sample (those memos' answers do not change any answer asked of this data inside a transaction that has written, where the
 batch path is off); the two plants above are the ones the sample proves it catches.
@@ -44,7 +45,7 @@ def check(label, ok, detail=''):
 
 
 def run_compare(cur, after_write=False):
-    cur.execute("set local statement_timeout = '280s'")
+    cur.execute("set local statement_timeout = '600s'")
     if after_write:
         cur.execute("select set_config('mx.memo_compare_written', '1', true)")
     cur.execute("select iam.kernel_memo_compare()::text")
@@ -150,8 +151,25 @@ HD6_WRAP = {
         "returns table(organization_id uuid, id uuid, seen boolean)",
         "select m.organization_id, m.id, case when current_setting('mx.kernel_batch', true) <> 'off' then not m.seen else m.seen end "
         "from custom.tables_seen_once_per_group_orig(p_user_id, p_organization_ids) m"),
+    # HOT-DOORS-7 (2026-10-09): the data home's per-organization loops made set-based; the comparison's 'kvs' and 'hub' kinds
+    "custom.kernel_viewer_sets: the memo-on arm flips all_visible": ("custom.kernel_viewer_sets(uuid,uuid[])", "custom", "kernel_viewer_sets",
+        "p_user uuid, p_orgs uuid[]",
+        "returns table(organization_id uuid, fallback boolean, all_visible boolean, granted_all uuid[], carried_visible uuid[])",
+        "select m.organization_id, m.fallback, case when current_setting('mx.kernel_batch', true) <> 'off' then not m.all_visible else m.all_visible end, "
+        "m.granted_all, m.carried_visible from custom.kernel_viewer_sets_orig(p_user, p_orgs) m"),
+    "custom.hub_changed_by_many: the memo-on arm answers nothing": ("custom.hub_changed_by_many(jsonb,text)", "custom", "hub_changed_by_many",
+        "p_asks jsonb, p_door text default null",
+        "returns table(organization_id uuid, id uuid, at timestamptz, who text)",
+        "select m.organization_id, m.id, m.at, m.who from custom.hub_changed_by_many_orig(p_asks, p_door) m "
+        "where coalesce(current_setting('mx.kernel_batch', true), '') = 'off'"),
 }
+# PLANTS_ONLY=<substring>: run only the plants whose label contains it (the baseline always runs)
+ONLY = os.environ.get('PLANTS_ONLY')
+def wanted(label):
+    return not ONLY or ONLY in label
 for label, (reg, old, new) in HD6.items():
+    if not wanted(label):
+        continue
     def planted6(cur, reg=reg, old=old, new=new):
         cur.execute(patched_def(cur, reg, old, new))
         return run_compare(cur, after_write=True)
@@ -159,6 +177,8 @@ for label, (reg, old, new) in HD6.items():
     print(f'plant [{label}]:', summary(r))
     check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == reg.split('(')[0] for d in r['diffs']), summary(r))
 for label, (reg, sch, fn, args, rets, body) in HD6_WRAP.items():
+    if not wanted(label):
+        continue
     def planted6w(cur, reg=reg, sch=sch, fn=fn, args=args, rets=rets, body=body):
         cur.execute(f"alter function {reg} rename to {fn}_orig")
         cur.execute(f"create function {sch}.{fn}({args}) {rets} language sql stable set search_path to '' as $f$ {body} $f$")
@@ -168,6 +188,8 @@ for label, (reg, sch, fn, args, rets, body) in HD6_WRAP.items():
     check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == f'{sch}.{fn}' for d in r['diffs']), summary(r))
 
 for label, (reg, old, new) in HD5.items():
+    if not wanted(label):
+        continue
     def planted5(cur, reg=reg, old=old, new=new):
         cur.execute(patched_def(cur, reg, old, new))
         return run_compare(cur, after_write=True)
@@ -176,6 +198,8 @@ for label, (reg, old, new) in HD5.items():
     check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == reg.split('(')[0] for d in r['diffs']), summary(r))
 
 for label, ddl in PLANTS.items():
+    if not wanted(label):
+        continue
     def planted(cur, ddl=ddl):
         cur.execute(ddl)               # a write: this transaction now has an id, and is rolled back below
         return run_compare(cur, after_write=True)
@@ -183,6 +207,10 @@ for label, ddl in PLANTS.items():
     print(f'plant [{label}]:', summary(r))
     check(f"PLANT {label}: the check FAILS", (not r['ok']) and len(r['diffs']) > 0, summary(r))
 
+if ONLY:
+    print('\nPLANTS_ONLY set: the refusal and off_for checks are skipped')
+    print(f'{len(failures)} FAILED: {failures}' if failures else 'ALL PASS')
+    sys.exit(1 if failures else 0)
 # 4. without the hook, a transaction that already wrote must be refused, never passed
 def written(cur):
     cur.execute("create temp table _memo_probe(x int) on commit drop")

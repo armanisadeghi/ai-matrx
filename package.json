@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.3051",
+  "version": "0.4.3057",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -1223,6 +1223,7 @@
     "eslint-plugin-no-barrel-files": "^2.2.0",
     "fake-indexeddb": "^6.2.5",
     "https-browserify": "latest",
+    "ical.js": "^2.2.1",
     "install": "^0.13.0",
     "jest": "latest",
     "jest-environment-jsdom": "^30.5.2",

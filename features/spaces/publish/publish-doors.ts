@@ -8,6 +8,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 
+import type { SpaceMedia } from "../contract";
+import { parseIcon } from "../store-db/supabase-store";
 import { syncPublishedMedia, type MediaSyncResult } from "./published-media";
 
 export interface PublishState {
@@ -95,4 +97,47 @@ export async function duplicatePublished(key: string, organizationId: string): P
     .rpc("space_duplicate_published", { p_key: key, p_organization_id: organizationId });
   if (error || !data) throw new Error(message(error, "We couldn't duplicate this page."));
   return data;
+}
+
+/** One page published to the web, as `content.space_published` answers it. */
+export interface PublishedPage {
+  id: string;
+  title: string;
+  icon: SpaceMedia | null;
+  /** The public address segment: the page's link, or its id when it has none. */
+  key: string;
+  indexed: boolean;
+  publishedAt: string;
+  organizationId: string;
+}
+
+interface PublishedRow {
+  id: string;
+  title: string | null;
+  icon: string | null;
+  slug: string | null;
+  search_engine_indexed: boolean | null;
+  published_at: string;
+  organization_id: string;
+}
+
+/**
+ * Every live page the person can open that is published to the web, newest first — one database function.
+ * `org` narrows to one organization when the caller chooses; the active organization is never passed.
+ */
+export async function readPublishedPages(org: string | null = null): Promise<PublishedPage[]> {
+  const db = supabase.schema("content") as unknown as {
+    rpc(fn: string, args: Record<string, unknown>): PromiseLike<{ data: PublishedRow[] | null; error: { message?: string } | null }>;
+  };
+  const { data, error } = await db.rpc("space_published", { p_org: org });
+  if (error) throw new Error(message(error, "We couldn't read your published pages."));
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    title: r.title?.trim() || "Untitled",
+    icon: parseIcon(r.icon),
+    key: r.slug ?? r.id,
+    indexed: r.search_engine_indexed === true,
+    publishedAt: r.published_at,
+    organizationId: r.organization_id,
+  }));
 }

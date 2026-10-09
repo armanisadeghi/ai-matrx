@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -105,8 +105,7 @@ export function MessageTemplateManager({
   className,
 }: MessageTemplateManagerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   // State
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);

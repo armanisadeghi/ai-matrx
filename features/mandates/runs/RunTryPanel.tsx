@@ -243,7 +243,13 @@ function TryWithRun({
           <PlacementTable
             label="Placement for the picked holder"
             placement={preview.placement}
-            values={run.provisions}
+            // The values the preview was sent — a run without saved placement has none of its
+            // own provisions, so the table reads the same values the server placed.
+            values={
+              run.provisions.length > 0
+                ? run.provisions
+                : Object.entries(provisions).map(([name, value]) => ({ name, kind: null, value, truncated: false }))
+            }
             problems={preview.problems}
           />
         </div>

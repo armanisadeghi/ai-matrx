@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
@@ -172,8 +172,7 @@ function toExpandedEntry(
 
 export default function AdminSandboxManagementPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // THE DOOR LAW: every row opens at the admin record page
   // (`/administration/compute/sandbox/[id]`, read through `/api/admin/sandbox/[id]`),
