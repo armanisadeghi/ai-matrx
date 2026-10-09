@@ -37,6 +37,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 import { downloadMediaSource, mediaRefToDownloadSource } from "./download";
 import { copyText } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 const playbackSession: PlaybackSessionPort = {
   useMediaElementSink(forward) {
@@ -80,7 +81,7 @@ const actions: MediaHostPorts["actions"] = {
       toast.error("No link available for this file");
       return;
     }
-    if (await copyText(url)) toast.success("Link copied");
+    if (await copyText(url)) copyNotify("Link copied", "success");
     else toast.error("Couldn't copy the link");
   },
   async share(ctx) {
@@ -92,7 +93,7 @@ const actions: MediaHostPorts["actions"] = {
       toast.error("This file can't be shared by Anyone link");
       return;
     }
-    if (await copyText(shareable)) toast.success("Anyone link copied");
+    if (await copyText(shareable)) copyNotify("Anyone link copied", "success");
     else toast.error("Couldn't copy the link");
   },
   async open(ctx) {

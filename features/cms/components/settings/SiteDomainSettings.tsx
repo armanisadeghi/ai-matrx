@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useMemo, useState } from "react";
 import { CheckCircle2, Copy, ExternalLink, Globe2, Loader2, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -66,8 +67,7 @@ type ProviderKey = keyof typeof PROVIDERS;
 
 export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRefresh: () => Promise<void> }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const traffic = site.settings?.domain_traffic;
   const activeDomain = activeSiteDomain(site);

@@ -10,6 +10,7 @@
 // /administration layout already gates the whole tree to super admins.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -338,8 +339,7 @@ function CheckDetail({
 
 export default function DataIntegrityPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [checks, setChecks] = useState<CheckMeta[] | null>(null);
   const [report, setReport] = useState<Report | null>(null);

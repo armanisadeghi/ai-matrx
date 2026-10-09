@@ -36,6 +36,7 @@ import {
   screenshotFileName,
   viewerColorScheme,
 } from "@/features/html-pages/capture/renderedCapture";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 export interface HtmlAttachToChatProps {
   conversationId: string | undefined;
@@ -92,7 +93,7 @@ export function HtmlAttachToChat({
     try {
       const png = await frameCapture(record, frame)();
       const ok = await copyImage(png);
-      if (ok) toast.success("Image copied");
+      if (ok) copyNotify("Image copied", "success");
       else toast.error("Couldn't copy the image");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't capture the page");

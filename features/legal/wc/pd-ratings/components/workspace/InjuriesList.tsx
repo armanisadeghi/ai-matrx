@@ -1,9 +1,9 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import * as React from "react";
 import { Plus, Activity, ClipboardCopy } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,8 +39,7 @@ export function InjuriesList({
   className,
 }: InjuriesListProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [newlyAddedId, setNewlyAddedId] = React.useState<string | null>(null);

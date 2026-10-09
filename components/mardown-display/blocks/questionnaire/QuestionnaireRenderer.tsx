@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
@@ -782,8 +782,7 @@ const DebugDisplay = ({
   questionData: Record<string, unknown>;
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   if (!debugMode) return null;
 

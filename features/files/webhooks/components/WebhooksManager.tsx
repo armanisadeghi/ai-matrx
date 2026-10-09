@@ -5,6 +5,7 @@
 // (owner RLS); delivery runs DB-side (files.webhook_* pipeline).
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
@@ -73,8 +74,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function SecretReveal({ secret }: { secret: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   return (

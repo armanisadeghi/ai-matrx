@@ -1,6 +1,7 @@
 'use client'
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { motion } from 'motion/react'
@@ -15,15 +16,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export default function UUIDGenerator() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
     const [currentUUID, setCurrentUUID] = useState(uuidv4())
     const [multipleUUIDs, setMultipleUUIDs] = useState<string[]>([])

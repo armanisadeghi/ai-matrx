@@ -1,6 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { EditorPrimaryAction } from "@ai-matrx/chat/host/window-openers";
 import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, {
@@ -169,8 +169,7 @@ interface FullScreenMarkdownEditorProps {
 
 function useCopyButton() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = useCallback((text: string) => {

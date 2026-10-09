@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -18,8 +19,7 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
   onClose: () => void; onSaved: (record: UserResearch) => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [category, setCategory] = useState<Relationship>(existing?.category ?? "unknown");
   const [contactState, setContactState] = useState<ContactState>(existing?.contact_state ?? (row.banned ? "hold" : "not_contacted"));

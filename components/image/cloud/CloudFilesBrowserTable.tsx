@@ -68,6 +68,7 @@ import {
   toggleCloudBrowserSelection,
 } from "./cloudFilesBrowserUtils";
 import { downloadUrl } from "@ai-matrx/kit/download";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 const MAX_PARALLEL = 4;
 
@@ -570,7 +571,7 @@ function MobileRowMenu({
 }) {
   const handleCopy = async () => {
     const url = await onCopyLink();
-    if (url) toast.success("Link copied");
+    if (url) copyNotify("Link copied", "success");
   };
 
   return (
@@ -800,7 +801,7 @@ function RowActionsCell({
 }) {
   const handleCopy = async () => {
     const url = await onCopyLink();
-    if (url) toast.success("Link copied");
+    if (url) copyNotify("Link copied", "success");
   };
   return (
     <td className="w-10 px-2 py-2">

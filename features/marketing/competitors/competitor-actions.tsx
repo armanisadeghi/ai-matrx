@@ -16,6 +16,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Copy, Eye, EyeOff, Globe } from "lucide-react";
 
@@ -25,7 +26,6 @@ import type {
   ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { CompetitorRow } from "./data";
 
@@ -69,8 +69,7 @@ export interface CompetitorMenuOptions {
 
 export function useCompetitorMenu(opts: CompetitorMenuOptions): CompetitorMenu {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [row, setRow] = useState<CompetitorRow | null>(null);
 

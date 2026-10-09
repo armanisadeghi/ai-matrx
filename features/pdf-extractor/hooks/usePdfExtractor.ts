@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -333,8 +334,7 @@ export interface UsePdfExtractorOptions {
 
 export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { loadHistory: shouldLoadHistory = true } = options;
   const dispatch = useAppDispatch();

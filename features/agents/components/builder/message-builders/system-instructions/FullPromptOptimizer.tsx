@@ -11,6 +11,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useMemo } from "react";
 // TODO(prompt-to-agent-sweep): re-enable useAppDispatch when handleOptimize is re-wired
 // TODO(prompt-to-agent-sweep): re-add supabase import when re-wiring to agent.definition
@@ -93,8 +94,7 @@ export function FullPromptOptimizer({
   onAcceptAsCopy,
 }: FullPromptOptimizerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // TODO(prompt-to-agent-sweep): re-enable when handleOptimize is re-wired
   // const dispatch = useAppDispatch();

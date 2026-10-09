@@ -6,6 +6,7 @@ import { DesktopImageCard } from "@/components/image/shared/DesktopImageCard";
 import { SimpleImageViewer } from "@/components/image/gallery/desktop/SimpleImageViewer";
 import { SearchBar } from "@/components/image/shared/SearchBar";
 import { useToast } from "@/components/ui/use-toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Loader2, Grid, Grid3X3 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { mimeToExtension } from "@/utils/file-operations/utils";
@@ -28,10 +29,7 @@ export function ImageGallery({ imageUrls = [] }: { imageUrls?: string[] }) {
 
   const { toast } = useToast();
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error"
-        ? toast({ title: message, variant: "destructive" })
-        : toast({ title: message }),
+    notify: copyNotify,
   });
 
   const observer = useRef<IntersectionObserver | null>(null);

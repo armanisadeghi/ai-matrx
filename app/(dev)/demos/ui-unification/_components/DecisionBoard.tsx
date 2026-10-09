@@ -11,6 +11,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -344,8 +345,7 @@ export function DecisionBoardView({
   onChange: (id: string, patch: (prev: DecisionState) => DecisionState) => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const update = onChange;
 

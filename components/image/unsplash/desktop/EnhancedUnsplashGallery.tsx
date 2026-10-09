@@ -1,6 +1,6 @@
 'use client';
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useUnsplashGallery, type SortOrder, type ImageOrientation, type PremiumFilter } from '@/hooks/images/useUnsplashGallery';
@@ -43,8 +43,7 @@ export interface EnhancedUnsplashGalleryProps {
 
 export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashGalleryProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
     const {
         photos,

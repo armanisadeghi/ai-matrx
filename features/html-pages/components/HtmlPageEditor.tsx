@@ -3,6 +3,7 @@
 import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
@@ -213,8 +214,7 @@ export default function HtmlPageEditor({
   listReturnQuery,
 }: HtmlPageEditorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const isMobile = useIsMobile();

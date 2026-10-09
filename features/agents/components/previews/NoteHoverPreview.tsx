@@ -7,6 +7,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -37,8 +38,7 @@ interface NotePreviewContentProps {
 
 export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const note = useAppSelector(selectNoteById(noteId));
   const [copied, setCopied] = useState(false);

@@ -11,6 +11,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
@@ -87,8 +88,7 @@ export function SystemPromptOptimizer({
   onAcceptAsCopy,
 }: SystemPromptOptimizerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();

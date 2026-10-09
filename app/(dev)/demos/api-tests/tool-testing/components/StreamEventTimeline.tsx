@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,6 @@ import {
   Wifi,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type { ToolStreamEvent } from "@/features/tool-call-visualization/testing/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -111,8 +111,7 @@ function TimelineEntry({
   index: number;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);

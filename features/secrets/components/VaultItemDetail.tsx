@@ -10,6 +10,7 @@
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState } from "react";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
@@ -1671,8 +1672,7 @@ function StoredRecoveryCodes({
   editMode: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const secret = useFieldSecret(item, field);
   const [replacement, setReplacement] = useState("");

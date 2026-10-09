@@ -10,6 +10,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
@@ -101,8 +102,7 @@ export function AppletSettingsContent({
   appId,
 }: AppletSettingsContentProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const store = useAppStore();

@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
@@ -32,8 +32,7 @@ export function MobileImageViewer({
   isFavorite,
 }: MobileImageViewerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [[page, direction], setPage] = useState([initialIndex, 0]);
   const [buffer, setBuffer] = useState<string[]>([]);

@@ -21,6 +21,7 @@
  *     visible values stay for the lifetime of the mounted row.
  */
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -91,8 +92,7 @@ export function useFieldSecret(
   onRecentAuthRequired?: () => void,
 ) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // Standard values are ordinary authorized display data: keep them for this
   // mounted row instead of hiding them on the restricted-value timer.

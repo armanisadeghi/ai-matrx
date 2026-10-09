@@ -22,6 +22,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -55,7 +56,6 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsCreator, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   resolveEntityToken,
@@ -184,8 +184,7 @@ export default function KnowledgeCommandBar({
   tablesModule,
 }: KnowledgeCommandBarProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const [, startTransition] = useTransition();

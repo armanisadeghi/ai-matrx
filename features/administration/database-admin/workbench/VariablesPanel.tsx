@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import {
@@ -16,7 +17,6 @@ import {
   Info,
   Copy,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { Variable } from "./types";
 
@@ -36,8 +36,7 @@ export function VariablesPanel({
   usageCounts,
 }: VariablesPanelProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const handleCopy = async (token: string) => {
     if (!(await copyText(token, `Copied ${token}`))) return;

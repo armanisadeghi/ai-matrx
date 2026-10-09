@@ -34,7 +34,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -93,8 +93,7 @@ export function useFileShortcuts({
   confirmDelete: () => Promise<void>;
 } {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const store = useAppStore();

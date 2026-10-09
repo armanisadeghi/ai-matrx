@@ -11,6 +11,7 @@
 // stacked scroll on mobile. One scroll area per view.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -107,8 +108,7 @@ function RecordSkeleton() {
 
 export function PartyRecordPage({ partyId, initialHeading }: Props) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const isMobile = useIsMobile();

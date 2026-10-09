@@ -47,6 +47,7 @@ import {
   reviewCountLabel,
 } from "@/features/admin/agent-review/components/ReviewCount";
 import { reviewItemPath } from "@/features/admin/agent-review/doors";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 
 const FLOW = [
@@ -213,7 +214,7 @@ export default function AgentReviewQueueTable() {
               event.stopPropagation();
               const url = `${window.location.origin}${reviewItemPath(row.id)}`;
               void share({ title: row.title, url }).then((outcome) => {
-                if (outcome === "copied") toast.success("Review link copied");
+                if (outcome === "copied") copyNotify("Review link copied", "success");
                 // "shared" spoke for itself; "manual" opened the copy dialog.
               });
             }}

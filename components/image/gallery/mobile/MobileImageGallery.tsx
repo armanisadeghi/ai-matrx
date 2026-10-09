@@ -1,6 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { AnimatePresence } from "motion/react";
 import { MobileImageCard } from "@/components/image/shared/MobileImageCard";
@@ -23,8 +23,7 @@ export function MobileImageGallery({
   imageUrls?: string[];
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const [photos, setPhotos] = useState<SimplePhoto[]>([]);
   const [filteredPhotos, setFilteredPhotos] = useState<SimplePhoto[]>([]);

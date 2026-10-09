@@ -8,8 +8,8 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Copy, Info } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
 import type { StoredFieldElement } from "@ai-matrx/content-ir";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -116,8 +116,7 @@ export default function KindSchemaTab({
   emittedJsonSchema,
 }: KindSchemaTabProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const fieldRows = isStoredFieldArray(fieldData)
     ? flattenStoredFields(fieldData as unknown as StoredFieldElement[])

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { useCanvasLike } from "@/hooks/canvas/useCanvasLike";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 interface CanvasSocialActionsProps {
   canvasId: string;
@@ -41,7 +41,7 @@ export function CanvasSocialActions({
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/canvas/shared/${shareToken}`;
     const success = await copyToClipboard(shareUrl);
-    if (success) toast.success("Share link copied");
+    if (success) copyNotify("Share link copied", "success");
   };
 
   return (

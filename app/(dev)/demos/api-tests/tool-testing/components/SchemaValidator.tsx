@@ -1,6 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useMemo, useState } from 'react';
 import Ajv from 'ajv';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
   Check,
   AlertTriangle,
 } from 'lucide-react';
-import { toast } from "@/lib/toast";
 import type { SchemaValidationResult } from '@/features/tool-call-visualization/testing/types';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -48,8 +48,7 @@ export function validateAgainstSchema(
 
 function InlineCopyButton({ text }: { text: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {

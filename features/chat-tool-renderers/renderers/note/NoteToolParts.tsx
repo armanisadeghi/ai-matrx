@@ -8,7 +8,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 
@@ -274,8 +274,7 @@ export function NoteEditArea({
 /** Full note UUID + always-visible copy affordance. */
 export function IdCopyChip({ id }: { id: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
 

@@ -25,7 +25,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -76,8 +76,7 @@ export function useSmartCodeEditor({
   setState: (s: CodeEditorState) => void;
 } {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // Keep the consumer in a ref so the effect below doesn't re-fire on
   // identity churn — the caller re-creates the fn on every render.

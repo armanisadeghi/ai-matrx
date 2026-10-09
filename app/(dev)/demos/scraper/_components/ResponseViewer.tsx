@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {
   useState,
   useCallback,
@@ -193,8 +193,7 @@ function JsonNode({
 
 function JsonExplorer({ data }: { data: unknown }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
 
@@ -233,8 +232,7 @@ function JsonExplorer({ data }: { data: unknown }) {
 
 function RawJsonView({ data }: { data: unknown }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const jsonString = JSON.stringify(data, null, 2);
@@ -301,8 +299,7 @@ export function ResponseViewer({
   className,
 }: ResponseViewerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [activeTab, setActiveTab] = useState<string>(
     renderContent ? "rendered" : "explorer",

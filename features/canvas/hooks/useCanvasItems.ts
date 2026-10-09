@@ -1,4 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useRef } from 'react';
 import {
   canvasItemsService,
@@ -30,8 +31,7 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
  */
 export function useCanvasItems(initialFilters?: CanvasItemFilters) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [items, setItems] = useState<CanvasItemSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);

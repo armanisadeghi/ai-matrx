@@ -1,7 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useRef, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useUnsplashSearch } from '@/hooks/images/useUnsplashSearch';
@@ -37,8 +37,7 @@ function isFullPhoto(value: unknown): value is Photo {
 
 export function EnhancedSearchDemo() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const [viewMode, setViewMode] = React.useState<'grid' | 'natural'>('grid');
   const { toast } = useToast();

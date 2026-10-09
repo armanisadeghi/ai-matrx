@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import type { CheckedStatement, CrisisHoldingResult } from "@/features/marketing/pr/media-desk/api";
 import { validity } from "./crisis-intake";
 import { copyText } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 function rec(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -107,7 +108,7 @@ function SendToPress({
           await advisories.recordGoAhead({ entityType: "crisis_holding_statement", choice: "go_ahead" });
           try {
             if (await copyText(text)) {
-              toast.success(`The ${name} statement is copied. Paste it into your email or post.`);
+              copyNotify(`The ${name} statement is copied. Paste it into your email or post.`, "success");
             } else {
               toast.warning("Could not copy automatically. Select the statement text and copy it.");
             }
@@ -186,7 +187,7 @@ function Statement({
             variant="outline"
             onClick={() => {
               void copyText(full).then((ok) =>
-                ok ? toast.success("Copied.") : toast.warning("Could not copy automatically."),
+                ok ? copyNotify("Copied.", "success") : toast.warning("Could not copy automatically."),
               );
             }}
           > Copy

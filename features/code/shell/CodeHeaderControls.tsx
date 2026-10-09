@@ -20,7 +20,7 @@ import { useEffect } from "react";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { SandboxDetailResponse } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import {
@@ -43,8 +43,7 @@ import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActi
 export function CodeHeaderControls() {
   const dispatch = useAppDispatch();
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const sideOpen = useAppSelector(selectSideOpen);
   const rightOpen = useAppSelector(selectRightOpen);

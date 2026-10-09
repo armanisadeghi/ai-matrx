@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Button } from "@ai-matrx/design-system";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { useOpenRagAiCopyWindow } from "@/features/overlays/openers/ragAiCopyWindow";
@@ -30,8 +30,7 @@ export function RagContentActions({
 }) {
   const [copied, setCopied] = useState(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const openAiCopy = useOpenRagAiCopyWindow();
 

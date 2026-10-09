@@ -1,6 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState } from 'react';
 import { X, Plus, Copy, Check, Zap, ChevronDown, ChevronUp, ListFilter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const UUIDArrayField = () => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
     const [inputValue, setInputValue] = useState('');
     const [uuids, setUuids] = useState<string[]>([]);

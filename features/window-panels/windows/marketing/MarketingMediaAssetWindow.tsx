@@ -8,6 +8,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRef, useState, type RefObject } from "react";
 import {
   Check,
@@ -354,8 +355,7 @@ function AssetInspector({
   actionsRef?: RefObject<AssetInspectorActions | null>;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const createAsset = useCreateBrandAsset();
   const [libraryKind, setLibraryKind] = useState<BrandAssetKind>("image");

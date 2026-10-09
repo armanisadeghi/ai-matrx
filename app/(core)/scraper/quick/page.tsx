@@ -1,6 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
@@ -39,8 +39,7 @@ import { ErrorNotice } from "@ai-matrx/design-system";
 
 export default function QuickScrapePage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const searchParams = useSearchParams();
   const {

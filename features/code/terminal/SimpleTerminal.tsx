@@ -23,7 +23,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Check, Trash2, Square as StopIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,8 +65,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
   className,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [history, setHistory] = useState<TerminalLine[]>([]);
   const [commandInput, setCommandInput] = useState("");

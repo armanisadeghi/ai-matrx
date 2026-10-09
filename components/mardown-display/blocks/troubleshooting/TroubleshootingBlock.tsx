@@ -3,6 +3,7 @@
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Button, Chip, Tile } from "@ai-matrx/design-system/controls";
 import type {
   TroubleshootingStep,
@@ -46,7 +47,6 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertTroubleshootingToTasks } from "@/features/tasks/utils/importConverters";
-import { toast } from "@/lib/toast";
 
 interface TroubleshootingData {
   title: string;
@@ -84,8 +84,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   onStateChange,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);

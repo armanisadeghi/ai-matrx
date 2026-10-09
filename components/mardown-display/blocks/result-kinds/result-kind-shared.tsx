@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -352,8 +352,7 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
   what,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = React.useState(false);
   return (

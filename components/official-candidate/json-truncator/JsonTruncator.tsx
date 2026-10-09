@@ -20,7 +20,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { BasicInput } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1828,8 +1828,7 @@ export function JsonTruncator({
   allowLayoutToggle = false,
 }: JsonTruncatorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [isTabbed, setIsTabbed] = useState(tabbed);
   const [inputText, setInputText] = useState(initialValue);
