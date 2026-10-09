@@ -22535,6 +22535,7 @@ export type Database = {
         }
       }
       meet_invitation_by_token: { Args: { p_secret: string }; Returns: Json }
+      meet_link_state: { Args: { p_slug: string }; Returns: Json }
       meet_meeting_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -37220,6 +37221,10 @@ export type Database = {
           organization_id: string
           who: string
         }[]
+      }
+      hub_row_asked_alone: {
+        Args: { p_id: string; p_org: string }
+        Returns: boolean
       }
       inbound_addresses: {
         Args: { p_organization_id: string; p_table_id?: string }
@@ -128062,6 +128067,1345 @@ export type Database = {
       [_ in never]: never
     }
   }
+  social: {
+    Tables: {
+      account_insight_daily: {
+        Row: {
+          comments: number | null
+          created_at: string
+          created_by: string | null
+          date: string
+          engagements: number | null
+          extras: Json
+          follower_delta: number | null
+          followers: number | null
+          id: string
+          impressions: number | null
+          likes: number | null
+          link_clicks: number | null
+          metadata: Json
+          observed_at: string
+          organization_id: string
+          profile_visits: number | null
+          provider: string
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          tracked_account_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          views: number | null
+          watch_time_minutes: number | null
+        }
+        Insert: {
+          comments?: number | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          engagements?: number | null
+          extras?: Json
+          follower_delta?: number | null
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          link_clicks?: number | null
+          metadata?: Json
+          observed_at?: string
+          organization_id: string
+          profile_visits?: number | null
+          provider: string
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          tracked_account_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          views?: number | null
+          watch_time_minutes?: number | null
+        }
+        Update: {
+          comments?: number | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          engagements?: number | null
+          extras?: Json
+          follower_delta?: number | null
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          link_clicks?: number | null
+          metadata?: Json
+          observed_at?: string
+          organization_id?: string
+          profile_visits?: number | null
+          provider?: string
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          tracked_account_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          views?: number | null
+          watch_time_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_insight_daily_tracked_account_id_fkey"
+            columns: ["tracked_account_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad: {
+        Row: {
+          advertiser_name: string
+          advertiser_platform_id: string | null
+          body: string | null
+          countries: string[]
+          created_at: string
+          created_by: string | null
+          cta: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          first_seen_at: string
+          format: string | null
+          headline: string | null
+          id: string
+          impressions_range: Json | null
+          landing_url: string | null
+          last_refreshed_at: string | null
+          library: string
+          library_url: string | null
+          metadata: Json
+          organization_id: string
+          placements: string[]
+          platform_ad_id: string
+          profile_id: string | null
+          provider: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          raw_payload: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          spend_range: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          advertiser_name: string
+          advertiser_platform_id?: string | null
+          body?: string | null
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          ended_at?: string | null
+          first_seen_at?: string
+          format?: string | null
+          headline?: string | null
+          id?: string
+          impressions_range?: Json | null
+          landing_url?: string | null
+          last_refreshed_at?: string | null
+          library: string
+          library_url?: string | null
+          metadata?: Json
+          organization_id: string
+          placements?: string[]
+          platform_ad_id: string
+          profile_id?: string | null
+          provider: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          spend_range?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          advertiser_name?: string
+          advertiser_platform_id?: string | null
+          body?: string | null
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          ended_at?: string | null
+          first_seen_at?: string
+          format?: string | null
+          headline?: string | null
+          id?: string
+          impressions_range?: Json | null
+          landing_url?: string | null
+          last_refreshed_at?: string | null
+          library?: string
+          library_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          placements?: string[]
+          platform_ad_id?: string
+          profile_id?: string | null
+          provider?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          spend_range?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "social_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_goal: {
+        Row: {
+          baseline_value: number | null
+          brand_id: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ends_on: string | null
+          id: string
+          metadata: Json
+          metric: string
+          metric_label: string | null
+          notes: string | null
+          organization_id: string
+          period: string
+          platform: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          starts_on: string
+          status: string
+          target_value: number
+          tracked_account_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          baseline_value?: number | null
+          brand_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          ends_on?: string | null
+          id?: string
+          metadata?: Json
+          metric: string
+          metric_label?: string | null
+          notes?: string | null
+          organization_id: string
+          period: string
+          platform?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          starts_on: string
+          status?: string
+          target_value: number
+          tracked_account_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          baseline_value?: number | null
+          brand_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          ends_on?: string | null
+          id?: string
+          metadata?: Json
+          metric?: string
+          metric_label?: string | null
+          notes?: string | null
+          organization_id?: string
+          period?: string
+          platform?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          starts_on?: string
+          status?: string
+          target_value?: number
+          tracked_account_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_goal_tracked_account_id_fkey"
+            columns: ["tracked_account_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post: {
+        Row: {
+          caption: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          duration_seconds: number | null
+          first_seen_at: string
+          format: string
+          hashtags: string[]
+          id: string
+          is_ad: boolean
+          language: string | null
+          last_refreshed_at: string | null
+          mentions: string[]
+          metadata: Json
+          music: Json | null
+          organization_id: string
+          platform: string
+          platform_post_id: string
+          posted_at: string | null
+          profile_id: string | null
+          provider: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          raw_payload: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          status_changed_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          url: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          first_seen_at?: string
+          format?: string
+          hashtags?: string[]
+          id?: string
+          is_ad?: boolean
+          language?: string | null
+          last_refreshed_at?: string | null
+          mentions?: string[]
+          metadata?: Json
+          music?: Json | null
+          organization_id: string
+          platform: string
+          platform_post_id: string
+          posted_at?: string | null
+          profile_id?: string | null
+          provider: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          status_changed_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          first_seen_at?: string
+          format?: string
+          hashtags?: string[]
+          id?: string
+          is_ad?: boolean
+          language?: string | null
+          last_refreshed_at?: string | null
+          mentions?: string[]
+          metadata?: Json
+          music?: Json | null
+          organization_id?: string
+          platform?: string
+          platform_post_id?: string
+          posted_at?: string | null
+          profile_id?: string | null
+          provider?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          status_changed_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "social_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_analysis: {
+        Row: {
+          audio: Json | null
+          cost_usd: number | null
+          created_at: string
+          created_by: string | null
+          cta: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          error: string | null
+          format_tags: string[]
+          hook_text: string | null
+          hook_type: string | null
+          id: string
+          kind: string
+          metadata: Json
+          model: string | null
+          on_screen_text: string | null
+          organization_id: string
+          payload: Json
+          post_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          style_tags: string[]
+          summary: string | null
+          transcript_language: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audio?: Json | null
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          error?: string | null
+          format_tags?: string[]
+          hook_text?: string | null
+          hook_type?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          model?: string | null
+          on_screen_text?: string | null
+          organization_id: string
+          payload?: Json
+          post_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          style_tags?: string[]
+          summary?: string | null
+          transcript_language?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audio?: Json | null
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          error?: string | null
+          format_tags?: string[]
+          hook_text?: string | null
+          hook_type?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          model?: string | null
+          on_screen_text?: string | null
+          organization_id?: string
+          payload?: Json
+          post_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          style_tags?: string[]
+          summary?: string | null
+          transcript_language?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analysis_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_comment: {
+        Row: {
+          author_handle: string | null
+          author_platform_user_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          id: string
+          like_count: number | null
+          metadata: Json
+          organization_id: string
+          parent_platform_comment_id: string | null
+          platform_comment_id: string
+          post_id: string
+          posted_at: string | null
+          provider: string
+          reply_count: number | null
+          text: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          author_handle?: string | null
+          author_platform_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          id?: string
+          like_count?: number | null
+          metadata?: Json
+          organization_id: string
+          parent_platform_comment_id?: string | null
+          platform_comment_id: string
+          post_id: string
+          posted_at?: string | null
+          provider: string
+          reply_count?: number | null
+          text: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          author_handle?: string | null
+          author_platform_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          id?: string
+          like_count?: number | null
+          metadata?: Json
+          organization_id?: string
+          parent_platform_comment_id?: string | null
+          platform_comment_id?: string
+          post_id?: string
+          posted_at?: string | null
+          provider?: string
+          reply_count?: number | null
+          text?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comment_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_metric_snapshot: {
+        Row: {
+          comments: number | null
+          created_at: string
+          created_by: string | null
+          extras: Json
+          id: string
+          likes: number | null
+          metadata: Json
+          observed_at: string
+          organization_id: string
+          post_id: string
+          provider: string
+          saves: number | null
+          shares: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          views: number | null
+        }
+        Insert: {
+          comments?: number | null
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          id?: string
+          likes?: number | null
+          metadata?: Json
+          observed_at?: string
+          organization_id: string
+          post_id: string
+          provider: string
+          saves?: number | null
+          shares?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          views?: number | null
+        }
+        Update: {
+          comments?: number | null
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          id?: string
+          likes?: number | null
+          metadata?: Json
+          observed_at?: string
+          organization_id?: string
+          post_id?: string
+          provider?: string
+          saves?: number | null
+          shares?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_metric_snapshot_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_stat: {
+        Row: {
+          baseline_views: number | null
+          baseline_window: number | null
+          comments: number | null
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          engagement_rate: number | null
+          id: string
+          likes: number | null
+          metadata: Json
+          metrics_observed_at: string | null
+          organization_id: string
+          outlier_score: number | null
+          percentile: number | null
+          post_id: string
+          saves: number | null
+          shares: number | null
+          updated_at: string
+          updated_by: string | null
+          velocity_24h: number | null
+          version: number
+          views: number | null
+        }
+        Insert: {
+          baseline_views?: number | null
+          baseline_window?: number | null
+          comments?: number | null
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          metadata?: Json
+          metrics_observed_at?: string | null
+          organization_id: string
+          outlier_score?: number | null
+          percentile?: number | null
+          post_id: string
+          saves?: number | null
+          shares?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          velocity_24h?: number | null
+          version?: number
+          views?: number | null
+        }
+        Update: {
+          baseline_views?: number | null
+          baseline_window?: number | null
+          comments?: number | null
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          metadata?: Json
+          metrics_observed_at?: string | null
+          organization_id?: string
+          outlier_score?: number | null
+          percentile?: number | null
+          post_id?: string
+          saves?: number | null
+          shares?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          velocity_24h?: number | null
+          version?: number
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_stat_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_transcript: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          id: string
+          language: string
+          metadata: Json
+          organization_id: string
+          post_id: string
+          provider: string
+          segments: Json
+          source: string
+          text: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          word_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          id?: string
+          language?: string
+          metadata?: Json
+          organization_id: string
+          post_id: string
+          provider: string
+          segments?: Json
+          source: string
+          text: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          id?: string
+          language?: string
+          metadata?: Json
+          organization_id?: string
+          post_id?: string
+          provider?: string
+          segments?: Json
+          source?: string
+          text?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_transcript_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_snapshot: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          extras: Json
+          follower_count: number | null
+          following_count: number | null
+          id: string
+          metadata: Json
+          observed_at: string
+          organization_id: string
+          post_count: number | null
+          profile_id: string
+          provider: string
+          total_likes: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          follower_count?: number | null
+          following_count?: number | null
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          organization_id: string
+          post_count?: number | null
+          profile_id: string
+          provider: string
+          total_likes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          follower_count?: number | null
+          following_count?: number | null
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          organization_id?: string
+          post_count?: number | null
+          profile_id?: string
+          provider?: string
+          total_likes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_snapshot_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "social_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remix_output: {
+        Row: {
+          brand_id: string
+          content: Json
+          cost_usd: number | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          model: string | null
+          organization_id: string
+          output_type: string
+          persona_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          voice_fingerprint_id: string | null
+        }
+        Insert: {
+          brand_id: string
+          content?: Json
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          model?: string | null
+          organization_id: string
+          output_type: string
+          persona_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          voice_fingerprint_id?: string | null
+        }
+        Update: {
+          brand_id?: string
+          content?: Json
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          model?: string | null
+          organization_id?: string
+          output_type?: string
+          persona_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          voice_fingerprint_id?: string | null
+        }
+        Relationships: []
+      }
+      social_profile: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          display_name: string | null
+          external_url: string | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string
+          id: string
+          is_business: boolean | null
+          is_verified: boolean | null
+          last_refreshed_at: string | null
+          metadata: Json
+          organization_id: string
+          platform: string
+          platform_user_id: string
+          post_count: number | null
+          profile_url: string | null
+          provider: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          raw_payload: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          total_likes: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          display_name?: string | null
+          external_url?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          handle: string
+          id?: string
+          is_business?: boolean | null
+          is_verified?: boolean | null
+          last_refreshed_at?: string | null
+          metadata?: Json
+          organization_id: string
+          platform: string
+          platform_user_id: string
+          post_count?: number | null
+          profile_url?: string | null
+          provider: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          total_likes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          display_name?: string | null
+          external_url?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          handle?: string
+          id?: string
+          is_business?: boolean | null
+          is_verified?: boolean | null
+          last_refreshed_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          platform?: string
+          platform_user_id?: string
+          post_count?: number | null
+          profile_url?: string | null
+          provider?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          raw_payload?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          total_likes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      swipe_collection: {
+        Row: {
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          sort: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sort?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sort?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      tracked_account: {
+        Row: {
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          label: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          profile_id: string
+          property_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          role: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          profile_id: string
+          property_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          role: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          profile_id?: string
+          property_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          role?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_account_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "social_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watchlist_hit: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          hit_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          post_id: string
+          saved_view_id: string
+          score: number | null
+          state: string
+          state_changed_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          hit_at?: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          post_id: string
+          saved_view_id: string
+          score?: number | null
+          state?: string
+          state_changed_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          hit_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          post_id?: string
+          saved_view_id?: string
+          score?: number | null
+          state?: string
+          state_changed_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_hit_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   tool: {
     Tables: {
       binding: {
@@ -134265,6 +135609,10 @@ export type Database = {
           name: string
           organization_id: string
           parent_id: string | null
+          price_amount: number | null
+          price_currency: string | null
+          price_note: string | null
+          price_unit: string | null
           slug: string
           sort: number
           status: string
@@ -134287,6 +135635,10 @@ export type Database = {
           name: string
           organization_id: string
           parent_id?: string | null
+          price_amount?: number | null
+          price_currency?: string | null
+          price_note?: string | null
+          price_unit?: string | null
           slug: string
           sort?: number
           status?: string
@@ -134309,6 +135661,10 @@ export type Database = {
           name?: string
           organization_id?: string
           parent_id?: string | null
+          price_amount?: number | null
+          price_currency?: string | null
+          price_note?: string | null
+          price_unit?: string | null
           slug?: string
           sort?: number
           status?: string
@@ -134337,6 +135693,98 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "offering_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_persona: {
+        Row: {
+          brand_id: string
+          channels: string[]
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          demographics: Json
+          goals: string[]
+          id: string
+          is_primary: boolean
+          metadata: Json
+          name: string
+          objections: string[]
+          organization_id: string
+          pain_points: string[]
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          sort: number
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          brand_id: string
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          demographics?: Json
+          goals?: string[]
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          name: string
+          objections?: string[]
+          organization_id: string
+          pain_points?: string[]
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sort?: number
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          brand_id?: string
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          demographics?: Json
+          goals?: string[]
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          name?: string
+          objections?: string[]
+          organization_id?: string
+          pain_points?: string[]
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          sort?: number
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_persona_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
             referencedColumns: ["id"]
           },
         ]
@@ -142714,6 +144162,9 @@ export const Constants = {
     Enums: {},
   },
   skill: {
+    Enums: {},
+  },
+  social: {
     Enums: {},
   },
   tool: {
