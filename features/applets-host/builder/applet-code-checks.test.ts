@@ -3,7 +3,7 @@
  * proved the old regex checks refused, beside the true violation the check must still refuse. Every
  * check reads the syntax tree, so a word in a string, JSX text or a comment is never code.
  */
-import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
 import { coerceBuildAnswer } from "./build-applet";
 import { checkBuildAnswer } from "./check-build-answer";
 
@@ -206,5 +206,15 @@ export default function App() {
   });
   it("does not check a job whose inputs it was not told", () => {
     expect(jobValuesNotTaken(file(`const job = useJob("other");\njob.run({ anything: 1 });`), CITY)).toEqual([]);
+  });
+});
+
+// The offer-breakdowns list (live, 2026-10-09) seeded its example from an effect; the preview held the write.
+describe("writesFromEffects names a row written from an effect", () => {
+  it("names create( inside useEffect, not create( in a handler", () => {
+    const live = `const breakdowns = useRows('offer_breakdowns');\nuseEffect(() => {\n  if (breakdowns.status === 'ready' && breakdowns.rows.length === 0 && !seeding) {\n    setSeeding(true);\n    breakdowns.create(SAMPLE_BREAKDOWN).finally(() => setSeeding(false));\n  }\n}, [breakdowns.status, breakdowns.rows.length, seeding]);`;
+    expect(writesFromEffects(file(live, "breakdowns_list.tsx"))).toEqual(["create"]);
+    expect(writesFromEffects(file(`React.useEffect(() => { void posts.create({ title: "x" }); }, []);`))).toEqual(["create"]);
+    expect(writesFromEffects(file(`const save = () => posts.create(values);\nuseEffect(() => { document.title = "x"; }, []);`))).toEqual([]);
   });
 });

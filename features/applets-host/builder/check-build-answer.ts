@@ -7,7 +7,7 @@
 import { checkAppletSources } from "@ai-matrx/applets/platform";
 import type { AppletSource } from "@ai-matrx/applets";
 
-import { archiveCalledDelete, bannedIcons, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, bannedIcons, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
 import { BuildRefused, dateFieldsAsText, literalNewlineAttributes, newTableGaps, type BuildAnswer, type BuilderFile } from "./build-applet";
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
@@ -122,6 +122,11 @@ export function checkBuildAnswer(
     for (const row of formsReseededFromRow(f)) {
       problems.push(
         `${f.name} copies ${row} into its form on every change (useEffect(…, [${row}])), so a re-read or a failed save writes the stored values over her typing — seed the form once per record: render <Form key={${row}._id} row={${row}} /> and inside it useState(() => ({ … }))`,
+      );
+    }
+    if (writesFromEffects(f).length) {
+      problems.push(
+        `${f.name} calls create( inside a useEffect — it runs again on every empty list and the preview never saves it; declare a sample row as the new table's rows: [{ cells: [{ key, value }] }] (written once, when the table is made)`,
       );
     }
     for (const word of archiveCalledDelete(f)) {
