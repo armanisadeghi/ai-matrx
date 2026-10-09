@@ -243,5 +243,5 @@ The item page lives in `/administration`, where the admin is usually NOT a membe
 
 - **Writes:** on the admin seat `recordHumanReviewAction` posts through `POST /api/admin/agent-review/feedback` (lane + admin identity re-checked, scoped to conversations that belong to an `agent.review_queue` row). Off the seat it inserts directly as before.
 - **Name:** the message's `actor_label` is the signed-in reviewer's own name (`selectDisplayName`), never a fixed one.
-- **Reading:** Realtime `postgres_changes` carry no lane, so `providers/MessagingHost.tsx` passes `observerRefresh` (5 s interval + window focus, only while `browserAdminLaneOpen()`) to `@ai-matrx/messaging`; `markRead` is a silent no-op for a viewer with no participant row.
+- **Reading:** Realtime `postgres_changes` carry no lane, so the in-provider observer in `providers/MessagingHost.tsx` reopens the active thread every 5 seconds and on window focus, only while `browserAdminLaneOpen()`. `MessagingProvider` has no `observerRefresh` prop; the host uses the public engine API. `markRead` is a silent no-op for a viewer with no participant row.
 - Guard: `__tests__/seat-write.test.ts`.
