@@ -35,10 +35,7 @@ import {
 } from "@/features/mandates/code-references/data";
 import type { MandateAdminReports } from "./facts";
 import { callMandateAdminList } from "./rpc";
-import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { drillClientFor } from "@/components/official/drill-explorer/useDrillExplorer";
-import { mandateSpendFromAnswer, spendQuestion } from "./spend";
-import { fetchMandateRuns, type MandateRunsCell } from "./runs";
+import { fetchMandateRuns, spendByKeyOf, type MandateRunsCell } from "./runs";
 
 export type MandateAdminReportName = "codeTruth" | "coverage" | "impact" | "workflowImpact";
 
@@ -66,10 +63,11 @@ export interface MandateAdminListState {
   sourceFacts: Map<string, MandateSourceFacts>;
   sourceChecked: Set<string>;
   /**
-   * THE COST COLUMNS (./spend.ts): the period's dollars per mandate key, read
-   * once per period from the usage ledger. `byKey` null = not read yet (or the
-   * read failed — `failures.spend`); `total` is the database's sum over every
-   * row the list's filters match (absent before the 2026-10-08 list read).
+   * THE COST COLUMNS: the period's dollars per mandate key — the cost of the
+   * SAME runs the Runs column counts (./runs.ts, one read for both). `byKey`
+   * null = not read yet (or the read failed — `failures.runs`); `folded` = the
+   * answer carried no costs, so an absent key is unknown, not zero; `total` is
+   * the database's sum over every row the list's filters match.
    */
   spend: {
     period: string | null;
@@ -184,72 +182,36 @@ export function ensureMandateSourceFacts(keys: readonly string[]): void {
   );
 }
 
-let spendAsk = 0;
-let spendViewer: string | null = null;
-
-/**
- * The period's spend per mandate key — one usage-ledger question, asked once
- * per period (`force` asks again). Never awaited by the list: the rows paint
- * first and the cost cells say "Checking…" until it lands.
- */
-export function ensureMandateSpend(period: string, viewerId: string | null, force = false): void {
-  spendViewer = viewerId;
-  if (!force && state.spend.period === period) return;
-  const myAsk = ++spendAsk;
-  const { spend: _dropped, ...failures } = state.failures;
-  publish({
-    spend: { period, byKey: null, folded: false, settled: false, total: null },
-    failures,
-  });
-  void drillClientFor(SYSTEM_ORGANIZATION_ID, viewerId)
-    .drillAsk({ source: { kind: "entity", token: "ai_usage" }, question: spendQuestion(period) })
-    .then(
-      (got) => {
-        if (myAsk !== spendAsk) return;
-        if (!got.ok || !got.data) {
-          publish({
-            spend: { ...state.spend, settled: true },
-            failures: {
-              ...state.failures,
-              spend: got.ok ? "The usage ledger gave no answer." : got.error.message,
-            },
-          });
-          return;
-        }
-        const read = mandateSpendFromAnswer(got.data);
-        publish({ spend: { ...state.spend, byKey: read.byKey, folded: read.folded, settled: true } });
-      },
-      (error: unknown) => {
-        if (myAsk !== spendAsk) return;
-        publish({
-          spend: { ...state.spend, settled: true },
-          failures: { ...state.failures, spend: describe(error) },
-        });
-      },
-    );
-}
-
 let runsAsk = 0;
 
 /**
- * Every mandate's runs over the period — one database read, asked once per
- * period (`force` asks again). Never awaited by the list: the rows paint first
- * and the Runs cells say "Checking…" until it lands.
+ * Every mandate's runs AND their cost over the period — one database read,
+ * asked once per period (`force` asks again). Never awaited by the list: the
+ * rows paint first and the Runs and Cost cells say "Checking…" until it lands.
  */
 export function ensureMandateRuns(period: string, force = false): void {
   if (!force && state.runs.period === period) return;
   const myAsk = ++runsAsk;
   const { runs: _dropped, ...failures } = state.failures;
-  publish({ runs: { period, byKey: null, settled: false }, failures });
+  publish({
+    runs: { period, byKey: null, settled: false },
+    spend: { period, byKey: null, folded: false, settled: false, total: null },
+    failures,
+  });
   fetchMandateRuns(period).then(
     (read) => {
       if (myAsk !== runsAsk) return;
-      publish({ runs: { period, byKey: read.byKey, settled: true } });
+      const spend = spendByKeyOf(read.byKey);
+      publish({
+        runs: { period, byKey: read.byKey, settled: true },
+        spend: { ...state.spend, byKey: spend.byKey, folded: spend.unknown, settled: true },
+      });
     },
     (error: unknown) => {
       if (myAsk !== runsAsk) return;
       publish({
         runs: { period, byKey: null, settled: true },
+        spend: { ...state.spend, settled: true },
         failures: { ...state.failures, runs: describe(error) },
       });
     },
@@ -270,9 +232,6 @@ export function setMandateSpendTotal(total: number | null): void {
 export function retryMandateAdminFailures(): void {
   const failed = Object.keys(state.failures);
   if (failed.length === 0) return;
-  if (failed.includes("spend") && state.spend.period) {
-    ensureMandateSpend(state.spend.period, spendViewer, true);
-  }
   if (failed.includes("runs") && state.runs.period) {
     ensureMandateRuns(state.runs.period, true);
   }

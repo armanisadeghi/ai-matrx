@@ -3,19 +3,29 @@
 // PURE + ONE READ: the admin mandate list's RUNS columns (Arman, 2026-10-08:
 // "where do I see the number of runs and things like that in the table").
 //
-// THE SOURCE is `mandate.admin_run_counts(p_since)` — every mandate's run count
-// and last run over the period in ONE database read, with the SAME definition
-// of a run as the mandate Test tab's runs list (`mandate.run_history`). Loaded
-// once per period beside the spend, never awaited by the list.
+// THE SOURCE is `mandate.admin_run_counts(p_since)` — every mandate's run count,
+// last run AND cost over the period in ONE database read, all from the same run
+// rows as the mandate Test tab's runs list (`mandate.run_history`): ONE
+// definition of a mandate's runs (features/mandates/FEATURE.md "A mandate's
+// runs"). The Cost and Points columns are these runs' cost. Loaded once per
+// period, never awaited by the list.
 
 import { drillWindowRange } from "@ai-matrx/design-system/data-table";
 import { supabase } from "@/utils/supabase/client";
 import { DEFAULT_SPEND_PERIOD } from "./spend";
 
-/** One mandate's runs over the period; `lastMs` is epoch milliseconds. */
+/**
+ * One mandate's runs over the period; `lastMs` is epoch milliseconds. The
+ * inferred share is its Holder agent's runs that carry no mandate name
+ * (history from before runs were named) — shown as estimated.
+ */
 export interface MandateRunsCell {
   runs: number;
   lastMs: number | null;
+  /** Dollars those runs cost; `null` = a database answer without costs. */
+  usd: number | null;
+  inferredRuns: number;
+  inferredUsd: number;
 }
 
 export interface MandateRuns {
@@ -29,17 +39,34 @@ export function runsSince(period: string, now: Date = new Date()): string {
   return range?.from ?? now.toISOString();
 }
 
+function numberOf(raw: unknown): number | null {
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  return Number.isFinite(n) ? n : null;
+}
+
 /** The database answer → cells. Anything unreadable is left out, never zero-filled. */
 export function mandateRunsFromAnswer(raw: unknown): MandateRuns {
   const byKey: Record<string, MandateRunsCell> = {};
   if (!raw || typeof raw !== "object") return { byKey };
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     if (!value || typeof value !== "object") continue;
-    const entry = value as { runs?: unknown; last?: unknown };
-    const runs = typeof entry.runs === "number" ? entry.runs : Number(entry.runs);
-    if (!key || !Number.isFinite(runs)) continue;
+    const entry = value as {
+      runs?: unknown;
+      last?: unknown;
+      cost?: unknown;
+      inferred_runs?: unknown;
+      inferred_cost?: unknown;
+    };
+    const runs = numberOf(entry.runs);
+    if (!key || runs === null) continue;
     const last = typeof entry.last === "string" ? Date.parse(entry.last) : NaN;
-    byKey[key] = { runs, lastMs: Number.isFinite(last) ? last : null };
+    byKey[key] = {
+      runs,
+      lastMs: Number.isFinite(last) ? last : null,
+      usd: numberOf(entry.cost),
+      inferredRuns: numberOf(entry.inferred_runs) ?? 0,
+      inferredUsd: numberOf(entry.inferred_cost) ?? 0,
+    };
   }
   return { byKey };
 }
@@ -58,13 +85,30 @@ export function runsFactsOf(
   return { runs, lastRun };
 }
 
+/**
+ * Mandate key → the dollars its runs cost (the Cost / Points columns' source).
+ * `unknown` = some cell carried no cost, so an absent key is not "nothing".
+ */
+export function spendByKeyOf(byKey: Record<string, MandateRunsCell>): {
+  byKey: Record<string, number>;
+  unknown: boolean;
+} {
+  const out: Record<string, number> = {};
+  let unknown = false;
+  for (const [key, cell] of Object.entries(byKey)) {
+    if (cell.usd === null) unknown = true;
+    else out[key] = cell.usd;
+  }
+  return { byKey: out, unknown };
+}
+
 /** One mandate's cell: no entry once the read landed = no runs in the period. */
 export function runsOfKey(
   byKey: Record<string, MandateRunsCell> | null,
   key: string,
 ): MandateRunsCell | null {
   if (!byKey) return null;
-  return byKey[key] ?? { runs: 0, lastMs: null };
+  return byKey[key] ?? { runs: 0, lastMs: null, usd: 0, inferredRuns: 0, inferredUsd: 0 };
 }
 
 /** The mandate's Test tab, on its runs. */

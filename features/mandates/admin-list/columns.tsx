@@ -168,12 +168,36 @@ function ModelCell({ row }: { row: MandateAdminRow }) {
   );
 }
 
-/** The period's cost, in dollars or points. Points follow the platform rate. */
+/**
+ * The inferred share of a figure: its Holder agent's runs that carry no mandate
+ * name (features/mandates/FEATURE.md "A mandate's runs"). Never hidden.
+ */
+function EstimatedMark({ detail }: { detail: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="shrink-0" data-estimated="true">
+          <Badge variant="outline" className="shrink-0 whitespace-nowrap px-1 py-0 text-[10px] font-normal">
+            Est.
+          </Badge>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top">{detail}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** The period's cost of the mandate's runs, in dollars or points. Points follow the platform rate. */
 function SpendCell({ row, unit }: { row: MandateAdminRow; unit: "usd" | "points" }) {
   if (row.spendPending) return <Checking what="the cost" />;
   if (row.spendUsd === null) return <Muted>—</Muted>;
   return (
-    <span className="block text-right type-secondary tabular-nums">
+    <span className="flex items-center justify-end gap-1 type-secondary tabular-nums">
+      {row.inferredUsd > 0 ? (
+        <EstimatedMark
+          detail={`Inferred: ${formatAdminUsd(row.inferredUsd)} of ${formatAdminUsd(row.spendUsd)} · Holder agent runs without the mandate's name`}
+        />
+      ) : null}
       {unit === "usd" ? formatAdminUsd(row.spendUsd) : <AdminPoints usd={row.spendUsd} />}
     </span>
   );
@@ -188,12 +212,19 @@ function RunsCell({ row }: { row: MandateAdminRow }) {
     ? adminMandateRecordHref(row.mandateKey)
     : adminMandateSupportRecordHref(row.id);
   return (
-    <Link
-      href={runsTabHref(base)}
-      className="block text-right type-secondary tabular-nums underline-offset-2 hover:underline"
-    >
-      {row.runs.toLocaleString("en-US")}
-    </Link>
+    <span className="flex items-center justify-end gap-1">
+      {row.inferredRuns > 0 ? (
+        <EstimatedMark
+          detail={`Inferred: ${row.inferredRuns.toLocaleString("en-US")} of ${row.runs.toLocaleString("en-US")} runs · Holder agent runs without the mandate's name`}
+        />
+      ) : null}
+      <Link
+        href={runsTabHref(base)}
+        className="type-secondary tabular-nums underline-offset-2 hover:underline"
+      >
+        {row.runs.toLocaleString("en-US")}
+      </Link>
+    </span>
   );
 }
 
@@ -496,7 +527,8 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   // for a workflow Holder. The filter matches a mandate using ANY chosen model
   // — its default Holder's or any binding's (database `vals.model`).
   facetColumn("model", "Model", 170, (row) => <ModelCell row={row} />),
-  // THE COST over the header's period, from the usage ledger (./spend.ts).
+  // THE COST over the header's period: the cost of the SAME runs the Runs
+  // column counts (./runs.ts, one read; "Est." marks an inferred share).
   // Sorted by the database across every page; no number filter is served.
   {
     id: "spendUsd",
@@ -508,7 +540,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       filter: false,
       align: "right",
       defaultSortDirection: "desc",
-      width: 100,
+      width: 116,
       cell: (row) => <SpendCell row={row} unit="usd" />,
     },
   },
@@ -522,7 +554,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       filter: false,
       align: "right",
       defaultSortDirection: "desc",
-      width: 120,
+      width: 140,
       cell: (row) => <SpendCell row={row} unit="points" />,
     },
   },
@@ -538,7 +570,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       filter: false,
       align: "right",
       defaultSortDirection: "desc",
-      width: 80,
+      width: 96,
       cell: (row) => <RunsCell row={row} />,
     },
   },

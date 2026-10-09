@@ -78,7 +78,6 @@ import {
 } from "./context";
 import {
   ensureMandateRuns,
-  ensureMandateSpend,
   invalidateMandateAdminList,
   retryMandateAdminFailures,
 } from "./store";
@@ -135,12 +134,11 @@ export function MandateAdminListPage({
   const listState = useMandateAdminListState();
 
   // THE COST PERIOD lives in the address (`?period=7d`), default the last 30
-  // days; the management page reads the period's spend once per period.
+  // days; the management page reads the period's runs and their cost once per period.
   const period = parseSpendPeriod(useListSearchParams().get(SPEND_PERIOD_PARAM));
   const support = lane === "support";
   useEffect(() => {
     if (support || !userId) return;
-    ensureMandateSpend(period, userId);
     ensureMandateRuns(period);
   }, [support, period, userId]);
 
@@ -473,8 +471,8 @@ function MandateSpendHeader({
           className="type-secondary tabular-nums whitespace-nowrap"
           title={
             folded
-              ? "Total of the mandates shown; some usage was grouped as Other"
-              : "Total of every mandate the filters match"
+              ? "Some costs were not answered"
+              : "Cost of every run of the mandates the filters match"
           }
         >
           {formatAdminUsd(totalUsd)} · <AdminPoints usd={totalUsd} />

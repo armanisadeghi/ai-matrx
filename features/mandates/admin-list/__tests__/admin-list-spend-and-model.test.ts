@@ -3,91 +3,21 @@
  * "points and actual dollar amounts for a given period … the current model …
  * filter by one or more models").
  *
- * Spend is ONE question of the usage ledger's own definition (`ai_usage`, by
- * feature, platform lane) — a mandate run is tagged `mandate:<key>`. The model
+ * The cost is the cost of the mandate's runs, from the runs read
+ * (admin-list-runs.test.ts — one definition of a mandate's runs). The model
  * is read by the list's database door (`models`, default Holder first). What
- * the browser owns is: the question it asks, reading the answer back into
- * per-key dollars, the period the address names, and the Model cell's split.
+ * this file covers: the period the address names, the Model cell's split, and
+ * what the list sends and reads back.
  * Real mandate keys and models from the platform.
  */
-import type { DrillAnswer } from "@ai-matrx/records";
 import {
   DEFAULT_SPEND_PERIOD,
-  mandateSpendFromAnswer,
   modelCellOf,
   parseSpendPeriod,
-  spendQuestion,
 } from "../spend";
 import { FIELDS } from "../fields";
 import type { MandateAdminRow } from "../types";
 import { spendFactsOf, spendOfKey, spendTotalOf } from "../service";
-
-const row = (
-  kind: "group" | "other" | "total",
-  feature: string | null,
-  cost: number | string | null,
-) =>
-  ({
-    kind,
-    groups: feature === null ? null : { feature },
-    measures: { cost },
-    row_count: 1,
-  }) as unknown as DrillAnswer["rows"][number];
-
-describe("the spend question", () => {
-  const now = new Date("2026-10-08T19:42:10.000Z");
-
-  it("asks the usage ledger by feature, across the whole platform, every group in one page", () => {
-    const q = spendQuestion("30d", now);
-    expect(q.by).toEqual(["feature"]);
-    expect(q.show).toEqual(["cost"]);
-    expect(q.lane).toBe("platform");
-    // The door folds groups past its cap into Other; the page ceiling is 1000.
-    expect(q.limit).toBe(1000);
-    expect(q.where).toEqual({});
-  });
-
-  it("covers the chosen period on whole hours, ending now (the rollup counts hours)", () => {
-    const q = spendQuestion("7d", now);
-    expect(q.window?.key).toBe("at");
-    expect(q.window?.from).toBe("2026-10-01T19:00:00.000Z");
-    expect(q.window?.to).toBe(now.toISOString());
-  });
-});
-
-describe("reading the answer back", () => {
-  it("keeps only mandate runs, keyed by the mandate key, in dollars", () => {
-    const spend = mandateSpendFromAnswer({
-      rows: [
-        row("total", null, 1600),
-        row("group", "chat", 1065.01),
-        row("group", "mandate:seo.ai_visibility_evidence_icp", "259.48817730"),
-        row("group", "mandate:news.coarse_relevance", 109.92),
-        row("group", "conversation", 412.07),
-      ],
-    });
-    expect(spend.byKey).toEqual({
-      "seo.ai_visibility_evidence_icp": 259.4881773,
-      "news.coarse_relevance": 109.92,
-    });
-    expect(spend.folded).toBe(false);
-  });
-
-  it("says when groups were folded into Other — a mandate there would read as zero", () => {
-    const spend = mandateSpendFromAnswer({
-      rows: [row("group", "mandate:applets.build", 16), row("other", null, 12)],
-    });
-    expect(spend.folded).toBe(true);
-    expect(spend.byKey).toEqual({ "applets.build": 16 });
-  });
-
-  it("never invents a figure from an unreadable cost", () => {
-    const spend = mandateSpendFromAnswer({
-      rows: [row("group", "mandate:masterwork.conductor", null), row("group", "mandate:", 4)],
-    });
-    expect(spend.byKey).toEqual({});
-  });
-});
 
 describe("the period in the address", () => {
   it("defaults to the last 30 days", () => {
@@ -124,7 +54,7 @@ describe("what the list sends and reads back", () => {
     expect(spendFactsOf({ "applets.build": 16 })).toEqual({ spend: { "applets.build": 16 } });
   });
 
-  it("reads a mandate the ledger never tagged as nothing spent — unless groups were folded", () => {
+  it("reads a mandate with no runs as nothing spent — unless the costs were unknown", () => {
     const byKey = { "applets.build": 16 };
     expect(spendOfKey({ byKey, folded: false }, "applets.build")).toBe(16);
     expect(spendOfKey({ byKey, folded: false }, "podcast.script")).toBe(0);

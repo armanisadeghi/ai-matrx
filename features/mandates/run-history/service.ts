@@ -33,7 +33,8 @@ export const RUN_STATUSES: readonly RunStatus[] = [
 ];
 
 export interface MandateRun {
-  runKind: "conversation" | "workflow";
+  /** `agent_run` = an agent run labelled with the mandate that kept no conversation. */
+  runKind: "conversation" | "workflow" | "agent_run";
   runId: string;
   startedAt: string;
   completedAt: string | null;
@@ -206,7 +207,8 @@ function parseRun(value: Json): MandateRun | null {
     ? value.output_missing_keys.filter((item): item is string => typeof item === "string")
     : [];
   return {
-    runKind: value.run_kind === "workflow" ? "workflow" : "conversation",
+    runKind:
+      value.run_kind === "workflow" ? "workflow" : value.run_kind === "agent_run" ? "agent_run" : "conversation",
     runId,
     startedAt,
     completedAt: str(value.completed_at),

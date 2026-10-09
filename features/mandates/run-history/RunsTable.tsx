@@ -374,7 +374,8 @@ export function RunsTable({
       minWidth: 84,
       cell: (run) => {
         const href = outputHrefOf(run, audience);
-        const what = run.runKind === "workflow" ? "workflow run" : "conversation";
+        const what =
+          run.runKind === "workflow" ? "workflow run" : run.runKind === "agent_run" ? "agent run" : "conversation";
         return href ? (
           <span className="inline-flex items-center gap-0.5">
             <Link href={href} className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline" title={`Open this ${what}`}>

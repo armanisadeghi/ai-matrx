@@ -440,7 +440,8 @@ function RunRow({
       : run.conversationId && run.hasTranscript
         ? conversationHref(run.conversationId, audience)
         : null;
-  const outputLabel = run.runKind === "workflow" ? "workflow run" : "conversation";
+  const outputLabel =
+    run.runKind === "workflow" ? "workflow run" : run.runKind === "agent_run" ? "agent run" : "conversation";
   return (
     <TableRow data-run-id={run.runId}>
       <TableCell title={absoluteWhen(run.startedAt)} className="text-muted-foreground">

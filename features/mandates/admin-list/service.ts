@@ -255,6 +255,8 @@ function buildPageRows(
       runs: runsOfKey(listState.runs.byKey, answer.mandate_key)?.runs ?? null,
       lastRunMs: runsOfKey(listState.runs.byKey, answer.mandate_key)?.lastMs ?? null,
       runsPending: !listState.runs.settled,
+      inferredRuns: runsOfKey(listState.runs.byKey, answer.mandate_key)?.inferredRuns ?? 0,
+      inferredUsd: runsOfKey(listState.runs.byKey, answer.mandate_key)?.inferredUsd ?? 0,
       sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
       sourcesPending: !checked,
       sourcesFailed: checked && Boolean(listState.failures.sources),
@@ -345,7 +347,6 @@ export function createMandateAdminService(
   return {
     fetchPage: async (query, sort) => {
       const reports = await reportsNow();
-      const searching = Boolean(query.search.trim());
       const args = {
         p_mode: "page",
         ...scopeArgs(query, lane),
@@ -354,9 +355,11 @@ export function createMandateAdminService(
         p_limit: sort.pageSize,
         p_offset: (query.page - 1) * sort.pageSize,
         p_facts: {
-          ...buildFacts(reports, sectionsFor(query, searching ? null : sort.sort)),
-          // The period's spend, once read: the database sorts by it and sums
-          // it over every matching row (spend_total).
+          // A sorted column keeps its order while searching (the database ranks by
+          // relevance only on the default order), so its facts ride along too.
+          ...buildFacts(reports, sectionsFor(query, sort.sort)),
+          // The period's cost (of the same runs the Runs column counts), once
+          // read: the database sorts by it and sums it over every matching row.
           ...spendFactsOf(getMandateAdminListState().spend.byKey),
           // The period's runs, once read and ONLY when the list is sorted by
           // them: the figures are already on the rows, so any other page keeps

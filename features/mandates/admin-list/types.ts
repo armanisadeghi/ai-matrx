@@ -140,4 +140,10 @@ export interface MandateAdminRow extends MandateRow {
   runs: number | null;
   lastRunMs: number | null;
   runsPending: boolean;
+  /**
+   * How many of `runs`, and how much of `spendUsd`, are INFERRED — its Holder
+   * agent's runs that carry no mandate name. The cells show them as estimated.
+   */
+  inferredRuns: number;
+  inferredUsd: number;
 }
