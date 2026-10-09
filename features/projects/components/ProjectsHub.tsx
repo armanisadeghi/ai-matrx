@@ -1019,7 +1019,8 @@ function ProjectsTable({
         header: "Project",
         accessorKey: "name",
         filter: "text",
-        width: 280,
+        width: 310,
+        minWidth: 200,
         cell: (p) => (
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
@@ -1042,7 +1043,8 @@ function ProjectsTable({
         id: "org",
         header: "Organization",
         accessorFn: (p) => orgEntry(p)?.name ?? "—",
-        width: 200,
+        width: 120,
+        minWidth: 110,
         cell: (p) =>
           p.organizationId ? (
             <EntityRef
@@ -1067,7 +1069,8 @@ function ProjectsTable({
         filter: "number",
         defaultSortDirection: "desc",
         align: "right",
-        width: 90,
+        width: 92,
+        minWidth: 92,
         // A COUNT IS A DOOR: /projects/[id] lists this project's tasks.
         cell: (p) => <span className="tabular-nums">{countCell(p, "open")}</span>,
       },
@@ -1078,7 +1081,8 @@ function ProjectsTable({
         filter: "number",
         defaultSortDirection: "desc",
         align: "right",
-        width: 90,
+        width: 92,
+        minWidth: 92,
         cell: (p) => (
           <span className="tabular-nums text-muted-foreground">
             {countCell(p, "done")}
@@ -1092,7 +1096,8 @@ function ProjectsTable({
         sortValue: (p) => toEpochMs(p.updatedAt),
         filter: "date",
         defaultSortDirection: "desc",
-        width: 150,
+        width: 135,
+        minWidth: 130,
         cell: (p) => (
           <span
             className="whitespace-nowrap text-sm text-muted-foreground"
@@ -1107,27 +1112,15 @@ function ProjectsTable({
         header: "Actions",
         sortable: false,
         filter: false,
+        width: 130,
+        minWidth: 130,
+        // ONE visible action. The table adds its own row Alchemy (copy) and
+        // panel buttons; Manage settings lives in the row menu (entity door).
         customActions: (p) => (
           <div className="flex items-center justify-end gap-1.5">
-            <ProjectCopyForAiButton
-              projectId={p.id}
-              projectName={p.name}
-              location="Projects — hub table"
-              size="icon"
-              className="h-11 w-11 lg:h-7 lg:w-7"
-            />
             {/* An anchor, so Open can be cmd- or middle-clicked. */}
             <Button asChild variant="quiet">
               <Link href={`/projects/${p.id}`}>Open</Link>
-            </Button>
-            <Button asChild variant="quiet" className="w-11 lg:w-auto">
-              <Link
-                href={`/projects/${p.id}/settings`}
-                aria-label={`Manage ${p.name}`}
-                title={`Manage ${p.name}`}
-              >
-                <Settings className="h-3.5 w-3.5" />
-              </Link>
             </Button>
           </div>
         ),
@@ -1145,7 +1138,7 @@ function ProjectsTable({
       defaultSort={{ id: "updated", direction: "desc" }}
       zebra
       pageSize={0}
-      fitToWidth
+      fitToWidth="grow"
       rowVersion={(p) => [stats.get(p.id), statsReadFailed, orgMap]}
       detail={{ enabled: false }}
       onRowOpen={(p) => router.push(`/projects/${p.id}`)}
