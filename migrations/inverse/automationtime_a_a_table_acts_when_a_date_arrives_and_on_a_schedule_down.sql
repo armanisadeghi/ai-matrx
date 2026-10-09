@@ -2,8 +2,8 @@
 -- lane: AUTOMATION-TIME
 -- chair-step: the inverse of campaign/automationtime_a_a_table_acts_when_a_date_arrives_and_on_a_schedule.sql. It unschedules the pg_cron job custom-automation-time-tick, drops the tick, the timed-run helper, the timed check, the clock and the once-only memory table custom.automation_fired, removes the knob custom/automation_catch_up_hours, and puts back the previous bodies of custom.automation_declare (calls the plain check) and custom._automation_value (no in_days).
 -- WHAT IT DOES NOT UNDO: a Table's stored date_arrives / schedule automations stay in its automations list (they simply never run again and cannot be re-declared) and every automation_run record keeps existing.
--- based-on: custom.automation_declare(uuid, uuid, jsonb, uuid) 6a1b0d0e4f3c8d9e7f2a5b6c1d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e
--- based-on: custom._automation_value(jsonb, jsonb, uuid) 6a1b0d0e4f3c8d9e7f2a5b6c1d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e
+-- based-on: custom.automation_declare(uuid, uuid, jsonb, uuid) f82debbec21a5a2351013c2464e79f853fa9e59f3c962b534c1560011cb20ca6
+-- based-on: custom._automation_value(jsonb, jsonb, uuid) 75f6189fb05ab43866798279142a4bdf91653c7bf14849a2a37c0bce78fa3acf
 
 set local statement_timeout = '120s';
 
@@ -95,5 +95,6 @@ drop function if exists custom.automation_time_tick();
 drop function if exists custom._automation_time_item(uuid, uuid, jsonb, timestamptz);
 drop function if exists custom._automation_check_timed(uuid, uuid, jsonb);
 drop function if exists custom._automation_now();
+delete from platform.entity_types where token = 'automation_fired';
 drop table if exists custom.automation_fired;
 delete from platform.feature_knob where feature = 'custom' and key = 'automation_catch_up_hours';

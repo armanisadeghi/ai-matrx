@@ -71,6 +71,18 @@ revoke all on table custom.automation_fired from public, anon, authenticated;
 comment on table custom.automation_fired is
   'Lane AUTOMATION-TIME: which date or schedule moments an automation has already acted on, so each fires once. Written only by custom._automation_time_item; no client lane.';
 
+insert into platform.entity_types
+  (token, schema_name, table_name, label, base_tier, is_versioned, has_soft_delete, is_active,
+   rls_variant, audit_class, audit_class_reason, type, data_class, data_class_reason, origin, table_ref, notes)
+values ('automation_fired', 'custom', 'automation_fired', 'Automation Fired', 1, false, false, true,
+  'entity', 'machinery',
+  'MACHINERY: the once-only memory of date and schedule automations. One row says an automation already acted on one moment of one row, so the next tick does not act again; no person lists or opens it.',
+  'system', 'organization',
+  'Internal bookkeeping of the automation tick, written only by custom._automation_time_item; no client role holds any privilege on it.',
+  'standard', 'custom.automation_fired',
+  'Registered 2026-10-08 by lane AUTOMATION-TIME. Keyed (automation_id, subject_id, fire_key); no id, no deleted_at, no version.')
+on conflict do nothing;
+
 -- ── THE CLOCK ───────────────────────────────────────────────────────────────────────────────────
 create function custom._automation_now()
  returns timestamptz
@@ -274,7 +286,6 @@ comment on function custom.automation_declare(uuid, uuid, jsonb, uuid) is
 create function custom._automation_time_item(p_organization_id uuid, p_table_id uuid, p_automation jsonb, p_now timestamptz)
  returns integer
  language plpgsql
- security definer
  set search_path to 'pg_catalog'
 as $fn$
 declare
@@ -401,7 +412,6 @@ revoke all on function custom._automation_time_item(uuid, uuid, jsonb, timestamp
 create function custom.automation_time_tick()
  returns jsonb
  language plpgsql
- security definer
  set search_path to 'pg_catalog'
 as $fn$
 declare
