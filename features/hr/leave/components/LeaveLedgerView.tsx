@@ -42,6 +42,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -142,6 +147,24 @@ function actorLabel(entry: LeaveLedgerEntry): string | null {
   return entry.actorType;
 }
 
+const LEDGER_COPY: MatrxDataTableCopyConfig<LeaveLedgerEntry> = {
+  label: "Ledger entry",
+  listLabel: "Leave ledger (this view)",
+  location: "Leave balance — ledger",
+  rowKind: "leave-ledger-entry",
+  listKind: "leave-ledger",
+  rowDescription: "One append-only entry on a leave policy's ledger.",
+  listDescription: "The ledger entries of one leave policy, as currently shown.",
+  humanRow: (entry) =>
+    [
+      `Date: ${entry.occurredOn ?? "—"}`,
+      `What happened: ${entry.sentence ?? "No description"}`,
+      `Change: ${signedHours(entry.hoursDelta) ?? "Not provided"}`,
+      `Balance after: ${formatHours(entry.balanceAfter) ?? "Not provided"}`,
+      `By: ${actorLabel(entry) ?? "Not recorded"}`,
+    ].join("\n"),
+};
+
 export interface LeaveLedgerViewProps {
   ledger: LeaveLedger;
   policyName: string | null;
@@ -209,6 +232,180 @@ export function LeaveLedgerView({
 
   const divergent = ledger.runningBalanceOk === false;
 
+  /** The anchors the old table used (`#ledger-entry-<id>`): scroll the entry's row into view. */
+  const goToEntry = (id: string) => {
+    document
+      .querySelector(`tr[data-row-id="${CSS.escape(id)}"]`)
+      ?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
+  const columns: MatrxColumnDef<LeaveLedgerEntry>[] = [
+    {
+      id: "date",
+      header: "Date",
+      accessorFn: (entry) => entry.occurredOn ?? "",
+      cell: (entry) => (
+        <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+          {entry.occurredOn ?? "—"}
+        </span>
+      ),
+      copyValue: (entry) => entry.occurredOn ?? "—",
+      filter: "text",
+      width: 120,
+    },
+    {
+      id: "what",
+      header: "What happened",
+      accessorFn: (entry) => entry.sentence ?? "",
+      cell: (entry) => {
+        const isReversed = reversedIds.has(entry.id);
+        const reversalId = reversalByTarget.get(entry.id) ?? null;
+        const isDivergent = ledger.divergenceAtEntryId === entry.id;
+        return (
+          <div className="min-w-0">
+            <span
+              className={cn(
+                "text-foreground",
+                /* Reversal pairing: struck through, never removed. Neither disappears. */
+                isReversed
+                  ? "line-through decoration-muted-foreground/60"
+                  : null,
+              )}
+            >
+              {entry.sentence ?? "This entry carries no description."}
+            </span>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {entry.unexplained ? (
+                <Badge variant="destructive" className="gap-1">
+                  <ShieldAlert className="h-3 w-3" aria-hidden />
+                  Unexplained entry
+                </Badge>
+              ) : null}
+              {isDivergent ? (
+                <Badge variant="destructive">Balance parts company here</Badge>
+              ) : null}
+              {isReversed && reversalId ? (
+                <button
+                  type="button"
+                  onClick={() => goToEntry(reversalId)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  <RotateCcw className="h-3 w-3" aria-hidden />
+                  Reversed later
+                </button>
+              ) : null}
+              {entry.reversesEntryId ? (
+                <button
+                  type="button"
+                  onClick={() => goToEntry(entry.reversesEntryId as string)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  <RotateCcw className="h-3 w-3" aria-hidden />
+                  Reverses an earlier entry
+                </button>
+              ) : null}
+            </div>
+          </div>
+        );
+      },
+      filter: "text",
+      width: 420,
+    },
+    {
+      id: "change",
+      header: "Change",
+      accessorFn: (entry) => entry.hoursDelta,
+      cell: (entry) => (
+        <span
+          className={cn(
+            "whitespace-nowrap tabular-nums font-medium",
+            entry.hoursDelta === null
+              ? "text-muted-foreground/70"
+              : entry.hoursDelta < 0
+                ? "text-destructive"
+                : "text-foreground",
+          )}
+        >
+          {signedHours(entry.hoursDelta) ?? "Not provided"}
+        </span>
+      ),
+      copyValue: (entry) => signedHours(entry.hoursDelta) ?? "Not provided",
+      filter: "number",
+      align: "right",
+      width: 120,
+    },
+    {
+      id: "balance-after",
+      header: "Balance after",
+      accessorFn: (entry) => entry.balanceAfter,
+      cell: (entry) => {
+        const after = formatHours(entry.balanceAfter);
+        return after ? (
+          <span className="whitespace-nowrap tabular-nums text-foreground">
+            {after}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/70">Not provided</span>
+        );
+      },
+      copyValue: (entry) => formatHours(entry.balanceAfter) ?? "Not provided",
+      filter: "number",
+      align: "right",
+      width: 130,
+    },
+    {
+      id: "source",
+      header: "Source",
+      accessorFn: (entry) => entry.source?.kind ?? "",
+      cell: (entry) => (
+        <SourceDoor
+          entry={entry}
+          requestHref={requestHref}
+          workweekHref={workweekHref}
+          onGoToEntry={goToEntry}
+        />
+      ),
+      copyValue: (entry) => entry.source?.kind ?? "—",
+      width: 220,
+    },
+    {
+      id: "rule",
+      header: "Rule",
+      accessorFn: (entry) =>
+        entry.snapshotId || entry.calc !== null ? "Recorded" : "None recorded",
+      cell: (entry) =>
+        entry.snapshotId || entry.calc !== null ? (
+          <Button
+            icon={<FileSearch aria-hidden />}
+            type="button"
+            variant="quiet"
+            onClick={() => setSnapshotEntry(entry)}
+          >
+            Open
+          </Button>
+        ) : (
+          /* No door is rendered where none exists. */
+          <span className="text-xs text-muted-foreground/70">
+            None recorded
+          </span>
+        ),
+      filter: "select",
+      width: 130,
+    },
+    {
+      id: "by",
+      header: "By",
+      accessorFn: (entry) => actorLabel(entry) ?? "",
+      cell: (entry) =>
+        actorLabel(entry) ?? (
+          <span className="text-muted-foreground/70">Not recorded</span>
+        ),
+      copyValue: (entry) => actorLabel(entry) ?? "Not recorded",
+      filter: "text",
+      width: 180,
+    },
+  ];
+
   return (
     <div className={cn("flex min-w-0 flex-col gap-4", className)}>
       {/*
@@ -239,12 +436,13 @@ export function LeaveLedgerView({
               the row itself is the identity, so the banner opens it.
             */}
             {ledger.divergenceAtEntryId ? (
-              <a
-                href={`#ledger-entry-${ledger.divergenceAtEntryId}`}
+              <button
+                type="button"
+                onClick={() => goToEntry(ledger.divergenceAtEntryId as string)}
                 className="mt-1.5 inline-block text-sm font-medium text-destructive underline underline-offset-2"
               >
                 Go to the first entry where they part company
-              </a>
+              </button>
             ) : null}
           </div>
           <ErrorAlchemyMenu className="ml-auto" />
@@ -326,176 +524,32 @@ export function LeaveLedgerView({
         {FILTER_EXPLANATION[filter]}
       </p>
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[52rem] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40 text-left">
-              <th className="px-3 py-2 font-medium text-muted-foreground">
-                Date
-              </th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">
-                What happened
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                Change
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                Balance after
-              </th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">
-                Source
-              </th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">
-                Rule
-              </th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">
-                By
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-3 py-8 text-center text-muted-foreground"
-                >
-                  {ledger.entryCount === 0
-                    ? "Nothing has been added to or taken from this policy yet."
-                    : "No entries match this filter."}
-                </td>
-              </tr>
-            ) : null}
-
-            {rows.map((entry) => {
-              const isReversed = reversedIds.has(entry.id);
-              const reversalId = reversalByTarget.get(entry.id) ?? null;
-              const isDivergent = ledger.divergenceAtEntryId === entry.id;
-              const delta = signedHours(entry.hoursDelta);
-              const after = formatHours(entry.balanceAfter);
-              const by = actorLabel(entry);
-
-              return (
-                <tr
-                  key={entry.id}
-                  id={`ledger-entry-${entry.id}`}
-                  className={cn(
-                    "border-b border-border last:border-b-0 align-top",
-                    isDivergent ? "bg-destructive/10" : null,
-                  )}
-                >
-                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted-foreground">
-                    {entry.occurredOn ?? "—"}
-                  </td>
-
-                  <td className="px-3 py-2">
-                    <span
-                      className={cn(
-                        "text-foreground",
-                        /* Reversal pairing: struck through, never removed. Neither disappears. */
-                        isReversed
-                          ? "line-through decoration-muted-foreground/60"
-                          : null,
-                      )}
-                    >
-                      {entry.sentence ?? "This entry carries no description."}
-                    </span>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {entry.unexplained ? (
-                        <Badge variant="destructive" className="gap-1">
-                          <ShieldAlert className="h-3 w-3" aria-hidden />
-                          Unexplained entry
-                        </Badge>
-                      ) : null}
-                      {isDivergent ? (
-                        <Badge variant="destructive">
-                          Balance parts company here
-                        </Badge>
-                      ) : null}
-                      {isReversed && reversalId ? (
-                        <a
-                          href={`#ledger-entry-${reversalId}`}
-                          className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
-                        >
-                          <RotateCcw className="h-3 w-3" aria-hidden />
-                          Reversed later
-                        </a>
-                      ) : null}
-                      {entry.reversesEntryId ? (
-                        <a
-                          href={`#ledger-entry-${entry.reversesEntryId}`}
-                          className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
-                        >
-                          <RotateCcw className="h-3 w-3" aria-hidden />
-                          Reverses an earlier entry
-                        </a>
-                      ) : null}
-                    </div>
-                  </td>
-
-                  <td
-                    className={cn(
-                      "whitespace-nowrap px-3 py-2 text-right tabular-nums font-medium",
-                      entry.hoursDelta === null
-                        ? "text-muted-foreground/70"
-                        : entry.hoursDelta < 0
-                          ? "text-destructive"
-                          : "text-foreground",
-                    )}
-                  >
-                    {delta ?? "Not provided"}
-                  </td>
-
-                  <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-foreground">
-                    {after ?? (
-                      <span className="text-muted-foreground/70">
-                        Not provided
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="px-3 py-2">
-                    <SourceDoor
-                      entry={entry}
-                      requestHref={requestHref}
-                      workweekHref={workweekHref}
-                    />
-                  </td>
-
-                  <td className="px-3 py-2">
-                    {entry.snapshotId || entry.calc !== null ? (
-                      <Button
-                        icon={<FileSearch aria-hidden />}
-                        type="button"
-                        variant="quiet"
-                        onClick={() => setSnapshotEntry(entry)}
-                      >
-                        Open
-                      </Button>
-                    ) : (
-                      /*
-                        No door is rendered where none exists — a control the viewer cannot use
-                        is not in the DOM. The red chip beside the sentence already says why.
-                      */
-                      <span className="text-xs text-muted-foreground/70">
-                        None recorded
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {by ?? (
-                      <span className="text-muted-foreground/70">
-                        Not recorded
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable<LeaveLedgerEntry>
+        tableId="hr/leave/ledger"
+        data={rows}
+        columns={columns}
+        getRowId={(entry) => entry.id}
+        viewTabs={false}
+        pageSize={0}
+        density="condensed"
+        searchText={(entry) =>
+          `${entry.sentence ?? ""} ${actorLabel(entry) ?? ""}`
+        }
+        toolbar={{ searchPlaceholder: "Search this ledger" }}
+        detail={{ enabled: false }}
+        copy={LEDGER_COPY}
+        rowClassName={(entry) =>
+          ledger.divergenceAtEntryId === entry.id
+            ? "bg-destructive/10"
+            : undefined
+        }
+        emptyState={{
+          title:
+            ledger.entryCount === 0
+              ? "Nothing has been added to or taken from this policy yet."
+              : "No entries match this filter.",
+        }}
+      />
 
       <p className="text-xs text-muted-foreground">
         This record is append-only: nothing on this screen can be edited or
@@ -522,10 +576,12 @@ function SourceDoor({
   entry,
   requestHref,
   workweekHref,
+  onGoToEntry,
 }: {
   entry: LeaveLedgerEntry;
   requestHref?: (id: string) => string | null;
   workweekHref?: (id: string) => string | null;
+  onGoToEntry: (id: string) => void;
 }) {
   const source = entry.source;
   if (!source || !source.id) {
@@ -534,12 +590,13 @@ function SourceDoor({
 
   if (source.kind === "leave_ledger") {
     return (
-      <a
-        href={`#ledger-entry-${source.id}`}
+      <button
+        type="button"
+        onClick={() => onGoToEntry(source.id as string)}
         className="inline-flex items-center gap-1 text-sm text-foreground underline underline-offset-2"
       >
         The entry it reverses
-      </a>
+      </button>
     );
   }
 
