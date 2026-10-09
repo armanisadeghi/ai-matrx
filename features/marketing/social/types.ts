@@ -292,8 +292,23 @@ export interface SocialCapabilities {
 }
 
 /** `GET /social/credits`. */
+export interface SocialSpendFigure {
+  usd: number;
+  calls: number;
+}
+
+/** Month-to-date provider spend from the cost ledger. `platform` is present for platform admins only. */
+export interface SocialSpend {
+  provider: string;
+  month_start: string;
+  organization: SocialSpendFigure;
+  platform: SocialSpendFigure | null;
+}
+
 export interface SocialCredits {
   balances: Record<string, number | null>;
+  spend: SocialSpend | null;
+  spend_error: string | null;
 }
 
 /** One ad as the cards render it (a `social.ad` row, normalised). */

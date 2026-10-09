@@ -6,8 +6,8 @@
  * credits remaining from `GET /social/credits` (the vendor's free balance call).
  * Every number is the server's; a failed call says so, never a zero.
  *
- * Spend this month: the social server does not write provider spend to a cost
- * ledger yet, so the row says "Not recorded" rather than inventing a figure.
+ * Spend this month: the same call returns month-to-date spend and call counts
+ * from the cost ledger (the organization's, plus the platform total for admins).
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 import { getCapabilities, getCredits } from "../server";
+import type { SocialSpend, SocialSpendFigure } from "../types";
 import { providerName } from "./ProviderFallbackNotice";
 import { platformLabel } from "./PlatformMark";
 
@@ -34,6 +35,14 @@ export function coverageOf(
 
 function formatCredits(n: number | null | undefined): string {
   return typeof n === "number" ? Math.round(n).toLocaleString() : "Not reported";
+}
+
+export function formatSpend(spend: SocialSpend | null | undefined, error?: string | null): string {
+  if (!spend) return error ? "Spend unavailable" : "Not reported";
+  const one = (f: SocialSpendFigure) => `$${f.usd.toFixed(2)} · ${f.calls.toLocaleString()} calls`;
+  return spend.platform
+    ? `${one(spend.organization)} (organization) · ${one(spend.platform)} (platform)`
+    : one(spend.organization);
 }
 
 export function SocialProviderCard() {
@@ -99,7 +108,17 @@ export function SocialProviderCard() {
                   : balances.map(([name, n]) => `${providerName(name)} ${formatCredits(n)}`).join(" · ")
           }
         />
-        <Row icon={Receipt} label="Spend this month" detail="Not recorded by the server yet" />
+        <Row
+          icon={Receipt}
+          label="Spend this month"
+          detail={
+            credits.isPending
+              ? "Loading…"
+              : credits.isError
+                ? "Spend unavailable"
+                : formatSpend(credits.data?.spend, credits.data?.spend_error)
+          }
+        />
       </div>
       {covered.length ? (
         <p className="mt-3 text-[11px] text-muted-foreground">{covered.map(platformLabel).join(" · ")}</p>
