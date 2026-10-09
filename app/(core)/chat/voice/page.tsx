@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 // app/(core)/chat/voice/page.tsx
 //
 // AI Matrx Introduction Agent — locked. No settings UI. This is the surface
@@ -19,7 +20,7 @@ import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export default async function VoiceIntroPage() {
+async function VoiceIntroSeeded() {
   // BOUNDED: `resolveMandateSeed` screams, never throws, and gives up at its
   // deadline — an unbounded await here is what answered /staff with a 504 on
   // 2026-09-21 (see seed.server.ts).
@@ -46,4 +47,17 @@ export default async function VoiceIntroPage() {
   }
 
   return <VoiceAgentSurface preset="intro" agentId={seed.agentId} />;
+}
+
+/**
+ * 🚨 THE PAGE STREAMS: the seed reads above resolve inside a Suspense child, so
+ * the shell goes out with the first byte instead of waiting for them
+ * (same fix as /chat/new, 2026-10-09).
+ */
+export default function VoiceIntroPage() {
+  return (
+    <Suspense fallback={null}>
+      <VoiceIntroSeeded />
+    </Suspense>
+  );
 }

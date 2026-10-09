@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ChatNewLandingSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatNewClient";
 import { createClient } from "@/utils/supabase/server";
 import { WarmOnRoute } from "@/components/warmup/WarmOnRoute";
 import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
@@ -34,7 +36,7 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
  * `router.replace`s to `/chat/[conversationId]` so the URL no longer pins
  * them to the agent route.
  */
-export default async function DirectAgentChatPage({
+async function DirectAgentChatSeeded({
   params,
 }: DirectAgentChatPageProps) {
   const { agentId } = await params;
@@ -55,5 +57,18 @@ export default async function DirectAgentChatPage({
           organization, so no switch-organization offer (Arman, 2026-09-26). */}
       <ChatRoomClient agentId={agentId} composer={{ initialMode }} />
     </>
+  );
+}
+
+/**
+ * 🚨 THE PAGE STREAMS: the seed reads above resolve inside a Suspense child, so
+ * the shell goes out with the first byte instead of waiting for them
+ * (same fix as /chat/new, 2026-10-09).
+ */
+export default function DirectAgentChatPage({ params }: DirectAgentChatPageProps) {
+  return (
+    <Suspense fallback={<ChatNewLandingSkeleton />}>
+      <DirectAgentChatSeeded params={params} />
+    </Suspense>
   );
 }
