@@ -112,3 +112,33 @@ export const UNPROVEN_PREFIX = "UNPROVEN:";
 
 /** The message prefix for a run that cannot start because the environment is not in its default state (reported ENV). */
 export const ENV_SETUP_PREFIX = "ENV-SETUP:";
+
+/** The production API origin the shared dev frontend (port 3001) calls. */
+export const PROD_API_ORIGIN = (process.env.MEET_PROD_API_ORIGIN ?? "https://server.app.matrxserver.com").replace(/\/$/, "");
+
+export interface MeetServer {
+  mode: "production" | "local";
+  /** Origin that really answers: production's, or the local aidream (from MEET_LOCAL_API_URL or local-api.sh state). */
+  origin: string;
+  /** Git SHA the local server runs (the aidream checkout HEAD recorded when local-api.sh started it); null for production. */
+  sha: string | null;
+}
+
+let cachedServer: MeetServer | null = null;
+
+/**
+ * Which server answers the meeting API. Default production. `MEET_SERVER=local` routes every browser
+ * request for the production API origin to a local aidream (see local-api.sh); the frontend is unchanged.
+ */
+export function meetServer(): MeetServer {
+  if (cachedServer) return cachedServer;
+  if ((process.env.MEET_SERVER ?? "production") !== "local") {
+    return (cachedServer = { mode: "production", origin: PROD_API_ORIGIN, sha: null });
+  }
+  const state = path.join(REPO_ROOT, ".cache/meet-scenarios/local-api");
+  const read = (f: string) => (existsSync(path.join(state, f)) ? readFileSync(path.join(state, f), "utf8").trim() : "");
+  const origin = (process.env.MEET_LOCAL_API_URL ?? read("url")).replace(/\/$/, "");
+  if (!origin) throw new Error("MEET_SERVER=local but no local API: run `bash tests/meet-scenarios/local-api.sh start` (or set MEET_LOCAL_API_URL)");
+  const sha = process.env.MEET_LOCAL_API_SHA ?? (read("sha") || "unknown");
+  return (cachedServer = { mode: "local", origin, sha });
+}

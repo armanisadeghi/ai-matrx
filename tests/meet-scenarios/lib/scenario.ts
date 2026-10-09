@@ -155,7 +155,7 @@ const test = base.extend<{ cast: Cast }>({
       await testInfo.attach("evidence", {
         body: JSON.stringify({
           envEvents: cast.actors.flatMap((a) => a.envEvents.map((e) => ({ ...e, who: a.opts.label }))),
-          levers: cast.actors.map((a) => ({ who: a.opts.label, seat: a.opts.seat, levers: a.levers })),
+          levers: cast.actors.map((a) => ({ who: a.opts.label, seat: a.opts.seat, levers: [...a.levers, ...(a.localAnswered || a.localFailed ? [`api: local server answered ${a.localAnswered} request(s), ${a.localFailed} failed`] : [])] })),
           sources,
           skin: activeSkinName(),
           loaded: cast.actors.map((a) => ({

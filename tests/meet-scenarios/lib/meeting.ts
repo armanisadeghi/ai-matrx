@@ -6,7 +6,7 @@ import { skin } from "./skins";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
-import { baseURL, supabasePublic } from "./env";
+import { baseURL, supabasePublic, meetServer, PROD_API_ORIGIN } from "./env";
 import { adminProfileOverrides } from "./fixtures";
 import { NO_GESTURE, evaluateIn, observe, summarize, type CallPhase, type Observation } from "./observe";
 
@@ -503,7 +503,7 @@ export interface EndOutcome {
  * User-Agent (Cloudflare answers some default agents with error 1010).
  */
 export async function callEndDoor(token: string, meetingId: string, organizationId: string | null): Promise<number> {
-  const server = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://server.app.matrxserver.com";
+  const server = meetServer().mode === "local" ? meetServer().origin : (process.env.NEXT_PUBLIC_BACKEND_URL ?? PROD_API_ORIGIN);
   const res = await fetch(`${server}/api/v1/meet/end`, {
     method: "POST",
     headers: {

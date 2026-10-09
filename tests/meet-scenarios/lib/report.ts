@@ -22,7 +22,7 @@ import path from "node:path";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { P0_IDS } from "./catalog";
 import { SKINS } from "./skins";
-import { baseURL, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX, ENV_SETUP_PREFIX } from "./env";
+import { baseURL, meetServer, PROD_API_ORIGIN, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX, ENV_SETUP_PREFIX } from "./env";
 
 const ENV_WINDOW_MS = 3 * 60_000;
 
@@ -146,7 +146,11 @@ export default class MeetReport implements Reporter {
     const fakes = [...allLevers].filter((l) => l.startsWith("fake "));
     const perms = [...allLevers].filter((l) => l.startsWith("permission") || l.startsWith("browser permission"));
     const sourceRows = (s: string) => this.rows.filter((r) => r.sources.includes(`${s}:`)).length;
+    const srv = meetServer();
     const oracle = [
+      srv.mode === "local"
+        ? `API SERVER: LOCAL aidream ${srv.origin} running git ${srv.sha} (NOT production; browser calls to ${PROD_API_ORIGIN} were routed there; LiveKit webhooks and deadline jobs still fired against PRODUCTION). Not production proof.`
+        : `API SERVER: PRODUCTION ${PROD_API_ORIGIN} (whatever is deployed).`,
       `Run \`${runId()}\` — real browsers (${browsers.join("; ") || "none launched"}), the shared dev server ${baseURL()}, real LiveKit Cloud, @ai-matrx/meet ${meetVersion()}.`,
       `Observation source: contract in ${sourceRows("contract")} of ${this.rows.length} rows, visible-text fallback in ${sourceRows("fallback")} (per row below).`,
       `Fake devices: ${fakes.join("; ") || "none"}. Init scripts: ${initScripts.length ? initScripts.join("; ") : "none"}. Permission overrides: ${perms.join("; ") || "none"}.`,
