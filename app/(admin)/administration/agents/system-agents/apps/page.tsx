@@ -69,7 +69,7 @@ const STATUS_OPTIONS: AppletAdminView["status"][] = [
 ];
 
 /**
- * Human-readable one-liner for a system app row — the "Copy" flavor for this
+ * Human-readable one-liner for a system Applet row — the "Copy" flavor for this
  * page only (per-row + copy-all). This page owns `AppletAdminView`
  * formatting since `features/applets/**` is out of scope here; don't
  * duplicate this summary elsewhere.
@@ -93,14 +93,14 @@ function appletAdminCsvRow(
 }
 
 const systemAppsCopy: MatrxDataTableCopyConfig<AppletAdminView> = {
-  label: "System app",
-  listLabel: "System apps (visible loaded view)",
+  label: "System Applet",
+  listLabel: "System Applets (visible loaded view)",
   location:
-    "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+    "AI Matrx Admin — System Agents · System Applets (/administration/agents/system-agents/apps)",
   rowKind: "applet",
   listKind: "applets",
   rowDescription: "A single system Applet.",
-  listDescription: "The filtered and sorted loaded system-app view on this page.",
+  listDescription: "The filtered and sorted loaded system-Applet view on this page.",
   humanRow: appletAdminSummary,
   listHuman: (visible) => visible.map(appletAdminSummary).join("\n"),
   listJson: (visible) => visible,
@@ -146,8 +146,8 @@ export default function AdminSystemAppsListPage() {
       setApps(data);
       setReadError(null);
     } catch (error) {
-      console.error("Failed to load system apps:", error);
-      setReadError(error ?? new Error("The system apps read failed"));
+      console.error("Failed to load system Applets:", error);
+      setReadError(error ?? new Error("The system Applets read failed"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -212,7 +212,7 @@ export default function AdminSystemAppsListPage() {
         throw new Error(payload.error ?? `HTTP ${res.status}`);
       }
       setApps((rows) => rows.filter((r) => r.id !== id));
-      toast.success("System app moved to Trash.");
+      toast.success("System Applet moved to Trash.");
       setDeleteTarget(null);
     } catch (err) {
       toast.error(
@@ -243,7 +243,7 @@ export default function AdminSystemAppsListPage() {
       cell: (app) => (
         <MatrxUuidCell
           value={app.id}
-          label="System app ID"
+          label="System Applet ID"
           href={`/administration/applets/edit/${app.id}`}
         />
       ),
@@ -374,7 +374,7 @@ export default function AdminSystemAppsListPage() {
             <Card>
               <CardContent className="p-12 flex items-center justify-center text-muted-foreground">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Loading system apps...
+                Loading system Applets...
               </CardContent>
             </Card>
           ) : readError != null && apps.length === 0 ? (
@@ -382,7 +382,7 @@ export default function AdminSystemAppsListPage() {
               <CardContent className="p-0">
                 <ReadFailure
                   error={readError}
-                  what="the system apps"
+                  what="the system Applets"
                   onRetry={() => void load(false)}
                 />
               </CardContent>
@@ -393,7 +393,7 @@ export default function AdminSystemAppsListPage() {
                 {readError != null && (
                   <StaleDataNotice
                     hasData
-                    what="the system apps"
+                    what="the system Applets"
                     detail={readError instanceof Error ? readError.message : String(readError)}
                     onRetry={() => void load(true)}
                     retrying={refreshing}
@@ -433,11 +433,11 @@ export default function AdminSystemAppsListPage() {
                         title="Open editor"
                       />
                       <Button
-                        icon={<Trash2 />} aria-label="Move system app to Trash"
+                        icon={<Trash2 />} aria-label="Move system Applet to Trash"
                         variant="quiet"
                         disabled={busyIds.has(app.id) || deleting}
                         onClick={() => setDeleteTarget(app)}
-                        title="Move system app to Trash"
+                        title="Move system Applet to Trash"
                       />
                     </div>
                   ) }]}
@@ -450,17 +450,17 @@ export default function AdminSystemAppsListPage() {
                     total: apps.length < 500 ? apps.length : undefined,
                     cap: 500,
                     answeredBy: "client",
-                    noun: "loaded system app",
+                    noun: "loaded system Applet",
                   }}
                   emptyState={{
-                    title: "No system apps match",
+                    title: "No system Applets match",
                     description:
-                      "Create a system app to ship a global agent-backed mini-app.",
+                      "Create a system Applet for every user.",
                   }}
                   toolbar={{
-                    title: "System apps",
+                    title: "System Applets",
                     search: true,
-                    searchPlaceholder: "Search system apps…",
+                    searchPlaceholder: "Search system Applets…",
                     add: {
                       onAdd: () =>
                         pushAppHref(
@@ -470,7 +470,7 @@ export default function AdminSystemAppsListPage() {
                     },
                     refresh: {
                       onRefresh: () => load(true),
-                      label: "Refresh system apps",
+                      label: "Refresh system Applets",
                     },
                   }}
                   copy={systemAppsCopy}
@@ -493,7 +493,7 @@ export default function AdminSystemAppsListPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">
-              Move system app to Trash
+              Move system Applet to Trash
             </AlertDialogTitle>
             <AlertDialogDescription>
               Move &ldquo;{deleteTarget?.name}&rdquo; to Trash. It stops being available to every user on the
