@@ -111,7 +111,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "admin_section",
     label: "Admin section",
     description:
-      'Which sub-route is rendering: "dashboard", "Applets", "edit", "categories", "executions", "analytics", or "rate_limits". Always present — each emitter declares its own value.',
+      'Which sub-route is rendering: "dashboard", "apps", "support", "edit", "categories", "executions", "analytics", or "rate_limits". Always present — each emitter declares its own value.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 10,
@@ -770,7 +770,7 @@ export const adminAppletsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface covering the whole Applets admin subtree at /administration/applets/**. It moderates every public agent-backed app on the platform (app.definition rows) — feature/verify/publish status, categories, execution history, per-app analytics, and rate limits.
 
-admin_section tells you which sub-route is rendering: "dashboard" (overview stat tiles + featured/recent app previews), "apps" (the full filterable/sortable apps table), "edit" (one app's admin + component-code shell), "categories" (the category list/editor), "executions" (execution log + error tabs), "analytics" (platform-wide aggregates), or "rate_limits" (per-identifier execution throttling).
+admin_section tells you which sub-route is rendering: "dashboard" (overview stat tiles + featured/recent app previews), "apps" (the platform's own system Applets table), "support" (organizations' and people's Applets, for support and moderation), "edit" (one app's admin + component-code shell), "categories" (the category list/editor), "executions" (execution log + error tabs), "analytics" (platform-wide aggregates), or "rate_limits" (per-identifier execution throttling).
 
 How to read the values: each section's group (dashboard_*, apps_list_*, selected_app_*, categories_*, executions_*/errors_*, analytics_*, rate_limits_*) is only populated when admin_section matches — everything else on this surface is absent, not stale.
 
@@ -916,6 +916,7 @@ export function createAdminAppletsScope(values: {
   admin_section:
     | "dashboard"
     | "apps"
+    | "support"
     | "edit"
     | "categories"
     | "executions"

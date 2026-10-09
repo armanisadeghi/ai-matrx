@@ -55,9 +55,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     href: "/administration/agents/system-agents/content-blocks",
     icon: FileText,
   },
+  // Leaves this hub on purpose: the platform's own Applets have ONE home,
+  // Admin › Applets › System Applets (/administration/applets/all).
   {
     label: "Applets",
-    href: "/administration/agents/system-agents/apps",
+    href: "/administration/applets/all",
     icon: AppWindow,
   },
   // Leaves this hub on purpose. Orchestras have exactly ONE home

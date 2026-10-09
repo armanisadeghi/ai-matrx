@@ -90,7 +90,7 @@ const TILES: Tile[] = [
     count: (c) => c.contentBlocks,
   },
   {
-    href: "/administration/agents/system-agents/apps",
+    href: "/administration/applets/all",
     label: "System Applets",
     description:
       "The platform's own Applets, published to every user.",

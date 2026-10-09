@@ -39,9 +39,9 @@ import { appBrief, humanApplet } from "@/features/applets/format";
 const TILES = [
   {
     href: "/administration/applets/all",
-    label: "All Applets",
+    label: "System Applets",
     description:
-      "Every Applet: filter, feature, verify, moderate.",
+      "The platform's own Applets: feature, verify, publish.",
     icon: Boxes,
     key: "apps" as const,
   },
@@ -57,7 +57,7 @@ const TILES = [
     href: "/administration/applets/executions",
     label: "Executions",
     description:
-      "Runs and errors across every Applet.",
+      "Runs and errors (count: system Applets).",
     icon: Activity,
     key: "executions" as const,
   },
@@ -80,7 +80,9 @@ export default function AppletsAdminDashboardPage() {
     setLoading(true);
     try {
       const [a, c] = await Promise.all([
-        fetchAppletsAdmin({ limit: 500 }),
+        // Management seat: the platform's own Applets only (admin-seat rule, Arman 2026-09-26).
+        // Organizations' and people's Applets live at /administration/applets/support.
+        fetchAppletsAdmin({ scope: "global", limit: 500 }),
         fetchAppletCategories(),
       ]);
       setApps(a);
@@ -190,13 +192,13 @@ export default function AppletsAdminDashboardPage() {
             <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold">{counts.apps}</div>
-                <div className="text-xs text-muted-foreground">Total Applets</div>
+                <div className="text-xs text-muted-foreground">System Applets</div>
               </CardContent>
               <CopyButtons
                 size="xs"
-                label="Total Applets"
+                label="System Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                human={() => `Total Applets: ${counts.apps}`}
+                human={() => `System Applets: ${counts.apps}`}
                 agent={() => ({
                   kind: "applet-analytics-stat",
                   location: "AI Matrx Admin — Applets — Dashboard",
@@ -393,7 +395,7 @@ export default function AppletsAdminDashboardPage() {
               <Card className="border-dashed">
                 <CardContent className="p-4 text-xs text-muted-foreground flex items-center gap-2">
                   <Stars className="h-3.5 w-3.5" />
-                  No featured Applets yet. Feature one from All Applets to
+                  No featured Applets yet. Feature one from System Applets to
                   highlight it.
                 </CardContent>
               </Card>
@@ -441,7 +443,7 @@ export default function AppletsAdminDashboardPage() {
                     agent={() => ({
                       kind: "applets",
                       location: "AI Matrx Admin — Applets — Dashboard",
-                      description: "Every Applet, most recently updated first.",
+                      description: "Every system Applet, newest first.",
                       data: allRecentlyUpdated,
                       attributes: { count: allRecentlyUpdated.length },
                       context: { shown: recentlyUpdated.length, total: allRecentlyUpdated.length },

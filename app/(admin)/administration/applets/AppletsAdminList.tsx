@@ -401,7 +401,16 @@ export function appletsCopyConfig(): MatrxDataTableCopyConfig<AppletAdminView> {
   };
 }
 
-export default function AppletsAdminListPage() {
+/**
+ * The ONE Applets admin table, in two seats (admin-seat rule, Arman 2026-09-26):
+ * - `system`  — /administration/applets/all: the platform's own Applets (created_by IS NULL), managed.
+ * - `support` — /administration/applets/support: organizations' and people's Applets, for tech
+ *   support and moderation (feature, verify, pause). Never the management page.
+ * Writes act on the record itself, at its owner's level (the edit page's admin actions).
+ */
+export type AppletsAdminLane = "system" | "support";
+
+export function AppletsAdminList({ lane }: { lane: AppletsAdminLane }) {
   const router = useRouter();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
@@ -411,7 +420,7 @@ export default function AppletsAdminListPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [viewApps, setViewApps] = useState<AppletAdminView[]>([]);
   const tableQuery = useTableUrlState({
-    tableId: "admin-applets",
+    tableId: lane === "system" ? "admin-applets" : "admin-applets-support",
     defaultSort: { id: "updated", direction: "desc" },
     defaultPageSize: 50,
   });
@@ -421,7 +430,7 @@ export default function AppletsAdminListPage() {
     try {
       if (retainsRows) setIsRefreshing(true);
       else setLoading(true);
-      const data = await fetchAppletsAdmin();
+      const data = await fetchAppletsAdmin({ scope: lane === "system" ? "global" : "user" });
       setApps(data);
       setViewApps(data);
       setLoadError(null);
@@ -474,7 +483,7 @@ export default function AppletsAdminListPage() {
   };
   const getScope = () =>
     createAdminAppletsScope({
-      admin_section: "apps",
+      admin_section: lane === "system" ? "apps" : "support",
       apps_list_total_count: apps.length,
       apps_list_filtered_count: visibleApps.length,
       apps_list_filters: appletsScopeFilters(tableQuery.state),
@@ -582,12 +591,12 @@ export default function AppletsAdminListPage() {
               isLoading={loading}
               isFetching={isRefreshing}
               toolbar={{
-                title: "Applets",
+                title: lane === "system" ? "System Applets" : "Applet support",
                 searchPlaceholder: "Search Applets…",
                 refresh: { onRefresh: load },
-                add: {
-                  onAdd: () => pushAppHref(router, "/applets/build"),
-                },
+                ...(lane === "system"
+                  ? { add: { onAdd: () => pushAppHref(router, "/applets/build") } }
+                  : {}),
               }}
               onViewChange={setViewApps}
               detail={{ enabled: false }}

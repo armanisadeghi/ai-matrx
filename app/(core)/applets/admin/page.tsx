@@ -114,15 +114,22 @@ const APPLETS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/administration/applets",
       label: "Admin: Applets dashboard",
-      description: "Counts, featured and recently updated Applets. Admin › Agents › Published Applets.",
+      description: "The platform's own Applets: counts, featured, recent. Admin › Applets.",
       filePath: "app/(admin)/administration/applets/page.tsx",
       status: "Live",
     },
     {
       url: "/administration/applets/all",
-      label: "Admin: All Applets",
-      description: "Every Applet on the platform: feature, verify, moderate. Row opens edit/[id].",
+      label: "Admin: System Applets",
+      description: "The platform's own Applets (management). Admin › Applets › System Applets.",
       filePath: "app/(admin)/administration/applets/all/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/administration/applets/support",
+      label: "Admin: Applet support",
+      description: "Organizations' and people's Applets: feature, verify, pause. Admin › Applets › Support.",
+      filePath: "app/(admin)/administration/applets/support/page.tsx",
       status: "Live",
     },
     {
@@ -162,8 +169,8 @@ const APPLETS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/administration/agents/system-agents/apps",
-      label: "Admin: System Applets",
-      description: "The platform's own (global) Applets. Admin › Agents › System Agents › Applets.",
+      label: "Old System Applets address",
+      description: "Redirects to /administration/applets/all (one home for system Applets).",
       filePath: "app/(admin)/administration/agents/system-agents/apps/page.tsx",
       status: "Live",
     },
