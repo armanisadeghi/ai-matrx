@@ -67,6 +67,7 @@ export default function SpaceBuildReattachDemo() {
           Reattach
         </Button>
       </div>
+      <pre data-demo-state className="text-xs">{`organization ${active.organizationState} · build ${available ? "available" : "not available"}`}</pre>
       <pre data-saved-conversation={saved ?? ""} className="text-xs">{saved ? `conversation ${saved}` : "no saved conversation"}</pre>
       {failure ? <pre data-failure className="text-xs text-red-600">{failure}</pre> : null}
       {outcome ? <pre data-outcome className="text-xs">{JSON.stringify(outcome)}</pre> : null}
