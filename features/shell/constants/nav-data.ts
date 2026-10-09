@@ -832,6 +832,16 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
       },
       {
+        // Spaces also sits on Board so a person finds it from home (Arman 2026-10-09: "add it to Board so
+        // it's somewhere at least"). Its domain-tree home stays Content › Spaces below.
+        label: "Spaces",
+        href: "/spaces",
+        iconName: "NotebookTabs",
+        description: "Pages, databases and templates in one workspace",
+        color: "amber",
+        guestHidden: true,
+      },
+      {
         // THE BOARD — boards work like every saved record: `/board` is the LIST (recents
         // first), one opens at `/board/<id>`. Every item a board supports is one click away:
         // `/board?add=<item key>` starts it on the board the person opened last (or a new one).

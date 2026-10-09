@@ -19,9 +19,11 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Search, Tags } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Building2, Tags } from "lucide-react";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import type { AdminOrganizationDirectory, AdminOrganizationRow } from "@/features/admin/users/types";
@@ -113,7 +115,7 @@ export function ScopesContextOrganizationsIndex({
   const [organizations, setOrganizations] = useState<AdminOrganizationRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<Record<string, OrganizationScopeSummary>>({});
-  const [query, setQuery] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -138,12 +140,64 @@ export function ScopesContextOrganizationsIndex({
     };
   }, [loadDirectory, loadScopeSummary]);
 
-  const visible = useMemo(() => {
-    const rows = organizations ?? [];
-    const needle = query.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((org) => org.name.toLowerCase().includes(needle) || org.slug.toLowerCase().includes(needle));
-  }, [organizations, query]);
+  const columns = useMemo(
+    (): MatrxColumnDef<AdminOrganizationRow>[] => [
+      {
+        id: "name",
+        header: "Organization",
+        accessorKey: "name",
+        width: 320,
+        cell: (org) => (
+          <Link
+            href={`/administration/scopes-context/organizations/${org.id}`}
+            className="flex items-center gap-2 font-medium text-foreground hover:underline"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+            {org.name}
+            {org.archived_at ? (
+              <span className="text-xs font-normal text-muted-foreground">(archived)</span>
+            ) : null}
+          </Link>
+        ),
+      },
+      // The old search also matched the slug; it keeps its own (hidden) column so it stays searchable.
+      { id: "slug", header: "Slug", accessorKey: "slug", width: 220, hidden: true },
+      { id: "member_count", header: "Members", accessorKey: "member_count", filter: "number", width: 110 },
+      {
+        id: "scope_types",
+        header: "Scope types",
+        // `…` while the per-organization read is in flight; `—` when it failed.
+        accessorFn: (org) => summaries[org.id]?.scopeTypeCount ?? null,
+        filter: "number",
+        width: 130,
+        cell: (org) => {
+          const summary = summaries[org.id];
+          return (
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Tags className="h-3.5 w-3.5" />
+              {summary === undefined ? "…" : (summary.scopeTypeCount ?? "—")}
+            </span>
+          );
+        },
+      },
+      {
+        id: "last_scope_change",
+        header: "Last scope change",
+        accessorFn: (org) => summaries[org.id]?.lastScopeChange ?? null,
+        width: 220,
+        cell: (org) => {
+          const summary = summaries[org.id];
+          return (
+            <span className="text-muted-foreground">
+              {summary === undefined ? "…" : formatWhen(summary.lastScopeChange)}
+            </span>
+          );
+        },
+      },
+    ],
+    [summaries],
+  );
 
   return (
     <div className="space-y-3">
@@ -165,75 +219,47 @@ export function ScopesContextOrganizationsIndex({
         ]}
       />
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input adornment="start"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search organizations…"
-          aria-label="Search organizations"
-        />
-      </div>
-
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>
-      ) : organizations === null ? (
-        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-          Loading organizations…
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-          {organizations.length === 0
-            ? "No organizations yet."
-            : `Nothing matches "${query}".`}
-        </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2">Organization</th>
-                <th className="px-3 py-2">Members</th>
-                <th className="px-3 py-2">Scope types</th>
-                <th className="px-3 py-2">Last scope change</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {visible.map((org) => {
-                const summary = summaries[org.id];
-                return (
-                  <tr key={org.id} className="hover:bg-muted/40">
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/administration/scopes-context/organizations/${org.id}`}
-                        className="flex items-center gap-2 font-medium text-foreground hover:underline"
-                      >
-                        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        {org.name}
-                        {org.archived_at ? (
-                          <span className="text-xs font-normal text-muted-foreground">(archived)</span>
-                        ) : null}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{org.member_count}</td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Tags className="h-3.5 w-3.5" />
-                        {summary === undefined ? "…" : summary.scopeTypeCount ?? "—"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {summary === undefined ? "…" : formatWhen(summary.lastScopeChange)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable
+          tableId="admin/scopes-context-organizations"
+          urlState={{ id: "scopes-context-organizations", defaultSort: { id: "name", direction: "asc" } }}
+          data={organizations ?? []}
+          columns={columns}
+          getRowId={(org) => org.id}
+          isLoading={organizations === null}
+          rowVersion={(org) => summaries[org.id]}
+          emptyState={{ title: "No organizations yet." }}
+          onRowOpen={(org) => router.push(`/administration/scopes-context/organizations/${org.id}`)}
+          detail={{ enabled: false }}
+          copy={{
+            label: "Organization",
+            listLabel: "Organizations",
+            location: "/administration/scopes-context/organizations",
+            rowKind: "scopes-context-organization",
+            listKind: "scopes-context-organizations",
+            humanRow: (org) => {
+              const summary = summaries[org.id];
+              return [
+                `${org.name} (${org.slug})${org.archived_at ? " — archived" : ""}`,
+                `${org.member_count} members · ${summary?.scopeTypeCount ?? "unknown"} scope types · last scope change ${formatWhen(summary?.lastScopeChange)}`,
+              ].join("\n");
+            },
+            agentRow: (org) => ({
+              id: org.id,
+              name: org.name,
+              slug: org.slug,
+              archived: Boolean(org.archived_at),
+              member_count: org.member_count,
+              scope_type_count: summaries[org.id]?.scopeTypeCount ?? null,
+              last_scope_change: summaries[org.id]?.lastScopeChange ?? null,
+            }),
+          }}
+        />
       )}
     </div>
   );

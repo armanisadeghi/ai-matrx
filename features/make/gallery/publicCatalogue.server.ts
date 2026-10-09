@@ -22,8 +22,32 @@ async function readOnce(): Promise<PublicRead> {
   return readPublicCatalogueWith((offset) => sb.schema("public").rpc("templates_public", { p_filter: platformFilter(offset) }));
 }
 
+// ONE catalogue read per server process for a few minutes, not one per page. React `cache()` lasts a
+// single request, and the build prerenders every /templates/category/* and /templates/job/* page, so
+// each page re-read the whole paged catalogue: 192 RPC calls, ~4 minutes of waiting per build
+// (measured 2026-10-08). The pages revalidate hourly, so a 5-minute shared read changes nothing a
+// visitor sees. A closed or failed read is never kept.
+const SHARED_READ_MS = 5 * 60 * 1000;
+let sharedRead: { at: number; read: Promise<PublicRead> } | null = null;
+
+function readShared(): Promise<PublicRead> {
+  if (sharedRead && Date.now() - sharedRead.at < SHARED_READ_MS) return sharedRead.read;
+  const read = readOnce();
+  const entry = { at: Date.now(), read };
+  sharedRead = entry;
+  read.then(
+    (r) => {
+      if (r.state === "closed" && sharedRead === entry) sharedRead = null;
+    },
+    () => {
+      if (sharedRead === entry) sharedRead = null;
+    },
+  );
+  return read;
+}
+
 export const readPublicCatalogue = cache(async (): Promise<PublicRead> => {
-  const read = await readOnce();
+  const read = await readShared();
   if (read.state === "closed") {
     console.warn(
       `[templates] the public gallery is empty because public.templates_public is ${read.reason === "absent" ? "not on this database" : "refused to a signed-out caller"}. ` +
