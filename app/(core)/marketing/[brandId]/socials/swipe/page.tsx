@@ -1,5 +1,5 @@
-import { SocialsTabPlaceholder } from "@/features/marketing/social/components/SocialsTabPlaceholder";
+import { SwipeFileTab } from "@/features/marketing/social/components/SwipeFileTab";
 
 export default function BrandSocialSwipePage() {
-  return <SocialsTabPlaceholder comingSoonId="marketing.social.swipe" />;
+  return <SwipeFileTab />;
 }

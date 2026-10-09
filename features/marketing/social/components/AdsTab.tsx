@@ -1,0 +1,522 @@
+"use client";
+
+/**
+ * Ads (UI-SPEC §6): search the ad libraries through the server, save an ad to
+ * the swipe file, and track an advertiser (Spyder-style) — a
+ * `platform.saved_view` that remembers the last look, so the ads newly seen
+ * since then are marked. Refresh is on demand only: no schedules.
+ *
+ * A search spends provider credits (about one); the button says so. The
+ * country the provider applied is shown with the results, never silent.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Radar, RefreshCw, Search } from "lucide-react";
+
+import {
+  Button,
+  Chip,
+  EmptyState,
+  Field,
+  SegmentedControl,
+  Select,
+  Tabs,
+  type SelectOption,
+} from "@ai-matrx/design-system/controls";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { toast } from "@/lib/toast";
+
+import { creditsLabel, filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
+import { socialKeys, useAdvertiserAds, useInvalidateSocial, useTrackedAdvertisers } from "../hooks";
+import { searchAds, socialErrorCode, socialErrorMessage } from "../server";
+import { archiveTrackedAdvertiser, readAdRows, saveTrackedAdvertiser } from "../service";
+import {
+  AD_LIBRARIES,
+  AD_LIBRARY_LABELS,
+  isAdLibrary,
+  type AdCardModel,
+  type AdLibrary,
+  type AdsSearchResult,
+  type TrackedAdvertiser,
+} from "../types";
+import { AdCard, libraryLabel } from "./AdCard";
+import { ProviderFallbackNotice } from "./ProviderFallbackNotice";
+import { useSocials } from "./SocialsContext";
+import { SaveToCollectionDialog } from "./SwipeDialogs";
+
+const SECTIONS = [
+  { value: "search", label: "Search" },
+  { value: "tracked", label: "Tracked" },
+] as const;
+type Section = (typeof SECTIONS)[number]["value"];
+
+const LIBRARY_OPTIONS: SelectOption<AdLibrary>[] = AD_LIBRARIES.map((l) => ({ value: l, label: AD_LIBRARY_LABELS[l] }));
+const KIND_DATA = [
+  { value: "query", label: "Keyword" },
+  { value: "advertiser", label: "Advertiser" },
+] as const;
+const SORT_DATA = [
+  { value: "latest", label: "Latest" },
+  { value: "longest", label: "Longest running" },
+] as const;
+
+function openLibrary(ad: AdCardModel) {
+  if (ad.libraryUrl) window.open(ad.libraryUrl, "_blank", "noopener,noreferrer");
+}
+
+export function AdsTab() {
+  const [section, setSection] = useState<Section>("search");
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <Tabs aria-label="Ads sections" variant="capsule" value={section} data={SECTIONS} onValueChange={(v) => setSection(v)} />
+      </div>
+      {section === "search" ? <AdsSearch onTracked={() => setSection("tracked")} /> : <TrackedAdvertisers />}
+    </div>
+  );
+}
+
+/** Ads filters shared by results and the advertiser view. */
+function AdFilters({
+  activeOnly,
+  setActiveOnly,
+  format,
+  setFormat,
+  formats,
+  sort,
+  setSort,
+}: {
+  activeOnly: boolean;
+  setActiveOnly: (v: boolean) => void;
+  format: string;
+  setFormat: (v: string) => void;
+  formats: string[];
+  sort: AdSort;
+  setSort: (v: AdSort) => void;
+}) {
+  const options: SelectOption[] = [{ value: "all", label: "All formats" }, ...formats.map((f) => ({ value: f, label: f }))];
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Chip asChild label="Active only" pressed={activeOnly}>
+        <button type="button" onClick={() => setActiveOnly(!activeOnly)} />
+      </Chip>
+      <Select aria-label="Format" value={format} options={options} onValueChange={setFormat} />
+      <SegmentedControl aria-label="Sort" value={sort} data={SORT_DATA} onValueChange={(v) => setSort(v as AdSort)} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+function AdsSearch({ onTracked }: { onTracked: () => void }) {
+  const { organizationId, brandId } = useSocials();
+  const invalidate = useInvalidateSocial();
+  const [library, setLibrary] = useState<AdLibrary>("meta");
+  const [kind, setKind] = useState<"query" | "advertiser">("query");
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [ads, setAds] = useState<AdCardModel[]>([]);
+  const [meta, setMeta] = useState<AdsSearchResult | null>(null);
+  const [asked, setAsked] = useState<{ library: AdLibrary; kind: "query" | "advertiser"; text: string } | null>(null);
+  const [error, setError] = useState<{ message: string; failure: unknown } | null>(null);
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [format, setFormat] = useState("all");
+  const [sort, setSort] = useState<AdSort>("latest");
+  const [saveAd, setSaveAd] = useState<AdCardModel | null>(null);
+
+  async function run(next: { library: AdLibrary; kind: "query" | "advertiser"; text: string }, cursor?: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await searchAds(
+        { library: next.library, [next.kind]: next.text.trim(), cursor },
+        { organizationId },
+      );
+      const ids = result.items.map((i) => i.ad_id).filter((v): v is string => !!v);
+      const rows = await readAdRows(ids);
+      const byId = new Map(rows.map((r) => [r.id, toAdCardModel(r)]));
+      const fresh = ids.map((id) => byId.get(id)).filter((a): a is AdCardModel => !!a);
+      setAds((prev) => (cursor ? [...prev, ...fresh.filter((a) => !prev.some((p) => p.adId === a.adId))] : fresh));
+      setMeta(result);
+      setAsked(next);
+      await invalidate();
+    } catch (err) {
+      const code = socialErrorCode(err);
+      const message =
+        code === "social_unsupported" || code === "social_not_configured"
+          ? `${AD_LIBRARY_LABELS[next.library]} search isn't available: ${socialErrorMessage(err, "unsupported")}`
+          : socialErrorMessage(err, "Search failed");
+      setError({ message, failure: err });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function trackAdvertiser(ad: AdCardModel) {
+    if (!isAdLibrary(ad.library)) return;
+    try {
+      await saveTrackedAdvertiser({
+        organizationId,
+        name: `${ad.advertiser} · ${AD_LIBRARY_LABELS[ad.library]}`,
+        definition: {
+          version: 1,
+          library: ad.library,
+          advertiser: ad.advertiser,
+          advertiserPlatformId: ad.advertiserPlatformId,
+          lastLookAt: new Date().toISOString(),
+        },
+      });
+      await invalidate();
+      toast.success(`Tracking ${ad.advertiser}`);
+      onTracked();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't track that advertiser");
+    }
+  }
+
+  const formats = useMemo(() => formatMix(ads).map((m) => m.format), [ads]);
+  const shown = useMemo(() => sortAds(filterAds(ads, { activeOnly, format }), sort), [ads, activeOnly, format, sort]);
+  const canSearch = text.trim().length > 1 && !busy;
+  const country = meta?.effective_params?.country;
+  const region = meta?.effective_params?.region;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <form
+        className="flex flex-wrap items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canSearch) void run({ library, kind, text });
+        }}
+      >
+        <Select aria-label="Library" value={library} options={LIBRARY_OPTIONS} onValueChange={setLibrary} />
+        <SegmentedControl aria-label="Search by" value={kind} data={KIND_DATA} onValueChange={(v) => setKind(v as "query" | "advertiser")} />
+        <Field
+          aria-label="Search ads"
+          placeholder={kind === "query" ? "Keyword or phrase" : "Advertiser or company"}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="min-w-48 flex-1"
+        />
+        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={`About ${creditsLabel(1)}`}>
+          {busy ? "Searching…" : "Search"}
+        </Button>
+      </form>
+
+      {meta ? (
+        <div className="flex min-h-5 flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+          <span>{ads.length} ads</span>
+          {asked ? <span>{libraryLabel(asked.library)}</span> : null}
+          {typeof country === "string" ? <span title="The country the provider searched">Country {country}</span> : null}
+          {typeof region === "string" ? <span>Region {region}</span> : null}
+          <span>{creditsLabel(meta.cost_credits)}</span>
+          {meta.provider ? <ProviderFallbackNotice trace={{ provider: meta.provider, fallback_reason: meta.fallback_reason }} /> : null}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="flex flex-col items-start gap-2">
+          <p className="flex items-center gap-1 text-sm text-destructive">
+            {error.message}
+            <ErrorAlchemyMenu error={error.failure} operation="search ad library" />
+          </p>
+          <Button variant="outline" onClick={() => asked && void run(asked)} disabled={!asked || busy}>
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
+      {ads.length > 0 ? (
+        <>
+          <AdFilters
+            activeOnly={activeOnly}
+            setActiveOnly={setActiveOnly}
+            format={format}
+            setFormat={setFormat}
+            formats={formats}
+            sort={sort}
+            setSort={setSort}
+          />
+          {shown.length === 0 ? (
+            <p className="p-3 text-xs text-muted-foreground">No active ads in these results</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {shown.map((ad) => (
+                <AdCard key={ad.adId} ad={ad} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={setSaveAd} onTrack={trackAdvertiser} />
+              ))}
+            </div>
+          )}
+          {meta?.has_more && meta.cursor && asked ? (
+            <div>
+              <Button variant="outline" disabled={busy} title={`About ${creditsLabel(1)}`} onClick={() => void run(asked, meta.cursor ?? undefined)}>
+                {busy ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          ) : null}
+        </>
+      ) : !busy && !error ? (
+        <div className="flex min-h-[35vh] items-center justify-center">
+          <EmptyState
+            icon={<Search className="h-5 w-5" />}
+            title={asked ? "No active ads" : "Search the ad libraries"}
+            line={asked ? "Try another keyword or advertiser" : "Meta, TikTok, Google, LinkedIn"}
+          />
+        </div>
+      ) : null}
+
+      <SaveToCollectionDialog
+        open={saveAd !== null}
+        onOpenChange={(o) => (o ? undefined : setSaveAd(null))}
+        organizationId={organizationId}
+        brandId={brandId}
+        targets={saveAd ? [{ itemType: "social_ad", itemId: saveAd.adId }] : []}
+        defaultCollectionId={null}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tracked advertisers
+// ---------------------------------------------------------------------------
+
+function TrackedAdvertisers() {
+  const tracked = useTrackedAdvertisers();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const current = tracked.data?.find((t) => t.viewId === openId) ?? null;
+
+  if (tracked.isPending) return <p className="p-3 text-xs text-muted-foreground">Loading…</p>;
+  if (tracked.isError) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <p className="flex items-center gap-1 text-sm">
+          Couldn&apos;t load tracked advertisers
+          <ErrorAlchemyMenu error={tracked.error} operation="load tracked advertisers" />
+        </p>
+        <Button variant="outline" onClick={() => void tracked.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+  if (current) return <AdvertiserView advertiser={current} onBack={() => setOpenId(null)} />;
+  if ((tracked.data ?? []).length === 0) {
+    return (
+      <div className="flex min-h-[35vh] items-center justify-center">
+        <EmptyState icon={<Radar className="h-5 w-5" />} title="No tracked advertisers" line="Track one from a search result" />
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {(tracked.data ?? []).map((t) => (
+        <AdvertiserCard key={t.viewId} advertiser={t} onOpen={() => setOpenId(t.viewId)} />
+      ))}
+    </div>
+  );
+}
+
+function useAdvertiserArgs(t: TrackedAdvertiser) {
+  return useAdvertiserAds({
+    library: t.definition.library,
+    advertiser: t.definition.advertiser,
+    advertiserPlatformId: t.definition.advertiserPlatformId,
+  });
+}
+
+function AdvertiserCard({ advertiser, onOpen }: { advertiser: TrackedAdvertiser; onOpen: () => void }) {
+  const ads = useAdvertiserArgs(advertiser);
+  const list = ads.data ?? [];
+  const fresh = newSinceLook(list, advertiser.definition.lastLookAt).length;
+  const active = list.filter((a) => a.status === "active").length;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-card p-3 text-left hover:border-primary/50"
+    >
+      <span className="truncate text-sm font-medium text-foreground" title={advertiser.name}>
+        {advertiser.definition.advertiser}
+      </span>
+      <span className="text-xs text-muted-foreground">{libraryLabel(advertiser.definition.library)}</span>
+      <span className="flex gap-3 text-xs tabular-nums text-muted-foreground">
+        <span>{ads.isPending ? "—" : active} active</span>
+        <span>{ads.isPending ? "—" : fresh} new</span>
+      </span>
+      <span className="text-[11px] text-muted-foreground">
+        {formatMix(list).map((m) => `${m.count} ${m.format}`).join(" · ")}
+      </span>
+    </button>
+  );
+}
+
+function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser; onBack: () => void }) {
+  const { organizationId, brandId } = useSocials();
+  const client = useQueryClient();
+  const invalidate = useInvalidateSocial();
+  const adsQuery = useAdvertiserArgs(advertiser);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<{ message: string; failure: unknown } | null>(null);
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [format, setFormat] = useState("all");
+  const [sort, setSort] = useState<AdSort>("latest");
+  const [saveAd, setSaveAd] = useState<AdCardModel | null>(null);
+  const def = advertiser.definition;
+  const list = useMemo(() => adsQuery.data ?? [], [adsQuery.data]);
+  const fresh = useMemo(() => new Set(newSinceLook(list, def.lastLookAt).map((a) => a.adId)), [list, def.lastLookAt]);
+  const shown = useMemo(() => sortAds(filterAds(list, { activeOnly, format }), sort), [list, activeOnly, format, sort]);
+  const mix = formatMix(list.filter((a) => a.status === "active"));
+  const landing = landingPageRanking(list);
+  useEffect(() => setError(null), [advertiser.viewId]);
+
+  async function lookAgain() {
+    const ok = await confirm({
+      title: `Look again at ${def.advertiser}?`,
+      description: `Searches the ${AD_LIBRARY_LABELS[def.library]} library. About ${creditsLabel(1)}, billed to this organization.`,
+      confirmLabel: "Look again",
+    });
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await searchAds({ library: def.library, advertiser: def.advertiser }, { organizationId });
+      await client.invalidateQueries({ queryKey: socialKeys.advertiserAds(`${def.library}|${def.advertiserPlatformId ?? def.advertiser}`) });
+      toast.success("Looked again");
+    } catch (err) {
+      setError({ message: socialErrorMessage(err, "Look again failed"), failure: err });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markSeen() {
+    try {
+      await saveTrackedAdvertiser({
+        organizationId,
+        viewId: advertiser.viewId,
+        name: advertiser.name,
+        definition: { ...def, lastLookAt: new Date().toISOString() },
+      });
+      await invalidate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update the look");
+    }
+  }
+
+  async function stop() {
+    const ok = await confirm({
+      title: `Stop tracking ${def.advertiser}?`,
+      description: "Removes it from Tracked. The ads stay in the shared cache.",
+      confirmLabel: "Stop tracking",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveTrackedAdvertiser(advertiser.viewId);
+      await invalidate();
+      onBack();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't stop tracking");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="quiet" icon={<ArrowLeft />} onClick={onBack}>
+          Tracked
+        </Button>
+        <span className="truncate text-sm font-medium text-foreground">{def.advertiser}</span>
+        <span className="text-xs text-muted-foreground">{libraryLabel(def.library)}</span>
+        <span className="flex-1" />
+        {fresh.size > 0 ? (
+          <Button variant="outline" onClick={() => void markSeen()}>
+            Mark {fresh.size} seen
+          </Button>
+        ) : null}
+        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={`About ${creditsLabel(1)}`} onClick={() => void lookAgain()}>
+          {busy ? "Looking…" : "Look again"}
+        </Button>
+        <Button variant="quiet" onClick={() => void stop()}>
+          Stop tracking
+        </Button>
+      </div>
+
+      {error ? (
+        <p className="flex items-center gap-1 text-sm text-destructive">
+          {error.message}
+          <ErrorAlchemyMenu error={error.failure} operation="look again at advertiser" />
+        </p>
+      ) : null}
+
+      {adsQuery.isPending ? (
+        <p className="p-3 text-xs text-muted-foreground">Loading…</p>
+      ) : list.length === 0 ? (
+        <div className="flex min-h-[30vh] items-center justify-center">
+          <EmptyState icon={<Radar className="h-5 w-5" />} title="No ads yet" line="Look again to fetch this advertiser's ads" />
+        </div>
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <AdFilters
+              activeOnly={activeOnly}
+              setActiveOnly={setActiveOnly}
+              format={format}
+              setFormat={setFormat}
+              formats={formatMix(list).map((m) => m.format)}
+              sort={sort}
+              setSort={setSort}
+            />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {shown.map((ad) => (
+                <AdCard key={ad.adId} ad={ad} isNew={fresh.has(ad.adId)} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={setSaveAd} />
+              ))}
+            </div>
+          </div>
+          <aside className="flex flex-col gap-3 text-xs">
+            <section aria-label="Active ads by format">
+              <p className="font-medium text-foreground">{mix.reduce((n, m) => n + m.count, 0)} active</p>
+              <ul className="text-muted-foreground">
+                {mix.map((m) => (
+                  <li key={m.format} className="flex justify-between tabular-nums">
+                    <span>{m.format}</span>
+                    <span>{m.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="Landing pages">
+              <p className="font-medium text-foreground">Landing pages</p>
+              <ul className="flex flex-col gap-1 text-muted-foreground">
+                {landing.length === 0 ? <li>None reported</li> : null}
+                {landing.map((l) => (
+                  <li key={l.url} className="min-w-0">
+                    <a href={l.url} target="_blank" rel="noreferrer noopener" className="block truncate text-primary hover:underline" title={l.url}>
+                      {l.url.replace(/^https?:\/\/(www\.)?/, "")}
+                    </a>
+                    <span className="tabular-nums">
+                      {l.count} ads · {Math.round(l.share * 100)}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+        </div>
+      )}
+
+      <SaveToCollectionDialog
+        open={saveAd !== null}
+        onOpenChange={(o) => (o ? undefined : setSaveAd(null))}
+        organizationId={organizationId}
+        brandId={brandId}
+        targets={saveAd ? [{ itemType: "social_ad", itemId: saveAd.adId }] : []}
+        defaultCollectionId={null}
+      />
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
-import { SocialsTabPlaceholder } from "@/features/marketing/social/components/SocialsTabPlaceholder";
+import { AdsTab } from "@/features/marketing/social/components/AdsTab";
 
 export default function BrandSocialAdsPage() {
-  return <SocialsTabPlaceholder comingSoonId="marketing.social.ads" />;
+  return <AdsTab />;
 }

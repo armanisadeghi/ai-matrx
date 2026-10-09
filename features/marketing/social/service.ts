@@ -31,8 +31,13 @@ import {
   type OutlierFilter,
 } from "./outliers";
 import { buildAccountRows } from "./mappers";
+import { parseAdvertiserDefinition, toAdCardModel } from "./ads";
+import { buildSwipeItems, toSwipeEdge, type RawEdge } from "./swipe";
 import type {
   AccountRow,
+  AdCardModel,
+  AdLibrary,
+  AdvertiserDefinition,
   BrandPost,
   KpiGoalRow,
   WatchlistHitRow,
@@ -990,4 +995,19 @@ export async function archiveTrackedAdvertiser(viewId: string): Promise<void> {
   });
   if (error) fail("Stop tracking", error.message);
   if (data === null) fail("Stop tracking", "That advertiser is no longer tracked.");
+}
+
+/** Which of these posts already have a stored transcript (bulk transcribe skips them). */
+export async function readTranscribedPostIds(postIds: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (const part of chunk(postIds, 100)) {
+    const { data, error } = await supabase
+      .schema("social")
+      .from("post_transcript")
+      .select("post_id")
+      .in("post_id", part);
+    if (error) fail("social.post_transcript read", error.message);
+    for (const r of data ?? []) out.add((r as { post_id: string }).post_id);
+  }
+  return out;
 }
