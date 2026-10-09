@@ -114,6 +114,11 @@ describe("goalProgress (current vs target)", () => {
     expect(slow.fraction).toBeCloseTo(0.1, 2);
     expect(slow.status).toBe("behind");
   });
+  it("a goal set today is not Behind on day one", () => {
+    const fresh = goalProgress({ goal: g({ starts_on: "2026-10-09" }), metric: "followers", current: 10000, now: NOW });
+    expect(fresh.fraction).toBe(0);
+    expect(fresh.status).toBe("on_track");
+  });
   it("level metric: on track from 80% of target, else behind", () => {
     const base = { baseline_value: null, target_value: 5000 };
     expect(goalProgress({ goal: g(base), metric: "avg_views", current: 4100, now: NOW }).status).toBe("on_track");

@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { BrandChannelPanel } from "@/features/marketing/youtube/components/BrandChannelPanel";
@@ -112,7 +113,10 @@ export function KpisTab() {
   if (data.isError || goals.isError) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
-        <p className="text-sm text-foreground">Couldn't load KPIs</p>
+        <p className="flex items-center gap-1 text-sm text-foreground">
+          Couldn't load KPIs
+          <ErrorAlchemyMenu error={data.error ?? goals.error} operation="load social kpis" />
+        </p>
         <Button
           variant="outline"
           onClick={() => {

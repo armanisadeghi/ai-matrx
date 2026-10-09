@@ -28,6 +28,7 @@ import { TextInputDialog } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useBrandSocialData, useInvalidateSocial, useWatchlistHits, useWatchlists } from "../hooks";
@@ -95,7 +96,7 @@ function platformLabel(p: string): string {
 }
 
 export function OutliersTab() {
-  const { brandId, brandSeg, organizationId, openTrack } = useSocials();
+  const { brandId, organizationId, openTrack } = useSocials();
   const data = useBrandSocialData(organizationId, brandId);
   const watchlists = useWatchlists(brandId);
   const lists = watchlists.data ?? [];
@@ -131,8 +132,8 @@ export function OutliersTab() {
   const platformsPresent = [...new Set(accounts.map((a) => a.platform))].sort();
   const formatsPresent = [...new Set(posts.map((p) => p.format))].sort();
   const platformValue =
-    filter.platforms.length === 0 ? ALL : filter.platforms.length === 1 ? filter.platforms[0]! : SEVERAL;
-  const roleValue = filter.roles.length === 0 ? ALL : filter.roles.length === 1 ? filter.roles[0]! : SEVERAL;
+    filter.platforms.length === 0 ? ALL : filter.platforms.length === 1 ? (filter.platforms[0] ?? SEVERAL) : SEVERAL;
+  const roleValue = filter.roles.length === 0 ? ALL : filter.roles.length === 1 ? (filter.roles[0] ?? SEVERAL) : SEVERAL;
 
   const watchlistOptions: SelectOption[] = [
     { value: ALL, label: "All tracked" },
@@ -323,7 +324,10 @@ export function OutliersTab() {
   if (data.isError) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
-        <p className="text-sm text-foreground">Couldn't load outliers</p>
+        <p className="flex items-center gap-1 text-sm text-foreground">
+          Couldn't load outliers
+          <ErrorAlchemyMenu error={data.error} operation="load social outliers" />
+        </p>
         <Button variant="outline" onClick={() => void data.refetch()}>
           Retry
         </Button>

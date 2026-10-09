@@ -54,14 +54,16 @@ export function SocialAnalyticsPanel({
 
   // Own followers' 30-day change: only when exactly one own account carries it
   // (summing unlike snapshot histories would invent a comparison).
-  const growth =
-    own.length === 1
-      ? judgeFollowerGrowth(snapshots.filter((s) => s.profile_id === own[0]!.profileId), 30)
-      : null;
+  const onlyOwn = own.length === 1 ? own[0] : undefined;
+  const growth = onlyOwn
+    ? judgeFollowerGrowth(snapshots.filter((s) => s.profile_id === onlyOwn.profileId), 30)
+    : null;
 
-  const kpiAccounts = accounts
-    .filter((a) => a.trackedAccountId)
-    .map((a) => ({ trackedAccountId: a.trackedAccountId!, platform: a.platform, role: a.role, followers: a.followers }));
+  const kpiAccounts = accounts.flatMap((a) =>
+    a.trackedAccountId
+      ? [{ trackedAccountId: a.trackedAccountId, platform: a.platform, role: a.role, followers: a.followers }]
+      : [],
+  );
   const goalRows = goals.data ?? [];
   const statuses = goalRows.map((g) => {
     const metric = goalMetricId(g);

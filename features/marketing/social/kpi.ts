@@ -54,7 +54,9 @@ export const KPI_METRICS: readonly KpiMetricDef[] = [
 ];
 
 export function metricDefOf(id: KpiMetricId): KpiMetricDef {
-  return KPI_METRICS.find((m) => m.id === id)!;
+  const def = KPI_METRICS.find((m) => m.id === id);
+  if (!def) throw new Error(`Unknown KPI metric ${id}`);
+  return def;
 }
 
 /** The UI metric a stored goal row means, or null for one this UI does not model. */
@@ -86,6 +88,9 @@ export function periodDays(
 
 /** Share of the target at which a level metric still reads "On track". */
 export const KPI_ON_TRACK_SHARE = 0.8;
+
+/** How far behind the clock a cumulative goal may run and still read "On track" (a fresh goal is not Behind on day one). */
+export const KPI_PACE_TOLERANCE = 0.1;
 
 export type KpiStatus = "achieved" | "on_track" | "behind" | "no_data" | "paused";
 
@@ -265,7 +270,7 @@ export function goalProgress(args: {
       target,
       fraction,
       elapsed,
-      status: fraction >= elapsed ? "on_track" : "behind",
+      status: fraction >= elapsed - KPI_PACE_TOLERANCE ? "on_track" : "behind",
     };
   }
   const fraction = Math.min(1, Math.max(0, current / target));
