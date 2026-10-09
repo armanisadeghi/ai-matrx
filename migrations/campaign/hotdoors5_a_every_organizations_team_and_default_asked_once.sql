@@ -1,4 +1,3 @@
--- draft: HOT-DOORS-5 not yet applied
 -- lane: HOT-DOORS-5
 -- based-on: iam.my_team_reach(uuid) defd6a6dddd3bfdb3ad44a1b6a0deab4aae1dbc8a661e52e76287ef8fe626cae
 -- based-on: custom._record_shown_to_ctx(uuid[], uuid) d48f0353757f55e192a1c39605c8578b46d42b9cb3cfa0d0ef969730beb701bf

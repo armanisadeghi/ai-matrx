@@ -1,7 +1,7 @@
--- chair-step: undo hotdoors5_a_every_organizations_team_and_default_asked_once.sql - restores iam.my_team_reach and custom._record_shown_to_ctx as they were before HOT-DOORS-5.
+-- chair-step: undo hotdoors5_a_every_organizations_team_and_default_asked_once.sql - restores iam.my_team_reach and custom._record_shown_to_ctx as they were before HOT-DOORS-5. Run AFTER hotdoors5_b's inverse.
 -- lane: HOT-DOORS-5
--- based-on: iam.my_team_reach(uuid) NEW_TEAM
--- based-on: custom._record_shown_to_ctx(uuid[], uuid) NEW_CTX
+-- based-on: iam.my_team_reach(uuid) 494f89273a768c4a94a9dbf9ab6040ff6648555e481bd722159955326dbf58ac
+-- based-on: custom._record_shown_to_ctx(uuid[], uuid) 020e101a4724c5bde13feaf34f3582de84246ba2787f589d8a03d132c849bfa5
 
 set local statement_timeout = '60s';
 
