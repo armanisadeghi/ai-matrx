@@ -15,6 +15,8 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   createPlatformHost,
+  isNewTableSource,
+  sampleRowsOf,
   type PlatformHost,
 } from "@ai-matrx/applets/platform";
 import { holdWrites, type HeldWrite } from "@ai-matrx/applets/preview";
@@ -311,7 +313,16 @@ export function AppletHostMount({
     });
     provideStoredComponentScopeModules();
     // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
-    const held = isPreview ? holdWrites(host.data) : null;
+    // Her declared example rows (`new_table.rows`) seed a table that is not made yet, or the preview shows it empty;
+    // they stay in memory with the held writes - nothing is saved until "Use it".
+    const held = isPreview
+      ? holdWrites(host.data, {
+          seed: async (alias) => {
+            const source = (await host.record()).sources.find((s) => s.alias === alias);
+            return source && isNewTableSource(source) ? sampleRowsOf(source.new_table) : [];
+          },
+        })
+      : null;
     const stopHeld = held
       ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes))
       : null;
