@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { cn } from "@/lib/utils";
 import {
   getMediaDevicesSnapshot,
@@ -31,9 +32,6 @@ import {
 import { useCaptureUploadFeed } from "@/features/media-capture/hooks/useCaptureUploadFeed";
 import { listStoredTusUploads } from "@/features/files/upload/tusUpload";
 import type { StoredTusUploadSummary } from "@/features/files/upload/tusUpload";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 function probeRecordingMimes(kind: "video" | "audio"): string[] {
   if (
@@ -47,9 +45,20 @@ function probeRecordingMimes(kind: "video" | "audio"): string[] {
   ).filter((c): c is string => c !== null);
 }
 
-function Cell({ children }: { children: React.ReactNode }) {
-  return <td className="px-2 py-1 align-top">{children}</td>;
-}
+type CaptureFailure = ReturnType<typeof getMediaCaptureDiagnostics>["failures"][number];
+
+const FAILURE_COLUMNS: MatrxColumnDef<CaptureFailure>[] = [
+  {
+    id: "at",
+    header: "Time",
+    accessorFn: (f) => f.at,
+    width: 120,
+    cell: (f) => <span className="font-mono tabular-nums">{new Date(f.at).toLocaleTimeString()}</span>,
+  },
+  { id: "scope", header: "Scope", accessorFn: (f) => f.scope, filter: "select", width: 160 },
+  { id: "message", header: "Message", accessorFn: (f) => f.message, width: 420, cell: (f) => <span className="text-muted-foreground">{f.message}</span> },
+  { id: "retryable", header: "Retryable", accessorFn: (f) => (f.retryable ? "yes" : "no"), filter: "select", width: 100 },
+];
 
 function Section({
   title,
@@ -245,40 +254,23 @@ export function CameraAdminDiagnostics() {
         <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Recent capture failures (ring, max 50, this session)
         </h3>
-        <div className="overflow-x-auto rounded-md border border-border bg-card">
-          {snap.failures.length === 0 ? (
-            <p className="px-2.5 py-2 text-xs text-muted-foreground">
-              No capture failures recorded this session.
-            </p>
-          ) : (
-            <table className={cn("text-left text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-[11px] uppercase text-muted-foreground">
-                  <th className="px-2 py-1 font-medium">Time</th>
-                  <th className="px-2 py-1 font-medium">Scope</th>
-                  <th className="px-2 py-1 font-medium">Message</th>
-                  <th className="px-2 py-1 font-medium">Retryable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {snap.failures.map((f) => (
-                  <tr key={f.id} className="border-b border-border/50">
-                    <Cell>
-                      <span className="font-mono tabular-nums">
-                        {new Date(f.at).toLocaleTimeString()}
-                      </span>
-                    </Cell>
-                    <Cell>{f.scope}</Cell>
-                    <Cell>
-                      <span className="text-muted-foreground">{f.message}</span>
-                    </Cell>
-                    <Cell>{f.retryable ? "yes" : "no"}</Cell>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <MatrxDataTable<CaptureFailure>
+          tableId="camera-admin-capture-failures"
+          data={snap.failures}
+          columns={FAILURE_COLUMNS}
+          getRowId={(f) => f.id}
+          defaultSort={{ id: "at", direction: "desc" }}
+          emptyState={{ title: "No capture failures recorded this session." }}
+          detail={{ enabled: false }}
+          copy={{
+            label: "Capture failures",
+            location: "Camera Admin Diagnostics, recent capture failures",
+            rowKind: "camera-capture-failure",
+            listKind: "camera-capture-failures",
+            humanRow: (f) => `${new Date(f.at).toLocaleTimeString()} ${f.scope}: ${f.message}${f.retryable ? " (retryable)" : ""}`,
+            agentRow: (f) => f,
+          }}
+        />
       </section>
     </div>
   );
