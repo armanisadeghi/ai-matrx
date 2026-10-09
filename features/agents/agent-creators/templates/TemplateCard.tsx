@@ -117,12 +117,12 @@ export function TemplateCard({
       </div>
 
       <div className="border-t border-border p-4 bg-muted rounded-b-lg">
-        <div className="flex gap-2 justify-center">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Link
             href={`/agents/templates/${id}`}
             tabIndex={-1}
             onClick={(e) => handleView(e)}
-            className="flex-1"
+            className="flex-1 min-w-[6.5rem]"
           >
             <Button
               icon={isNavigating ? (
@@ -147,7 +147,7 @@ export function TemplateCard({
             variant="primary"
             onClick={handleUseTemplate}
             disabled={isDisabled}
-            className="flex-1"
+            className="flex-1 min-w-[6.5rem]"
           >
             Use Template
           </Button>

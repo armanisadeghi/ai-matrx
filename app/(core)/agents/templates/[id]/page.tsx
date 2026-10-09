@@ -72,7 +72,7 @@ export default async function AgentTemplateDetailPage({
                 {template.name}
               </h1>
               {template.is_archived && (
-                <Badge variant="outline" className="text-muted-foreground border-border">
+                <Badge variant="outline" className="text-muted-foreground border-border shrink-0 whitespace-nowrap">
                   Archived
                 </Badge>
               )}
