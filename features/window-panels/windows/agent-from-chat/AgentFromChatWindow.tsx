@@ -26,6 +26,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
 import { ExamplesField, ProofCount, emptyExamples, filledExamples } from "@/features/agents/factory/components/ExamplesField";
 import { useFactoryDoor } from "@/features/agents/factory/door";
+import { KEPT_OUTCOMES } from "@/features/agents/factory/types";
 import {
   FROM_CHAT_STEPS,
   continueWithAgentHref,
@@ -300,7 +301,17 @@ function AgentFromChatWindowInner({
             {proof.cases < filledExamples(examples).length + 1 ? <p>{proof.says}</p> : null}
           </div>
         ) : null}
-        {phase === "building" && buildId ? <BuildProgress buildId={buildId} onRebuilt={setBuildId} /> : null}
+        {phase === "building" && buildId ? (
+          <BuildProgress
+            buildId={buildId}
+            onRebuilt={setBuildId}
+            forwardWhenKept
+            onFinished={(state) => {
+              // R58: a kept agent opens in the builder beside the Side Chat; this window steps aside.
+              if (state.agent_id && state.outcome && KEPT_OUTCOMES.has(state.outcome)) onClose();
+            }}
+          />
+        ) : null}
 
         {phase === "failed" && failure ? (
           <EmptyState
