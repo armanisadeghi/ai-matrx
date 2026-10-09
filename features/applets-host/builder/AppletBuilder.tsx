@@ -63,6 +63,8 @@ import { UseAppletDialog } from "./UseAppletDialog";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { whenOrgReady } from "./org-ready";
+import { typedAnswerBody } from "./typed-answer";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { BuildAttachments } from "./BuildAttachments";
@@ -157,8 +159,11 @@ export function AppletBuilder({
   // The run is parked on HER: the builder asked a question in the build conversation and waits for the
   // answer there (the ask's own card) or typed in the builder box — never a failure (W4, 2026-10-09).
   const waitingOn = useRef<string | null>(null);
+  // The same fact for the button: while the question is open it reads "Answer", not "Send next".
+  const [asking, setAsking] = useState(false);
   const awaitingPerson = (info: { conversationId: string }) => {
     waitingOn.current = info.conversationId;
+    setAsking(true);
     stepTo("Waiting for your answer");
     // The run window stays open here: closing it lets the build conversation's instance go, and the
     // conversation beside the preview went blank — no question anywhere (live v0.4.3084, lane F16).
@@ -348,7 +353,7 @@ export function AppletBuilder({
     let started: { id: string; entry: BuildEntry } | null = null;
     try {
       // A new app needs an organization: with none set, the picker asks and THIS build continues with the pick.
-      const org = appletId || retry ? null : (organizationId ?? (await ensureOrgId(null)));
+      const org = appletId || retry ? null : (organizationId ?? (await whenOrgReady(() => ensureOrgId(null))));
       // The request is written BEFORE anything runs — a new app is born here and the address becomes its own.
       // An automatic fix round is claimed instead: exactly one tab runs it, every other tab follows that run.
       let begun: { record: BuildRecord; entry: BuildEntry };
@@ -454,6 +459,7 @@ export function AppletBuilder({
       }
     } finally {
       waitingOn.current = null;
+      setAsking(false);
       // Still this run's open window (not closed on save, not replaced by a fix round's): stop waiting.
       if (live.handle && runWindow.current?.handle === live.handle) live.handle.update({ pending: false });
       setStep(null);
@@ -477,18 +483,17 @@ export function AppletBuilder({
     try {
       const ask = (await fetchPendingActionRequests()).find((row) => row.conversation_id === conversationId);
       if (!ask) return void queueNext(text);
-      // A kind a sentence cannot answer (a sign-in, a form) stays on its card; her words go next.
-      if (ask.render.form !== "choose_one") return void queueNext(text);
-      const said = text.trim().toLowerCase();
-      const choice = ask.render.choices.find((c) => c.label.trim().toLowerCase() === said || c.value.trim().toLowerCase() === said);
-      const reply = await completeActionRequestAsSelf(ask.request_id, ask.organization_id, {
-        result: choice ? { value: choice.value } : { value: text.trim(), note: text.trim() },
-      });
+      // Her words ARE the answer (an option's label picks it, other words are her own answer). A kind a
+      // sentence cannot answer (a sign-in, a form) stays on its card; her words go next.
+      const result = typedAnswerBody(ask.render, text);
+      if (!result) return void queueNext(text);
+      const reply = await completeActionRequestAsSelf(ask.request_id, ask.organization_id, { result });
       if (reply.status >= 400) {
         console.error("[applet-build] the typed answer was refused", reply.status, reply.body?.message);
         return void queueNext(text);
       }
       setSentence("");
+      setAsking(false);
       await rereadAndFollow(dispatch, conversationId, "applet builder: typed answer");
     } catch (err) {
       console.error("[applet-build] could not answer the builder's question", err);
@@ -592,11 +597,11 @@ export function AppletBuilder({
             <Button
               variant="primary"
               disabled={!sentence.trim()}
-              title={!sentence.trim() ? "Say what you want first" : busy ? "It goes to the builder when this round ends" : undefined}
+              title={!sentence.trim() ? (asking ? "Type your answer first" : "Say what you want first") : asking ? "Answers the builder's question" : busy ? "It goes to the builder when this round ends" : undefined}
               onClick={() => send(sentence.trim())}
               data-applet-send=""
             >
-              {busy ? "Send next" : appletId ? "Change it" : "Build"}
+              {asking ? "Answer" : busy ? "Send next" : appletId ? "Change it" : "Build"}
             </Button>
           ) : (
             <Button variant="primary" disabled aria-busy icon={<Spinner />} data-applet-build-pending="">
