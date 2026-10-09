@@ -64,6 +64,7 @@ import {
   socialErrorCode,
   socialErrorMessage,
 } from "@/features/marketing/social/server";
+import { classifySocialLink, type SocialLink } from "@/features/marketing/social/link";
 import { SOCIAL_PLATFORM_LABELS, isSocialPlatform } from "@/features/marketing/social/types";
 import {
   OUTLIER_FEED_LIMIT,
@@ -322,14 +323,14 @@ function PostActionBar({ actions, hasTranscript }: { actions: ReturnType<typeof 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
       {hasTranscript ? null : (
-        <Button variant="outline" icon={<FileText />} loading={actions.busy === "transcript"} onClick={run(actions.transcript)}>
+        <Button variant="outline" icon={<FileText />} disabled={actions.busy !== null} onClick={run(actions.transcript)}>
           Get transcript
         </Button>
       )}
-      <Button variant="outline" icon={<Wand2 />} loading={actions.busy === "breakdown"} onClick={run(actions.breakdown)}>
+      <Button variant="outline" icon={<Wand2 />} disabled={actions.busy !== null} onClick={run(actions.breakdown)}>
         Breakdown
       </Button>
-      <Button variant="outline" icon={<Bookmark />} loading={actions.busy === "save"} onClick={run(actions.saveToSwipe)}>
+      <Button variant="outline" icon={<Bookmark />} disabled={actions.busy !== null} onClick={run(actions.saveToSwipe)}>
         Save to swipe file
       </Button>
       <Button variant="quiet" icon={<PanelRightOpen />} onClick={actions.openDetail}>
@@ -435,42 +436,47 @@ function SocialPostBody(props: ItemBodyProps) {
       />
     );
   }
-  return <Centered>Paste a TikTok, Instagram, YouTube, LinkedIn, X or Facebook link onto the board.</Centered>;
+  return (
+    <LinkForm
+      kind="post"
+      onLink={(l) => props.onSource(entity(SOCIAL_POST_KEY, null, { url: l.url, platform: l.platform }), props.title)}
+    />
+  );
 }
 
 function PostLinkPicker({ onPick, onCancel }: PickerProps) {
-  return <LinkPicker kind="post" onPick={onPick} onCancel={onCancel} />;
+  return <LinkForm kind="post" onLink={(l) => onPick([linkItem("post", l)])} onCancel={onCancel} />;
 }
 function ProfileLinkPicker({ onPick, onCancel }: PickerProps) {
-  return <LinkPicker kind="profile" onPick={onPick} onCancel={onCancel} />;
+  return <LinkForm kind="profile" onLink={(l) => onPick([linkItem("profile", l)])} onCancel={onCancel} />;
 }
 
-function LinkPicker({ kind, onPick, onCancel }: PickerProps & { kind: "post" | "profile" }) {
+function linkItem(kind: "post" | "profile", link: SocialLink) {
+  return {
+    title: kind === "profile" && link.handle ? `@${link.handle}` : "Social post",
+    source: entity(kind === "post" ? SOCIAL_POST_KEY : SOCIAL_PROFILE_KEY, null, { url: link.url, platform: link.platform }),
+  };
+}
+
+/** The link box a picker and an empty tile (a template's) share. */
+function LinkForm({ kind, onLink, onCancel }: { kind: "post" | "profile"; onLink: (link: SocialLink) => void; onCancel?: () => void }) {
   const [value, setValue] = useState("");
   const [bad, setBad] = useState(false);
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 p-3"
       onSubmit={(e) => {
         e.preventDefault();
-        void import("@/features/marketing/social/link").then(({ classifySocialLink }) => {
-          const link = classifySocialLink(value);
-          if (!link || link.kind !== kind) return setBad(true);
-          onPick([
-            {
-              title: kind === "profile" && link.handle ? `@${link.handle}` : "Social post",
-              source: entity(kind === "post" ? SOCIAL_POST_KEY : SOCIAL_PROFILE_KEY, null, { url: link.url, platform: link.platform }),
-            },
-          ]);
-        });
+        const link = classifySocialLink(value);
+        if (!link || link.kind !== kind) return setBad(true);
+        onLink(link);
       }}
     >
-      <label className="text-sm font-medium text-foreground" htmlFor="social-link-input">
+      <label className="text-sm font-medium text-foreground" htmlFor={`social-link-${kind}`}>
         {kind === "post" ? "Post link" : "Account link"}
       </label>
       <input
-        id="social-link-input"
-        autoFocus
+        id={`social-link-${kind}`}
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -481,11 +487,13 @@ function LinkPicker({ kind, onPick, onCancel }: PickerProps & { kind: "post" | "
       />
       {bad ? <p className="text-xs text-destructive">That is not a {kind === "post" ? "post" : "account"} link.</p> : null}
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="quiet" onClick={onCancel}>
-          Cancel
-        </Button>
+        {onCancel ? (
+          <Button type="button" variant="quiet" onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
         <Button type="submit" variant="primary" disabled={!value.trim()}>
-          Add to board
+          {onCancel ? "Add to board" : "Read it"}
         </Button>
       </div>
     </form>
@@ -596,7 +604,14 @@ function SocialProfileBody(props: ItemBodyProps) {
       />
     );
   }
-  return <Centered>Paste a social account link onto the board.</Centered>;
+  return (
+    <LinkForm
+      kind="profile"
+      onLink={(l) =>
+        props.onSource(entity(SOCIAL_PROFILE_KEY, null, { url: l.url, platform: l.platform }), l.handle ? `@${l.handle}` : props.title)
+      }
+    />
+  );
 }
 
 // ─── Outlier feed ────────────────────────────────────────────────────────────

@@ -42,6 +42,11 @@ export const BOARD_ADDABLE_ITEM_KEYS = [
   "study-kit",
   "scope",
   "label",
+  "social-post",
+  "social-profile",
+  "social-outlier-feed",
+  "social-ad",
+  "social-swipe-collection",
 ] as const;
 
 /** Item types `board_find_records` searches (each has a search token or a finder). */

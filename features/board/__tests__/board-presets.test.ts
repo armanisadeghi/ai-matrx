@@ -18,6 +18,16 @@ describe("board presets", () => {
     });
   }
 
+  it("marketing-social features the five social tiles first", () => {
+    expect(BOARD_PRESETS["marketing-social"].featured.slice(0, 5)).toEqual([
+      "social-post",
+      "social-profile",
+      "social-outlier-feed",
+      "social-ad",
+      "social-swipe-collection",
+    ]);
+  });
+
   it("the guard catches a bad key", () => {
     const bad: BoardPreset = { key: "x", label: "x", featured: ["chat", "no-such-type", "group:nope"], more: "rest" };
     expect(badPresetEntries(bad, keys, groups)).toEqual(["no-such-type", "group:nope"]);
