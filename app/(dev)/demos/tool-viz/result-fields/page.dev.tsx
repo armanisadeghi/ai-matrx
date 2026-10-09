@@ -1038,6 +1038,9 @@ const AGENT_CALL_ENTRY = entry({
   },
 });
 
+// A sample tool result's sub-agent id, declared once as a seed (the guard reads *_SEED_AGENT_ID).
+const SAMPLE_IMAGE_SEED_AGENT_ID = "bcc69216-d4fa-4e28-a090-8a7749123bc5";
+
 // Image-generation `agent_call` — the EXACT wire result aidream returns
 // (agent_call.py: agent_id / agent_name / result / model_id), where `result` is
 // the child image agent's signed S3 URL. This shipped as a key/value grid whose
@@ -1260,9 +1263,6 @@ const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
     },
   }),
 ];
-
-// A sample tool result's sub-agent id, declared once as a seed (the guard reads *_SEED_AGENT_ID).
-const SAMPLE_IMAGE_SEED_AGENT_ID = "bcc69216-d4fa-4e28-a090-8a7749123bc5";
 
 const CLOUD_BROWSER_SCREENSHOT =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='675' viewBox='0 0 1200 675'%3E%3Crect width='1200' height='675' fill='%23f8fafc'/%3E%3Crect x='36' y='34' width='1128' height='607' rx='22' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Crect x='36' y='34' width='1128' height='58' rx='22' fill='%23f1f5f9'/%3E%3Ccircle cx='70' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='96' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='122' cy='63' r='8' fill='%2394a3b8'/%3E%3Crect x='170' y='49' width='770' height='28' rx='14' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Ctext x='194' y='69' font-family='Arial,sans-serif' font-size='14' fill='%23475569'%3Email.google.com/mail/u/0/%23inbox%3C/text%3E%3Ctext x='85' y='158' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%230f172a'%3EInbox%3C/text%3E%3Crect x='85' y='196' width='1030' height='1' fill='%23e2e8f0'/%3E%3Crect x='85' y='224' width='820' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='267' width='680' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='318' width='950' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='361' width='600' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='412' width='880' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='455' width='720' height='16' rx='8' fill='%23e2e8f0'/%3E%3C/svg%3E";

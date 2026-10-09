@@ -14,7 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { callApi } from "@/lib/api/call-api";
+import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import { extractSocialLinks, type FoundSocialLink } from "./social-links";
@@ -404,6 +404,8 @@ export async function findSocialsOnWebsite(
         // A discovery read, not the person's own research: never land the page as one of
         // their knowledge Sources.
         save_as_source: false,
+      } as NonNullable<ApiCallConfig<"/scraper/quick-scrape", "POST">["body"]> & {
+        save_as_source: false;
       },
       onStreamEvent: (event) => events.push(event),
     }),
