@@ -58,6 +58,8 @@ export interface MandateRun {
   tokens: number | null;
   /** The mandate this run served; null = the agent was used directly. */
   mandateKey: string | null;
+  /** How the mandate list found it: `holder_agent` = a run of its Holder agent with no mandate name. */
+  foundBy: "mandate" | "holder_agent" | "agent";
   /** The run's answer, one line (≤240 chars); null when none was kept. */
   outputPreview: string | null;
   conversationId: string | null;
@@ -218,6 +220,7 @@ function parseRun(value: Json): MandateRun | null {
     durationMs: num(value.duration_ms),
     tokens: num(value.tokens),
     mandateKey: str(value.mandate_key),
+    foundBy: value.found_by === "holder_agent" ? "holder_agent" : value.found_by === "agent" ? "agent" : "mandate",
     outputPreview: str(value.output_preview),
     conversationId: str(value.conversation_id),
     hasTranscript: value.has_transcript === true,

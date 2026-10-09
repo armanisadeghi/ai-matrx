@@ -15,7 +15,7 @@ export interface StoredRunState {
   retry: () => void;
 }
 
-export function useStoredRun(conversationId: string): StoredRunState {
+export function useStoredRun(conversationId: string, mandateKey: string): StoredRunState {
   const dispatch = useAppDispatch();
   const [run, setRun] = useState<StoredRun | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function useStoredRun(conversationId: string): StoredRunState {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchStoredRun(dispatch, conversationId)
+    fetchStoredRun(dispatch, conversationId, mandateKey)
       .then((next) => {
         if (!cancelled) setRun(next);
       })
@@ -39,7 +39,7 @@ export function useStoredRun(conversationId: string): StoredRunState {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, conversationId, attempt]);
+  }, [dispatch, conversationId, mandateKey, attempt]);
 
   return { conversationId, run, loading, error, retry: () => setAttempt((n) => n + 1) };
 }

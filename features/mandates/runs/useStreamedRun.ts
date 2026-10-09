@@ -47,7 +47,7 @@ export function useStreamedRun(): StreamedRunState {
       });
       setResult(done);
       if (done.conversationId) {
-        fetchStoredRun(dispatch, done.conversationId)
+        fetchStoredRun(dispatch, done.conversationId, null)
           .then(setStored)
           .catch(() => setStored(null));
       }
