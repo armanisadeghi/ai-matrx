@@ -160,7 +160,8 @@ export function voiceOwnerBetaProgramSnapshot(
   const verifiedCallerBinding: VoiceOwnerBetaProgramSnapshot["verifiedCallerBinding"] =
     candidates.verifiedCallers.length === 0 ? "missing" : "enrolled";
   return {
-    ready: destinationBinding === "exact" && verifiedCallerBinding === "enrolled",
+    ready:
+      destinationBinding === "exact" && verifiedCallerBinding === "enrolled",
     programKey: VOICE_OWNER_BETA_PROGRAM_KEY,
     destinationBinding,
     verifiedCallerBinding,
@@ -174,14 +175,18 @@ async function readVoiceOwnerBetaCandidates(
   const { data: destinations, error: destinationError } = await supabase
     .schema("communication")
     .from("sms_phone_numbers")
-    .select("id, phone_number, provider, provider_account_id, program_key, metadata")
+    .select(
+      "id, phone_number, provider, provider_account_id, program_key, metadata",
+    )
     .eq("provider", "twilio")
     .eq("program_key", VOICE_OWNER_BETA_PROGRAM_KEY)
     .eq("is_active", true)
     .is("deleted_at", null)
     .limit(2);
   if (destinationError) {
-    throw new Error(`Failed to read owner Voice destination: ${destinationError.message}`);
+    throw new Error(
+      `Failed to read owner Voice destination: ${destinationError.message}`,
+    );
   }
   if (!destinations) {
     throw new Error("Owner Voice destination read returned no result set");
@@ -205,7 +210,9 @@ async function readVoiceOwnerBetaCandidates(
       .is("deleted_at", null)
       .maybeSingle();
     if (successorError) {
-      throw new Error(`Failed to read owner Voice successor destination: ${successorError.message}`);
+      throw new Error(
+        `Failed to read owner Voice successor destination: ${successorError.message}`,
+      );
     }
     successor = successorRow ?? null;
   }
@@ -239,7 +246,9 @@ async function readVoiceOwnerBetaCandidates(
 
   const { data: callerRows, error: callerError } = await query.limit(2);
   if (callerError) {
-    throw new Error(`Failed to read verified owner Voice caller: ${callerError.message}`);
+    throw new Error(
+      `Failed to read verified owner Voice caller: ${callerError.message}`,
+    );
   }
   if (!callerRows) {
     throw new Error("Verified owner Voice caller read returned no result set");
@@ -263,4 +272,33 @@ export async function authorizeVoiceOwnerBetaCall(
 /** Secret-free readiness summary for the live Voice status endpoint. */
 export async function inspectVoiceOwnerBetaProgram(): Promise<VoiceOwnerBetaProgramSnapshot> {
   return voiceOwnerBetaProgramSnapshot(await readVoiceOwnerBetaCandidates());
+}
+
+/** Transfer is an organization-owned number setting, never agent-provided routing. */
+export async function resolveVoiceOwnerBetaTransfer(
+  call: VoiceOwnerBetaCallIdentity,
+): Promise<string | null> {
+  return evaluateVoiceOwnerBetaTransfer(
+    call,
+    await readVoiceOwnerBetaCandidates(call.callerNumber),
+  );
+}
+
+export function evaluateVoiceOwnerBetaTransfer(
+  call: VoiceOwnerBetaCallIdentity,
+  candidates: VoiceOwnerBetaCandidates,
+): string | null {
+  if (evaluateVoiceOwnerBetaAdmission(call, candidates).status !== "authorized")
+    return null;
+  const metadata = candidates.destinations[0].metadata;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    !("voice_transfer_number" in metadata)
+  )
+    return null;
+  const value = metadata.voice_transfer_number;
+  return typeof value === "string" && /^\+1[2-9]\d{9}$/.test(value)
+    ? value
+    : null;
 }

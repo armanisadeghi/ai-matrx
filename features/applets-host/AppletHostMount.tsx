@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   createPlatformHost,
+  sampleRowsOf,
   type PlatformHost,
 } from "@ai-matrx/applets/platform";
 import { holdWrites, type HeldWrite } from "@ai-matrx/applets/preview";
@@ -311,14 +312,23 @@ export function AppletHostMount({
     });
     provideStoredComponentScopeModules();
     // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
-    const held = isPreview ? holdWrites(host.data) : null;
+    const recordPromise = host.record();
+    const held = isPreview
+      ? holdWrites(host.data, {
+          seed: async (alias) => {
+            const record = await recordPromise;
+            const source = record.sources.find((candidate) => candidate.alias === alias);
+            return source && "new_table" in source
+              ? sampleRowsOf(source.new_table)
+              : [];
+          },
+        })
+      : null;
     const stopHeld = held
       ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes))
       : null;
     const channel: PlatformHost = held ? { ...host, data: held } : host;
-    void host
-      .record()
-      .then((record) => {
+    void recordPromise.then((record) => {
         // The Applet's fixed jobs, declared in the top Agents menu (agent-disclosure; never page chips).
         // A signed-out visitor is not described: /mandates/<key>/describe answers signed-in people
         // and guests who already hold an identity, never a first visit (that read was a 401 on every
