@@ -1,5 +1,7 @@
 -- chair-step: undo memosweep_k - puts iam._memo_pair, iam.kernel_memo_compare and iam.kernel_memo_sweep back as memosweep_j / i left them (definers, asking as postgres) and drops iam._memo_ask.
 -- lane: MEMO-SWEEP-2
+-- based-on: iam._memo_pair(text, uuid, uuid, uuid, uuid[], text, text, integer, integer) 94b9a0ba4c0749617c00b434908053cdc2e2a73faacfc091d09c33fba073505e
+-- based-on: iam.kernel_memo_compare(integer, integer) 629799ee17ef7f55ce7f1f8ce08b83489666bba2c429b24711e1f4e775a9eaba
 
 create or replace FUNCTION iam._memo_pair(p_kind text, p_person uuid, p_org uuid, p_table uuid, p_ids uuid[], p_level text, p_search text, p_limit integer, p_offset integer)
  RETURNS jsonb
