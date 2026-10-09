@@ -89,7 +89,6 @@
     "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
     "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
     "components/brokers/output/TableRenderer.tsx",
-    "components/image/cloud/CloudFilesBrowserTable.tsx",
     "components/matrx/LoadingComponents.tsx",
     "components/official/processor-extractor/path-management/BookmarkManager.tsx",
     "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx",
