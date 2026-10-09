@@ -121,11 +121,13 @@ export function buildBrandContextXml(input: BrandContextInput): string {
   if (profile.elevator_pitches) {
     const pitches = profile.elevator_pitches;
     profileParts.push(
-      `<elevator_pitches>${[
-        ["ten_second", pitches.ten_second],
-        ["thirty_second", pitches.thirty_second],
-        ["sixty_second", pitches.sixty_second],
-      ]
+      `<elevator_pitches>${(
+        [
+          ["ten_second", pitches.ten_second],
+          ["thirty_second", pitches.thirty_second],
+          ["sixty_second", pitches.sixty_second],
+        ] as Array<[string, string | undefined]>
+      )
         .flatMap(([tag, text]) => (text ? [element(tag, text)] : []))
         .join("")}</elevator_pitches>`,
     );
