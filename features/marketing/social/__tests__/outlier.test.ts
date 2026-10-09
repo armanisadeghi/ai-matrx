@@ -50,7 +50,7 @@ describe("badge model", () => {
     expect(m.bars).toBe(2);
     expect(m.tooltip).toBe("4.2x this creator's median (31K). Percentile 97 of last 30.");
   });
-  it("has no baseline: a visible "11+ posts" state, never 0x or 1.0x", () => {
+  it("has no baseline: a visible 11+ posts state, never 0x or 1.0x", () => {
     const m = outlierBadgeModel({ score: null, baselineViews: null, percentile: null, baselineWindow: null, ageHours: 500 });
     expect(m.text).toBe("11+ posts");
     expect(m.tooltip).toBe("Needs 10 other posts to compare");
