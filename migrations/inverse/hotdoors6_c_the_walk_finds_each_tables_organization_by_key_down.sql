@@ -1,6 +1,7 @@
 -- chair-step: undo hotdoors6_c - restores custom.tables_seen_among as hotdoors6_a left it. Run AFTER hotdoors6_d inverse.
 -- lane: HOT-DOORS-6
 -- based-on: custom.tables_seen_among(uuid, uuid[], uuid[]) 95925f09230532c4325b774c8a32daaabe006f207cf607e3e7f3763dfa029a0a
+-- ground-standing-ok: b — this body calls custom.hot_doors_6_on and iam.has_access_for_many_in, which inverse a drops; the order is stated and run in sequence (d, c, b, a), inverse b restores the callee to its pre-lane body before inverse a drops anything, so the end state is consistent and no file is run on top of another out of order.
 
 set local statement_timeout = '60s';
 
