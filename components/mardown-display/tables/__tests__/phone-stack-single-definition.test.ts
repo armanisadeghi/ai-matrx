@@ -1,6 +1,6 @@
 /**
  * The stacked-card table layout has exactly ONE definition: a container query on
- * `.phone-stack` in app/globals.css. A second copy (a viewport media query, or
+ * `.phone-stack` in @ai-matrx/design-system/web-theme.css (matrx-frontend carries no copy). A second copy (a viewport media query, or
  * Tailwind arbitrary-variant classes per renderer) drifts — it did, once.
  */
 import fs from "node:fs";
@@ -10,7 +10,11 @@ const root = path.resolve(__dirname, "../../../..");
 const read = (p: string) => fs.readFileSync(path.join(root, p), "utf8");
 
 describe("phone-stack card list", () => {
-  const css = read("app/globals.css");
+  const css = read("node_modules/@ai-matrx/design-system/dist/web-theme.css");
+
+  it("is not redefined in the host stylesheet", () => {
+    expect(read("app/globals.css")).not.toContain(".phone-stack");
+  });
 
   it("is keyed on the wrapper's width, never on the viewport", () => {
     expect(css).toMatch(/@container \(width < 480px\)\s*\{\s*\.phone-stack > table,/);
