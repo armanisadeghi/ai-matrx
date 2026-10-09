@@ -29,8 +29,6 @@ export const templateListConfig: EntityListConfig<TemplateRow> = {
     rowKind: "template",
     listKind: "template-list",
     humanRow: (row) => `${row.name} — ${row.documents.length} documents, ${row.roles.length} roles`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No templates yet",

@@ -9,7 +9,7 @@
  *   1. the aborted processor commits everything it applied SYNCHRONOUSLY on
  *      abort (its 30 ms batch would otherwise still hold the last frames);
  *   2. `cancelExecution` aborts first, then sends that cursor as `seen_seq`;
- *   3. `cancelAgentRunRequest` puts it on the wire.
+ *   3. `cancelConversationRun` (the conversation door) puts it on the wire.
  * Break this guards: any of the three drops or stales the cursor.
  */
 
@@ -26,13 +26,13 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 const cancelCalls: unknown[][] = [];
-jest.mock("@ai-matrx/chat/host/server/matrx-transport", () => {
-  const actual = jest.requireActual("@ai-matrx/chat/host/server/matrx-transport");
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/call-conversation-api", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/call-conversation-api");
   return {
     ...actual,
-    cancelAgentRunRequest: (...args: unknown[]) => {
+    cancelConversationRun: (...args: unknown[]) => {
       cancelCalls.push(args);
-      return () => Promise.resolve({ data: { request_id: args[0] } });
+      return () => Promise.resolve({ data: { request_id: args[1] } });
     },
   };
 });
@@ -179,5 +179,5 @@ test("Stop aborts first, then sends the page's cursor with the cancel", async ()
   );
 
   expect(controller.signal.aborted).toBe(true);
-  expect(cancelCalls).toEqual([["srv-req-9", "cancel", 41]]);
+  expect(cancelCalls).toEqual([[CONVERSATION_ID, "srv-req-9", "cancel", 41]]);
 });

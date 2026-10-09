@@ -380,7 +380,12 @@ const nextConfig = {
     // evidence-backed single-worker ceiling; package.json runs Next's compile
     // and generate modes as separate processes so compile memory is released
     // before static generation begins.
-    cpus: 1,
+    // GENERATE PROCESS ONLY: 8 workers (2026-10-09). That process starts with
+    // compile memory already released: one worker peaked at 2.8 GB locally
+    // (efa490a55), and 8 workers cut page-data collection ~61 s → ~20 s and
+    // static generation 64 s → 16 s. The compile process (where every OOM
+    // above happened, with compile memory still resident) keeps ONE worker.
+    cpus: process.argv.includes("generate") ? 8 : 1,
     serverActions: {
       bodySizeLimit: "10mb",
     },

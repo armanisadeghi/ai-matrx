@@ -31,7 +31,7 @@ const SUBJECT = /^spaces[:(]/;
 // @ai-matrx/records-ui renders a row's body Space through this entry. Add an entry only by owner decision.
 // The public web page of a published Space (`app/(link)/site/[slug]`, Notion Publish — phase 6, owner brief
 // 2026-10-07): the read-only page and the read of its one door.
-const ENTRY_POINTS = [/features\/spaces\/embed\/RecordBodySpace["'/]/, /features\/spaces\/public\/(?:PublicSpace|public-view)["'/]/, /features\/spaces\/spaces\.css["']/];
+const ENTRY_POINTS = [/features\/spaces\/embed\/RecordBodySpace["'/]/, /features\/spaces\/embed\/useSpaceBuild["'/]/, /features\/spaces\/public\/(?:PublicSpace|public-view)["'/]/, /features\/spaces\/spaces\.css["']/];
 const IMPORT_INTO_FENCE = /(?:from\s+|import\s*\(\s*|require\s*\(\s*)["'](?:@\/features\/spaces(?:\/|["'])|[./]+(?:[^"']*\/)?features\/spaces(?:\/|["']))/;
 
 export function insideFence(path) {

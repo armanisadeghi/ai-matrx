@@ -56,8 +56,17 @@ export interface MandateRun {
   cost: number | null;
   durationMs: number | null;
   tokens: number | null;
-  /** The mandate this run served; null = the agent was used directly. */
+  /** The mandate this run served; null = no mandate named it. */
   mandateKey: string | null;
+  /**
+   * What the server's attribution funnel decided for a run with no mandate
+   * (`mandate_attribution`): `direct` = a person or fixture started the agent by id,
+   * `unknown` = the funnel could not decide. null = never stamped (recorded before
+   * the stamp, or the database read predates it) — never read as `direct`.
+   */
+  attribution: string | null;
+  /** The door that made a `direct` run direct (e.g. `matrx-frontend/agent-runner`). */
+  directDoor: string | null;
   /** How the mandate list found it: `holder_agent` = a run of its Holder agent with no mandate name. */
   foundBy: "mandate" | "holder_agent" | "agent";
   /** The run's answer, one line (≤240 chars); null when none was kept. */
@@ -220,6 +229,8 @@ function parseRun(value: Json): MandateRun | null {
     durationMs: num(value.duration_ms),
     tokens: num(value.tokens),
     mandateKey: str(value.mandate_key),
+    attribution: str(value.attribution),
+    directDoor: str(value.direct_door),
     foundBy: value.found_by === "holder_agent" ? "holder_agent" : value.found_by === "agent" ? "agent" : "mandate",
     outputPreview: str(value.output_preview),
     conversationId: str(value.conversation_id),

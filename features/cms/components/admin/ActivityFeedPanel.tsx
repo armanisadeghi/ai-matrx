@@ -15,11 +15,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Workflow, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
+import { MatrxDataTable, type MatrxColumnDef } from '@ai-matrx/design-system/data-table';
+import { Workflow, User, Cog, RefreshCw, Loader2 } from 'lucide-react';
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { openFilePreview } from '@/features/files/components/preview/openFilePreview';
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ACTOR_META = {
     agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary-ink border-primary/30' },
@@ -65,6 +64,8 @@ function ActorBadge({ actor }: { actor: string | undefined }) {
     );
 }
 
+type ActivityRow = ReturnType<typeof useCmsAdminActivity>['activity'][number];
+
 export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[] }) {
     const [siteId, setSiteId] = useState<string>('all');
     const [entityType, setEntityType] = useState<string>('all');
@@ -81,6 +82,24 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
 
     const { activity, isLoading, error, refresh } = useCmsAdminActivity(filters);
     const siteName = (id: string | null) => sites.find((s) => s.id === id)?.name ?? id ?? '—';
+
+    const columns = useMemo((): MatrxColumnDef<ActivityRow>[] => [
+        { id: 'created_at', header: 'Time', accessorFn: (row) => row.created_at, width: 150,
+          cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}</span> },
+        { id: 'actor', header: 'Actor', accessorFn: (row) => row.changes?.actor ?? 'unknown', filter: 'select', width: 110,
+          cell: (row) => <ActorBadge actor={row.changes?.actor} /> },
+        { id: 'site', header: 'Site', accessorFn: (row) => siteName(row.client_id), filter: 'select', width: 150,
+          cell: (row) => <span className="block truncate">{siteName(row.client_id)}</span> },
+        { id: 'activity_type', header: 'Type', accessorFn: (row) => row.activity_type, filter: 'select', width: 150,
+          cell: (row) => <span className="font-mono text-[11px] text-muted-foreground">{row.activity_type}</span> },
+        { id: 'description', header: 'Description', accessorFn: (row) => row.description ?? '', width: 420,
+          cell: (row) => <span className="block truncate">{row.description}</span> },
+        { id: 'media', header: 'Media', sortable: false, filter: false, accessorFn: (row) => (row.changes?.metadata?.capture_media_refs ?? []).length, width: 140,
+          cell: (row) => <CaptureMediaLinks fileIds={row.changes?.metadata?.capture_media_refs} /> },
+        { id: 'by', header: 'By', accessorFn: (row) => row.user_email ?? row.user_id ?? '—', width: 180,
+          cell: (row) => <span className="block truncate text-muted-foreground">{row.user_email ?? row.user_id ?? '—'}</span> },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ], [sites]);
 
     return (
         <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites, cms_activity_filter: { siteId, entityType, actor }, cms_activity_log: activity })}>
@@ -137,61 +156,26 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                 </Button>
             </div>
 
-            {error && (
-                <div className="flex-none flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md bg-destructive/10 text-destructive-ink text-xs">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                    {error}
-                  <ErrorAlchemyMenu error={error} />
-                </div>
-            )}
-
-            <div className="flex-1 min-h-0 overflow-auto rounded-md border border-border">
-                <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10">
-                        <TableRow>
-                            <TableHead className="h-8 text-xs">Time</TableHead>
-                            <TableHead className="h-8 text-xs">Actor</TableHead>
-                            <TableHead className="h-8 text-xs">Site</TableHead>
-                            <TableHead className="h-8 text-xs">Type</TableHead>
-                            <TableHead className="h-8 text-xs">Description</TableHead>
-                            <TableHead className="h-8 text-xs">Media</TableHead>
-                            <TableHead className="h-8 text-xs">By</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {activity.length === 0 && !isLoading && !error && (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-xs">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Activity className="h-6 w-6 opacity-30" />
-                                        No activity yet — mutations from any site will appear here within {8}s.
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {activity.map((row) => (
-                            <TableRow key={row.id} className="text-xs">
-                                <TableCell className="whitespace-nowrap text-muted-foreground py-1.5">
-                                    {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
-                                </TableCell>
-                                <TableCell className="py-1.5">
-                                    <ActorBadge actor={row.changes?.actor} />
-                                </TableCell>
-                                <TableCell className="py-1.5 max-w-[140px] truncate">{siteName(row.client_id)}</TableCell>
-                                <TableCell className="py-1.5 font-mono text-[11px] text-muted-foreground">
-                                    {row.activity_type}
-                                </TableCell>
-                                <TableCell className="py-1.5 max-w-[420px] truncate">{row.description}</TableCell>
-                                <TableCell className="py-1.5">
-                                    <CaptureMediaLinks fileIds={row.changes?.metadata?.capture_media_refs} />
-                                </TableCell>
-                                <TableCell className="py-1.5 max-w-[160px] truncate text-muted-foreground">
-                                    {row.user_email ?? row.user_id ?? '—'}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+            <div className="flex-1 min-h-0">
+                <MatrxDataTable<ActivityRow>
+                    tableId="cms-admin-activity"
+                    data={activity as ActivityRow[]}
+                    columns={columns}
+                    getRowId={(row) => row.id}
+                    isLoading={isLoading && activity.length === 0}
+                    read={{ status: error ? 'error' : isLoading ? 'loading' : 'ready', error: error ?? undefined, onRetry: refresh, what: 'the activity feed' }}
+                    defaultSort={{ id: 'created_at', direction: 'desc' }}
+                    emptyState={{ title: 'No activity yet', description: 'Mutations from any site will appear here within 8s.' }}
+                    detail={{ enabled: false }}
+                    copy={{
+                        label: 'CMS activity',
+                        location: 'CMS Admin Activity Feed',
+                        rowKind: 'cms-activity',
+                        listKind: 'cms-activity-list',
+                        humanRow: (row) => `${row.activity_type}: ${row.description ?? ''}`.trim(),
+                        agentRow: (row) => row,
+                    }}
+                />
             </div>
         </div>
         </SurfaceRuntimeProvider>

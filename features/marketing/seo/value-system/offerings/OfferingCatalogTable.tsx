@@ -464,7 +464,7 @@ function RowActions({
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => actions.onEdit(node)}>
           <Pencil className="h-3.5 w-3.5" />
-          Edit name, kind or place…
+          Edit details and price…
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => actions.onAddChild(node)}>
           <GitBranchPlus className="h-3.5 w-3.5" />

@@ -41,6 +41,8 @@ import {
   Link,
   Link2,
   ListChecks,
+  Lock,
+  LockOpen,
   Pencil,
   Settings,
   Share2,
@@ -91,6 +93,8 @@ export const OBJECT_ACTION_ICONS: Record<ObjectActionIcon, LucideIcon> = {
   "link-2": Link2,
   "layout-grid": LayoutGrid,
   "git-merge": GitMerge,
+  lock: Lock,
+  "lock-open": LockOpen,
 };
 
 function toCommand(action: ObjectAction): ItemMenuCommand {

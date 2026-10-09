@@ -315,7 +315,6 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     busy:
       aiCleanRunning ||
       pipelineRunning ||
-      !docRun.answered ||
       docRunActive ||
       docRun.phase === "failed" ||
       extractor.batchStatus !== "idle" ||
@@ -326,6 +325,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     pagesHaveCleanText: pages.some((p) => p.cleanedText.trim().length > 0),
     pageCount: pages.length,
     pagesHaveSectionKind: pages.some((p) => Boolean(p.sectionKind)),
+    runAnswered: docRun.answered,
     run: () => void handleRunAiClean(),
   });
 

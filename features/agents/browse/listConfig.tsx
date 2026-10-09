@@ -244,10 +244,6 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
     listKind: "agent-list",
     humanRow: (row) =>
       `${row.name}${row.category ? ` (${row.category})` : ""} — updated ${formatRelativeTime(row.updated_at)}`,
-    // Row copy lives in the "…" menu; the toolbar strip would be a lone pair
-    // of unlabeled icons floating above the header.
-    showRow: false,
-    showToolbar: false,
   },
   views: {
     cards: (p) => (

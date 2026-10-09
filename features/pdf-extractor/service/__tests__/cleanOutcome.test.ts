@@ -1,6 +1,5 @@
 import {
   classifyRecordUpdateStatus,
-  pollForCleanContent,
   preferAggregateClean,
   shouldRefreshOnProcessingProgress,
 } from "../cleanOutcome";
@@ -34,27 +33,6 @@ describe("shouldRefreshOnProcessingProgress", () => {
   it("ignores other stages and phases", () => {
     expect(shouldRefreshOnProcessingProgress({ stage: "embed", phase: "done" }, 0, 99999)).toBe(false);
     expect(shouldRefreshOnProcessingProgress({ stage: "clean", phase: "start" }, 0, 99999)).toBe(false);
-  });
-});
-
-describe("pollForCleanContent", () => {
-  const noSleep = async () => {};
-  it("returns text that shows up on a later read", async () => {
-    const read = jest
-      .fn<Promise<string | null>, []>()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce("cleaned");
-    await expect(
-      pollForCleanContent(read, { intervalMs: 1, timeoutMs: 10, sleep: noSleep }),
-    ).resolves.toBe("cleaned");
-    expect(read).toHaveBeenCalledTimes(2);
-  });
-  it("gives up with null after the bounded window", async () => {
-    const read = jest.fn<Promise<string | null>, []>().mockResolvedValue(null);
-    await expect(
-      pollForCleanContent(read, { intervalMs: 1, timeoutMs: 3, sleep: noSleep }),
-    ).resolves.toBeNull();
-    expect(read).toHaveBeenCalledTimes(3);
   });
 });
 

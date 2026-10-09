@@ -37,7 +37,6 @@ export const appletListConfig: EntityListConfig<AppletListRow> = {
     listKind: "agent-app-list",
     humanRow: (row) =>
       `${row.name} — ${row.state.label}, ${row.total_executions} runs, edited ${formatRelativeTime(row.updated_at)}`,
-    showRow: false,
     showToolbar: true,
   },
   // FIRST RUN (audit L1): a new person's All lane is empty — never strangers' public items — so the

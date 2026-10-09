@@ -1,4 +1,4 @@
-import { AtSign, Globe2 } from "lucide-react";
+import { AtSign, Ghost, Globe2, MessagesSquare } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   Facebook,
@@ -24,6 +24,9 @@ const KIND_ICONS: Record<PropertyKind, LucideIcon> = {
   linkedin: Linkedin,
   pinterest: Pinterest,
   google_business_profile: Google,
+  threads: AtSign,
+  reddit: MessagesSquare,
+  snapchat: Ghost,
   other: AtSign,
 };
 
@@ -43,6 +46,9 @@ const KIND_TILE_CLASSES: Record<PropertyKind, string> = {
   linkedin: "bg-[#0A66C2] text-white",
   pinterest: "bg-[#E60023] text-white",
   google_business_profile: "bg-[#4285F4] text-white",
+  threads: "bg-black text-white dark:bg-white dark:text-black",
+  reddit: "bg-[#FF4500] text-white",
+  snapchat: "bg-[#FFFC00] text-black",
   other: "bg-muted text-muted-foreground",
 };
 
@@ -55,6 +61,9 @@ const HANDLE_URL_BUILDERS: Partial<Record<PropertyKind, (h: string) => string>> 
     tiktok: (h) => `https://tiktok.com/@${h}`,
     youtube: (h) => `https://youtube.com/@${h}`,
     pinterest: (h) => `https://pinterest.com/${h}`,
+    threads: (h) => `https://www.threads.com/@${h}`,
+    reddit: (h) => `https://reddit.com/user/${h}`,
+    snapchat: (h) => `https://snapchat.com/add/${h}`,
   };
 
 export function toPropertyKind(value: string): PropertyKind {

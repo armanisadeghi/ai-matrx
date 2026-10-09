@@ -16,6 +16,7 @@ import {
   ScanSearch,
   Star,
   Swords,
+  Users,
   Target,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -98,6 +99,7 @@ import {
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { BrandCompetitorDirectory } from "./BrandCompetitorDirectory";
 
 import {
   competitorOpportunityCopyRow,
@@ -126,6 +128,7 @@ const COMPETITOR_VIEWS = [
   { id: "competitors", name: "Competitors", icon: Swords },
   { id: "evidence", name: "Evidence", icon: FileSearch },
   { id: "history", name: "History", icon: History },
+  { id: "all", name: "All", icon: Users },
 ] as const;
 
 type CompetitorView = (typeof COMPETITOR_VIEWS)[number]["id"];
@@ -1689,6 +1692,10 @@ export default function CompetitorAutopsyWorkspace({
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="all" className="mt-0">
+            {brandId ? <BrandCompetitorDirectory /> : null}
           </TabsContent>
 
           <TabsContent value="history" className="mt-0">

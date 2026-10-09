@@ -95,6 +95,7 @@ function rowToFormData(row: AiModel): AiModelFormData {
     cost_rating: row.cost_rating != null ? String(row.cost_rating) : "",
     speed_rating: row.speed_rating != null ? String(row.speed_rating) : "",
     retry_fallback_id: row.retry_fallback_id ?? "",
+    successor_id: row.successor_id ?? "",
     retry_max_attempts:
       row.retry_max_attempts != null ? String(row.retry_max_attempts) : "",
   };
@@ -116,6 +117,7 @@ const EMPTY_FORM: AiModelFormData = {
   speed_rating: "",
   retry_fallback_id: "",
   retry_max_attempts: "",
+  successor_id: "",
 };
 
 // ─── Pricing (read-only, sourced from ai.offering) ────────────────────────
@@ -570,6 +572,7 @@ const AI_MODEL_COLUMNS = new Set([
   "speed_rating",
   "retry_fallback_id",
   "retry_max_attempts",
+  "successor_id",
 ]);
 
 /** Strip any keys not in AI_MODEL_COLUMNS and return { cleaned, unknownKeys } */
@@ -1117,6 +1120,7 @@ export default function AiModelDetailPanel({
             ? parseInt(formData.speed_rating)
             : null,
           retry_fallback_id: formData.retry_fallback_id || null,
+          successor_id: formData.successor_id || null,
           retry_max_attempts: formData.retry_max_attempts
             ? parseInt(formData.retry_max_attempts)
             : 0,

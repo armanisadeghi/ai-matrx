@@ -14,6 +14,7 @@ import {
   relativeWhen,
   rungTitle,
   rungWords,
+  unmandatedRunLabel,
   RUNG_NOT_RECORDED,
 } from "../format";
 
@@ -174,5 +175,36 @@ describe("a run's error reads as a sentence", () => {
   it("keeps a plain sentence as it is", () => {
     expect(readableError("Timed out after 120s")).toBe("Timed out after 120s");
     expect(readableError(null)).toBeNull();
+  });
+});
+
+
+describe("a run with no mandate says what the server decided, never a guess", () => {
+  it("carries the attribution and the door through the read", () => {
+    const page = parseRunPage({
+      total: 2,
+      rows: [
+        { ...conversationRow, attribution: "direct", direct_door: "matrx-frontend/agent-runner" },
+        { ...conversationRow, run_id: "11111111-2222-4333-8444-555555555555", attribution: "unknown" },
+      ],
+    });
+    expect(page.rows[0].attribution).toBe("direct");
+    expect(page.rows[0].directDoor).toBe("matrx-frontend/agent-runner");
+    expect(page.rows[1].attribution).toBe("unknown");
+    expect(page.rows[1].directDoor).toBeNull();
+  });
+  it("a row from a read that predates the stamp has no attribution", () => {
+    expect(parseRunPage({ total: 1, rows: [conversationRow] }).rows[0].attribution).toBeNull();
+  });
+  it("Direct run only for direct, with its door; unknown and missing are Unattributed", () => {
+    const direct = unmandatedRunLabel({ attribution: "direct", directDoor: "matrx-frontend/agent-runner" });
+    expect(direct.words).toBe("Direct run");
+    expect(direct.warning).toBe(false);
+    expect(direct.title).toContain("matrx-frontend/agent-runner");
+    for (const attribution of ["unknown", null, "something-new"]) {
+      const label = unmandatedRunLabel({ attribution, directDoor: null });
+      expect(label.words).toBe("Unattributed");
+      expect(label.warning).toBe(true);
+    }
   });
 });

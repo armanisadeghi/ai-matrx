@@ -718,7 +718,6 @@ export function DealsPage() {
                   listKind: "crm-deal-list",
                   humanRow: (row) =>
                     `${row.name} — ${stageById.get(row.stage_id)?.name ?? "unknown stage"}`,
-                  showRow: false,
                   // The toolbar's one export, over the WHOLE result (lane 7 W2).
                   showToolbar: true,
                   export: exportWhole,

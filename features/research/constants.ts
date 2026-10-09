@@ -183,7 +183,7 @@ export const ORIGIN_CONFIG: Record<
     label: "Search",
     color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   },
-  manual: {
+  manual_add: {
     label: "Manual",
     color:
       "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",

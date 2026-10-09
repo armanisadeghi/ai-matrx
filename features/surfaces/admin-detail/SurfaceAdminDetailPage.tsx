@@ -7,6 +7,7 @@ import React, {
   useTransition,
 } from "react";
 import AppLink from "@/components/navigation/AppLink";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -117,9 +118,6 @@ import {
   getAncestorChain,
   surfaceAdminHref,
 } from "@ai-matrx/chat/surfaces/utils/surface-hierarchy";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { replaceAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -1090,6 +1088,41 @@ function HierarchySection({
   const ancestors = getAncestorChain(surface.name, byName);
   const childrenByParent = buildChildrenByParent(surfaceOptions);
   const children = childrenByParent.get(surface.name) ?? [];
+  const childColumns: MatrxColumnDef<(typeof children)[number]>[] = [
+    {
+      id: "name",
+      header: "Surface",
+      accessorFn: (child) => child.name,
+      width: 300,
+      cell: (child) => (
+        <AppLink
+          href={surfaceAdminHref(child.name)}
+          className="block truncate font-mono text-foreground hover:text-primary hover:underline"
+          title={child.name}
+        >
+          {child.name}
+        </AppLink>
+      ),
+    },
+    { id: "client", header: "Client", accessorFn: (child) => child.client_name, filter: "select", width: 120, cell: (child) => <span className="text-muted-foreground">{child.client_name}</span> },
+    { id: "description", header: "Description", accessorFn: (child) => child.description ?? "", width: 260, cell: (child) => <span className="block truncate text-muted-foreground">{child.description ?? "—"}</span> },
+    {
+      id: "open",
+      header: "Open",
+      sortable: false,
+      filter: false,
+      accessorFn: (child) => child.name,
+      width: 72,
+      align: "right",
+      cell: (child) => (
+        <Button asChild variant="quiet" className="w-6">
+          <AppLink href={surfaceAdminHref(child.name)} aria-label={`Open ${child.name}`} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </AppLink>
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <section className="space-y-4">
@@ -1197,63 +1230,22 @@ function HierarchySection({
                 No direct children — this surface has no child surfaces.
               </EmptyHint>
             ) : (
-              <div className="rounded-md border border-border bg-card overflow-hidden">
-                <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40">
-                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Surface
-                      </th>
-                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[100px]">
-                        Client
-                      </th>
-                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground hidden sm:table-cell">
-                        Description
-                      </th>
-                      <th className="px-2 py-1.5 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[72px]">
-                        Open
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {children.map((child) => (
-                      <tr key={child.name} className="hover:bg-muted/30">
-                        <td className="px-2 py-1.5 font-mono align-middle">
-                          <AppLink
-                            href={surfaceAdminHref(child.name)}
-                            className="text-foreground hover:text-primary hover:underline sm:truncate block sm:max-w-[280px]"
-                            title={child.name}
-                          >
-                            {child.name}
-                          </AppLink>
-                        </td>
-                        <td className="px-2 py-1.5 text-muted-foreground align-middle">
-                          {child.client_name}
-                        </td>
-                        <td className="px-2 py-1.5 text-muted-foreground align-middle hidden sm:table-cell sm:max-w-[200px] sm:truncate">
-                          {child.description ?? "—"}
-                        </td>
-                        <td className="px-2 py-1.5 text-right align-middle">
-                          <Button
-                            asChild
-                            variant="quiet"
-                            className="w-6"
-                          >
-                            <AppLink
-                              href={surfaceAdminHref(child.name)}
-                              aria-label={`Open ${child.name}`}
-                               target="_blank"
-                               rel="noopener noreferrer"
-                             >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </AppLink>
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <MatrxDataTable<(typeof children)[number]>
+                tableId="surface-admin-direct-children"
+                data={children}
+                columns={childColumns}
+                getRowId={(child) => child.name}
+                emptyState={{ title: "No direct children" }}
+                detail={{ enabled: false }}
+                copy={{
+                  label: "Direct child surfaces",
+                  location: `Surface Admin, children of ${surface.name}`,
+                  rowKind: "surface-child",
+                  listKind: "surface-children",
+                  humanRow: (child) => `${child.name} (${child.client_name})${child.description ? ` - ${child.description}` : ""}`,
+                  agentRow: (child) => child,
+                }}
+              />
             )}
           </div>
         </>

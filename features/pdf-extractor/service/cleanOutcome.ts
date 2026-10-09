@@ -2,9 +2,8 @@
  * PDF Extractor — pure decisions about the clean stage's outcome.
  *
  * Kept free of React and the network so the rules the studio depends on are
- * unit-testable: what a `record_update` status means, when a processing
- * progress event should refetch the doc, and the bounded poll for clean text
- * that the server finished writing just after the stream closed.
+ * unit-testable: what a `record_update` status means and when a processing
+ * progress event should refetch the doc.
  */
 
 /** What a `processed_documents` `record_update` means for the UI. */
@@ -57,36 +56,6 @@ export function shouldRefreshOnProcessingProgress(
   if (evt.phase === "done") return true;
   if (evt.phase === "page") return now - lastRefreshAt >= throttleMs;
   return false;
-}
-
-/**
- * The stream ended without clean text, but the server often finishes the
- * write seconds later. Poll `read` until it yields text or `timeoutMs` ends;
- * returns the text, or null when it never showed up.
- */
-export async function pollForCleanContent(
-  read: () => Promise<string | null | undefined>,
-  opts: {
-    intervalMs?: number;
-    timeoutMs?: number;
-    sleep?: (ms: number) => Promise<void>;
-    isCancelled?: () => boolean;
-  } = {},
-): Promise<string | null> {
-  const {
-    intervalMs = 3000,
-    timeoutMs = 30_000,
-    sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms)),
-    isCancelled = () => false,
-  } = opts;
-  const attempts = Math.max(1, Math.floor(timeoutMs / intervalMs));
-  for (let i = 0; i < attempts; i++) {
-    if (isCancelled()) return null;
-    const text = await read().catch(() => null);
-    if (text && text.length > 0) return text;
-    if (i < attempts - 1) await sleep(intervalMs);
-  }
-  return null;
 }
 
 /**

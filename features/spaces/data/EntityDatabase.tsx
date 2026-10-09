@@ -507,13 +507,13 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
           columns={columns}
           getRowId={(row) => String(row.id)}
           isLoading={entity.loading && !entity.rows.length}
+          // table-copy-optout: embedded records grid whose space owns the header; row Alchemy stays
           hideToolbar
           hidePagination
           pageSize={Math.max(entity.rows.length, 1)}
           selection={false}
           frameHeight="content"
           fitToWidth={false}
-          copy={false}
           cellLines="one"
           // The same table behaviour as a custom table's grid (records-ui Grid): no detail panel and no row
           // window of the table's own, a spreadsheet cell cursor — one click selects a cell, Enter opens the

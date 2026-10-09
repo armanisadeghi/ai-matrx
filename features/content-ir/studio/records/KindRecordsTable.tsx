@@ -738,8 +738,6 @@ export default function KindRecordsTable({
           listKind: "content-ir-kind-instance-list",
           humanRow: (row) =>
             `${row.title ?? "Untitled"} — ${row.confirmation}${row.archivedAt ? ", archived" : ""}`,
-          showRow: false,
-          showToolbar: false,
         }}
         // read-gate-exempt: error swaps this for the failed-read state and the banner above names the failure once
         emptyState={

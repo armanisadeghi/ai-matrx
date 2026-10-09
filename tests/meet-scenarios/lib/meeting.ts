@@ -277,6 +277,13 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
       actor.note(`${lastAction === "name" ? "retyped" : "typed"} name "${name}"${gesture ? "" : " (no gesture)"}`);
       lastAction = "name";
       lastAt = Date.now();
+    } else if (o.phase === "prejoin" && due("join") && (await page.getByRole("button", { name: /^(Switch here|Transfer here)$/ }).isVisible().catch(() => false))) {
+      // S7: already in this meeting on another tab or device — a person who opened it here to
+      // use it here presses "Switch here" (Meet) / "Transfer here" (Teams).
+      await page.getByRole("button", { name: /^(Switch here|Transfer here)$/ }).click();
+      actor.note("pressed Switch here (already in the meeting on another tab)");
+      lastAction = "join";
+      lastAt = Date.now();
     } else if (o.phase === "prejoin" && due("join")) {
       const join = page.getByRole("button", { name: /^Join now$/ });
       const enabled = gesture

@@ -101,3 +101,26 @@ export function outputWarningTitle(run: MandateRun): string | null {
     ? `Output may not fit: the ${run.holderType} that ran does not declare ${keys.join(", ")}.`
     : `Output may not fit: the ${run.holderType} that ran does not declare this job's output.`;
 }
+
+/**
+ * What a run with NO mandate says it is. `Direct run` only when the server's funnel
+ * stamped it `direct` (the door rides along as the hover); anything else — `unknown`,
+ * or never stamped — is `Unattributed`, a quiet warning, never "Direct run".
+ */
+export function unmandatedRunLabel(run: {
+  attribution: string | null;
+  directDoor: string | null;
+}): { words: "Direct run" | "Unattributed"; title: string; warning: boolean } {
+  if (run.attribution === "direct") {
+    return {
+      words: "Direct run",
+      title: run.directDoor ? `Started by its agent directly, through ${run.directDoor}` : "Started by its agent directly",
+      warning: false,
+    };
+  }
+  return {
+    words: "Unattributed",
+    title: run.attribution === "unknown" ? "The server could not tell which mandate this run served" : "No mandate recorded for this run",
+    warning: true,
+  };
+}

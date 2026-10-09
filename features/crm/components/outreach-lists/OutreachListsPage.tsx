@@ -460,8 +460,6 @@ export function OutreachListsPage() {
                     listKind: "crm-outreach-lists",
                     humanRow: (row) =>
                       `${row.name} (${row.list_kind}, ${row.status}) — ${memberCount(row)} members`,
-                    showRow: false,
-                    showToolbar: false,
                   }}
                   emptyState={{
                     icon: <Megaphone className="h-5 w-5" />,

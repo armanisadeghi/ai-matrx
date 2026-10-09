@@ -120,11 +120,13 @@ begin
       array['toNumber("12") + 1', '(("12" * 1) + 1)'],
       array['ifs(prop("Fee") > 500, "Large", prop("Fee") > 100, "Mid", "Small")', 'IF(({Fee} > 500), "Large", IF(({Fee} > 100), "Mid", "Small"))'],
       array['empty(prop("Notes"))', 'ISBLANK({Notes})']];
+    -- FORMULA-2 (2026-10-08) carried three of the original five refusals (a pattern in replaceAll, current / index, hours):
+    -- they now work (see formula2_a_notion_list_functions_let_and_more_date_units.sql); these still have no word here.
     v_refused text[][] := array[
-      array['replaceAll(prop("Name"), "Co.", "Company")', 'pattern'],
+      array['padStart(prop("Name"), 5, "0")', 'padStart'],
       array['prop("Fee") ^ 2', 'power'],
-      array['map(prop("Tags"), current.length())', 'item by item'],
-      array['prop("Due").dateAdd(1, "hours")', 'unit'],
+      array['reduce(prop("Tags"), current)', 'reduce'],
+      array['prop("Due").dateAdd(1, "decades")', 'unit'],
       array['prop("A"', 'closing']];
     i integer;
   begin

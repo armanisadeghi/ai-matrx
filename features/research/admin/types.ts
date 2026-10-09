@@ -60,12 +60,15 @@ export const AGENT_CONFIG_META: Record<AgentConfigKey, { label: string; descript
     },
 };
 
+// Seed mirror of the server setting's default (the guard reads a *_SEED_AGENT_ID constant as a declaration).
+const GENERIC_PAGE_SUMMARY_SEED_AGENT_ID = '7e021d98-5ea7-4ff1-b295-1c941312439d';
+
 export const SYSTEM_CONSTANTS = [
     {
         key: 'GENERIC_PAGE_SUMMARY_AGENT_ID',
         label: 'Page Summary Fallback',
         description: 'System-wide fallback for page summary when no template/project override exists',
-        defaultValue: '7e021d98-5ea7-4ff1-b295-1c941312439d',
+        defaultValue: GENERIC_PAGE_SUMMARY_SEED_AGENT_ID,
         module: 'analysis.py',
     },
     {

@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T06:32:38.747Z",
+  "generated_at": "2026-10-09T07:14:59.457Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3026,6 +3026,18 @@
       "checksum": "2785193cb2e9b253b16789c66cb936ed92626fd3d09a44f900219d2a55e4df55",
       "applied_at": "2026-09-21 03:39:45.53276+00"
     },
+    "migrations/campaign/fileparent_a_record_children_follow_their_record.sql": {
+      "source": "matrx-frontend",
+      "filename": "fileparent_a_record_children_follow_their_record.sql",
+      "checksum": "b01a1fa4567a42eddeacd4aa14cbd2c5c3e35aef24806121befcdbefa00c0bc1",
+      "applied_at": "2026-10-09 07:03:50.835902+00"
+    },
+    "migrations/campaign/fileparent_b_publish_refused_only_under_confidential_or_private.sql": {
+      "source": "matrx-frontend",
+      "filename": "fileparent_b_publish_refused_only_under_confidential_or_private.sql",
+      "checksum": "6b32134c5fc26eb0aa85c0e6eb98fffb7f339e29ec80ba11df3bd0ca969af0b5",
+      "applied_at": "2026-10-09 07:14:58.289333+00"
+    },
     "migrations/campaign/filtergroups_a_signed_in_person_may_read_a_rules_members.sql": {
       "source": "matrx-frontend",
       "filename": "filtergroups_a_signed_in_person_may_read_a_rules_members.sql",
@@ -3337,6 +3349,12 @@
       "filename": "formsfix1_the_server_lane_can_ask_which_questions_come_next.sql",
       "checksum": "24d778f974c9766c10fc0b5325668ce31b31519b4dd230ac3eecf501324e9a66",
       "applied_at": "2026-09-25 00:24:59.043482+00"
+    },
+    "migrations/campaign/formula2_a_notion_list_functions_let_and_more_date_units.sql": {
+      "source": "matrx-frontend",
+      "filename": "formula2_a_notion_list_functions_let_and_more_date_units.sql",
+      "checksum": "c2e6d07180cbb2e2e1a05c12bd8468edf14ea01ba3d03244dad24793abd80029",
+      "applied_at": "2026-10-09 06:45:43.16032+00"
     },
     "migrations/campaign/fts2c_a_a_contact_names_the_columns_the_crm_form_edits.sql": {
       "source": "matrx-frontend",
@@ -5131,6 +5149,18 @@
       "filename": "notionsmall2_d_a_reminder_opens_its_row.sql",
       "checksum": "215b953ea14e884e64d00a5115c2d6f91fe10ba8e239f122e959e936612460ea",
       "applied_at": "2026-10-09 05:45:07.886474+00"
+    },
+    "migrations/campaign/notionsmall3_a_relative_days_are_the_readers_days.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall3_a_relative_days_are_the_readers_days.sql",
+      "checksum": "2087baef68e794e735bbf17b3eff630c20865a37451bde1a7e63d8f05ff981f4",
+      "applied_at": "2026-10-09 06:52:41.304136+00"
+    },
+    "migrations/campaign/notionsmall3_b_me_is_the_readers_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall3_b_me_is_the_readers_person.sql",
+      "checksum": "e59bca7e2e5acfe29a9ae638d2344645f4f5d2747c53fa497b8f0572f3c30ef8",
+      "applied_at": "2026-10-09 07:04:32.71104+00"
     },
     "migrations/campaign/olderdoors_a_moved_older_table_reads_marked_and_refuses_writes.sql": {
       "source": "matrx-frontend",

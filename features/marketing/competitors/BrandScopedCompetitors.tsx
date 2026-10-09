@@ -22,6 +22,7 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { BrandCompetitorDirectory } from "./BrandCompetitorDirectory";
 import CompetitorAutopsyWorkspace from "./CompetitorAutopsyWorkspace";
 
 export function BrandScopedCompetitors({
@@ -41,17 +42,9 @@ export function BrandScopedCompetitors({
   if (sites.isPending) return <LoadingSurface label="Loading websites…" />;
   if (sites.isError) return <QueryError error={sites.error} />;
 
-  if ((sites.data ?? []).length === 0) {
-    return (
-      <div className="p-4">
-        <p className="rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-          Competitors are found per website, and {brand.name} has no website
-          connected yet. Add one to this brand and the competitor search turns
-          on immediately.
-        </p>
-      </div>
-    );
-  }
+  // A brand with no website still has competitors: the social ones. The directory works without
+  // a site; the website analysis screens need one.
+  if ((sites.data ?? []).length === 0) return <BrandCompetitorDirectory />;
 
   return <CompetitorAutopsyWorkspace brandId={brand.id} view={view} />;
 }

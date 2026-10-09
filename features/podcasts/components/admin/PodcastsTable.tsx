@@ -444,7 +444,6 @@ export function PodcastsTable({
           isLoading={isLoading}
           read={read}
           density="condensed"
-          copy={false}
           toolbar={{ search: false }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
@@ -509,7 +508,6 @@ export function PodcastsTable({
           isLoading={isLoading}
           read={read}
           density="condensed"
-          copy={false}
           toolbar={{ search: false }}
           detail={{ enabled: false }}
           window={{ enabled: false }}

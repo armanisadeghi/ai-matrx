@@ -30,7 +30,7 @@ git config user.name test; git config user.email test@test
 mkdir -p scripts
 cp "$SCRIPT_UNDER_TEST" scripts/release.sh
 # The primitives the script sources ride along when they sit beside it.
-for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh sync-main.py check-lockfile-keys.py; do
+for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh sync-main.py check-lockfile-keys.py lockfile-twins.sh check-matrx-packages.mjs; do
     [[ -f "$(dirname "$SCRIPT_UNDER_TEST")/$helper" ]] && cp "$(dirname "$SCRIPT_UNDER_TEST")/$helper" "scripts/$helper"
 done
 printf '{\n  "name": "sandbox",\n  "version": "0.1.0",\n  "private": true\n}\n' > package.json
@@ -200,7 +200,57 @@ set -e
 check "an unreadable lockfile stops the release"  '[[ $STATUS6 -ne 0 ]]'
 check "nothing was pushed for it"                 '[[ "$(git ls-remote origin refs/heads/main | cut -f1)" == "$BEFORE6" ]] && ! git ls-remote --tags origin | grep -q "refs/tags/v0.1.6$"'
 check "the stop names the lockfile"               'grep -q "pnpm-lock.yaml in the release tree cannot be parsed" "$SANDBOX/out6"'
+# ── seventh + eighth releases: THE TWINS GUARD (v0.4.3061, 2026-10-08) ──────
+# The lockfile parsed, but held two versions of one @ai-matrx package; Vercel's
+# postinstall (check-matrx-packages.mjs --duplicates) refused it on every project.
+# A stub pnpm stands in for the registry: in the 7th run its `update` collapses the
+# twins (remedied inside the release commit, WARNING); in the 8th it cannot, and
+# nothing may be pushed.
+twin_lock() {  # $1 = the app's design-system version, $2 = meet's
+    local pkgs="  '@ai-matrx/design-system@$1':\n    resolution: {integrity: sha512-a}\n\n"
+    [[ "$1" != "$2" ]] && pkgs+="  '@ai-matrx/design-system@$2':\n    resolution: {integrity: sha512-b}\n\n"
+    local snaps="  '@ai-matrx/design-system@$1': {}\n\n"
+    [[ "$1" != "$2" ]] && snaps+="  '@ai-matrx/design-system@$2': {}\n\n"
+    printf "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      '@ai-matrx/design-system':\n        specifier: latest\n        version: $1\n      '@ai-matrx/meet':\n        specifier: latest\n        version: 0.11.29\n\npackages:\n\n${pkgs}  '@ai-matrx/meet@0.11.29':\n    resolution: {integrity: sha512-c}\n\nsnapshots:\n\n${snaps}  '@ai-matrx/meet@0.11.29':\n    dependencies:\n      '@ai-matrx/design-system': $2\n"
+}
+cat > "$SANDBOX/bin/pnpm" <<STUB
+#!/usr/bin/env bash
+echo "\$*" >> "$SANDBOX/pnpm-calls"
+if [[ "\$1" == update && -f "$SANDBOX/pnpm-can-remedy" ]]; then
+    $(declare -f twin_lock)
+    twin_lock 0.86.27 0.86.27 > pnpm-lock.yaml
+fi
+exit 0
+STUB
+chmod +x "$SANDBOX/bin/pnpm"
+touch "$SANDBOX/pnpm-can-remedy"
+( cd "$SANDBOX/other" && git pull -q origin main && twin_lock 0.86.26 0.86.27 > pnpm-lock.yaml \
+    && git add -A && git -c user.name=t -c user.email=t@t commit -qm "meet: adopt 0.11.29 (twins)" && git push -q origin main )
+check "the fixture really fails the Vercel postinstall check" '! (mkdir -p "$SANDBOX/fx" && git --git-dir="$SANDBOX/origin.git" show main:pnpm-lock.yaml > "$SANDBOX/fx/pnpm-lock.yaml" && node scripts/check-matrx-packages.mjs --duplicates --root "$SANDBOX/fx" >/dev/null 2>&1)'
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out7" 2>&1
+STATUS7=$?
+set -e
+git fetch -q origin
+echo "release ship path — the twins guard"
+check "remediable twins still ship a release"     '[[ $STATUS7 -eq 0 ]] && [[ "$(git log -1 --format=%s origin/main)" == release:* ]]'
+check "the released lockfile passes the postinstall check" 'mkdir -p "$SANDBOX/rel" && git show origin/main:pnpm-lock.yaml > "$SANDBOX/rel/pnpm-lock.yaml" && node scripts/check-matrx-packages.mjs --duplicates --root "$SANDBOX/rel" >/dev/null 2>&1'
+check "the remedy ran lockfile-only over @ai-matrx/*" 'grep -q "update -r @ai-matrx/\* --depth Infinity --lockfile-only" "$SANDBOX/pnpm-calls" 2>/dev/null'
+check "the remedy is a Lockfile WARNING"          'grep -q "WARNING.*Lockfile.*two versions of one @ai-matrx package.*remedied" "$SANDBOX/out7"'
+rm -f "$SANDBOX/pnpm-can-remedy"
+( cd "$SANDBOX/other" && git pull -q origin main && twin_lock 0.86.28 0.86.29 > pnpm-lock.yaml \
+    && git add -A && git -c user.name=t -c user.email=t@t commit -qm "twins again" && git push -q origin main )
+BEFORE8=$(git ls-remote origin refs/heads/main | cut -f1)
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out8" 2>&1
+STATUS8=$?
+set -e
+check "unremediable twins stop the release"       '[[ $STATUS8 -ne 0 ]]'
+check "nothing was pushed for them"               '[[ "$(git ls-remote origin refs/heads/main | cut -f1)" == "$BEFORE8" ]]'
+check "the stop names the twins"                  'grep -q "@ai-matrx twins that Vercel.s postinstall" "$SANDBOX/out8"'
 if [[ $FAILED -ne 0 ]]; then
-    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null; echo "--- fourth run ---"; tail -25 "$SANDBOX/out4" 2>/dev/null; echo "--- fifth run ---"; tail -25 "$SANDBOX/out5" 2>/dev/null; echo "--- sixth run ---"; tail -25 "$SANDBOX/out6" 2>/dev/null
+    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null; echo "--- fourth run ---"; tail -25 "$SANDBOX/out4" 2>/dev/null; echo "--- fifth run ---"; tail -25 "$SANDBOX/out5" 2>/dev/null; echo "--- sixth run ---"; tail -25 "$SANDBOX/out6" 2>/dev/null; echo "--- seventh run ---"; tail -25 "$SANDBOX/out7" 2>/dev/null; echo "--- eighth run ---"; tail -25 "$SANDBOX/out8" 2>/dev/null
     exit 1
 fi

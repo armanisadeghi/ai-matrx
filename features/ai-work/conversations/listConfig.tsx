@@ -184,7 +184,6 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
       )}${row.workspace_name ? ` in ${row.workspace_name}` : ""}, ${
         row.message_count
       } messages, last active ${formatRelativeTime(row.last_activity_at)}`,
-    showRow: false,
     showToolbar: true,
   },
   emptyState: {

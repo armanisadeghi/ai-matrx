@@ -90,8 +90,8 @@ jest.mock("@ai-matrx/chat/agents/redux/execution-system/utils/build-tool-injecti
 
 // The ONE network edge reached: the queue POST.
 const inboxPosts: Array<{ text: string; delivery: string }> = [];
-jest.mock("@ai-matrx/chat/host/server/call-api", () => ({
-  callApi: (args: { body: { text: string; delivery: string } }) => () => {
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/call-conversation-api", () => ({
+  callConversationApi: (_conversationId: string, args: { body: { text: string; delivery: string } }) => () => {
     inboxPosts.push({ text: args.body.text, delivery: args.body.delivery });
     return Promise.resolve({
       data: { injection_id: `inj-${inboxPosts.length}`, run_active: true },

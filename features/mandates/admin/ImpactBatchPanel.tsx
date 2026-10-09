@@ -910,7 +910,6 @@ export function ImpactBatchPanel({
           pageSize={compact ? 25 : 50}
           density="condensed"
           detail={{ enabled: false }}
-          copy={false}
           read={{
             status: hasScope && !impact && (loading || !sessionReady) ? "loading" : "ready",
             what: "the pin grades",

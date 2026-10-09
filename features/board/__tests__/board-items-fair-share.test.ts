@@ -23,6 +23,8 @@ import {
   BOARD_ITEMS_BRIEF_BUDGET_CHARS,
   BOARD_ITEMS_MAX,
   boardItemsOverview,
+  CONNECTED_FULL_FLOOR_CHARS,
+  CONNECTED_FULL_TOTAL_CHARS,
   createItemSurfaceIndex,
   type BoardItemRow,
 } from "../tools/item-surfaces";
@@ -103,5 +105,57 @@ describe("board_items fair share", () => {
     });
     expect(String((selected.full_values as Record<string, unknown>).note_body)).toContain("Second paragraph");
     expect(selected.basics).toBeUndefined();
+  });
+
+  it("connected sources (a chat tile's lines) carry full values OUTSIDE the basics budget, so the fair share of everyone else holds", async () => {
+    const { index, rows } = build(40);
+    const connectedIds = new Set([rows[3].id, rows[9].id, rows[20].id]);
+    const withLines = rows.map((r) => ({ ...r, live: false, ...(connectedIds.has(r.id) ? { connected: true } : {}) }));
+    const overview = await boardItemsOverview(withLines, index);
+    const connected = overview.items.filter((i) => i.connected);
+    expect(connected).toHaveLength(3);
+    for (const item of connected) {
+      expect(String((item.full_values as Record<string, unknown>).note_body)).toContain("Second paragraph");
+      expect(item.basics).toBeUndefined();
+    }
+    // everyone else keeps the board's normal basics, still within the budget the connected ones do not eat
+    const others = overview.items.filter((i) => !i.connected);
+    expect(others).toHaveLength(37);
+    for (const item of others) expect(item.full_values).toBeUndefined();
+    expect(others.reduce((s, i) => s + JSON.stringify(i.basics).length, 0)).toBeLessThanOrEqual(
+      BOARD_ITEMS_BRIEF_BUDGET_CHARS,
+    );
+    // the share of the others is computed over THEM alone (3 connected rows do not shrink it)
+    const baseline = await boardItemsOverview(
+      rows.slice(0, 37).map((r) => ({ ...r, live: false })),
+      index,
+    );
+    expect(overview.limits.basics_chars_per_item).toBe(baseline.limits.basics_chars_per_item);
+  });
+
+  it("a connected source that is the live tile still carries its full values", async () => {
+    const { index, rows } = build(3);
+    const overview = await boardItemsOverview([{ ...rows[0], live: true, connected: true }, rows[1], rows[2]], index);
+    expect(overview.items[0].full_values).toBeDefined();
+    expect(overview.items[0].basics_note).toBeUndefined();
+  });
+
+  it("connected sources never blow the inline cap of the rest, and a crowd of them shares CONNECTED_FULL_TOTAL_CHARS", async () => {
+    const { index, rows } = build(30);
+    const big = "x".repeat(15_000);
+    for (const r of rows) {
+      index.set(r.id, {
+        primary: () => ({
+          surfaceName: SURFACE,
+          getScope: () => ({ note_title: r.title, note_body: big, note_tags: ["a"], note_folder: "f" }),
+        }),
+      } as unknown as SurfaceRegistry);
+    }
+    const all = rows.map((r) => ({ ...r, live: false, connected: true }));
+    const overview = await boardItemsOverview(all, index);
+    const full = overview.items.reduce((s, i) => s + JSON.stringify(i.full_values ?? {}).length, 0);
+    // 30 sources: each gets the floor share; together they stay near the total, never 30 x 15k
+    expect(full).toBeLessThanOrEqual(CONNECTED_FULL_TOTAL_CHARS + 30 * CONNECTED_FULL_FLOOR_CHARS);
+    expect(full).toBeLessThan(30 * 15_000);
   });
 });

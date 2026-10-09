@@ -71,6 +71,7 @@ import { planPlacement } from "../board/plan-placement";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { resolvePresetTypes, type BoardPreset } from "../presets/board-preset";
 import { UnavailableItemBody } from "./UnavailableItemBody";
+import { createTileLinks, TileLinksProvider } from "../items/connected-sources";
 import { StatusChip } from "../components/TileFace";
 import { runArrange } from "../board/arrange-board";
 import { groupMoveSet } from "../engine/selection";
@@ -374,6 +375,12 @@ export function UserBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addKey, store]);
 
+  /** The tile under a world point, if any. */
+  const tileAtPoint = (p: { x: number; y: number }) =>
+    board
+      .read()
+      .tiles.find((t) => p.x >= t.rect.x && p.x <= t.rect.x + t.rect.w && p.y >= t.rect.y && p.y <= t.rect.y + t.rect.h);
+
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
     switch (c.tool) {
@@ -401,9 +408,19 @@ export function UserBoard({
         board.addShape({ id, kind: c.tool, points: [{ x: c.rect.x, y: c.rect.y }, { x: c.rect.x + c.rect.w, y: c.rect.y + c.rect.h }] });
         break;
       case "arrow":
-      case "line":
+      case "line": {
+        // An arrow drawn from one tile onto another is a LINE between them (a connection): the
+        // second tile becomes context for a chat tile, in either direction. Anywhere else it is a mark.
+        const from = tileAtPoint(c.from);
+        const to = tileAtPoint(c.to);
+        if (c.tool === "arrow" && from && to && from.id !== to.id) {
+          board.connect({ id: `link:${crypto.randomUUID().slice(0, 8)}`, from: from.id, to: to.id });
+          toast(`Connected "${from.title}" to "${to.title}"`);
+          return;
+        }
         board.addShape({ id, kind: c.tool, points: [c.from, c.to] });
         break;
+      }
       case "pen":
         board.addShape({ id, kind: "pen", points: c.points });
         break;
@@ -604,6 +621,25 @@ export function UserBoard({
     describe: (tile) => describeItem(tile.source),
   };
 
+  // Lines are context: a chat tile reads which tiles are joined to it, and builds its own context
+  // from the live board (`items/connected-sources.tsx`). Stable; reads the latest host at call time.
+  const hostRef = useRef(agentHost);
+  useEffect(() => {
+    hostRef.current = agentHost;
+  });
+  const [links] = useState(() =>
+    createTileLinks<UserBoardTile>({
+      board,
+      host: () => hostRef.current,
+      focus: (id) => {
+        const s = storeRef.current;
+        if (!s) return;
+        s.select(id);
+        s.fitItem(id, 80);
+      },
+    }),
+  );
+
   const onBoard = new Set(layout.tileIds);
   // A page a tile opens lands on THIS board as a page tile (engine/tile-navigation.tsx);
   // a record already here is shown instead (place → recordKeyOf).
@@ -619,6 +655,7 @@ export function UserBoard({
   const parkedTiles = layout.parked;
 
   return (
+    <TileLinksProvider value={links}>
     <BoardSurface host={agentHost}>
       <BoardMenu
         store={store}
@@ -764,6 +801,7 @@ export function UserBoard({
         />
       )}
     </BoardSurface>
+    </TileLinksProvider>
   );
 }
 
@@ -809,7 +847,9 @@ function BoardEdge({ board, from, to }: { board: BoardStore<UserBoardTile>; from
   const a = useBoardTile(board, from);
   const b = useBoardTile(board, to);
   if (!a || !b) return null;
-  return <BoardEdgeLine from={a.rect} to={b.rect} />;
+  // A line that touches a chat tile hands that chat the other tile's content: drawn a little firmer.
+  const feedsChat = itemTypeFor(a.source)?.key === "chat" || itemTypeFor(b.source)?.key === "chat";
+  return <BoardEdgeLine from={a.rect} to={b.rect} feedsChat={feedsChat} />;
 }
 
 /** The layers list reads every tile, so it alone re-renders on every change — only while open. */

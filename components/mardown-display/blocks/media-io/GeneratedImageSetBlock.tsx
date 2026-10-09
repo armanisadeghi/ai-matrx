@@ -24,6 +24,7 @@
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { Carousel } from "@ai-matrx/design-system/carousel";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenImageViewerWindow } from "@/features/overlays/openers/imageViewer";
 import {
@@ -72,9 +73,15 @@ export function readGeneratedImageSetData(
 export function GeneratedImageTile({
   image,
   index,
+  slide = false,
+  interactive = true,
 }: {
   image: GeneratedImageData;
   index: number;
+  /** Fill a carousel slide's frame (no caption, no square box of its own). */
+  slide?: boolean;
+  /** False for a carousel thumbnail: it selects the slide, it never opens the viewer. */
+  interactive?: boolean;
 }) {
   const openFilePreview = useOpenFilePreviewWindow();
   const openImageViewer = useOpenImageViewerWindow();
@@ -93,6 +100,20 @@ export function GeneratedImageTile({
 
   const dims =
     image.width && image.height ? `${image.width}×${image.height}` : null;
+
+  if (slide) {
+    return (
+      <InlineMediaRef
+        ref={image.handle}
+        as="img"
+        size="fill"
+        fit="contain"
+        alt={label}
+        {...(interactive ? { onClick: open } : {})}
+        className="h-full w-full bg-muted"
+      />
+    );
+  }
 
   return (
     <figure className="animate-in fade-in group min-w-0">
@@ -170,6 +191,24 @@ export default function GeneratedImageSetBlock({
             ? "No images were returned."
             : "Waiting for the first image…"}
         </p>
+      ) : data.images.length > 1 ? (
+        <Carousel
+          slides={data.images.map((image, index) => ({
+            id: image.file_id ?? image.handle ?? `image-${index}`,
+            image,
+            index,
+          }))}
+          aspect="1:1"
+          labels={{ carousel: "Generated images" }}
+          renderSlide={(slide, ctx) => (
+            <GeneratedImageTile
+              image={slide.image}
+              index={slide.index}
+              slide
+              interactive={!ctx.thumbnail}
+            />
+          )}
+        />
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {data.images.map((image, index) => (

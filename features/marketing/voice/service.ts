@@ -48,6 +48,9 @@ export interface FingerprintRow {
   refresh_due_at: string;
   confirmed_at: string | null;
   fingerprint: Record<string, unknown>;
+  brand_id?: string | null;
+  organization_id?: string | null;
+  person_user_id?: string | null;
 }
 
 export interface SourceOption {
@@ -57,7 +60,7 @@ export interface SourceOption {
 }
 
 const FINGERPRINT_COLUMNS =
-  "id, label, status, confidence, register_label, sample_count, sample_word_count, last_extracted_at, refresh_due_at, confirmed_at, fingerprint";
+  "id, label, status, confidence, register_label, sample_count, sample_word_count, last_extracted_at, refresh_due_at, confirmed_at, fingerprint, brand_id, person_user_id, organization_id";
 
 /** Every live fingerprint of one person or one brand, newest first. */
 export async function listFingerprints(
@@ -77,6 +80,38 @@ export async function listFingerprints(
       : await base.eq("profile_scope", "person").eq("person_user_id", ownerId);
   if (error) throw new Error(`Voice fingerprints could not be read: ${error.message}`);
   return (data ?? []) as unknown as FingerprintRow[];
+}
+
+/**
+ * Spokespeople of one brand: person-scoped voices (`profile_scope='person'`)
+ * whose `brand_id` is this brand. Direct read under RLS.
+ */
+export async function listBrandSpokespeople(brandId: string): Promise<FingerprintRow[]> {
+  const { data, error } = await supabase
+    .schema("web")
+    .from("voice_fingerprint")
+    .select(FINGERPRINT_COLUMNS)
+    .is("deleted_at", null)
+    .eq("profile_scope", "person")
+    .eq("brand_id", brandId)
+    .order("last_extracted_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(`Spokespeople could not be read: ${error.message}`);
+  return (data ?? []) as unknown as FingerprintRow[];
+}
+
+/** Link a person's voice to a brand as its spokesperson (brandId) or unlink it (null). Direct write under RLS. */
+export async function setSpokespersonBrand(fingerprintId: string, brandId: string | null): Promise<void> {
+  const { data, error } = await supabase
+    .schema("web")
+    .from("voice_fingerprint")
+    .update({ brand_id: brandId })
+    .eq("id", fingerprintId)
+    .eq("profile_scope", "person")
+    .is("deleted_at", null)
+    .select("id");
+  if (error) throw new Error(`The spokesperson link could not be saved: ${error.message}`);
+  if (!data?.length) throw new Error("The spokesperson link was not saved: that voice is not yours to change.");
 }
 
 /** Sources (processed documents) the person can read, newest first, optionally by name. */

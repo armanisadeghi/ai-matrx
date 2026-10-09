@@ -7,7 +7,7 @@
  * cells: if the UI NAMES a thing that has an identity in our system, the UI
  * must let the user reach it. A server refusal that says
  *
- *     resolved system agent 8f0bbfc2-85d9-4913-8cea-b09a50c62be6 breaks the
+ *     resolved system agent <agent uuid> breaks the
  *     mandate contract: declares no structured output_schema
  *
  * names an agent. Printed as flat text it is a dead end with extra steps — the

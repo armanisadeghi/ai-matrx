@@ -33,7 +33,22 @@ export interface OfferingEditDraft {
   kind: OfferingKindValue;
   description: string;
   parentId: string | null;
+  /** Published price; empty amount = no published price. */
+  priceAmount: string;
+  priceCurrency: string;
+  priceUnit: string;
+  priceNote: string;
 }
+
+const PRICE_UNITS = [
+  { value: "", label: "No unit" },
+  { value: "one_time", label: "One time" },
+  { value: "per_month", label: "Per month" },
+  { value: "per_year", label: "Per year" },
+  { value: "per_hour", label: "Per hour" },
+  { value: "per_item", label: "Per item" },
+  { value: "starting_at", label: "Starting at" },
+] as const;
 
 export function OfferingEditDialog({
   draft,
@@ -56,6 +71,13 @@ export function OfferingEditDialog({
   const [description, setDescription] = useState(draft.description);
   const [parentId, setParentId] = useState<string | null>(draft.parentId);
   const [parentSearch, setParentSearch] = useState("");
+  const [priceAmount, setPriceAmount] = useState(draft.priceAmount);
+  const [priceCurrency, setPriceCurrency] = useState(draft.priceCurrency);
+  const [priceUnit, setPriceUnit] = useState(draft.priceUnit);
+  const [priceNote, setPriceNote] = useState(draft.priceNote);
+  const priceInvalid =
+    priceAmount.trim() !== "" && !(Number.isFinite(Number(priceAmount)) && Number(priceAmount) >= 0);
+  const currencyInvalid = priceAmount.trim() !== "" && !/^[A-Za-z]{3}$/.test(priceCurrency.trim());
   const creating = draft.offeringId === null;
 
   const needle = parentSearch.trim().toLocaleLowerCase();
@@ -169,6 +191,49 @@ export function OfferingEditDialog({
               className="text-base sm:text-sm"
             />
           </div>
+
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Price (optional)</Label>
+            <div className="grid grid-cols-[1fr_5rem_1fr] gap-1.5">
+              <Input
+                aria-label="Price amount"
+                inputMode="decimal"
+                value={priceAmount}
+                onChange={(event) => setPriceAmount(event.target.value)}
+                placeholder="199"
+              />
+              <Input
+                aria-label="Currency"
+                value={priceCurrency}
+                onChange={(event) => setPriceCurrency(event.target.value.toUpperCase())}
+                placeholder="USD"
+                maxLength={3}
+              />
+              <select
+                aria-label="Price unit"
+                value={priceUnit}
+                onChange={(event) => setPriceUnit(event.target.value)}
+                className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+              >
+                {PRICE_UNITS.map((unit) => (
+                  <option key={unit.value} value={unit.value}>
+                    {unit.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              aria-label="Price note"
+              value={priceNote}
+              onChange={(event) => setPriceNote(event.target.value)}
+              placeholder="Note, e.g. volume discounts over 50 drives"
+            />
+            {priceInvalid || currencyInvalid ? (
+              <p className="text-[11px] text-destructive">
+                {priceInvalid ? "Amount must be a number, 0 or more." : "Currency is a 3-letter code, like USD."}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <DialogFooter className="pb-safe">
@@ -178,7 +243,7 @@ export function OfferingEditDialog({
           <Button
             icon={busy ? <Loader2 className="animate-spin" /> : null}
             variant="primary"
-            disabled={busy || !name.trim()}
+            disabled={busy || !name.trim() || priceInvalid || currencyInvalid}
             onClick={() =>
               onSave({
                 offeringId: draft.offeringId,
@@ -186,6 +251,10 @@ export function OfferingEditDialog({
                 kind,
                 description,
                 parentId,
+                priceAmount: priceAmount.trim(),
+                priceCurrency: priceCurrency.trim(),
+                priceUnit,
+                priceNote: priceNote.trim(),
               })
             }
           >

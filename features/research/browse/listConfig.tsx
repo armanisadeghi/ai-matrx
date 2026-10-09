@@ -96,8 +96,6 @@ export const RESEARCH_TOPIC_LIST_CONFIG: EntityListConfig<ResearchTopicListRow> 
       `${row.name} — ${labelFor(TOPIC_STATUS_LABELS, row.status)}${
         row.project_name ? `, project ${row.project_name}` : ""
       }${row.description ? `\n${row.description}` : ""}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No research topics",

@@ -55,8 +55,6 @@ export const mapListConfig: EntityListConfig<MapListRow> = {
     listKind: "map-list",
     humanRow: (row) =>
       `${row.title} — ${row.box_count} boxes, ${row.section_count} sections, ${row.arrow_count} arrows, edited ${formatRelativeTime(row.updated_at)}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No maps yet",

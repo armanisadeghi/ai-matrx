@@ -228,7 +228,7 @@ export type ScrapeStatus =
 export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual" | "social";
 export type SourceOrigin =
   | "search"
-  | "manual"
+  | "manual_add"
   | "link_extraction"
   | "file_upload"
   | "social_capture";
@@ -1254,7 +1254,7 @@ const SOURCE_TYPES_SET = new Set<string>([
 ]);
 const SOURCE_ORIGINS_SET = new Set<string>([
   "search",
-  "manual",
+  "manual_add",
   "link_extraction",
   "file_upload",
   "social_capture",

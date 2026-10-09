@@ -992,7 +992,6 @@ function ComparisonTable({
       listKind: "provider-sync-models",
       // The existing row control owns the lean provider/local AI envelope.
       // Keep shared view and selected-row copy without a second row action.
-      showRow: false,
       rowDescription: "A single provider model comparison.",
       listDescription:
         "Provider-model comparisons currently shown after canonical table filters.",

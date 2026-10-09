@@ -228,8 +228,6 @@ const CONFIG: EntityListConfig<UnconvertedCall> = {
       listKind: "unconverted-ai-call-list",
       humanRow: (row) =>
         `${row.location} — calls ${row.calls || "(not recorded)"}; ${UNCONVERTED_STATUS_LABEL[row.status]}`,
-      showRow: false,
-      showToolbar: false,
     },
     emptyState: {
       title: "No AI calls outside mandates",

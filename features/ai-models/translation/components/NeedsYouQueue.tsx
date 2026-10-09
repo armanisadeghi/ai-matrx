@@ -256,7 +256,6 @@ export default function NeedsYouQueue({
             );
           },
         }}
-        copy={false}
         defaultSort={null}
         pageSize={50}
         stickyHeader

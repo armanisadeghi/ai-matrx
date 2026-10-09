@@ -32,15 +32,11 @@ import {
   AlertCircle,
   ScanLine,
   FolderOpen,
-  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { usePdfExtractor } from "../hooks/usePdfExtractor";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
@@ -115,32 +111,6 @@ export function PdfStudioUpload({
 
     onUploadComplete?.(newIds);
   }, [extractor, onUploadComplete, onFirstDocReady]);
-
-  // An upload refused for want of an active organization keeps its files and
-  // offers the picker inline; choosing one runs the same upload again.
-  const organizationId = useAppSelector(selectOrganizationId);
-  // The organization in force when the upload was refused — a retry waits for
-  // a DIFFERENT choice, so a server refusal can never loop.
-  const orgAtHoldRef = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    if (!extractor.needsOrganization) {
-      orgAtHoldRef.current = undefined;
-      return;
-    }
-    if (orgAtHoldRef.current === undefined) {
-      orgAtHoldRef.current = organizationId;
-      return;
-    }
-    if (!organizationId || organizationId === orgAtHoldRef.current || isBusy) return;
-    if (extractor.selectedFiles.length === 0) return;
-    void handleExtract();
-  }, [
-    extractor.needsOrganization,
-    organizationId,
-    isBusy,
-    extractor.selectedFiles.length,
-    handleExtract,
-  ]);
 
   async function handleChooseExisting(): Promise<void> {
     const ids = await openFilePicker({
@@ -279,19 +249,6 @@ export function PdfStudioUpload({
               </div>
             ))}
           </div>
-
-          {extractor.needsOrganization ? (
-            <div
-              className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1.5"
-              data-testid="pdf-upload-needs-organization"
-            >
-              <Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate text-[11px] text-foreground">
-                Choose an organization to upload
-              </span>
-              <OrganizationPickerButton label="Choose" align="end" />
-            </div>
-          ) : null}
 
           <Button
             variant="primary"

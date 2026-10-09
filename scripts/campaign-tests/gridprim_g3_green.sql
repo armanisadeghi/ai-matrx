@@ -80,7 +80,7 @@ begin
     raise exception '2a: a formula with too few values for DATEADD was stored';
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
-    if v_caught not like '%`DATEADD` was given 2 values. Use DATEADD(date, count, ''days'' | ''months'' | ''years'')%' then
+    if v_caught not like '%`DATEADD` was given 2 values. Use DATEADD(date, count, ''days'' | ''hours'' | ''minutes'' | ''months'' | ''years'')%' then
       raise exception '2a: refused, but not in the parser''s words: %', v_caught;
     end if;
   end;

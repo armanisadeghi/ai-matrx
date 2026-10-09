@@ -136,6 +136,103 @@ export interface BrandProfile {
   outlets_to_skip?: string[];
   /** Signed exactly as written at the end of every reply. */
   contact_block?: string;
+  /** Brand fundamentals (Identity -> Messaging). */
+  mission?: string;
+  vision?: string;
+  story?: string;
+  values?: string[];
+  messaging_pillars?: MessagingPillar[];
+  elevator_pitches?: ElevatorPitches;
+  content_pillars?: ContentPillar[];
+  hashtags?: BrandHashtag[];
+  /** Claims & compliance (Identity -> Claims). */
+  approved_claims?: string[];
+  forbidden_claims?: string[];
+  disclaimers?: string[];
+}
+
+export interface MessagingPillar {
+  title: string;
+  proof_points: string[];
+}
+
+export interface ElevatorPitches {
+  ten_second?: string;
+  thirty_second?: string;
+  sixty_second?: string;
+}
+
+export interface ContentPillar {
+  name: string;
+  description?: string;
+}
+
+export const HASHTAG_USES = ["branded", "campaign", "community"] as const;
+export type HashtagUse = (typeof HASHTAG_USES)[number];
+
+export interface BrandHashtag {
+  tag: string;
+  use: HashtagUse;
+}
+
+const ELEVATOR_PITCH_KEYS = ["ten_second", "thirty_second", "sixty_second"] as const;
+
+function cleanStrings(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => (typeof entry === "string" && entry.trim() ? [entry.trim()] : []));
+}
+
+function asRecord(value: unknown): { [key: string]: Json } | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as { [key: string]: Json })
+    : null;
+}
+
+function normalizeTag(value: string): string {
+  return value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+}
+
+function parseMessagingPillars(value: unknown): MessagingPillar[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const record = asRecord(entry);
+    const title = typeof record?.title === "string" ? record.title.trim() : "";
+    if (!record || !title) return [];
+    return [{ title, proof_points: cleanStrings(record.proof_points) }];
+  });
+}
+
+function parseContentPillars(value: unknown): ContentPillar[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const record = asRecord(entry);
+    const name = typeof record?.name === "string" ? record.name.trim() : "";
+    if (!record || !name) return [];
+    const description = typeof record.description === "string" ? record.description.trim() : "";
+    return [description ? { name, description } : { name }];
+  });
+}
+
+function parseHashtags(value: unknown): BrandHashtag[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const record = asRecord(entry);
+    const tag = typeof record?.tag === "string" ? normalizeTag(record.tag) : "";
+    if (!record || !tag) return [];
+    const use = HASHTAG_USES.find((candidate) => candidate === record.use) ?? "branded";
+    return [{ tag, use }];
+  });
+}
+
+function parseElevatorPitches(value: unknown): ElevatorPitches | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+  const out: ElevatorPitches = {};
+  for (const key of ELEVATOR_PITCH_KEYS) {
+    const text = record[key];
+    if (typeof text === "string" && text.trim()) out[key] = text.trim();
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 const BRAND_PROFILE_STRING_FIELDS = [
@@ -148,6 +245,9 @@ const BRAND_PROFILE_STRING_FIELDS = [
   "spokesperson_name",
   "spokesperson_title",
   "contact_block",
+  "mission",
+  "vision",
+  "story",
 ] as const;
 
 const BRAND_PROFILE_LIST_FIELDS = [
@@ -159,6 +259,18 @@ const BRAND_PROFILE_LIST_FIELDS = [
   "credentials",
   "do_not_comment_on",
   "outlets_to_skip",
+  "values",
+  "approved_claims",
+  "forbidden_claims",
+  "disclaimers",
+] as const;
+
+/** Structured (non-flat) profile keys: owned by the parser, serialized separately. */
+const BRAND_PROFILE_STRUCTURED_FIELDS = [
+  "messaging_pillars",
+  "elevator_pitches",
+  "content_pillars",
+  "hashtags",
 ] as const;
 
 /**
@@ -180,6 +292,14 @@ export function parseBrandProfile(raw: Json | null | undefined): BrandProfile {
     );
     if (items.length) profile[key] = items;
   }
+  const messagingPillars = parseMessagingPillars(raw.messaging_pillars);
+  if (messagingPillars.length) profile.messaging_pillars = messagingPillars;
+  const pitches = parseElevatorPitches(raw.elevator_pitches);
+  if (pitches) profile.elevator_pitches = pitches;
+  const contentPillars = parseContentPillars(raw.content_pillars);
+  if (contentPillars.length) profile.content_pillars = contentPillars;
+  const hashtags = parseHashtags(raw.hashtags);
+  if (hashtags.length) profile.hashtags = hashtags;
   return profile;
 }
 
@@ -194,6 +314,18 @@ export function brandProfileToJson(profile: BrandProfile): Json {
     const value = profile[key];
     if (Array.isArray(value) && value.length) record[key] = value;
   }
+  // Structured fields round-trip through their parsers so a hand-built edit is
+  // normalized exactly as a stored one is.
+  const structured = parseBrandProfile({
+    messaging_pillars: (profile.messaging_pillars ?? []) as unknown as Json,
+    elevator_pitches: (profile.elevator_pitches ?? {}) as unknown as Json,
+    content_pillars: (profile.content_pillars ?? []) as unknown as Json,
+    hashtags: (profile.hashtags ?? []) as unknown as Json,
+  });
+  for (const key of BRAND_PROFILE_STRUCTURED_FIELDS) {
+    const value = structured[key];
+    if (value !== undefined) record[key] = value as unknown as Json;
+  }
   return record;
 }
 
@@ -207,7 +339,11 @@ export function brandProfileToJson(profile: BrandProfile): Json {
 export function mergeBrandProfile(current: Json | null | undefined, edited: BrandProfile): Json {
   const merged: { [key: string]: Json } =
     current !== null && current !== undefined && isJsonRecord(current) ? { ...current } : {};
-  for (const key of [...BRAND_PROFILE_STRING_FIELDS, ...BRAND_PROFILE_LIST_FIELDS]) {
+  for (const key of [
+    ...BRAND_PROFILE_STRING_FIELDS,
+    ...BRAND_PROFILE_LIST_FIELDS,
+    ...BRAND_PROFILE_STRUCTURED_FIELDS,
+  ]) {
     delete merged[key];
   }
   const owned = brandProfileToJson(edited);
@@ -436,6 +572,9 @@ export const PROPERTY_KINDS = [
   "linkedin",
   "pinterest",
   "google_business_profile",
+  "threads",
+  "reddit",
+  "snapchat",
   "other",
 ] as const;
 export type PropertyKind = (typeof PROPERTY_KINDS)[number];
@@ -454,6 +593,9 @@ export const PROPERTY_KIND_LABELS: Record<PropertyKind, string> = {
   linkedin: "LinkedIn",
   pinterest: "Pinterest",
   google_business_profile: "Google Business Profile",
+  threads: "Threads",
+  reddit: "Reddit",
+  snapchat: "Snapchat",
   other: "Other property",
 };
 

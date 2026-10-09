@@ -493,7 +493,6 @@ export function CrawlsTable() {
           label: "Crawl session",
           listLabel: "All crawl sessions",
           location: webLocation(`Crawls — ${site.root_url}`),
-          showToolbar: false,
           rowKind: "web-crawl-session",
           listKind: "web-crawl-sessions-list",
           rowDescription: "One frozen crawl session for this site.",

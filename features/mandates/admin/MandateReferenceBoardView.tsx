@@ -27,6 +27,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CircleCheck, CircleDot, Loader2, RefreshCw } from "lucide-react";
 
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoHint } from "@/components/official/InfoHint";
@@ -256,6 +257,154 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
  */
 function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
   const { unit, rate: costRate, format: formatCostDisplay } = useCostDisplay();
+  const runColumns: MatrxColumnDef<MandatePatrolRun>[] = [
+    {
+      id: "started",
+      header: "Started",
+      accessorFn: (run) => run.started_at ?? run.due_at ?? "",
+      width: 190,
+      cell: (run) => (
+        <span className="whitespace-nowrap">
+          {run.started_at
+            ? new Date(run.started_at).toLocaleString()
+            : run.due_at
+              ? `due ${new Date(run.due_at).toLocaleString()}`
+              : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (run) => run.status,
+      filter: "select",
+      width: 200,
+      cell: (run) =>
+        run.failed_legs.length > 0 ? (
+          <span className="text-destructive">
+            {run.status} — {run.failed_legs.join(", ")}
+          </span>
+        ) : (
+          run.status
+        ),
+    },
+    {
+      id: "wall",
+      header: "Wall",
+      align: "right",
+      accessorFn: (run) => run.wall_seconds ?? -1,
+      filter: "number",
+      width: 90,
+      cell: (run) => (
+        <span className="whitespace-nowrap">
+          {formatSeconds(run.wall_seconds)}
+          {run.seconds_source === "derived_from_timestamps" ? (
+            <span
+              className="ml-1 text-muted-foreground"
+              title="Derived from this run's own start and finish times — the patrol did not record its duration on this run."
+            >
+              ~
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: "cpu",
+      header: "CPU",
+      align: "right",
+      accessorFn: (run) => run.cpu_seconds ?? -1,
+      filter: "number",
+      width: 90,
+      cell: (run) => <span className="whitespace-nowrap">{formatSeconds(run.cpu_seconds)}</span>,
+    },
+    {
+      id: "compute",
+      header: "Compute",
+      align: "right",
+      accessorFn: (run) => run.compute_cost_usd ?? -1,
+      filter: "number",
+      width: 110,
+      cell: (run) => (
+        <span
+          className="whitespace-nowrap"
+          title={[
+            run.compute_cost_note,
+            run.vcpu_seconds === null || run.vcpu_seconds === undefined
+              ? null
+              : `${run.vcpu_seconds} vCPU-seconds (${run.cpu_count_source ?? "source unrecorded"})`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        >
+          {costCell(run.compute_cost_usd, costRate, unit)}
+        </span>
+      ),
+    },
+    {
+      id: "model",
+      header: "Model",
+      align: "right",
+      accessorFn: (run) => run.model_spend_usd ?? -1,
+      filter: "number",
+      width: 100,
+      cell: (run) => (
+        <span className="whitespace-nowrap" title={run.model_spend_evidence ?? undefined}>
+          {run.model_spend_usd === null || run.model_spend_usd === undefined
+            ? "—"
+            : formatCostDisplay(run.model_spend_usd)}
+        </span>
+      ),
+    },
+    { id: "rows", header: "Rows", align: "right", accessorFn: (run) => run.rows_submitted ?? -1, filter: "number", width: 80, cell: (run) => run.rows_submitted ?? "—" },
+    {
+      id: "filed",
+      header: "Filed",
+      align: "right",
+      accessorFn: (run) => run.error_rows_filed ?? -1,
+      filter: "number",
+      width: 80,
+      cell: (run) => {
+        const href = errorRowsHref(run);
+        // The link from a run to the defects IT filed.
+        return run.error_rows_filed !== null && run.error_rows_filed !== undefined && href ? (
+          <Link
+            href={href}
+            className="underline underline-offset-2"
+            title={`Open the ${run.error_rows_filed} error row(s) this run filed`}
+          >
+            {run.error_rows_filed}
+            <ErrorAlchemyMenu error={run.error_rows_filed} />
+          </Link>
+        ) : (
+          (run.error_rows_filed ?? "—")
+        );
+      },
+    },
+    { id: "resolved", header: "Resolved", align: "right", accessorFn: (run) => run.error_rows_resolved ?? -1, filter: "number", width: 90, cell: (run) => run.error_rows_resolved ?? "—" },
+    {
+      id: "clone",
+      header: "Clone",
+      align: "right",
+      accessorFn: (run) => run.git_clone_bytes ?? -1,
+      filter: "number",
+      width: 90,
+      cell: (run) => <span className="whitespace-nowrap">{formatFileSize(run.git_clone_bytes)}</span>,
+    },
+    {
+      id: "revision",
+      header: "Revision",
+      accessorFn: (run) => run.revision ?? "",
+      width: 160,
+      cell: (run) =>
+        run.revision ? (
+          <code className="[overflow-wrap:anywhere]">{run.revision.slice(0, 12)}</code>
+        ) : (
+          <span className="text-muted-foreground">nothing scanned</span>
+        ),
+    },
+  ];
+
   return (
     <section className="space-y-2" aria-label="Scheduled patrol">
       <div className="flex flex-wrap items-center gap-3">
@@ -373,132 +522,30 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
           stops "no rate set" being read as "broken" or as "$0.00". */}
       <p className="type-secondary text-muted-foreground">{patrol.cost_note}</p>
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full type-secondary">
-          <thead className="border-b border-border text-left text-muted-foreground">
-            <tr>
-              <th scope="col" className="px-3 py-2 font-medium">Started</th>
-              <th scope="col" className="px-3 py-2 font-medium">Status</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Wall</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">CPU</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Compute</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Model</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Rows</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Filed</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Resolved</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Clone</th>
-              <th scope="col" className="px-3 py-2 font-medium">Revision</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {patrol.runs.length > 0 ? (
-              patrol.runs.map((run: MandatePatrolRun) => {
-                const href = errorRowsHref(run);
-                const broken = run.failed_legs.length > 0;
-                return (
-                  <tr key={run.run_id} className={broken ? "bg-destructive/5" : undefined}>
-                    <td className="whitespace-nowrap px-3 py-2">
-                      {run.started_at
-                        ? new Date(run.started_at).toLocaleString()
-                        : run.due_at
-                          ? `due ${new Date(run.due_at).toLocaleString()}`
-                          : "—"}
-                    </td>
-                    <td className="px-3 py-2">
-                      {broken ? (
-                        <span className="text-destructive">
-                          {run.status} — {run.failed_legs.join(", ")}
-                        </span>
-                      ) : (
-                        run.status
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-right">
-                      {formatSeconds(run.wall_seconds)}
-                      {run.seconds_source === "derived_from_timestamps" ? (
-                        <span
-                          className="ml-1 text-muted-foreground"
-                          title="Derived from this run's own start and finish times — the patrol did not record its duration on this run."
-                        >
-                          ~
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-right">
-                      {formatSeconds(run.cpu_seconds)}
-                    </td>
-                    <td
-                      className="whitespace-nowrap px-3 py-2 text-right"
-                      title={[
-                        run.compute_cost_note,
-                        run.vcpu_seconds === null || run.vcpu_seconds === undefined
-                          ? null
-                          : `${run.vcpu_seconds} vCPU-seconds (${run.cpu_count_source ?? "source unrecorded"})`,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    >
-                      {costCell(run.compute_cost_usd, costRate, unit)}
-                    </td>
-                    <td
-                      className="whitespace-nowrap px-3 py-2 text-right"
-                      title={run.model_spend_evidence ?? undefined}
-                    >
-                      {run.model_spend_usd === null || run.model_spend_usd === undefined
-                        ? "—"
-                        : formatCostDisplay(run.model_spend_usd)}
-                    </td>
-                    <td className="px-3 py-2 text-right">{run.rows_submitted ?? "—"}</td>
-                    <td className="px-3 py-2 text-right">
-                      {/* The link from a run to the defects IT filed. */}
-                      {run.error_rows_filed !== null &&
-                      run.error_rows_filed !== undefined &&
-                      href ? (
-                        <Link
-                          href={href}
-                          className="underline underline-offset-2"
-                          title={`Open the ${run.error_rows_filed} error row(s) this run filed`}
-                        >
-                          {run.error_rows_filed}
-                          <ErrorAlchemyMenu error={run.error_rows_filed} />
-                        </Link>
-                      ) : (
-                        (run.error_rows_filed ?? "—")
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {run.error_rows_resolved ?? "—"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-right">
-                      {formatFileSize(run.git_clone_bytes)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {run.revision ? (
-                        <code className="[overflow-wrap:anywhere]">
-                          {run.revision.slice(0, 12)}
-                        </code>
-                      ) : (
-                        <span className="text-muted-foreground">nothing scanned</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={11} className="px-3 py-2 text-muted-foreground">
-                  {patrol.read_error
-                    ? "The runs could not be read — see the message above."
-                    : patrol.enabled
-                      ? "No run recorded yet. The first one appears here after the next due time."
-                      : "The patrol is disabled, so there are no runs and nothing re-scans on its own."}
-                  <ErrorAlchemyMenu />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable<MandatePatrolRun>
+        tableId="mandate-patrol-runs"
+        data={patrol.runs}
+        columns={runColumns}
+        getRowId={(run) => run.run_id}
+        rowClassName={(run) => (run.failed_legs.length > 0 ? "bg-destructive/5" : undefined)}
+        emptyState={{
+          title: patrol.read_error
+            ? "The runs could not be read — see the message above."
+            : patrol.enabled
+              ? "No run recorded yet. The first one appears here after the next due time."
+              : "The patrol is disabled, so there are no runs and nothing re-scans on its own.",
+        }}
+        detail={{ enabled: false }}
+        copy={{
+          label: "Mandate patrol runs",
+          location: "Mandate Reference Board, patrol runs",
+          rowKind: "mandate-patrol-run",
+          listKind: "mandate-patrol-runs",
+          humanRow: (run) =>
+            `${run.started_at ?? run.due_at ?? "unscheduled"} ${run.status}${run.failed_legs.length > 0 ? ` (failed: ${run.failed_legs.join(", ")})` : ""}, ${formatSeconds(run.wall_seconds)} wall, ${run.error_rows_filed ?? 0} filed, ${run.error_rows_resolved ?? 0} resolved`,
+          agentRow: (run) => run,
+        }}
+      />
     </section>
   );
 }

@@ -737,6 +737,7 @@ function TableLayout({
         getRowId={(h) => hitKey(h)}
         density="condensed"
         viewTabs={false}
+        // table-copy-optout: the hub owns its search bar and source filters; row Alchemy stays in the Actions menu
         hideToolbar
         facets={{ enabled: true, totalRows: hits.length }}
         searchText={(h) => `${h.title} ${h.snippet ?? ""}`}

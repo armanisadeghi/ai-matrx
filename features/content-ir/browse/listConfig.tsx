@@ -107,8 +107,6 @@ export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
     listKind: "content-ir-kind-list",
     humanRow: (row) =>
       `${row.label} (${row.kind}) — ${row.is_active ? "active" : "inactive"}, updated ${formatRelativeTime(row.updated_at)}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No shapes here",

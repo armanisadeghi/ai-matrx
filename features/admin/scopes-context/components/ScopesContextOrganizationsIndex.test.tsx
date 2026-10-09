@@ -8,7 +8,11 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("next/navigation", () => ({ usePathname: () => "/administration/scopes-context/organizations" }));
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/administration/scopes-context/organizations",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 jest.mock("@/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));
@@ -100,7 +104,7 @@ describe("ScopesContextOrganizationsIndex", () => {
   it("narrows the list to organizations matching the search", async () => {
     await render(directoryOf([ORG_A, ORG_B]));
 
-    const input = host.querySelector("input") as HTMLInputElement;
+    const input = host.querySelector('input[placeholder="Search…"]') as HTMLInputElement;
     await act(async () => {
       input.dispatchEvent(new Event("focus", { bubbles: true }));
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;

@@ -601,9 +601,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     busy:
       aiCleanRunning ||
       pipelineRunning ||
-      // The run record answers "is a server run going?" — wait for it, and
-      // never start a second clean beside a live one.
-      !docRun.answered ||
+      // The run record answers "is a server run going?" — never start a
+      // second clean beside a live or failed one.
       docRunActive ||
       docRun.phase === "failed" ||
       extractor.batchStatus !== "idle" ||
@@ -614,6 +613,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     pagesHaveCleanText: pages.some((p) => p.cleanedText.trim().length > 0),
     pageCount: pages.length,
     pagesHaveSectionKind: pages.some((p) => Boolean(p.sectionKind)),
+    runAnswered: docRun.answered,
     run: () => void handleRunAiClean(),
   });
 

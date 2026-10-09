@@ -36,8 +36,6 @@ export const envelopeListConfig: EntityListConfig<EnvelopeListRow> = {
       row.status === "draft"
         ? `${row.title} — Draft, created ${row.created_at}`
         : `${row.title} — ${statusLabel(row.status)}, signed ${row.signed_count} of ${row.signer_count}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "Nothing sent for signature yet",
