@@ -391,6 +391,8 @@ export type AiModelFormData = {
   // Retry fallback: model to substitute after retry_max_attempts failures.
   retry_fallback_id: string;
   retry_max_attempts: string;
+  // Model that replaces this one on retirement. Empty string = NULL.
+  successor_id: string;
 };
 // NOTE: model-level `pricing` editing was removed — pricing lives on
 // `ai.offering` now (managed via OfferingForm/OfferingsContainer). Do not

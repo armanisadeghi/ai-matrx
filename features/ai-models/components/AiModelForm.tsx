@@ -289,6 +289,33 @@ export default function AiModelForm({
                 </div>
             </div>
 
+            {/* Successor — the model that replaces this one when it is retired.
+                Pins on this model advance to it through the mandate impact door. */}
+            <div className="border rounded-md p-3 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Successor
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                    <FormField label="Successor Model">
+                        <ModelListDropdown
+                            modelOnly
+                            value={data.successor_id}
+                            onValueChange={(modelId) =>
+                                onChange({ ...data, successor_id: modelId })
+                            }
+                            inputModalities={[]}
+                            allowedModelIds={fallbackModelIds}
+                            catalogVariant="admin"
+                            selectionPurpose="admin"
+                            emptyOptionLabel="No successor"
+                            onClear={() => onChange({ ...data, successor_id: "" })}
+                            placeholder="Choose successor…"
+                            className="h-8 w-full justify-between text-sm"
+                        />
+                    </FormField>
+                </div>
+            </div>
+
             {/* Tier fallbacks — quota/guest-tier model substitution.
                 When set, the aidream backend substitutes this model when the
                 caller is at the matching tier. Leave at "no swap" for entry-
