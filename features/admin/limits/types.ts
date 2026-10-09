@@ -210,7 +210,7 @@ export function limitToStored(
 
 /**
  * `platform.points` — the AI budget. 20,000 points = $1 of model spend, so
- * `personal-pro` at 320,000 points/month is ~$16 of AI. The admin still types
+ * `personal-pro` at 2,000,000 points/month is ~$100 of AI at 20,000 points per $1. The admin still types
  * POINTS (the stored unit never changes); this is only the dollar hint that
  * sits beside the number so nobody has to divide by twenty thousand in their
  * head.
