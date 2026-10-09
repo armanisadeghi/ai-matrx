@@ -24,7 +24,7 @@ batch path is off); the two plants above are the ones the sample proves it catch
 Exit 1 on any deviation. Nothing persists. Run from aidream so its .env is found:
   cd aidream && uv run python ../matrx-frontend/scripts/db-proofs/memo-path-agreement.py
 """
-import json, sys, psycopg
+import json, os, sys, psycopg
 from dotenv import dotenv_values
 
 env = dotenv_values('/Users/armanisadeghi/code/aidream/.env')
@@ -55,12 +55,19 @@ def summary(r):
     return f"ok={r['ok']} compared={r['compared']} diffs={len(r['diffs'])} errors={len(r['errors'])} slots={r.get('slots')}"
 
 
+# MEMO_PRE_APPLY=<migration file>: run that file inside every planting transaction first (rolled back with it), to prove a
+# migration's checks BEFORE it is applied. Unset once the migration is live.
+PRE = open(os.environ['MEMO_PRE_APPLY']).read() if os.environ.get('MEMO_PRE_APPLY') else None
+
+
 def with_txn(fn, read_only=False):
     conn = connect()
     try:
         cur = conn.cursor()
         if read_only:
             cur.execute("set transaction read only")
+        elif PRE:
+            cur.execute(PRE)
         return fn(cur)
     finally:
         conn.rollback()
@@ -118,12 +125,48 @@ HD5 = {
         "     where iam.kernel_batch_on(null)\n       and exists (select 1 from unnest(v_v_org, v_v_id)",
         "     where iam.kernel_batch_on(null) and false\n       and exists (select 1 from unnest(v_v_org, v_v_id)"),
 }
-# HOT-DOORS-6 paths (2026-10-09) CANNOT be planted here, measured: both plants were invisible (ok=True, 0 diffs).
-#   iam.has_access_for_many_in's organization hint is asked only by custom.tables_seen_among's kernel-first step, which runs
-#   only while the transaction has written nothing - and a plant is DDL, a write. custom.data_home_items' booking shortcut
-#   skips the store owner, and iam._memo_pair asks as postgres, whom custom.query_is_store_owner() calls the owner.
-# Their proof is read-only and old-vs-new on one snapshot (mx.hot_doors_6 = 'off' forces the old paths): see KERNEL.md
-# HOT-DOORS-6. The read-only comparison above still runs both paths for the non-owner arms it reaches.
+# HOT-DOORS-6 paths. Until MEMO-SWEEP-2 the comparison asked as postgres, whom custom.query_is_store_owner() calls the store
+# owner, so the non-owner arm of custom.data_home_items' booking shortcut was never taken. iam._memo_pair now asks with the role
+# GUC set to authenticated (through iam._memo_ask), so owner checks see a normal user. Plants (all in a rolled-back transaction,
+# the memo-on arm run under the existing mx.kernel_batch = 'on_written' hook because a plant is DDL, a write):
+HD6 = {
+    "custom.data_home_items: the booking shortcut (non-owner arm only) drops every booking page": ("custom.data_home_items(uuid)",
+        "                then true\n                else custom.my_level", "                then false\n                else custom.my_level"),
+}
+# the three set paths, planted by renaming the live function and putting a wrapper in its place that flips the memo-on answer
+HD6_WRAP = {
+    "iam.has_access_for_many_in: a hinted ask answers the opposite": ("iam.has_access_for_many_in(uuid,uuid[],uuid[],text,text)", "iam", "has_access_for_many_in",
+        "p_person uuid, p_targets uuid[], p_orgs uuid[], p_level text, p_type text default 'record'",
+        "returns table(target uuid, allowed boolean)",
+        "select m.target, case when current_setting('mx.kernel_batch', true) <> 'off' and p_orgs is not null then not m.allowed else m.allowed end "
+        "from iam.has_access_for_many_in_orig(p_person, p_targets, p_orgs, p_level, p_type) m"),
+    "custom.tables_seen_among: the memo-on arm flips seen": ("custom.tables_seen_among(uuid,uuid[],uuid[])", "custom", "tables_seen_among",
+        "p_user_id uuid, p_organization_ids uuid[], p_among uuid[]",
+        "returns table(organization_id uuid, id uuid, seen boolean)",
+        "select m.organization_id, m.id, case when current_setting('mx.kernel_batch', true) <> 'off' then not m.seen else m.seen end "
+        "from custom.tables_seen_among_orig(p_user_id, p_organization_ids, p_among) m"),
+    "custom.tables_seen_once_per_group: the memo-on arm flips seen": ("custom.tables_seen_once_per_group(uuid,uuid[])", "custom", "tables_seen_once_per_group",
+        "p_user_id uuid, p_organization_ids uuid[]",
+        "returns table(organization_id uuid, id uuid, seen boolean)",
+        "select m.organization_id, m.id, case when current_setting('mx.kernel_batch', true) <> 'off' then not m.seen else m.seen end "
+        "from custom.tables_seen_once_per_group_orig(p_user_id, p_organization_ids) m"),
+}
+for label, (reg, old, new) in HD6.items():
+    def planted6(cur, reg=reg, old=old, new=new):
+        cur.execute(patched_def(cur, reg, old, new))
+        return run_compare(cur, after_write=True)
+    r = with_txn(planted6)
+    print(f'plant [{label}]:', summary(r))
+    check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == reg.split('(')[0] for d in r['diffs']), summary(r))
+for label, (reg, sch, fn, args, rets, body) in HD6_WRAP.items():
+    def planted6w(cur, reg=reg, sch=sch, fn=fn, args=args, rets=rets, body=body):
+        cur.execute(f"alter function {reg} rename to {fn}_orig")
+        cur.execute(f"create function {sch}.{fn}({args}) {rets} language sql stable set search_path to '' as $f$ {body} $f$")
+        return run_compare(cur, after_write=True)
+    r = with_txn(planted6w)
+    print(f'plant [{label}]:', summary(r))
+    check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == f'{sch}.{fn}' for d in r['diffs']), summary(r))
+
 for label, (reg, old, new) in HD5.items():
     def planted5(cur, reg=reg, old=old, new=new):
         cur.execute(patched_def(cur, reg, old, new))

@@ -1,8 +1,9 @@
--- chair-step: undo hotdoors6_a - restores iam.has_access_for_many, custom.tables_seen_among and custom.tables_seen_once_per_group as before HOT-DOORS-6 and drops the two functions it added. Run AFTER hotdoors6_b inverse.
+-- chair-step: undo hotdoors6_a - restores iam.has_access_for_many, custom.tables_seen_among and custom.tables_seen_once_per_group as before HOT-DOORS-6 and drops the functions it added except iam.has_access_for_many_in, which stays as a thin unhinted wrapper because iam._memo_ask (memosweep_k) asks it. Run AFTER hotdoors6_b inverse.
 -- lane: HOT-DOORS-6
 -- based-on: iam.has_access_for_many(uuid, uuid[], text, text) 158ea840126ca4ef9f351e88708dc46b924a62f0e1a19cbdfd51ab0485b1398a
 -- based-on: custom.tables_seen_among(uuid, uuid[], uuid[]) db89ca3d2f5d6e7ca5284f94fe439f374b65f3c85eb432558a67045954c62837
 -- based-on: custom.tables_seen_once_per_group(uuid, uuid[]) 90364ec4bedd3231aeb7733af8980381743c4a4e3b3b5513c9c245fe3be1636d
+-- based-on: iam.has_access_for_many_in(uuid, uuid[], uuid[], text, text) e049a33bae07af8eadfb16277025425f5275259eb43eec3d10bc797110738416
 
 set local statement_timeout = '60s';
 
@@ -801,6 +802,13 @@ begin
 end;
 $function$;
 
-delete from platform.client_callable_door where schema_name = 'iam' and function_name = 'has_access_for_many_in';
-drop function iam.has_access_for_many_in(uuid, uuid[], uuid[], text, text);
+-- iam.has_access_for_many_in stays standing (iam._memo_ask, memosweep_k, asks it): neutered to the unhinted form, hints ignored.
+create or replace function iam.has_access_for_many_in(p_person uuid, p_targets uuid[], p_orgs uuid[], p_level text, p_type text default 'record'::text)
+ returns table(target uuid, allowed boolean)
+ language sql
+ stable security definer
+ set search_path to ''
+as $function$
+  select m.target, m.allowed from iam.has_access_for_many(p_person, p_targets, p_level, p_type) m;
+$function$;
 drop function custom.hot_doors_6_on(uuid);
