@@ -56,7 +56,7 @@ const FENCED = /^\s*(`{3,}|~{3,})[^\n]*\n([\s\S]*?)\n?\s*\1\s*$/;
 
 /** The block's text body (an `<artifact>` body may wrap its source in a fence). */
 function sourceText(data: unknown, context?: Pick<PrintBlockContext, "raw">): string {
-  const text = context?.raw?.trim() ? context.raw : typeof data === "string" ? data : "";
+  const text = context?.raw?.trim() ? context.raw : typeof data === "string" ? data : data && typeof data === "object" ? JSON.stringify(data) : "";
   const fenced = FENCED.exec(text);
   return (fenced ? (fenced[2] as string) : text).trim();
 }
