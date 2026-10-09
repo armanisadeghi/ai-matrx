@@ -1,0 +1,114 @@
+{
+ "reading-list": {
+  "__kind": "describe_template_result",
+  "notes": [
+   "I reused your existing Recommenders table, so the people already in it can be linked to books right away.",
+   "Books move through Want to read, Reading, Finished and Abandoned.",
+   "Ratings run from 1 to 5 stars.",
+   "Each book links to one recommender, the main person who suggested it.",
+   "I left out reading dates, page counts and genres to keep the list simple."
+  ],
+  "reuses": [
+   {
+    "existing_table_id": "689ea459-e898-438c-aabe-717ac9fe1b19",
+    "token": "recommender"
+   }
+  ],
+  "template": {
+   "audience": "individual",
+   "business": "{\"name\":\"AI Matrx\",\"describes\":\"A personal reading list for rating books and remembering who recommended them.\",\"timezone\":\"UTC\"}",
+   "extras": [],
+   "forms": [
+    "{\"token\":\"add_book\",\"name\":\"Add a book\",\"describes\":\"Adds a book to the reading list along with who recommended it.\",\"audience\":\"staff\",\"table\":\"book\",\"fields\":[{\"fieldKey\":\"title\",\"ask\":\"What is the book called?\",\"required\":true},{\"fieldKey\":\"author\",\"ask\":\"Who wrote it?\"},{\"fieldKey\":\"recommended_by\",\"ask\":\"Who recommended it to you?\"},{\"fieldKey\":\"status\",\"ask\":\"Where are you with it right now?\"},{\"fieldKey\":\"rating\",\"ask\":\"How many stars would you give it?\"},{\"fieldKey\":\"notes\",\"ask\":\"Anything you want to remember about it?\"}],\"submitLabel\":\"Add book\",\"confirmation\":\"Book added to your reading list.\"}"
+   ],
+   "id": "reading-list-ratings-recommenders",
+   "industry": "personal_family",
+   "job": "projects",
+   "relationships": [
+    "{\"describes\":\"Each book can be credited to the person who recommended it.\",\"fromTable\":\"book\",\"fromField\":\"recommended_by\",\"toTable\":\"recommender\",\"flavor\":\"referenced\",\"cardinality\":\"one\",\"onDelete\":\"set_null\",\"inverseKey\":\"books_recommended\"}"
+   ],
+   "tables": [
+    "{\"token\":\"book\",\"name\":\"Books\",\"labelSingular\":\"Book\",\"icon\":\"book-open\",\"titleField\":\"title\",\"describes\":\"Books on the reading list with their rating and who recommended them.\",\"subject\":\"thing\",\"fields\":[{\"key\":\"title\",\"label\":\"Title\",\"parityType\":\"text\",\"required\":true},{\"key\":\"author\",\"label\":\"Author\",\"parityType\":\"text\"},{\"key\":\"status\",\"label\":\"Status\",\"parityType\":\"select\",\"required\":true,\"default\":\"Want to read\",\"choices\":[\"Want to read\",\"Reading\",\"Finished\",\"Abandoned\"],\"choiceColors\":{\"Want to read\":\"blue\",\"Reading\":\"amber\",\"Finished\":\"green\",\"Abandoned\":\"red\"}},{\"key\":\"rating\",\"label\":\"Rating\",\"parityType\":\"rating\",\"help\":\"One to five stars.\",\"rules\":[{\"kind\":\"min\",\"value\":1},{\"kind\":\"max\",\"value\":5}]},{\"key\":\"recommended_by\",\"label\":\"Recommended by\",\"parityType\":\"relation\",\"relationTarget\":\"recommender\",\"relationMax\":1},{\"key\":\"notes\",\"label\":\"Notes\",\"parityType\":\"long_text\"}],\"rows\":[{\"key\":\"project_hail_mary\",\"values\":{\"title\":\"Project Hail Mary\",\"author\":\"Andy Weir\",\"status\":\"Finished\",\"rating\":5}},{\"key\":\"the_overstory\",\"values\":{\"title\":\"The Overstory\",\"author\":\"Richard Powers\",\"status\":\"Reading\"}},{\"key\":\"educated\",\"values\":{\"title\":\"Educated\",\"author\":\"Tara Westover\",\"status\":\"Want to read\"}}]}",
+    "{\"token\":\"recommender\",\"name\":\"Recommenders\",\"labelSingular\":\"Recommender\",\"icon\":\"user-round\",\"titleField\":\"name\",\"describes\":\"People who recommend books and how they are known.\",\"subject\":\"thing\",\"fields\":[{\"key\":\"name\",\"label\":\"Name\",\"parityType\":\"text\",\"required\":true,\"sensitivity\":\"confidential\",\"contextPolicy\":\"summarize\"},{\"key\":\"connection\",\"label\":\"How I know them\",\"parityType\":\"select\",\"choices\":[\"Friend\",\"Family\",\"Colleague\",\"Author or critic\",\"Other\"],\"choiceColors\":{\"Friend\":\"blue\",\"Family\":\"violet\",\"Colleague\":\"teal\",\"Author or critic\":\"orange\",\"Other\":\"gray\"}},{\"key\":\"notes\",\"label\":\"Notes\",\"parityType\":\"text\"}]}"
+   ],
+   "teaches": "relations_rollups",
+   "useCase": "One person keeps a reading list, rates each book and notes who recommended it.",
+   "vertical": "Personal reading list",
+   "views": [
+    "{\"token\":\"reading_board\",\"name\":\"Reading board\",\"table\":\"book\",\"kind\":\"kanban\",\"groupBy\":\"status\",\"isDefault\":true}",
+    "{\"token\":\"top_rated\",\"name\":\"Top rated\",\"table\":\"book\",\"kind\":\"grid\",\"filters\":{\"status\":\"Finished\"},\"sorts\":[{\"field\":\"rating\",\"direction\":\"desc\"}]}"
+   ]
+  }
+ },
+ "birthday-rsvp": {
+  "__kind": "describe_template_result",
+  "notes": [
+   "Built one RSVP list with a public RSVP form that guests can fill in from a link.",
+   "Headcount is asked as adults and kids separately so you can plan food and party favours.",
+   "Allergies are stored privately and asked of the parent answering for their child.",
+   "Answers are Coming, Maybe or Can't come, with Coming as the default.",
+   "There is no party date, venue or gift list because your sentence did not mention them."
+  ],
+  "reuses": [],
+  "template": {
+   "audience": "individual",
+   "business": "{\"name\":\"AI Matrx\",\"describes\":\"A family planning their daughter's birthday party.\",\"timezone\":\"UTC\"}",
+   "extras": [],
+   "forms": [
+    "{\"token\":\"party_rsvp\",\"name\":\"Party RSVP\",\"describes\":\"Guests tell the family whether they can come, how many are coming and any allergies.\",\"audience\":\"public\",\"table\":\"rsvp\",\"fields\":[{\"fieldKey\":\"guest_name\",\"ask\":\"What name should we put on the guest list?\",\"required\":true},{\"fieldKey\":\"phone\",\"ask\":\"What's the best phone number to reach you?\"},{\"fieldKey\":\"email\",\"ask\":\"Which email should get party updates?\"},{\"fieldKey\":\"status\",\"ask\":\"Will you be able to come to the party?\",\"required\":true},{\"fieldKey\":\"kids\",\"ask\":\"How many kids are coming?\"},{\"fieldKey\":\"adults\",\"ask\":\"How many adults are coming?\"},{\"fieldKey\":\"allergies\",\"ask\":\"Does anyone coming have food allergies we should know about?\",\"help\":\"List the allergy and who has it.\"},{\"fieldKey\":\"notes\",\"ask\":\"Is there anything else we should know?\"}],\"submitLabel\":\"Send my RSVP\",\"confirmation\":\"Thanks for letting us know! We can't wait to celebrate with you.\"}"
+   ],
+   "id": "birthday-party-rsvps",
+   "industry": "personal_family",
+   "job": "intake",
+   "relationships": [],
+   "tables": [
+    "{\"token\":\"rsvp\",\"name\":\"RSVPs\",\"labelSingular\":\"RSVP\",\"icon\":\"party-popper\",\"titleField\":\"guest_name\",\"describes\":\"Each guest family's reply to the birthday party invitation, with headcount and allergies.\",\"subject\":\"person\",\"fields\":[{\"key\":\"guest_name\",\"label\":\"Guest name\",\"parityType\":\"text\",\"sensitivity\":\"confidential\",\"contextPolicy\":\"summarize\",\"required\":true,\"askOfSubject\":true},{\"key\":\"status\",\"label\":\"Response\",\"parityType\":\"select\",\"required\":true,\"default\":\"Coming\",\"choices\":[\"Coming\",\"Maybe\",\"Can't come\"],\"choiceColors\":{\"Coming\":\"green\",\"Maybe\":\"amber\",\"Can't come\":\"red\"}},{\"key\":\"kids\",\"label\":\"Kids coming\",\"parityType\":\"number\",\"rules\":[{\"kind\":\"min\",\"value\":0},{\"kind\":\"max\",\"value\":15}],\"help\":\"Count every child, including siblings.\"},{\"key\":\"adults\",\"label\":\"Adults coming\",\"parityType\":\"number\",\"rules\":[{\"kind\":\"min\",\"value\":0},{\"kind\":\"max\",\"value\":15}]},{\"key\":\"allergies\",\"label\":\"Allergies\",\"parityType\":\"long_text\",\"sensitivity\":\"restricted\",\"contextPolicy\":\"exclude\",\"askOfGuardian\":true},{\"key\":\"phone\",\"label\":\"Phone\",\"parityType\":\"phone\",\"sensitivity\":\"confidential\",\"contextPolicy\":\"summarize\",\"askOfSubject\":true},{\"key\":\"email\",\"label\":\"Email\",\"parityType\":\"email\",\"sensitivity\":\"confidential\",\"contextPolicy\":\"summarize\",\"askOfSubject\":true},{\"key\":\"notes\",\"label\":\"Notes\",\"parityType\":\"long_text\"}],\"rows\":[{\"key\":\"rivera_family\",\"values\":{\"guest_name\":\"The Rivera family\",\"status\":\"Coming\",\"kids\":2,\"adults\":1,\"allergies\":\"Peanuts (Sofia)\",\"phone\":\"(555) 555-0142\"}},{\"key\":\"chen_family\",\"values\":{\"guest_name\":\"The Chen family\",\"status\":\"Maybe\",\"kids\":1,\"adults\":2}},{\"key\":\"brooks_family\",\"values\":{\"guest_name\":\"The Brooks family\",\"status\":\"Can't come\",\"kids\":0,\"adults\":0}}]}"
+   ],
+   "teaches": "forms",
+   "useCase": "A parent collects RSVPs, headcount and allergies for their daughter's birthday party.",
+   "vertical": "Kids' birthday party",
+   "views": [
+    "{\"token\":\"guest_list\",\"name\":\"Guest list\",\"table\":\"rsvp\",\"kind\":\"grid\",\"isDefault\":true,\"sorts\":[{\"field\":\"guest_name\",\"direction\":\"asc\"}]}",
+    "{\"token\":\"rsvp_board\",\"name\":\"Who's coming\",\"table\":\"rsvp\",\"kind\":\"kanban\",\"groupBy\":\"status\"}"
+   ]
+  }
+ },
+ "dog-grooming": {
+  "__kind": "describe_template_result",
+  "notes": [
+   "I used your existing Grooming Appointments table, which already holds the dog's name, breed, owner phone and next visit date, so nothing is duplicated.",
+   "Its current Booked, Completed and Cancelled statuses and the groomer and notes fields stay as they are.",
+   "Your team gets a staff form for adding appointments, but there's no public booking page because you didn't ask for one.",
+   "I added a calendar of next visit dates so the week ahead is easy to see.",
+   "There are no separate Owners or Dogs tables, to keep this to the one list you described.",
+   "I added two example appointments with made-up phone numbers that you can delete."
+  ],
+  "reuses": [
+   {
+    "existing_table_id": "7f30b67d-4c8a-4ab4-95f7-79b95fda2583",
+    "token": "grooming_appointment"
+   }
+  ],
+  "template": {
+   "audience": "organization",
+   "business": "{\"name\":\"AI Matrx\",\"describes\":\"A dog grooming business that keeps track of each client's grooming appointments.\",\"timezone\":\"UTC\"}",
+   "extras": [],
+   "forms": [
+    "{\"token\":\"new_grooming_appointment\",\"name\":\"New grooming appointment\",\"describes\":\"Staff record a dog's grooming appointment with the owner's phone and next visit.\",\"audience\":\"staff\",\"table\":\"grooming_appointment\",\"fields\":[{\"fieldKey\":\"dog_name\",\"ask\":\"What's the dog's name?\",\"required\":true},{\"fieldKey\":\"breed\",\"ask\":\"What breed is the dog?\"},{\"fieldKey\":\"owner_phone\",\"ask\":\"What's the best phone number for the owner?\",\"required\":true},{\"fieldKey\":\"next_visit\",\"ask\":\"When is the dog's next visit?\",\"required\":true},{\"fieldKey\":\"groomer_name\",\"ask\":\"Which groomer is taking this dog?\"},{\"fieldKey\":\"notes\",\"ask\":\"Anything the groomer should know about this dog?\"}],\"submitLabel\":\"Save appointment\",\"confirmation\":\"Appointment saved.\"}"
+   ],
+   "id": "dog-grooming-appointments",
+   "industry": "fitness_beauty_wellness",
+   "job": "scheduling",
+   "relationships": [],
+   "tables": [
+    "{\"token\":\"grooming_appointment\",\"name\":\"Grooming Appointments\",\"labelSingular\":\"Grooming appointment\",\"icon\":\"scissors\",\"titleField\":\"dog_name\",\"describes\":\"Each client's dog grooming appointment with the dog, owner phone and next visit date.\",\"subject\":\"thing\",\"fields\":[{\"key\":\"dog_name\",\"label\":\"Dog's name\",\"parityType\":\"text\",\"required\":true},{\"key\":\"breed\",\"label\":\"Breed\",\"parityType\":\"text\"},{\"key\":\"groomer_name\",\"label\":\"Groomer's name\",\"parityType\":\"text\",\"sensitivity\":\"confidential\",\"contextPolicy\":\"summarize\"},{\"key\":\"owner_phone\",\"label\":\"Owner phone\",\"parityType\":\"phone\",\"required\":true},{\"key\":\"next_visit\",\"label\":\"Next visit\",\"parityType\":\"datetime\",\"required\":true,\"help\":\"Day and time the dog is due back.\"},{\"key\":\"status\",\"label\":\"Status\",\"parityType\":\"select\",\"required\":true,\"default\":\"Booked\",\"choices\":[\"Booked\",\"Completed\",\"Cancelled\"],\"choiceColors\":{\"Booked\":\"blue\",\"Completed\":\"green\",\"Cancelled\":\"red\"}},{\"key\":\"notes\",\"label\":\"Notes\",\"parityType\":\"text\"}],\"rows\":[{\"key\":\"biscuit\",\"values\":{\"dog_name\":\"Biscuit\",\"breed\":\"Cocker Spaniel\",\"owner_phone\":\"(813) 555-0142\",\"next_visit\":\"2026-10-16T10:00:00Z\",\"status\":\"Booked\",\"notes\":\"Nervous with clippers near the ears.\"}},{\"key\":\"pepper\",\"values\":{\"dog_name\":\"Pepper\",\"breed\":\"Miniature Schnauzer\",\"owner_phone\":\"(813) 555-0117\",\"next_visit\":\"2026-10-21T13:30:00Z\",\"status\":\"Booked\",\"notes\":\"Full groom every six weeks.\"}}]}"
+   ],
+   "teaches": "calendar",
+   "useCase": "A dog grooming business tracks each client's grooming appointments with the dog's name, breed, owner phone and next visit date.",
+   "vertical": "Dog grooming",
+   "views": [
+    "{\"token\":\"next_visits_calendar\",\"name\":\"Next visits calendar\",\"table\":\"grooming_appointment\",\"kind\":\"calendar\",\"dateField\":\"next_visit\"}"
+   ]
+  }
+ }
+}

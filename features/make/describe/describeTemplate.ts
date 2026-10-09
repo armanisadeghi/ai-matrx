@@ -121,6 +121,49 @@ export function applySafeReuses(answer: DescribeAnswer, existing: ExistingTable[
   return { template: r.spec as unknown as Record<string, unknown>, reuses: r.reuses, notes: r.notes };
 }
 
+/** The store's check refused the design (after its automatic fixes). Try again designs again rather than resuming. */
+export class DesignRefused extends AnswerRefused {
+  constructor(message: string) {
+    super(message);
+    this.name = "DesignRefused";
+  }
+}
+
+/** A design the box can declare: the answer, its safe reuses, and the passed check. */
+export interface ReadDesign {
+  answer: DescribeAnswer;
+  safe: ReturnType<typeof applySafeReuses>;
+  checked: Extract<DescribeCheck, { ok: true }>;
+}
+
+/**
+ * THE BOX'S ONE READ of the mandate's answer — the `coerce` of the design run, so EVERY refusal (a missing spec, a part
+ * the deserializer cannot open, a check refusal, or any error thrown on the way) is thrown INSIDE the run and recorded on
+ * it as failed (chat's useHeadlessAgentJson). Nothing it throws is a raw JS error: anything that is not already an
+ * AnswerRefused becomes one, and the box says the plain sentence. Live 2026-10-09: "i.fields is not iterable" reached the
+ * person, and the run read `completed`.
+ */
+export function readDesign(value: unknown, existing: ExistingTable[]): ReadDesign {
+  let checked: DescribeCheck;
+  let answer: DescribeAnswer;
+  let safe: ReadDesign["safe"];
+  try {
+    answer = coerceDescribeAnswer(value);
+    safe = applySafeReuses(answer, existing);
+    checked = checkDescribeTemplate(safe.template, existing);
+  } catch (e) {
+    if (e instanceof AnswerRefused) throw e;
+    // A thrown JS error is a defect in reading, never words for the person: the console keeps it, the run records the plain line.
+    console.error("[make:describe] the answer could not be read", e);
+    throw new AnswerRefused(`The answer could not be read (${e instanceof Error ? e.name : "error"}).`);
+  }
+  if (!checked.ok) {
+    console.warn("[make:describe] the store's check refused the spec", checked.line, checked.problems, checked.autoFixes);
+    throw new DesignRefused(checked.line);
+  }
+  return { answer, safe, checked };
+}
+
 /**
  * REUSE, NEVER DUPLICATE: each table the mandate said it meant (`reuses`) binds to the organization's own
  * table (`bindsTo`) — the install makes no second one, adds only the fields it lacks and links the new

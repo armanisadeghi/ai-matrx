@@ -29,7 +29,12 @@ jest.mock("next/link", () => ({ __esModule: true, default: ({ href, children }: 
 jest.mock("@ai-matrx/records/core", () => ({ supabaseDataSource: () => ({}) }));
 jest.mock("@ai-matrx/records/templates", () => ({ runTemplateDoor: (...a: unknown[]) => runTemplateDoor(...a) }));
 jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { make__describe_template: "make.describe_template" } }));
-jest.mock("@ai-matrx/chat/agents/hooks/useFloatingAgentRun", () => ({ useFloatingAgentRun: () => ({ run: writerRun, isRunning: false }) }));
+// Like the real hook, the run hands the model's answer to the caller's `coerce` and returns what it reads.
+const coercedRun = async (o: { coerce?: (v: unknown) => unknown }) => {
+  const v = await writerRun(o);
+  return o.coerce ? o.coerce(v) : v;
+};
+jest.mock("@ai-matrx/chat/agents/hooks/useFloatingAgentRun", () => ({ useFloatingAgentRun: () => ({ run: coercedRun, isRunning: false }) }));
 // The box before the guided run ran its model headless; the same stand-in serves both so the guard can fail before.
 jest.mock("@ai-matrx/chat/agents/hooks/useHeadlessAgentJson", () => ({ HeadlessAgentRunError: class extends Error {}, useHeadlessAgentJson: () => ({ run: writerRun, isRunning: false }) }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/surface-mandates", () => ({ useDeclaredSurfaceMandates: () => undefined }));
@@ -48,13 +53,19 @@ jest.mock("@/components/official/ProTextarea", () => ({
 }));
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({ useOrganizationRequired: () => ({ organizationId: ORG, organizationState: "ready" }) }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/features/spaces/embed/useSpaceBuild", () => ({ useSpaceBuild: () => ({ build: spaceBuild, isRunning: false, available: true }) }));
+jest.mock("@/features/spaces/embed/useSpaceBuild", () => ({ SpaceBuildRefused: class extends Error {}, useSpaceBuild: () => ({ build: spaceBuild, isRunning: false, available: true }) }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHomeTables: async () => ({ ok: true, data: [] }) }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("../../gallery/TemplateGallery", () => ({ Landing: () => null, Progress: () => null }));
 jest.mock("../../gallery/galleryHref", () => ({ templatePreviewHref: (id: string) => `/make/templates/${id}` }));
 jest.mock("../describeTemplate", () => ({
   AnswerRefused: class extends Error {},
+  DesignRefused: class extends Error {},
+  readDesign: (v: { template: Record<string, unknown>; reuses: unknown[]; notes: string[] }) => ({
+    answer: v,
+    safe: { template: v.template, reuses: v.reuses, notes: [] },
+    checked: { ok: true, spec: v.template, autoFixes: [] },
+  }),
   applySafeReuses: (a: { template: Record<string, unknown>; reuses: unknown[]; notes: string[] }) => ({ template: a.template, reuses: a.reuses, notes: [] }),
   bindReuses: (s: unknown) => s,
   checkDescribeTemplate: (t: unknown) => ({ ok: true, spec: t, autoFixes: [] }),
@@ -121,15 +132,19 @@ describe("the guided run on /make", () => {
   });
 
   it("designs once more on its own when the check refuses the first design, then builds", async () => {
-    const mod = jest.requireMock("../describeTemplate") as { checkDescribeTemplate: unknown };
-    const real = mod.checkDescribeTemplate;
+    // The check now runs inside the run's read (readDesign): its refusal is a DesignRefused thrown from `coerce`.
+    const mod = jest.requireMock("../describeTemplate") as { readDesign: (v: unknown) => unknown; DesignRefused: new (m: string) => Error };
+    const real = mod.readDesign;
     let n = 0;
-    mod.checkDescribeTemplate = (t: unknown) => (++n === 1 ? { ok: false, line: "\"Call time\" is required, and this row leaves it empty.", problems: [], spec: t, autoFixes: [] } : { ok: true, spec: t, autoFixes: [] });
+    mod.readDesign = (v: unknown) => {
+      if (++n === 1) throw new mod.DesignRefused("\"Call time\" is required, and this row leaves it empty.");
+      return real(v);
+    };
     writerRun.mockResolvedValue({ template: { tables: [] }, notes: [], reuses: [] });
     runTemplateDoor.mockResolvedValue({ ok: true, answer: { made: [{ kind: "table", ref: "call", id: TABLE, title: "Discovery calls" }] }, calls: 2 });
     const host = await mount();
     await say(host, "a booking page for discovery calls");
-    mod.checkDescribeTemplate = real;
+    mod.readDesign = real;
 
     expect(writerRun).toHaveBeenCalledTimes(2);
     expect(host.querySelector("[data-make-describe]")?.getAttribute("data-make-describe")).toBe("installed");

@@ -26,6 +26,14 @@ export interface SpaceBuildOutcome {
   tableIds: string[];
 }
 
+/** A refusal written for a person (the box shows its message as-is); every other error is said plainly by the caller. */
+export class SpaceBuildRefused extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SpaceBuildRefused";
+  }
+}
+
 /** Builds take 1–8 minutes; the wait outlasts the slowest one. */
 const RUN_TIMEOUT_MS = 12 * 60_000;
 
@@ -34,8 +42,8 @@ export function useSpaceBuild() {
 
   const build = async (args: { request: string; organizationId: string; label?: string }): Promise<SpaceBuildOutcome> => {
     const words = args.request.trim();
-    if (!words) throw new Error("Say what to build");
-    if (!BUILD_KEY) throw new Error("Build with AI is not available here");
+    if (!words) throw new SpaceBuildRefused("Say what to build");
+    if (!BUILD_KEY) throw new SpaceBuildRefused("Build with AI is not available here");
     const r = await run({
       mandateKey: BUILD_KEY,
       ...buildRequest(words, null),

@@ -18,7 +18,7 @@ import { ArrowUpRight, MessageSquare, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { appletBuilderHref, appletWebUrl, AppletCardLazy, AppletInPageLazy, type AppletCardInfo } from "@/features/applets/embed/appletsPort";
+import { appletBuilderHref, appletWebUrl, AppletCardLazy, AppletInPageLazy, readAppletCards, type AppletCardInfo } from "@/features/applets/embed/appletsPort";
 import { APPLET_BLOCK_MIN_HEIGHT } from "@/lib/spaces-blocks/types";
 
 import { readPublishState } from "../publish/publish-doors";
@@ -76,6 +76,22 @@ function AppletBlockView({ p, ctx }: { p: Record<string, unknown>; ctx: Ctx }) {
   const pagePublished = usePagePublished(params?.spaceId, editable && near && !publicSite);
   const [info, setInfo] = useState<AppletCardInfo | null>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
+  // "Open Applet" needs only the Applet's slug: read it at once (one small row), never after the live Applet's chunk
+  // loads and the block scrolls near (live 2026-10-09: the link sat disabled ~10 s after load).
+  useEffect(() => {
+    if (!editable || publicSite || !appletId) return;
+    let live = true;
+    readAppletCards([appletId]).then(
+      (cards) => {
+        const hit = cards.get(appletId);
+        if (live && hit) setInfo(hit);
+      },
+      (err: unknown) => console.error("[applet-block] the Applet could not be read", appletId, err),
+    );
+    return () => {
+      live = false;
+    };
+  }, [editable, publicSite, appletId]);
 
   // SWITCH POINT (public-static): a published Site shows the card, never the live Applet, until G1 guest data ships.
   if (publicSite)
@@ -91,7 +107,7 @@ function AppletBlockView({ p, ctx }: { p: Record<string, unknown>; ctx: Ctx }) {
       {editable ? (
         <>
           <div className="spaces-applet-tools" onMouseDown={(e) => e.stopPropagation()}>
-            <a href={info ? appletWebUrl(info.slug) : undefined} target="_blank" rel="noreferrer" aria-disabled={!info || undefined} data-testid="applet-open">
+            <a href={info ? appletWebUrl(info.slug) : undefined} target="_blank" rel="noreferrer" aria-disabled={!info || undefined} aria-busy={!info || undefined} title={info ? undefined : "Finding the Applet…"} data-testid="applet-open">
               <ArrowUpRight size={13} /> Open Applet
             </a>
             <a href={appletBuilderHref(appletId)} target="_blank" rel="noreferrer" data-testid="applet-change">

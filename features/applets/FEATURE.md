@@ -197,6 +197,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- 2026-10-09 (lane F13): `readAppletCards` / `readAppletBySlug` answer a signed-out visitor — when the owner column (`created_by`, not readable signed out) refuses the read (42501), the same read runs without it and row security returns the Applets on the web; a published Site shows their cards again. The Space block's "Open Applet" reads the slug at once instead of waiting for the live Applet (guard `embed/__tests__/a-signed-out-visitor-reads-a-published-applet-card.test.ts`).
+
 - 2026-10-09 (lane B1, "one roof" first piece): `embed/` grows the Space `applet` block's half — `AppletInPage` takes `height` + `pagePublished` (Publish notice), new `AppletCard` (the static card a published Site draws), and the reads `listPlaceableApplets` / `readAppletCards` / `readAppletBySlug`; comments that called a records-ui page "a Space" corrected.
 
 - 2026-10-09 (lane F2): Manage (Overview and Sharing) shows one line when an Applet is on the web but reads stored data a signed-out visitor cannot read — `webVisitorsMissData` (`lib/applet-state.ts`), `components/AppletWebDataNotice.tsx` — with the one-click fix "Make organization-only". Sharing the data with visitors is not offered: no visitor read door exists for custom tables or entities, and opening one is an access decision. post-approvals' "empty" admin view was the data-loading skeleton (live read 2026-10-09: clients render at ~35s; 54 posts / 8 clients readable as admin).
