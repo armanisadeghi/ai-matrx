@@ -321,8 +321,10 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
         // silently dropped by another (V-30 NEW-5).
         const pendingKey = `${canonicalKey}\u0000${panel.instanceId ?? ""}`;
         if (hydrator) {
-          unresolvedTokens.current.set(pendingKey, pending);
-          hydrator(dispatch, panel.instanceId, panel.args || {});
+          const outcome = hydrator(dispatch, panel.instanceId, panel.args || {});
+          // A refused link is dropped from the address (the sync effect
+          // removes managed tokens that have no window); it is not "still to come".
+          if (outcome !== "refused") unresolvedTokens.current.set(pendingKey, pending);
         } else {
           // Law 4: the link named a window this build has no way to open. Keep
           // the address, say so out loud — never strip it on the next write.

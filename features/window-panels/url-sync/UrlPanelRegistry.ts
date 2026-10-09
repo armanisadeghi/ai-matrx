@@ -12,7 +12,13 @@ export type PanelHydrateCallback = (
   dispatch: AppDispatch,
   instanceId: string,
   args: Record<string, string>,
-) => void;
+) => void | "refused";
+
+/**
+ * A hydrator that returns `"refused"` declined the link on purpose (e.g. a
+ * brand-scoped panel on another brand's page). The manager then drops that
+ * token from the address instead of preserving it as a window still to come.
+ */
 
 interface Registry {
   [typeKey: string]: PanelHydrateCallback;

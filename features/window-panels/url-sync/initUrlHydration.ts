@@ -12,6 +12,7 @@ import { readAgentPanelSurfaceArg } from "@ai-matrx/chat/window-panels/windows/a
 import { patchConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { resolveAgentPanelDisplayMode } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { postPanelOutOfScope } from "@/features/marketing/social/panelScope";
 import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { PANEL_KEY_ALIASES } from "./panelKeyAliases";
@@ -282,6 +283,11 @@ export function initUrlHydration() {
         `[initUrlHydration] Ignoring "?panels=social_post:${id}": a post panel needs its post and organization ("social_post:<postId>:o-<organizationId>"). Re-copy the link from the panel.`,
       );
       return;
+    }
+    // A post panel scoped to another brand is refused here and its token leaves the address,
+    // instead of lingering in the URL as a window that never opens.
+    if (typeof window !== "undefined" && postPanelOutOfScope({ brandSeg: args.b, pathname: window.location.pathname })) {
+      return "refused";
     }
     dispatch(
       openOverlay({

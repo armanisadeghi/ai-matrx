@@ -67,6 +67,8 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
     try {
       await deleteBoard(row.id);
       list.removeRow(row.id);
+      // Re-read too, as every sibling list does: counts, scope tabs and the Archived view must see the trashed board.
+      list.refresh();
       toast.success(`Deleted "${row.title}"`);
     } catch (error) {
       toast.error(failure(error, "The board could not be deleted. Try again."));
