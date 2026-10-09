@@ -52,6 +52,7 @@ import { useFactoryDoor } from "@/features/agents/factory/door";
 import { startAgentBuild } from "@/features/agents/factory/service";
 import { KEPT_OUTCOMES, type FactoryBuildState } from "@/features/agents/factory/types";
 import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
+import { buildIdFromSearch, hrefWithBuild } from "@/features/agents/factory/build-id-in-url";
 
 const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
 
@@ -228,7 +229,20 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
 
   // Pipeline path: the person's example inputs (proof needs 3, R34) and the build it started.
   const [examples, setExamples] = useState<string[]>(emptyExamples);
-  const [buildId, setBuildId] = useState<string | null>(null);
+  // The build being watched rides the address (`?build=<id>`, generate door only) so a full
+  // reload mid-build re-attaches BuildProgress to the build still running on the server.
+  const [buildId, setBuildIdState] = useState<string | null>(null);
+  useEffect(() => {
+    if (mandateMode) return;
+    const fromUrl = buildIdFromSearch(window.location.search);
+    if (fromUrl) setBuildIdState((current) => current ?? fromUrl);
+  }, [mandateMode]);
+  const setBuildId = (id: string) => {
+    setBuildIdState(id);
+    if (!mandateMode) {
+      window.history.replaceState(window.history.state, "", hrefWithBuild(window.location.pathname, window.location.search, id));
+    }
+  };
   const [buildOver, setBuildOver] = useState(false);
   const [startingBuild, setStartingBuild] = useState(false);
 
