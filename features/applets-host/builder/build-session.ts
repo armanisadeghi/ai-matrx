@@ -341,13 +341,54 @@ export function requestOutcome(requests: readonly BuildEntry[], index: number): 
       for (const later of requests.slice(index + 1)) {
         if (!later.fix) break;
         if (later.state === "saved") return { label: later.version ? `Fixed · Saved v${later.version}` : "Fixed · Saved", tone: "success" };
-        if (later.state === "starting" || later.state === "running" || later.state === "saving") return { label: "Fixing", tone: "neutral" };
+        // Its fix round is the row that says "Fixing"; this one says what happened to it (F6: both said "Fixing").
+        if (later.state === "starting" || later.state === "running" || later.state === "saving") return { label: "Problem found", tone: "warning" };
       }
       return { label: "Not saved", tone: "warning" };
     }
     default:
       return { label: "Stopped", tone: "destructive" };
   }
+}
+
+/**
+ * What a check's refusal is about, in her words — the check speaks to the builder ("use <RecordField …/>"),
+ * never to her. The first quoted name it mentions becomes "the created date field"; otherwise "something".
+ */
+export function problemSubject(message: string | null | undefined): string {
+  const quoted = /["“]([A-Za-z][\w .-]{0,60})["”]/.exec(message ?? "")?.[1];
+  if (!quoted) return "";
+  const words = quoted.replace(/[_.-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").trim().toLowerCase();
+  return words ? `the ${words} field` : "";
+}
+
+/** The builder's narration of a fix round: "I found a problem with the created date field and I'm fixing it." */
+export function fixNarration(message: string | null | undefined): string {
+  const subject = problemSubject(message);
+  return subject ? `I found a problem with ${subject} and I'm fixing it` : "I found a problem and I'm fixing it";
+}
+
+/** A fix round's row in the history: what it fixes, never "Fix this error". */
+export function fixRowText(entry: Pick<BuildEntry, "fix">): string {
+  const subject = problemSubject(entry.fix?.message);
+  return subject ? `Fix ${subject}` : "Fix a problem";
+}
+
+/** What the card says once an answer is saved: what it is now, and what each button does (F6). */
+export function doneLine(kind: string | null): string {
+  if (kind === "draft") return "Saved as a draft. Use it to go live; Open to try it.";
+  return "Saved. Open to try it in a new tab.";
+}
+
+/** The Applet's full address on this site: https://www.aimatrx.com/applets/<slug> — never a bare path. */
+export function appletLink(origin: string, slug: string): string {
+  return `${origin.replace(/\/+$/, "")}/applets/${encodeURIComponent(slug)}`;
+}
+
+/** The preview header's held-writes badge, explained: what is held and that nothing reached her tables. */
+export function heldHint(count: number): string {
+  const what = count === 1 ? "1 change you made" : `${count} changes you made`;
+  return `${what} in the preview, held here and never written to your tables`;
 }
 
 /** The fix button's words: a draft is fixed so she can use it; a published Applet is just fixed. */
@@ -373,5 +414,5 @@ export function buildingStep(requests: readonly BuildEntry[] | null | undefined)
   const latest = requests?.at(-1);
   if (!isOpenEntry(latest)) return null;
   const since = Date.parse(latest.started_at);
-  return { label: latest.fix ? "Fixing your Applet" : "Building your Applet", since: Number.isFinite(since) ? since : Date.now() };
+  return { label: latest.fix ? fixNarration(latest.fix.message) : "Building your Applet", since: Number.isFinite(since) ? since : Date.now() };
 }

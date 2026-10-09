@@ -7,7 +7,7 @@
 import { checkAppletSources } from "@ai-matrx/applets/platform";
 import type { AppletSource } from "@ai-matrx/applets";
 
-import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, bannedIcons, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
 import { BuildRefused, dateFieldsAsText, literalNewlineAttributes, newTableGaps, type BuildAnswer, type BuilderFile } from "./build-applet";
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
@@ -97,6 +97,9 @@ export function checkBuildAnswer(
     }
     for (const name of browserDialogs(f)) {
       problems.push(`${f.name} calls the browser's ${name}() — ask with confirmAction({ title, description, confirmLabel, variant: "destructive" }) from "@ai-matrx/applets/react"; never window.confirm / alert / prompt`);
+    }
+    for (const icon of bannedIcons(f)) {
+      problems.push(`${f.name} uses the ${icon} icon — it means "AI" and our interfaces never use it; pick an icon for what the page is about (FileText, Building2, ListChecks)`);
     }
     for (const attr of literalNewlineAttributes(f)) {
       problems.push(`${f.name} has ${attr}="…\\n…", which shows a literal "\\n" — keep it one line of plain text`);

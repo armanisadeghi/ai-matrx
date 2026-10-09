@@ -27,7 +27,7 @@ describe("B1 — an open request is the build, from the first paint", () => {
   it("names the build and keeps its own start time", () => {
     const entry: BuildEntry = { ...newBuildEntry("A reading list", null), started_at: "2026-10-09T05:00:00.000Z", state: "running" };
     expect(buildingStep([entry])).toEqual({ label: "Building your Applet", since: Date.parse("2026-10-09T05:00:00.000Z") });
-    expect(buildingStep([{ ...entry, fix: { where: "record", message: "x" } }])?.label).toBe("Fixing your Applet");
+    expect(buildingStep([{ ...entry, fix: { where: "record", message: "x" } }])?.label).toBe("I found a problem and I'm fixing it");
   });
   it("is nothing once the request has ended", () => {
     const entry: BuildEntry = { ...newBuildEntry("A reading list", null), state: "saved" };

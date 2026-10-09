@@ -206,6 +206,30 @@ export function browserDialogs(file: BuilderFile): string[] {
   return [...out];
 }
 
+/**
+ * ICONS OUR UI DOES NOT USE (F6, "✨ Offer Breakdowns", 2026-10-09): the Sparkles family means "AI" and is
+ * banned in every interface we ship, an Applet's included. Named by the lucide import, so an emoji the person
+ * typed into her own data (🇪🇸) is never touched.
+ */
+export const BANNED_ICONS: ReadonlySet<string> = new Set(["Sparkles", "Sparkle", "WandSparkles"]);
+
+/** The banned lucide icons a file imports (by their lucide names). */
+export function bannedIcons(file: BuilderFile): string[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const out = new Set<string>();
+  for (const stmt of ast.program.body) {
+    if (stmt.type !== "ImportDeclaration" || !/^lucide-react(\/|$)/.test(stmt.source.value)) continue;
+    for (const spec of stmt.specifiers) {
+      if (spec.type !== "ImportSpecifier") continue;
+      const name = spec.imported.type === "Identifier" ? spec.imported.name : spec.imported.value;
+      const base = name.replace(/Icon$/, "");
+      if (BANNED_ICONS.has(base)) out.add(base);
+    }
+  }
+  return [...out];
+}
+
 /** What a button says: its text, collapsed. */
 function buttonLabel(el: t.JSXElement): string {
   const words: string[] = [];
