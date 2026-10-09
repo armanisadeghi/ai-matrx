@@ -118,6 +118,12 @@ HD5 = {
         "     where iam.kernel_batch_on(null)\n       and exists (select 1 from unnest(v_v_org, v_v_id)",
         "     where iam.kernel_batch_on(null) and false\n       and exists (select 1 from unnest(v_v_org, v_v_id)"),
 }
+# HOT-DOORS-6 paths (2026-10-09) CANNOT be planted here, measured: both plants were invisible (ok=True, 0 diffs).
+#   iam.has_access_for_many_in's organization hint is asked only by custom.tables_seen_among's kernel-first step, which runs
+#   only while the transaction has written nothing - and a plant is DDL, a write. custom.data_home_items' booking shortcut
+#   skips the store owner, and iam._memo_pair asks as postgres, whom custom.query_is_store_owner() calls the owner.
+# Their proof is read-only and old-vs-new on one snapshot (mx.hot_doors_6 = 'off' forces the old paths): see KERNEL.md
+# HOT-DOORS-6. The read-only comparison above still runs both paths for the non-owner arms it reaches.
 for label, (reg, old, new) in HD5.items():
     def planted5(cur, reg=reg, old=old, new=new):
         cur.execute(patched_def(cur, reg, old, new))
