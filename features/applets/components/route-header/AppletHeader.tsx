@@ -2,8 +2,8 @@
 
 import {
   AppWindow,
-  Bookmark,
-  Code,
+  AtSign,
+  MessageSquare,
   EyeOff,
   History,
   Play,
@@ -45,7 +45,7 @@ interface AppletHeaderProps {
  *
  * The RecordPageHeader template (one line): back + "Applets" + the Applet
  * + its status + RouteModeNav (Overview /
- * Run / Code / Versions / Settings) + Copy reference + Publish. Desktop
+ * Run / Change with AI / Versions / Settings) + Copy reference + Publish. Desktop
  * renders modes as a measurement-driven pill; mobile collapses everything
  * into the back + name + "…" drawer.
  */
@@ -72,7 +72,9 @@ export function AppletHeader({
   const modes: RouteNavItem[] = [
     { name: "Overview", href: `${basePath}/${appId}`, icon: AppWindow },
     { name: "Run", href: `${basePath}/${appId}/run`, icon: Play },
-    { name: "Code", href: `${basePath}/${appId}/code`, icon: Code },
+    // The /code page is where the Applet is CHANGED by talking to its builder (with its code one
+    // click away) — named for what a person does there, never "Code" (live audit 2026-10-09, M5).
+    { name: "Change with AI", href: `${basePath}/${appId}/code`, icon: MessageSquare },
     { name: "Versions", href: `${basePath}/${appId}/versions`, icon: History },
     {
       name: "Settings",
@@ -83,7 +85,7 @@ export function AppletHeader({
   const actions: RecordPageAction[] = [];
   actions.push({
     label: "Copy reference",
-    icon: Bookmark,
+    icon: AtSign,
     onPress: async () => {
       const copied = await copyReferenceFence(
         buildRecordReferenceFence({ type: "agent_app", id: appId, label: appName }),
@@ -97,6 +99,8 @@ export function AppletHeader({
     label: isPublished ? "Unpublish" : "Publish",
     icon: isPublished ? EyeOff : Rocket,
     primary: !isPublished,
+    // Taking an Applet off the web is never an unlabeled glyph (audit M1): the name rides beside it.
+    showLabel: isPublished,
     disabled: publicationBusy,
     onPress: async () => {
       // A publication change reaches strangers, so the click says what it

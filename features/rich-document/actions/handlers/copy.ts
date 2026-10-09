@@ -51,7 +51,7 @@ registerAction({
     // read it from the store (the whole record, thinking included).
     const record =
       ctx.source.type === "chat-message"
-        ? ctx.getState().messages.byConversationId[ctx.source.conversationId]
+        ? ctx.getState().messages?.byConversationId?.[ctx.source.conversationId]
             ?.byId?.[ctx.source.messageId]
         : undefined;
     const fullContent = record

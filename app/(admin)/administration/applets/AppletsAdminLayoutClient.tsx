@@ -6,6 +6,7 @@ import {
   Activity,
   BarChart3,
   Boxes,
+  LifeBuoy,
   LayoutDashboard,
   ShieldAlert,
   Tag,
@@ -23,9 +24,14 @@ const NAV_ITEMS: AdminSectionTab[] = [
     exact: true,
   },
   {
-    label: "All Applets",
+    label: "System Applets",
     href: "/administration/applets/all",
     icon: Boxes,
+  },
+  {
+    label: "Support",
+    href: "/administration/applets/support",
+    icon: LifeBuoy,
   },
   {
     label: "Categories",

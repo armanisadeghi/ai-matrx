@@ -3,7 +3,7 @@
  * proved the old regex checks refused, beside the true violation the check must still refuse. Every
  * check reads the syntax tree, so a word in a string, JSX text or a comment is never code.
  */
-import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
 import { coerceBuildAnswer } from "./build-applet";
 import { checkBuildAnswer } from "./check-build-answer";
 
@@ -170,5 +170,41 @@ describe("B-6 archiveCalledDelete names a confirm that calls an archive a delete
   it("checkBuildAnswer refuses the live page by name, both ways", () => {
     const raw = { applet: { name: "X", entry: "post_detail.tsx", files: [file(LIVE_POST_DETAIL, "post_detail.tsx")], pages: [{ path: "/", title: "X", file: "post_detail.tsx" }], sources: [{ alias: "posts", table_id: "t", organization_id: "o" }], mandates: [] }, note: "" };
     expect(() => checkBuildAnswer(raw, coerceBuildAnswer(raw))).toThrow(/copies row into its form on every change.*asks "Delete" before archive\(\)/);
+  });
+});
+
+describe("F1 jobValuesNotTaken — a form fills its own job", () => {
+  const CITY = new Map([["main", ["city", "what", "response_format"]]]);
+  it("refuses the live legal form on a city guide (city-travel-guide v6: onExecute(variables) over useState({ matter, … }))", () => {
+    const src = `import { useJob } from "@ai-matrx/applets/react";
+export default function LegalMattersApp() {
+  const job = useJob("main");
+  const onExecute = async (variables, userInput) => {
+    await job.run(variables, userInput ? { userInput } : undefined);
+  };
+  const [variables, setVariables] = useState({ matter: '', practiceArea: '', details: '' });
+  const handleSubmit = async () => { await onExecute(variables); };
+  return <button onClick={handleSubmit}>Generate</button>;
+}`;
+    expect(jobValuesNotTaken(file(src), CITY)).toEqual([{ alias: "main", sent: ["matter", "practiceArea", "details"], takes: ["city", "what", "response_format"] }]);
+  });
+  it("passes the stock form whose FIELDS are the job's own inputs, and an inline literal of the job's names", () => {
+    const stock = `const FIELDS = [{ "name": "city" }, { "name": "response_format" }, { "name": "what" }];
+function initialValues() { return {}; }
+export default function App() {
+  const job = useJob("main");
+  const [values, setValues] = useState(initialValues);
+  const submit = async () => { await job.run(values, undefined); };
+  return <button onClick={submit}>Run</button>;
+}`;
+    expect(jobValuesNotTaken(file(stock), CITY)).toEqual([]);
+    expect(jobValuesNotTaken(file(`const job = useJob("main");\nconst go = () => job.run({ city: "Lisbon", what: "food" });`), CITY)).toEqual([]);
+  });
+  it("names a renamed input (metro_name where the job takes region_name)", () => {
+    const src = `const job = useJob("main");\nconst [v, setV] = useState(() => ({ metro_name: "", sub_regions: "" }));\nconst go = () => job.run(v);`;
+    expect(jobValuesNotTaken(file(src), new Map([["main", ["region_name", "sub_regions"]]]))).toEqual([{ alias: "main", sent: ["metro_name"], takes: ["region_name", "sub_regions"] }]);
+  });
+  it("does not check a job whose inputs it was not told", () => {
+    expect(jobValuesNotTaken(file(`const job = useJob("other");\njob.run({ anything: 1 });`), CITY)).toEqual([]);
   });
 });

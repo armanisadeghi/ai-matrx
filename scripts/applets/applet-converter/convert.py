@@ -186,6 +186,7 @@ def stock(row, var_defs, takes_message):
         if opts and default and default not in opts: opts = [default] + list(opts)
         fields.append({"name": name, "label": d.get("label") or humanize(name), "help": d.get("helpText") or None,
                        "default": default if default is not None else "", "required": bool(d.get("required")),
-                       "options": opts, "multiline": cc.get("type") == "textarea" or len(str(default or "")) > 60 or name in ("transcript", "claim", "page_content")})
+                       "options": opts, "multiline": cc.get("type") == "textarea" or len(str(default or "")) > 60 or name in ("transcript", "claim", "page_content")
+                       or "paste" in str(d.get("helpText") or "").lower()})
     return (STOCK.replace("__NAME__", js(row["name"])).replace("__FIELDS__", json.dumps(fields, ensure_ascii=False, indent=2))
             .replace("__MESSAGE__", "true" if takes_message else "false"))

@@ -526,14 +526,6 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "System Applets",
-        description:
-          "Global-scope Applets available to every user. Distinct from moderation of user-published Applets.",
-        iconName: "Bot",
-        link: "/administration/agents/system-agents/apps",
-        isNew: true,
-      },
-      {
         title: "Agents Lineage",
         description:
           "See what each system agent gives rise to — derived agents, shortcuts, and Applets.",
@@ -583,17 +575,24 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Applets Dashboard",
         description:
-          "Hub for moderating user-published Applets: featured picks, verification, and quick stats.",
+          "The platform's own Applets: featured picks, verification, stats.",
         iconName: "LayoutDashboard",
         link: "/administration/applets",
         isNew: true,
       },
       {
-        title: "All Applets",
+        title: "System Applets",
         description:
-          "Every Applet across the platform — filter, feature, verify, and moderate.",
+          "The platform's own Applets: feature, verify, publish.",
         iconName: "Boxes",
         link: "/administration/applets/all",
+      },
+      {
+        title: "Applet support",
+        description:
+          "Organizations' and people's Applets, for support and moderation.",
+        iconName: "LifeBuoy",
+        link: "/administration/applets/support",
       },
       {
         title: "Applet Categories",

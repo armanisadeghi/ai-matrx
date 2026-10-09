@@ -7,7 +7,9 @@
 //   - a signed-out visitor RUNS a published, public Applet on the guest lane (its jobs ride the guest
 //     identity; it has no reach into anyone's data) — the one address a shared Applet has;
 //   - a signed-out visitor of any other Applet gets the introductory page when the owner published one,
-//     else is sent to sign in.
+//     else is sent to sign in — unless the address names an ARCHIVED Applet, which says it is no longer
+//     available, or names nothing at all, which is not found (live audit 2026-10-09, A2: both sent a
+//     stranger to sign in, so every broken public link read as "you need an account").
 import "server-only";
 import { cache } from "react";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
@@ -16,13 +18,14 @@ import { readAppletIntro } from "@/features/marketing/applets/publicApplets.serv
 import type { AppletIntro } from "@/features/marketing/applets/types";
 import type { Database } from "@/types/database.types";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 
 /** The Applet `slug` (or, UUID-shaped, its id) names for THIS viewer (their own server client: row security decides). */
-export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string; entry: string | null } | null> => {
+export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string; entry: string | null; created_by: string | null } | null> => {
   const supabase = await createClient();
   const read = async (column: "slug" | "id") => {
-    const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq(column, slug).is("deleted_at", null).maybeSingle();
+    const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry, created_by").eq(column, slug).is("deleted_at", null).maybeSingle();
     if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
     return data ?? null;
   };
@@ -74,7 +77,26 @@ export type AppletView =
   /** A build still being made (born empty at Build, no app saved yet): it opens as its build. */
   | { kind: "unbuilt"; id: string }
   | { kind: "sign-in" }
+  /** The address named an Applet that has been archived: it is no longer available (never "sign in"). */
+  | { kind: "gone" }
   | { kind: "missing" };
+
+/**
+ * What an address names when the visitor cannot read it: an archived Applet, a live one they may not
+ * open, or nothing. Asked with the server's own key and answering only that one word — never the name,
+ * the owner or any field — so a stranger learns no more than the link itself said.
+ */
+export const appletAddressFate = cache(async (key: string): Promise<"archived" | "exists" | "none"> => {
+  const admin = createAdminClient();
+  const read = async (column: "slug" | "id") => {
+    const { data, error } = await admin.schema("app").from("definition").select("deleted_at").eq(column, key).maybeSingle();
+    if (error) throw new Error(`Could not check the Applet address "${key}": ${error.message}`);
+    return data ?? null;
+  };
+  const row = (await read("slug")) ?? (isUuidShape(key) ? await read("id") : null);
+  if (!row) return "none";
+  return row.deleted_at ? "archived" : "exists";
+});
 
 /** What `/applets/<key>` shows this viewer. */
 export async function resolveAppletView(key: string, signedIn: boolean): Promise<AppletView> {
@@ -87,5 +109,9 @@ export async function resolveAppletView(key: string, signedIn: boolean): Promise
   }
   const guest = await readPublicApplet(key);
   if (guest) return { kind: "run", id: guest.id, slug: guest.slug, guest };
-  return intro ? { kind: "intro", intro } : { kind: "sign-in" };
+  if (intro) return { kind: "intro", intro };
+  const fate = await appletAddressFate(key);
+  if (fate === "archived") return { kind: "gone" };
+  if (fate === "none") return { kind: "missing" };
+  return { kind: "sign-in" };
 }

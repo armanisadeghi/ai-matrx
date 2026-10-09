@@ -50,6 +50,8 @@ export interface ReopenedRun {
 
 export function useAppletBuildSession(opts: {
   appletId: string | null;
+  /** The record as the page's server render read it — shown from the first paint (audit9 B1). */
+  initialRecord?: BuildRecord | null;
   /** The page owns the address: a new build moves it to /applets/build/<id>. */
   routed: boolean;
   /** Open the live window on a rejoined run. */
@@ -59,7 +61,7 @@ export function useAppletBuildSession(opts: {
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const [record, setRecord] = useState<BuildRecord | null>(null);
+  const [record, setRecord] = useState<BuildRecord | null>(opts.initialRecord ?? null);
   const [readError, setReadError] = useState<string | null>(null);
   const [rejoining, setRejoining] = useState(false);
   const reopened = useRef<string | null>(null);

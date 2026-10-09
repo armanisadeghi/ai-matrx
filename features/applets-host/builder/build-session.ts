@@ -108,9 +108,9 @@ function withRequests(metadata: Record<string, unknown>, requests: BuildEntry[])
   return { ...metadata, build: { ...build, requests } };
 }
 
-const RECORD_COLUMNS = "id, organization_id, slug, name, version, status, entry, metadata";
+export const RECORD_COLUMNS = "id, organization_id, slug, name, version, status, entry, metadata";
 
-type RecordRow = {
+export type RecordRow = {
   id: string;
   organization_id: string;
   slug: string;
@@ -121,7 +121,8 @@ type RecordRow = {
   metadata: unknown;
 };
 
-function toRecord(row: RecordRow): BuildRecord {
+/** The row as the build reads it — also how the page's server render hands the record over (audit9 B1). */
+export function toRecord(row: RecordRow): BuildRecord {
   return {
     id: row.id,
     slug: row.slug,
@@ -361,4 +362,16 @@ export function fixLabel(kind: string | null): string {
  */
 export function previewLine(versionLabel: string | null): string {
   return `Preview${versionLabel ? ` of ${versionLabel}` : ""} · what you add here is held, never saved`;
+}
+
+/**
+ * What the page says while a request is still open — read from the record alone, so the server render and
+ * a refresh mid-build show "Building your Applet" with its own start time, never the empty start screen
+ * (audit9 B1). Null when nothing is in flight.
+ */
+export function buildingStep(requests: readonly BuildEntry[] | null | undefined): { label: string; since: number } | null {
+  const latest = requests?.at(-1);
+  if (!isOpenEntry(latest)) return null;
+  const since = Date.parse(latest.started_at);
+  return { label: latest.fix ? "Fixing your Applet" : "Building your Applet", since: Number.isFinite(since) ? since : Date.now() };
 }

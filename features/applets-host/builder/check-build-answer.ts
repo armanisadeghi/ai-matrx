@@ -7,7 +7,7 @@
 import { checkAppletSources } from "@ai-matrx/applets/platform";
 import type { AppletSource } from "@ai-matrx/applets";
 
-import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem } from "./applet-code-checks";
 import { BuildRefused, dateFieldsAsText, literalNewlineAttributes, newTableGaps, type BuildAnswer, type BuilderFile } from "./build-applet";
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
@@ -43,6 +43,11 @@ export function checkBuildAnswer(
      * on demand by the builder, so this file keeps the compiler out of the builder's first chunk.
      */
     importProblems?: (files: Readonly<Record<string, string>>) => string[];
+    /**
+     * The input names each job KEY takes (`readJobInputs` from "@ai-matrx/applets/catalogue"). With it, every
+     * name the code sends a job must be one the job takes (lane F1, 2026-10-09).
+     */
+    jobInputs?: ReadonlyMap<string, readonly string[]>;
   } = {},
 ): BuildAnswer {
   const { applet } = answer;
@@ -95,6 +100,18 @@ export function checkBuildAnswer(
     }
     for (const attr of literalNewlineAttributes(f)) {
       problems.push(`${f.name} has ${attr}="…\\n…", which shows a literal "\\n" — keep it one line of plain text`);
+    }
+    if (context.jobInputs) {
+      const byAlias = new Map<string, readonly string[]>();
+      for (const m of applet.mandates) {
+        const takes = context.jobInputs.get(m.key);
+        if (takes) byAlias.set(m.alias, takes);
+      }
+      for (const miss of jobValuesNotTaken(f, byAlias)) {
+        problems.push(
+          `${f.name} sends job "${miss.alias}" ${miss.sent.map((n) => `"${n}"`).join(", ")}, which the job does not take (it takes ${miss.takes.map((n) => `"${n}"`).join(", ") || "only what she writes — pass it as job.run(undefined, { userInput })"}) — name each value after the job's input it fills, or send free words as job.run(values, { userInput })`,
+        );
+      }
     }
     for (const label of deadButtons(f)) {
       problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);

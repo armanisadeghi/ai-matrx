@@ -8,7 +8,8 @@
 //   - signed in: the running Applet, read through the viewer's own client — row security decides;
 //   - signed out, a published public Applet: the running Applet on the guest lane, with the one
 //     attribution row a shared link carries (`?embed=widget` drops it for an iframe);
-//   - signed out, anything else: the introductory page when the owner published one, else sign in.
+//   - signed out, anything else: the introductory page when the owner published one; an archived Applet
+//     or an address naming none says so (`AppletUnavailablePage`); a live private one asks to sign in.
 // `build` and `manage` are owner-tool routes in `(core)/applets`, never an Applet's address
 // (`features/applets/reserved-slugs.ts`).
 
@@ -16,6 +17,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
+import { AppletUnavailablePage } from "@/features/applets-host/AppletUnavailablePage";
 import { readPublicApplet, resolveAppletRoute, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
 import { getAppletIconsMetadata } from "@/features/applets/utils/favicon-metadata";
 import { AppletIntroPage } from "@/features/marketing/applets/AppletIntroPage";
@@ -85,6 +87,9 @@ export default async function AppletRoute({ params, searchParams }: Props) {
   const key = decodeURIComponent(slug);
   const view = await resolveAppletView(key, isAuthenticated);
   if (view.kind === "sign-in") redirect(loginHref(here));
+  // A stranger at an archived or unknown address is told so — never sent to sign in (audit A2).
+  if (view.kind === "gone") return <AppletUnavailablePage reason="archived" />;
+  if (view.kind === "missing" && !isAuthenticated) return <AppletUnavailablePage reason="missing" />;
   if (view.kind === "missing") notFound();
   // A build that has not saved an app yet is still being built: open the build, never a broken Applet.
   if (view.kind === "unbuilt") redirect(`/applets/build/${view.id}`);

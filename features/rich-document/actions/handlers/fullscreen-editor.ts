@@ -37,7 +37,7 @@ registerAction({
       const conversationId = ctx.source.conversationId;
       const loaded =
         !!conversationId &&
-        !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[ext.editTarget.messageId];
+        !!ctx.getState().messages?.byConversationId?.[conversationId]?.byId?.[ext.editTarget.messageId];
       if (conversationId && loaded) {
         ctx.dispatch(
           updateMessageRecord({

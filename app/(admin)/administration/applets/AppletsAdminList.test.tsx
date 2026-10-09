@@ -5,7 +5,7 @@ import {
   appletsCopyConfig,
   appletSuccessPercent,
   appletsScopeFilters,
-} from "./page";
+} from "./AppletsAdminList";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 function column(id: string) {

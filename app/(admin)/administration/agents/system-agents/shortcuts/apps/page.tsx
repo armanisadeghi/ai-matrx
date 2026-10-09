@@ -10,5 +10,5 @@ import { redirect } from "next/navigation";
 // to and what `SystemAgentsLayoutClient` highlights), so this redirects rather
 // than mounting a second copy of the page.
 export default function ShortcutsTabAlias() {
-  redirect("/administration/agents/system-agents/apps");
+  redirect("/administration/applets/all");
 }

@@ -35,12 +35,14 @@ export const appletListConfig: EntityListConfig<AppletListRow> = {
     rowKind: "agent_app",
     listKind: "agent-app-list",
     humanRow: (row) =>
-      `${row.name} — ${row.state.label}${row.published_to_web ? ", on the web" : ""}, ${row.total_executions} runs, edited ${formatRelativeTime(row.updated_at)}`,
+      `${row.name} — ${row.state.label}, ${row.total_executions} runs, edited ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: true,
   },
+  // FIRST RUN (audit L1): a new person's All lane is empty — never strangers' public items — so the
+  // shell says so and offers the two ways in (AppletsListPage's emptyAction); Public stays one click away.
   emptyState: {
     title: "No Applets yet",
-    description: "Describe what you need and an agent builds it.",
+    description: "Describe what you need, or start from a template.",
   },
 };

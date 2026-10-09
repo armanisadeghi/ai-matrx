@@ -11,20 +11,19 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
-import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Loader2, Save, Trash2 } from "lucide-react";
+import { Copy, Loader2, Save, Archive } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { buildAppletsWorkspaceScope } from "./AppletSurfaceRuntime";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { toastAppletArchived } from "@/features/applets/lib/archive-undo";
+import { archiveAppletFromPageSentence } from "@/features/applets/lib/applet-state";
 import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChangeByTalkingDisclosure";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
@@ -52,7 +51,7 @@ import { selectAppById } from "@/features/agents/redux/applets/selectors";
 import {
   saveAppField,
   deleteApp,
-  setAppletPublication,
+  setAppletAudience,
 } from "@/features/agents/redux/applets/thunks";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { APPLETS_SURFACE_NAME } from "@/features/surfaces/manifests/applets.manifest";
@@ -64,7 +63,8 @@ import {
 } from "./applet-entity-writes";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
-import { appletState } from "@/features/applets/lib/applet-state";
+import { APPLET_AUDIENCE_LABELS, APPLET_AUDIENCES, appletAudience, appletState, type AppletAudience } from "@/features/applets/lib/applet-state";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 interface AppletSettingsContentProps {
@@ -107,6 +107,7 @@ export function AppletSettingsContent({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const pathname = usePathname();
+  const router = useRouter();
   const { rate: costRate } = useCostDisplay();
   const app = useAppSelector((state) => selectAppById(state, appId));
 
@@ -244,8 +245,9 @@ export function AppletSettingsContent({
     if (!app) return;
     const ok = await confirm({
       title: `Archive "${app.name}"?`,
-      // The owner restores it from the Applets list (Filters → Archived) or Trash.
-      description: `${archiveConfirmSentence(`"${app.name}"`, { restoreFrom: "list_filters" })} It stops running for everyone.`,
+      // This page holds no list (audit A1): the sentence names where it comes back from — the Applets
+      // list — and the toast after it carries Undo.
+      description: archiveAppletFromPageSentence(app.name),
       confirmLabel: "Archive",
       variant: "destructive",
     });
@@ -253,8 +255,11 @@ export function AppletSettingsContent({
     setIsDeleting(true);
     try {
       await dispatch(deleteApp(app.id)).unwrap();
-      toast.success("Applet archived.");
-      window.location.href = "/applets";
+      const archivedId = app.id;
+      toastAppletArchived(archivedId, app.name, {
+        onRestored: () => router.push(`/applets/manage/${archivedId}`),
+      });
+      router.push("/applets");
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -270,17 +275,14 @@ export function AppletSettingsContent({
     await copyText(`${siteConfig.url}/applets/${app.slug}`, "Link copied");
   };
 
-  const handlePublicationChange = async (published: boolean) => {
+  // Who can open it — the same two choices "Use it" offers (audit9 B8), written as ONE transition.
+  const handleAudienceChange = async (audience: AppletAudience) => {
     setSavingField("publication");
     try {
-      await dispatch(setAppletPublication({ appId, published })).unwrap();
-      toast.success(published ? "App published." : "App unpublished.");
+      await dispatch(setAppletAudience({ appId, audience })).unwrap();
+      toast.success(audience === "web" ? "Anyone with the link can open it." : "Only your organization can open it.");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? `Publication failed: ${error.message}`
-          : "Publication failed.",
-      );
+      toast.error(error instanceof Error ? `Not changed: ${error.message}` : "Not changed.");
     } finally {
       setSavingField(null);
     }
@@ -308,7 +310,7 @@ export function AppletSettingsContent({
     // unsaved diff matches the Save buttons the user can see.
     const drafts: AppletFieldDraft[] = [
       { field: "name", label: "Name", live: name, saved: app.name },
-      { field: "slug", label: "Slug", live: slug, saved: app.slug },
+      { field: "slug", label: "Link name", live: slug, saved: app.slug },
       {
         field: "tagline",
         label: "Tagline",
@@ -323,7 +325,7 @@ export function AppletSettingsContent({
       },
       {
         field: "rate_limit_per_ip",
-        label: "Runs per visitor",
+        label: "Uses per visitor",
         live: rateIp.trim(),
         saved: String(app.rate_limit_per_ip ?? ""),
       },
@@ -335,7 +337,7 @@ export function AppletSettingsContent({
       },
       {
         field: "rate_limit_authenticated",
-        label: "Runs per signed-in person",
+        label: "Uses per signed-in person",
         live: rateAuth.trim(),
         saved: String(app.rate_limit_authenticated ?? ""),
       },
@@ -397,8 +399,8 @@ export function AppletSettingsContent({
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="pages">Pages</TabsTrigger>
-              <TabsTrigger value="jobs">Jobs</TabsTrigger>
-              <TabsTrigger value="sources">Sources</TabsTrigger>
+              <TabsTrigger value="jobs">AI jobs</TabsTrigger>
+              <TabsTrigger value="sources">Data</TabsTrigger>
               <TabsTrigger value="sharing">Sharing</TabsTrigger>
               <TabsTrigger value="danger">Danger</TabsTrigger>
             </TabsList>
@@ -448,7 +450,7 @@ export function AppletSettingsContent({
               />
             </FieldRow>
             <FieldRow
-              label="Slug"
+              label="Link name"
               busy={savingField === "slug"}
               dirty={slug !== app.slug}
               onSave={() => {
@@ -545,11 +547,28 @@ export function AppletSettingsContent({
 
           {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
           <TabsContent value="sharing" className="space-y-5">
-            <Row label={PUBLISHED_TO_WEB_LABEL}>
-              <Switch
-                checked={appletState(app).live}
-                onCheckedChange={handlePublicationChange}
-                disabled={savingField === "publication"}
+            {/* The current choice, and the change, in one control (audit M4 / B8): the same two choices
+                "Use it" offers; specific people through the platform's one share dialog. */}
+            <Row label="Who can open it">
+              <SegmentedControl
+                aria-label="Who can open it"
+                value={appletAudience(app)}
+                onValueChange={(next) => void handleAudienceChange(next)}
+                data={APPLET_AUDIENCES.map((value) => ({
+                  value,
+                  label: APPLET_AUDIENCE_LABELS[value],
+                  disabled: savingField === "publication",
+                }))}
+              />
+            </Row>
+            <Row label="People">
+              <ShareButton
+                resourceType="app"
+                resourceId={app.id}
+                resourceName={app.name}
+                organizationId={app.organization_id ?? undefined}
+                showStatus={false}
+                size="sm"
               />
             </Row>
             <Row label="Web address">
@@ -594,7 +613,7 @@ export function AppletSettingsContent({
 
             <div className="border-t border-border/60 pt-4 space-y-1.5">
               <div className="text-sm font-medium text-foreground">
-                Organization, project, task and scope tags
+                Filed under
               </div>
               <EntityEngagementPicker
                 // Applets live in app.definition (registry token `app`).
@@ -618,7 +637,7 @@ export function AppletSettingsContent({
 
             <div className="border-t border-border/60 pt-4 space-y-3">
               <FieldRow
-                label="Runs per visitor"
+                label="Uses per visitor"
                 busy={savingField === "rate_limit_per_ip"}
                 dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
                 onSave={() => {
@@ -664,7 +683,7 @@ export function AppletSettingsContent({
                 />
               </FieldRow>
               <FieldRow
-                label="Runs per signed-in person"
+                label="Uses per signed-in person"
                 busy={savingField === "rate_limit_authenticated"}
                 dirty={
                   rateAuth.trim() !== String(app.rate_limit_authenticated ?? "")
@@ -697,7 +716,7 @@ export function AppletSettingsContent({
                 icon={isDeleting ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  <Trash2 />
+                  <Archive />
                 )}
                 variant="danger"
                 onClick={handleDelete}

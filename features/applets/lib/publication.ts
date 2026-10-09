@@ -51,3 +51,17 @@ export function appletPublicationPatch(
         published_at: null,
       };
 }
+
+/**
+ * "Use it" / Sharing: who opens the Applet. Using it and putting it on the web are separate choices
+ * (audit9 B8) — "organization" puts it in use with the web switch OFF (row security keeps it to her
+ * organization); "web" is the publication transition above.
+ */
+export function appletAudiencePatch(
+  audience: "organization" | "web",
+  at = new Date().toISOString(),
+  userId: string | null = null,
+): AppletPublicationPatch {
+  if (audience === "web") return appletPublicationPatch(true, at, userId);
+  return { status: "published", ...publishedToWebPatch(false, userId), published_at: at };
+}

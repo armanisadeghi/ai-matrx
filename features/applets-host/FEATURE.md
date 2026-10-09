@@ -106,6 +106,22 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-09 — Lane F3 (live UI audit, build page): "Use it" asks WHO can open it — My organization (default:
+  `status` published, web switch off → `appletState` "In use") or Anyone with the link (the publication) — through
+  `builder/UseAppletDialog.tsx` + `appletAudiencePatch`; Settings › Sharing carries the same choice plus People (the
+  one `ShareButton`, token `app`). A refresh mid-build opens on the build: the page's server render reads the record
+  (`toRecord`) and an open request is the step (`buildingStep`). One clock per request (`stepTo`). The run keeps its
+  instance (`keepInstance`) and its window closes once the answer is saved — no blank "Done / Processing…" window over
+  the preview. Files are said in her words (`plainFileLabel`), the card is titled with the Applet's name, taken
+  addresses are skipped before the save (no 409), and a phone scrolls one column so the preview never covers
+  "Use it" / "Open".
+- 2026-10-09 — Lane F4 (live UI audit): a signed-out visitor at an archived Applet's address sees "This Applet is no
+  longer available" and at an address naming none "There is no Applet at this address" (`AppletUnavailablePage`,
+  `appletAddressFate` — one word, asked with the server key) instead of a sign-in wall; the maker of a running Applet
+  gets `AppletOwnerBar` (Back to AI Matrx · Manage · Change with AI). Pairs with `@ai-matrx/applets` Unreleased
+  (a ":id" page is never a tab; the reference stops promising a restore an Applet cannot offer).
+
+
 - 2026-10-08 — Lane AQ: `checkBuildAnswer` refuses a form copied from a `useRow` row on every change
   (`useEffect(…set…, [row])` — a failed save rolled her typing back) and a confirm that says Delete / remove before
   `archive()` (an archive can be restored); both read the syntax tree (`formsReseededFromRow`, `archiveCalledDelete`),

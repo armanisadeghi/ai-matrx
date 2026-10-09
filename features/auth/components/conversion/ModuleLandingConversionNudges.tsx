@@ -52,14 +52,16 @@ export function ModuleLandingConversionNudges({
       {showInlineCard && (
         <InlineConversionCard
           heading={
+            // A returning GUEST has visited before but has no account: greeting them as a member and
+            // promising their work "synced" spoke to someone we have never met (live audit 2026-10-09, G1).
             userType === "returning-guest"
-              ? `Welcome back — ready to try ${moduleName}?`
+              ? `Back for another look at ${moduleName}?`
               : `Like what you see? Make ${moduleName} yours.`
           }
           description={
             userType === "returning-guest"
-              ? "Your free account picks up where you leave off — chats, files, agents, all synced."
-              : "Sign up free in seconds. No credit card required, no commitment."
+              ? "A free account keeps what you make, no card needed."
+              : "Sign up free in seconds, no credit card needed."
           }
         />
       )}

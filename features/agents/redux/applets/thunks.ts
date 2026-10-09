@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/agents/field-flags";
 import type { AppletRow } from "./types";
 import { appletActions } from "./slice";
-import { appletPublicationPatch } from "@/features/applets/lib/publication";
+import { appletAudiencePatch, appletPublicationPatch } from "@/features/applets/lib/publication";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -217,6 +217,27 @@ export const saveAppField = createAsyncThunk<
       [field]: value,
     } as Partial<AppletRow> & { id: string }),
   );
+});
+
+/**
+ * Who opens an Applet that is in use — her organization or anyone with the link — as one write
+ * (`appletAudiencePatch`), so the list, manage and builder read it the same way through `appletState`.
+ */
+export const setAppletAudience = createAsyncThunk<
+  void,
+  { appId: string; audience: "organization" | "web" },
+  ThunkApi
+>("applet/setAudience", async ({ appId, audience }, { dispatch }) => {
+  const patch = appletAudiencePatch(audience);
+  const { error } = await tryWriteOne(
+    supabase.schema("app").from("definition").update(patch).eq("id", appId).select("id"),
+    { action: audience === "web" ? "publish" : "unpublish", noun: "app" },
+  );
+  if (error) {
+    dispatch(appletActions.setAppError({ id: appId, error: error.message }));
+    throw pgErrorToError(error);
+  }
+  dispatch(appletActions.mergePartialApp({ id: appId, ...patch }));
 });
 
 /**

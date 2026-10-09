@@ -145,6 +145,8 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/agents/system-agents/agents/[id]/shortcuts/new",
             "/administration/agents/system-agents/shortcuts/agents",
             "/administration/agents/system-agents/shortcuts/apps",
+            // Redirect alias: system Applets live at /administration/applets/all.
+            "/administration/agents/system-agents/apps",
             "/administration/agents/system-agents/shortcuts/categories",
             "/administration/agents/system-agents/shortcuts/content-blocks",
             "/administration/agents/system-agents/shortcuts/[shortcutId]",
@@ -152,7 +154,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           ]),
           destination("/administration/agents/system-agents/categories"),
           destination("/administration/agents/system-agents/content-blocks"),
-          destination("/administration/agents/system-agents/apps"),
           destination("/administration/agents/system-agents/lineage"),
           destination("/administration/agents/system-agents/agents/new"),
           destination("/administration/agents/system-agents/agents/new/manual"),
@@ -219,7 +220,8 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
   {
     // Applets (2026-10-09): what customers build on their own tables. Its pages live at
     // /administration/applets, so it is its own domain (the registry refuses a destination outside
-    // its domain's path). The platform's own Applets stay under Agents › System Agents.
+    // its domain's path). System Applets is the platform's own (management); Support is
+    // organizations' and people's Applets (admin-seat rule, Arman 2026-09-26).
     name: "Applets",
     slug: "applets",
     iconName: "Boxes",
@@ -233,6 +235,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/applets/all", [
             "/administration/applets/edit/[id]",
           ]),
+          destination("/administration/applets/support"),
           destination("/administration/applets/categories"),
           destination("/administration/applets/executions"),
           destination("/administration/applets/analytics"),

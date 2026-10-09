@@ -10,7 +10,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArchiveRestore, Copy, ExternalLink, Eye, Link as LinkIcon, Play, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, ExternalLink, Hammer, Link as LinkIcon, Play, Settings2 } from "lucide-react";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -21,7 +21,8 @@ import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteApp } from "@/features/agents/redux/applets/thunks";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
-import { appletRowHref, forgetAppletListReads, restoreApplet, type AppletListRow } from "./service";
+import { toastAppletArchived } from "@/features/applets/lib/archive-undo";
+import { appletRowHref, appletManageHref, forgetAppletListReads, restoreApplet, type AppletListRow } from "./service";
 
 function message(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -72,7 +73,7 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
       list.removeRow(row.id);
       forgetAppletListReads();
       list.refresh();
-      toast.success(`Archived "${row.name}"`);
+      toastAppletArchived(row.id, row.name, { onRestored: () => list.refresh() });
     } catch (error) {
       toast.error(message(error, "The Applet could not be archived. Try again."));
     }
@@ -110,10 +111,17 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
       sections: [
         {
           id: "open",
+          // Every row says where it goes (audit L7): a built Applet's own page is "Manage" (its maker) or
+          // "Details" (anyone else) — the /applets/manage page was unreachable from this menu — a build
+          // still open is "Continue building", and "Use the Applet" opens the running Applet itself.
           items: [
-            { id: "open", label: "Open", icon: Eye, kind: "link", href },
+            row.build_open || row.unbuilt
+              ? { id: "open", label: "Continue building", icon: Hammer, kind: "link" as const, href }
+              : { id: "open", label: row.is_mine ? "Manage" : "Details", icon: Settings2, kind: "link" as const, href: appletManageHref(row) },
             { id: "open-tab", label: "Open in new tab", icon: ExternalLink, kind: "link", href, target: "_blank" },
-            { id: "run", label: "Use the Applet", icon: Play, kind: "link", href: appletHref, target: "_blank" },
+            ...(row.unbuilt
+              ? []
+              : [{ id: "run", label: "Use the Applet", icon: Play, kind: "link" as const, href: appletHref, target: "_blank" as const }]),
           ],
         },
         {
@@ -154,7 +162,7 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
                   {
                     id: "archive",
                     label: "Archive",
-                    icon: Trash2,
+                    icon: Archive,
                     tone: "destructive" as const,
                     onSelect: () => {
                       void archive(row);

@@ -150,7 +150,13 @@ export default function AdminEditAppletPage({
 
   const goToList = () => {
     startTransition(() => {
-      pushAppHref(router, "/administration/applets/all");
+      // A system Applet's list is System Applets; anyone else's is Applet support.
+      pushAppHref(
+        router,
+        app && app.created_by == null
+          ? "/administration/applets/all"
+          : "/administration/applets/support",
+      );
     });
   };
 
@@ -290,7 +296,7 @@ export default function AdminEditAppletPage({
           id={id}
           onRetry={() => void load()}
           fallbackHref="/administration/applets/all"
-          fallbackLabel="All Applets"
+          fallbackLabel="System Applets"
         />
       </div>
     );

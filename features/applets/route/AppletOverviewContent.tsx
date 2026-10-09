@@ -103,9 +103,9 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           )}
         </RowGroup>
 
-        <RowGroup title="Jobs">
+        <RowGroup title="AI jobs">
           {jobs.length === 0 ? (
-            <SettingRow label="No jobs" />
+            <SettingRow label="No AI jobs" />
           ) : (
             jobs.map((job) => (
               <SettingRow key={job.alias} label={humanizeAlias(job.alias)}>
@@ -125,9 +125,9 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           )}
         </RowGroup>
 
-        <RowGroup title="Sources">
+        <RowGroup title="Data">
           {sources.length === 0 ? (
-            <EmptyState icon={<SettingsIcon />} title="No sources" />
+            <EmptyState icon={<SettingsIcon />} title="No data" />
           ) : (
             sources.map((source) => {
               // The real table in words — never the code's alias alone (2026-10-07 audit: "books" hid a
