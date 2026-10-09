@@ -3,14 +3,18 @@
 /**
  * Studio (UI-SPEC §9): the Board with the `marketing-social` preset, for this brand. One Studio board per brand
  * (database-unique) is made on the first open (from the Viral breakdown template); the picker switches to any other board
- * linked to the brand, "New board" adds one. The tab adds only that one row over the board's own chrome.
+ * linked to the brand, "New board" adds one. Full-bleed, exactly as /board/<id>: the board's own title dropdown lists the brand's boards (no strip over it).
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Check, Plus, Users } from "lucide-react";
 
-import { Button, Select } from "@ai-matrx/design-system/controls";
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+
+import { Button } from "@ai-matrx/design-system/controls";
 import { PresetBoard } from "@/features/board/components/PresetBoard";
 import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -22,7 +26,7 @@ import { useSocials } from "./SocialsContext";
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
 
 export function StudioTab() {
-  const { brandId, organizationId } = useSocials();
+  const { brandId, brandSeg, organizationId } = useSocials();
   const brandName = useMarketingBrand().name;
   const client = useQueryClient();
   const key = ["marketing", "social", "studio-boards", organizationId, brandId] as const;
@@ -82,22 +86,28 @@ export function StudioTab() {
   }
   if (!current) return <RegionSkeleton />;
 
-  return (
-    <div className="flex h-[calc(100dvh-var(--shell-header-h)-2.5rem)] min-h-[520px] flex-col gap-2">
-      <div className="flex shrink-0 items-center gap-2">
-        <Select
-          aria-label="Studio board"
-          value={current.id}
-          options={list.map((b) => ({ value: b.id, label: b.title }))}
-          onValueChange={setPicked}
-        />
-        <Button variant="quiet" icon={<Plus />} disabled={busy} onClick={() => void add(`${brandName} board ${list.length + 1}`, false)}>
-          New board
-        </Button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
-        <PresetBoard key={current.id} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} />
-      </div>
-    </div>
+  const menu = (
+    <>
+      {list.map((b) => (
+        <DropdownMenuItem key={b.id} onSelect={() => setPicked(b.id)}>
+          <Check className={`mr-2 h-4 w-4 ${b.id === current.id ? "opacity-100" : "opacity-0"}`} />
+          {b.title}
+        </DropdownMenuItem>
+      ))}
+      <DropdownMenuItem disabled={busy} onSelect={() => void add(`${brandName} board ${list.length + 1}`, false)}>
+        <Plus className="mr-2 h-4 w-4" />
+        New {brandName} board
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <Link href={marketingRoutes.brandSocials(brandSeg)}>
+          <Users className="mr-2 h-4 w-4" />
+          Socials
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+    </>
   );
+
+  return <PresetBoard key={current.id} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} />;
 }
