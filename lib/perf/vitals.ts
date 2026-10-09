@@ -6,6 +6,8 @@
 // web-vitals to the signed-in door `ops.perf_client_report` when the page is
 // hidden. An unsampled load keeps nothing and sends nothing.
 
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 export const VITAL_NAMES = ["LCP", "INP", "CLS", "TTFB", "FCP"] as const;
 export type VitalName = (typeof VITAL_NAMES)[number];
 
@@ -26,7 +28,6 @@ export function isVitalName(name: string): name is VitalName {
   return (VITAL_NAMES as readonly string[]).includes(name);
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LONG_NUMBER = /^[0-9]{3,}$/;
 
 /**
@@ -54,7 +55,7 @@ export function routeTemplate(
     if (named) {
       if (named.startsWith("[...") && out[out.length - 1] === named) continue;
       out.push(named);
-    } else if (UUID.test(decoded)) out.push("[id]");
+    } else if (isUuidShape(decoded)) out.push("[id]");
     else if (LONG_NUMBER.test(decoded)) out.push("[n]");
     else out.push(seg);
   }

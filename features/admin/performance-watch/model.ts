@@ -6,6 +6,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 type ProofCheckRow = Database["ops"]["Tables"]["proof_check"]["Row"];
 type PerfSampleRow = Database["ops"]["Tables"]["perf_sample"]["Row"];
@@ -281,7 +282,7 @@ export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject
   const names = isRecord(watch.metadata) && isRecord(watch.metadata.perf_subject_names) ? watch.metadata.perf_subject_names : {};
   const tableId = typeof args.p_table_id === "string" ? args.p_table_id : typeof source?.id === "string" ? source.id : null;
   if (tableId) {
-    const records = typeof s.table_records === "number" ? ` · ${s.table_records.toLocaleString("en-US")} records` : "";
+    const records = typeof s.table_records === "number" ? ` · ${formatCount(s.table_records, { locale: "en-US" })} records` : "";
     const name = typeof names.table_name === "string" ? names.table_name : shortId(tableId);
     out.push({ label: "Table", value: `${name}${records}`, token: "record", id: tableId });
   }

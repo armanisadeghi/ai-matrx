@@ -16,6 +16,7 @@
  */
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
+import { formatCount } from "@ai-matrx/kit/format";
 import { SPEND_FLAG_LIMITS, agentHref, mandateHref, orgMandateHref } from "@/features/scheduling/service/automationCosts";
 
 export type SpendSeat = "admin" | "org";
@@ -322,7 +323,7 @@ export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => stri
     flags.push({ id: "premium_short_output", label: "Premium, short replies", detail: `Premium model writing ${row.avg_output_per_call} tokens per call on average`, severity: "critical" });
   }
   if (row.avg_input_per_call > HUGE_CONTEXT_TOKENS) {
-    flags.push({ id: "huge_context", label: "Huge context", detail: `${Math.round(row.avg_input_per_call).toLocaleString()} input tokens per call on average`, severity: "warning" });
+    flags.push({ id: "huge_context", label: "Huge context", detail: `${formatCount(Math.round(row.avg_input_per_call))} input tokens per call on average`, severity: "warning" });
   }
   if (row.automated_runs > 0) {
     flags.unshift({ id: "automated", label: "Automated", detail: `${row.automated_runs} of ${row.runs} runs started with nobody pressing a button`, severity: "info" });

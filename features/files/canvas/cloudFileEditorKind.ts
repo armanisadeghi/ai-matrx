@@ -12,6 +12,7 @@ import { FileCode } from "lucide-react";
 import type { CanvasController, CanvasJson } from "@ai-matrx/canvas";
 import { defineCanvasKind, type AnyCanvasKind, type CanvasOutputRequest } from "@ai-matrx/canvas/react";
 import { buildPrintDocument, openPendingPrintWindow } from "@ai-matrx/print/core";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import { canvasText, openToolInCanvas } from "@/features/canvas/host/toolCanvas";
 
 export const CLOUD_FILE_EDITOR_KIND = "cloud-file-editor";
@@ -30,9 +31,6 @@ export function openCloudFileEditor(canvas: CanvasController | null, fileId: str
     data: { fileId },
   });
 }
-
-const escapeHtml = (text: string) =>
-  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
  * Print = the WHOLE file's text (the working copy, unsaved edits included) in

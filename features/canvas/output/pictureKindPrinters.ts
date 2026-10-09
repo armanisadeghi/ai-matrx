@@ -31,6 +31,7 @@ import {
   type PrintBlockOutput,
 } from "@ai-matrx/print/core";
 import { escapeHtml } from "@ai-matrx/kit/html-escape";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { CanvasKind, CanvasOutputRequest } from "@ai-matrx/canvas/react";
 import { fileHandler } from "@/features/files/handler/handler";
 import { resolveArtifactData } from "@/features/canvas/artifact-types/resolveArtifactData";
@@ -133,8 +134,6 @@ export const svgPrinter: BlockPrinter = {
 
 // ─── image ───────────────────────────────────────────────────────────────────
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** The image's source string: a file id, a URL or a data URI. */
 function imageSource(data: unknown, context?: Pick<PrintBlockContext, "raw">): string {
   const value = data && typeof data === "object" ? (data as { url?: unknown }).url : null;
@@ -145,7 +144,7 @@ function imageSource(data: unknown, context?: Pick<PrintBlockContext, "raw">): s
 export async function imageBlob(source: string): Promise<Blob> {
   if (!source) throw new Error("this image has no source");
   if (source.startsWith("data:")) return (await fetch(source)).blob();
-  if (UUID.test(source)) return fileHandler.use({ kind: "file_id", fileId: source }).as({ kind: "blob" });
+  if (isUuidShape(source)) return fileHandler.use({ kind: "file_id", fileId: source }).as({ kind: "blob" });
   if (/^https?:\/\//i.test(source)) return fileHandler.use({ kind: "external_url", url: source }).as({ kind: "blob" });
   throw new Error("this image's source is not one the app can read");
 }

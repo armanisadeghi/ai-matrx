@@ -18,6 +18,7 @@ import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatCount } from "@ai-matrx/kit/format";
 import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
 import { conversationHref } from "@/features/scheduling/service/automationCosts";
@@ -248,9 +249,9 @@ function RunsTable({
           <>
             <span>
               {remaining > 0 ? "Showing " : "All "}
-              <span className="font-medium tabular-nums text-foreground">{runs.length.toLocaleString()}</span>
+              <span className="font-medium tabular-nums text-foreground">{formatCount(runs.length)}</span>
               {remaining > 0 ? " of " : " runs"}
-              {remaining > 0 && <span className="font-medium tabular-nums text-foreground">{totals.runs.toLocaleString()} runs</span>}
+              {remaining > 0 && <span className="font-medium tabular-nums text-foreground">{formatCount(totals.runs)} runs</span>}
             </span>
             <CostFigures items={[{ usdLabel: "Total $", pointsLabel: "Total points", usd: totals.cost }]} />
             {remaining > 0 && (
@@ -358,15 +359,15 @@ export function AgentSpendDetail({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             <Stat label="Cost $"><AdminUsd usd={row.cost} /></Stat>
             <Stat label="Points"><AdminPoints usd={row.cost} /></Stat>
-            <Stat label="Runs">{row.runs.toLocaleString()}</Stat>
+            <Stat label="Runs">{formatCount(row.runs)}</Stat>
             <Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat>
             <Stat label="Avg cost/run points"><AdminPoints usd={row.avg_run_cost} /></Stat>
             <Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat>
             <Stat label="Max cost/run points"><AdminPoints usd={row.max_run_cost} /></Stat>
             <Stat label="Avg turns">{row.avg_turns}</Stat>
             <Stat label="Max turns">{row.max_turns}</Stat>
-            <Stat label="In / call">{Math.round(row.avg_input_per_call).toLocaleString()}</Stat>
-            <Stat label="Out / call">{Math.round(row.avg_output_per_call).toLocaleString()}</Stat>
+            <Stat label="In / call">{formatCount(Math.round(row.avg_input_per_call))}</Stat>
+            <Stat label="Out / call">{formatCount(Math.round(row.avg_output_per_call))}</Stat>
             <Stat label="Automated">{`${row.automated_runs} / ${row.runs}`}</Stat>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -419,7 +420,7 @@ export function AgentSpendDetail({
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
-                    <span className="tabular-nums text-muted-foreground">{`${r.runs.toLocaleString()} runs`}</span>
+                    <span className="tabular-nums text-muted-foreground">{`${formatCount(r.runs)} runs`}</span>
                     <span className="tabular-nums"><AdminUsd usd={r.cost} /></span>
                     <span className="tabular-nums text-muted-foreground"><AdminPoints usd={r.cost} /></span>
                   </div>

@@ -39,6 +39,8 @@ import {
   automationCostColumns,
 } from "./AutomationCostColumns";
 import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { formatCount } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 export function automationIntervalText(r: AutomationCostRow): string {
@@ -235,7 +237,7 @@ export function AutomationRunsTable({
             `Run: ${r.run_id}`,
             `When: ${r.run_at}`,
             `Status: ${r.status ?? "unknown"}`,
-            `Cost: $${r.cost.toFixed(4)}`,
+            `Cost: ${formatAdminUsd(r.cost)}`,
             `Turns: ${r.turns}`,
             r.models.length ? `Models: ${r.models.join(", ")}` : null,
             r.mandates.length ? `Jobs: ${r.mandates.join(", ")}` : null,
@@ -292,7 +294,7 @@ export function AutomationCostDetail({
         <Stat label="Points 7d"><AdminPoints usd={row.cost_7d} /></Stat>
         <Stat label="Est./month $"><AdminUsd usd={row.est_monthly_cost} /></Stat>
         <Stat label="Est./month points"><AdminPoints usd={row.est_monthly_cost} /></Stat>
-        <Stat label="Runs 30d">{row.runs.toLocaleString()}</Stat>
+        <Stat label="Runs 30d">{formatCount(row.runs)}</Stat>
         <Stat label="Last run $"><AdminUsd usd={row.last_run_cost} /></Stat>
         <Stat label="Last run points"><AdminPoints usd={row.last_run_cost} /></Stat>
         <Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat>

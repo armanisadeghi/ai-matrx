@@ -1615,6 +1615,10 @@
         {
           "file": "features/marketing/news-monitor/kinds/NewsOpportunityReportView.tsx",
           "why": "NOT A RELATIVE TIME: the card title pluralises a COUNT of big stories (`stor${big === 1 ? \"y\" : \"ies\"}`) beside `pitch-ready` and `watched` counts. No timestamp, clock or age enters the line; the lane reads the count's plural tail as a unit."
+        },
+        {
+          "file": "scripts/check-package-imports-resolve.mjs",
+          "why": "NOT A RELATIVE TIME: `((Date.now() - t0) / 1000).toFixed(1)` is the guard's own elapsed RUN time printed as \"19.0s\" with no \"ago\" — a duration, already censused under formatDurationMs with the reason it cannot import kit. The relative-time lane reads `Date.now() - t0` as an epoch age. (Duplicate watch, 2026-10-08.)"
         }
       ],
       "shapeCensus": [

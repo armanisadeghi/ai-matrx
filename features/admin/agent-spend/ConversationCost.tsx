@@ -17,6 +17,8 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { formatCount } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { agentSpendDetailHref, fetchConversationSpend, type ConversationSpendCall } from "./agentSpend";
 
@@ -109,8 +111,8 @@ export function ConversationSpendDialog({ agentId }: { agentId: string }) {
             <span>Conversation cost</span>
             {total != null && (
               <>
-                <span className="text-sm font-normal tabular-nums">{`$${total.toFixed(2)}`}</span>
-                <span className="text-sm font-normal tabular-nums text-muted-foreground">{`${(toPoints(total) ?? 0).toLocaleString()} points`}</span>
+                <span className="text-sm font-normal tabular-nums">{formatAdminUsd(total)}</span>
+                <span className="text-sm font-normal tabular-nums text-muted-foreground">{`${formatCount(toPoints(total) ?? 0)} points`}</span>
               </>
             )}
           </DialogTitle>

@@ -10,6 +10,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef, MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table/types";
 import type { ExecutionRecord } from "@/features/ai-runs/types/executionTypes";
 import { readOf } from "@ai-matrx/design-system";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 const PAGE_LOCATION = "AI Matrx Admin — AI Tasks (/administration/ai/ai-tasks)";
 
@@ -75,7 +76,7 @@ export default function AiTasksPage() {
     { id: "type", accessorKey: "type", header: "Type", filter: "select", width: 140, cell: (run) => <span className="font-medium">{run.type || "-"}</span> },
     { id: "source", accessorKey: "link_kind", header: "Source", filter: "select", width: 160, mobileHidden: true, cell: (run) => <span className="text-sm text-muted-foreground">{run.link_kind || "-"}</span> },
     { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 130, cell: (run) => <Badge variant={getStatusBadgeVariant(run.status)}>{run.status}</Badge> },
-    { id: "cost", accessorKey: "cost", header: "Cost", width: 100, mobileHidden: true, cell: (run) => <span className="tabular-nums">${run.cost.toFixed(4)}</span> },
+    { id: "cost", accessorKey: "cost", header: "Cost", width: 100, mobileHidden: true, cell: (run) => <span className="tabular-nums">{formatAdminUsd(run.cost)}</span> },
     { id: "created", accessorKey: "created_at", header: "Created at", filter: "date", width: 180, mobileHidden: true, cell: (run) => formatDate(run.created_at) },
     { id: "ended", accessorKey: "ended_at", header: "Ended at", filter: "date", width: 180, mobileHidden: true, cell: (run) => formatDate(run.ended_at) },
   ], []);
