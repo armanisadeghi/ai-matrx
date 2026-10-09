@@ -1,0 +1,124 @@
+{
+ "source": "https://linktr.ee/melrobbins",
+ "captured_at": "2026-10-09",
+ "note": "Real capture of linktr.ee/melrobbins: the page's link data plus every URL in its HTML outside Linktree (48) and 20 of Linktree's own.",
+ "account": {
+  "username": "melrobbins",
+  "pageTitle": "@melrobbins",
+  "description": "Bestselling Author of The LET THEM Theory and Host of The Mel Robbins Podcast",
+  "socialLinks": [
+   {
+    "type": "FACEBOOK",
+    "url": "https://www.facebook.com/melrobbins/"
+   },
+   {
+    "type": "INSTAGRAM",
+    "url": "https://instagram.com/melrobbins"
+   },
+   {
+    "type": "YOUTUBE",
+    "url": "https://www.youtube.com/@melrobbins"
+   },
+   {
+    "type": "THREADS",
+    "url": "https://www.threads.com/@melrobbins"
+   }
+  ]
+ },
+ "links": [
+  {
+   "title": "Listen to The Mel Robbins Podcast on Apple Podcasts \ud83c\udf99\ufe0f",
+   "url": "https://podcasts.apple.com/us/podcast/the-mel-robbins-podcast/id1646101002"
+  },
+  {
+   "title": "Listen on Spotify \ud83c\udf99\ufe0f",
+   "url": "https://open.spotify.com/show/7vz4RYsD5MulTCrcH478t1"
+  },
+  {
+   "title": "Pure Genius Protein: Order yours now!",
+   "url": "https://puregeniusprotein.com/mtt"
+  },
+  {
+   "title": "The Let Them Theory: Get your copy today!",
+   "url": "https://melrob.co/tt-letthem"
+  },
+  {
+   "title": "Watch the latest episode on YouTube",
+   "url": "https://www.youtube.com/melrobbins"
+  },
+  {
+   "title": "Listen to The Let Them Theory only on Audible",
+   "url": "https://www.audible.com/pd/The-Let-Them-Theory-Audiobook/B0DFMX1RT8"
+  }
+ ],
+ "pageUrlsSample": [
+  "https://assets.production.linktr.ee",
+  "https://assets.production.linktr.ee/cep/cep.min.js",
+  "https://assets.production.linktr.ee/consent-scripts/geo-consent.js",
+  "https://assets.production.linktr.ee/fonts/v1/LinkSansProduct.woff2",
+  "https://assets.production.linktr.ee/profiles",
+  "https://assets.production.linktr.ee/profiles/",
+  "https://assets.production.linktr.ee/profiles/_next/static/8af99b354ac40fc71598b4a3c53271529a7c5224/_buildManifest.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/8af99b354ac40fc71598b4a3c53271529a7c5224/_ssgManifest.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/11944-51557276483f3f24.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/16073-f8f84029b4bc90b3.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/16156-f6bb0dee9ee14080.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/17385-3dc5859d6677442f.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/17480-7f92d4bc1ced93a7.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/184-0e38b266e15f4e06.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/20337-3ad347d418e20041.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/24713-38da3d53b614eed4.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/24916-69ebe10244b5ca34.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/25564-4aa42abca6c8ac35.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/28470-4df682326ea9f336.js",
+  "https://assets.production.linktr.ee/profiles/_next/static/chunks/30200-dc7e42a135644c81.js",
+  "http://puregeniusprotein.com/cdn/shop/files/Variation.png?v=1776349436",
+  "http://www.w3.org/2000/svg",
+  "https://api.consentjs.datagrail.io/b8f6c3bf-2519-4023-963a-974547789e46/bdebe460-46f3-470f-8bb7-09929c22ee50/consent-loader.js",
+  "https://armra.com",
+  "https://babbel.sjv.io/c/5163860/1432288/13589",
+  "https://clearstem.com",
+  "https://click.linksynergy.com/fs-bin/click?id=5lRxBRhs1h0",
+  "https://dailyharvest.pxf.io/c/5163860/2928823/20086",
+  "https://fabletics.sjv.io/c/5163860/951477/12340",
+  "https://fonts.googleapis.com",
+  "https://fonts.gstatic.com",
+  "https://fonts.gstatic.com/s/karla/v31/qkBbXvYC6trAT7RVLtyU5rZP.woff2",
+  "https://fonts.gstatic.com/s/karla/v31/qkBbXvYC6trAT7RbLtyU5rZPoAU.woff2",
+  "https://gobble.sjv.io/c/5163860/2907410/5084",
+  "https://headspace.pxf.io/c/5163860/2494442/13686",
+  "https://i.scdn.co/image/ab6765630000ba8a464250c491dc86ec4316431f",
+  "https://instagram.com/melrobbins",
+  "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/2a/9f/c7/2a9fc792-c6a7-e159-0e10-a4442eec27d5/mza_5919882476720095362.jpg/1200x1200bf-60.jpg",
+  "https://maevinc.sjv.io/c/5163860/2929162/27953",
+  "https://melrob.co/tt-letthem",
+  "https://omniluxled.com",
+  "https://open.spotify.com/show/7vz4RYsD5MulTCrcH478t1",
+  "https://podcasts.apple.com/us/podcast/the-mel-robbins-podcast/id1646101002",
+  "https://puregeniusprotein.com/mtt",
+  "https://purple-carrot.wk5q.net/c/5163860/2060141/9141?u=https%3A%2F%2Fwww.purplecarrot.com%2Fpages%2Fitsgoodfood%3Fcoupon%3Dfresh50",
+  "https://ritual.sjv.io/09RK9N",
+  "https://schema.org",
+  "https://schema.org/",
+  "https://schema.org/ProfilePage",
+  "https://talkspace.pxf.io/c/5163860/2548680/14729",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_13b2ead4-3743-4a65-8515-0fda7d40",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_411e3a4f-5b48-470a-b849-1c894b10",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_6815c7b1-69e3-4fea-bc29-20a1ef08",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_69fdb724-9185-4f25-b27c-ff1815a2",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_9b1ab8ef-fcb3-4c4e-abbb-9f25409c",
+  "https://thanks.is/direct/plat7850a264-716e-4c31-9ac5-16e9f13e/int_edcd813c-ccc5-492d-bd92-15719cc1",
+  "https://thezeroproof.com",
+  "https://www.audible.com/pd/The-Let-Them-Theory-Audiobook/B0DFMX1RT8",
+  "https://www.equipfoods.com",
+  "https://www.facebook.com/melrobbins/",
+  "https://www.factor75.com/terms",
+  "https://www.hellofresh.com/termsandconditions",
+  "https://www.jlab.com",
+  "https://www.kqzyfj.com/click-101093762-17072556",
+  "https://www.threads.com/@melrobbins",
+  "https://www.upside.com/data-and-security/terms",
+  "https://www.youtube.com/@melrobbins",
+  "https://www.youtube.com/melrobbins"
+ ]
+}

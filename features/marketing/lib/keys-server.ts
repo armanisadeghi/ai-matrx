@@ -39,6 +39,8 @@ export interface ResolvedBrand {
   slug: string | null;
   name: string;
   organization_id: string;
+  /** company | person — the one switch person-brand copy and ordering read. */
+  kind: string;
 }
 
 export interface ResolvedSite {
@@ -49,7 +51,7 @@ export interface ResolvedSite {
   brand_id: string | null;
 }
 
-const BRAND_SEGMENT_COLUMNS = "id, slug, name, organization_id";
+const BRAND_SEGMENT_COLUMNS = "id, slug, name, organization_id, kind";
 const SITE_SEGMENT_COLUMNS = "id, slug, name, domain, brand_id";
 
 export const resolveBrandParam = cache(
