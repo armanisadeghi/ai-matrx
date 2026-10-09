@@ -934,6 +934,7 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       { label: "Applet Templates", href: "/templates/applets", iconName: "LayoutTemplate", guestHidden: true },
+      { label: "Build an Applet", href: "/applets/build", iconName: "Plus", actionItem: true, guestHidden: true },
     ],
   },
   {

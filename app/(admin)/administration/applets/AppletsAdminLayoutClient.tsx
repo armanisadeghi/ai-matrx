@@ -23,7 +23,7 @@ const NAV_ITEMS: AdminSectionTab[] = [
     exact: true,
   },
   {
-    label: "Apps",
+    label: "All Applets",
     href: "/administration/applets/all",
     icon: Boxes,
   },

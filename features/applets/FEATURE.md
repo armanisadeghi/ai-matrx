@@ -1,8 +1,8 @@
 # FEATURE.md — `applets`
 
-**Status:** `active` — the Applet feature (an Applet is what a customer builds; `app.definition`). Routes: `/applets` (signed-out landing + the person's Applets list), `/applets/build` (build by talking), `/applets/manage/[id]` with `/code`, `/settings`, `/versions`, `/v/[version]`, `/run` (owner tools), `/applets/<slug>` (the running Applet, `app/(link)/applets/[slug]`; signed-out and template visitors get its introductory page), `/templates/applets`, `/organizations/[orgId]/applets`, admin `/administration/applets/**` (`all`, `categories`, `executions`, `analytics`, `rate-limits`, `edit/[id]`). Reserved slugs: `reserved-slugs.ts`. History below names the retired "agent app" era.
+**Status:** `active` — the Applet feature (an Applet is what a customer builds; `app.definition`). Routes: `/applets` (signed-out landing + the person's Applets list), `/applets/build` (build by talking), `/applets/manage/[id]` with `/code`, `/settings`, `/versions`, `/v/[version]`, `/run` (owner tools), `/applets/<slug>` (the running Applet, `app/(link)/applets/[slug]`; signed-out and template visitors get its introductory page), `/templates/applets`, `/organizations/[orgId]/applets`, admin `/administration/applets/**` (`all`, `categories`, `executions`, `analytics`, `rate-limits`, `edit/[id]`; its own Admin menu domain "Applets"), System Applets at `/administration/agents/system-agents/apps`, and the admin map `/applets/admin` (every route + how it is reached). Reserved slugs: `reserved-slugs.ts`. History below names the retired "agent app" era.
 **Tier:** `1`
-**Last updated:** `2026-08-29`
+**Last updated:** `2026-10-09`
 
 ---
 
@@ -190,6 +190,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-10-09` — claude (lane R1, route + menu map): sidebar Applets gains "Build an Applet" (`/applets/build` was reachable only from the list's button); Admin menu: the Applets pages became their own domain "Applets" (they sat under Agents and failed the registry's own path rule), "Agents Apps" → "System Applets", "New App" → "Build an Applet"; every admin "Apps"/"apps" label on the Applets dashboard, All Applets tab, analytics and System Agents › Applets now says Applet; new admin map `/applets/admin` (Tier 1 contract) with `admin` added to the reserved slugs in code AND the `definition_slug_not_reserved_check` constraint (applied through the MCP).
 
 - `2026-10-08` — claude (lane AJ): Versions page — the current version's badge says the Applet's state via `appletVersionStatusLabel` (it read the snapshot's frozen `status`, so a published v2 showed "Draft"); older rows keep their snapshot status.
 

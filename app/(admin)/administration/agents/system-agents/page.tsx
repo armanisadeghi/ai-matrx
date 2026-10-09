@@ -54,7 +54,7 @@ const TILES: Tile[] = [
     href: "/administration/agents/system-agents/lineage",
     label: "Lineage",
     description:
-      "See what each system agent gives rise to — derived agents, shortcuts, and apps — in one place.",
+      "Derived agents, shortcuts and Applets per system agent.",
     icon: GitBranch,
   },
   {
@@ -91,9 +91,9 @@ const TILES: Tile[] = [
   },
   {
     href: "/administration/agents/system-agents/apps",
-    label: "Apps",
+    label: "System Applets",
     description:
-      "Global Applets published to all users. Distinct from user-published apps.",
+      "The platform's own Applets, published to every user.",
     icon: AppWindow,
     count: (c) => c.apps,
   },

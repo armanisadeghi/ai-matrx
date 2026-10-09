@@ -236,7 +236,7 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AppletAdminView>[] = [
 const ANALYTICS_SHOW = ["count", "sum_executions", "sum_cost", "sum_cost_points", "sum_tokens"];
 export const ANALYTICS_DRILL: MatrxDataTableLocalDrillConfig = {
   local: true,
-  countLabel: "Apps",
+  countLabel: "Applets",
   dimensions: ["category", "status", "verified", "featured", "last-execution"],
   measures: ANALYTICS_SHOW,
   extraMeasures: [

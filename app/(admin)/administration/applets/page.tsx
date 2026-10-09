@@ -39,9 +39,9 @@ import { appBrief, humanApplet } from "@/features/applets/format";
 const TILES = [
   {
     href: "/administration/applets/all",
-    label: "Apps",
+    label: "All Applets",
     description:
-      "Every Applet across the platform: filter, feature, verify, moderate.",
+      "Every Applet: filter, feature, verify, moderate.",
     icon: Boxes,
     key: "apps" as const,
   },
@@ -49,7 +49,7 @@ const TILES = [
     href: "/administration/applets/categories",
     label: "Categories",
     description:
-      "Manage the static list of applet categories shown in public browsing.",
+      "The category list shown in public Applet browsing.",
     icon: Tag,
     key: "categories" as const,
   },
@@ -57,7 +57,7 @@ const TILES = [
     href: "/administration/applets/executions",
     label: "Executions",
     description:
-      "Recent runs and errors across every Applet. Resolve incidents, see usage.",
+      "Runs and errors across every Applet.",
     icon: Activity,
     key: "executions" as const,
   },
@@ -196,7 +196,7 @@ export default function AppletsAdminDashboardPage() {
                 size="xs"
                 label="Total Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                human={() => `Total apps: ${counts.apps}`}
+                human={() => `Total Applets: ${counts.apps}`}
                 agent={() => ({
                   kind: "applet-analytics-stat",
                   location: "AI Matrx Admin — Applets — Dashboard",
@@ -217,7 +217,7 @@ export default function AppletsAdminDashboardPage() {
                 size="xs"
                 label="Published Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                human={() => `Published apps: ${published}`}
+                human={() => `Published Applets: ${published}`}
                 agent={() => ({
                   kind: "applet-analytics-stat",
                   location: "AI Matrx Admin — Applets — Dashboard",
@@ -238,7 +238,7 @@ export default function AppletsAdminDashboardPage() {
                 size="xs"
                 label="Featured Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                human={() => `Featured apps: ${featured}`}
+                human={() => `Featured Applets: ${featured}`}
                 agent={() => ({
                   kind: "applet-analytics-stat",
                   location: "AI Matrx Admin — Applets — Dashboard",
@@ -259,7 +259,7 @@ export default function AppletsAdminDashboardPage() {
                 size="xs"
                 label="Verified Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                human={() => `Verified apps: ${verified}`}
+                human={() => `Verified Applets: ${verified}`}
                 agent={() => ({
                   kind: "applet-analytics-stat",
                   location: "AI Matrx Admin — Applets — Dashboard",
@@ -294,7 +294,7 @@ export default function AppletsAdminDashboardPage() {
                           )}
                         </div>
                         <Badge variant="secondary" className="text-xs">
-                          <UntrustedCount read={appsRead} label="Apps" value={count.toLocaleString()} />
+                          <UntrustedCount read={appsRead} label="Applets" value={count.toLocaleString()} />
                         </Badge>
                       </div>
                       <div>
@@ -317,7 +317,7 @@ export default function AppletsAdminDashboardPage() {
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <Star className="h-4 w-4 text-warning" />
-                Featured apps
+                Featured Applets
                 <span className="text-xs font-normal text-muted-foreground">
                   (showing{" "}
                   <UntrustedCount read={appsRead} label="Featured Applets shown" value={featuredApps.length} />{" "}
@@ -381,7 +381,7 @@ export default function AppletsAdminDashboardPage() {
             {loading ? (
               <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Loading featured apps…
+                Loading featured Applets…
               </div>
             ) : loadError && apps.length === 0 ? (
               <ReadFailure
@@ -393,7 +393,7 @@ export default function AppletsAdminDashboardPage() {
               <Card className="border-dashed">
                 <CardContent className="p-4 text-xs text-muted-foreground flex items-center gap-2">
                   <Stars className="h-3.5 w-3.5" />
-                  No featured apps yet. Feature an app from the apps list to
+                  No featured Applets yet. Feature one from All Applets to
                   highlight it.
                 </CardContent>
               </Card>
@@ -401,7 +401,7 @@ export default function AppletsAdminDashboardPage() {
               <AdminAppletGrid
                 apps={featuredApps}
                 hrefFor={getAppHref}
-                emptyLabel="No featured apps."
+                emptyLabel="No featured Applets."
               />
             )}
           </div>
@@ -441,7 +441,7 @@ export default function AppletsAdminDashboardPage() {
                     agent={() => ({
                       kind: "applets",
                       location: "AI Matrx Admin — Applets — Dashboard",
-                      description: "Every Applet, sorted by most recently updated (not just the top 6 shown).",
+                      description: "Every Applet, most recently updated first.",
                       data: allRecentlyUpdated,
                       attributes: { count: allRecentlyUpdated.length },
                       context: { shown: recentlyUpdated.length, total: allRecentlyUpdated.length },
@@ -454,7 +454,7 @@ export default function AppletsAdminDashboardPage() {
                         build: () => ({
                           kind: "applets-briefs",
                           location: "AI Matrx Admin — Applets — Dashboard",
-                          description: "One-line briefs for every Applet, most recently updated first.",
+                          description: "One-line briefs, most recently updated first.",
                           data: allRecentlyUpdated.map(appBrief),
                           attributes: { count: allRecentlyUpdated.length },
                         }),

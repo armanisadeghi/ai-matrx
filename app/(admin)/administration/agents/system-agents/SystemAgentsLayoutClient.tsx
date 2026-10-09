@@ -56,7 +56,7 @@ const NAV_ITEMS: AdminSectionTab[] = [
     icon: FileText,
   },
   {
-    label: "Apps",
+    label: "Applets",
     href: "/administration/agents/system-agents/apps",
     icon: AppWindow,
   },

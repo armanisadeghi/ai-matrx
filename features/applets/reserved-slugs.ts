@@ -4,10 +4,10 @@
 // `app/(core)/applets`: `/applets/build`, `/applets/manage/<id>/…`. A static segment out-ranks the
 // dynamic one, so an Applet slugged `build` or `manage` would be unreachable. Every path that mints or
 // changes a slug passes it through here: the builder (`build-applet.ts`) and the record saves
-// (`saveApp` / `saveAppField`). `new` is held for a future create route. The database refuses them too:
+// (`saveApp` / `saveAppField`). `new` is held for a future create route; `admin` is the admin map. The database refuses them too:
 // CHECK `definition_slug_not_reserved_check` on `app.definition` (keep the two lists equal).
 
-export const RESERVED_APPLET_SLUGS: readonly string[] = ["build", "manage", "new"];
+export const RESERVED_APPLET_SLUGS: readonly string[] = ["build", "manage", "new", "admin"];
 
 export function isReservedAppletSlug(slug: string): boolean {
   return RESERVED_APPLET_SLUGS.includes(slug.trim().toLowerCase());

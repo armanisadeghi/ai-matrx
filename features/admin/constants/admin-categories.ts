@@ -526,9 +526,9 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents Apps",
+        title: "System Applets",
         description:
-          "Global-scope Applets available to every user. Distinct from moderation of user-published apps.",
+          "Global-scope Applets available to every user. Distinct from moderation of user-published Applets.",
         iconName: "Bot",
         link: "/administration/agents/system-agents/apps",
         isNew: true,
@@ -536,7 +536,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Agents Lineage",
         description:
-          "See what each system agent gives rise to — derived agents, shortcuts, and apps.",
+          "See what each system agent gives rise to — derived agents, shortcuts, and Applets.",
         iconName: "GitBranch",
         link: "/administration/agents/system-agents/lineage",
         isNew: true,
@@ -558,8 +558,8 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "New App",
-        description: "Create a new global-scope system Applet.",
+        title: "Build an Applet",
+        description: "Opens the Applet builder in your active organization.",
         iconName: "Plus",
         link: "/applets/build",
         isNew: true,
@@ -598,7 +598,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Applet Categories",
         description:
-          "Manage the static category list shown in public applet browsing.",
+          "Manage the static category list shown in public Applet browsing.",
         iconName: "Folder",
         link: "/administration/applets/categories",
       },

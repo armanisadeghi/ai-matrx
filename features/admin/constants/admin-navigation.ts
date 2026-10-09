@@ -170,20 +170,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         ],
       },
       {
-        name: "Published Applets",
-        iconName: "Boxes",
-        destinations: [
-          destination("/administration/applets"),
-          destination("/administration/applets/all", [
-            "/administration/applets/edit/[id]",
-          ]),
-          destination("/administration/applets/categories"),
-          destination("/administration/applets/executions"),
-          destination("/administration/applets/analytics"),
-          destination("/administration/applets/rate-limits"),
-        ],
-      },
-      {
         name: "Skills",
         iconName: "BookOpen",
         destinations: [
@@ -227,6 +213,31 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Support",
         iconName: "LifeBuoy",
         destinations: [destination("/administration/agents/support")],
+      },
+    ],
+  },
+  {
+    // Applets (2026-10-09): what customers build on their own tables. Its pages live at
+    // /administration/applets, so it is its own domain (the registry refuses a destination outside
+    // its domain's path). The platform's own Applets stay under Agents › System Agents.
+    name: "Applets",
+    slug: "applets",
+    iconName: "Boxes",
+    iconColor: "text-indigo-600",
+    sections: [
+      {
+        name: "Applets",
+        iconName: "Boxes",
+        destinations: [
+          destination("/administration/applets"),
+          destination("/administration/applets/all", [
+            "/administration/applets/edit/[id]",
+          ]),
+          destination("/administration/applets/categories"),
+          destination("/administration/applets/executions"),
+          destination("/administration/applets/analytics"),
+          destination("/administration/applets/rate-limits"),
+        ],
       },
     ],
   },
