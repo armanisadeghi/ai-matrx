@@ -103,6 +103,10 @@ Expect: zero “Overly broad patterns” / “unexpected file in NFT list” war
 - **Node 20.x deprecated on Vercel** — set project to Node **24.x** in Vercel Project Settings.
 - **pnpm 9 vs 10** — `package.json` declares `packageManager: pnpm@10.29.2`; `vercel.json` installCommand enables corepack (see repo root).
 
+## Request-time source reads (2026-10-09)
+
+The same tracing class, a different trigger: route menus and "does this route exist" read `app/` from disk at request time, and one admin page imported a CLI script. Rules and the post-build guard live in the code-splitting skill's `build-time-bloat.md` (THE TRACE LAW); route discovery reads `utils/route-discovery/app-tree.ts`.
+
 ## Change log
 
 - `2026-07-25` — **Deleted the OOM offenders.** Removed
