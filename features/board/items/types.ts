@@ -66,6 +66,27 @@ export interface PickerProps {
 
 export type BoardItemGroup = "work" | "content" | "media" | "features";
 
+/**
+ * The Add menu's, Start panel's and Board menu's sections, in the order they are shown. Every
+ * registered type declares exactly one (`BoardItemType.section`); `__tests__/add-sections.test.ts`
+ * fails for a type with none. `canvas` is the board's own tools, whose rows are made by the Add
+ * menu itself (they activate a toolbar tool); the one catalog type in it is the board-only label.
+ */
+export const BOARD_SECTIONS = [
+  { key: "canvas", label: "Canvas" },
+  { key: "notes", label: "Notes & docs" },
+  { key: "media", label: "Files & media" },
+  { key: "data", label: "Data" },
+  { key: "ai", label: "AI" },
+  { key: "work", label: "Work" },
+  { key: "meetings", label: "Meetings" },
+  { key: "research", label: "Research & learning" },
+  { key: "social", label: "Web & social" },
+] as const;
+export type BoardSection = (typeof BOARD_SECTIONS)[number]["key"];
+export const boardSectionLabel = (key: BoardSection): string =>
+  BOARD_SECTIONS.find((s) => s.key === key)?.label ?? key;
+
 /** A type's colour on the board (its card at far zoom, its kind label). Tokens
  * `--board-accent-<name>` in `components/board-accents.css`, light and dark. */
 export const BOARD_ACCENTS = [
@@ -166,6 +187,8 @@ export interface BoardItemType {
   label: string;
   icon: LucideIcon;
   group: BoardItemGroup;
+  /** The Add menu / Start panel / Board menu section it is listed under (see `BOARD_SECTIONS`). */
+  section: BoardSection;
   /** The type's colour on the board (see `BoardAccent`). */
   accent: BoardAccent;
   /** The item's live state on its tile (see `ItemStatusDoor`). */

@@ -185,6 +185,7 @@ export const MEETING_ITEMS: BoardItemType[] = [
     label: "Meeting notes",
     icon: NotebookPen,
     group: "features",
+    section: "meetings",
     accent: "cyan",
     status: { none: "Its meeting's tile carries the meeting's state." },
     defaultSize: { w: 520, h: 390 },

@@ -185,6 +185,7 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     kindLabel: "pick list",
     icon: ListChecks,
     group: "work",
+    section: "data",
     accent: "teal",
     status: { none: "A list of choices has no running state." },
     // Wide enough for the table's Name column (~170 px, equal-share columns) to read a normal name beside five other columns and

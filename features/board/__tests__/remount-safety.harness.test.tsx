@@ -48,6 +48,7 @@ function itemType(Body: BoardItemType["Body"]): BoardItemType {
     label: "Probe",
     icon: FileText,
     group: "content",
+    section: "notes",
     accent: "slate",
     status: { none: "harness probe" },
     defaultSize: { w: 400, h: 300 },
