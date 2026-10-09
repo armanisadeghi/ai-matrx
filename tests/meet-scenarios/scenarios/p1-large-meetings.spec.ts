@@ -2,7 +2,7 @@
 import { expect } from "@playwright/test";
 import { keepsSeeing, seeUntil } from "../lib/meeting";
 import { summarize } from "../lib/observe";
-import { bodyText, openLink, setPolicies } from "../lib/p1";
+import { bodyText, openLink, press, setPolicies } from "../lib/p1";
 import { scenario, unproven } from "../lib/scenario";
 import { GUEST, hostWithMeeting } from "../lib/stories";
 import { walkIn } from "../lib/meeting";
@@ -13,7 +13,9 @@ scenario("meeting-full", async ({ cast }) => {
   await walkIn(host, cast.meeting!, { until: ["in-call"] });
   // The cap counts DEVICES: the host's second tab takes the second seat, so a guest is refused (the host is not kicked).
   const second = await host.openSecondTab(cast.meeting!.path);
-  await walkIn(host, cast.meeting!, { until: ["in-call"], page: second });
+  // Meet offers "Switch here" (replaces the first tab, still one device) or "Join here too" (a second device): take the second seat.
+  await press(host, "Join here too (second device)", second.getByRole("button", { name: /^Join here too$/ }), 45_000, second);
+  await seeUntil(host, "the second tab in the call", (x) => x.phase === "in-call", 45_000, second);
   const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
   const o = await openLink(guest, cast.meeting!);
   expect(o.phase, `a full meeting is refused with its own screen; saw ${summarize(o)}`).toBe("refused:meeting_full");
