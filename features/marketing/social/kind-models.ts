@@ -23,10 +23,17 @@ import type {
   WatchlistHitRow,
 } from "./types";
 
-export type SocialPostKind = KindPayload<"social_post">;
+/**
+ * `thumbnail_file_id` (SCHEMA A3, the stored small JPEG) is declared by the Python kinds already but
+ * the live registry rows for `social_post` / `outlier_row` have not been republished with it, so the
+ * generated payload type lacks it. Remove this widening when `pnpm shape:types` emits the field.
+ */
+type WithThumbnailFile = { thumbnail_file_id?: string | null };
+
+export type SocialPostKind = KindPayload<"social_post"> & WithThumbnailFile;
 export type SocialProfileKind = KindPayload<"social_profile">;
 export type PostTranscriptKind = KindPayload<"post_transcript">;
-export type OutlierRowKind = KindPayload<"outlier_row">;
+export type OutlierRowKind = KindPayload<"outlier_row"> & WithThumbnailFile;
 export type AdCreativeKind = KindPayload<"ad_creative">;
 export type SwipeCollectionKind = KindPayload<"swipe_collection">;
 

@@ -16,6 +16,8 @@ import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker"
 import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
 import { SocialPostCard } from "@/features/marketing/social/components/SocialPostCard";
 import { formatCompact } from "@/features/marketing/social/outlier";
+import { useRefusedRead } from "@/features/marketing/social/gated/RefusedReadOffer";
+import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guidedJob";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonObject } from "@/types/json";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -148,6 +150,7 @@ export default function TopicSocial() {
     [items],
   );
 
+  const { open: openCapture, node: captureNode } = useRefusedRead(topic?.organization_id ?? "", () => void load());
   const handles = handlesOf(topic?.subject);
   const capture = socialCaptureOf(topic?.metadata);
   const voice = subjectVoiceOf(topic?.metadata);
@@ -210,6 +213,17 @@ export default function TopicSocial() {
                           Open profile <ArrowUpRight className="h-3 w-3" />
                         </a>
                         <TrackInSocials brandId={brandId} url={url} />
+                        {!found && topic?.organization_id && GUIDED_CAPTURE_PLATFORMS.has(h.platform) ? (
+                          <button
+                            type="button"
+                            className={TRACK_CLASS}
+                            onClick={() =>
+                              openCapture({ platform: h.platform, handleOrUrl: url, ...(brandId ? { brandId } : {}) })
+                            }
+                          >
+                            Capture with my browser
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -271,6 +285,7 @@ export default function TopicSocial() {
           </div>
         )}
       </div>
+      {captureNode}
     </div>
   );
 }

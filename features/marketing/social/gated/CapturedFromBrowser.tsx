@@ -13,7 +13,7 @@ import { Badge } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import { formatCompact } from "../outlier";
-import { capturedPostsMissingFrom, fetchBrowserCaptures, type CaptureEntity } from "./capturedFromBrowser";
+import { capturePollInterval, capturedPostsMissingFrom, fetchBrowserCaptures, type CaptureEntity } from "./browserCaptures";
 import { guidedResultHref } from "./guidedJob";
 
 export function browserCapturesKey(targets: { type: CaptureEntity; id: string | null | undefined }[]) {
@@ -23,11 +23,13 @@ export function browserCapturesKey(targets: { type: CaptureEntity; id: string | 
 export function CapturedFromBrowser({
   targets,
   knownPlatformPostIds,
+  platform,
 }: {
   targets: { type: CaptureEntity; id: string | null | undefined }[];
   knownPlatformPostIds: ReadonlySet<string>;
+  platform: string;
 }) {
-  const q = useQuery({ queryKey: browserCapturesKey(targets), queryFn: () => fetchBrowserCaptures(targets) });
+  const q = useQuery({ queryKey: browserCapturesKey(targets), queryFn: () => fetchBrowserCaptures(targets), refetchInterval: (q) => capturePollInterval(q.state.data) });
   if (q.isError) {
     return (
       <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -39,7 +41,7 @@ export function CapturedFromBrowser({
   const captures = q.data ?? [];
   if (captures.length === 0) return null;
   const latest = captures[0];
-  const extra = capturedPostsMissingFrom(captures, knownPlatformPostIds);
+  const extra = capturedPostsMissingFrom(captures, knownPlatformPostIds, platform);
   const figures = [
     latest.profile.followerCount !== null ? `${formatCompact(latest.profile.followerCount)} followers` : null,
     latest.profile.postCount !== null ? `${formatCompact(latest.profile.postCount)} posts` : null,

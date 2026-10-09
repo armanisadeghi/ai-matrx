@@ -55,7 +55,7 @@ import { useSocialSpend } from "../cost";
 import { refreshProfile, socialErrorCode, socialErrorMessage, trackAccount } from "../server";
 import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
 import { CapturedFromBrowser, browserCapturesKey } from "../gated/CapturedFromBrowser";
-import { enrichWithCaptures, fetchBrowserCaptures, knownPostKeys } from "../gated/capturedFromBrowser";
+import { capturePollInterval, enrichWithCaptures, fetchBrowserCaptures, knownPostKeys } from "../gated/browserCaptures";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 import { TRACKED_ROLE_LABELS, isSocialPlatform, isTrackedRole, type PostCardModel } from "../types";
@@ -289,7 +289,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     { type: "social_profile" as const, id: profileId },
     { type: "social_tracked_account" as const, id: tracked.data?.id ?? null },
   ];
-  const captures = useQuery({ queryKey: browserCapturesKey(captureTargets), queryFn: () => fetchBrowserCaptures(captureTargets) });
+  const captures = useQuery({ queryKey: browserCapturesKey(captureTargets), queryFn: () => fetchBrowserCaptures(captureTargets), refetchInterval: (q) => capturePollInterval(q.state.data) });
   const snapshots = useProfileSnapshots(profileId);
   const [tab, setTab] = useState<InnerTab>("posts");
   const openInPanel = useOpenPost();

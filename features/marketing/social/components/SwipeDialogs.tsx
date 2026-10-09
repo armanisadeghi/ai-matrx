@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { RefusedReadOffer } from "../gated/RefusedReadOffer";
 
 import { useAllSwipeCollections, useInvalidateSocial } from "../hooks";
 import { looksLikePostUrl } from "../link";
@@ -317,6 +318,14 @@ export function SaveLinkDialog({
             <Field aria-label="New collection name" placeholder="Collection name" value={newName} onChange={(e) => setNewName(e.target.value)} />
           ) : null}
           <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} disabled={busy} />
+          {failure && !busy ? (
+            <RefusedReadOffer
+              organizationId={organizationId}
+              error={failure}
+              target={{ handleOrUrl: url.trim(), target: "post" }}
+              onCaptured={() => void invalidate()}
+            />
+          ) : null}
           <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
             {error ? (
               <span className="text-destructive">

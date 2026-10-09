@@ -23,7 +23,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
-import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
+import { RefusedReadOffer } from "../gated/RefusedReadOffer";
 import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
 import { useSocialSpend } from "../cost";
 import {
@@ -84,7 +84,6 @@ export function TrackAccountDialog({
   const emptyRefused = socialErrorCode(failure) === "social_profile_empty";
   // The provider could not read it (private, restricted, blocked): the person's own browser still can.
   const failCode = socialErrorCode(failure);
-  const gated = !isPostLink(text) && (failCode === "social_not_found" || failCode === "social_provider_failed");
 
   const isPost = looksLikePostUrl(text);
   function isPostLink(value: string) {
@@ -189,11 +188,11 @@ export function TrackAccountDialog({
               ""
             )}
           </p>
-          {gated && !busy && effectivePlatform ? (
-            <GatedCaptureOffer
+          {failure && !busy && effectivePlatform ? (
+            <RefusedReadOffer
               organizationId={organizationId}
-              target={{ platform: effectivePlatform, handleOrUrl: text.trim(), brandId }}
-              platformLabel={SOCIAL_PLATFORM_LABELS[effectivePlatform]}
+              error={failure}
+              target={{ platform: effectivePlatform, handleOrUrl: text.trim(), brandId, target: isPost ? "post" : "profile" }}
               onCaptured={() => void invalidate()}
             />
           ) : null}
