@@ -284,6 +284,9 @@ function readSites(): ReadSite[] {
  * cannot quietly absorb a new unaddressable read.
  */
 const COMPUTED_REFS: Record<string, string> = {
+  "features/agents/factory/door.ts":
+    "one `knobRef(door)` helper over the three declared `door_<door>` rows (`agent_factory`, " +
+    "`door_from_chat` / `door_mandate_holder_draft` / `door_generate`), all in the knob snapshot",
   "components/selection-toolbar/SelectionToolbarRoot.tsx":
     "reads its own declared HIGHLIGHT_WHILE_EDITING_KNOB constant from selection-actions.ts, the pair " +
     "`selection_toolbar` / `highlight_while_editing`, which is a row in the knob snapshot",
