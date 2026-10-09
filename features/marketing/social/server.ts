@@ -7,9 +7,9 @@
  * Every call names the BRAND's organization (carried by the brand context),
  * never the header's selection: the cost lands on that organization.
  *
- * The long doors (ingest, track, refresh) answer plain JSON today and are
- * being converted to the NDJSON stream; `callSocial` accepts BOTH, so the
- * progress callback lights up the day the stream lands with no UI change.
+ * The long doors (ingest post/profile, track, refresh) answer an NDJSON event
+ * stream; `callSocial` also accepts a plain JSON answer, so a server that has
+ * not converted a door yet still works.
  */
 
 import {
@@ -22,6 +22,7 @@ import {
 import { BackendApiError, parseHttpError } from "@/lib/api/errors";
 import { parseMatrxNdjsonResponse } from "@ai-matrx/agents/matrx";
 
+import { SocialStreamError, consumeSocialEvents } from "./stream";
 import type {
   AnalyzePostResult,
   IngestPostResult,
@@ -64,6 +65,9 @@ const KNOWN_CODES: readonly SocialErrorCode[] = [
 
 /** The server's `detail.code`, wherever the shared error parser left it. */
 export function socialErrorCode(error: unknown): SocialErrorCode | null {
+  if (error instanceof SocialStreamError) {
+    return KNOWN_CODES.find((c) => c === error.code) ?? null;
+  }
   if (!(error instanceof Error)) return null;
   const haystack: string[] = [error.message];
   if (error instanceof BackendApiError) {
@@ -86,29 +90,9 @@ export function socialErrorMessage(error: unknown, fallback: string): string {
   if (code === "social_not_found") return "That account or post was not found.";
   if (code === "social_unsupported") return "That platform or link is not supported yet.";
   if (code === "social_not_configured") return "That provider is not set up.";
+  if (error instanceof SocialStreamError && error.userMessage) return error.userMessage;
   if (error instanceof BackendApiError && error.userMessage) return error.userMessage;
   return error instanceof Error && error.message ? error.message : fallback;
-}
-
-/** Progress text from a stream event, whatever its exact envelope. */
-function progressOf(evt: unknown): SocialProgress | null {
-  if (!evt || typeof evt !== "object") return null;
-  const e = evt as { event?: string; data?: Record<string, unknown> };
-  const d = e.data;
-  if (!d || typeof d !== "object") return null;
-  const type = typeof d.type === "string" ? d.type : e.event;
-  if (type !== "progress" && type !== "status" && type !== "step") return null;
-  const message =
-    (typeof d.message === "string" && d.message) ||
-    (typeof d.label === "string" && d.label) ||
-    (typeof d.step === "string" && d.step) ||
-    "";
-  if (!message) return null;
-  return {
-    message,
-    step: typeof d.current === "number" ? d.current : undefined,
-    total: typeof d.total === "number" ? d.total : undefined,
-  };
 }
 
 /**
@@ -131,23 +115,8 @@ async function callSocial<T>(
   if (!type.includes("ndjson") && !type.includes("event-stream")) {
     return (await response.json()) as T;
   }
-  let result: unknown = null;
   const parsed = parseMatrxNdjsonResponse(response, opts.signal);
-  for await (const evt of parsed.events) {
-    const progress = progressOf(evt);
-    if (progress) opts.onProgress?.(progress);
-    const e = evt as { event?: string; data?: Record<string, unknown> };
-    if (e.event === "error") {
-      throw new Error(
-        typeof e.data?.user_message === "string" ? e.data.user_message : "The social call failed.",
-      );
-    }
-    if (e.event === "data" && e.data && !progress) {
-      result = "result" in e.data ? e.data.result : e.data;
-    }
-  }
-  if (result === null) throw new Error("The social call ended without an answer.");
-  return result as T;
+  return consumeSocialEvents<T>(parsed.events, opts.onProgress);
 }
 
 // ---------------------------------------------------------------------------

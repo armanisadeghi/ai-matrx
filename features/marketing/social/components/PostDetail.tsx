@@ -33,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { KpiTile } from "@/components/official/kpi/KpiTile";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -112,7 +113,6 @@ function PostMedia({
       if (current) URL.revokeObjectURL(current);
     };
   }, [src]);
-  useEffect(() => setSrc(null), [postId]);
 
   const primary: PostMediaRef | undefined =
     media.data?.find((m) => m.role === "video") ?? media.data?.find((m) => m.role.startsWith("image")) ?? media.data?.[0];
@@ -333,6 +333,7 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [state, setState] = useState<"idle" | "not_built" | "failed">("idle");
+  const [failure, setFailure] = useState<unknown>(null);
 
   async function run() {
     setBusy(true);
@@ -341,6 +342,7 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
       await analyzePost(postId, { organizationId });
       await client.invalidateQueries({ queryKey: socialKeys.analysis(organizationId, postId) });
     } catch (err) {
+      setFailure(err);
       setState(socialErrorCode(err) === "social_agent_not_built" ? "not_built" : "failed");
       if (socialErrorCode(err) !== "social_agent_not_built") {
         toast.error(socialErrorMessage(err, "Breakdown failed"));
@@ -357,9 +359,16 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
       <Button variant="outline" onClick={() => void run()} disabled={busy} title="Runs the post breakdown for this organization">
         {busy ? "Running…" : "Run breakdown"}
       </Button>
-      <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
-        {state === "not_built" ? "Breakdown agent not built yet" : state === "failed" ? "Breakdown failed. Retry." : ""}
-      </p>
+      {state === "failed" ? (
+        <p className="flex min-h-4 items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
+          Breakdown failed. Retry.
+          <ErrorAlchemyMenu error={failure} operation="social post breakdown" />
+        </p>
+      ) : (
+        <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
+          {state === "not_built" ? "Breakdown agent not built yet" : ""}
+        </p>
+      )}
     </div>
   );
 }
@@ -413,7 +422,10 @@ export function PostDetailBody({ postId, organizationId, brandSeg }: { postId: s
   if (detail.isError || !detail.data) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
-        <p className="text-sm text-foreground">{detail.isError ? "Couldn't load this post" : "Post not found"}</p>
+        <p className="flex items-center gap-1 text-sm text-foreground">
+          {detail.isError ? "Couldn't load this post" : "Post not found"}
+          {detail.isError ? <ErrorAlchemyMenu error={detail.error} operation="load social post" /> : null}
+        </p>
         {detail.isError ? (
           <Button variant="outline" onClick={() => void detail.refetch()}>
             Retry
@@ -430,7 +442,7 @@ export function PostDetailBody({ postId, organizationId, brandSeg }: { postId: s
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-2">
-        <PostMedia postId={postId} organizationId={organizationId} thumbnailUrl={post.thumbnail_url} postUrl={post.url} />
+        <PostMedia key={postId} postId={postId} organizationId={organizationId} thumbnailUrl={post.thumbnail_url} postUrl={post.url} />
         <div className="flex flex-wrap items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
@@ -66,6 +67,7 @@ export function TrackAccountDialog({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [failure, setFailure] = useState<unknown>(null);
 
   const isPost = looksLikePostUrl(text);
   const detected = detectPlatform(text);
@@ -77,8 +79,10 @@ export function TrackAccountDialog({
   async function submit() {
     setBusy(true);
     setError("");
+    setFailure(null);
     setStatus("Fetching…");
-    const opts = { organizationId, onProgress: (p: { message: string }) => setStatus(p.message) };
+    const opts = { organizationId, onProgress: (p: { message: string; step?: number; total?: number }) =>
+        setStatus(p.step && p.total ? `${p.message} · ${p.step} of ${p.total}` : p.message) };
     try {
       if (isPost) {
         const result = await ingestPost({ url: text.trim() }, opts);
@@ -103,6 +107,7 @@ export function TrackAccountDialog({
       }
       setText("");
     } catch (err) {
+      setFailure(err);
       setError(socialErrorMessage(err, "Couldn't track that account"));
     } finally {
       setBusy(false);
@@ -143,7 +148,10 @@ export function TrackAccountDialog({
           </div>
           <p className="h-4 text-xs text-muted-foreground" aria-live="polite">
             {error ? (
-              <span className="text-destructive">{error}</span>
+              <span className="text-destructive">
+                {error}
+                <ErrorAlchemyMenu error={failure} operation="track social account" />
+              </span>
             ) : status ? (
               status
             ) : isPost ? (

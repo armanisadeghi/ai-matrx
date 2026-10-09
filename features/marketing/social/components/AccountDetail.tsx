@@ -24,6 +24,7 @@ import {
 } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { KpiTile } from "@/components/official/kpi/KpiTile";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -236,9 +237,10 @@ function PostsPanel({
 function GrowthPanel({ profileId }: { profileId: string }) {
   const snapshots = useProfileSnapshots(profileId);
   const [range, setRange] = useState<string>("90");
+  const [now] = useState(() => Date.now());
   if (snapshots.isLoading) return <RegionSkeleton shape="rows" count={4} />;
   const all = profileFollowerSeries(snapshots.data ?? []);
-  const cutoff = range === "0" ? 0 : Date.now() - Number(range) * 86_400_000;
+  const cutoff = range === "0" ? 0 : now - Number(range) * 86_400_000;
   const points = all.filter((p) => p.t >= cutoff);
   const growth = judgeFollowerGrowth(snapshots.data ?? [], range === "0" ? 90 : Number(range));
   return (
@@ -300,7 +302,10 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   if (profile.isError || !profile.data) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
-        <p className="text-sm text-foreground">{profile.isError ? "Couldn't load this account" : "Account not found"}</p>
+        <p className="flex items-center gap-1 text-sm text-foreground">
+          {profile.isError ? "Couldn't load this account" : "Account not found"}
+          {profile.isError ? <ErrorAlchemyMenu error={profile.error} operation="load social account" /> : null}
+        </p>
         <Button variant="outline" onClick={() => router.back()}>
           Back
         </Button>
@@ -369,6 +374,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       ) : posts.isError ? (
         <div className="flex items-center gap-2 text-sm">
           Couldn't load posts
+          <ErrorAlchemyMenu error={posts.error} operation="load social posts" />
           <Button variant="outline" onClick={() => void posts.refetch()}>
             Retry
           </Button>
