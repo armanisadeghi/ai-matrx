@@ -3,7 +3,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { whenLateIdle } from "@/lib/boot/lateIdle";
 import {
   setUser,
   setFingerprintId,
@@ -16,7 +17,7 @@ import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 import { rememberValidatedAccount } from "@/utils/auth/remembered-account";
-import { readAppPermissions } from "@/utils/userDataMapper";
+import { mapUserData, readAppPermissions } from "@/utils/userDataMapper";
 
 type AuthValidationError = {
   name?: unknown;
@@ -54,12 +55,47 @@ export function isExpectedMissingAuthSession(error: unknown): boolean {
  */
 export function usePublicAuthSync() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const hasRun = useRef(false);
 
   useEffect(() => {
     // Only run once
     if (hasRun.current) return undefined;
     hasRun.current = true;
+    // Read BEFORE the reconciliation pre-pass can clear it: the identity the server seeded.
+    const seededUserId = store.getState().userAuth.id;
+
+    // The record-only fields (created_at, identities, last_sign_in_at, *_confirmed_at) come
+    // from THE ONE record door — in the late tier, after paint, and only when the store still
+    // lacks them: the locally stored session user usually carries them already, and the signed-in
+    // shell's DeferredShellData reads the same record at idle.
+    const mergeAuthRecordLate = (userId: string) => {
+      void whenLateIdle().then(async (ok) => {
+        if (!ok) return;
+        const auth = store.getState().userAuth;
+        if (auth.id !== userId || auth.identities.length > 0) return;
+        const { user: record, error: recordError } = await fetchAuthUserRecord();
+        if (!record || record.id !== userId) {
+          if (recordError) {
+            console.warn(
+              "[usePublicAuthSync] auth-server user record unavailable; " +
+                `identity stands on verified claims. ${recordError.message}`,
+            );
+          }
+          return;
+        }
+        if (store.getState().userAuth.id !== userId) return;
+        const full = mapUserData(record, undefined, false);
+        dispatch(
+          setUser({
+            createdAt: full.createdAt,
+            emailConfirmedAt: full.emailConfirmedAt,
+            lastSignInAt: full.lastSignInAt,
+            identities: full.identities,
+          }),
+        );
+      });
+    };
 
     const syncAuth = async () => {
       const startTime = performance.now();
@@ -93,29 +129,19 @@ export function usePublicAuthSync() {
           if (!claimsUser) {
             user = null;
           } else {
-            // The record-only fields (created_at, identities, last_sign_in_at,
-            // *_confirmed_at) come from THE ONE record door, once. If it does
-            // not answer, identity still stands on the verified claims.
-            const { user: record, error: recordError } = await fetchAuthUserRecord();
-            if (record && record.id === claimsUser.id) {
-              user = record;
-            } else {
-              if (recordError) {
-                console.warn(
-                  "[usePublicAuthSync] auth-server user record unavailable; " +
-                    `proceeding on verified claims. ${recordError.message}`,
-                );
-              }
-              user = {
-                ...(localSession.user ?? {}),
-                id: claimsUser.id,
-                email: claimsUser.email ?? localSession.user?.email,
-                phone: claimsUser.phone ?? localSession.user?.phone,
-                is_anonymous: claimsUser.is_anonymous ?? localSession.user?.is_anonymous,
-                app_metadata: claimsUser.app_metadata,
-                user_metadata: claimsUser.user_metadata,
-              } as typeof localSession.user;
-            }
+            // Identity stands on the VERIFIED claims, over the locally stored session user (which
+            // already carries created_at / identities / last_sign_in_at from sign-in). The auth
+            // server's fresh RECORD is never on this path: it is merged in the late tier below,
+            // after the page has painted, and never blocks setUser / authReady.
+            user = {
+              ...(localSession.user ?? {}),
+              id: claimsUser.id,
+              email: claimsUser.email ?? localSession.user?.email,
+              phone: claimsUser.phone ?? localSession.user?.phone,
+              is_anonymous: claimsUser.is_anonymous ?? localSession.user?.is_anonymous,
+              app_metadata: claimsUser.app_metadata,
+              user_metadata: claimsUser.user_metadata,
+            } as typeof localSession.user;
           }
         }
 
@@ -124,21 +150,31 @@ export function usePublicAuthSync() {
           // We already have the session from the local check above
           const session = localSession;
 
-          // Check admin status + level
-          let isAdmin = false;
-          let adminLevel: AdminLevel | null = null;
-          try {
-            const { data: adminData } = await supabase
-              .schema("admin")
-              .from("admins")
-              .select("user_id, level")
-              .eq("user_id", user.id)
-              .maybeSingle();
-            isAdmin = !!adminData;
-            adminLevel =
-              (adminData as { level?: AdminLevel } | null)?.level ?? null;
-          } catch {
-            // Admin check failed, default to non-admin
+          // Admin status + level. Every server layout that seeds a signed-in user resolves its
+          // admin status too (`mapUserData(user, token, isAdmin, adminLevel)`), so when the store
+          // was seeded with THIS user the seeded answer stands and nothing is re-read.
+          const seededSameUser = seededUserId === user.id;
+          let isAdmin: boolean | undefined;
+          let adminLevel: AdminLevel | null | undefined;
+          if (!seededSameUser) {
+            isAdmin = false;
+            adminLevel = null;
+            try {
+              const { data: adminData } = await supabase
+                .schema("admin")
+                .from("admins")
+                .select("user_id, level")
+                .eq("user_id", user.id)
+                .maybeSingle();
+              isAdmin = !!adminData;
+              adminLevel =
+                (adminData as { level?: AdminLevel } | null)?.level ?? null;
+            } catch (adminError) {
+              console.warn(
+                "[usePublicAuthSync] admin status could not be read; proceeding as non-admin.",
+                adminError,
+              );
+            }
           }
 
           // Dispatch to Redux with access token (authReady set automatically)
@@ -180,12 +216,13 @@ export function usePublicAuthSync() {
                   sub: i.identity_data?.sub || null,
                   name: i.identity_data?.name || null,
                 })) || [],
-              isAdmin,
-              adminLevel,
+              ...(isAdmin !== undefined ? { isAdmin } : {}),
+              ...(adminLevel !== undefined ? { adminLevel } : {}),
               accessToken: session?.access_token || null,
               tokenExpiresAt: session?.expires_at || null,
             }),
           );
+          mergeAuthRecordLate(user.id);
           // User preferences hydration is now handled automatically
           // by the sync engine: it reads from IDB on boot and falls
           // back to `userPreferencesPolicy.remote.fetch` (Supabase)
@@ -289,5 +326,5 @@ export function usePublicAuthSync() {
     // Delay to ensure page renders first
     const timer = setTimeout(syncAuth, 100);
     return () => clearTimeout(timer);
-  }, [dispatch]);
+  }, [dispatch, store]);
 }

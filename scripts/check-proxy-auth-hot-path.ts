@@ -318,7 +318,7 @@ const RECORD_DOOR_CALLERS: Record<string, string> = {
     "Fills the Redux user with the record-only fields ONCE after hydration of the " +
     "signed-in shell; every profile / menu surface reads them from Redux.",
   "hooks/usePublicAuthSync.ts":
-    "The same fill for public routes, once, after the local session check.",
+    "The same fill for public routes, once, in the late idle tier, only when the stored session lacks it.",
 };
 
 const SWEPT_ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "lib", "utils", "components", "hooks", "providers", "actions", "config"];
