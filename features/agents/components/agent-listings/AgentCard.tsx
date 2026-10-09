@@ -281,8 +281,6 @@ export function AgentCard({
       </div>
 
       <FavoriteAgentButton id={id} disabled={isDisabled} />
-
-      <AgentProofBadge agentId={id} className="absolute bottom-3 right-3 z-10" />
       {isArchived && (
         <div className="absolute top-3 right-8 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
           <Archive className="h-3 w-3" />
@@ -290,7 +288,13 @@ export function AgentCard({
         </div>
       )}
 
-      <div className="group/entity-ref p-4 pl-12 pr-8 flex-1 flex flex-col items-center justify-center gap-1.5">
+      <div className="group/entity-ref relative p-4 pb-7 pl-12 pr-8 flex-1 flex flex-col items-center justify-center gap-1.5">
+        {/* The proof badge has its own strip under the name (bottom padding above is its
+            room), so it can never sit on the action bar or the name, whatever the card's
+            width — and, absolute inside reserved padding, it arrives without moving anything. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-1.5 flex justify-center">
+          <AgentProofBadge agentId={id} />
+        </div>
         {/* THE DOOR LAW: the card body opens a chooser modal, so the NAME
             carries the record's own door — a real anchor, which is what makes
             cmd-click, middle-click, "open in new tab" and keyboard focus work.
