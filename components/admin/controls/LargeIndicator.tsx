@@ -445,7 +445,15 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
               {consoleErrors.length > 0 && (
                 <span className="text-[10px] font-semibold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded-full">
                   {consoleErrors.length}
-                  <ErrorAlchemyMenu />
+                  {/* The badge's own text is only the count — hand the menu the
+                      errors themselves, or it copies "4" as the error. */}
+                  <ErrorAlchemyMenu
+                    input={() => ({
+                      title: `${consoleErrors.length} console errors on this page`,
+                      message: consoleErrors.map((e) => `[${e.source}] ${e.message}`).join("\n"),
+                      source: "inline",
+                    })}
+                  />
                 </span>
               )}
               <ChevronRight
@@ -465,7 +473,14 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] text-red-400 font-semibold">
                           {err.source}
-                          <ErrorAlchemyMenu />
+                          <ErrorAlchemyMenu
+                            input={{
+                              title: err.source,
+                              message: err.message,
+                              ...(err.stack ? { details: { stack: err.stack } } : {}),
+                              source: "inline",
+                            }}
+                          />
                         </span>
                         <span className="text-[10px] text-slate-500">
                           {new Date(err.capturedAt).toLocaleTimeString()}
