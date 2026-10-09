@@ -48,6 +48,8 @@ import {
 } from "lucide-react";
 
 import { Skeleton } from "@ai-matrx/design-system";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useCrmContext } from "@/features/crm/hooks/useCrmContext";
 import { fetchOutreachLists } from "@/features/crm/outreach-lists/service";
@@ -211,13 +213,29 @@ export function OutreachFrontDoor({
           : "Link and PR prospecting, sequenced contact, and earned placements — the pipeline lives beside the records in your CRM. This is the way in."
       }
       toolbar={
-        <FrontDoorSiteSelect
-          state={siteState}
-          basePath={basePath ?? "/marketing/outreach"}
-          label="Website for prospecting"
-        />
+        brandId && !siteState.isPending && !siteState.site ? null : (
+          <FrontDoorSiteSelect
+            state={siteState}
+            basePath={basePath ?? "/marketing/outreach"}
+            label="Website for prospecting"
+          />
+        )
       }
     >
+      {brandId && !siteState.isPending && !siteState.isError && !siteState.site ? (
+        <NoWebsiteState
+          compact
+          brandId={brandId}
+          brandName={client}
+          needs="finding prospects (competitor link gaps and SERP prospects)"
+          alternatives={[{ label: "Open Socials", href: marketingRoutes.brandSocials(brandId) }]}
+        >
+          <p className="mt-1 text-xs text-muted-foreground">
+            Media lists, replies and the Chasebox below work without a website.
+          </p>
+        </NoWebsiteState>
+      ) : null}
+
       {error ? (
         <InlineQueryError
           what="outreach summary"

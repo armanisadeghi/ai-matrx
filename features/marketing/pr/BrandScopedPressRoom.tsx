@@ -18,7 +18,10 @@
 import { useEffect, useState } from "react";
 import { Megaphone, PanelRightClose, X } from "lucide-react";
 
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
+import { useBrandSites } from "@/features/marketing/data/hooks";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 
 import PressRoomWorkspace from "./PressRoomWorkspace";
@@ -27,6 +30,10 @@ import { pageHoldsDirectorConversation, useDirectorDock } from "./director/direc
 
 export function BrandScopedPressRoom() {
   const brand = useMarketingBrand();
+  const sites = useBrandSites(brand.id);
+  // Story angles, source requests and coverage are all read per website. A brand with none would
+  // otherwise land on another business's sample room under its own name.
+  const noWebsite = sites.isSuccess && (sites.data ?? []).length === 0;
   // Phone: the Director opens over the page. Wide screen: it docks beside the Press Room, closed
   // by default where it would squeeze the angle list (see director-dock.ts).
   const [directorOpen, setDirectorOpen] = useState(false);
@@ -41,7 +48,21 @@ export function BrandScopedPressRoom() {
     // squeezing the angle list to one word per line (walk 2026-10-05, 1024px).
     <div className="@container/pressroom flex h-full min-h-0">
       <div className="h-full min-w-0 flex-1">
-        <PressRoomWorkspace scopedBrandId={brand.id} />
+        {noWebsite ? (
+          <div className="flex h-full items-center justify-center overflow-y-auto p-6">
+            <NoWebsiteState
+              brandId={brand.id}
+              brandName={brand.name}
+              needs="story angles, journalist requests and coverage"
+              alternatives={[
+                { label: "PR calendar", href: marketingRoutes.brandSection(brand.seg, "planning/calendar") },
+                { label: "Open Socials", href: marketingRoutes.brandSocials(brand.id) },
+              ]}
+            />
+          </div>
+        ) : (
+          <PressRoomWorkspace scopedBrandId={brand.id} />
+        )}
       </div>
       <aside
         aria-label="PR Director column"

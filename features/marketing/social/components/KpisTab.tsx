@@ -9,6 +9,8 @@
  */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Lock, Pause, Pencil, Play, Plus, Target, Trash2, UserPlus, Users } from "lucide-react";
 
 import {
@@ -68,7 +70,8 @@ import {
 import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
-import { trackableOwn, useTrackOwn } from "./useTrackOwn";
+import { useTrackOwn } from "./useTrackOwn";
+import { ownTrackingState } from "../own-accounts";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 type KpiView = "trend" | "benchmark" | "own";
@@ -140,7 +143,8 @@ export function KpisTab() {
   const snapshots = data.data?.snapshots ?? [];
   const kpiAccounts = toKpiAccounts(accounts);
   const own = accounts.filter((a) => a.role === "own" && a.profileId);
-  const untrackedOwn = (accountRows.data ?? []).filter(trackableOwn);
+  const ownState = ownTrackingState(accountRows.data ?? []);
+  const untrackedOwn = ownState.kind === "trackable" ? ownState.rows : [];
 
   async function setStatus(goal: KpiGoalRow, status: "active" | "paused") {
     try {
@@ -213,12 +217,14 @@ export function KpisTab() {
             icon={<Users className="h-5 w-5" />}
             title="No own accounts tracked"
             line={
-              untrackedOwn.length > 0
+              ownState.kind === "trackable"
                 ? `${untrackedOwn.length} own ${untrackedOwn.length === 1 ? "account is" : "accounts are"} not tracked yet`
-                : "Set a tracked account's role to Own"
+                : ownState.kind === "coming"
+                  ? `${ownState.platforms.map(platformLabel).join(" and ")} tracking is coming; your ${ownState.platforms.length === 1 ? "account stays" : "accounts stay"} listed on Accounts`
+                  : "Add an account to start tracking"
             }
             action={
-              untrackedOwn.length > 0 ? (
+              ownState.kind === "trackable" ? (
                 <Button
                   variant="primary"
                   icon={<UserPlus />}
@@ -227,6 +233,10 @@ export function KpisTab() {
                   onClick={() => void trackAllOwn(untrackedOwn)}
                 >
                   {busyRow === "bulk" ? "Tracking…" : `Track own accounts (${untrackedOwn.length})`}
+                </Button>
+              ) : ownState.kind === "coming" ? (
+                <Button variant="outline" asChild>
+                  <Link href={`${marketingRoutes.brandSocials(brandId)}/accounts`}>Open Accounts</Link>
                 </Button>
               ) : (
                 <Button variant="outline" onClick={openTrack}>
