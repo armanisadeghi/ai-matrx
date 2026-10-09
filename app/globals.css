@@ -24,7 +24,8 @@
 @source "../constants";
 @source "../features";
 @source "../node_modules/@ai-matrx/chat/dist";
-@source "../node_modules/@ai-matrx/coding-sessions/dist/projects";
+@source "../node_modules/@ai-matrx/coding-sessions/dist";
+@source "../node_modules/@ai-matrx/rich-editor/dist";
 @source "../hooks";
 @source "../lib";
 @source "../providers";
