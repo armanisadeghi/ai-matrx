@@ -193,12 +193,59 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
   },
   "marketing.social": {
     id: "marketing.social",
-    label: "Social",
+    label: "Social intelligence",
     owner: "marketing",
     promise:
-      "Connect social accounts, schedule and publish posts, and work one engagement inbox across every network.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/social route"],
+      "Track competitor, inspiration and client accounts, find the posts that beat their own baseline, keep a swipe file, and study rival ads. Posting is not part of this.",
+    stage: "building",
+    // The Accounts tab, account detail and post detail are live
+    // (features/marketing/social, SI-07a); each remaining tab below has its own row.
+    surfaces: ["/marketing/[brand]/socials"],
+  },
+  "marketing.social.studio": {
+    id: "marketing.social.studio",
+    label: "Social Studio",
+    owner: "marketing",
+    promise:
+      "Turn winning posts into scripts, hooks and captions on a board, in your brand voice. Nothing is generated until you confirm.",
+    stage: "building",
+    surfaces: ["/marketing/[brand]/socials/studio"],
+  },
+  "marketing.social.outliers": {
+    id: "marketing.social.outliers",
+    label: "Outliers",
+    owner: "marketing",
+    promise:
+      "A feed of posts that beat their creator's own baseline, with watchlists and alerts.",
+    stage: "building",
+    surfaces: ["/marketing/[brand]/socials/outliers"],
+  },
+  "marketing.social.swipe": {
+    id: "marketing.social.swipe",
+    label: "Swipe file",
+    owner: "marketing",
+    promise:
+      "Save posts and ads into collections with tags and notes, from the app or the browser extension.",
+    stage: "building",
+    surfaces: ["/marketing/[brand]/socials/swipe"],
+  },
+  "marketing.social.ads": {
+    id: "marketing.social.ads",
+    label: "Competitor ads",
+    owner: "marketing",
+    promise:
+      "Search ad libraries and follow rival advertisers: what is live, for how long, and where it lands.",
+    stage: "building",
+    surfaces: ["/marketing/[brand]/socials/ads"],
+  },
+  "marketing.social.kpis": {
+    id: "marketing.social.kpis",
+    label: "Social KPIs",
+    owner: "marketing",
+    promise:
+      "Goals and progress for your own accounts, next to the competitors you track.",
+    stage: "building",
+    surfaces: ["/marketing/[brand]/socials/kpis"],
   },
   // Lane B email — the mailbox, the templates, the sequences — SHIPPED, and
   // /marketing/email is now its front door. What remains is LANE A: opt-in

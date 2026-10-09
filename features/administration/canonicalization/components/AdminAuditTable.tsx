@@ -3,65 +3,37 @@
 /**
  * features/administration/canonicalization/components/AdminAuditTable.tsx
  *
- * Dense, virtualized admin data grid for the `audit.*` snapshot views:
- * sticky header, per-column sort + filter (text/enum/number/date), a
- * global search box, CSV export, and no row-count truncation — every row
- * the query returns is filterable/sortable/exportable. Built as a
- * CSS-grid (not a native <table>) so header + body columns stay pixel-
- * aligned while `@tanstack/react-virtual` only mounts visible rows.
- *
- * Reuses the kg-inspector column-filter primitives (tableFilters.ts,
- * KgInspectorColumnHeader) rather than reimplementing sort/filter logic.
+ * The admin grid for the `audit.*` snapshot views, on the shared MatrxDataTable
+ * (sort / filter / search / copy / export / row inspector all come from the
+ * package). This file only maps the audit column vocabulary (`AuditColumnDef`)
+ * and the page props (deep-link seeds, per-row copy-for-AI, toolbar extras) onto
+ * it, so the nine consuming pages keep their API.
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
-import { useMemo, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { Copy, Download, Search, X } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { useMemo } from "react";
+import { Copy } from "lucide-react";
+import {
+  MatrxDataTable,
+  type ColumnFiltersState,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
-import { Skeleton } from "@ai-matrx/design-system";
-import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@ai-matrx/design-system";
 
-import {
-  KgInspectorColumnHeader,
-  KgSortIcon,
-} from "@/features/administration/kg-inspector/components/KgInspectorColumnHeader";
-import { ValueListFilterPopover } from "@/features/administration/kg-inspector/components/ValueListFilterPopover";
-import {
-  applyColumnFilters,
-  isColumnFilterActive,
-  sortRows,
-  toggleSort,
-  type ColumnDef,
-  type ColumnFilter,
-  type ColumnFilterType,
-  type SortDirection,
+import type {
+  ColumnFilter,
+  ColumnFilterType,
+  SortDirection,
 } from "@/features/administration/kg-inspector/utils/tableFilters";
 import {
-  enumUrlCodec,
-  jsonUrlCodec,
-  stringUrlCodec,
-  useUrlState,
-} from "@ai-matrx/kit/url-state";
-import { exportRowsAsCsv } from "../utils/exportCsv";
-import {
   auditRowToAgentInput,
-  auditRowsToAgentInput,
   type AuditTableCopyForAi,
 } from "../utils/aiExport";
-import { formatCount } from "@ai-matrx/kit/format";
 
 export type { AuditTableCopyForAi };
-
-/** Value-list dropdowns render every option in the DOM — cap how many a text column may offer. */
-const MAX_TEXT_FILTER_OPTIONS = 300;
 
 export interface AuditColumnDef<T> {
   key: string;
@@ -86,121 +58,6 @@ export interface AuditColumnDef<T> {
    * function name, …) get the dropdown automatically.
    */
   noValueList?: boolean;
-}
-
-/**
- * Merges a partial patch into a column's `ColumnFilter`, keeping the free
- * substring (`text`) and the exact-value checklist (`enumValues`) — set by
- * the value-list dropdown — independent of each other. Drops the filter
- * entirely once both are empty so the column filter map stays clean.
- */
-function mergeTextFilter(
-  prev: ColumnFilter | undefined,
-  patch: Partial<ColumnFilter>,
-): ColumnFilter | undefined {
-  const next: ColumnFilter = { ...(prev ?? {}), ...patch };
-  const hasText = Boolean(next.text?.trim());
-  const hasValues =
-    Array.isArray(next.enumValues) && next.enumValues.length > 0;
-  if (!hasText) delete next.text;
-  if (!hasValues) delete next.enumValues;
-  return hasText || hasValues ? next : undefined;
-}
-
-function HeaderCell<T>({
-  col,
-  sortKey,
-  sortDir,
-  onSort,
-  columnFilter,
-  onColumnFilterChange,
-  enumOptions,
-  textValueOptions,
-}: {
-  col: AuditColumnDef<T>;
-  sortKey: string;
-  sortDir: SortDirection;
-  onSort: (key: string) => void;
-  columnFilter: ColumnFilter | undefined;
-  onColumnFilterChange: (value: ColumnFilter | undefined) => void;
-  enumOptions: string[];
-  textValueOptions: string[] | undefined;
-}) {
-  const sortable = col.sortable !== false;
-  const filterable = col.filterable !== false;
-
-  if (col.type === "enum") {
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-1",
-          col.align === "right" && "justify-end",
-        )}
-      >
-        <span
-          className={cn(
-            "font-semibold",
-            sortable && "cursor-pointer select-none hover:text-primary",
-          )}
-          onClick={() => sortable && onSort(col.key)}
-        >
-          {col.label}
-        </span>
-        {sortable ? (
-          <KgSortIcon active={sortKey === col.key} dir={sortDir} />
-        ) : null}
-        {filterable ? (
-          <ValueListFilterPopover
-            label={col.label}
-            options={enumOptions}
-            selected={columnFilter?.enumValues}
-            onApply={(values) =>
-              onColumnFilterChange(
-                values && values.length ? { enumValues: values } : undefined,
-              )
-            }
-          />
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <KgInspectorColumnHeader
-      label={col.label}
-      sortKey={col.key}
-      activeSortKey={sortKey}
-      sortDir={sortDir}
-      onSort={onSort}
-      align={col.align}
-      sortable={sortable}
-      filterable={filterable}
-      filterType={col.type}
-      textValue={col.type === "text" ? (columnFilter?.text ?? "") : undefined}
-      onTextChange={
-        col.type === "text"
-          ? (text) =>
-              onColumnFilterChange(mergeTextFilter(columnFilter, { text }))
-          : undefined
-      }
-      valueOptions={col.type === "text" ? textValueOptions : undefined}
-      selectedValues={
-        col.type === "text" ? columnFilter?.enumValues : undefined
-      }
-      onValueListChange={
-        col.type === "text"
-          ? (values) =>
-              onColumnFilterChange(
-                mergeTextFilter(columnFilter, { enumValues: values ?? [] }),
-              )
-          : undefined
-      }
-      columnFilter={col.type !== "text" ? columnFilter : undefined}
-      onColumnFilterChange={
-        col.type !== "text" ? onColumnFilterChange : undefined
-      }
-    />
-  );
 }
 
 function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
@@ -265,7 +122,61 @@ export interface AdminAuditTableProps<T> {
   urlStateKey?: string;
 }
 
-const DEFAULT_ROW_HEIGHT = 34;
+const DEFAULT_COLUMN_WIDTH = 160;
+
+/** `"160px"` or `"minmax(240px,1fr)"` (the old grid track) -> the table's pixel width. */
+function trackToWidth(track: string | undefined): number {
+  const match = track?.match(/(\d+(?:\.\d+)?)px/);
+  return match ? Number(match[1]) : DEFAULT_COLUMN_WIDTH;
+}
+
+/** The audit filter shape a page seeds from a deep link -> the table's filter value. */
+function toTableFilters(
+  seeds: Record<string, ColumnFilter> | undefined,
+): ColumnFiltersState | undefined {
+  if (!seeds) return undefined;
+  const out: ColumnFiltersState = {};
+  for (const [key, f] of Object.entries(seeds)) {
+    if (f.enumValues && f.enumValues.length > 0) {
+      out[key] = {
+        kind: "select",
+        value: f.enumValues[0] ?? "",
+        values: f.enumValues,
+      };
+    } else if (f.text?.trim()) {
+      out[key] = { kind: "text", value: f.text };
+    } else if (f.numMin != null || f.numMax != null) {
+      out[key] = {
+        kind: "number",
+        min: f.numMin ?? undefined,
+        max: f.numMax ?? undefined,
+      };
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function tableIdFor(urlStateKey?: string, csvFilename?: string): string {
+  const raw = urlStateKey
+    ? `audit-${urlStateKey}`
+    : (csvFilename ?? "audit-table").replace(/\.csv$/i, "");
+  const slug = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return /^[a-z]/.test(slug) ? slug : `audit-${slug}`.slice(0, 64);
+}
+
+const FILTER_KIND: Record<
+  ColumnFilterType,
+  NonNullable<MatrxColumnDef<unknown>["filter"]>
+> = {
+  text: "auto",
+  enum: "select",
+  number: "number",
+  date: "date",
+};
 
 export function AdminAuditTable<T>({
   rows,
@@ -277,318 +188,100 @@ export function AdminAuditTable<T>({
   csvFilename,
   defaultSort,
   toolbarExtra,
-  rowHeight = DEFAULT_ROW_HEIGHT,
   initialColumnFilters,
   initialSearch,
   copyForAi,
   urlStateKey,
 }: AdminAuditTableProps<T>) {
-  const param = (name: string) =>
-    urlStateKey ? `${urlStateKey}.${name}` : name;
-  const [search, setSearch] = useUrlState(
-    param("q"),
-    stringUrlCodec(initialSearch ?? ""),
-  );
-  const [columnFilters, setColumnFilters] = useUrlState(
-    param("f"),
-    jsonUrlCodec<Record<string, ColumnFilter>>(
-      initialColumnFilters ?? {},
-      (value): value is Record<string, ColumnFilter> =>
-        Boolean(value) && typeof value === "object" && !Array.isArray(value),
-    ),
-  );
-  const [sortKey, setSortKey] = useUrlState(
-    param("sort"),
-    stringUrlCodec(defaultSort?.key ?? columns[0]?.key ?? ""),
-  );
-  const [sortDir, setSortDir] = useUrlState(
-    param("dir"),
-    enumUrlCodec<SortDirection>(["asc", "desc"], defaultSort?.dir ?? "asc"),
-  );
+  const tableId = tableIdFor(urlStateKey, csvFilename);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const colDefs: ColumnDef<T>[] = useMemo(
-    () =>
-      columns.map((c) => ({ key: c.key, type: c.type, getValue: c.getValue })),
-    [columns],
-  );
-
-  const enumOptionsByColumn = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const col of columns) {
-      if (col.type !== "enum") continue;
-      const set = new Set<string>();
-      for (const row of rows) {
-        const v = col.getValue(row);
-        if (v != null && String(v) !== "") set.add(String(v));
-      }
-      map[col.key] = Array.from(set).sort();
-    }
+  // Audit rows carry no id of their own; identity of the row object is the key.
+  const rowIds = useMemo(() => {
+    const map = new Map<T, string>();
+    rows.forEach((row, index) => map.set(row, String(index)));
     return map;
-  }, [rows, columns]);
+  }, [rows]);
 
-  /**
-   * Bounded `text` columns (schema, table, token, function name, …) get the
-   * same value-list dropdown as enum columns, computed from the currently
-   * loaded dataset. Columns flagged `noValueList` (free text like `detail`
-   * or `message`) or whose distinct count blows past the render cap are
-   * skipped — the free substring input is still always available for those.
-   */
-  const textValueOptionsByColumn = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const col of columns) {
-      if (col.type !== "text" || col.filterable === false || col.noValueList)
-        continue;
-      const set = new Set<string>();
-      let overflowed = false;
-      for (const row of rows) {
-        const v = col.getValue(row);
-        if (v != null && String(v) !== "") set.add(String(v));
-        if (set.size > MAX_TEXT_FILTER_OPTIONS) {
-          overflowed = true;
-          break;
-        }
-      }
-      if (!overflowed && set.size > 0) {
-        map[col.key] = Array.from(set).sort();
-      }
+  const tableColumns = useMemo<MatrxColumnDef<T>[]>(() => {
+    const mapped: MatrxColumnDef<T>[] = columns.map((col) => ({
+      id: col.key,
+      header: col.label,
+      accessorFn: col.getValue,
+      sortValue: col.getValue,
+      width: trackToWidth(col.width),
+      ...(col.align === "right" ? { align: "right" as const } : {}),
+      sortable: col.sortable !== false,
+      filter:
+        col.filterable === false
+          ? false
+          : col.type === "text" && col.noValueList
+            ? "text"
+            : FILTER_KIND[col.type],
+      cell: (row) => <Cell col={col} row={row} />,
+    }));
+    if (copyForAi) {
+      mapped.push({
+        id: "copy-for-ai",
+        header: "Copy",
+        filter: false,
+        sortable: false,
+        width: 72,
+        align: "center",
+        customActions: (row) => (
+          <CopyButtons
+            size="icon"
+            label={copyForAi.label}
+            human={() => copyForAi.humanRow(row)}
+            agent={() => auditRowToAgentInput(copyForAi, row)}
+          />
+        ),
+      });
     }
-    return map;
-  }, [rows, columns]);
+    return mapped;
+  }, [columns, copyForAi]);
 
-  const searched = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) =>
-      columns.some((col) => {
-        const v = col.getValue(row);
-        return v != null && String(v).toLowerCase().includes(q);
-      }),
-    );
-  }, [rows, columns, search]);
-
-  const filtered = useMemo(
-    () => applyColumnFilters(searched, colDefs, columnFilters),
-    [searched, colDefs, columnFilters],
+  const seededFilters = useMemo(
+    () => toTableFilters(initialColumnFilters),
+    [initialColumnFilters],
   );
-
-  const processed = useMemo(
-    () => sortRows(filtered, colDefs, sortKey, sortDir),
-    [filtered, colDefs, sortKey, sortDir],
-  );
-
-  const handleSort = (key: string) => {
-    const next = toggleSort(sortKey, sortDir, key);
-    setSortKey(next.sortKey);
-    setSortDir(next.sortDir);
-  };
-
-  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
-    const next = { ...columnFilters };
-    if (value) next[key] = value;
-    else delete next[key];
-    setColumnFilters(next);
-  };
-
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    columns.some((col) =>
-      isColumnFilterActive(columnFilters[col.key], col.type),
-    );
-
-  const clearAllFilters = () => {
-    setSearch("");
-    setColumnFilters({});
-  };
-
-  const gridTemplateColumns = [
-    ...columns.map((c) => c.width ?? "160px"),
-    copyForAi ? "52px" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const virtualizer = useVirtualizer({
-    count: processed.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => rowHeight,
-    overscan: 12,
-  });
-
-  const handleExport = () => {
-    if (!csvFilename) return;
-    exportRowsAsCsv(csvFilename, processed, columns);
-    toast.success(`Exported ${processed.length} row(s)`);
-  };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input adornment="start"
-            placeholder="Search all columns…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        {toolbarExtra}
-        {hasActiveFilters ? (
-          <Button
-            icon={<X />}
-            variant="quiet"
-            onClick={clearAllFilters}
-          > Clear filters
-          </Button>
-        ) : null}
-        {csvFilename ? (
-          <Button
-            icon={<Download />}
-            variant="outline"
-            onClick={handleExport}
-          > Export CSV
-          </Button>
-        ) : null}
-        {copyForAi && processed.length > 0 ? (
-          <CopyButtons
-            size="sm"
-            label={copyForAi.listLabel}
-            human={() =>
-              processed.map((row) => copyForAi.humanRow(row)).join("\n\n")
-            }
-            agent={() =>
-              auditRowsToAgentInput(copyForAi, processed, rows, {
-                search: search.trim() || undefined,
-                filtered: hasActiveFilters ? "yes" : "no",
-              })
-            }
-          />
-        ) : null}
-      </div>
-
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-        <div style={{ minWidth: "fit-content" }}>
-          <div
-            className="sticky top-0 z-10 grid border-b border-border bg-card text-xs shadow-sm"
-            style={{ gridTemplateColumns }}
-          >
-            {columns.map((col) => (
-              <div
-                key={col.key}
-                className={cn(
-                  "flex items-center overflow-hidden border-r border-border/60 px-2 py-1.5 last:border-r-0",
-                  col.align === "right" && "justify-end",
-                )}
-              >
-                <HeaderCell
-                  col={col}
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  columnFilter={columnFilters[col.key]}
-                  onColumnFilterChange={(v) => setColumnFilter(col.key, v)}
-                  enumOptions={enumOptionsByColumn[col.key] ?? []}
-                  textValueOptions={textValueOptionsByColumn[col.key]}
-                />
-              </div>
-            ))}
-            {copyForAi ? (
-              <div className="flex items-center justify-center border-r border-border/60 px-1 py-1.5 text-xs font-semibold last:border-r-0">
-                Copy
-              </div>
-            ) : null}
-          </div>
-
-          {loading ? (
-            <div className="space-y-px p-2">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <Skeleton key={i} className="h-7 w-full" />
-              ))}
-            </div>
-          ) : error ? (
-            <ReadFailure error={error} what="these rows" />
-          ) : processed.length === 0 ? (
-            <div className="px-3 py-10 text-center text-sm text-muted-foreground">
-              {emptyMessage}
-            </div>
-          ) : (
-            <div
-              style={{
-                height: virtualizer.getTotalSize(),
-                position: "relative",
-              }}
-            >
-              {virtualizer.getVirtualItems().map((vi) => {
-                const row = processed[vi.index];
-                return (
-                  <div
-                    key={vi.key}
-                    className={cn(
-                      "group absolute left-0 top-0 grid w-full border-b border-border/60 text-xs hover:bg-muted/40",
-                      onRowClick && "cursor-pointer",
-                    )}
-                    style={{
-                      gridTemplateColumns,
-                      transform: `translateY(${vi.start}px)`,
-                      height: vi.size,
-                    }}
-                    onClick={() => onRowClick?.(row)}
-                  >
-                    {columns.map((col) => (
-                      <div
-                        key={col.key}
-                        className={cn(
-                          "flex min-w-0 items-center overflow-hidden border-r border-border/40 px-2 py-1.5",
-                          col.align === "right" && "justify-end",
-                        )}
-                      >
-                        <Cell col={col} row={row} />
-                      </div>
-                    ))}
-                    {copyForAi ? (
-                      <div
-                        className="flex items-center justify-center border-r border-border/40 px-1 py-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <CopyButtons
-                          size="icon"
-                          label={copyForAi.label}
-                          human={() => copyForAi.humanRow(row)}
-                          agent={() => auditRowToAgentInput(copyForAi, row)}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="shrink-0 border-t border-border bg-card p-0">
-        <GenericTablePagination
-          totalItems={processed.length}
-          // This table virtualizes every processed row. Pagination controls
-          // remain as a stable, disabled receipt rather than slicing rows.
-          itemsPerPage={0}
-          currentPage={1}
-          onPageChange={() => undefined}
-          onItemsPerPageChange={() => undefined}
-          pageSizeOptions={[]}
-          allValue={0}
-          allOptionLabel="All loaded"
-          compact
-          layoutType="grid"
-          containerClassName="border-t-0 pt-0"
-          countUnavailable={
-            loading ? "loading" : error ? "failed" : undefined
-          }
-          labelFormat={(_start, _end, total) =>
-            `${formatCount(total)} shown / ${formatCount(rows.length)} loaded`
-          }
-        />
-      </div>
+    <div className="h-full min-h-0">
+      <MatrxDataTable<T>
+        data={rows}
+        columns={tableColumns}
+        getRowId={(row) => rowIds.get(row) ?? String(rows.indexOf(row))}
+        tableId={tableId}
+        urlState={{
+          id: tableId,
+          ...(defaultSort
+            ? {
+                defaultSort: {
+                  id: defaultSort.key,
+                  direction: defaultSort.dir,
+                },
+              }
+            : columns[0]
+              ? { defaultSort: { id: columns[0].key, direction: "asc" } }
+              : {}),
+        }}
+        {...(initialSearch ? { initialSearch } : {})}
+        {...(seededFilters ? { initialColumnFilters: seededFilters } : {})}
+        isLoading={loading}
+        read={{
+          status: loading ? "loading" : error ? "error" : "ready",
+          error,
+          what: "these rows",
+        }}
+        emptyState={{ title: emptyMessage }}
+        pageSize={0}
+        virtualize={{ enabled: true }}
+        frameHeight="fill"
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        toolbar={toolbarExtra ? { leading: toolbarExtra } : {}}
+        {...(onRowClick ? { onRowOpen: onRowClick } : {})}
+      />
     </div>
   );
 }

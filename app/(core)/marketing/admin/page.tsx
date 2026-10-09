@@ -893,9 +893,9 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/socials",
       label: "Social accounts",
       description:
-        "RESERVED — renders <MarketingComingSoon comingSoonId=\"marketing.social\">; the URL is permanent.",
-      filePath: "app/(core)/marketing/[brandId]/socials/page.tsx",
-      status: "Coming soon",
+        "Social Intelligence shell — tabs Accounts · Studio · Outliers · Swipe file · Ads · KPIs; Accounts is live, the rest are registered coming-soon tabs.",
+      filePath: "app/(core)/marketing/[brandId]/socials/layout.tsx",
+      status: "Live",
     },
     {
       url: "/marketing/[brandId]/email",

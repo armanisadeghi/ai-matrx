@@ -1,6 +1,13 @@
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
+import { redirect } from "next/navigation";
 
-/** This client's connected social accounts — reserved, not yet built. */
-export default function BrandSocialsPage() {
-  return <MarketingComingSoon comingSoonId="marketing.social" />;
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+
+/** `/socials` opens its first tab (a temporary redirect, never a cached 308). */
+export default async function BrandSocialsPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
+  redirect(`${marketingRoutes.brandSocials(brandId)}/accounts`);
 }

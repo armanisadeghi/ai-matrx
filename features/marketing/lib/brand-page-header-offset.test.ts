@@ -32,7 +32,7 @@ function hasHeaderOffset(source: string): boolean {
 
 /** A page whose entire body is a redirect never renders content to offset. */
 function isRedirectOnlyPage(source: string): boolean {
-  return source.includes("permanentRedirect(") && !/return\s*[(<]/.test(source);
+  return /\b(permanentRedirect|redirect)\(/.test(source) && !/return\s*[(<]/.test(source);
 }
 
 function importedMarketingModulePaths(source: string): string[] {

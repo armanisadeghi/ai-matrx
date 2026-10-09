@@ -66,7 +66,10 @@ import {
   type LibraryEntityType,
   type LibraryResource,
 } from "@/features/rag/hooks/useLibraryResources";
-import { useDataStoreDetail } from "@/features/rag/hooks/useDataStores";
+import {
+  useDataStoreDetail,
+  type EnrichedMember,
+} from "@/features/rag/hooks/useDataStores";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import { useMyCuratorships } from "@/features/rag/hooks/useMyCuratorships";
 import {
@@ -79,10 +82,9 @@ import { LibraryLabelChip } from "@/features/rag/components/library-catalog/Libr
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@ai-matrx/design-system";
@@ -618,6 +620,73 @@ function CatalogListRow({
 }
 
 /** A data store: subscribe conveys a REFERENCE, and the documents read here. */
+type LibraryMember = EnrichedMember;
+
+const MEMBER_COLUMNS: MatrxColumnDef<LibraryMember>[] = [
+  {
+    id: "document",
+    header: "Document",
+    accessorFn: (m) => m.label ?? "Untitled document",
+    cell: (m) => (
+      <div>
+        <div className="flex items-center gap-1.5 type-secondary">
+          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          {m.label ?? "Untitled document"}
+        </div>
+        <div className="select-all truncate font-mono type-meta text-muted-foreground">
+          {m.sourceId}
+        </div>
+      </div>
+    ),
+    copyValue: (m) => `${m.label ?? "Untitled document"} (${m.sourceId})`,
+    filter: "text",
+    width: 360,
+  },
+  {
+    id: "kind",
+    header: "Kind",
+    accessorFn: (m) => m.sourceKind,
+    cell: (m) => (
+      <span className="type-secondary text-muted-foreground">
+        {m.sourceKind}
+      </span>
+    ),
+    filter: "select",
+    width: 140,
+  },
+  {
+    id: "added",
+    header: "Added",
+    accessorFn: (m) => m.addedAt,
+    cell: (m) => (
+      <span className="type-meta tabular-nums text-muted-foreground">
+        {new Date(m.addedAt).toLocaleDateString()}
+      </span>
+    ),
+    copyValue: (m) => new Date(m.addedAt).toLocaleDateString(),
+    width: 120,
+  },
+  {
+    id: "preview",
+    header: "Preview",
+    accessorFn: (m) => (m.sourceKind === "cld_file" ? "Available" : ""),
+    cell: (m) =>
+      m.sourceKind === "cld_file" ? (
+        <a
+          href={`/files/f/${m.sourceId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-meta font-medium text-primary-ink transition-colors hover:bg-primary/10"
+        >
+          <BookOpenText className="h-3.5 w-3.5" /> Preview
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : null,
+    sortable: false,
+    width: 120,
+  },
+];
+
 function StoreDetailPanel({
   item,
   onBack,
@@ -765,73 +834,18 @@ function StoreDetailPanel({
                 This library has no documents yet.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-md border">
-                <table
-                  className={cn("whitespace-nowrap type-body", MOBILE_TABLE)}
-                >
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      <th
-                        className={cn(
-                          "px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground",
-                          MOBILE_TABLE_FROZEN_HEAD,
-                        )}
-                      >
-                        Document
-                      </th>
-                      <th className="px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground">
-                        Kind
-                      </th>
-                      <th className="px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground">
-                        Added
-                      </th>
-                      <th className="w-20" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {detail.members.map((m) => (
-                      <tr
-                        key={`${m.sourceKind}/${m.sourceId}`}
-                        className="hover:bg-muted/20"
-                      >
-                        <td
-                          className={cn(
-                            "px-3 py-1.5",
-                            MOBILE_TABLE_FROZEN_CELL,
-                          )}
-                        >
-                          <div className="flex items-center gap-1.5 type-secondary">
-                            <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                            {m.label ?? "Untitled document"}
-                          </div>
-                          <div className="select-all truncate font-mono type-meta text-muted-foreground">
-                            {m.sourceId}
-                          </div>
-                        </td>
-                        <td className="px-3 py-1.5 type-secondary text-muted-foreground">
-                          {m.sourceKind}
-                        </td>
-                        <td className="px-3 py-1.5 type-meta tabular-nums text-muted-foreground">
-                          {new Date(m.addedAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-3 py-1.5 text-right">
-                          {m.sourceKind === "cld_file" ? (
-                            <a
-                              href={`/files/f/${m.sourceId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-meta font-medium text-primary-ink transition-colors hover:bg-primary/10"
-                            >
-                              <BookOpenText className="h-3.5 w-3.5" /> Preview
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <MatrxDataTable<LibraryMember>
+                tableId="rag/library-catalog/members"
+                data={detail.members}
+                columns={MEMBER_COLUMNS}
+                getRowId={(m) => `${m.sourceKind}/${m.sourceId}`}
+                appearance="embedded"
+                pageSize={0}
+                viewTabs={false}
+                detail={{ enabled: false }}
+                toolbar={{ searchPlaceholder: "Search documents" }}
+                emptyState={{ title: "No documents match" }}
+              />
             )}
             <p className="type-meta text-muted-foreground/70">
               Shared libraries are read-only — searchable alongside your own

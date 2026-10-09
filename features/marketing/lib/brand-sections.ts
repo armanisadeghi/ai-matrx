@@ -95,12 +95,13 @@ export const MARKETING_BRAND_SECTIONS = [
     name: "Socials",
     titlePrefix: "Social Accounts",
     description:
-      "Connected social accounts — publishing, inbox, listening, and performance per account.",
+      "Tracked and own social accounts — outliers, swipe file, ads, and KPIs.",
     letter: "Sa",
     iconName: "Share2",
     group: "Properties",
-    status: "coming-soon",
-    comingSoonId: "marketing.social",
+    // The section is live (features/marketing/social); its unbuilt tabs carry
+    // their own registry rows, declared in MARKETING_BRAND_SUBROUTE_PROMISES.
+    subPath: "accounts",
   },
   {
     slug: "seo",
@@ -307,6 +308,14 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   // The ad CENTER (campaigns, creative, budgets across providers) is still a
   // promise; the live Google Ads workspace is its first room at `ads`.
   { comingSoonId: "marketing.ads", subRoute: "ads" },
+  // Socials: Accounts and the detail pages are live; the umbrella row and one
+  // row per tab another lane is still building.
+  { comingSoonId: "marketing.social", subRoute: "socials" },
+  { comingSoonId: "marketing.social.studio", subRoute: "socials/studio" },
+  { comingSoonId: "marketing.social.outliers", subRoute: "socials/outliers" },
+  { comingSoonId: "marketing.social.swipe", subRoute: "socials/swipe" },
+  { comingSoonId: "marketing.social.ads", subRoute: "socials/ads" },
+  { comingSoonId: "marketing.social.kpis", subRoute: "socials/kpis" },
 ];
 
 /** The unique filesystem segments under `/marketing/[brandId]` (drift test). */

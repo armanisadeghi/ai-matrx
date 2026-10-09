@@ -12,6 +12,10 @@ import { pageOrganizationId } from "../data/agency-install";
 import { supabase } from "@/utils/supabase/client";
 
 const ROLE = "labeled";
+
+/** What carries the label: a page (`document`, the Spaces templates) or a saved board (`board`, SI-13). Both ride the same
+ *  category and the same `labeled` association, so one set of helpers serves both - never a second mechanism. */
+export type TemplateSource = "document" | "board";
 let categoryId: Promise<string> | null = null;
 
 /** The template category's id, read once per tab. */
@@ -34,27 +38,27 @@ function templateCategoryId(): Promise<string> {
   return categoryId;
 }
 
-/** Ids of every Space marked as a template that the person can open. */
-export async function listTemplateIds(): Promise<string[]> {
+/** Ids of every record of `source` (default: Space) marked as a template that the person can open. */
+export async function listTemplateIds(source: TemplateSource = "document"): Promise<string[]> {
   const cat = await templateCategoryId();
   const { data, error } = await supabase.rpc("assoc_for_targets", { p_target_type: "category", p_target_ids: [cat] });
   if (error) throw new Error(`We couldn't list templates: ${error.message}`);
-  return [...new Set((data ?? []).filter((e) => e.source_type === "document" && e.label === ROLE).map((e) => e.source_id))];
+  return [...new Set((data ?? []).filter((e) => e.source_type === source && e.label === ROLE).map((e) => e.source_id))];
 }
 
-export async function setTemplate(spaceId: string, on: boolean): Promise<void> {
+export async function setTemplate(spaceId: string, on: boolean, source: TemplateSource = "document"): Promise<void> {
   const cat = await templateCategoryId();
   const { error } = on
     ? await supabase.rpc("assoc_link", {
-        p_source_type: "document",
+        p_source_type: source,
         p_source_id: spaceId,
         p_target_type: "category",
         p_target_id: cat,
         p_role: ROLE,
         p_label: ROLE,
       })
-    : await supabase.rpc("assoc_unlink", { p_source_type: "document", p_source_id: spaceId, p_target_type: "category", p_target_id: cat, p_role: ROLE });
-  if (error) throw new Error(`We couldn't ${on ? "save this page as a template" : "remove the template label"}: ${error.message}`);
+    : await supabase.rpc("assoc_unlink", { p_source_type: source, p_source_id: spaceId, p_target_type: "category", p_target_id: cat, p_role: ROLE });
+  if (error) throw new Error(`We couldn't ${on ? `save this ${source === "board" ? "board" : "page"} as a template` : "remove the template label"}: ${error.message}`);
 }
 
 /** "Use template": the template and its sub-pages copied to the top level of the active organization. */
