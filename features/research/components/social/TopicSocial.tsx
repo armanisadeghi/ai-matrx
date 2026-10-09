@@ -1,0 +1,240 @@
+"use client";
+
+// /research/topics/[topicId]/social — what the social capture lane found for a typed subject:
+// each handle's profile, its posts with outlier multiples, the measured speaking style, and the
+// door into a brand's Socials to keep tracking the creator. Reads what the pipeline recorded
+// (rs_source.metadata.social, rs_topic.metadata.social_capture / subject_voice); nothing here runs
+// the lane. Posts render with the marketing feature's own card and badge — imported, not forked.
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowUpRight, BadgeCheck, Mic, UserRound } from "lucide-react";
+import { ReadFailure, Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
+import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
+import { SocialPostCard } from "@/features/marketing/social/components/SocialPostCard";
+import { formatCompact } from "@/features/marketing/social/outlier";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { isJsonObject } from "@/types/json";
+import { useTopicContext } from "../../context/ResearchContext";
+import { getSources } from "../../service";
+import type { ResearchSource } from "../../types";
+import {
+  socialCaptureOf,
+  socialFactsOf,
+  socialPostCardModel,
+  subjectVoiceOf,
+  type SocialSourceFacts,
+} from "../../utils/socialSource";
+
+const SOCIAL_SOURCE_LIMIT = 1000;
+
+function Section({
+  icon: Icon,
+  title,
+  count,
+  children,
+}: {
+  icon: typeof UserRound;
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-md border border-border bg-card">
+      <header className="flex h-9 items-center gap-1.5 border-b border-border px-2.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <h2 className="type-secondary font-semibold uppercase tracking-wider text-foreground">{title}</h2>
+        {count !== undefined && (
+          <span className="type-secondary tabular-nums text-muted-foreground">{count}</span>
+        )}
+      </header>
+      <div className="p-2.5">{children}</div>
+    </section>
+  );
+}
+
+interface Handle {
+  platform: string;
+  handle: string;
+}
+
+function handlesOf(subject: unknown): Handle[] {
+  if (!isJsonObject(subject) || !isJsonObject(subject.handles)) return [];
+  return Object.entries(subject.handles).flatMap(([platform, handle]) =>
+    typeof handle === "string" && handle.trim() ? [{ platform, handle: handle.trim().replace(/^@/, "") }] : [],
+  );
+}
+
+function trackHref(brandId: string | null, text: string): string {
+  if (!brandId) return marketingRoutes.brands();
+  return `${marketingRoutes.brandSocials(brandId)}/accounts?track=${encodeURIComponent(text)}`;
+}
+
+export default function TopicSocial() {
+  const { topicId, topic } = useTopicContext();
+  const [sources, setSources] = useState<ResearchSource[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      setSources(await getSources(topicId, { source_type: "social", limit: SOCIAL_SOURCE_LIMIT }));
+    } catch (e) {
+      setError(e);
+    }
+  }, [topicId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const items = useMemo(
+    () =>
+      (sources ?? []).flatMap((source) => {
+        const facts = socialFactsOf(source);
+        return facts ? [{ source, facts }] : [];
+      }),
+    [sources],
+  );
+  const profiles = items.filter((i) => i.facts.kind === "profile");
+  const posts = useMemo(
+    () =>
+      items
+        .filter((i) => i.facts.kind === "post")
+        .map((i) => socialPostCardModel(i.source, i.facts))
+        .sort((a, b) => (b.outlierScore ?? -1) - (a.outlierScore ?? -1)),
+    [items],
+  );
+
+  const handles = handlesOf(topic?.subject);
+  const capture = socialCaptureOf(topic?.metadata);
+  const voice = subjectVoiceOf(topic?.metadata);
+  const brandId =
+    topic && isJsonObject(topic.subject) && typeof topic.subject.brand_id === "string"
+      ? topic.subject.brand_id
+      : null;
+  const profileFor = (h: Handle): { source: ResearchSource; facts: SocialSourceFacts } | undefined =>
+    profiles.find((p) => p.facts.platform === h.platform && p.facts.handle.toLowerCase() === h.handle.toLowerCase());
+
+  return (
+    <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">
+      <div className="mx-auto max-w-5xl space-y-4">
+        <Section icon={UserRound} title="Profiles" count={handles.length}>
+          {error != null && sources === null ? (
+            <ReadFailure error={error} what="the captured social profiles" onRetry={() => void load()} className="m-0" />
+          ) : sources === null ? (
+            <Skeleton className="h-16 w-full rounded" />
+          ) : handles.length === 0 ? (
+            <p className="py-2 text-center type-secondary text-muted-foreground">This subject has no social handles.</p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {handles.map((h) => {
+                const found = profileFor(h);
+                const record = capture?.handles.find((c) => c.platform === h.platform);
+                const url = found?.source.url ?? `https://www.${h.platform}.com/${h.platform === "tiktok" ? "@" : ""}${h.handle}`;
+                return (
+                  <div key={h.platform} className="flex gap-2.5 rounded-md border border-border/60 p-2.5">
+                    <PlatformMark platform={h.platform} size={28} />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate type-title">{found?.facts.displayName ?? `@${h.handle}`}</span>
+                        {found?.facts.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Verified" />}
+                      </div>
+                      <div className="type-meta text-muted-foreground">
+                        {platformLabel(h.platform)} · @{h.handle}
+                      </div>
+                      {found ? (
+                        <div className="type-secondary tabular-nums">
+                          {found.facts.followers === null ? "—" : formatCompact(found.facts.followers)} followers
+                          {found.facts.following !== null && (
+                            <span className="text-muted-foreground"> · {formatCompact(found.facts.following)} following</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="type-secondary text-muted-foreground">
+                          {record?.error ?? (record ? `Capture ${record.status}` : "Not captured yet")}
+                        </div>
+                      )}
+                      {found?.facts.bio && (
+                        <p className="line-clamp-3 whitespace-pre-line type-meta text-muted-foreground">{found.facts.bio}</p>
+                      )}
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-0.5 type-meta text-muted-foreground hover:text-foreground"
+                        >
+                          Open profile <ArrowUpRight className="h-3 w-3" />
+                        </a>
+                        <Link
+                          href={trackHref(brandId, url)}
+                          className="inline-flex items-center gap-0.5 type-meta font-medium text-primary-ink hover:underline"
+                        >
+                          Track in Socials <ArrowUpRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
+        <Section icon={UserRound} title="Posts" count={posts.length}>
+          {sources === null ? (
+            <Skeleton className="h-40 w-full rounded" />
+          ) : posts.length === 0 ? (
+            <p className="py-2 text-center type-secondary text-muted-foreground">No posts captured yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {posts.map((p) => (
+                <SocialPostCard
+                  key={p.postId}
+                  post={p}
+                  onOpen={(post) => window.open(post.url, "_blank", "noopener,noreferrer")}
+                />
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section icon={Mic} title="Speaking style">
+          {voice === null ? (
+            <p className="py-2 text-center type-secondary text-muted-foreground">Not measured yet.</p>
+          ) : voice.status === "measured" ? (
+            <div className="space-y-2">
+              {voice.summary && <p className="type-body">{voice.summary}</p>}
+              <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                {voice.traits.map((t) => (
+                  <div key={t.label} className="flex gap-2 type-secondary">
+                    <dt className="w-36 shrink-0 capitalize text-muted-foreground">{t.label}</dt>
+                    <dd className="min-w-0 break-words">{t.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="type-meta tabular-nums text-muted-foreground">
+                {voice.sampleCount ?? "—"} posts · {voice.wordCount ?? "—"} words
+                {voice.confidence !== null && ` · confidence ${Math.round(voice.confidence * 100)}%`}
+              </p>
+            </div>
+          ) : (
+            <p className="py-2 text-center type-secondary text-muted-foreground">
+              {voice.reason ?? voice.summary ?? `Voice stage: ${voice.status}`}
+            </p>
+          )}
+        </Section>
+
+        {brandId === null && handles.length > 0 && (
+          <div className="flex justify-end">
+            <Button asChild variant="outline" size="sm">
+              <Link href={marketingRoutes.brands()}>Choose a brand to track in</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

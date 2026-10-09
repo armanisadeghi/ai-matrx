@@ -54,6 +54,7 @@ import {
 } from "../../../context/ResearchContext";
 import { useResearchApi } from "../../../hooks/useResearchApi";
 import { useResearchStream } from "../../../hooks/useResearchStream";
+import { useRunningPass } from "../../../hooks/useRunningPass";
 import { useCostSummary } from "../../../hooks/useTopicCosts";
 import {
   usePipelineProgress,
@@ -184,6 +185,12 @@ function edgeStateFor(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+/** "of 2 max" while within the limit; once past it, say how many run and how many wait. */
+function keywordsHint(total: number, max: number | null | undefined): string {
+  const cap = max ?? 5;
+  return total > cap ? `${cap} run · ${total - cap} waiting` : `of ${cap} max`;
+}
+
 export function PipelineGraph() {
   const { topicId, topic, progress, refresh, refreshProgress, isLoading } =
     useTopicContext();
@@ -192,6 +199,9 @@ export function PipelineGraph() {
   const debug = useStreamDebug();
 
   const stream = useResearchStream();
+  const livePass = useRunningPass(topicId, topic?.status, stream.isStreaming);
+  // A pass working on this topic — started here or anywhere else — blocks starting another.
+  const passBusy = stream.isStreaming || livePass.running;
   const pipeline = usePipelineProgress({ topic });
   const { data: costSummary } = useCostSummary(topicId);
 
@@ -672,17 +682,17 @@ export function PipelineGraph() {
 
   // Per-node action availability — only show the play button when running
   // that step independently makes sense AND it's not currently running.
-  const canRunSearch = p.total_keywords > 0 && !stream.isStreaming;
-  const canRunScrape = p.total_sources > 0 && !stream.isStreaming;
-  const canRunAnalyze = p.total_content > 0 && !stream.isStreaming;
-  const canRunSynthesize = p.total_analyses > 0 && !stream.isStreaming;
-  const canRunReport = p.keyword_syntheses > 0 && !stream.isStreaming;
-  const canRunAll = p.total_keywords > 0 && !stream.isStreaming;
+  const canRunSearch = p.total_keywords > 0 && !passBusy;
+  const canRunScrape = p.total_sources > 0 && !passBusy;
+  const canRunAnalyze = p.total_content > 0 && !passBusy;
+  const canRunSynthesize = p.total_analyses > 0 && !passBusy;
+  const canRunReport = p.keyword_syntheses > 0 && !passBusy;
+  const canRunAll = p.total_keywords > 0 && !passBusy;
   // Tags: manual branch. Tag-creation needs scraped sources; consolidation
   // needs existing tags. Surfaced as play buttons on the Tags node so the user
   // can finally kick off tagging (it never runs as part of `/run`).
-  const canRunAutoTag = p.total_sources > 0 && !stream.isStreaming;
-  const canRunAutoConsolidate = p.total_tags > 0 && !stream.isStreaming;
+  const canRunAutoTag = p.total_sources > 0 && !passBusy;
+  const canRunAutoConsolidate = p.total_tags > 0 && !passBusy;
 
   return (
     <div className="p-2 space-y-3 min-w-0">
@@ -740,13 +750,14 @@ export function PipelineGraph() {
         </Tooltip>
 
         {/* Primary CTA: Run all OR Cancel */}
-        {stream.isStreaming ? (
+        {stream.isStreaming || livePass.running ? (
           <button
-            onClick={stream.cancel}
+            onClick={stream.isStreaming ? stream.cancel : () => void livePass.stop()}
+            disabled={livePass.stopping}
             className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-medium bg-destructive/15 text-destructive-ink hover:bg-destructive/25 transition-colors"
           >
             <Square className="h-3 w-3 fill-current" />
-            <span>Stop</span>
+            <span>{livePass.stopping ? "Stopping…" : "Stop"}</span>
           </button>
         ) : (
           <DropdownMenu>
@@ -858,7 +869,7 @@ export function PipelineGraph() {
               icon={Search}
               label="Keywords"
               count={p.total_keywords}
-              hint={`of ${topic.max_keywords ?? 5} max`}
+              hint={keywordsHint(p.total_keywords, topic.max_keywords)}
               status={keywordsStatus}
               href={`${base}/keywords`}
               onAction={handleSearch}
@@ -995,7 +1006,7 @@ export function PipelineGraph() {
               icon={Search}
               label="Keywords"
               count={p.total_keywords}
-              hint={`of ${topic.max_keywords ?? 5} max`}
+              hint={keywordsHint(p.total_keywords, topic.max_keywords)}
               status={keywordsStatus}
               href={`${base}/keywords`}
               onAction={handleSearch}

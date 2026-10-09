@@ -57,6 +57,7 @@ export function TrackAccountDialog({
   brandId,
   brandSeg,
   defaultRole = "competitor",
+  initialText,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,10 +65,12 @@ export function TrackAccountDialog({
   brandId: string;
   brandSeg: string;
   defaultRole?: TrackedRole;
+  /** A link or handle to start with (a deep link's `?track=`). */
+  initialText?: string;
 }) {
   const router = useRouter();
   const invalidate = useInvalidateSocial();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText ?? "");
   const [platform, setPlatform] = useState<string>("auto");
   const [role, setRole] = useState<TrackedRole>(defaultRole);
   const [busy, setBusy] = useState(false);

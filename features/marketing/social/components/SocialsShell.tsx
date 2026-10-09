@@ -9,7 +9,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   Clapperboard,
@@ -43,7 +43,10 @@ const TAB_ICONS: Record<SocialsTabId, LucideIcon> = {
 export function SocialsShell({ children }: { children: ReactNode }) {
   const brand = useMarketingBrand();
   const pathname = usePathname();
-  const [trackOpen, setTrackOpen] = useState(false);
+  // `?track=<link or @handle>` — a deep link from another feature (a research topic's
+  // Social tab) opens the Track dialog with the account already typed in.
+  const trackParam = useSearchParams().get("track");
+  const [trackOpen, setTrackOpen] = useState(() => Boolean(trackParam));
 
   const base = marketingRoutes.brandSocials(brand.seg);
   const modes = SOCIALS_TABS.map((tab) => ({ name: tab.label, href: `${base}/${tab.id}`, icon: TAB_ICONS[tab.id] }));
@@ -81,6 +84,7 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         organizationId={brand.organizationId}
         brandId={brand.id}
         brandSeg={brand.seg}
+        initialText={trackParam ?? undefined}
       />
     </SocialsContext.Provider>
   );

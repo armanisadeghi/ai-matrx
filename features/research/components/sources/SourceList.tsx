@@ -51,6 +51,7 @@ import {
   useYouTubeVideoIndex,
 } from "../../hooks/useResearchState";
 import { VideoSourceMeta } from "../shared/VideoSourceMeta";
+import { SocialSourceSignal } from "../shared/SocialSourceSignal";
 import type { YouTubeVideoIdentity } from "../../service";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
@@ -612,6 +613,7 @@ function SourceRow({
             {videoIdentity && (
               <VideoSourceMeta identity={videoIdentity} className="mt-1" />
             )}
+            <SocialSourceSignal source={source} className="mt-1.5" />
             <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
               <SourceTagsInline
                 sourceId={source.id}
@@ -1671,6 +1673,7 @@ export default function SourceList() {
                           className="mt-0.5"
                         />
                       )}
+                      <SocialSourceSignal source={source} className="mt-1" />
                     </div>
                     <Switch
                       checked={source.is_included ?? false}

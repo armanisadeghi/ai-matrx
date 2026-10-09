@@ -252,6 +252,8 @@ export interface ResearchNavItem {
   group: "primary" | "secondary";
   mobileVisible: boolean;
   comingSoon?: boolean;
+  /** Shown only on a topic with a typed subject (company / brand / person / creator). */
+  requiresSubject?: boolean;
 }
 
 export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
@@ -359,6 +361,17 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     href: (id) => `/research/topics/${id}/experts`,
     group: "primary",
     mobileVisible: false,
+  },
+  {
+    // What the social capture lane found for a typed subject: profiles, posts with
+    // outlier multiples, the measured speaking style.
+    key: "social",
+    label: "Social",
+    icon: "Users",
+    href: (id) => `/research/topics/${id}/social`,
+    group: "primary",
+    mobileVisible: false,
+    requiresSubject: true,
   },
   // ── Secondary utility tabs ───────────────────────────────────────────────
   {

@@ -18,6 +18,8 @@ import {
   isToolEventEvent,
   isTypedDataEvent,
 } from "@ai-matrx/agents/generated/stream-events";
+import { callApi } from "@/lib/api/call-api";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type {
@@ -105,6 +107,7 @@ export function useResearchStream(
   const [requestId, setRequestId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<string | null>(null);
   const idCounter = useRef(0);
 
   const addMessage = useCallback(
@@ -136,6 +139,7 @@ export function useResearchStream(
       setStreamingText("");
       setRawEvents([]);
       setInfos([]);
+      requestIdRef.current = null;
       setRequestId(null);
       setConversationId(null);
 
@@ -157,6 +161,7 @@ export function useResearchStream(
           // StartStreamOptions.abortController.
           abortController: options?.abortController,
           onAdopted: (ids) => {
+            requestIdRef.current = ids.requestId;
             setRequestId(ids.requestId);
             setConversationId(ids.conversationId);
             callbacks?.onAdopted?.(ids);
@@ -274,10 +279,20 @@ export function useResearchStream(
   );
 
   const cancel = useCallback(() => {
+    // Closing the connection never stops server work. Stop is the durable cancel on the run
+    // (`POST /ai/cancel/{request_id}`) AND closing the stream.
+    const adopted = requestIdRef.current;
+    if (adopted) {
+      void dispatch(
+        callApi({ path: "/ai/cancel/{request_id}", method: "POST", pathParams: { request_id: adopted } }),
+      ).catch((error: unknown) => {
+        toast.error(error instanceof Error ? error.message : "Could not stop the run on the server");
+      });
+    }
     abortRef.current?.abort();
     setIsStreaming(false);
     setCurrentStep(null);
-  }, []);
+  }, [dispatch]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

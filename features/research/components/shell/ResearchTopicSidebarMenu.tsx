@@ -35,6 +35,7 @@ import {
   Search,
   Settings2,
   Tags,
+  Users,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -69,6 +70,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   BrainCircuit: INTELLIGENCE_ICON,
   Video,
   GraduationCap,
+  Users,
 };
 
 interface ResearchTopicSidebarMenuProps {
@@ -163,14 +165,39 @@ function TopicAbout({ topicId }: { topicId: string }) {
   );
 }
 
+/** Whether this topic has a typed subject — the Social tab exists only then. */
+function useTopicHasSubject(topicId: string | null): boolean {
+  const [state, setState] = useState<{ topicId: string; typed: boolean } | null>(null);
+  useEffect(() => {
+    if (!topicId) return;
+    let cancelled = false;
+    getTopic(topicId)
+      .then((topic) => {
+        const type = topic?.subject_type ?? null;
+        if (!cancelled) setState({ topicId, typed: type !== null && type !== "topic" });
+      })
+      // read-gate-exempt: the page body reads the same topic and shows its load failure; the menu only omits the Social tab
+      .catch((error: unknown) => {
+        console.error("[research] topic subject could not load", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId]);
+  return state?.topicId === topicId && state.typed;
+}
+
 export default function ResearchTopicSidebarMenu({
   expanded,
 }: ResearchTopicSidebarMenuProps) {
   const pathname = usePathname();
   const topicId = researchTopicIdFromPath(pathname);
+  const hasSubject = useTopicHasSubject(topicId);
   if (!topicId) return null;
 
-  const items = RESEARCH_NAV_ITEMS.map((item) => ({
+  const items = RESEARCH_NAV_ITEMS.filter(
+    (item) => !item.requiresSubject || hasSubject,
+  ).map((item) => ({
     item,
     href: item.href(topicId),
     // The overview must match exactly so it never lights up for sub-routes.

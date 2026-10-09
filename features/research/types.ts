@@ -618,6 +618,8 @@ export interface ResearchSource {
    * null = not assessed.
    */
   snippet_relevance: number | null;
+  /** Per-source JSON the capture lanes record (social posts and profiles keep their engagement under `social`). */
+  metadata?: Json | null;
 }
 
 // ============================================================================
@@ -967,6 +969,7 @@ export function rowToResearchSource(row: ResearchSourceRow): ResearchSource {
     redundancy_group: row.redundancy_group,
     entity_match_confidence: row.entity_match_confidence,
     snippet_relevance: row.snippet_relevance,
+    metadata: row.metadata,
   };
 }
 
