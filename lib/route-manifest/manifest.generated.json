@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1365,
+  "routeCount": 1367,
   "routes": [
     {
       "pattern": "/",
@@ -827,6 +827,11 @@
       "pattern": "/administration/intelligence",
       "status": "live",
       "source": "app/(admin)/administration/intelligence/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/go/[...slug]",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/go/[...slug]/page.tsx"
     },
     {
       "pattern": "/administration/intelligence/mandates",
@@ -3683,6 +3688,11 @@
       "pattern": "/intelligence/[feature]/unassigned",
       "status": "live",
       "source": "app/(core)/intelligence/[feature]/unassigned/page.tsx"
+    },
+    {
+      "pattern": "/intelligence/go/[...slug]",
+      "status": "live",
+      "source": "app/(core)/intelligence/go/[...slug]/page.tsx"
     },
     {
       "pattern": "/invitations/class/accept/[token]",

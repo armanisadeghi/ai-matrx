@@ -1,11 +1,26 @@
-import { permanentRedirect } from "next/navigation";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
+// app/(core)/marketing/monitoring/page.tsx
+//
+// The agency plane's news monitors: every tracker the person administers
+// across brands, with what its relevance check receives and what it cost.
+// A brand's own Monitoring page stays at /marketing/[brandId]/intelligence/monitoring.
 
-/**
- * Legacy flat pillar. Monitoring now lives on the brand, at /marketing/[brand]/intelligence/monitoring.
- * Which client's work this is can only be answered by a person, so the shim
- * lands on the client roster rather than guessing a brand.
- */
-export default function MarketingMonitoringShim() {
-  permanentRedirect(marketingRoutes.brands());
+import type { Metadata } from "next";
+
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
+import { NewsTrackersList } from "@/features/marketing/monitor-setup/inputs/NewsTrackersList";
+
+export const metadata: Metadata = {
+  title: "News monitors",
+  description: "Every news monitor, what its AI checks read, and what it costs.",
+};
+
+export default function MarketingNewsMonitorsPage() {
+  return (
+    <>
+      <RecordPageHeader record={{ name: "News monitors" }} />
+      <div className="h-full min-h-0 overflow-hidden">
+        <NewsTrackersList />
+      </div>
+    </>
+  );
 }

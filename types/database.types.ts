@@ -33945,7 +33945,12 @@ export type Database = {
         Args: { p_i: number; p_t: Json; p_types: Json }
         Returns: Json
       }
-      _not_a_member_refusal: { Args: { p_door: string }; Returns: undefined }
+      _not_a_member_refusal:
+        | { Args: { p_door: string }; Returns: undefined }
+        | {
+            Args: { p_door: string; p_organization_id: string }
+            Returns: undefined
+          }
       _older_table_copy_refusal: {
         Args: { p_table_id: string }
         Returns: string
@@ -37139,6 +37144,7 @@ export type Database = {
           table_id: string
         }[]
       }
+      hot_doors_6_on: { Args: { p_person: string }; Returns: boolean }
       hub_changed_by: {
         Args: { p_ids: string[]; p_kind: string; p_organization_id: string }
         Returns: {
@@ -76383,6 +76389,20 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id?: string }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      _memo_pair: {
+        Args: {
+          p_ids: string[]
+          p_kind: string
+          p_level: string
+          p_limit: number
+          p_offset: number
+          p_org: string
+          p_person: string
+          p_search: string
+          p_table: string
+        }
+        Returns: Json
+      }
       _notify_door: {
         Args: {
           p_dedupe: string
@@ -77067,6 +77087,19 @@ export type Database = {
           target: string
         }[]
       }
+      has_access_for_many_in: {
+        Args: {
+          p_level: string
+          p_orgs: string[]
+          p_person: string
+          p_targets: string[]
+          p_type?: string
+        }
+        Returns: {
+          allowed: boolean
+          target: string
+        }[]
+      }
       has_access_for_shadow: {
         Args: {
           p_caller?: string
@@ -77151,6 +77184,14 @@ export type Database = {
       }
       is_trusted_backend: { Args: never; Returns: boolean }
       kernel_batch_on: { Args: { p_person: string }; Returns: boolean }
+      kernel_memo_compare: {
+        Args: { p_ids?: number; p_pages?: number }
+        Returns: Json
+      }
+      kernel_memo_sweep: {
+        Args: { p_ids?: number; p_pages?: number }
+        Returns: Json
+      }
       kernel_set_form_on: { Args: { p_person: string }; Returns: boolean }
       kernel_shadow_on: { Args: { p_person: string }; Returns: boolean }
       kernel_shadow_sweep: {
@@ -83987,6 +84028,7 @@ export type Database = {
       perf_door_sql: { Args: { p_subject: Json }; Returns: string }
       perf_health_run: { Args: never; Returns: Json }
       perf_job_collect: { Args: never; Returns: Json }
+      perf_job_rebudget: { Args: { p_apply?: boolean }; Returns: Json }
       perf_judge: { Args: { p_check_id: string }; Returns: Json }
       perf_judge_rule: {
         Args: { p_history: Json; p_knobs: Json; p_now: string; p_watch: Json }
@@ -83995,6 +84037,11 @@ export type Database = {
       perf_knobs: { Args: never; Returns: Json }
       perf_marker: {
         Args: { p_at: string; p_slug_pattern: string; p_text: string }
+        Returns: Json
+      }
+      perf_probe_group: { Args: { p_subject: Json }; Returns: string }
+      perf_probe_group_run: {
+        Args: { p_group?: string; p_only_check?: string }
         Returns: Json
       }
       perf_probe_run: { Args: { p_only_check?: string }; Returns: Json }
@@ -126616,6 +126663,44 @@ export type Database = {
       multi_location_knob: {
         Args: { p_default: number; p_key: string }
         Returns: number
+      }
+      news_tracker_inputs: {
+        Args: { p_include_archived?: boolean; p_tracker_id?: string }
+        Returns: {
+          auto_run_paused_at: string
+          auto_run_paused_reason: string
+          brand_description: string
+          brand_id: string
+          brand_name: string
+          brief_is_empty: boolean
+          brief_source_id: string
+          brief_text: string
+          competitor_names: string[]
+          cost_30d_usd: number
+          deleted_at: string
+          exclude_terms: string[]
+          facts: Json
+          id: string
+          is_active: boolean
+          is_fixture: boolean
+          last_run_at: string
+          last_run_status: string
+          lenses: string[]
+          name: string
+          organization_id: string
+          organization_name: string
+          runs_30d: number
+          search_terms: string[]
+          site_id: string
+          topics: string[]
+        }[]
+      }
+      news_tracker_set_state: {
+        Args: { p_action: string; p_tracker_ids: string[] }
+        Returns: {
+          id: string
+          status: string
+        }[]
       }
       offering_map_topic: {
         Args: { p_create?: boolean; p_depth?: number; p_offering_id: string }

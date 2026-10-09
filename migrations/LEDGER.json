@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T00:54:22.131Z",
+  "generated_at": "2026-10-09T01:03:49.657Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3793,6 +3793,24 @@
       "filename": "hotdoors6_a_the_walk_reads_each_table_in_its_organization.sql",
       "checksum": "f063c235042c88ed6f7f24acda57dd7ed6b82a2833c13d88518bbc1f60999229",
       "applied_at": "2026-10-09 00:54:18.700365+00"
+    },
+    "migrations/campaign/hotdoors6_b_unhinted_targets_and_booking_pages_read_as_sets.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors6_b_unhinted_targets_and_booking_pages_read_as_sets.sql",
+      "checksum": "3310d93054b36e9faaecaa3fe75fdede40a9e2934a02cd24c83da713079e5d4c",
+      "applied_at": "2026-10-09 00:58:59.653198+00"
+    },
+    "migrations/campaign/hotdoors6_c_the_walk_finds_each_tables_organization_by_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors6_c_the_walk_finds_each_tables_organization_by_key.sql",
+      "checksum": "80bd17afa85fa62005d8651851bf322632018d518c6ddc5745bdec5d33e9d6d6",
+      "applied_at": "2026-10-09 01:01:26.762879+00"
+    },
+    "migrations/campaign/hotdoors6_d_the_hinted_table_read_is_its_own_arm.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors6_d_the_hinted_table_read_is_its_own_arm.sql",
+      "checksum": "804ff9b265350b6e80f3f9be020edac79e9a10ac49a09691747ffe3cc1eb121b",
+      "applied_at": "2026-10-09 01:03:46.787288+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
