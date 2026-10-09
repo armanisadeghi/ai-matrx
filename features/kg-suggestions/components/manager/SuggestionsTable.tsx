@@ -297,7 +297,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
     else toast.error(`${label}: ${ids.length - failed} done, ${failed} failed`);
   };
   return (
-    <div className="min-w-[72rem] flex flex-col">
+    <div className="min-w-0 flex flex-col">
       <MatrxDataTable<KgEnrichedSuggestionRow>
         tableId="knowledge-suggestions"
         data={rows}
