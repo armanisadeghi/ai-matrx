@@ -17,6 +17,8 @@ export default async function BrandVoicePage({
       ownerId={brand.id}
       ownerName={brand.name}
       organizationId={brand.organization_id}
+      brandKind={brand.kind}
+      personUserId={brand.person_user_id}
     />
   );
 }

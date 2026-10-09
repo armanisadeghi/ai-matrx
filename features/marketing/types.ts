@@ -409,6 +409,9 @@ export interface UpdateBrandInput {
       | "published_to_web_at"
       | "published_to_web_by"
       | "profile"
+      | "kind"
+      | "person_party_id"
+      | "person_user_id"
     >
   >;
 }

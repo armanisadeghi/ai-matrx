@@ -89,6 +89,8 @@ import {
   toPropertyKind,
 } from "@/features/marketing/components/shared/PropertyKindMark";
 import { BrandSocialProfilesCard } from "@/features/marketing/components/brands/BrandSocialProfilesCard";
+import { PersonBrandAvatar, PersonFollowerTotal } from "@/features/marketing/components/brands/PersonBrandAvatar";
+import { BRAND_KIND_COPY, isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import {
@@ -602,13 +604,22 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           "Value settings" door is the sidebar's Settings row. */}
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
-          <section className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4">
-            <SiteIdentityMark
-              site={heroIdentity}
-              size={72}
-              prefer="logo"
-              className="bg-background p-1.5"
-            />
+          {/* A person brand leads with the person: their face and their accounts come first. */}
+          <section className={`flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4${isPersonBrand(current) ? " order-first" : ""}`}>
+            {isPersonBrand(current) ? (
+              <PersonBrandAvatar
+                brandId={current.id}
+                size={72}
+                fallback={<SiteIdentityMark site={heroIdentity} size={72} prefer="logo" className="bg-background p-1.5" />}
+              />
+            ) : (
+              <SiteIdentityMark
+                site={heroIdentity}
+                size={72}
+                prefer="logo"
+                className="bg-background p-1.5"
+              />
+            )}
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 {current.name}
@@ -626,6 +637,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               ) : null}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge value={current.status} />
+                {isPersonBrand(current) ? (
+                  <>
+                    <Badge variant="outline">{BRAND_KIND_COPY.person.label}</Badge>
+                    <PersonFollowerTotal brandId={current.id} />
+                  </>
+                ) : null}
                 {current.industry ? (
                   <Badge variant="outline">{current.industry}</Badge>
                 ) : null}
@@ -831,7 +848,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             )}
           </SectionCard>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className={`grid gap-3 lg:grid-cols-2${isPersonBrand(current) ? " -order-1" : ""}`}>
             <BrandSocialProfilesCard
               brandId={current.id}
               brandSeg={marketingSeg(current)}

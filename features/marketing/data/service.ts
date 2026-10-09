@@ -93,6 +93,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { classifySocialLink } from "@/features/marketing/social/link";
 import { readBrandSocialCounts } from "@/features/marketing/social/service";
 import {
   marketingKeyProblem,
@@ -2611,6 +2612,8 @@ export async function confirmDiscoveredProperty(
       brand_id: input.item.brand_id,
       kind: input.propertyKind,
       url: input.item.url,
+      // The same handle rule the server uses, so the brand's social list shows a handle at once.
+      handle: classifySocialLink(input.item.url)?.handle ?? null,
       display_name: input.displayName,
       status: "active",
       metadata: { source_discovery_id: input.item.id },
@@ -2943,7 +2946,7 @@ export async function listBrandSites(
 }
 
 const PROPERTY_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, url, handle, display_name, status, site_id, connection, settings";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, url, handle, display_name, status, site_id, connection, settings, owner_kind, owner_party_id";
 
 export async function listBrandProperties(
   brandId: string,

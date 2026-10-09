@@ -49,6 +49,8 @@ import {
 } from "./service";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SpokespeoplePanel } from "./SpokespeoplePanel";
+import { PersonVoiceBar } from "./PersonVoiceBar";
+import { brandKindCopy, isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import {
   landSocialSample,
   sampleKindForPlatform,
@@ -72,6 +74,10 @@ export interface VoicePageProps {
    * full-height scroll box and shell-header padding.
    */
   embedded?: boolean;
+  /** Brand pages: company | person. A person brand's voice is that person's own voice. */
+  brandKind?: string | null;
+  /** Person brands: the user who is that person, when they said "this is me". */
+  personUserId?: string | null;
 }
 
 type Picked = { source: SourceOption; kind: VoiceSampleKind; social?: SocialSampleOption };
@@ -101,7 +107,16 @@ function toggle(list: string[], item: string): string[] {
 const selectClass =
   "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOrganization, embedded = false }: VoicePageProps) {
+export function VoicePage({
+  scope,
+  ownerId,
+  ownerName,
+  organizationId,
+  resolveOrganization,
+  embedded = false,
+  brandKind = null,
+  personUserId = null,
+}: VoicePageProps) {
   const [rows, setRows] = useState<FingerprintRow[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -114,7 +129,12 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   // On a brand's page the picker starts on that brand's Sources; "All my sources" widens it.
   const [allSources, setAllSources] = useState(false);
   // "brand" measures the brand's voice; "me" measures the signed-in person's own voice as its spokesperson.
-  const [target, setTarget] = useState<"brand" | "me">("brand");
+  // On a person brand that IS the signed-in user, their own voice is the one measured.
+  const personBrand = scope === "brand" && isPersonBrand(brandKind);
+  const [selfUserId, setSelfUserId] = useState<string | null>(personUserId);
+  const [target, setTarget] = useState<"brand" | "me">(() =>
+    personBrand && personUserId && personUserId === userId ? "me" : "brand",
+  );
   const [spokes, setSpokes] = useState<FingerprintRow[]>([]);
   const [spokesNonce, setSpokesNonce] = useState(0);
   const brandScoped = scope === "brand" && !allSources && target === "brand";
@@ -284,11 +304,26 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
         <header>
           <h1 className="text-base font-semibold text-foreground">{ownerName} · Voice</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {scope === "brand" ? "How this brand actually writes" : "How you actually write"}, measured from real writing. Every pitch,
+            {scope === "brand" ? brandKindCopy(brandKind).voiceLine : "How you actually write"}, measured from real writing. Every pitch,
             reply, subject line and statement written in {scope === "brand" ? "its" : "your"} name is checked against it,
             and the AI tells are rewritten before you see the draft.
           </p>
         </header>
+
+        {personBrand ? (
+          <PersonVoiceBar
+            brandId={ownerId}
+            brandName={ownerName}
+            personUserId={selfUserId}
+            onClaimed={setSelfUserId}
+            onMeasureMine={() => {
+              setTarget("me");
+              setAllSources(true);
+              setPicked([]);
+              document.getElementById("voice-samples")?.scrollIntoView({ block: "start" });
+            }}
+          />
+        ) : null}
 
         {scope === "brand" ? <SpokespeoplePanel
             key={spokesNonce}

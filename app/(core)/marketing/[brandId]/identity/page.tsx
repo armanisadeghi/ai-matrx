@@ -22,6 +22,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { createClient } from "@/utils/supabase/server";
 import { researchThisHref } from "@/features/research/utils/init-route";
 import { subjectFromBrandProperties } from "@/features/research/utils/subject";
+import { brandKindCopy, type BrandRoom } from "@/features/marketing/lib/brand-kind";
 
 /**
  * Brand Identity — who this client IS, as opposed to what it owns or what the
@@ -53,89 +54,70 @@ export default async function BrandIdentityPage({
     returnTo: identity,
   });
 
-  const rooms: Array<{
-    name: string;
-    description: string;
+  // Names and lines per brand kind (company | person) come from the one config.
+  const roomCopy = brandKindCopy(brand).rooms;
+  const roomDefs: Array<{
+    room: BrandRoom;
     href: string;
     icon: LucideIcon;
   }> = [
     {
-      name: "Media",
-      description:
-        "Everything this brand owns or can draw on — its library, research captures, stock sources, and generated imagery.",
+      room: "media",
       href: marketingRoutes.brandAssets(seg),
       icon: Images,
     },
     {
-      name: "Strategy",
-      description:
-        "The business facts every website of this brand reads — what it does, who it serves, each service line and where it competes. Written by AI, corrected by you, inherited by every agent.",
+      room: "strategy",
       href: `${identity}/strategy`,
       icon: Compass,
     },
     {
-      name: "Knowledge",
-      description:
-        "What the business actually is: AI reads the website cold and proposes the model, the customers, and the money map — you rule every rung.",
+      room: "knowledge",
       href: `${identity}/knowledge`,
       icon: BookOpen,
     },
     {
-      name: "Offerings",
-      description:
-        "The tree of what this client sells, and what each offering is worth — the spine every keyword and page is valued against.",
+      room: "offerings",
       href: `${identity}/offerings`,
       icon: Boxes,
     },
     {
-      name: "Guidelines",
-      description:
-        "How this brand must be written about and what it must never claim — the rules every agent inherits.",
+      room: "guidelines",
       href: `${identity}/guidelines`,
       icon: ScrollText,
     },
     {
-      name: "Messaging",
-      description:
-        "Mission, vision, story, pitches, messaging and content pillars, hashtags.",
+      room: "messaging",
       href: `${identity}/messaging`,
       icon: Megaphone,
     },
     {
-      name: "Claims",
-      description: "Approved and forbidden claims, and the disclaimers that go with them.",
+      room: "claims",
       href: `${identity}/claims`,
       icon: ShieldCheck,
     },
     {
-      name: "Voice",
-      description:
-        "How this brand actually writes, measured from its real writing. Every pitch, reply, subject line and statement in its name is checked against it.",
+      room: "voice",
       href: `${identity}/voice`,
       icon: PenLine,
     },
     {
-      name: "Research",
-      description:
-        "Website, socials, top posts and speaking style.",
+      room: "research",
       href: researchHref,
       icon: Telescope,
     },
     {
-      name: "Competitors",
-      description:
-        "Rivals by website and social account, and how they compare.",
+      room: "competitors",
       href: marketingRoutes.brandCompetitors(seg),
       icon: Swords,
     },
     {
-      name: "Audience",
-      description:
-        "Named personas — goals, pain points, objections, channels.",
+      room: "audience",
       href: `${identity}/audience`,
       icon: Users,
     },
   ];
+  const rooms = roomDefs.map((def) => ({ ...def, ...roomCopy[def.room] }));
 
   return (
     <div className="h-full overflow-y-auto bg-textured">

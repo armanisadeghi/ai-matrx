@@ -18,7 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { BRAND_KIND_COPY, BRAND_KINDS, brandKindOf, type BrandKind } from "@/features/marketing/lib/brand-kind";
+import { HandleBrandCreator } from "./HandleBrandCreator";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -214,6 +216,10 @@ function BrandEditorDialogBody({
   const [failure, setFailure] = useState<string | null>(null);
   const busy = createMutation.isPending || updateMutation.isPending;
   const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
+  // Company or person; a new brand can start from a website (company) or a social handle (both).
+  const [kind, setKind] = useState<BrandKind>(() => brandKindOf(brand));
+  const [startFrom, setStartFrom] = useState<"website" | "handle">("website");
+  const fromHandle = !brand && (kind === "person" || startFrom === "handle");
 
   const set =
     <K extends keyof BrandDraft>(key: K) =>
@@ -243,6 +249,9 @@ function BrandEditorDialogBody({
             og_image_url: draft.ogImageUrl.trim() || null,
             notes: draft.notes.trim() || null,
             status: draft.status,
+            kind,
+            // A company names no person; the database refuses a person link on one.
+            ...(kind === "company" ? { person_party_id: null, person_user_id: null } : {}),
             shown_to: draft.shownTo,
             ...(draft.publishedToWeb !== brand.published_to_web
               ? publishedToWebPatch(draft.publishedToWeb, userId)
@@ -273,6 +282,7 @@ function BrandEditorDialogBody({
           ogImageUrl: draft.ogImageUrl.trim() || null,
           notes: draft.notes.trim() || null,
           status: draft.status,
+          kind,
           ...(draft.shownTo !== null ? { shownTo: draft.shownTo } : {}),
           ...(draft.publishedToWeb ? { publishedToWeb: true } : {}),
           profile: brandProfileToJson(profileFromDraft(draft)),
@@ -303,12 +313,61 @@ function BrandEditorDialogBody({
         <DialogHeader>
           <DialogTitle>{brand ? `Edit ${brand.name}` : "Add brand"}</DialogTitle>
           <DialogDescription>
-            {brand
-              ? "Every editable brand field, in one place."
-              : "A brand is the company — websites and social accounts attach to it as properties."}
+            {brand ? "Every editable brand field, in one place." : BRAND_KIND_COPY[kind].createDescription}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-center gap-2" data-testid="brand-kind-choice">
+          <SegmentedControl
+            aria-label="Brand kind"
+            value={kind}
+            onValueChange={(next) => setKind(next as BrandKind)}
+            data={BRAND_KINDS.map((k) => ({ value: k, label: BRAND_KIND_COPY[k].label }))}
+          />
+          <span className="text-[11px] text-muted-foreground">{BRAND_KIND_COPY[kind].hint}</span>
+          {!brand && kind === "company" ? (
+            <div className="ml-auto">
+              <SegmentedControl
+                aria-label="Start from"
+                value={startFrom}
+                onValueChange={(next) => setStartFrom(next as "website" | "handle")}
+                data={[
+                  { value: "website", label: "Website" },
+                  { value: "handle", label: "Social handle" },
+                ]}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {fromHandle && !brand ? (
+          <>
+            {orgs.organizations.length > 1 ? (
+              <div className="space-y-1">
+                <Label className="text-xs">Owning organization</Label>
+                <Select value={selectedOrgId ?? ""} onValueChange={setOrganizationId} disabled={orgs.loading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose an organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {orgs.organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            <HandleBrandCreator
+              key={`${kind}:${selectedOrgId ?? ""}`}
+              kind={kind}
+              organizationId={selectedOrgId}
+              onClose={() => onOpenChange(false)}
+            />
+          </>
+        ) : (
+        <>
         <div className="grid gap-3">
           {!brand ? (
             <div className="space-y-1">
@@ -750,6 +809,8 @@ function BrandEditorDialogBody({
             {brand ? "Save brand" : "Create brand"}
           </Button>
         </DialogFooter>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

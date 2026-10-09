@@ -79,6 +79,8 @@ it("keeps site resolution scoped to a readable brand", async () => {
       slug: null,
       name: "Readable",
       organization_id: "66666666-6666-4666-8666-666666666666",
+      kind: "company",
+      person_user_id: null,
     });
   const result = await MarketingWebsiteLayout({
     children: React.createElement("div"),

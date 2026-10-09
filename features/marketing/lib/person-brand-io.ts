@@ -83,3 +83,4 @@ export const personBrandDeps: PersonBrandDeps = {
   createBrand,
   createProperty,
 };
+
