@@ -1043,8 +1043,8 @@ function ProjectsTable({
         id: "org",
         header: "Organization",
         accessorFn: (p) => orgEntry(p)?.name ?? "—",
-        width: 120,
-        minWidth: 110,
+        width: 190,
+        minWidth: 160,
         cell: (p) =>
           p.organizationId ? (
             <EntityRef
@@ -1143,6 +1143,9 @@ function ProjectsTable({
       detail={{ enabled: false }}
       onRowOpen={(p) => router.push(`/projects/${p.id}`)}
       window={{}}
+      // The page's own search (shared with the card view and the URL-less
+      // list query) is the single search box.
+      toolbar={{ search: false }}
       getRowHref={(p) => `/projects/${p.id}`}
       emptyState={{ title: "No projects match these column filters." }}
       copy={{
