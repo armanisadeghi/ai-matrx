@@ -68,6 +68,20 @@ function readableProjectsQuery() {
   return query;
 }
 
+function pagedReadableProjectsQuery(
+  pages: readonly (typeof PROVIDER_ACCESS_LAUNCH)[],
+) {
+  const query: Record<string, jest.Mock> = {};
+  for (const method of ["select", "is", "order"]) {
+    query[method] = jest.fn(() => query);
+  }
+  query.range = jest.fn((from: number) => {
+    const page = pages.slice(from, from + 1000);
+    return Promise.resolve({ data: page, error: null, count: pages.length });
+  });
+  return query;
+}
+
 describe("project creation", () => {
   beforeEach(() => {
     from.mockReset();
@@ -234,6 +248,44 @@ describe("getUserProjects", () => {
     expect(query.range).toHaveBeenCalledWith(0, 999);
   });
 
+  it("reads every accessible project across exact-count pages in a stable order", async () => {
+    const rows = Array.from({ length: 1001 }, (_, index) => ({
+      ...PROVIDER_ACCESS_LAUNCH,
+      id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      name: `Project ${String(index).padStart(4, "0")}`,
+    }));
+    const query = pagedReadableProjectsQuery(rows);
+    from.mockReturnValue(query);
+
+    await expect(getUserProjects()).resolves.toHaveLength(1001);
+
+    expect(query.select).toHaveBeenCalledWith("*", { count: "exact" });
+    expect(query.order).toHaveBeenNthCalledWith(1, "updated_at", {
+      ascending: false,
+    });
+    expect(query.order).toHaveBeenNthCalledWith(2, "id", { ascending: true });
+    expect(query.range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(query.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+  });
+
+  it.each(["owner", "admin"] as const)(
+    "retains a direct %s project role",
+    async (role) => {
+      const query = readableProjectsQuery();
+      from.mockReturnValue(query);
+      forUser.mockResolvedValue({
+        ok: true,
+        data: {
+          memberships: [{ containerId: PROVIDER_ACCESS_LAUNCH.id, role }],
+        },
+      });
+
+      await expect(getUserProjects()).resolves.toEqual([
+        expect.objectContaining({ role }),
+      ]);
+    },
+  );
+
   it("rejects when the complete RLS project read fails instead of reporting no projects", async () => {
     mockReadAllRows.mockRejectedValue(new Error("project read unavailable"));
 
@@ -248,7 +300,9 @@ describe("getUserProjects", () => {
       error: { code: "unexpected", message: "membership read unavailable" },
     });
 
-    await expect(getUserProjects()).rejects.toThrow("membership read unavailable");
+    await expect(getUserProjects()).rejects.toThrow(
+      "membership read unavailable",
+    );
   });
 
   it("rejects when member counts fail", async () => {
