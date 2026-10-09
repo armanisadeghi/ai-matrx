@@ -16,7 +16,6 @@ import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import React from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { AppDispatch } from "@/lib/redux/store";
 import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,9 +32,8 @@ import {
   type MergedConversationRow,
 } from "../../hooks/useMergedAgentConversations";
 import type { CodeEditorAgentConfig } from "../../types";
-import { ItemRow } from "@ai-matrx/design-system/item";
-import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { ConversationListRow } from "@ai-matrx/chat/agents/components/conversation-history/AgentConversationList";
+import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CodeEditorHistoryPanelProps {
@@ -173,7 +171,6 @@ export function CodeEditorHistoryPanel({
               onSelect={() =>
                 onSelectConversation(row.conversationId, row.agentId)
               }
-              dispatch={dispatch}
             />
           );
         })}
@@ -187,12 +184,10 @@ function ConversationItemRow({
   row,
   isActive,
   onSelect,
-  dispatch,
 }: {
   row: MergedConversationRow;
   isActive: boolean;
   onSelect: () => void;
-  dispatch: AppDispatch;
 }) {
   const date = row.sortKey
     ? new Date(row.sortKey).toLocaleDateString(undefined, {
@@ -209,37 +204,26 @@ function ConversationItemRow({
     .filter(Boolean)
     .join(" · ");
 
+  // A saved row without its list item yet is shown from the merged row alone.
+  const conv: ConversationListItem = row.item ?? {
+    conversationId: row.conversationId,
+    title: row.title,
+    updatedAt: row.sortKey ?? "",
+    messageCount: row.messageCount,
+    status: "active",
+    isFavorite: false,
+    excludeFromKg: false,
+  };
+
   return (
-    <ItemRow
+    <ConversationListRow
+      conv={conv}
+      href={href}
       sourceFeature="code-editor"
       className="mx-1"
-      size="sm"
-      label={row.title}
       secondaryLabel={secondary || undefined}
       active={isActive}
       onOpen={onSelect}
-      menu={() =>
-        buildConversationMenu({
-          conversationId: row.conversationId,
-          title: row.item?.title ?? row.title,
-          isFavorite: row.item?.isFavorite ?? false,
-          isArchived: row.item?.status === "archived",
-          excludeFromKg: row.item?.excludeFromKg ?? false,
-          href,
-          dispatch,
-        })
-      }
-      rename={{
-        value: row.item?.title ?? "",
-        emptyFallback: "Untitled",
-        onCommit: (next) =>
-          void dispatch(
-            renameConversation({
-              conversationId: row.conversationId,
-              title: next,
-            }),
-          ),
-      }}
     />
   );
 }

@@ -338,7 +338,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     const proj = transformProjectFromDb(row);
     return {
       ...proj,
-      role: roleById.get(proj.id) ?? ("member" as ProjectRole),
+      role: roleById.get(proj.id) ?? null,
       memberCount: countById.get(proj.id) ?? 0,
     };
   });

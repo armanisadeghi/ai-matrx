@@ -264,13 +264,16 @@ it("Reload board after a conflict reopens the newer board and saving resumes", a
   expect(saveBoardDocument.mock.calls[1][2]).toEqual({ expectedVersion: 6, baseFingerprint: "fp-5", base: expect.objectContaining({ nodes: expect.any(Array) }) });
 });
 
-it("a refused organization choice is a failed state whose retry asks again", async () => {
-  getBoard.mockReset().mockRejectedValueOnce({ name: "OrganizationSelectionCancelled" }).mockResolvedValue(loaded);
+it("an organization refusal (ensureOrgId never prompts) is a failed state with its reason, whose retry asks again", async () => {
+  getBoard
+    .mockReset()
+    .mockRejectedValueOnce(new Error("You don't belong to an organization yet. Create one to continue."))
+    .mockResolvedValue(loaded);
   const { result } = mount();
   await settle();
   const failed = result.current;
   if (failed.state !== "failed") throw new Error("expected failed");
-  expect(failed.reason).toMatch(/Choose one/);
+  expect(failed.reason).toMatch(/don't belong to an organization yet/);
   act(() => failed.retry());
   await settle();
   expect(getBoard).toHaveBeenCalledTimes(2);

@@ -237,7 +237,7 @@ export function seedChat(): void {
     { id: "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01", slug: "working_document", dimension: "document_type", deleted_at: null },
     { id: "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02", slug: "scratch", dimension: "document_type", deleted_at: null },
   ]);
-  // The composer's unsent-chips restore (`remarkDurability.restore`): no chip is staged in this chat.
+  // The composer's unsent-chips restore (the chat package's default remark durability restore): no chip is staged in this chat.
   // Unanswered it is a failed read, which is never kept as restored.
   seedRpc("block_state_list_staged", []);
   // The attach menu's counts (`useRunControlCounts`, P24b) read the agent's RUN TIER on a chat's first

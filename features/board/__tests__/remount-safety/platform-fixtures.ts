@@ -12,6 +12,8 @@ import { seed, seedRpc } from "./fake-backend";
 /** The platform's seeded knob rows a board tile reads (`feature.key` → value). */
 const KNOBS: Record<string, unknown> = {
   "tables.density.mode": "normal",
+  // features/settings/universal/knobEnumVocabularies.generated.ts — the copy door's flavor (a chat reply's copy action).
+  "copy.default_flavor": "markdown",
   "lists.landing_tab.note": "all",
   "lists.landing_tab.task": "all",
   "lists.landing_tab.project": "all",

@@ -1,6 +1,6 @@
 # Projects Feature
 
-Organization-scoped project management system. Projects mirror the Organizations feature with full member management, role-based access, and invitation system.
+Organization-scoped project management system. Projects mirror the Organizations feature with full member management, role-based access, and invitation system. A project row that is readable only through organization access has no direct project role (`role: null`); it must never be presented as a project member.
 
 ## Architecture
 

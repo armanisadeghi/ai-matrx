@@ -41,7 +41,11 @@ export interface Project {
 }
 
 export interface ProjectWithRole extends Project {
-  role: ProjectRole;
+  /**
+   * Direct project membership only. A readable project can inherit access
+   * through its organization without a project membership.
+   */
+  role: ProjectRole | null;
   memberCount?: number;
 }
 

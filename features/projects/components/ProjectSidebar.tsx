@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Puzzle, Crown, Shield, User as UserIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrgProjects } from "../hooks";
-import type { ProjectWithRole } from "../types";
+import type { ProjectRole, ProjectWithRole } from "../types";
 
 interface ProjectSidebarProps {
   organizationId: string;
@@ -59,7 +59,7 @@ function ProjectNavItem({
   orgSlug: string;
   isActive: boolean;
 }) {
-  const RoleIcon = getRoleIcon(project.role);
+  const RoleIcon = project.role ? getRoleIcon(project.role) : null;
 
   return (
     <Link
@@ -76,23 +76,25 @@ function ProjectNavItem({
         <Puzzle className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
       </div>
       <span className="flex-1 truncate">{project.name}</span>
-      <RoleIcon
-        className={cn(
-          "h-3 w-3 flex-shrink-0",
-          isActive ? "text-primary" : "text-muted-foreground",
-        )}
-      />
+      {RoleIcon && (
+        <RoleIcon
+          className={cn(
+            "h-3 w-3 flex-shrink-0",
+            isActive ? "text-primary" : "text-muted-foreground",
+          )}
+        />
+      )}
     </Link>
   );
 }
 
-function getRoleIcon(role: string) {
+function getRoleIcon(role: ProjectRole) {
   switch (role) {
     case "owner":
       return Crown;
     case "admin":
       return Shield;
-    default:
+    case "member":
       return UserIcon;
   }
 }

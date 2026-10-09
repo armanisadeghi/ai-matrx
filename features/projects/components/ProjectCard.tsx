@@ -56,13 +56,15 @@ export function ProjectCard({
           color:
             "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
         };
-      default:
+      case "member":
         return {
           icon: <UserIcon className="h-3 w-3" />,
           label: "Member",
           color:
             "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
         };
+      default:
+        return null;
     }
   };
 
@@ -128,15 +130,17 @@ export function ProjectCard({
                 <h3 className="text-base font-semibold text-foreground truncate">
                   {project.name}
                 </h3>
-                <Badge
-                  className={cn(
-                    "flex items-center gap-1 text-xs",
-                    roleDisplay.color,
-                  )}
-                >
-                  {roleDisplay.icon}
-                  {roleDisplay.label}
-                </Badge>
+                {roleDisplay && (
+                  <Badge
+                    className={cn(
+                      "flex items-center gap-1 text-xs",
+                      roleDisplay.color,
+                    )}
+                  >
+                    {roleDisplay.icon}
+                    {roleDisplay.label}
+                  </Badge>
+                )}
               </div>
               {project.description && (
                 <p className="text-sm text-muted-foreground line-clamp-1">

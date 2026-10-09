@@ -55,9 +55,16 @@ const PROVIDER_ACCESS_LAUNCH = {
 
 function readableProjectsQuery() {
   const query: Record<string, jest.Mock> = {};
-  for (const method of ["select", "is", "order", "range"]) {
+  for (const method of ["select", "is", "order"]) {
     query[method] = jest.fn(() => query);
   }
+  query.range = jest.fn(() =>
+    Promise.resolve({
+      data: [PROVIDER_ACCESS_LAUNCH],
+      error: null,
+      count: 1,
+    }),
+  );
   return query;
 }
 
@@ -198,39 +205,60 @@ describe("getUserProjects", () => {
         ],
       },
     });
+    mockReadAllRows.mockImplementation(
+      jest.requireActual("@ai-matrx/data/db").readAllRows,
+    );
   });
 
   it("includes an RLS-readable organization project when the viewer has no direct project membership", async () => {
     const query = readableProjectsQuery();
     from.mockReturnValue(query);
-    mockReadAllRows.mockImplementation(async (factory) => {
-      await factory({ from: 0, to: 499 });
-      return [PROVIDER_ACCESS_LAUNCH];
-    });
-
     await expect(getUserProjects()).resolves.toEqual([
       expect.objectContaining({
         id: PROVIDER_ACCESS_LAUNCH.id,
         name: "Provider Access Launch",
         organizationId: PROVIDER_ACCESS_LAUNCH.organization_id,
-        role: "member",
+        role: null,
         memberCount: 7,
       }),
     ]);
 
     expect(forUser).toHaveBeenCalledWith("project");
     expect(counts).toHaveBeenCalledWith("project", [PROVIDER_ACCESS_LAUNCH.id]);
+    expect(query.select).toHaveBeenCalledWith("*", { count: "exact" });
     expect(query.is).toHaveBeenCalledWith("deleted_at", null);
     expect(query.order).toHaveBeenNthCalledWith(1, "updated_at", {
       ascending: false,
     });
     expect(query.order).toHaveBeenNthCalledWith(2, "id", { ascending: true });
-    expect(query.range).toHaveBeenCalledWith(0, 499);
+    expect(query.range).toHaveBeenCalledWith(0, 999);
   });
 
   it("rejects when the complete RLS project read fails instead of reporting no projects", async () => {
     mockReadAllRows.mockRejectedValue(new Error("project read unavailable"));
 
     await expect(getUserProjects()).rejects.toThrow("project read unavailable");
+  });
+
+  it("rejects when the direct-membership read fails", async () => {
+    const query = readableProjectsQuery();
+    from.mockReturnValue(query);
+    forUser.mockResolvedValue({
+      ok: false,
+      error: { code: "unexpected", message: "membership read unavailable" },
+    });
+
+    await expect(getUserProjects()).rejects.toThrow("membership read unavailable");
+  });
+
+  it("rejects when member counts fail", async () => {
+    const query = readableProjectsQuery();
+    from.mockReturnValue(query);
+    counts.mockResolvedValue({
+      ok: false,
+      error: { code: "unexpected", message: "member count unavailable" },
+    });
+
+    await expect(getUserProjects()).rejects.toThrow("member count unavailable");
   });
 });
