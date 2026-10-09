@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T05:51:19.879Z",
+  "generated_at": "2026-10-09T06:32:38.747Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2810,6 +2810,12 @@
       "checksum": "a6a937f268ea0b48343ed55c6255e8c55701a0b21beab8f34d3990e9653d7e09",
       "applied_at": "2026-09-20 04:14:16.066085+00"
     },
+    "migrations/campaign/entityids2_file_reads_cost_what_the_person_reaches.sql": {
+      "source": "matrx-frontend",
+      "filename": "entityids2_file_reads_cost_what_the_person_reaches.sql",
+      "checksum": "5fa07098b89653f57adcfb6bb4221cb2db1d410490d69b72e7dbb10a7eb62c11",
+      "applied_at": "2026-10-09 06:32:21.624475+00"
+    },
     "migrations/campaign/entityids_a_file_parents_are_asked_by_the_ids_the_files_name.sql": {
       "source": "matrx-frontend",
       "filename": "entityids_a_file_parents_are_asked_by_the_ids_the_files_name.sql",
@@ -3925,6 +3931,18 @@
       "filename": "hotdoors7_f_the_memo_sweep_asks_the_template_shortcut.sql",
       "checksum": "b2ea87fd0c58ab159eafa12fd1a90baf2a5502200f993770a117385e8a9e2a8c",
       "applied_at": "2026-10-09 05:49:26.481289+00"
+    },
+    "migrations/campaign/hotdoors7_g_the_memo_sweep_does_not_call_a_refusal_agreement.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_g_the_memo_sweep_does_not_call_a_refusal_agreement.sql",
+      "checksum": "a76da2dbb9de079492c9759f9d136a1242cd9365e95a6d8190f91d502327fa94",
+      "applied_at": "2026-10-09 06:15:12.699095+00"
+    },
+    "migrations/campaign/hotdoors7_h_the_memo_sweep_builds_the_asks_like_the_data_home.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_h_the_memo_sweep_builds_the_asks_like_the_data_home.sql",
+      "checksum": "0c1d579dbbf8d90f7b4ca3b31dbe074888e25a39b7a7cea757ecccc7fec21bbf",
+      "applied_at": "2026-10-09 06:22:40.044356+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
