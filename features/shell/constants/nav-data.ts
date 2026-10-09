@@ -21,6 +21,7 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
+import { MESSENGER_HREF, MESSENGER_LABEL } from "@/features/messaging/messenger/messenger-route";
 import {
   EDU_TOOL_NAV,
   eduToolHref,
@@ -1672,6 +1673,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "pink",
         profileMenu: true,
         dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: MESSENGER_LABEL,
+        href: MESSENGER_HREF,
+        iconName: "MessagesSquare",
+        description: "Your conversations in a desktop messenger",
+        color: "pink",
         guestHidden: true,
       },
       {

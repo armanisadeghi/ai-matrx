@@ -100,7 +100,6 @@ const COMPOSERS = [
   "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx",
   "../aidream/apps/shared/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
   "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
-  "features/whatsapp-clone/chat-view/MessageInputBar.tsx",
   "components/official/ProTextarea.tsx",
 ];
 

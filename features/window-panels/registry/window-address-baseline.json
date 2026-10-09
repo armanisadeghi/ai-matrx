@@ -98,9 +98,7 @@
     "captureInspectorWindow",
     "taskEditorWindow",
     "toolCallWindow",
-    "transcriptStudioWindow",
-    "whatsappMedia",
-    "whatsappSettings"
+    "transcriptStudioWindow"
   ],
   "$subjectlessAddressesWhy": "V-27 NEW-2: a registry row can declare `urlSync.key` while the window never passes `urlSyncId`, so the panel registers its sync entry under the singleton overlay id and writes THAT into ?panels= — the deep link opens once and dies on reload. This census reads the window components. These entries are the ones that were already like that when the case landed, or that genuinely address by key alone WITH the reason; it only shrinks. Each entry names the subject its address drops; the fix is `urlSyncId={<that id>}` on the window, plus a hydrator that can read it back.",
   "subjectlessAddresses": {

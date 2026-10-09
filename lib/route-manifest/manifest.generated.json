@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1391,
+  "routeCount": 1392,
   "routes": [
     {
       "pattern": "/",
@@ -5359,6 +5359,11 @@
       "pattern": "/messages/admin",
       "status": "live",
       "source": "app/(core)/messages/admin/page.tsx"
+    },
+    {
+      "pattern": "/messenger",
+      "status": "live",
+      "source": "app/(core)/messenger/page.tsx"
     },
     {
       "pattern": "/news",

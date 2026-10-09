@@ -1138,21 +1138,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  whatsappMedia: {
-    label: "Whatsapp Media",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
-  whatsappSettings: {
-    label: "Whatsapp Settings",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
-  whatsappShellWindow: {
-    label: "Whatsapp Shell Window",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
 } as const satisfies Record<string, OverlayCatalogueEntry>;
 
 /**
