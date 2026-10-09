@@ -31,7 +31,11 @@ export interface SpendPopoverKnobsState {
   error: Error | null;
 }
 
-export function useSpendPopoverKnobs(): SpendPopoverKnobsState {
+/**
+ * `enabled: false` reads nothing (the daily popover mounts for every person but only a super
+ * admin ever sees it — the gate comes BEFORE the read, never after it).
+ */
+export function useSpendPopoverKnobs({ enabled = true }: { enabled?: boolean } = {}): SpendPopoverKnobsState {
   const [state, setState] = useState<SpendPopoverKnobsState>({
     knobs: null,
     loading: true,
@@ -39,6 +43,7 @@ export function useSpendPopoverKnobs(): SpendPopoverKnobsState {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -67,7 +72,7 @@ export function useSpendPopoverKnobs(): SpendPopoverKnobsState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   return state;
 }

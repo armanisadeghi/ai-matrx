@@ -30,6 +30,7 @@ jest.mock("@/utils/supabase/client", () => ({
             order: () => query,
             range: () => query,
             is: () => query,
+            eq: () => query,
             then: (
               resolve: (v: unknown) => unknown,
               reject?: (e: unknown) => unknown,
