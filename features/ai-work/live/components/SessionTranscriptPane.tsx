@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { ProviderConversationTranscript } from "../../components/ProviderConversationTranscript";
 import {
@@ -10,13 +11,16 @@ import {
 
 /** The session's mirrored transcript, read client-side through the one reader. */
 export function SessionTranscriptPane({ address }: { address: string }) {
-  const [read, setRead] = useState<ProviderConversationRead | null>(null);
+  const [loaded, setLoaded] = useState<{
+    address: string;
+    read: ProviderConversationRead;
+  } | null>(null);
+  const read = loaded?.address === address ? loaded.read : null;
 
   useEffect(() => {
     let current = true;
-    setRead(null);
     void readProviderConversationWith(supabase, address).then((result) => {
-      if (current) setRead(result);
+      if (current) setLoaded({ address, read: result });
     });
     return () => {
       current = false;
@@ -34,11 +38,15 @@ export function SessionTranscriptPane({ address }: { address: string }) {
   }
   if (read.state !== "ready") {
     return (
-      <p className="p-4 text-sm text-muted-foreground">
-        {read.state === "not-provider"
-          ? "This conversation is not a coding-session mirror."
-          : "The transcript could not be read."}
-      </p>
+      <div className="p-4">
+        {read.state === "not-provider" ? (
+          <p className="text-sm text-muted-foreground">
+            This conversation is not a coding-session mirror.
+          </p>
+        ) : (
+          <ErrorNotice message="The transcript could not be read." error={read.error} size="compact" />
+        )}
+      </div>
     );
   }
   return <ProviderConversationTranscript key={address} detail={read.detail} />;

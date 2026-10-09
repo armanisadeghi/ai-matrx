@@ -11,9 +11,9 @@
  * is a link.
  */
 import { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { Radio } from "lucide-react";
-import { useConversations, useMessagingHost } from "@ai-matrx/messaging/react";
 import { cn } from "@/lib/utils";
 import { agentRoomKind } from "../presence";
 import { useLiveHub } from "../useLiveHub";
@@ -31,17 +31,13 @@ function readSelection(params: URLSearchParams): LiveSelection {
 }
 
 export function LiveHub() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const selection = readSelection(new URLSearchParams(params.toString()));
-  const { sessions, members, loading, error, nowMs, refresh } = useLiveHub();
-  const { conversations } = useConversations();
-  const host = useMessagingHost();
+  const { sessions, members, rooms, loading, error, nowMs, refresh } = useLiveHub();
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [createdDirect, setCreatedDirect] = useState<Record<string, string>>({});
 
-  const rooms = conversations.filter((c) => agentRoomKind(c.conversation.metadata) !== null);
 
   const select = (next: LiveSelection) => {
     const q =
@@ -50,7 +46,7 @@ export function LiveHub() {
         : next?.kind === "room"
           ? `?room=${next.id}`
           : "";
-    router.replace(`${pathname}${q}`, { scroll: false });
+    replaceAddressWithoutNavigating(`${pathname}${q}`);
   };
 
   const session =
@@ -114,9 +110,10 @@ export function LiveHub() {
             directRoomId={directRoomId}
             nowMs={nowMs}
             onBack={() => select(null)}
-            onDirectRoomCreated={(id) =>
-              setCreatedDirect((cur) => ({ ...cur, [session.address]: id }))
-            }
+            onDirectRoomCreated={(id) => {
+              setCreatedDirect((cur) => ({ ...cur, [session.address]: id }));
+              refresh();
+            }}
           />
         ) : room ? (
           <RoomDetail
@@ -154,7 +151,7 @@ export function LiveHub() {
         sessions={sessions}
         onCreated={(id) => {
           setNewRoomOpen(false);
-          void host?.engine.refreshInbox();
+          refresh();
           select({ kind: "room", id });
         }}
       />

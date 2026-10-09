@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useState } from "react";
 import { SendHorizontal } from "lucide-react";
 import { asConversationId } from "@ai-matrx/messaging";
@@ -47,7 +48,6 @@ export function DirectLine({
       host.engine.send({ conversationId: asConversationId(created), content: text });
       setDraft("");
       onCreated(created);
-      void host.engine.refreshInbox();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The message was not sent.");
     } finally {
@@ -73,7 +73,7 @@ export function DirectLine({
           <p className="text-center text-xs text-muted-foreground">
             No messages with this session yet.
           </p>
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <ErrorNotice message={error} size="inline" />}
           <div className="flex items-end gap-2 rounded-lg border border-input p-1.5 focus-within:ring-1 focus-within:ring-ring">
             <textarea
               value={draft}

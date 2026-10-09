@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bot, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { providerMeta } from "@/features/agent-connections/coding-sessions/catalog";
 import { compactAge, deliveryLag } from "../presence";
@@ -31,7 +33,7 @@ export function SessionDetail({
   onDirectRoomCreated: (roomId: string) => void;
 }) {
   const [tab, setTab] = useState<Tab>("messages");
-  const Icon = providerMeta(session.provider)?.icon ?? Bot;
+  const Icon = providerMeta(session.provider)?.icon ?? AGENT_ICON;
   const lag = worstLag(members.map((m) => deliveryLag(m, nowMs)));
   const lagLine = lagText(lag);
   const seen = session.lastSeenAt
@@ -41,13 +43,9 @@ export function SessionDetail({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <Button
-          variant="quiet"
-          icon={<ArrowLeft />}
-          aria-label="Back"
-          className="shrink-0 @2xl/live:hidden"
-          onClick={onBack}
-        />
+        <span className="shrink-0 @2xl/live:hidden">
+          <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={onBack} />
+        </span>
         <PresenceDot presence={session.presence} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold">{session.title}</h2>

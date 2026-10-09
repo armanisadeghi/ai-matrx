@@ -13,7 +13,21 @@ import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { apiPost } from "@/lib/api/typed-client";
 import { getUserMessage } from "@/lib/api/errors";
+import {
+  createMessagingRepository,
+  type ConversationSummary,
+} from "@ai-matrx/messaging";
 import type { MemberCursor } from "./presence";
+
+// The hub lists agent rooms on its own axis: the app's one messaging engine
+// carries the /messages People|Agents filter, which the hub must not move.
+const agentRooms = createMessagingRepository({ client: supabase });
+
+/** The person's agent rooms (direct, pair, named, review), newest first. */
+export async function fetchAgentRooms(): Promise<ConversationSummary[]> {
+  const page = await agentRooms.listConversations({ kind: "agents", limit: 100 });
+  return [...page.items];
+}
 
 const MEMBER_COLUMNS =
   "id, conversation_id, member_kind, member_id, offered_through, offered_at, delivered_through, delivered_at, delivered_via, lookup_failures, expired_count, last_failure_reason, last_failure_at, muted, created_at" as const;

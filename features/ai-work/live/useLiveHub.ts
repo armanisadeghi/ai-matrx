@@ -5,7 +5,8 @@
  * presence), their agent-room member rows (with delivery lag), kept live by ONE
  * @ai-matrx/realtime channel over `chat.coding_session` and
  * `communication.dm_session_members` (both published by
- * migrations/agent_messaging_live_hub_realtime_publication.sql).
+ * migrations/agent_messaging_live_hub_realtime_publication.sql), plus new
+ * `communication.dm_messages` rows for the room list's unread and last line.
  *
  * A presence change patches the row in place; an unknown session or any member
  * change triggers one debounced re-read, never a per-event fetch.
@@ -25,7 +26,8 @@ import { providerMeta } from "@/features/agent-connections/coding-sessions/catal
 import { workspaceName } from "../lib/codingSessionPresentation";
 import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 import { effectivePresence, type LivePresence } from "./presence";
-import { fetchSessionMembers, type SessionMemberRow } from "./service";
+import type { ConversationSummary } from "@ai-matrx/messaging";
+import { fetchAgentRooms, fetchSessionMembers, type SessionMemberRow } from "./service";
 
 const liveChannel = defineChannelNamespace({
   namespace: "work-live",
@@ -108,6 +110,7 @@ function toLive(
 export interface LiveHubState {
   sessions: LiveSession[];
   members: SessionMemberRow[];
+  rooms: ConversationSummary[];
   loading: boolean;
   error: string | null;
   nowMs: number;
@@ -118,6 +121,7 @@ export function useLiveHub(): LiveHubState {
   const userId = useAppSelector(selectUserId);
   const [rows, setRows] = useState<CodingSessionView[]>([]);
   const [members, setMembers] = useState<SessionMemberRow[]>([]);
+  const [rooms, setRooms] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -159,11 +163,12 @@ export function useLiveHub(): LiveHubState {
   useEffect(() => {
     if (!userId) return;
     let current = true;
-    void Promise.all([fetchCodingSessions(), fetchSessionMembers(userId)])
-      .then(([page, memberRows]) => {
+    void Promise.all([fetchCodingSessions(), fetchSessionMembers(userId), fetchAgentRooms()])
+      .then(([page, memberRows, roomRows]) => {
         if (!current) return;
         setRows(page.sessions);
         setMembers(memberRows);
+        setRooms(roomRows);
         setError(null);
         setNowMs(Date.now());
       })
@@ -222,6 +227,15 @@ export function useLiveHub(): LiveHubState {
               rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
               onChange: () => scheduleRead(),
             },
+            {
+              // RLS limits this to rooms the person is in; any new message
+              // re-reads the room list (unread, last message) once, debounced.
+              event: "INSERT",
+              schema: "communication",
+              table: "dm_messages",
+              rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+              onChange: () => scheduleRead(),
+            },
           ],
           onBackfill: () => scheduleRead(),
         }
@@ -232,6 +246,7 @@ export function useLiveHub(): LiveHubState {
   return {
     sessions,
     members,
+    rooms,
     loading,
     error,
     nowMs,

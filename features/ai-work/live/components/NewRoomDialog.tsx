@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,7 +87,7 @@ export function NewRoomDialog({
             ))
           )}
         </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <ErrorNotice message={error} size="inline" />}
         <DialogFooter>
           <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Cancel

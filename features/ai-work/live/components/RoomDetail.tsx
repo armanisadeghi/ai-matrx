@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useState } from "react";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import type { ConversationSummary } from "@ai-matrx/messaging";
@@ -66,13 +67,9 @@ export function RoomDetail({
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="border-b border-border px-3 py-2">
         <div className="flex items-center gap-2">
-          <Button
-            variant="quiet"
-            icon={<ArrowLeft />}
-            aria-label="Back"
-            className="shrink-0 @2xl/live:hidden"
-            onClick={onBack}
-          />
+          <span className="shrink-0 @2xl/live:hidden">
+            <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={onBack} />
+          </span>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-semibold">{room.displayName}</h2>
             <p className="text-xs text-muted-foreground">
@@ -141,7 +138,7 @@ export function RoomDetail({
             })}
           </ul>
         )}
-        {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+        {error && <ErrorNotice message={error} size="inline" />}
       </header>
       <ConversationPane
         key={roomId}

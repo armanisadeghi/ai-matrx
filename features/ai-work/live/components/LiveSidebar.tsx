@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   ArrowLeftRight,
-  Bot,
   ChevronRight,
   ClipboardCheck,
   MessageSquare,
@@ -14,6 +13,8 @@ import {
 import type { ConversationSummary } from "@ai-matrx/messaging";
 import { formatConversationTime } from "@ai-matrx/messaging";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { providerMeta } from "@/features/agent-connections/coding-sessions/catalog";
 import { agentRoomKind, compactAge, deliveryLag, type AgentRoomKind } from "../presence";
@@ -27,6 +28,7 @@ export type LiveSelection =
   | null;
 
 const ENDED_SHOWN = 15;
+const ROOMS_SHOWN = 12;
 
 const ROOM_ICON: Record<AgentRoomKind, typeof Users> = {
   agent_direct: MessageSquare,
@@ -67,7 +69,7 @@ function SessionRow({
   nowMs: number;
   onSelect: () => void;
 }) {
-  const Icon = providerMeta(session.provider)?.icon ?? Bot;
+  const Icon = providerMeta(session.provider)?.icon ?? AGENT_ICON;
   const lag = worstLag(members.map((m) => deliveryLag(m, nowMs)));
   const seen = session.lastSeenAt ? compactAge(nowMs - Date.parse(session.lastSeenAt)) : null;
   return (
@@ -186,6 +188,8 @@ export function LiveSidebar({
 }) {
   const [query, setQuery] = useState("");
   const [showEnded, setShowEnded] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [roomLimit, setRoomLimit] = useState(ROOMS_SHOWN);
   const [endedLimit, setEndedLimit] = useState(ENDED_SHOWN);
   const q = query.trim().toLowerCase();
   const match = (text: string) => !q || text.toLowerCase().includes(q);
@@ -204,7 +208,13 @@ export function LiveSidebar({
     );
   const ended = visible.filter((s) => s.presence === "ended");
   const busy = active.filter((s) => s.presence === "busy").length;
-  const shownRooms = rooms.filter((r) => match(r.displayName));
+  const matchedRooms = rooms.filter((r) => match(r.displayName));
+  const shownRooms = matchedRooms.filter(
+    (r) => agentRoomKind(r.conversation.metadata) !== "agent_review",
+  );
+  const reviewRooms = matchedRooms.filter(
+    (r) => agentRoomKind(r.conversation.metadata) === "agent_review",
+  );
   const agentMembers = members.filter((m) => m.member_kind === "agent_conversation");
   const membersOf = (s: LiveSession) => members.filter((m) => s.bindingIds.includes(m.member_id));
   const roomMemberCount = (id: string) =>
@@ -235,9 +245,9 @@ export function LiveSidebar({
           action={busy > 0 ? <span className="normal-case tracking-normal text-emerald-600 dark:text-emerald-400">{busy} busy</span> : null}
         />
         {error ? (
-          <div className="px-3 py-2 text-sm text-destructive">
-            {error}{" "}
-            <button type="button" className="underline" onClick={onRetry}>
+          <div className="px-3 py-2">
+            <ErrorNotice message={error} size="inline" />
+            <button type="button" className="text-xs underline" onClick={onRetry}>
               Retry
             </button>
           </div>
@@ -304,7 +314,7 @@ export function LiveSidebar({
             Rooms appear when sessions message each other or you.
           </p>
         ) : (
-          shownRooms.map((r) => (
+          shownRooms.slice(0, roomLimit).map((r) => (
             <RoomRow
               key={r.conversation.id}
               room={r}
@@ -313,6 +323,38 @@ export function LiveSidebar({
               onSelect={() => onSelect({ kind: "room", id: r.conversation.id })}
             />
           ))
+        )}
+        {shownRooms.length > roomLimit && (
+          <button
+            type="button"
+            className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setRoomLimit((n) => n + ROOMS_SHOWN)}
+          >
+            Show {Math.min(ROOMS_SHOWN, shownRooms.length - roomLimit)} more
+          </button>
+        )}
+        {reviewRooms.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowReview((v) => !v)}
+              aria-expanded={showReview}
+              className="flex h-8 w-full items-center gap-1 px-3 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className={cn("size-3 transition-transform", showReview && "rotate-90")} />
+              Review rooms <span className="tabular-nums">{reviewRooms.length}</span>
+            </button>
+            {showReview &&
+              reviewRooms.map((r) => (
+                <RoomRow
+                  key={r.conversation.id}
+                  room={r}
+                  memberCount={roomMemberCount(r.conversation.id)}
+                  selected={selection?.kind === "room" && selection.id === r.conversation.id}
+                  onSelect={() => onSelect({ kind: "room", id: r.conversation.id })}
+                />
+              ))}
+          </>
         )}
 
         <SectionHeader label="Manager agents" count={agentMembers.length} />
@@ -328,7 +370,7 @@ export function LiveSidebar({
               onClick={() => onSelect({ kind: "room", id: m.conversation_id })}
               className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-accent/50"
             >
-              <Bot className="size-4 shrink-0 text-muted-foreground" />
+              <AGENT_ICON className="size-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate text-sm">
                 {rooms.find((r) => r.conversation.id === m.conversation_id)?.displayName ?? "Agent room"}
               </span>
