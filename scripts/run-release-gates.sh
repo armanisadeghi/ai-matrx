@@ -144,6 +144,9 @@ if $STRICT; then
         # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PickListWindowBody).
         "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
+        # Copy/Alchemy is never switched off on a table; no new hand-built tables (baseline shrinks only).
+        "Tables keep copy/Alchemy; no new hand-built table|pnpm check:one-table-law"
+        "The one-table-law guard can still fail (fixtures in a temp dir)|pnpm check:one-table-law:self-test"
         "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration"
         "The demos chat registration guard can still fail|pnpm check:demos-chat-registration:self-test"
         # Never list every table to find one: tableFind / ensureTable / defineTypedTable are the doors.

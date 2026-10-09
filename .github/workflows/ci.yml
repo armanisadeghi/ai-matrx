@@ -268,6 +268,9 @@ jobs:
       - name: every store table mounts the one table page (no old grid, no second host)
         # 2026-10-04: the window, chat modal, canvas, quick sheet and picker mount what /data/<table> mounts.
         run: pnpm check:one-store-grid && pnpm check:one-store-grid:self-test
+      - name: tables keep copy/Alchemy and no new hand-built table (copy-optout, hand-table)
+        # 2026-10-08: pages kept switching off the canonical table's core features and hand-building tables. Baseline only shrinks.
+        run: pnpm check:one-table-law && pnpm check:one-table-law:self-test
       - name: no heavy module in the shell's eager client set
         # 2026-10-08: it ran only in the advisory release gates, so a compiler or editor pulled into
         # the first chunk of every page shipped unseen. ~90s, static, no secrets.

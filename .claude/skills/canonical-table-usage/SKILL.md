@@ -4,7 +4,7 @@ type: Skill
 title: Canonical table usage
 description: "Approved table usage rules. Use when configuring, migrating, or reviewing MatrxDataTable columns, toolbars, or pagination."
 tags: [tables, ui]
-timestamp: 2026-10-04
+timestamp: 2026-10-08
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -23,3 +23,4 @@ timestamp: 2026-10-04
 6. Before converting a hand-built table, screenshot it in place and apply [canonicalize without destroying](../../policies/no-dead-ends.md): if the converted table is visibly worse in its spot (a box inside a box, lost counts or columns, added chrome), the hand-built design is adopted into the table package as an option or new primitive, never replaced by the default. A table inside a card, section or panel never adds its own frame inside the host's frame.
 7. Never re-style the table or its toolbar from the page: no `className` / `tableClassName` on `MatrxDataTable`, `TableTitleRow`, `TableViewTabs` or their siblings, and no arbitrary variant reaching into them (`[&_[data-matrx-…]]`, `[&_thead]`, `[&_td]`). Use the package's option (`density`, `frameHeight`, `emptyHeader`, `toolbar.portalInto` / `tabsPortalInto`); a missing option is added in `@ai-matrx/design-system`, released and adopted the same session. Guards: ESLint `matrx/no-canonical-component-override` and `pnpm findings` (ui-drift rule `canonical-override`, shrink-only).
 8. A table whose people ask "how many, how much, by what" (a status, an owner, a date, an amount) offers drill-down and never hand-builds group counts beside it. Local vs server, levels, declaring, verifying: the `table-drill-down` skill.
+9. Copy / Alchemy is never switched off: no `copy={false}`, `copy: false`, `showRow: false`, `showToolbar: false`, `copyControls` false or `hideToolbar` on `MatrxDataTable` / `EntityList` — place the control, don't remove it. Genuine exception: `// table-copy-optout: <reason>`. A new table is `MatrxDataTable`, never a raw `<table>` or `components/ui/table`. Guard: `pnpm check:one-table-law` (fails on both; the hand-built baseline only shrinks).
