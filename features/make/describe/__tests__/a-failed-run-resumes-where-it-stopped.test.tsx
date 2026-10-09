@@ -68,6 +68,7 @@ jest.mock("../describeTemplate", () => ({
   }),
   applySafeReuses: (a: { template: Record<string, unknown>; reuses: unknown[]; notes: string[] }) => ({ template: a.template, reuses: a.reuses, notes: [] }),
   bindReuses: (s: unknown) => s,
+  dropOrphanRows: (s: unknown) => ({ spec: s, notes: [] }),
   checkDescribeTemplate: (t: unknown) => ({ ok: true, spec: t, autoFixes: [] }),
   coerceDescribeAnswer: (v: unknown) => v,
   declareDescribeSpec: async () => "tpl-1",
