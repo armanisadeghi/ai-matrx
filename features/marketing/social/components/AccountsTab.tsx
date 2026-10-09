@@ -11,6 +11,7 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Globe, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
@@ -23,7 +24,8 @@ import { useRefusedRead } from "../gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
-import { accountLabels, formatGrowth, lastPostLabel, refreshSummary, relativeAge } from "../mappers";
+import { accountLabels, formatGrowth, lastPostLabel, refreshSummary, relativeAge, showOwnerChip } from "../mappers";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { formatCompact, formatPercentile, outlierBadgeModel } from "../outlier";
 import {
   refreshProfile,
@@ -43,6 +45,8 @@ import {
   type TrackedRole,
 } from "../types";
 import { PersonOwnerChip } from "../../components/brands/PersonOwnerChip";
+import { socialRowOpen } from "../row-open";
+import { AccountSummary } from "./AccountSummary";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
@@ -62,9 +66,12 @@ export function accountHref(brandSeg: string, row: Pick<AccountRow, "platform" |
 
 export function AccountsTab() {
   const { brandId, brandSeg, organizationId, openTrack } = useSocials();
+  const brandKind = useMarketingBrand().kind;
+  const router = useRouter();
+  const [summaryRow, setSummaryRow] = useState<AccountRow | null>(null);
   const accounts = useAccountRows(organizationId, brandId);
   const invalidate = useInvalidateSocial();
-  const { busyRow, setBusyRow, trackOwn, trackAllOwn, costText, confirmSpend } = useTrackOwn(organizationId, brandId);
+  const { busyRow, progress, setBusyRow, trackOwn, trackAllOwn, costText, confirmSpend } = useTrackOwn(organizationId, brandId);
 
   const { show: showRefused, open: openCapture, node: captureNode } = useRefusedRead(organizationId, () => void invalidate());
   const [refusedRows, setRefusedRows] = useState<ReadonlySet<string>>(new Set());
@@ -137,7 +144,7 @@ export function AccountsTab() {
         minWidth: 220,
         cell: (r) => {
           const href = accountHref(brandSeg, r);
-          const labels = accountLabels(r.displayName, r.handle);
+          const labels = accountLabels(r.displayName, r.handle, r.platform);
           const platformName = isSocialPlatform(r.platform) ? SOCIAL_PLATFORM_LABELS[r.platform] : r.platform;
           const body = (
             <span className="flex min-w-0 items-center gap-2">
@@ -145,7 +152,7 @@ export function AccountsTab() {
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate text-sm font-medium text-foreground">{labels.primary}</span>
-                  {r.ownerKind === "person" ? <PersonOwnerChip propertyId={r.propertyId ?? null} ownerName={r.ownerName ?? null} organizationId={organizationId} brandId={brandId} /> : null}
+                  {showOwnerChip(r, brandKind) ? <PersonOwnerChip propertyId={r.propertyId ?? null} ownerName={r.ownerName ?? null} organizationId={organizationId} brandId={brandId} /> : null}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {[platformName, labels.secondary ? formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) : null].filter(Boolean).join(" · ")}
@@ -275,11 +282,20 @@ export function AccountsTab() {
         header: "Status",
         accessorKey: "status",
         filter: "select",
-        cell: (r) => (r.status === "not_tracked" ? "Not tracked" : r.status === "active" ? "Active" : r.status),
+        cell: (r) =>
+          busyRow === r.rowId && !r.trackedAccountId ? (
+            <span className="text-primary">{progress ?? "Tracking…"}</span>
+          ) : r.status === "not_tracked" ? (
+            "Not tracked"
+          ) : r.status === "active" ? (
+            "Active"
+          ) : (
+            r.status
+          ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandSeg, organizationId, brandId],
+    [brandSeg, organizationId, brandId, brandKind, busyRow, progress],
   );
 
   // A fixed order that does not depend on anything tracking changes (followers, name): tracking an
@@ -298,6 +314,12 @@ export function AccountsTab() {
       data={rows}
       columns={columns}
       getRowId={(r) => r.rowId}
+      {...socialRowOpen<AccountRow>((r) => {
+        // A row opens what it is: its account page when it has one, else a designed summary (never raw fields).
+        const href = accountHref(brandSeg, r);
+        if (href) router.push(href);
+        else setSummaryRow(r);
+      })}
       isLoading={accounts.isLoading}
       isFetching={accounts.isFetching}
       read={{
@@ -385,6 +407,13 @@ export function AccountsTab() {
       }}
     />
     {captureNode}
+    <AccountSummary
+      row={summaryRow}
+      onClose={() => setSummaryRow(null)}
+      canTrack={summaryRow !== null && trackableOwn(summaryRow) && !summaryRow.trackedAccountId}
+      tracking={summaryRow !== null && busyRow === summaryRow.rowId}
+      onTrack={(row) => void trackOwn(row).then(() => setSummaryRow(null))}
+    />
     </>
   );
 }

@@ -181,16 +181,33 @@ export function openPostLabel(handle: string | null | undefined, hookLine: strin
   return `${who}: ${excerpt}`;
 }
 
-/** Display name and handle once each: when the name is just the handle, the handle stands alone. */
+/** A YouTube channel id (`UC` + 22 characters): an address, never a name a person would say. */
+export function isRawChannelId(handle: string | null | undefined): boolean {
+  return /^@?UC[\w-]{22}$/.test((handle ?? "").trim());
+}
+
+/**
+ * Display name and handle once each: when the name is just the handle, the handle stands alone.
+ * A raw YouTube channel id is never shown as a name or a handle: the stored name stands, else "YouTube channel".
+ */
 export function accountLabels(
   displayName: string,
   handle: string,
+  platform?: string | null,
 ): { primary: string; secondary: string | null } {
   const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
   const name = displayName.trim();
+  if (isRawChannelId(handle) && (!platform || platform === "youtube")) {
+    return { primary: !name || isRawChannelId(name) ? "YouTube channel" : name, secondary: null };
+  }
   const at = handle ? `@${handle.replace(/^@/, "")}` : "";
   if (!name || norm(name) === norm(handle)) return { primary: at || name, secondary: null };
   return { primary: name, secondary: at || null };
+}
+
+/** The person-owner chip says whose account it is; on a person brand every such account is the brand's person, so it adds nothing. */
+export function showOwnerChip(row: { ownerKind?: "company" | "person" }, brandKind: "company" | "person"): boolean {
+  return row.ownerKind === "person" && brandKind !== "person";
 }
 
 /** `3d`, `5h`, `2mo` — relative posted age; absolute date goes in the tooltip. */

@@ -109,6 +109,13 @@ Standards components (`@/features/marketing/social/components/…`)
 - **A brand's post panel belongs to that brand's pages** (`panelScope.ts`, used by `SocialPostWindow`): it closes on another brand, /board or any non-brand page, and a restored `?panels=` link on another page does not open it. A panel opened outside a brand follows the person.
 - **A brand's accounts become profile tiles** through `board-accounts.ts` (own first, stored-only for the Studio starter) and `studio/studio-starter.ts`; the Add menu's "From this brand's accounts" picker is in `features/board/items/social-items.tsx`.
 
+## Close rules (SOC-CLOSE-1, 2026-10-09)
+
+- **A row click opens what the row is, never raw fields.** Every `MatrxDataTable` here spreads `socialRowOpen(...)` (`row-open.ts`: generic side panel + row window off, `onRowOpen` = the account page, the post panel, or `components/AccountSummary` for an account with no page). Guard: `__tests__/row-open-rule.test.ts` counts tables vs rules per component file.
+- **`SocialImage` asks the element, not only the event** (`imageSettled`): a cached image can finish before `onLoad` is heard or before the source effect re-arms "loading".
+- **A raw YouTube channel id is never a name or handle** (`accountLabels(name, handle, platform)`, `formatSocialHandle`): the stored name, else "YouTube channel".
+- **Overview card and Accounts show the same numbers** for a row (readings show even when not tracked); the person-owner chip is hidden on a person brand (`showOwnerChip`).
+
 ## Decisions and edges
 
 - **Reads direct, compute through the server.** No Next.js API routes. Plain edits (role) are Layer B row updates under RLS.

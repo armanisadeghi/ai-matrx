@@ -10,7 +10,7 @@
  * bytes arrive; a pulsing skeleton fills it meanwhile.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -71,6 +71,16 @@ export function isDrawableUrl(url: string | null | undefined): url is string {
   return !/\.heic(\?|$)/i.test(url.split("#")[0] ?? "");
 }
 
+/**
+ * What an <img> already knows about itself. A cached image can finish loading before React has
+ * attached `onLoad` (direct load / refresh of a page: the server HTML's request completes before
+ * hydration), and the event is then never seen. So the element is asked, not just listened to.
+ */
+export function imageSettled(img: Pick<HTMLImageElement, "complete" | "naturalWidth"> | null): "ready" | "failed" | "pending" {
+  if (!img || !img.complete) return "pending";
+  return img.naturalWidth > 0 ? "ready" : "failed";
+}
+
 export interface SocialImageProps {
   /** Stored-copy door path (`postThumbnailDoor` / `profileAvatarDoor`); null when nothing is stored. */
   door: string | null;
@@ -84,6 +94,7 @@ export interface SocialImageProps {
 export function SocialImage({ door, url, fallback, className, alt = "" }: SocialImageProps) {
   const organizationId = useAppSelector(selectOrganizationId) ?? "";
   const [src, setSrc] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "failed">(door || isDrawableUrl(url) ? "loading" : "failed");
 
   useEffect(() => {
@@ -106,6 +117,17 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
     return () => { alive = false; };
   }, [door, url, organizationId]);
 
+  // The load event may have fired before this component could hear it (see `imageSettled`): the
+  // source effect above re-arms "loading" whenever the organization id arrives after first paint,
+  // for an element that has already loaded and will never load again. Ask the element each time
+  // the state says it is still waiting.
+  useEffect(() => {
+    if (!src || state !== "loading") return;
+    const settled = imageSettled(imgRef.current);
+    if (settled === "ready") setState("ready");
+    else if (settled === "failed") setState("failed");
+  }, [src, state]);
+
   // The designed fallback is ALWAYS the bottom layer: whatever the image does (slow, refused, blank),
   // the box is never empty. The picture covers it only once it has really loaded.
   if (state === "failed") return <>{fallback}</>;
@@ -115,6 +137,7 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
       {state === "loading" ? <span aria-hidden className="absolute inset-0 animate-pulse bg-muted/60" /> : null}
       {src ? (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           decoding="async"

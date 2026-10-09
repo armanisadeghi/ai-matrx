@@ -23,6 +23,7 @@ import {
   type SelectOption,
 } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { socialRowOpen } from "../row-open";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -47,6 +48,7 @@ import {
   profileFollowerSeries,
   refreshSummary,
   relativeAge,
+  accountLabels,
   type PostFilter,
   type PostSort,
 } from "../mappers";
@@ -229,6 +231,7 @@ function PostsPanel({
           data={shown}
           columns={POST_COLUMNS}
           getRowId={(r) => r.postId}
+          {...socialRowOpen<PostCardModel>(onOpen)}
           toolbar={{ searchPlaceholder: "Search posts…" }}
           rowActions={(r) => [
             {
@@ -382,7 +385,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
           </span>
         ) : null}
         <div className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-sm font-semibold text-foreground">{p.display_name || p.handle}</span>
+          <span className="truncate text-sm font-semibold text-foreground">{accountLabels(p.display_name ?? "", p.handle, p.platform).primary}</span>
           <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: p.platform, handle: p.handle, url: p.profile_url })}</span>
         </div>
         <span title={platformLabel(platform)}>

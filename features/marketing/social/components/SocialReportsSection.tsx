@@ -12,6 +12,8 @@ import { useState } from "react";
 
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { useRouter } from "next/navigation";
+import { socialRowOpen } from "../row-open";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -160,6 +162,7 @@ const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
 
 export function SocialReportsSection() {
   const agency = useAgencySocial();
+  const router = useRouter();
   const [view, setView] = useState<"accounts" | "outliers">("accounts");
   return (
     <SectionCard title="Social" action={{ label: "Brands", href: marketingRoutes.brands() }}>
@@ -179,6 +182,10 @@ export function SocialReportsSection() {
             data={agency.data?.accounts ?? []}
             columns={ACCOUNT_COLUMNS}
             getRowId={(r) => r.trackedAccountId}
+            {...socialRowOpen<AgencyAccountRow>((r) => {
+              const href = agencyAccountHref(r) ?? agencyBrandHref(r);
+              if (href) router.push(href);
+            })}
             isLoading={agency.isLoading}
             read={{
               status: agency.isError ? "error" : agency.isLoading ? "loading" : "ready",
@@ -195,6 +202,9 @@ export function SocialReportsSection() {
             data={agency.data?.outliers ?? []}
             columns={OUTLIER_COLUMNS}
             getRowId={(r) => r.postId}
+            {...socialRowOpen<AgencyOutlierRow>((r) => {
+              window.open(r.url, "_blank", "noopener,noreferrer");
+            })}
             isLoading={agency.isLoading}
             read={{
               status: agency.isError ? "error" : agency.isLoading ? "loading" : "ready",

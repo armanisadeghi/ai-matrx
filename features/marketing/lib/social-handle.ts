@@ -14,6 +14,8 @@ export function formatSocialHandle(args: {
   url?: string | null;
 }): string {
   const handle = (args.handle ?? "").trim();
+  // A raw YouTube channel id is an address, not a handle: never printed as one.
+  if (args.platform?.toLowerCase() === "youtube" && /^@?UC[\w-]{22}$/.test(handle)) return "";
   if (args.platform?.toLowerCase() === "reddit") {
     const target =
       (args.url ? classifyRedditUrl(args.url) : null) ?? (handle ? classifyRedditHandle(handle) : null);

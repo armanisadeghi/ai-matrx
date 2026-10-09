@@ -1,5 +1,7 @@
 
 import {
+  accountLabels,
+  showOwnerChip,
   brandSocialRowToAccountRow,
   buildAccountRows,
   filterAndSortPosts,
@@ -289,5 +291,25 @@ describe("brand social account rows (brand_social_accounts)", () => {
   });
   it("marks unsupported platforms not trackable", () => {
     expect(brandSocialRowToAccountRow({ ...base, platform: "pinterest", trackable: false }).trackable).toBe(false);
+  });
+});
+
+describe("a raw YouTube channel id is never shown as an account name", () => {
+  const id = "UCF4Ku_RBslqV3A36j6KddZQ";
+  it("says YouTube channel when no name is stored, the stored name when it is", () => {
+    expect(accountLabels(id, id, "youtube")).toEqual({ primary: "YouTube channel", secondary: null });
+    expect(accountLabels("", `@${id}`, "youtube")).toEqual({ primary: "YouTube channel", secondary: null });
+    expect(accountLabels("Mel Robbins Podcast", id, "youtube")).toEqual({ primary: "Mel Robbins Podcast", secondary: null });
+  });
+  it("leaves real handles alone", () => {
+    expect(accountLabels("Mel Robbins", "melrobbins", "instagram")).toEqual({ primary: "Mel Robbins", secondary: "@melrobbins" });
+  });
+});
+
+describe("the person-owner chip", () => {
+  it("is hidden on a person brand", () => {
+    expect(showOwnerChip({ ownerKind: "person" }, "person")).toBe(false);
+    expect(showOwnerChip({ ownerKind: "person" }, "company")).toBe(true);
+    expect(showOwnerChip({ ownerKind: "company" }, "company")).toBe(false);
   });
 });

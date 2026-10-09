@@ -27,6 +27,7 @@ import {
 } from "@ai-matrx/design-system/controls";
 import { TextInputDialog } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { socialRowOpen } from "../row-open";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -527,6 +528,7 @@ export function OutliersTab() {
           data={items}
           columns={columns}
           getRowId={(r) => r.post.postId}
+          {...socialRowOpen<FeedItem>((r) => openPost(r))}
           toolbar={{ searchPlaceholder: "Search outliers…" }}
           defaultSort={{ id: "multiple", direction: "desc" }}
           rowActions={(r) => [

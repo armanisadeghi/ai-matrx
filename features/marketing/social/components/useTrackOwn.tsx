@@ -62,10 +62,12 @@ export function useTrackOwn(organizationId: string, brandId: string) {
   }
 
   async function trackOwn(row: AccountRow) {
-    const ok = await confirmSpend("track", 1, { title: `Track ${platformLabel(row.platform)} @${row.handle} as Own?`, confirmLabel: "Track" });
-    if (!ok) return;
+    // The row shows "Tracking…" the instant it is clicked, before the cost check and its confirmation.
     setBusyRow(row.rowId);
+    setProgress("Starting…");
     try {
+      const ok = await confirmSpend("track", 1, { title: `Track ${platformLabel(row.platform)} @${row.handle} as Own?`, confirmLabel: "Track" });
+      if (!ok) return;
       if ((await trackOwnRow(row)) === "ok") {
         await invalidate();
         toast.success(`Tracking @${row.handle}`);

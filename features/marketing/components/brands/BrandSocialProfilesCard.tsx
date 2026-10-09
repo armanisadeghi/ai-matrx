@@ -18,7 +18,7 @@ import { SectionCard } from "@/features/marketing/components/shared/MarketingUi"
 import { useBrandSocialAccounts, useInvalidateSocial } from "@/features/marketing/social/hooks";
 import { useRefusedRead } from "@/features/marketing/social/gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guidedJob";
-import { accountLabels, formatGrowth, lastPostLabel } from "@/features/marketing/social/mappers";
+import { accountLabels, formatGrowth, lastPostLabel, showOwnerChip } from "@/features/marketing/social/mappers";
 import { formatCompact, outlierBadgeModel } from "@/features/marketing/social/outlier";
 import { profileAvatarDoor } from "@/features/marketing/social/server";
 import type { AccountRow } from "@/features/marketing/social/types";
@@ -27,6 +27,7 @@ import { PlatformMark, platformLabel } from "@/features/marketing/social/compone
 import { SocialImage } from "@/features/marketing/social/components/SocialImage";
 import { trackableOwn, useTrackOwn } from "@/features/marketing/social/components/useTrackOwn";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { BrandProperty } from "@/features/marketing/types";
 
@@ -175,10 +176,13 @@ function SocialRow({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const brandKind = useMarketingBrand().kind;
   const tracked = Boolean(row.trackedAccountId);
   const handle = formatSocialHandle({ platform: row.platform, handle: row.handle, url: row.profileUrl });
   const href = row.profileId ? `/marketing/${brandSeg}/socials/${row.platform}/${row.profileId}` : null;
   const canTrack = trackableOwn(row);
+  // Numbers read when the account was added still show: the same numbers Socials -> Accounts shows for this row.
+  const hasReadings = row.followers !== null || row.postsTracked > 0;
   const best = {
     score: row.bestScore,
     baselineViews: null,
@@ -193,7 +197,7 @@ function SocialRow({
   // Never read (no profile, or tracked with nothing in it): the person's own browser can still get it.
   const unreadable = GUIDED_CAPTURE_PLATFORMS.has(row.platform) && (!row.profileId || (tracked && row.postsTracked === 0));
 
-  const labels = accountLabels(row.displayName, row.handle);
+  const labels = accountLabels(row.displayName, row.handle, row.platform);
   const name = (
     <span className="truncate text-sm font-medium text-foreground">{labels.primary}</span>
   );
@@ -225,17 +229,23 @@ function SocialRow({
           ) : (
             name
           )}
-          {row.ownerKind === "person" ? (
+          {showOwnerChip(row, brandKind) ? (
             <PersonOwnerChip propertyId={row.propertyId} ownerName={row.ownerName ?? null} organizationId={organizationId} brandId={brandId} />
           ) : null}
-          {tracked ? <Badge tone="success">Tracked</Badge> : <Badge tone="warning">Not tracked</Badge>}
+          {tracked ? (
+            <Badge tone="success">Tracked</Badge>
+          ) : (
+            <span title={hasReadings ? "Read once when the brand was set up. Track it to keep these numbers current." : undefined}>
+              <Badge tone="warning">Not tracked</Badge>
+            </span>
+          )}
         </span>
         <span className="truncate text-xs text-muted-foreground">
           {progress ?? [platformLabel(row.platform), labels.secondary ? handle : null].filter(Boolean).join(" · ")}
         </span>
       </div>
 
-      {tracked ? (
+      {tracked || hasReadings ? (
         <span className="flex shrink-0 items-start gap-4">
           <Stat label="Followers" className="w-[88px]">
             {formatCompact(row.followers)}

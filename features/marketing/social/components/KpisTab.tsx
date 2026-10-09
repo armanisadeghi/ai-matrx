@@ -24,6 +24,8 @@ import {
   type SelectOption,
 } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { useRouter } from "next/navigation";
+import { socialRowOpen } from "../row-open";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   Dialog,
@@ -55,7 +57,7 @@ import {
   type KpiMetricId,
   type KpiStatus,
 } from "../kpi";
-import { formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
+import { accountLabels, formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
 import { formatCompact } from "../outlier";
 import { socialErrorMessage } from "../server";
 import { archiveKpiGoal, createKpiGoal, updateKpiGoal, updateKpiGoalStatus } from "../service";
@@ -400,7 +402,7 @@ function OwnTrend({
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
           <PlatformMark platform={account.platform} size={16} />
-          <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl })}</span>
+          <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl }) || accountLabels(account.displayName, account.handle, account.platform).primary}</span>
         </span>
         <Badge tone={growth.fraction === null ? "neutral" : growth.fraction >= 0 ? "success" : "destructive"}>
           <span title={growth.note}>{formatGrowth(growth.fraction)}</span>
@@ -426,6 +428,8 @@ function BenchmarkTable({
   snapshots: readonly import("../types").ProfileSnapshotRow[];
   now: number;
 }) {
+  const router = useRouter();
+  const { brandSeg } = useSocials();
   const rows: BenchmarkRow[] = sortBenchmark(
     accounts
       .filter((a) => a.trackedAccountId)
@@ -462,7 +466,7 @@ function BenchmarkTable({
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-2">
           <PlatformMark platform={r.platform} size={18} />
-          <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
+          <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) || accountLabels(r.displayName, r.handle, r.platform).primary}</span>
         </span>
       ),
     },
@@ -544,6 +548,9 @@ function BenchmarkTable({
       data={rows}
       columns={columns}
       getRowId={(r) => r.rowId}
+      {...socialRowOpen<BenchmarkRow>((r) => {
+        if (r.profileId) router.push(`/marketing/${brandSeg}/socials/${r.platform}/${r.profileId}`);
+      })}
       toolbar={{ searchPlaceholder: "Search accounts…" }}
       emptyState={{ title: "No accounts yet", description: "Track accounts to compare" }}
     />
