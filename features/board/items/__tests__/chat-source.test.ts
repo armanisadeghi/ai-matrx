@@ -9,6 +9,7 @@ import {
   chatSource,
   chatSourceToSave,
   chatTitleToSave,
+  removedChatResetsTile,
 } from "../work-sources";
 
 const ID = "7b1c4a52-1f0e-4c43-9a61-0d2f9c3e8a10";
@@ -97,5 +98,15 @@ describe("chatTitleToSave", () => {
   it("leaves the title alone when the server has not titled it yet", () => {
     expect(chatTitleToSave({ serverHasIt: true, conversationTitle: null })).toBeUndefined();
     expect(chatTitleToSave({ serverHasIt: true, conversationTitle: "  " })).toBeUndefined();
+  });
+});
+
+describe("removedChatResetsTile", () => {
+  it("resets the tile when the removed conversation is the one shown", () => {
+    expect(removedChatResetsTile("c1", "c1")).toBe(true);
+  });
+  it("leaves the tile alone for another row or no conversation", () => {
+    expect(removedChatResetsTile("c1", "c2")).toBe(false);
+    expect(removedChatResetsTile("c1", null)).toBe(false);
   });
 });

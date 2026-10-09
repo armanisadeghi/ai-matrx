@@ -107,6 +107,15 @@ export function chatTitleToSave(input: { serverHasIt: boolean; conversationTitle
   return input.conversationTitle?.trim() ? input.conversationTitle : undefined;
 }
 
+/**
+ * "Remove from this board" on the conversation the tile is showing: the tile must start a
+ * new conversation (default title, empty chat) rather than keep the removed one's title
+ * over a body the board no longer has. A row that is not the shown one changes nothing.
+ */
+export function removedChatResetsTile(removedConversationId: string, shownConversationId: string | null): boolean {
+  return shownConversationId !== null && removedConversationId === shownConversationId;
+}
+
 export function chatAgentId(source: NodeSource): string | null {
   if (!isEntity(source, "chat")) return null;
   const agentId = source.meta?.agentId;

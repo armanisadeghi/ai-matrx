@@ -60,6 +60,7 @@ import {
   CHAT_LIST_WIDE_PX,
   chatSourceToSave,
   chatTitleToSave,
+  removedChatResetsTile,
   entityId,
   fileIdOf,
   chatItem,
@@ -230,7 +231,13 @@ function BoardChatList({
       scopeId={`board-chats:${boardChats.boardId}`}
       agentIds={ALL_AGENTS}
       onlyConversationIds={boardChats.ids}
-      removeFromList={{ label: "Remove from this board", onRemove: (conv) => boardChats.unfile(conv.conversationId) }}
+      removeFromList={{
+        label: "Remove from this board",
+        onRemove: (conv) => {
+          boardChats.unfile(conv.conversationId);
+          if (removedChatResetsTile(conv.conversationId, activeConversationId)) onNew();
+        },
+      }}
       activeConversationId={activeConversationId}
       onOpenConversation={onSwitch}
       openInPlace
