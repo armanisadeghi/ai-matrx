@@ -28,7 +28,28 @@ describe("AgentCard action bar and name", () => {
 
   it("hides View, Sneak Peek, Share, Orchestra and Delete inline on narrow cards, with menu twins", () => {
     expect(source.match(/hidden @\[340px\]:contents/g)?.length).toBe(3);
-    expect(source.match(/@\[340px\]:hidden/g)?.length).toBe(4);
+    // View, Sneak Peek, Share, Delete + the Add to Orchestra submenu
+    expect(source.match(/@\[340px\]:hidden/g)?.length).toBe(5);
+  });
+
+  it("keeps Add to Orchestra reachable on narrow cards as a submenu of the ⋯ menu", () => {
+    const menu = source.slice(source.indexOf("<DropdownMenu>"), source.indexOf("</DropdownMenu>"));
+    expect(menu).toContain("<AddToOrchestraSubmenu");
+    // the create dialog is mounted by the card, outside the menu that unmounts on close
+    expect(source).toContain("<CreateOrchestraDialog");
+    const menuSrc = readFileSync(
+      join(__dirname, "..", "..", "..", "orchestras", "components", "AddToOrchestraMenu.tsx"),
+      "utf8",
+    );
+    expect(menuSrc).toContain("DropdownMenuSubTrigger");
+    expect(menuSrc).toContain("export function AddToOrchestraSubmenu");
+  });
+
+  it("reflows the card grid by a minimum card width instead of shrinking cards", () => {
+    const grid = readFileSync(join(__dirname, "..", "AgentsGrid.tsx"), "utf8");
+    const cards = grid.slice(grid.indexOf("const renderCards"), grid.indexOf("const renderList"));
+    expect(cards).toContain("auto-fill,minmax(");
+    expect(cards).not.toMatch(/lg:grid-cols-3|xl:grid-cols-4/);
   });
 
   it("breaks an unbroken name inside its slot and carries the full name on hover", () => {

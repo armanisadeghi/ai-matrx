@@ -35,7 +35,11 @@ import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
 import { FavoriteAgentButton } from "@ai-matrx/agents/catalog/react";
-import { AddToOrchestraMenu } from "@/features/agents/orchestras/components/AddToOrchestraMenu";
+import {
+  AddToOrchestraMenu,
+  AddToOrchestraSubmenu,
+} from "@/features/agents/orchestras/components/AddToOrchestraMenu";
+import { CreateOrchestraDialog } from "@/features/agents/orchestras/components/CreateOrchestraDialog";
 import { useState } from "react";
 import { toast } from "@/lib/toast-service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -97,6 +101,7 @@ export function AgentCard({
     : null;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isOrchestraCreateOpen, setIsOrchestraCreateOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCreateAppModalOpen, setIsCreateAppModalOpen] = useState(false);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
@@ -442,6 +447,11 @@ export function AgentCard({
                   <Share2 className="h-4 w-4" />
                   Share
                 </DropdownMenuItem>
+                <AddToOrchestraSubmenu
+                  agentId={id}
+                  className="@[340px]:hidden"
+                  onCreate={() => setIsOrchestraCreateOpen(true)}
+                />
                 <DropdownMenuItem
                   className="gap-2"
                   disabled={isDuplicating}
@@ -554,6 +564,14 @@ export function AgentCard({
         isDeleting={isDeleting}
         isDuplicating={isDuplicating}
       />
+
+      {isOrchestraCreateOpen ? (
+        <CreateOrchestraDialog
+          open={isOrchestraCreateOpen}
+          onOpenChange={setIsOrchestraCreateOpen}
+          seedMemberId={id}
+        />
+      ) : null}
 
       <ShareModal
         isOpen={isShareModalOpen}
