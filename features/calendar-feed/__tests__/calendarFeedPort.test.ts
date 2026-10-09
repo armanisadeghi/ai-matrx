@@ -40,7 +40,7 @@ describe("calendar feed port", () => {
   });
 
   it("is bound on the records host and listed in settings", () => {
-    expect(recordsUiHostFor({ ports: { organizationId: "o" } as never }).calendarFeed).toBe(CALENDAR_FEED_PORT);
+    expect(recordsUiHostFor({ ports: { organizationId: "o" } as never, merged: false }).calendarFeed).toBe(CALENDAR_FEED_PORT);
     expect(settingsRegistry.find((t) => t.id === "general.calendarLinks")?.label).toBe("Calendar links");
   });
 });
