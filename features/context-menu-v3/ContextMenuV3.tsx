@@ -977,26 +977,55 @@ export function ContextMenuV3({
     if (native[KEY_RUN_CLAIMED] || e.defaultPrevented || suppressed || e.repeat) return;
     if (reachedThroughPortal(e)) return;
     if (!store || (!e.altKey && !e.ctrlKey && !e.metaKey)) return;
-    const match = findComboMatch(
-      e.nativeEvent,
-      selectAllShortcutsArray(store.getState()).filter((s) => s.isActive !== false),
-      (s) => s.keyboardShortcut,
-    );
-    if (!match) return;
+    const matchOf = (event: KeyboardEvent) =>
+      findComboMatch(
+        event,
+        selectAllShortcutsArray(store.getState()).filter((s) => s.isActive !== false),
+        (s) => s.keyboardShortcut,
+      );
+    const target = e.target as HTMLElement;
+    const owner = selectionOwnerRef.current ?? e.currentTarget;
+    const run = (match: { id: string; label: string }) => {
+      captureContext(target, owner);
+      setOpenSeq((n) => n + 1);
+      setKeyRun({ id: match.id, label: match.label });
+    };
+    // The shortcut list loads on the first modifier press (the modifier key's
+    // own keydown usually lands it before the combo key), never on focus — an
+    // autofocused composer would otherwise read it on every page load.
+    const loading = loadShortcuts();
+    const match = matchOf(e.nativeEvent);
+    if (!match) {
+      // A combo pressed before the list arrived still runs, once it arrives.
+      if (loading) {
+        const event = e.nativeEvent;
+        void loading.then(() => {
+          const late = matchOf(event);
+          if (late) run(late);
+        });
+      }
+      return;
+    }
     native[KEY_RUN_CLAIMED] = true;
     e.preventDefault();
     e.stopPropagation();
-    const target = e.target as HTMLElement;
-    captureContext(target, selectionOwnerRef.current ?? e.currentTarget);
-    setOpenSeq((n) => n + 1);
-    setKeyRun({ id: match.id, label: match.label });
+    run(match);
   };
-  const shortcutsRequested = useRef(false);
-  const loadShortcutsOnFocus = () => {
-    if (!store || !isEditable || shortcutsRequested.current) return;
-    shortcutsRequested.current = true;
-    // Deduped + condition-gated in the thunk: one request page-wide.
-    void store.dispatch(fetchUnifiedMenu({ scope, scopeId })).catch(() => undefined);
+  const shortcutsLoad = useRef<Promise<unknown> | null>(null);
+  const shortcutsLoaded = useRef(false);
+  /** The in-flight first load of the shortcut list, or null once it has landed. */
+  const loadShortcuts = (): Promise<unknown> | null => {
+    if (!store || !isEditable || shortcutsLoaded.current) return null;
+    if (!shortcutsLoad.current) {
+      // Deduped + condition-gated in the thunk: one request page-wide.
+      shortcutsLoad.current = store
+        .dispatch(fetchUnifiedMenu({ scope, scopeId }))
+        .catch(() => undefined)
+        .finally(() => {
+          shortcutsLoaded.current = true;
+        });
+    }
+    return shortcutsLoad.current;
   };
   const finishKeyRun = () => {
     setKeyRun(null);
@@ -1052,10 +1081,7 @@ export function ContextMenuV3({
     // a click that focused an OUTER surface cannot steal it from the inner one.
     onPointerOver: claim("pointer"),
     onPointerDown: claim("pointer"),
-    onFocus: (e: React.FocusEvent<HTMLElement>) => {
-      claim("focus")(e);
-      loadShortcutsOnFocus();
-    },
+    onFocus: claim("focus"),
     onKeyDown: handleShortcutKeyDown,
     ...(isMobile
       ? {

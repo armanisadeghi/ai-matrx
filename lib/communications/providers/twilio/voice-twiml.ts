@@ -5,6 +5,9 @@ import { getApplicationBaseUrl } from "./config";
 
 export const VOICE_RELAY_ENDED_PATH = "/api/webhooks/twilio/voice/relay-ended";
 
+export const VOICE_TRANSFER_ENDED_PATH =
+  "/api/webhooks/twilio/voice/transfer-ended";
+
 const VOICE = "Polly.Joanna-Neural";
 
 export const OWNER_BETA_VOICE_DISCLOSURE_VERSION = "owner-beta-2026-08-17-v2";
@@ -53,6 +56,7 @@ function disclosedResponse(message: string): string {
 /** The Connect action runs after the relay closes, including a failed WebSocket. */
 export function buildVoiceRelayEndedTwiml(
   params: Record<string, string>,
+  transferNumber: string | null = null,
 ): string {
   // The caller has already hung up. Do not manufacture an apology or restart the call.
   if (
@@ -61,6 +65,38 @@ export function buildVoiceRelayEndedTwiml(
   ) {
     const response = new twilio.twiml.VoiceResponse();
     response.hangup();
+    return response.toString();
+  }
+  if (
+    params.SessionStatus === "ended" &&
+    requestsHumanTransfer(params.HandoffData)
+  ) {
+    if (
+      !transferNumber ||
+      !/^\+1[2-9]\d{9}$/.test(transferNumber) ||
+      transferNumber === params.To ||
+      transferNumber === params.From
+    ) {
+      return disclosedResponse(
+        "A person is not available for transfer right now. Please call again later. Goodbye.",
+      );
+    }
+    const response = new twilio.twiml.VoiceResponse();
+    response.say(
+      { voice: VOICE },
+      "Please hold while I connect you to a person.",
+    );
+    response.dial(
+      {
+        action: new URL(
+          VOICE_TRANSFER_ENDED_PATH,
+          getApplicationBaseUrl(),
+        ).toString(),
+        method: "POST",
+        timeout: 20,
+      },
+      transferNumber,
+    );
     return response.toString();
   }
   // Provider error text and handoffData can carry private content; never read them aloud.
@@ -145,4 +181,37 @@ export function buildOwnerBetaNoConsentTwiml(): string {
 
 export function buildOwnerBetaRejectedCallerTwiml(): string {
   return disclosedResponse(OWNER_BETA_REJECTION_MESSAGE);
+}
+
+/** Only the application control code requests transfer; a payload never supplies a number. */
+export function requestsHumanTransfer(raw: string | undefined): boolean {
+  if (!raw || raw.length > 4096) return false;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "reasonCode" in value &&
+      value.reasonCode === "live-agent-handoff"
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function buildVoiceTransferEndedTwiml(
+  params: Record<string, string>,
+): string {
+  if (
+    params.CallStatus === "completed" ||
+    params.DialCallStatus === "completed" ||
+    params.DialCallStatus === "answered"
+  ) {
+    const response = new twilio.twiml.VoiceResponse();
+    response.hangup();
+    return response.toString();
+  }
+  return disclosedResponse(
+    "We could not reach a person. Please call again later. Goodbye.",
+  );
 }

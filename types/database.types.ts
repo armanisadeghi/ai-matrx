@@ -4243,6 +4243,72 @@ export type Database = {
   }
   app: {
     Tables: {
+      applet_visitor_binding: {
+        Row: {
+          alias: string
+          applet_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_table_id: string | null
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          visitor_id: string
+        }
+        Insert: {
+          alias: string
+          applet_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_table_id?: string | null
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          visitor_id: string
+        }
+        Update: {
+          alias?: string
+          applet_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_table_id?: string | null
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       definition: {
         Row: {
           app_kind: string
@@ -4811,6 +4877,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _visitor_column_preview: { Args: { p_fields: Json }; Returns: Json }
+      _visitor_field_decl: {
+        Args: { f: Database["custom"]["Views"]["field"]["Row"] }
+        Returns: Json
+      }
       applet_has_content: {
         Args: { p_entry: string; p_files: Json }
         Returns: boolean
@@ -4819,6 +4890,11 @@ export type Database = {
         Args: { p_applet_id: string; p_kind: string; p_platform?: string }
         Returns: Json
       }
+      applet_visitor_tables: {
+        Args: { p_applet_id: string; p_organization_id?: string }
+        Returns: Json
+      }
+      guest_save_status: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -13511,6 +13587,10 @@ export type Database = {
         }
         Returns: string
       }
+      conversation_unreadable_reason: {
+        Args: { p_conversation_id: string }
+        Returns: string
+      }
       cx_overview_kpis: {
         Args: { p_end?: string; p_start?: string; p_user_id?: string }
         Returns: Json
@@ -18901,6 +18981,95 @@ export type Database = {
           },
         ]
       }
+      dm_session_members: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivered_through: string | null
+          delivered_via: string | null
+          expired_count: number
+          id: string
+          last_failure_at: string | null
+          last_failure_reason: string | null
+          left_at: string | null
+          lookup_failures: number
+          member_id: string
+          member_kind: string
+          metadata: Json
+          muted: boolean
+          offered_at: string | null
+          offered_through: string | null
+          organization_id: string
+          recent_continuations: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_through?: string | null
+          delivered_via?: string | null
+          expired_count?: number
+          id?: string
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          left_at?: string | null
+          lookup_failures?: number
+          member_id: string
+          member_kind: string
+          metadata?: Json
+          muted?: boolean
+          offered_at?: string | null
+          offered_through?: string | null
+          organization_id: string
+          recent_continuations?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_through?: string | null
+          delivered_via?: string | null
+          expired_count?: number
+          id?: string
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          left_at?: string | null
+          lookup_failures?: number
+          member_id?: string
+          member_kind?: string
+          metadata?: Json
+          muted?: boolean
+          offered_at?: string | null
+          offered_through?: string | null
+          organization_id?: string
+          recent_continuations?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_session_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           body: string
@@ -18933,6 +19102,7 @@ export type Database = {
       }
       meet_call_invites: {
         Row: {
+          authority_version: number
           callee_ids: string[]
           caller_avatar_url: string | null
           caller_name: string
@@ -18945,6 +19115,7 @@ export type Database = {
           deleted_at: string | null
           expires_at: string
           id: string
+          livekit_room_sid: string | null
           metadata: Json
           mode: string
           organization_id: string
@@ -18961,6 +19132,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          authority_version?: number
           callee_ids?: string[]
           caller_avatar_url?: string | null
           caller_name?: string
@@ -18973,6 +19145,7 @@ export type Database = {
           deleted_at?: string | null
           expires_at: string
           id?: string
+          livekit_room_sid?: string | null
           metadata?: Json
           mode?: string
           organization_id: string
@@ -18989,6 +19162,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          authority_version?: number
           callee_ids?: string[]
           caller_avatar_url?: string | null
           caller_name?: string
@@ -19001,6 +19175,7 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string
           id?: string
+          livekit_room_sid?: string | null
           metadata?: Json
           mode?: string
           organization_id?: string
@@ -22327,6 +22502,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_attach_capture_file: {
+        Args: { p_file_id: string; p_meeting_id: string }
+        Returns: boolean
+      }
       meet_audience_assets: {
         Args: { p_id: string }
         Returns: {
@@ -22417,6 +22596,7 @@ export type Database = {
           p_room_name: string
         }
         Returns: {
+          authority_version: number
           callee_ids: string[]
           caller_avatar_url: string | null
           caller_name: string
@@ -22429,6 +22609,7 @@ export type Database = {
           deleted_at: string | null
           expires_at: string
           id: string
+          livekit_room_sid: string | null
           metadata: Json
           mode: string
           organization_id: string
@@ -22562,6 +22743,10 @@ export type Database = {
         }
       }
       meet_invitation_by_token: { Args: { p_secret: string }; Returns: Json }
+      meet_link_capture_to_notes: {
+        Args: { p_notes_id: string; p_review_id: string }
+        Returns: number
+      }
       meet_link_state: { Args: { p_slug: string }; Returns: Json }
       meet_meeting_by_slug: {
         Args: { p_slug: string }
@@ -22702,6 +22887,7 @@ export type Database = {
       meet_pending_call_invites: {
         Args: { p_user_id: string }
         Returns: {
+          authority_version: number
           callee_ids: string[]
           caller_avatar_url: string | null
           caller_name: string
@@ -22714,6 +22900,7 @@ export type Database = {
           deleted_at: string | null
           expires_at: string
           id: string
+          livekit_room_sid: string | null
           metadata: Json
           mode: string
           organization_id: string
@@ -23103,6 +23290,7 @@ export type Database = {
           p_state: string
         }
         Returns: {
+          authority_version: number
           callee_ids: string[]
           caller_avatar_url: string | null
           caller_name: string
@@ -23115,6 +23303,7 @@ export type Database = {
           deleted_at: string | null
           expires_at: string
           id: string
+          livekit_room_sid: string | null
           metadata: Json
           mode: string
           organization_id: string
@@ -24237,6 +24426,15 @@ export type Database = {
           p_text: string
         }
         Returns: Json
+      }
+      space_by_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          organization_id: string
+          space_id: string
+          title: string
+          version: number
+        }[]
       }
       space_children: {
         Args: { p_parent_id: string }
@@ -33889,6 +34087,8 @@ export type Database = {
         Returns: string
       }
       _fx_iso: { Args: { p_date_only: boolean; p_ts: string }; Returns: string }
+      _fx_item_text: { Args: { p_x: Json }; Returns: string }
+      _fx_itemkey: { Args: { p_x: Json }; Returns: Json }
       _fx_items: {
         Args: {
           p_context: Json
@@ -33898,10 +34098,33 @@ export type Database = {
         }
         Returns: Json
       }
+      _fx_list: {
+        Args: {
+          p_context: Json
+          p_node: Json
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      _fx_listop: {
+        Args: {
+          p_args: Json
+          p_context: Json
+          p_op: string
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _fx_loose: { Args: { p_v: Json }; Returns: number }
       _fx_num: { Args: { p_v: Json; p_what: string }; Returns: number }
       _fx_num_text: { Args: { p_n: number }; Returns: string }
       _fx_ordinal: { Args: { p_n: number }; Returns: string }
+      _fx_recprop: {
+        Args: { p_name: string; p_organization_id: string; p_rec: Json }
+        Returns: Json
+      }
       _fx_regex: { Args: { p_fn: string; p_pattern: string }; Returns: string }
       _fx_text: { Args: { p_v: Json }; Returns: string }
       _fx_truthy: { Args: { p_v: Json }; Returns: boolean }
@@ -39415,6 +39638,14 @@ export type Database = {
           words: string
         }[]
       }
+      relative_window_for_reader: {
+        Args: {
+          p_instants?: boolean
+          p_organization_id: string
+          p_window: Json
+        }
+        Returns: Json
+      }
       relative_window_resolve: { Args: { p_window: Json }; Returns: Json }
       reopen_declared_doors: {
         Args: never
@@ -39583,7 +39814,12 @@ export type Database = {
         }
         Returns: string
       }
-      rule_is_me: { Args: { p_a: Json; p_op: string }; Returns: Json }
+      rule_is_me:
+        | { Args: { p_a: Json; p_op: string }; Returns: Json }
+        | {
+            Args: { p_a: Json; p_op: string; p_organization_id: string }
+            Returns: Json
+          }
       rule_kernel_id: { Args: never; Returns: string }
       rule_members: {
         Args: { p_organization_id: string; p_rule_id: string }
@@ -50858,6 +51094,7 @@ export type Database = {
           parent_type: string
         }[]
       }
+      record_closed_level: { Args: { p_record: string }; Returns: string }
       ultimate_parent_record: {
         Args: { p_file_id: string }
         Returns: Record<string, unknown>
@@ -76844,6 +77081,24 @@ export type Database = {
       canonical_certify_ok: {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
+      }
+      child_parent_fresh_allows: {
+        Args: {
+          p_child_type: string
+          p_parent_id: string
+          p_parent_type: string
+        }
+        Returns: boolean
+      }
+      child_parent_ids_allowed: {
+        Args: {
+          p_child_type: string
+          p_include_public: boolean
+          p_parent_type: string
+          p_person: string
+          p_required: Database["public"]["Enums"]["permission_level"]
+        }
+        Returns: string[]
       }
       child_parent_records_worth_asking: {
         Args: { p_ids: string[]; p_orgs: string[]; p_person: string }
@@ -135226,6 +135481,10 @@ export type Database = {
         Args: { p_expires_days?: number; p_id: string }
         Returns: Json
       }
+      claim_guest_workspace: {
+        Args: { p_guest: string; p_target: string; p_via: string }
+        Returns: Json
+      }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
         Returns: {
@@ -135235,6 +135494,17 @@ export type Database = {
         }[]
       }
       guest_conversion_sweep: { Args: { p_budget_ms?: number }; Returns: Json }
+      guest_revive: { Args: { p_guest: string }; Returns: Json }
+      guest_session_bind: {
+        Args: {
+          p_fingerprint: string
+          p_ip: unknown
+          p_metadata: Json
+          p_new: string
+          p_user_agent: string
+        }
+        Returns: Json
+      }
       guest_transfer_link_columns: {
         Args: { p_inline_max_bytes?: number; p_links_to: string }
         Returns: {

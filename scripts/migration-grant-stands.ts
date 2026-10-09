@@ -93,13 +93,19 @@ export async function grantStandsFindings(q: GrantQuery, sql: string): Promise<G
       [parsed.schema, parsed.name, parsed.nargs],
     );
     if (!rows.length) continue; // dropped in this file's end state
-    const r = { ...rows[0]!, g_auth: rows.some((x) => x.g_auth === true), g_anon: rows.some((x) => x.g_anon === true) };
+    const first = rows[0]!;
+    const r = {
+      sig: String(first["sig"]),
+      definer: first["definer"] === true,
+      g_auth: rows.some((x) => x["g_auth"] === true),
+      g_anon: rows.some((x) => x["g_anon"] === true),
+    };
     const k = fn.signature.replace(/\s+/g, "").toLowerCase();
     for (const role of fn.roles) {
       if (revoked.get(k)?.has(role) || revoked.get(k)?.has("public")) continue;
       const held = role === "anon" ? r.g_anon === true : r.g_auth === true;
       if (held) continue;
-      const sig = String(r.sig);
+      const sig = r.sig;
       findings.push({
         signature: sig,
         role,

@@ -130,13 +130,7 @@ substantial reasoning with a stated reason. Model tier and effort are separate c
 Shared policy: [subagent model ladder](/policies/subagent-model-ladder.md); the display
 pairs Sonnet/Luna, Opus/Terra, and Fable/Astra never replace exact tool model identifiers.
 
-Task-to-task messaging follows the universal [cross-task silence rule](/policies/subagent-model-ladder.md#cross-task-silence-and-wake-cost).
-A peer prompt is a full paid wake, not a coordination channel. Do not send status,
-evidence requests, ownership questions, receipts, acknowledgments, or corrective replies,
-even to an apparently active task; an incoming task message does not authorize a reply.
-Use the patrol's durable state and internal subagents. Only Arman's exact request naming the
-recipient or a verified immediate system-wide security/data/destructive emergency with no
-local or passive alternative permits one self-contained message to one task and no follow-up.
+Use the patrol's durable state and internal subagents.
 Internal delegates return compact results to this parent.
 
 Project tool results before displaying or saving parent state: retain identifiers,

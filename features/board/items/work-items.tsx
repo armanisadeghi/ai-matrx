@@ -254,12 +254,12 @@ function BoardChatList({
       emptyState={<p className="px-2 py-1 text-xs text-muted-foreground">No chats on this board yet</p>}
       headerSlot={
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
+          <Button type="button" variant="quiet" onClick={onClose} aria-label="Close sidebar" title="Close sidebar">
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </Button>
           <Button type="button" variant="outline" onClick={onNew} className="min-w-0 flex-1 justify-start gap-1">
             <Plus className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">New conversation</span>
-          </Button>
-          <Button type="button" variant="quiet" onClick={onClose} aria-label="Close sidebar" title="Close sidebar">
-            <PanelLeftClose className="h-3.5 w-3.5" />
           </Button>
         </div>
       }

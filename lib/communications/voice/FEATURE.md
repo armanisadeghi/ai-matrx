@@ -34,6 +34,20 @@ long-lived media and agent execution stay in aidream.
   writes it to the interaction, and appends its uniquely keyed activity event before accepted
   TwiML can be returned. Mutated replays and persistence failures fail closed.
 
+## Human transfer continuation
+
+- Exact caller speech in aidream emits the `live-agent-handoff` end control. The signed
+  relay-ended route reuses owner-beta admission and reads `voice_transfer_number` from the
+  admitted `communication.sms_phone_numbers.metadata`; no environment toggle or agent-supplied
+  destination chooses routing. The target must be a US E.164 number, distinct from caller and
+  called line; clone outbound suppression applies.
+- The caller hears a hold message before a 20-second `<Dial>`. Its signed `transfer-ended`
+  action handles no-answer/busy/failed/canceled with an honest closing message and hangup;
+  completed calls remain silent. No retries, second recording, or raw handoff content is spoken.
+- Missing configuration or routing-read failure returns an unavailable message. Summary delivery,
+  a general agent tool, configuration UI, durable transfer receipts and handset acceptance remain
+  outside this slice; local HTTP/loopback checks do not prove carrier dialing or audio.
+
 ## Recording safety boundary
 
 - `recording-readiness.ts` is the fail-closed launch gate. Recording stays disabled unless every

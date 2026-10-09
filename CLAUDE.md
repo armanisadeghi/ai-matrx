@@ -11,7 +11,7 @@
 4. **Nothing fails silently.** A stand-in announces itself; a screen is honest or absent; never hide a feature to dodge a defect — fix it. In-app text is layout, not prose. `common-docs/policies/interface-text-is-layout.md`
 5. **Think in platform primitives.** Build every capability in the shared layer so all modules and apps inherit it.
 6. **Opinions become knobs.** Organizations decide, never agents. Validation offers, never blocks. Defaults lean open.
-7. **Delegate down, never sideways.** The starting session owns the task end to end; name every subagent's lane; never message another task. `common-docs/policies/subagent-model-ladder.md`
+7. **Delegate down, never sideways.** The starting session owns the task end to end; name every subagent's lane. `common-docs/policies/subagent-model-ladder.md`
 8. **A delta is not a status.** Lead with current truth and every open item.
 9. **Raise the bar.** Name the world champion, match it, beat it. `common-docs/policies/champions.md`
 10. **Talk to Arman like a person.** Plain English, in the chat, no paths or codenames. Tell him your decision and reason; ask only what is truly his. `common-docs/policies/talk-to-arman-like-a-person.md`

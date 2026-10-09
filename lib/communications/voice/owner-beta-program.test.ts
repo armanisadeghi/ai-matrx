@@ -2,6 +2,7 @@
 
 import {
   evaluateVoiceOwnerBetaAdmission,
+  evaluateVoiceOwnerBetaTransfer,
   voiceOwnerBetaProgramSnapshot,
 } from "@/lib/communications/voice/owner-beta-program";
 
@@ -183,5 +184,32 @@ describe("owner Voice beta program", () => {
       verifiedCallerBinding: "enrolled",
     });
   });
+});
 
+test("transfer setting belongs to the admitted destination, not the caller or payload", () => {
+  const candidates = {
+    destinations: [
+      { ...destination, metadata: { voice_transfer_number: "+19497027626" } },
+    ],
+    verifiedCallers: [verifiedCaller],
+  };
+  expect(evaluateVoiceOwnerBetaTransfer(call, candidates)).toBe("+19497027626");
+  expect(
+    evaluateVoiceOwnerBetaTransfer(
+      { ...call, providerAccountId: "other" },
+      candidates,
+    ),
+  ).toBeNull();
+  expect(
+    evaluateVoiceOwnerBetaTransfer(call, {
+      ...candidates,
+      verifiedCallers: [],
+    }),
+  ).toBeNull();
+  expect(
+    evaluateVoiceOwnerBetaTransfer(call, {
+      ...candidates,
+      destinations: [destination],
+    }),
+  ).toBeNull();
 });

@@ -4,7 +4,11 @@ import { validateTwilioWebhook } from "@/lib/communications/providers/twilio/web
 import {
   buildVoiceRelayEndedTwiml,
   VOICE_RELAY_ENDED_PATH,
+  requestsHumanTransfer,
 } from "@/lib/communications/providers/twilio/voice-twiml";
+
+import { resolveVoiceOwnerBetaTransfer } from "@/lib/communications/voice/owner-beta-program";
+import { outboundSuppression } from "@/lib/communications/outbound-guard";
 
 export const runtime = "nodejs";
 
@@ -14,7 +18,30 @@ export async function POST(request: Request): Promise<NextResponse> {
     VOICE_RELAY_ENDED_PATH,
   );
   if (!validation.valid) return new NextResponse("Forbidden", { status: 403 });
-  return new NextResponse(buildVoiceRelayEndedTwiml(validation.params), {
+  let transferNumber: string | null = null;
+  const params = validation.params;
+  if (
+    params.CallStatus !== "completed" &&
+    params.SessionStatus === "ended" &&
+    requestsHumanTransfer(params.HandoffData)
+  ) {
+    try {
+      transferNumber = await resolveVoiceOwnerBetaTransfer({
+        provider: "twilio",
+        providerAccountId: params.AccountSid,
+        providerCallId: params.CallSid,
+        callerNumber: params.From,
+        calledNumber: params.To,
+        direction: params.Direction,
+      });
+      if (transferNumber && outboundSuppression("voice", transferNumber))
+        transferNumber = null;
+    } catch {
+      // A routing read failure must not strand the caller or guess a destination.
+      transferNumber = null;
+    }
+  }
+  return new NextResponse(buildVoiceRelayEndedTwiml(params, transferNumber), {
     headers: { "Content-Type": "text/xml" },
   });
 }

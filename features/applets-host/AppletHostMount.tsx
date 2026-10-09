@@ -315,10 +315,12 @@ export function AppletHostMount({
     // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
     // Her declared example rows (`new_table.rows`) seed a table that is not made yet, or the preview shows it empty;
     // they stay in memory with the held writes - nothing is saved until "Use it".
+    const recordPromise = host.record();
     const held = isPreview
       ? holdWrites(host.data, {
           seed: async (alias) => {
-            const source = (await host.record()).sources.find((s) => s.alias === alias);
+            const record = await recordPromise;
+            const source = record.sources.find((s) => s.alias === alias);
             return source && isNewTableSource(source) ? sampleRowsOf(source.new_table) : [];
           },
         })
@@ -327,9 +329,7 @@ export function AppletHostMount({
       ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes))
       : null;
     const channel: PlatformHost = held ? { ...host, data: held } : host;
-    void host
-      .record()
-      .then((record) => {
+    void recordPromise.then((record) => {
         // The Applet's fixed jobs, declared in the top Agents menu (agent-disclosure; never page chips).
         // A signed-out visitor is not described: /mandates/<key>/describe answers signed-in people
         // and guests who already hold an identity, never a first visit (that read was a 401 on every
