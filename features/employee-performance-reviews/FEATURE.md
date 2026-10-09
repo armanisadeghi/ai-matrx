@@ -80,3 +80,10 @@ writer.
 - Meeting defaults, the due hour and reminder lead are knobs (`hr.performance/review_360_*`); the lead becomes the .ics reminder (VALARM) on the respond page. In-app reminders before a due date have no mechanism yet (the store reminds after N untouched days; tasks remind the day before).
 - The 360 meeting sets `meet.observers_visible_to = hosts` for that meeting; the observer's token publishes no data and is hidden from other participants.
 - Notes audit: opening notes through this feature goes through `iam.open_confidential_audited` and is logged. A direct read of the notes row through the records store (data pages, API) is NOT logged — only the feature's own door is.
+
+## 360 review, meeting recording and transcript (lane HR-360-REC, 2026-10-09)
+
+- Scheduling the review meeting makes the Confidential notes row first (`ensureMeetingNotes`), then ties the meeting to it (`meet_link_capture_to_notes` -> `metadata.app_panel.artifacts_record_id`). Capture itself stays off unless the organization's knob `meet.confidential_capture` allows it (unchanged trigger).
+- When capture runs, aidream (`services/meet/confidential_artifacts.py`) puts the recording (before the recording row says `available`) and the transcript (one text file) under that row through `communication.meet_attach_capture_file`. A meeting with an artifacts row never lands its transcript as a content Source (organization-level, read by AI).
+- A file under the row is read by exactly the row's readers: HR always, the manager and the employee once HR shares the notes; never published, never Anyone-linked (ENTITY-IDS). `Review360MeetingFiles` lists them on the meeting page and opens each through `iam.open_confidential_audited` first.
+- Proof (rolled back, RED then GREEN): `scripts/campaign-tests/hr360rec_capture_files_follow_the_notes_row_proof.sql`. Inverse: `migrations/inverse/hr360rec_a_a_confidential_meetings_files_live_under_the_notes_row_down.sql`.
