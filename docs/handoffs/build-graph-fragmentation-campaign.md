@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-10-08
 repos: [matrx-frontend]
 vision: [.claude/skills/code-splitting/SKILL.md]
 ---
@@ -8,6 +8,23 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 # Handoff — Build-Graph Fragmentation Campaign (memory, build time, chunk consolidation)
 
 **Read first:** `.claude/skills/code-splitting/SKILL.md` (rule 3, "THE FRAGMENTATION LAW") — the doctrine this campaign produced. Nothing below overrides it. This doc also absorbed `docs/_current/bundle-optimization-tracker.md` (deleted 2026-07-28) — its still-open items live in Remaining work; its resolved/disproven claims are in Done and Gotchas.
+
+## 0. ACTIVE — 2026-10-08 build-time regression (tracker; update every step)
+
+**Truth:** Vercel main build ~5.5 min (Sep 20) → ~15–17 min (Oct 8). All the growth is the Turbopack compile phase (2.9 → 10.4 min) plus a bigger output to finalize and cache. All three Vercel projects grew in proportion, so the cause is shared code. Vercel load, the Next canary pin and route growth are measured OUT (compile vs concurrent builds r = −0.04 over 211 builds).
+
+**Measured steps** (server chunks / output MB from the Vercel logs, the only stable metrics):
+- Sep 25 13:32, b58a3f942 → 26f897b94: output 643 → 1,010 MB, chunks 6,077 → 6,609. Window = 521 commits + package bumps (print 0.5 → 0.8, content-ir 0.12 → 0.17, records, records-ui). **Not yet attributed.**
+- Oct 7 22:58, dfc373972 → a00f27f43: output 1,350 → 2,615 MB, chunks 7,903 → 9,705. Cause: `@ai-matrx/icons` 0.3.5 switched to Lucide's `dynamicIconImports` (2,118 `import()` calls). **Fixed in aidream bfff9347d7** (one `import("lucide-react")` edge + guard test).
+- Side cost: Vercel node_modules grows ~0.7 GB/day between cache resets (4 → 12 GB), so cache create/upload takes ~2.5 min. Suspected cause: pnpm keeps orphaned package versions for 7 days (`modules-cache-max-age`).
+
+| # | Test | Status | Result |
+|---|---|---|---|
+| 1 | Local A/B: main as-is vs the icons fix dropped into node_modules (`lab:run`, chunks + output + RSS) | running | |
+| 2 | Icons fix published → adopted → next Vercel build: chunks ≈ 7.9k, output ≈ 1.35 GB | waiting on publish | |
+| 3 | Attribute the Sep 25 step: A/B the package bumps alone on the pre-step tree | todo | |
+| 4 | Cache bloat: prune orphans at install → Vercel node_modules ≈ 4 GB, cache upload < 1 min | todo | |
+| 5 | Keep going: rank the remaining shared-graph growth with `pnpm lab:graph` and the per-package `import()` census | todo | |
 
 ## 1. Vision
 

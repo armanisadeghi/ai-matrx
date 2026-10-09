@@ -96,12 +96,23 @@ contract; the traps that have actually bitten:
   `Symbol.for("ai-matrx.<pkg>.<name>")` (dual-loader graphs split module state).
 - TS strict + `exactOptionalPropertyTypes` + `noUncheckedIndexedAccess`, zero `any`;
   branded types for identity values; host-generated JSON boundaries typed over `unknown`.
+- **THE HOST-BUILD LAW: a package never fans out `import()` edges.** Every `import()` in a
+  package's dist becomes a chunk in EVERY host build that reaches the package, so a map of N
+  lazy imports = N chunks per host. Incident 2026-10-07: icons 0.3.5 adopted Lucide's
+  `dynamicIconImports` (2,118 `import()` calls) to shrink the first screen; frontend build
+  output doubled (1.35 → 2.6 GB, +1,800 chunks) and Vercel compile went ~4.5 → 9–14 min.
+  First-screen size and build time pull in OPPOSITE directions: lazy-load a heavy set
+  through ONE `import()` of the whole set, never one per item. Never add or "optimize" a
+  dynamic import in a package without reading the frontend `code-splitting` skill (rule 3).
 
 ## Step 5 — gates (ALL of them, before release)
 
 Strict typecheck · behavioral tests · publint + attw · **packed-tarball canary**: install
 the `.tgz` into an empty project and `import` AND `require` every public entry · the host
-app's typecheck/tests/build · a real browser smoke for device/permission behavior. A green
+app's typecheck/tests/build · a real browser smoke for device/permission behavior. · **host
+build cost**: `grep -c 'import(' dist/*.js` must not grow by more than a handful per release
+— a jump is the fan-out class above, and a bundle-size budget will never catch it (it
+rewards the fan-out). A green
 source build is NOT package proof.
 
 ## Step 6 — release
@@ -138,3 +149,4 @@ doesn't exist.
   distilling the typescript-package-standard policy + campaign rulings C1–C31 into the
   ordered runbook (census → design doc → approval → build → gates → release → C9 adoption
   → paper trail).
+- **2026-10-08** — Host-build law (Step 4) + host build-cost gate (Step 5) after icons 0.3.5's per-icon `import()` map doubled the frontend build.
