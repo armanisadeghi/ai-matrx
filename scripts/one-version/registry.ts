@@ -57,9 +57,16 @@ function first(text: string, re: RegExp): number | null {
 }
 
 /** Sends a message to an agent. */
+// Every door a typed message can take into an agent run — the conversation
+// sends AND the headless / one-shot doors (2026-10-08: /make's describe box
+// typed into a ProTextarea and sent through useHeadlessAgentJson, so it could
+// not attach anything, and this guard saw neither half).
 const SENDS_TO_AGENT =
-  /\b(?:smartExecute|executeInstance|launchAgentExecution|startConversation|startHostedRun|composerKeyIntent|enterSendsHere)\b/;
-const OWN_TEXTAREA = /<\s*(?:textarea|Textarea|AutosizeTextarea|TextareaAutosize)\b/;
+  /\b(?:smartExecute|executeInstance|launchAgentExecution|startConversation|startHostedRun|composerKeyIntent|enterSendsHere|useHeadlessAgentJson|runHeadlessAgentJson|useLiveAgentRun|launchMandate|continueAgentConversation)\b/;
+// A box a person writes in: a raw field, or the shared writing boxes
+// (ProTextarea / ProInput / VoiceTextarea) used as a message box.
+const OWN_TEXTAREA =
+  /<\s*(?:textarea|Textarea|AutosizeTextarea|TextareaAutosize|ProTextarea|ProInput|VoiceTextarea)\b|contentEditable\b/;
 const ENTER_KEY = /\bkey\s*===?\s*["']Enter["']|\bkeyCode\s*===?\s*13\b|\bcode\s*===?\s*["']Enter["']/;
 
 const notTest = (f: string) =>

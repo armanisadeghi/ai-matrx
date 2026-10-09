@@ -1,5 +1,5 @@
 {
-  "_readme": "THE ACCEPT RULES — how each check’s own allowlist takes an accepted key (PLAN.md C1). ONE source for both callers: `pnpm findings accept` (scripts/findings/registry.mjs → accept-rules.mjs) and the server’s one-click Mark OK (aidream aidream/services/platform_checks/accept_rules.py fetches THIS file from main). A rule is data; its `kind` is implemented twice (JS here, Python there) and proven byte-identical by accept-corpus.json, which the server re-checks before every commit. A check with `no_accept` cannot be accepted, in the registry’s own words. Change a kind → run `node scripts/findings/accept-rules.mjs --write-corpus` and commit both files.",
+  "_readme": "THE ACCEPT RULES \u2014 how each check\u2019s own allowlist takes an accepted key (PLAN.md C1). ONE source for both callers: `pnpm findings accept` (scripts/findings/registry.mjs \u2192 accept-rules.mjs) and the server\u2019s one-click Mark OK (aidream aidream/services/platform_checks/accept_rules.py fetches THIS file from main). A rule is data; its `kind` is implemented twice (JS here, Python there) and proven byte-identical by accept-corpus.json, which the server re-checks before every commit. A check with `no_accept` cannot be accepted, in the registry\u2019s own words. Change a kind \u2192 run `node scripts/findings/accept-rules.mjs --write-corpus` and commit both files.",
   "version": 1,
   "checks": {
     "visibility-vocabulary": {
@@ -49,10 +49,10 @@
       }
     },
     "access-errors-surfaces-that-guess-why-a-read-failed": {
-      "no_accept": "This check is accepted by an inline `// access-errors: ok — <reason>` marker on the flagged line or the line above it (a source edit you make by hand), never a key list. An adapter would go in scripts/findings/registry.mjs."
+      "no_accept": "This check is accepted by an inline `// access-errors: ok \u2014 <reason>` marker on the flagged line or the line above it (a source edit you make by hand), never a key list. An adapter would go in scripts/findings/registry.mjs."
     },
     "no-dead-ends-door-law": {
-      "no_accept": "The allowlist is a TypeScript module (scripts/dead-ends/allowlist.ts, DEAD_END_ALLOWLIST: { file, rule?, reason }) — a hand edit with a reason. An adapter would append to that array."
+      "no_accept": "The allowlist is a TypeScript module (scripts/dead-ends/allowlist.ts, DEAD_END_ALLOWLIST: { file, rule?, reason }) \u2014 a hand edit with a reason. An adapter would append to that array."
     },
     "type-escape-hatch-ratchet": {
       "no_accept": "A per-category COUNT ratchet (scripts/type-escape-baseline.json) that only shrinks: there is no per-site entry to accept."
@@ -70,16 +70,16 @@
       "no_accept": "scripts/check-scroll-chain.ts has no allowlist or baseline: every item is new."
     },
     "binder-errors-duplicate-declarations-missing-exports": {
-      "no_accept": "scripts/check-binder.mjs has no allowlist or baseline: every item is new — fix the declaration or the import."
+      "no_accept": "scripts/check-binder.mjs has no allowlist or baseline: every item is new \u2014 fix the declaration or the import."
     },
     "floating-clearance": {
-      "no_accept": "Only an inline `// ui-exception:` reason beside data-floating-clearance=\"off\" (scripts/check-floating-clearance.mjs) — no key list; every item is new."
+      "no_accept": "Only an inline `// ui-exception:` reason beside data-floating-clearance=\"off\" (scripts/check-floating-clearance.mjs) \u2014 no key list; every item is new."
     },
     "ssr-viewport-branch": {
-      "no_accept": "Shrink-only baseline (scripts/ssr-viewport-branch/baseline.json, --write-baseline never raises a count) or an inline `// ssr-viewport-ok: <reason>` above the site — no key list."
+      "no_accept": "Shrink-only baseline (scripts/ssr-viewport-branch/baseline.json, --write-baseline never raises a count) or an inline `// ssr-viewport-ok: <reason>` above the site \u2014 no key list."
     },
     "canonical-agent-model-pickers": {
-      "no_accept": "Only an inline exemption in the source file (scripts/check-canonical-pickers.ts documents it) — no key list."
+      "no_accept": "Only an inline exemption in the source file (scripts/check-canonical-pickers.ts documents it) \u2014 no key list."
     },
     "surfaces-running-an-agent-without-naming-it": {
       "no_accept": "scripts/check-agent-disclosure.ts has no allowlist or baseline: every item is new."
@@ -94,19 +94,22 @@
       "no_accept": "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new."
     },
     "page-top": {
-      "no_accept": "scripts/page-top/baseline.json only shrinks (`--shrink`); a new item is fixed by moving the page onto a template — never added to the baseline."
+      "no_accept": "scripts/page-top/baseline.json only shrinks (`--shrink`); a new item is fixed by moving the page onto a template \u2014 never added to the baseline."
     },
     "bare-secret-fill": {
-      "no_accept": "scripts/fill-secret/check-fill-secret.mjs has no baseline: the repo shipped with zero bare secret fills, so every item is new — use fillSecret."
+      "no_accept": "scripts/fill-secret/check-fill-secret.mjs has no baseline: the repo shipped with zero bare secret fills, so every item is new \u2014 use fillSecret."
     },
     "one-control": {
-      "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new — render the package control."
+      "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new \u2014 render the package control."
     },
     "every-ai-matrx-import-exists-in-the-installed-package": {
       "no_accept": "There is nothing to accept: an import the installed package does not ship breaks the build. Publish the package, wait for its tarball, `pnpm sync:matrx-packages`, commit the lockfile."
     },
     "every-ai-matrx-version-in-the-lockfile-is-served-by-npm": {
       "no_accept": "There is nothing to accept: a locked version npm does not serve breaks every frozen install. Wait for the tarball to answer 200, then `pnpm sync:matrx-packages`."
+    },
+    "one-version-of-each-canonical-piece": {
+      "no_accept": "Never accepted: scripts/one-version/baseline.json is SHRINK-ONLY. A new second version is fixed (render the canonical piece), or Arman rules it an approved variant in scripts/one-version/registry.ts."
     }
   }
 }
