@@ -8,7 +8,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { providerMeta } from "@/features/agent-connections/coding-sessions/catalog";
-import { compactAge, deliveryLag } from "../presence";
+import { compactAge, deliveryLag, needsClaudeAccount } from "../presence";
 import type { LiveSession } from "../useLiveHub";
 import type { SessionMemberRow } from "../service";
 import { LagMarker, PresenceDot, lagText, presenceLabel, worstLag } from "./LiveBits";
@@ -72,6 +72,11 @@ export function SessionDetail({
             )}
           </p>
         </div>
+        {needsClaudeAccount(lag) && (
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link href="/work/connections#claude-accounts">Connect Claude account</Link>
+          </Button>
+        )}
         <Button asChild variant="quiet" className="shrink-0">
           <Link href={`/work/conversations/${session.address}`}>
             <ExternalLink className="size-3.5" />

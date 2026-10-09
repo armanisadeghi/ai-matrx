@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ClaudeAccountsPanel } from "./ClaudeAccountsPanel";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -229,6 +230,8 @@ export function AiWorkConnections() {
         />
 
         <CodingProjectOrganizations />
+
+        <ClaudeAccountsPanel />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">

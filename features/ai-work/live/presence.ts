@@ -78,6 +78,16 @@ export interface MemberCursor {
   muted: boolean;
 }
 
+/**
+ * The server cloud courier's member-row reason when no connected Claude account
+ * owns a cloud session (`aidream agent_messaging/cloud_courier.py` NEEDS_ACCOUNT).
+ */
+export const NEEDS_CLAUDE_ACCOUNT = "Connect the Claude account that owns this session";
+
+export function needsClaudeAccount(lag: DeliveryLag): boolean {
+  return lag.state === "failing" && (lag.reason ?? "").startsWith(NEEDS_CLAUDE_ACCOUNT);
+}
+
 export type DeliveryLag =
   | { state: "clear" }
   | { state: "offered"; sinceMs: number }
