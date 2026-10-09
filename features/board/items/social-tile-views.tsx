@@ -20,6 +20,8 @@ import { isLikelyWinner, runLabel } from "@/features/marketing/social/ads";
 import { libraryLabel } from "@/features/marketing/social/components/AdCard";
 import { OutlierBadge } from "@/features/marketing/social/components/OutlierBadge";
 import { PlatformMark } from "@/features/marketing/social/components/PlatformMark";
+import { SocialImage } from "@/features/marketing/social/components/SocialImage";
+import { postThumbnailDoor, profileAvatarDoor } from "@/features/marketing/social/server";
 import { thumbAspect } from "@/features/marketing/social/components/SocialPostCard";
 import { formatDuration, formatGrowth, judgeFollowerGrowth, profileFollowerSeries, relativeAge } from "@/features/marketing/social/mappers";
 import { formatCompact, outlierBadgeModel } from "@/features/marketing/social/outlier";
@@ -95,17 +97,12 @@ function NoPicture({ post }: { post: PostCardModel }) {
   );
 }
 
-function Picture({ url, post }: { url: string | null; post: PostCardModel }) {
-  const [failed, setFailed] = useState(false);
-  if (!url || failed) return <NoPicture post={post} />;
+function Picture({ post }: { post: PostCardModel }) {
   return (
-    <img
-      src={url}
-      alt=""
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
-      className="absolute inset-0 h-full w-full object-cover"
+    <SocialImage
+      door={post.thumbnailFileId ? postThumbnailDoor(post.postId) : null}
+      url={post.thumbnailUrl}
+      fallback={<NoPicture post={post} />}
     />
   );
 }
@@ -132,7 +129,7 @@ export function PostThumb({
       title={post.hookLine || undefined}
       className={cn("group relative block w-full min-w-0 overflow-hidden rounded-md border border-border bg-muted", ratio, className)}
     >
-      <Picture url={post.thumbnailUrl} post={post} />
+      <Picture post={post} />
       <span className="absolute left-1 top-1">
         <MultipleBadge post={post} />
       </span>
@@ -205,7 +202,6 @@ export interface ProfileTileViewProps {
 export function ProfileTileView(props: ProfileTileViewProps) {
   const { profile, posts, snapshots } = props;
   const [ref, size] = useBoxSize({ w: 620, h: 700 });
-  const [avatarFailed, setAvatarFailed] = useState(false);
   const ranked = rankPostsForTile(posts ?? []);
   const plan = profilePlan(size, ranked.length, profileFollowerSeries(snapshots).length);
   const shown = ranked.slice(0, plan.cells);
@@ -217,17 +213,11 @@ export function ProfileTileView(props: ProfileTileViewProps) {
     <div ref={ref} className={cn(FRAME, "flex flex-col gap-2.5")}>
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
-          {profile.avatar_url && !avatarFailed ? (
-            <img
-              src={profile.avatar_url}
-              alt=""
-              referrerPolicy="no-referrer"
-              onError={() => setAvatarFailed(true)}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <PlatformMark platform={profile.platform} size={20} />
-          )}
+          <SocialImage
+            door={profile.avatar_file_id ? profileAvatarDoor(profile.id) : null}
+            url={profile.avatar_url}
+            fallback={<PlatformMark platform={profile.platform} size={20} />}
+          />
         </span>
         <div className="min-w-0 flex-1">
           <p className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">

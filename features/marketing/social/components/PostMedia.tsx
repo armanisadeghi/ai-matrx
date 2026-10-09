@@ -22,9 +22,10 @@ import { Progress } from "@/components/ui/progress";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatDuration } from "../mappers";
 import { confirmPostSpend } from "../postSpend";
-import { fetchPlaybackUrl, ingestPost, listPostMedia, socialErrorMessage } from "../server";
+import { fetchPlaybackUrl, ingestPost, listPostMedia, postThumbnailDoor, socialErrorMessage } from "../server";
 import type { PostMediaRef } from "../types";
 import { PlatformMark, platformLabel } from "./PlatformMark";
+import { SocialImage } from "./SocialImage";
 
 /** Aspect ratio (w/h) a post's player starts with, before the poster or the video reports its own. */
 export function guessAspect(format: string, platform: string): number {
@@ -54,6 +55,7 @@ export function PostMedia({
   postId,
   organizationId,
   thumbnailUrl,
+  thumbnailFileId,
   postUrl,
   platform,
   platformPostId,
@@ -65,6 +67,8 @@ export function PostMedia({
   postId: string;
   organizationId: string;
   thumbnailUrl: string | null;
+  /** The stored thumbnail (files.id); when set the poster is drawn through the durable door. */
+  thumbnailFileId?: string | null;
   postUrl: string;
   platform: string;
   platformPostId: string;
@@ -236,7 +240,13 @@ export function PostMedia({
 
   return (
     <Frame ratio={ratio} fill={fill}>
-      {poster ? (
+      {thumbnailFileId ? (
+        <SocialImage
+          door={postThumbnailDoor(postId)}
+          url={providerPoster}
+          fallback={<PosterPlaceholder platform={platform} format={format} />}
+        />
+      ) : poster ? (
         <img
           src={poster}
           alt=""

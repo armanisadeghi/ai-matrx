@@ -450,6 +450,7 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
             postId={card.postId}
             organizationId={organizationId}
             thumbnailUrl={card.thumbnailUrl}
+            thumbnailFileId={card.thumbnailFileId}
             postUrl={card.url}
             platform={card.platform}
             platformPostId={card.platformPostId}

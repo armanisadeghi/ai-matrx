@@ -438,6 +438,7 @@ export function PostDetailBody({
               postId={postId}
               organizationId={organizationId}
               thumbnailUrl={post.thumbnail_url}
+              thumbnailFileId={post.thumbnail_file_id}
               postUrl={post.url}
               platform={post.platform}
               platformPostId={post.platform_post_id}
