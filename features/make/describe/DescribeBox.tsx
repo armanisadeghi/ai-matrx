@@ -1,40 +1,50 @@
 "use client";
 
-// features/make/describe/DescribeBox.tsx — lane CHAIR-DESCRIBE (v7): the describe box on /make.
+// features/make/describe/DescribeBox.tsx — the describe box on /make: ONE GUIDED RUN (lane MAKE-WORKS).
 //
-// ONE SENTENCE → A COMPLETE, WORKING SETUP IN UNDER 60 s. Champions: Softr's AI app generator, Glide's
-// "describe your app", Airtable Omni. Brief: common-docs projects/data-doctrine-adoption/v6/
-// MANDATE-BRIEF-SENTENCE-TO-TEMPLATE.md (Arman approved 2026-10-03, "Yes. Definitely." 2026-10-05).
+// "When I go to /make and I tell it exactly what I want, there isn't a solid workflow that runs and gets
+// it done for me properly." (Arman, 2026-10-09). Champions: Notion AI "build me a workspace", Airtable's
+// AI app builder. What a person sees now:
+//   1. the PLAN, the instant they press Make it (plan.ts reads the route from their words — no model):
+//      data-shaped → template builder; page-shaped → Space Builder; both → the Space, then the template
+//      builder reusing the Space's tables;
+//   2. each step in plain words, with its own clock; every model run streams in the platform's floating
+//      LiveRunWindow (never a spinner while AI works);
+//   3. the result OPENS — a Space is opened; a data setup offers one Open and the list of what was made;
+//   4. up to three one-line follow-ups that run through this same box (the template builder reuses what
+//      exists, so a follow-up extends, never duplicates);
+//   5. a failure names its step and Try again RESUMES from that step — a designed spec is never designed
+//      twice, a built Space is never built twice.
 //
-// THE PIPE (no second path):
-//   1. the mandate `make.describe_template` (launched by mandate key, never an agent id — whoever holds
-//      it owns its quality; this file writes no instruction) answers ONE template spec;
-//   2. the package's describeCheck (automatic fixes, then validateTemplate "describe" profile) checks it — a failure is one line and a retry, never a
-//      half-build;
-//   3. custom.template_declare('org') files it as the organization's own template, and the gallery's
-//      runTemplateDoor installs it with the gallery's own live progress and landing.
-// Remove and "Save as my template" live on the template's own page (the same family), linked from the
-// result.
+// THE DOORS (no second builder): mandate `make.describe_template` (headless JSON → the store's
+// describeCheck → custom.template_declare('org') → the gallery's runTemplateDoor) and the Spaces door
+// `useSpaceBuild` (mandate `spaces.build`). Mandates are launched by key; this file writes no instruction.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Check, CircleDashed, CircleX } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
+import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/loaders/Spinner";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useSpaceBuild, type SpaceBuildOutcome } from "@/features/spaces/embed/useSpaceBuild";
 import * as doors from "@/features/unified-data/hub/doors";
 import { createClient } from "@/utils/supabase/client";
 import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
-import { Landing, Progress } from "../gallery/TemplateGallery";
-import type { MadeObject } from "../gallery/catalogue";
+import { cn } from "@/lib/utils";
+import { Landing } from "../gallery/TemplateGallery";
+import { hrefForMade, openableMade, type MadeObject } from "../gallery/catalogue";
 import { templatePreviewHref } from "../gallery/galleryHref";
 
 import { secondsWords } from "./made";
+import { followUpsFor, planFor, STEP_WORDS, type MakePlan, type MakeStepId } from "./plan";
 import {
   applySafeReuses,
   bindReuses,
@@ -51,37 +61,144 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 const DESCRIBE = MANDATE_KEYS.make__describe_template;
 const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
 
-type Run =
-  | { phase: "idle" }
-  | { phase: "writing"; startedAt: number }
-  | { phase: "installing"; startedAt: number; templateId: string; answer: TemplateDoorAnswer | null; notes: string[] }
-  | { phase: "installed"; ms: number; split: Split; templateId: string; answer: TemplateDoorAnswer; notes: string[] }
-  | { phase: "failed"; why: string; templateId: string | null; answer: TemplateDoorAnswer | null };
+type StepState = "waiting" | "doing" | "done" | "failed";
 
-/** Where the wait went, in ms per stage — on the result as data-make-describe-split, for timing runs. */
-type Split = { provision: number; model: number; check: number; declare: number; install: number; install_calls: number };
+/** One guided run. What each finished step produced is kept, so Try again resumes where it stopped. */
+interface Run {
+  sentence: string;
+  organizationId: string;
+  plan: MakePlan;
+  startedAt: number;
+  endedAt: number | null;
+  step: Partial<Record<MakeStepId, { state: StepState; at: number; ms?: number }>>;
+  space: SpaceBuildOutcome | null;
+  templateId: string | null;
+  install: TemplateDoorAnswer | null;
+  notes: string[];
+  failed: { at: MakeStepId; why: string } | null;
+}
+
+/** The run's one word for the page and for timing runs (data-make-describe). */
+function phaseOf(run: Run | null): "idle" | "running" | "installed" | "failed" {
+  if (!run) return "idle";
+  if (run.failed) return "failed";
+  return run.endedAt ? "installed" : "running";
+}
 
 export function DescribeBox() {
-  // org-filter: write-target what the sentence makes is installed in the organization new things go to; its tables are read only to reuse them
+  // org-filter: write-target what the sentence makes is created in the organization new things go to; its tables are read only to reuse them
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
-  const writer = useHeadlessAgentJson();
+  const router = useRouter();
+  const writer = useFloatingAgentRun({ instanceId: "make-describe" });
+  const spaces = useSpaceBuild();
   useDeclaredSurfaceMandates(DESCRIBE_DISCLOSURE);
   const [sentence, setSentence] = useState("");
-  const [run, setRun] = useState<Run>({ phase: "idle" });
+  const [run, setRun] = useState<Run | null>(null);
   const [askOrganization, setAskOrganization] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  const busy = run.phase === "writing" || run.phase === "installing";
+  const phase = phaseOf(run);
+  const busy = phase === "running";
   useEffect(() => {
     if (!busy) return;
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(tick);
   }, [busy]);
 
-  const start = async () => {
-    const said = sentence.trim();
-    if (!said) return;
+  /** Drive the run from its first unfinished step. `from` is a new run or a failed one being resumed. */
+  const drive = async (from: Run) => {
+    let r: Run = { ...from, failed: null, endedAt: null };
+    const commit = (next: Run) => {
+      r = next;
+      setRun(next);
+    };
+    const mark = (id: MakeStepId, state: StepState) => {
+      const was = r.step[id];
+      const t = Date.now();
+      commit({ ...r, step: { ...r.step, [id]: { state, at: was?.state === "doing" ? was.at : t, ms: state === "done" || state === "failed" ? t - (was?.at ?? t) : undefined } } });
+    };
+    let current: MakeStepId = r.plan.steps[0]!;
+    try {
+      const client = createClient();
+      const source = supabaseDataSource(client);
+      for (const id of r.plan.steps) {
+        current = id;
+        if (r.step[id]?.state === "done") continue;
+        mark(id, "doing");
+        if (id === "space") {
+          const built = await spaces.build({ request: r.sentence, organizationId: r.organizationId, label: "Building your workspace" });
+          commit({ ...r, space: built });
+        } else if (id === "design") {
+          const [facts, listed] = await Promise.all([readOrganizationFacts(client, r.organizationId), doors.dataHomeTables(source, r.organizationId)]);
+          // The Space's own tables first: the builder reuses them instead of making a second copy.
+          const fromSpace = new Set(r.space?.tableIds ?? []);
+          const own = listed.ok
+            ? // org-filter: server-call the setup is built in this organization, so only its own tables are reused
+              listed.data
+                .filter((t) => t.organization_id === r.organizationId && t.kind === "table" && !t.platform_owned)
+                .map((t) => ({ id: t.table_id, name: t.table_name }))
+                .sort((a, b) => Number(fromSpace.has(b.id)) - Number(fromSpace.has(a.id)))
+            : [];
+          const tables = await readExistingTables(client, r.organizationId, own);
+          const answer = await writer.run<DescribeAnswer>({
+            mandateKey: DESCRIBE,
+            label: "Designing your tables and forms",
+            surfaceKey: "make:describe",
+            sourceFeature: "udt",
+            expect: "json",
+            initiation: "user",
+            organizationId: r.organizationId,
+            variables: describeVariables(r.sentence, facts, tables),
+            coerce: (v) => coerceDescribeAnswer(v),
+          });
+          mark("design", "done");
+          current = "check";
+          mark("check", "doing");
+          const safe = applySafeReuses(answer, tables);
+          const checked = checkDescribeTemplate(safe.template, tables);
+          if (!checked.ok) {
+            console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
+            throw new Error(checked.line);
+          }
+          const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+          const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
+          commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
+          mark("check", "done");
+          continue;
+        } else if (id === "check") {
+          // Reached only on a resume whose design finished but whose check failed: design again.
+          commit({ ...r, step: { ...r.step, design: undefined, check: undefined } });
+          throw new Error("The design did not pass the check");
+        } else if (id === "build") {
+          const done = await runTemplateDoor(source, "template_install", r.organizationId, r.templateId!, {
+            onCall: (a) => commit({ ...r, install: a }),
+          });
+          if (!done.ok || !done.answer) {
+            const refusal = done.answer?.refusal as { message?: string } | null | undefined;
+            commit({ ...r, install: done.answer ?? r.install });
+            // access-errors: ok — the install door's own refusal, said as it said it; not a record read
+            throw new Error(refusal?.message ?? done.error?.message ?? "The setup stopped before it finished");
+          }
+          commit({ ...r, install: done.answer });
+        }
+        mark(id, "done");
+      }
+      commit({ ...r, endedAt: Date.now() });
+      // A workspace is the home of everything made: open it.
+      if (r.space?.url) router.push(r.space.url);
+    } catch (err: unknown) {
+      const detail = (err as { detail?: string } | null)?.detail;
+      // access-errors: ok — a run failure (model, check, Space build or install door), never a record read
+      const why = [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — ");
+      mark(current, "failed");
+      commit({ ...r, failed: { at: current, why } });
+    }
+  };
+
+  const start = (words = sentence) => {
+    const said = words.trim();
+    if (!said || busy) return;
     if (!organizationId) {
       setAskOrganization(true);
       return;
@@ -89,80 +206,42 @@ export function DescribeBox() {
     setAskOrganization(false);
     const startedAt = Date.now();
     setNow(startedAt);
-    setRun({ phase: "writing", startedAt });
-    const client = createClient();
-    const split: Split = { provision: 0, model: 0, check: 0, declare: 0, install: 0, install_calls: 0 };
-    let mark = startedAt;
-    const lap = (k: Exclude<keyof Split, "install_calls">) => {
-      const t = Date.now();
-      split[k] = t - mark;
-      mark = t;
-    };
-    try {
-      // The provision: the organization's facts and its own tables (reuse beats duplicate).
-      const source = supabaseDataSource(client);
-      const [facts, listed] = await Promise.all([readOrganizationFacts(client, organizationId), doors.dataHomeTables(source, organizationId)]);
-      const own = listed.ok
-        // org-filter: server-call the app is built in this organization, so only its own tables are reused
-        ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.platform_owned).map((t) => ({ id: t.table_id, name: t.table_name }))
-        : [];
-      const tables = await readExistingTables(client, organizationId, own);
-      lap("provision");
-
-      const answer = await writer.run<DescribeAnswer>({
-        mandateKey: DESCRIBE,
-        surfaceKey: "make:describe",
-        sourceFeature: "udt",
-        expect: "json",
-        initiation: "user",
-        organizationId,
-        variables: describeVariables(said, facts, tables),
-        coerce: (v) => coerceDescribeAnswer(v),
-      });
-      lap("model");
-
-      // The check before anything is built: one line, and a retry.
-      // The package's automatic fixes run first; the person sees an error only for what REMAINS.
-      const safe = applySafeReuses(answer, tables);
-      const checked = checkDescribeTemplate(safe.template, tables);
-      lap("check");
-      if (!checked.ok) {
-        console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
-        setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
-        return;
-      }
-      const notes = [...answer.notes, ...safe.notes, ...checked.autoFixes];
-      const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
-      lap("declare");
-      setRun({ phase: "installing", startedAt, templateId, answer: null, notes });
-      const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
-        onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),
-      });
-      lap("install");
-      split.install_calls = done.calls;
-      if (!done.ok || !done.answer) {
-        const refusal = done.answer?.refusal as { message?: string } | null | undefined;
-        setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
-        return;
-      }
-      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes });
-    } catch (err: unknown) {
-      const detail = (err as { detail?: string } | null)?.detail;
-      setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });
-    }
+    void drive({
+      sentence: said,
+      organizationId,
+      plan: planFor(said),
+      startedAt,
+      endedAt: null,
+      step: {},
+      space: null,
+      templateId: null,
+      install: null,
+      notes: [],
+      failed: null,
+    });
   };
 
-  const elapsed = run.phase === "writing" || run.phase === "installing" ? secondsWords(now - run.startedAt) : null;
+  // A check failure re-designs; anything else resumes at the step that failed.
+  const resume = () => {
+    if (!run?.failed) return;
+    const redesign = run.failed.at === "check";
+    void drive({ ...run, step: redesign ? { ...run.step, design: undefined, check: undefined } : run.step, templateId: redesign ? null : run.templateId });
+  };
+
+  const made = (run?.install?.made ?? []) as MadeObject[];
+  const firstOpen = openableMade(made).find((m) => m.kind === "table") ?? openableMade(made)[0];
+  const openHref = run?.space?.url ?? (firstOpen ? hrefForMade(firstOpen) : null);
+  const followUps = phase === "installed" && run ? followUpsFor(run.sentence, run.plan.route, made) : [];
+
   return (
-    <section className="flex flex-col gap-2" aria-labelledby="make-describe" data-make-describe={run.phase}>
+    <section className="flex flex-col gap-2" aria-labelledby="make-describe" data-make-describe={phase} data-make-route={run?.plan.route}>
       <h2 id="make-describe" className="sr-only">
         Describe it
       </h2>
       <ProTextarea
         value={sentence}
         onChange={(e) => setSentence(e.target.value)}
-        onSubmit={() => void start()}
+        onSubmit={() => start()}
         submitOnEnter={enterSendsHere(true)}
         submitLabel="Make it"
         isSubmitting={busy}
@@ -173,9 +252,6 @@ export function DescribeBox() {
         enableTextStats={false}
         data-make-describe-input=""
       />
-      <p className="h-5 text-sm text-muted-foreground" role="status" aria-live="polite" data-make-describe-go="" data-busy={busy || undefined}>
-        {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : ""}
-      </p>
 
       {askOrganization && !organizationId ? (
         <OrganizationContextNotice
@@ -186,28 +262,87 @@ export function DescribeBox() {
         />
       ) : null}
 
-      {run.phase === "installing" ? <Progress run={{ door: "template_install", answer: run.answer }} /> : null}
+      {run ? (
+        <ol className="flex flex-col gap-1 text-sm" aria-live="polite" data-make-run-steps={run.plan.steps.join(",")}>
+          {run.plan.steps.map((id) => {
+            const s = run.step[id];
+            const state: StepState = id === "open" && phase === "installed" ? "done" : (s?.state ?? "waiting");
+            const clock = state === "doing" && s ? secondsWords(now - s.at) : state === "done" && s?.ms != null && s.ms > 1500 ? secondsWords(s.ms) : null;
+            return (
+              <li key={id} className="flex min-w-0 items-center gap-2" data-make-run-step={id} data-state={state}>
+                {state === "done" ? (
+                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                ) : state === "doing" ? (
+                  <Spinner size="xs" className="shrink-0" />
+                ) : state === "failed" ? (
+                  <CircleX className="h-4 w-4 shrink-0 text-destructive" />
+                ) : (
+                  <CircleDashed className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                <span className={cn("truncate", state === "waiting" && "text-muted-foreground")}>{STEP_WORDS[id]}</span>
+                {id === "build" && state === "doing" && run.install?.steps ? (
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{`${Math.min(run.install.next_step ?? 0, run.install.steps as number)} of ${run.install.steps}`}</span>
+                ) : null}
+                {clock ? <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{clock}</span> : null}
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
 
-      {run.phase === "installed" ? (
-        <div className="flex flex-col gap-2" data-make-describe-result="" data-make-describe-ms={run.ms} data-make-describe-split={JSON.stringify(run.split)}>
-          <p className="text-sm font-medium text-foreground">Made in {secondsWords(run.ms)}</p>
-          <Landing made={(run.answer.made ?? []) as MadeObject[]} />
+      {phase === "installed" && run ? (
+        <div className="flex flex-col gap-2" data-make-describe-result="" data-make-describe-ms={(run.endedAt ?? now) - run.startedAt}>
+          <div className="flex flex-wrap items-center gap-2">
+            {openHref ? (
+              <Button asChild data-make-run-open="">
+                <Link href={openHref}>{run.space?.url ? "Open your workspace" : "Open"}</Link>
+              </Button>
+            ) : null}
+            <span className="text-sm text-muted-foreground">{`Made in ${secondsWords((run.endedAt ?? now) - run.startedAt)}`}</span>
+          </div>
+          {run.space?.summary ? <p className="line-clamp-2 text-sm text-muted-foreground">{run.space.summary}</p> : null}
+          {made.length ? <Landing made={made} /> : null}
           <Notes notes={run.notes} />
-          <Link href={templatePreviewHref(run.templateId)} className="text-sm text-primary underline-offset-2 hover:underline" data-make-describe-template="">
-            Remove or save as a template
-          </Link>
+          {followUps.length ? (
+            <div className="flex flex-wrap gap-2" data-make-followups={followUps.length}>
+              {followUps.map((f) => (
+                <Button
+                  key={f}
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSentence(f);
+                    start(f);
+                  }}
+                  data-make-followup=""
+                >
+                  {f}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          {run.templateId ? (
+            <Link href={templatePreviewHref(run.templateId)} className="text-sm text-primary underline-offset-2 hover:underline" data-make-describe-template="">
+              Remove or save as a template
+            </Link>
+          ) : null}
         </div>
       ) : null}
 
-      {run.phase === "failed" ? (
-        <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
+      {phase === "failed" && run?.failed ? (
+        <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="" data-make-failed-at={run.failed.at}>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
-            <Button type="button" variant="outline" onClick={() => void start()} data-make-describe-retry="">
+            <p className="min-w-0 flex-1 text-sm text-destructive">{`${STEP_WORDS[run.failed.at]} stopped: ${run.failed.why}`}</p>
+            <Button type="button" variant="outline" onClick={resume} data-make-describe-retry="">
               Try again
             </Button>
           </div>
-          {run.templateId ? (
+          {run.space?.url ? (
+            <Link href={run.space.url} className="text-sm text-primary underline-offset-2 hover:underline">
+              Open the workspace that was built
+            </Link>
+          ) : null}
+          {run.templateId && run.install ? (
             <Link href={templatePreviewHref(run.templateId)} className="text-sm text-primary underline-offset-2 hover:underline">
               Remove what was made
             </Link>

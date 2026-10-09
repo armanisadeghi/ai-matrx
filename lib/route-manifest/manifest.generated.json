@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1376,
+  "routeCount": 1380,
   "routes": [
     {
       "pattern": "/",
@@ -397,6 +397,11 @@
       "pattern": "/administration/applets/rate-limits",
       "status": "live",
       "source": "app/(admin)/administration/applets/rate-limits/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/support",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/support/page.tsx"
     },
     {
       "pattern": "/administration/applications",
@@ -4140,6 +4145,11 @@
       "source": "app/(core)/marketing/[brandId]/identity/audience/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/identity/claims",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/claims/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/identity/guidelines",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/identity/guidelines/page.tsx"
@@ -4170,6 +4180,11 @@
       "source": "app/(core)/marketing/[brandId]/identity/media/sources/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/identity/messaging",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/messaging/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/identity/offerings",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/identity/offerings/page.tsx"
@@ -4198,6 +4213,11 @@
       "pattern": "/marketing/[brandId]/intelligence/competitors",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/intelligence/competitors/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/all",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/all/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/intelligence/competitors/competitors",

@@ -376,16 +376,19 @@ const nextConfig = {
     // collection after successful compilation. Four workers let v0.4.1066/1068
     // complete, but v0.4.1069 still OOMed in the same phase on the 60 GB machine.
     // Two workers then OOMed after a successful 16.1-minute compile in v0.4.1088,
-    // and one worker OOMed as page-data collection began in v0.4.1090. Keep the
-    // evidence-backed single-worker ceiling; package.json runs Next's compile
-    // and generate modes as separate processes so compile memory is released
-    // before static generation begins.
-    // GENERATE PROCESS ONLY: 8 workers (2026-10-09). That process starts with
-    // compile memory already released: one worker peaked at 2.8 GB locally
-    // (efa490a55), and 8 workers cut page-data collection ~61 s → ~20 s and
-    // static generation 64 s → 16 s. The compile process (where every OOM
-    // above happened, with compile memory still resident) keeps ONE worker.
-    cpus: process.argv.includes("generate") ? 8 : 1,
+    // and one worker OOMed as page-data collection began in v0.4.1090. (History:
+    // that era ran 1 worker and split compile/generate into two processes so
+    // compile memory was released first — superseded below, 2026-10-09.)
+    // 8 WORKERS, ONE PASS (2026-10-09). Every OOM above happened when compile
+    // itself peaked ~50-60 GB. After the icons/print fan-out fixes compile peaks
+    // ~26 GB, and a single `next build` with 8 workers measured 32.8 GB for the
+    // WHOLE process tree (efa490a55, sampled across all workers) on Vercel's 60 GB
+    // machine. Gains: page-data collection ~61 s → ~20 s, static generation
+    // 64 s → 9 s, and the second process's duplicate wrap-up (~0.8 min) is gone.
+    // If compile memory climbs back past ~45 GB, return to the two-pass split
+    // (package.json build:next) with 1 worker in the compile pass — and hunt the
+    // graph regression that caused it (code-splitting skill) before anything else.
+    cpus: 8,
     serverActions: {
       bodySizeLimit: "10mb",
     },

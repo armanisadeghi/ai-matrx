@@ -67,10 +67,47 @@ export interface DescribeAnswer {
   reuses: Array<{ token: string; existing_table_id: string }>;
 }
 
+/** A JSON object or list the model wrote as a string ("{\"token\":…}") — parsed; anything else as it was. */
+function unwrapJsonText(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const t = value.trim();
+  if (!((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]")))) return value;
+  try {
+    return JSON.parse(t) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * THE MODEL SOMETIMES WRITES EACH TABLE, FORM, VIEW AND RELATIONSHIP AS A JSON STRING (lane MAKE-WORKS,
+ * 2026-10-09: "a content calendar for my 6 agency clients…" answered `tables: ["{\"token\":\"client\",…}"]`
+ * for both test seats, and the check died on "t.fields is not iterable"). The meaning is intact, so the
+ * box reads it: every top-level value of the template, and every entry of a top-level list, that is a JSON
+ * object or list written as text is parsed. Said in the console, never silently.
+ */
+export function unwrapStringifiedParts(template: Record<string, unknown>): { template: Record<string, unknown>; unwrapped: string[] } {
+  const unwrapped: string[] = [];
+  const out: Record<string, unknown> = {};
+  for (const [key, raw] of Object.entries(template)) {
+    const top = unwrapJsonText(raw);
+    if (top !== raw) unwrapped.push(key);
+    if (Array.isArray(top)) {
+      const items = top.map(unwrapJsonText);
+      if (items.some((item, i) => item !== top[i]) && !unwrapped.includes(key)) unwrapped.push(key);
+      out[key] = items;
+    } else out[key] = top;
+  }
+  return { template: out, unwrapped };
+}
+
 /** Narrow the mandate's JSON; a missing spec throws in one line. */
 export function coerceDescribeAnswer(value: unknown): DescribeAnswer {
   const v = (value ?? {}) as Record<string, unknown>;
-  const template = v.template;
+  const raw = unwrapJsonText(v.template);
+  const read = raw && typeof raw === "object" && !Array.isArray(raw) ? unwrapStringifiedParts(raw as Record<string, unknown>) : null;
+  if (read?.unwrapped.length) console.warn("[make:describe] the answer wrote these parts as JSON text; read as JSON:", read.unwrapped);
+  const template = read?.template;
   if (!template || typeof template !== "object" || Array.isArray(template)) throw new Error("The answer held no template.");
   const notes = Array.isArray(v.notes) ? v.notes.filter((n): n is string => typeof n === "string") : [];
   const reuses = Array.isArray(v.reuses) ? (v.reuses as DescribeAnswer["reuses"]).filter((r) => r && typeof r.token === "string") : [];

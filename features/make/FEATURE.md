@@ -15,6 +15,7 @@ dialog on the page — no builder is forked.
 |---|---|
 | `tiles.ts` | The tile registry: one row per tile `{id, label, what (≤60), flow, kind, champion, asksForTable, href?}`. |
 | `MakeHome.tsx` | The page, `MakeMount` (RecordsMount + `useRecordsUiPorts` + `recordsUiHostFor` behind the store switch), `MakeFlowSheet` (step 1 "Which table, or make one?" on `PickOrAdd`, then the builder made NEW: `createOnMount` / `startNew`), Recent and templates. The only file here that imports `@ai-matrx/records*` (registered in `lib/knobs/unifiedDataCampaign.register.ts`). |
+| `describe/plan.ts` | The guided run's plan (lane MAKE-WORKS): the route read from the words (`data` → template builder, `page` → Space Builder via `features/spaces/embed/useSpaceBuild`, `both` → the Space first, then the template builder reusing its tables), the visible steps, and up to three one-line follow-ups. Pure, no model. |
 | `recent.ts` | What "Recently changed" never shows: archived rows, test organizations (`settings.test_fixture`), platform-owned tables. |
 
 ## Rules
@@ -40,3 +41,4 @@ dialog on the page — no builder is forked.
   one Template spec), checks it with `validateTemplate` (describe profile; a failure is one line + Try again),
   declares it `template_declare('org')` and installs it with the gallery's `runTemplateDoor`, `Progress` and
   `Landing` (`describe/describeTemplate.ts`). Guard: `describe/__tests__/describe-installs-only-what-passes-the-check.test.ts`.
+- 2026-10-09 — lane MAKE-WORKS: the describe box is ONE GUIDED RUN — the plan shown at once (`describe/plan.ts`), each step with its own clock, the model runs streamed in the floating LiveRunWindow (was headless), a workspace-shaped sentence routed to the Space Builder and opened, a data result with one Open button, up to three follow-ups that run through the same box, and Try again RESUMING at the failed step (a finished design or Space is never redone). Guards: `describe/__tests__/a-sentence-goes-to-the-door-that-can-build-it.test.ts`, `describe/__tests__/a-failed-run-resumes-where-it-stopped.test.tsx`.

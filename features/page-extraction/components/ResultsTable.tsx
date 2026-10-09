@@ -24,7 +24,7 @@
 
 import { useMemo, useEffect, useState } from "react";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { AlertTriangle, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -33,13 +33,9 @@ import {
   selectResultsRefreshNonce,
 } from "@/features/page-extraction/redux/selectors";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { clearJobResults, getJob } from "@/features/page-extraction/api/jobs";
@@ -293,213 +289,217 @@ function SingleJobResultsTable({
     );
   }
 
-  const rowCountLabel =
-    visibleResults.length + " row" + (visibleResults.length === 1 ? "" : "s");
+  const columns: MatrxColumnDef<PageExtractionResult>[] = templateCols
+    ? schemaColumns({
+        columns: templateCols,
+        mergedCountById,
+        onJumpToPage,
+        onRefetch: refetch,
+        onError: (m) => toast.error(m),
+      })
+    : [
+        pageColumn({ onJumpToPage }),
+        ...payloadColumns(inferredCols),
+      ];
 
   return (
     <div className="flex flex-col h-full">
-      <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/40">
-        <span className="text-[10px] text-muted-foreground">
-          {rowCountLabel}
-          {pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""}
-        </span>
-        <div className="flex items-center gap-1">
-          {dupeCount > 0 && (
-            <Button
-              variant="quiet"
-              onClick={() => setHideDuplicates((v) => !v)}
-              title="Rows a validation pass flagged as duplicates"
-            >
-              {hideDuplicates
-                ? `Show ${dupeCount} duplicate${dupeCount === 1 ? "" : "s"}`
-                : "Merge duplicates"}
-            </Button>
-          )}
-          <Button
-            icon={<RefreshCw
-              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
-            />}
-            variant="quiet"
-            disabled={loading}
-            onClick={() => refetch()}
-            title="Refresh results"
-          >
-            Refresh
-          </Button>
-          <Button
-            icon={clearing ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Trash2 />
-            )}
-            variant="quiet"
-            disabled={clearing}
-            onClick={() => void handleClearData()}
-            title="Move every result row for this template to Trash (template stays)"
-          >
-            Clear data
-          </Button>
-        </div>
-      </div>
       {unwrappedCount > 0 && <RecoveryBanner count={unwrappedCount} />}
-      <div className="flex-1 min-h-0 overflow-auto">
-        {templateCols ? (
-          <SchemaResultsBody
-            columns={templateCols}
-            results={visibleResults}
-            mergedCountById={mergedCountById}
-            onJumpToPage={onJumpToPage}
-            onRefetch={refetch}
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16 text-xs">Page</TableHead>
-                {inferredCols.map((key) => (
-                  <TableHead key={key} className="text-xs">
-                    {prettifyKey(key)}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleResults.map((r) => {
-                const payload = (r.payload ?? {}) as Record<string, unknown>;
-                const canJump =
-                  typeof r.canonical_page === "number" && r.canonical_page > 0;
-                return (
-                  <TableRow
-                    key={r.id}
-                    className={
-                      canJump ? "cursor-pointer hover:bg-muted/50" : ""
-                    }
-                    onClick={() => {
-                      if (canJump && onJumpToPage)
-                        onJumpToPage(r.canonical_page as number);
-                    }}
+      <div className="flex-1 min-h-0">
+        <MatrxDataTable<PageExtractionResult>
+          tableId={
+            templateCols
+              ? "page-extraction/results/" + jobId
+              : "page-extraction/results-inferred"
+          }
+          data={visibleResults}
+          columns={columns}
+          getRowId={(r) => r.id}
+          appearance="embedded"
+          pageSize={0}
+          viewTabs={false}
+          detail={{ enabled: false }}
+          onRowOpen={
+            templateCols
+              ? undefined
+              : (r) => {
+                  if (hasPage(r) && onJumpToPage)
+                    onJumpToPage(r.canonical_page as number);
+                }
+          }
+          isFetching={loading}
+          toolbar={{
+            title:
+              pageNumber != null ? "Filtered to page " + pageNumber : undefined,
+            searchPlaceholder: "Search results",
+            refresh: { onRefresh: () => refetch() },
+            actions: (
+              <>
+                {dupeCount > 0 && (
+                  <Button
+                    variant="quiet"
+                    onClick={() => setHideDuplicates((v) => !v)}
+                    title="Rows a validation pass flagged as duplicates"
                   >
-                    <TableCell className="text-xs tabular-nums">
-                      {r.canonical_page ??
-                        formatPageRange(
-                          Array.isArray(r.source_pages) ? r.source_pages : [],
-                        )}
-                    </TableCell>
-                    {inferredCols.map((key) => (
-                      <TableCell key={key} className="text-xs align-top">
-                        {key === TEXT_RESULT_KEY ? (
-                          <TextResultCell value={payload[key]} />
-                        ) : (
-                          renderCell(payload[key])
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
+                    {hideDuplicates
+                      ? `Show ${dupeCount} duplicate${dupeCount === 1 ? "" : "s"}`
+                      : "Merge duplicates"}
+                  </Button>
+                )}
+                <Button
+                  icon={clearing ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Trash2 />
+                  )}
+                  variant="quiet"
+                  disabled={clearing}
+                  onClick={() => void handleClearData()}
+                  title="Move every result row for this template to Trash (template stays)"
+                >
+                  Clear data
+                </Button>
+              </>
+            ),
+          }}
+          emptyState={{ title: "No results match" }}
+        />
       </div>
     </div>
   );
 }
 
-// ─── Schema-driven body (template column schema present) ─────────────────
+function hasPage(r: PageExtractionResult): boolean {
+  return typeof r.canonical_page === "number" && r.canonical_page > 0;
+}
 
-function SchemaResultsBody({
+function pageLabel(r: PageExtractionResult): string {
+  return r.canonical_page != null
+    ? String(r.canonical_page)
+    : formatPageRange(Array.isArray(r.source_pages) ? r.source_pages : []);
+}
+
+function pageColumn({
+  onJumpToPage,
+  mergedCountById,
+  jumpFromCell,
+}: {
+  onJumpToPage?: (page: number) => void;
+  mergedCountById?: Map<string, number>;
+  /** Schema grids keep the door on the page cell, so editing a cell never jumps. */
+  jumpFromCell?: boolean;
+}): MatrxColumnDef<PageExtractionResult> {
+  return {
+    id: "page",
+    header: "Page",
+    accessorFn: (r) => r.canonical_page ?? pageLabel(r),
+    cell: (r) => {
+      const merged = mergedCountById?.get(r.id) ?? 0;
+      const canJump = jumpFromCell && hasPage(r) && onJumpToPage;
+      return (
+        <span
+          className={"tabular-nums" + (canJump ? " cursor-pointer" : "")}
+          onClick={
+            canJump ? () => onJumpToPage(r.canonical_page as number) : undefined
+          }
+        >
+          {pageLabel(r)}
+          {merged > 0 && (
+            <span
+              className="ml-1 px-1 py-px rounded bg-primary/10 text-primary-ink text-[8px] font-medium align-middle"
+              title={`${merged} duplicate row(s) merged into this entry`}
+            >
+              +{merged} merged
+            </span>
+          )}
+        </span>
+      );
+    },
+    copyValue: (r) => pageLabel(r),
+    filter: "text",
+    width: 90,
+  };
+}
+
+/** One column per payload key (no template schema to label them). */
+function payloadColumns(
+  keys: string[],
+): MatrxColumnDef<PageExtractionResult>[] {
+  return keys.map((key) => ({
+    id: "key:" + key,
+    header: prettifyKey(key),
+    accessorFn: (r) =>
+      renderCell(((r.payload ?? {}) as Record<string, unknown>)[key]),
+    cell: (r) => {
+      const value = ((r.payload ?? {}) as Record<string, unknown>)[key];
+      return key === TEXT_RESULT_KEY ? (
+        <TextResultCell value={value} />
+      ) : (
+        renderCell(value)
+      );
+    },
+    copyValue: (r) =>
+      renderCell(((r.payload ?? {}) as Record<string, unknown>)[key]),
+    filter: "text" as const,
+  }));
+}
+
+// ─── Schema-driven columns (template column schema present) ──────────────
+
+function schemaColumns({
   columns,
-  results,
   mergedCountById,
   onJumpToPage,
   onRefetch,
+  onError,
 }: {
   columns: ExtractionColumn[];
-  results: PageExtractionResult[];
   mergedCountById: Map<string, number>;
   onJumpToPage?: (page: number) => void;
   onRefetch: () => void;
-}) {
-  const toast = useToastManager("page-extraction");
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-16 text-xs">Page</TableHead>
-          {columns.map((col) => (
-            <TableHead key={col.key} className="text-xs">
-              <span className="flex items-center gap-1">
-                {col.label}
-                {col.source !== "agent" && (
-                  <span
-                    className="text-[8px] uppercase tracking-wider text-muted-foreground/60"
-                    title={COLUMN_SOURCE_META[col.source].hint}
-                  >
-                    {col.source}
-                  </span>
-                )}
-              </span>
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {results.map((r) => {
-          const canJump =
-            typeof r.canonical_page === "number" && r.canonical_page > 0;
-          return (
-            <TableRow key={r.id}>
-              <TableCell
-                className={
-                  "text-xs tabular-nums" +
-                  (canJump ? " cursor-pointer " : "")
-                }
-                onClick={() => {
-                  if (canJump && onJumpToPage)
-                    onJumpToPage(r.canonical_page as number);
-                }}
+  onError: (msg: string) => void;
+}): MatrxColumnDef<PageExtractionResult>[] {
+  return [
+    pageColumn({ onJumpToPage, mergedCountById, jumpFromCell: true }),
+    ...columns.map(
+      (col): MatrxColumnDef<PageExtractionResult> => ({
+        id: "key:" + col.key,
+        label: col.label,
+        header: (
+          <span className="flex items-center gap-1">
+            {col.label}
+            {col.source !== "agent" && (
+              <span
+                className="text-[8px] uppercase tracking-wider text-muted-foreground/60"
+                title={COLUMN_SOURCE_META[col.source].hint}
               >
-                {r.canonical_page ??
-                  formatPageRange(
-                    Array.isArray(r.source_pages) ? r.source_pages : [],
-                  )}
-                {(mergedCountById.get(r.id) ?? 0) > 0 && (
-                  <span
-                    className="ml-1 px-1 py-px rounded bg-primary/10 text-primary-ink text-[8px] font-medium align-middle"
-                    title={`${mergedCountById.get(r.id)} duplicate row(s) merged into this entry`}
-                  >
-                    +{mergedCountById.get(r.id)} merged
-                  </span>
-                )}
-              </TableCell>
-              {columns.map((col) => {
-                const editable = COLUMN_SOURCE_META[col.source].editable;
-                const value = cellValueFor(r, col);
-                return (
-                  <TableCell key={col.key} className="text-xs align-top">
-                    {col.key === TEXT_RESULT_KEY ? (
-                      <TextResultCell value={value} />
-                    ) : editable ? (
-                      <ManualCell
-                        result={r}
-                        column={col}
-                        value={value}
-                        onSaved={onRefetch}
-                        onError={(m) => toast.error(m)}
-                      />
-                    ) : (
-                      renderCell(value)
-                    )}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
+                {col.source}
+              </span>
+            )}
+          </span>
+        ),
+        accessorFn: (r) => renderCell(cellValueFor(r, col)),
+        cell: (r) => {
+          const value = cellValueFor(r, col);
+          return col.key === TEXT_RESULT_KEY ? (
+            <TextResultCell value={value} />
+          ) : COLUMN_SOURCE_META[col.source].editable ? (
+            <ManualCell
+              result={r}
+              column={col}
+              value={value}
+              onSaved={onRefetch}
+              onError={onError}
+            />
+          ) : (
+            renderCell(value)
           );
-        })}
-      </TableBody>
-    </Table>
-  );
+        },
+        copyValue: (r) => renderCell(cellValueFor(r, col)),
+        filter: "text",
+      }),
+    ),
+  ];
 }
 
 function ManualCell({
@@ -652,81 +652,53 @@ function AllResultsTable({
     );
   }
 
-  const rowCountLabel =
-    filtered.length + " row" + (filtered.length === 1 ? "" : "s");
+  const columns: MatrxColumnDef<PageExtractionResult>[] = [
+    pageColumn({}),
+    {
+      id: "template",
+      header: "Template",
+      accessorFn: (r) => jobNameById.get(r.job_id) ?? "(archived)",
+      cell: (r) => (
+        <span className="text-muted-foreground">
+          {jobNameById.get(r.job_id) ?? "(archived)"}
+        </span>
+      ),
+      copyValue: (r) => jobNameById.get(r.job_id) ?? "(archived)",
+      filter: "select",
+    },
+    ...payloadColumns(cols),
+  ];
 
   return (
     <div className="flex flex-col h-full">
-      <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/40">
-        <span className="text-[10px] text-muted-foreground">
-          {rowCountLabel} across {jobs.length} template
-          {jobs.length === 1 ? "" : "s"}
-          {pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""}
-        </span>
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground/70">
-            All extractions
-          </span>
-          <Button
-            icon={<RefreshCw
-              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
-            />}
-            variant="quiet"
-            disabled={loading}
-            onClick={() => refetch()}
-            title="Refresh results"
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
       {unwrappedCount > 0 && <RecoveryBanner count={unwrappedCount} />}
-      <div className="flex-1 min-h-0 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16 text-xs">Page</TableHead>
-              <TableHead className="text-xs">Template</TableHead>
-              {cols.map((key) => (
-                <TableHead key={key} className="text-xs">
-                  {prettifyKey(key)}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((r) => {
-              const payload = (r.payload ?? {}) as Record<string, unknown>;
-              const canJump =
-                typeof r.canonical_page === "number" && r.canonical_page > 0;
-              return (
-                <TableRow
-                  key={r.id}
-                  className={canJump ? "cursor-pointer hover:bg-muted/50" : ""}
-                  onClick={() => {
-                    if (canJump && onJumpToPage)
-                      onJumpToPage(r.canonical_page as number);
-                  }}
-                >
-                  <TableCell className="text-xs tabular-nums">
-                    {r.canonical_page ??
-                      formatPageRange(
-                        Array.isArray(r.source_pages) ? r.source_pages : [],
-                      )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {jobNameById.get(r.job_id) ?? "(archived)"}
-                  </TableCell>
-                  {cols.map((key) => (
-                    <TableCell key={key} className="text-xs align-top">
-                      {renderCell(payload[key])}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      <div className="flex-1 min-h-0">
+        <MatrxDataTable<PageExtractionResult>
+          tableId="page-extraction/results-all"
+          data={filtered}
+          columns={columns}
+          getRowId={(r) => r.id}
+          appearance="embedded"
+          pageSize={0}
+          viewTabs={false}
+          detail={{ enabled: false }}
+          onRowOpen={(r) => {
+            if (hasPage(r) && onJumpToPage)
+              onJumpToPage(r.canonical_page as number);
+          }}
+          isFetching={loading}
+          toolbar={{
+            title:
+              "All extractions across " +
+              jobs.length +
+              " template" +
+              (jobs.length === 1 ? "" : "s") +
+              (pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""),
+            searchPlaceholder: "Search results",
+            refresh: { onRefresh: () => refetch() },
+          }}
+          emptyState={{ title: "No results match" }}
+        />
       </div>
     </div>
   );

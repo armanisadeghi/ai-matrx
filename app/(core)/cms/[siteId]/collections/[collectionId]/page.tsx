@@ -39,18 +39,18 @@ import type {
   SiteCollectionItem,
 } from "@/features/cms/types";
 import { CollectionItemEditorDialog } from "@/features/cms/components/collections/CollectionItemEditorDialog";
-import ColumnHeaderMenu from "@/components/user-generated-table-data/ColumnHeaderMenu";
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import { activeFiltersOnly } from "@/features/data-tables/table-view-url";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { defaultFormatForBase } from "@ai-matrx/design-system/field-formats";
 import { readFieldFormatConfig } from "@ai-matrx/design-system/field-formats";
-import type { ColumnFilter } from "@/features/data-tables/column-filters";
+import type {
+  ColumnFilter,
+  ColumnFilterMap,
+} from "@/features/data-tables/column-filters";
 import type { ColumnFacets } from "@/features/data-tables/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system/controls";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
@@ -60,18 +60,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  MatrxDataTable,
+  dateFilterBounds,
+  type ColumnFiltersState,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
 import {
   AlertCircle,
   Archive,
   ChevronLeft,
-  ChevronRight,
   Download,
   Pencil,
   Plus,
@@ -79,7 +77,6 @@ import {
   Loader2,
   MailCheck,
   MailX,
-  Search,
   ShieldAlert,
   ShieldCheck,
   Trash2,
@@ -104,6 +101,13 @@ const MAX_DATA_COLUMNS = 4;
  * prototype member (`constructor`, `toString`, …) must never surface the
  * prototype's value as if a visitor had submitted it.
  */
+function extraJson(item: SiteCollectionItem, columnKeys: string[]): string {
+  const extra = Object.fromEntries(
+    Object.entries(item.data ?? {}).filter(([k]) => !columnKeys.includes(k)),
+  );
+  return Object.keys(extra).length > 0 ? JSON.stringify(extra) : "";
+}
+
 function readField(
   data: Record<string, unknown> | null | undefined,
   key: string,
@@ -150,6 +154,82 @@ function buildCsv(
       ...metaKeys.map((k) => cellText(item[k])),
     ]),
   );
+}
+
+/**
+ * The database speaks the data-tables filter vocabulary (`values` / `text` /
+ * `range`); the shared table speaks its own. The URL keeps the first one — a
+ * narrowed view is a link — and these two translate at the table's edge.
+ */
+function filtersToTable(
+  filters: ColumnFilterMap,
+  dataTypes: Map<string, string>,
+): ColumnFiltersState {
+  const out: ColumnFiltersState = {};
+  for (const [field, f] of Object.entries(filters)) {
+    const type = field === "created_at" ? "datetime" : (dataTypes.get(field) ?? "text");
+    if (f.mode === "text") out[field] = { kind: "text", value: f.text };
+    else if (f.mode === "values")
+      out[field] = {
+        kind: "select",
+        value: f.values[0] ?? "",
+        values: f.values,
+        negated: f.negate,
+      };
+    else if (type === "number") {
+      const min = f.min.trim() === "" ? undefined : Number(f.min);
+      const max = f.max.trim() === "" ? undefined : Number(f.max);
+      out[field] = { kind: "number", min, max };
+    } else {
+      out[field] = {
+        kind: "date",
+        ...(f.min.trim() ? { since: f.min } : {}),
+        ...(f.max.trim() ? { until: f.max } : {}),
+      };
+    }
+  }
+  return out;
+}
+
+function filtersFromTable(state: ColumnFiltersState): ColumnFilterMap {
+  const out: ColumnFilterMap = {};
+  for (const [field, f] of Object.entries(state)) {
+    if (!f) continue;
+    if (f.kind === "text") {
+      if (f.value.trim() !== "") out[field] = { mode: "text", text: f.value };
+    } else if (f.kind === "select") {
+      const values = f.values ?? (f.value ? [f.value] : []);
+      if (values.length > 0)
+        out[field] = {
+          mode: "values",
+          values,
+          includeBlank: false,
+          negate: f.negated === true,
+        };
+    } else if (f.kind === "boolean") {
+      out[field] = {
+        mode: "values",
+        values: [String(f.value)],
+        includeBlank: false,
+        negate: f.negated === true,
+      };
+    } else if (f.kind === "number") {
+      const op = f.op ?? "between";
+      const min = op === "lt" ? undefined : f.min;
+      const max = op === "gt" ? undefined : f.max;
+      if (min !== undefined || max !== undefined)
+        out[field] = {
+          mode: "range",
+          min: min === undefined ? "" : String(min),
+          max: max === undefined ? "" : String(max),
+        };
+    } else if (f.kind === "date") {
+      const b = dateFilterBounds(f);
+      if (b.since || b.until)
+        out[field] = { mode: "range", min: b.since ?? "", max: b.until ?? "" };
+    }
+  }
+  return out;
 }
 
 export default function CollectionItemsPage() {
@@ -451,9 +531,114 @@ export default function CollectionItemsPage() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  const allOnPageSelected =
-    items.length > 0 && items.every((it) => selected.has(it.id));
+  const columns: MatrxColumnDef<SiteCollectionItem>[] = [
+    ...columnKeys.map(
+      (key): MatrxColumnDef<SiteCollectionItem> => ({
+        id: key,
+        header: columnLabels.get(key) ?? key,
+        accessorFn: (item) => cellText(readField(item.data, key)),
+        cell: (item) => (
+          <span className={item.seen_at ? undefined : "font-semibold"}>
+            {/* The declared field TYPE decides how a cell reads: a url is a
+                link, a datetime a date, a boolean a chip. */}
+            <FormattedFieldValue
+              value={readField(item.data, key)}
+              format={columnFormats.get(key) ?? null}
+              dataType={columnDataTypes.get(key) ?? "text"}
+              plain
+            />
+          </span>
+        ),
+        copyValue: (item) => cellText(readField(item.data, key)),
+        filter:
+          columnDataTypes.get(key) === "number"
+            ? "number"
+            : columnDataTypes.get(key) === "boolean"
+              ? "boolean"
+              : columnDataTypes.get(key) === "datetime"
+                ? "date"
+                : "text",
+      }),
+    ),
+    {
+      id: "data",
+      header: "Data",
+      accessorFn: (item) => extraJson(item, columnKeys),
+      cell: (item) => (
+        <span className="font-mono text-muted-foreground">
+          {extraJson(item, columnKeys)}
+        </span>
+      ),
+      sortable: false,
+      filter: false,
+    },
+    {
+      id: "created_at",
+      header: "Received",
+      accessorFn: (item) => item.created_at,
+      cell: (item) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+        </span>
+      ),
+      copyValue: (item) => item.created_at,
+      filter: "date",
+      width: 150,
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (item) =>
+        [
+          item.seen_at ? "" : "New",
+          item.is_spam ? "Spam" : "",
+          item.status === "archived" ? "Archived" : "",
+        ]
+          .filter(Boolean)
+          .join(", "),
+      cell: (item) => (
+        <div className="flex items-center gap-1">
+          {!item.seen_at && <Badge className="text-[10px] px-1.5">New</Badge>}
+          {item.is_spam && (
+            <Badge variant="destructive" className="text-[10px] px-1.5">
+              Spam
+            </Badge>
+          )}
+          {item.status === "archived" && (
+            <Badge variant="outline" className="text-[10px] px-1.5">
+              Archived
+            </Badge>
+          )}
+        </div>
+      ),
+      sortable: false,
+      filter: false,
+      width: 120,
+    },
+  ];
+
+  const tableState: MatrxDataTableQueryState = {
+    page,
+    pageSize: perPage,
+    search,
+    anyOf: "",
+    columnFilters: filtersToTable(columnFilters, columnDataTypes),
+    sort: sortField
+      ? { id: sortField, direction: sortDirection === "asc" ? "asc" : "desc" }
+      : null,
+  };
+
+  const handleTableState = (next: MatrxDataTableQueryState) => {
+    if (next.search !== search) view.setSearchTerm(next.search.trim());
+    if ((next.sort?.id ?? null) !== sortField || (next.sort?.direction ?? null) !== (sortField ? sortDirection : null)) {
+      if (next.sort) applySort(next.sort.id, next.sort.direction);
+      else clearSort();
+    }
+    const nextFilters = filtersFromTable(next.columnFilters);
+    if (JSON.stringify(activeFiltersOnly(nextFilters)) !== activeFiltersKey)
+      setColumnFilters(nextFilters);
+    if (next.page !== page) setPage(next.page);
+  };
 
   if (isLoading) {
     return (
@@ -491,45 +676,6 @@ export default function CollectionItemsPage() {
             </Link>
           </Button>
           <p className="text-sm font-medium">{collection.name}</p>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input adornment="start"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setPage(1);
-                    view.setSearchTerm(searchInput.trim());
-                  }
-                }}
-                placeholder="Search items…"
-                className="w-44 sm:w-56"
-              />
-            </div>
-            <Button
-              icon={<Plus />}
-              variant="primary"
-              onClick={() => {
-                setEditingItem(null);
-                setItemEditorOpen(true);
-              }}
-            >
-              Add item
-            </Button>
-            <Button
-              icon={isExporting ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Download />
-              )}
-              variant="outline"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              Export CSV
-            </Button>
-          </div>
         </div>
 
         {/* Filter tabs */}
@@ -551,77 +697,6 @@ export default function CollectionItemsPage() {
           </span>
         </div>
 
-        {/* Bulk action bar */}
-        {selected.size > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-            {/* read-gate-exempt: how many items the person has ticked (selection state), not a count from a read */}
-            <span className="text-xs font-medium">{selected.size} selected</span>
-            <Button
-              icon={<MailCheck />}
-              variant="quiet"
-              disabled={bulkBusy}
-              onClick={() => bulkFlags({ seen: true }, "Marked seen")}
-            >
-              Mark seen
-            </Button>
-            <Button
-              icon={<MailX />}
-              variant="quiet"
-              disabled={bulkBusy}
-              onClick={() => bulkFlags({ seen: false }, "Marked unseen")}
-            >
-              Mark unseen
-            </Button>
-            {filter === "spam" ? (
-              <Button
-                icon={<ShieldCheck />}
-                variant="quiet"
-                disabled={bulkBusy}
-                onClick={() => bulkFlags({ isSpam: false }, "Marked not spam")}
-              >
-                Not spam
-              </Button>
-            ) : (
-              <Button
-                icon={<ShieldAlert />}
-                variant="quiet"
-                disabled={bulkBusy}
-                onClick={() => bulkFlags({ isSpam: true }, "Marked spam")}
-              >
-                Spam
-              </Button>
-            )}
-            {filter === "archived" ? (
-              <Button
-                icon={<Inbox />}
-                variant="quiet"
-                disabled={bulkBusy}
-                onClick={() => bulkFlags({ status: "active" }, "Restored")}
-              >
-                Restore
-              </Button>
-            ) : (
-              <Button
-                icon={<Archive />}
-                variant="quiet"
-                disabled={bulkBusy}
-                onClick={() => bulkFlags({ status: "archived" }, "Archived")}
-              >
-                Archive
-              </Button>
-            )}
-            <Button
-              icon={<Trash2 />}
-              variant="quiet"
-              disabled={bulkBusy}
-              onClick={() => setDeleteOpen(true)}
-            >
-              Delete
-            </Button>
-            {bulkBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          </div>
-        )}
-
         {/* With rows on screen a failed refresh is said above them; with none, the table slot says it. */}
         {error && items.length > 0 && (
           <div className="text-sm text-destructive-ink flex items-center gap-2 p-3 rounded-md bg-destructive/10">
@@ -632,257 +707,178 @@ export default function CollectionItemsPage() {
         )}
 
         {/* Table */}
-        {itemsLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : error && items.length === 0 ? (
+        {error && items.length === 0 && !itemsLoading ? (
           <ReadFailure
             error={new Error(error)}
             what="this collection's items"
             onRetry={() => void refreshItems()}
           />
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
-            <Inbox className="h-10 w-10 opacity-30" />
-            <p className="text-sm">
-              {search
-                ? "No items match this search"
-                : filter === "all"
-                  ? "No items yet"
-                  : `No ${filter} items`}
-            </p>
-            {filter === "all" && !search && (
-              <>
-                <p className="text-xs max-w-md text-center">
-                  Items appear here when visitors submit through published
-                  pages, when agents write to this collection, or when you add
-                  one yourself.
-                </p>
-                <Button
-                  icon={<Plus />}
-                  variant="primary"
-                  onClick={() => {
+        ) : (
+          <div className="h-[70dvh] min-h-[360px]">
+            <MatrxDataTable<SiteCollectionItem>
+              tableId={`cms/collection-items/${collectionId}`}
+              data={items}
+              columns={columns}
+              getRowId={(item) => item.id}
+              viewTabs={false}
+              detail={{ enabled: false }}
+              isLoading={itemsLoading && items.length === 0}
+              isFetching={itemsLoading}
+              pageSize={perPage}
+              query={{
+                mode: "controlled",
+                state: tableState,
+                onStateChange: handleTableState,
+                totalItems: total,
+                sourceProcessing: {
+                  search: "source",
+                  sort: "source",
+                  columnFilters: "source",
+                },
+              }}
+              onRowOpen={handleOpenItem}
+              selection={{
+                selectedIds: [...selected],
+                onSelectedIdsChange: (ids) => setSelected(new Set(ids)),
+                actions: () => (
+                  <>
+                    <Button
+                      icon={<MailCheck />}
+                      variant="quiet"
+                      disabled={bulkBusy}
+                      onClick={() => bulkFlags({ seen: true }, "Marked seen")}
+                    >
+                      Mark seen
+                    </Button>
+                    <Button
+                      icon={<MailX />}
+                      variant="quiet"
+                      disabled={bulkBusy}
+                      onClick={() => bulkFlags({ seen: false }, "Marked unseen")}
+                    >
+                      Mark unseen
+                    </Button>
+                    {filter === "spam" ? (
+                      <Button
+                        icon={<ShieldCheck />}
+                        variant="quiet"
+                        disabled={bulkBusy}
+                        onClick={() =>
+                          bulkFlags({ isSpam: false }, "Marked not spam")
+                        }
+                      >
+                        Not spam
+                      </Button>
+                    ) : (
+                      <Button
+                        icon={<ShieldAlert />}
+                        variant="quiet"
+                        disabled={bulkBusy}
+                        onClick={() => bulkFlags({ isSpam: true }, "Marked spam")}
+                      >
+                        Spam
+                      </Button>
+                    )}
+                    {filter === "archived" ? (
+                      <Button
+                        icon={<Inbox />}
+                        variant="quiet"
+                        disabled={bulkBusy}
+                        onClick={() => bulkFlags({ status: "active" }, "Restored")}
+                      >
+                        Restore
+                      </Button>
+                    ) : (
+                      <Button
+                        icon={<Archive />}
+                        variant="quiet"
+                        disabled={bulkBusy}
+                        onClick={() =>
+                          bulkFlags({ status: "archived" }, "Archived")
+                        }
+                      >
+                        Archive
+                      </Button>
+                    )}
+                    <Button
+                      icon={<Trash2 />}
+                      variant="quiet"
+                      disabled={bulkBusy}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      Delete
+                    </Button>
+                    {bulkBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  </>
+                ),
+              }}
+              rowActions={(item) => [
+                {
+                  id: "edit",
+                  icon: Pencil,
+                  label: "Edit item",
+                  onClick: () => {
+                    setEditingItem(item);
+                    setItemEditorOpen(true);
+                  },
+                },
+              ]}
+              facets={{
+                source: async ({ columnId, search: q, limit }) => {
+                  const f = await CmsCollectionService.itemColumnFacets(
+                    collectionId,
+                    columnId,
+                    { filter, q: q || undefined, limit },
+                  );
+                  return f
+                    ? {
+                        columnId,
+                        totalRows: f.total_rows,
+                        filled: f.filled,
+                        blank: f.blank,
+                        distinctCount: f.distinct_count,
+                        maxLength: f.max_length,
+                        unlistable: f.unlistable,
+                        limit: f.limit,
+                        truncated: f.truncated,
+                        values: f.values,
+                        answeredBy: "source" as const,
+                        complete: !f.truncated,
+                      }
+                    : null;
+                },
+                totalRows: total,
+              }}
+              toolbar={{
+                searchPlaceholder: "Search items…",
+                add: {
+                  onAdd: () => {
                     setEditingItem(null);
                     setItemEditorOpen(true);
-                  }}
-                >
-                  Add item
-                </Button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="rounded-md border border-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8">
-                    <Checkbox
-                      checked={allOnPageSelected}
-                      onCheckedChange={(v) =>
-                        setSelected(
-                          v === true
-                            ? new Set(items.map((it) => it.id))
-                            : new Set(),
-                        )
-                      }
-                      aria-label="Select all on page"
-                    />
-                  </TableHead>
-                  {columnKeys.map((key) => (
-                    <TableHead key={key} className="text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="truncate">
-                          {columnLabels.get(key) ?? key}
-                        </span>
-                        <ColumnHeaderMenu
-                          fieldName={key}
-                          displayName={columnLabels.get(key) ?? key}
-                          dataType={columnDataTypes.get(key) ?? "text"}
-                          isSorted={sortField === key}
-                          sortDirection={sortDirection === "asc" ? "asc" : "desc"}
-                          filter={columnFilters[key]}
-                          searchTerm={search || undefined}
-                          // The browser holds ONE PAGE, so it must never build
-                          // a value checklist from what it can see — the menu
-                          // asks the server, which counts every row.
-                          localRows={items}
-                          totalCount={total}
-                          fetchFacets={fetchColumnFacets}
-                          onSortAsc={() => applySort(key, "asc")}
-                          onSortDesc={() => applySort(key, "desc")}
-                          onClearSort={clearSort}
-                          onFilterChange={(next) => applyColumnFilter(key, next)}
-                        />
-                      </div>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-xs">Data</TableHead>
-                  <TableHead className="text-xs">
-                    <div className="flex items-center gap-1">
-                      <span>Received</span>
-                      <ColumnHeaderMenu
-                        fieldName="created_at"
-                        displayName="Received"
-                        dataType="timestamp"
-                        isSorted={sortField === "created_at"}
-                        sortDirection={sortDirection === "asc" ? "asc" : "desc"}
-                        filter={columnFilters["created_at"]}
-                        searchTerm={search || undefined}
-                        localRows={items}
-                        totalCount={total}
-                        fetchFacets={fetchColumnFacets}
-                        onSortAsc={() => applySort("created_at", "asc")}
-                        onSortDesc={() => applySort("created_at", "desc")}
-                        onClearSort={clearSort}
-                        onFilterChange={(next) =>
-                          applyColumnFilter("created_at", next)
-                        }
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-xs w-20">Status</TableHead>
-                  <TableHead className="text-xs w-10 max-lg:sticky max-lg:right-0 max-lg:z-20 max-lg:bg-background">
-                    <span className="sr-only">Edit</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => {
-                  const unread = !item.seen_at;
-                  const extra = Object.fromEntries(
-                    Object.entries(item.data ?? {}).filter(
-                      ([k]) => !columnKeys.includes(k),
-                    ),
-                  );
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Open item received ${formatDistanceToNow(
-                        new Date(item.created_at),
-                        { addSuffix: true },
-                      )}`}
-                      onClick={() => handleOpenItem(item)}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter" && e.key !== " ") return;
-                        // Let the row checkbox keep its own keyboard behaviour.
-                        if (e.target !== e.currentTarget) return;
-                        e.preventDefault();
-                        handleOpenItem(item);
-                      }}
-                    >
-                      <TableCell
-                        className="w-8"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Checkbox
-                          checked={selected.has(item.id)}
-                          onCheckedChange={(v) =>
-                            setSelected((prev) => {
-                              const next = new Set(prev);
-                              if (v === true) next.add(item.id);
-                              else next.delete(item.id);
-                              return next;
-                            })
-                          }
-                          aria-label="Select item"
-                        />
-                      </TableCell>
-                      {columnKeys.map((key) => (
-                        <TableCell
-                          key={key}
-                          className={`text-xs max-w-48 truncate ${unread ? "font-semibold" : ""}`}
-                        >
-                          {/* The declared field TYPE decides how a cell reads:
-                              a url is a link, a datetime a date, a boolean a
-                              chip. `plain` keeps a dense grid dense — the row
-                              itself is the click target. */}
-                          <FormattedFieldValue
-                            value={readField(item.data, key)}
-                            format={columnFormats.get(key) ?? null}
-                            dataType={columnDataTypes.get(key) ?? "text"}
-                            plain
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell className="text-xs max-w-56 truncate font-mono text-muted-foreground">
-                        {Object.keys(extra).length > 0
-                          ? JSON.stringify(extra)
-                          : ""}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(new Date(item.created_at), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <div className="flex items-center gap-1">
-                          {unread && (
-                            <Badge className="text-[10px] px-1.5">New</Badge>
-                          )}
-                          {item.is_spam && (
-                            <Badge
-                              variant="destructive"
-                              className="text-[10px] px-1.5"
-                            >
-                              Spam
-                            </Badge>
-                          )}
-                          {item.status === "archived" && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5"
-                            >
-                              Archived
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell
-                        className="w-10 max-lg:sticky max-lg:right-0 max-lg:z-10 max-lg:bg-background"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          icon={<Pencil />}
-                          variant="quiet"
-                          aria-label="Edit item"
-                          onClick={() => {
-                            setEditingItem(item);
-                            setItemEditorOpen(true);
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-xs text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              icon={<ChevronLeft />}
-              variant="outline"
-              disabled={page <= 1 || itemsLoading}
-              onClick={() => setPage(page - 1)}
-              aria-label="Previous page"
-            />
-            <Button
-              icon={<ChevronRight />}
-              variant="outline"
-              disabled={page >= totalPages || itemsLoading}
-              onClick={() => setPage(page + 1)}
-              aria-label="Next page"
+                  },
+                },
+                actions: (
+                  <Button
+                    icon={isExporting ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Download />
+                    )}
+                    variant="outline"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                  >
+                    Export CSV
+                  </Button>
+                ),
+              }}
+              emptyState={{
+                title: search
+                  ? "No items match this search"
+                  : filter === "all"
+                    ? "No items yet"
+                    : `No ${filter} items`,
+              }}
             />
           </div>
         )}
