@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
@@ -61,7 +61,18 @@ import { EntitlementMeter } from "@/features/entitlements/components/Entitlement
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Chip, ChipSet, SegmentedControl, Switch } from "@ai-matrx/design-system/controls";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Label } from "@/components/ui/label";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { KIND_CHOICES } from "@/features/flashcards/components/set-detail/AddMoreCardsButton";
+import { QUESTION_TYPE_LABELS } from "@/features/education/assessment/components/AddMoreQuestionsButton";
+import { QUESTION_TYPES, type QuestionType } from "@/features/education/assessment/data/types";
+import type { CardKind } from "@/features/flashcards/utils/cardVariants";
+import type { OutlineSection } from "@/features/education/kits/outline/types";
+import { gapSections, type GenerationSteer } from "./steering";
+import { announceLineage } from "./announceLineage";
+import { recordSourceLineage } from "./recordSourceLineage";
 
 interface TargetMeta {
   kind: TargetKind;
@@ -179,7 +190,23 @@ export interface ConvertContentDialogProps {
   focusKind?: TargetKind;
   /** Called after a successful conversion so the caller can refresh lineage chips. */
   onConverted?: () => void;
+  /**
+   * The kit's outline and what each section already holds (living-kit W2):
+   * with it the dialog offers "Focus on gaps" (default on), which aims a deck
+   * at the sections with the fewest cards and a quiz at those with the fewest
+   * questions.
+   */
+  outline?: {
+    sections: OutlineSection[];
+    cards: ReadonlyMap<string, number>;
+    questions: ReadonlyMap<string, number>;
+  };
+  /** Pre-aim the run at these sections (Coverage "Make more" / "Go deeper"); gaps off. */
+  sections?: OutlineSection[];
 }
+
+/** The kinds that read steering (types, instruction, sections). */
+const STEERED: ReadonlySet<TargetKind> = new Set(["deck", "quiz", "practice_test"]);
 
 export function ConvertContentDialog({
   open,
@@ -192,6 +219,8 @@ export function ConvertContentDialog({
   excludeKinds,
   focusKind,
   onConverted,
+  outline,
+  sections: aimedSections,
 }: ConvertContentDialogProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -209,6 +238,28 @@ export function ConvertContentDialog({
   const hasSelection = Boolean(selectionText && selectionText.trim().length > 20);
   const [useSelection, setUseSelection] = useState(false);
   const [rows, setRows] = useState<Record<string, RowState>>({});
+
+  // Steering (deck / quiz / practice test): the person's words, the types
+  // they want, and which outline sections to cover.
+  const [instruction, setInstruction] = useState("");
+  const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
+  const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([]);
+  const [focusGaps, setFocusGaps] = useState(!aimedSections?.length);
+  const instructionRef = useRef<HTMLTextAreaElement | null>(null);
+  const steerFor = (kind: TargetKind): GenerationSteer | undefined => {
+    if (!STEERED.has(kind)) return undefined;
+    const counts = kind === "deck" ? outline?.cards : outline?.questions;
+    const sections = aimedSections?.length
+      ? aimedSections
+      : focusGaps && outline && counts
+        ? gapSections(outline.sections, counts)
+        : undefined;
+    return {
+      instruction: instruction.trim() || undefined,
+      ...(kind === "deck" ? { cardKinds } : { questionTypes }),
+      sections,
+    };
+  };
 
   const sourceText = useSelection && selectionText ? selectionText : text;
   const canConvert = sourceText.trim().length > 0;
@@ -243,11 +294,17 @@ export function ConvertContentDialog({
     };
     setLiveRequestId(null);
     try {
-      const result = await convert({ source, targetKind: kind }, (requestId) =>
-        setLiveRequestId(requestId),
+      const steer = steerFor(kind);
+      const result = await convert(
+        { source, targetKind: kind, options: steer ? { steer } : undefined },
+        (requestId) => setLiveRequestId(requestId),
       );
       setRows((r) => ({ ...r, [kind]: { status: "done", result } }));
       onConverted?.();
+      // Saved, but a link did not land: say so, with Retry (never console-only).
+      announceLineage(result.lineage, () => recordSourceLineage(result, source, orgId), {
+        inKit: Boolean(source.ref?.kitId),
+      });
       toast.success(`Created "${result.title}"`, {
         action: { label: "Open", onClick: () => router.push(result.href) },
       });
@@ -265,6 +322,78 @@ export function ConvertContentDialog({
       {hasSelection && (
           <SegmentedControl aria-label="Scope of the source" fill value={useSelection ? "selection" : "whole"} onValueChange={(v) => setUseSelection(v === "selection")} data={[{ value: "whole", label: "Whole source" }, { value: "selection", label: "Selected passage" }]} />
         )}
+
+      {targets.some((t) => STEERED.has(t.kind)) && (
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
+          {aimedSections?.length ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {`Section: ${aimedSections.map((s) => s.title).join(", ")}`}
+            </p>
+          ) : outline?.sections.length ? (
+            <label className="flex items-center justify-between gap-3 text-sm text-foreground">
+              Focus on gaps
+              <Switch checked={focusGaps} onCheckedChange={setFocusGaps} aria-label="Focus on gaps" />
+            </label>
+          ) : null}
+          {targets.some((t) => t.kind === "deck") && (
+            <div className="flex flex-col gap-1.5">
+              <Label>Card types</Label>
+              <ChipSet aria-label="Card types">
+                {KIND_CHOICES.map(({ kind, label }) => (
+                  <Chip key={kind} label={label} pressed={cardKinds.includes(kind)} asChild>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCardKinds((cur) => (cur.includes(kind) ? cur.filter((k) => k !== kind) : [...cur, kind]))
+                      }
+                    />
+                  </Chip>
+                ))}
+              </ChipSet>
+            </div>
+          )}
+          {targets.some((t) => t.kind === "quiz" || t.kind === "practice_test") && (
+            <div className="flex flex-col gap-1.5">
+              <Label>Question types</Label>
+              <ChipSet aria-label="Question types">
+                {QUESTION_TYPES.map((t) => (
+                  <Chip key={t} label={QUESTION_TYPE_LABELS[t]} pressed={questionTypes.includes(t)} asChild>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuestionTypes((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))
+                      }
+                    />
+                  </Chip>
+                ))}
+              </ChipSet>
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="convert-instruction">Anything to focus on?</Label>
+            <ProTextarea
+              id="convert-instruction"
+              ref={instructionRef}
+              surfaceName="education-convert-instruction"
+              getApplicationScope={() => {
+                const el = instructionRef.current;
+                const start = el?.selectionStart ?? 0;
+                const end = el?.selectionEnd ?? 0;
+                return buildApplicationScopeFromMenuContext({
+                  selectedText: el && start !== end ? el.value.slice(Math.min(start, end), Math.max(start, end)) : "",
+                  selectionRange: el ? { type: "editable", element: el, start, end } : null,
+                  contextData: { title: origin.title, instruction },
+                });
+              }}
+              value={instruction}
+              onChange={(e) => setInstruction(e.target.value)}
+              placeholder="e.g. isotopes, exam style"
+              rows={2}
+              autoGrow
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         {targets.map((t) => (

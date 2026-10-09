@@ -241,7 +241,7 @@ async function run(
     detail: covered.gapNote ? `${detail} - ${covered.gapNote}` : detail,
   };
 
-  await recordSourceLineage(result, source, ctx.orgId);
+  result.lineage = await recordSourceLineage(result, source, ctx.orgId);
 
   return result;
 }

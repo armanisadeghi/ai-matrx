@@ -11,7 +11,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import { explainOutlier, formatMultiplierLong, outlierBadgeModel, type OutlierBadgeModel, type OutlierTier } from "../outlier";
+import { explainOutlier, formatMultiplierLong, outlierBadgeModel, outlierMetricWord, type OutlierBadgeModel, type OutlierTier } from "../outlier";
 import type { OutlierInput } from "../types";
 
 type BadgeVariant = "default" | "neutral" | "outline";
@@ -71,7 +71,7 @@ export function OutlierBadge({ input, model, className, verbose, inTable }: Outl
     const words = explainOutlier(input);
     m = {
       ...base,
-      text: `${base.tilde ? "~" : ""}${formatMultiplierLong(input.score)}`,
+      text: `${base.tilde ? "~" : ""}${formatMultiplierLong(input.score, outlierMetricWord(input.metric))}`,
       tooltip: [base.tilde ? base.tooltip : "", words].filter(Boolean).join(" ") || base.tooltip,
     };
   }

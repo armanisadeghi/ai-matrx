@@ -157,3 +157,32 @@ describe("polish helpers", () => {
     expect(l.length).toBeLessThanOrEqual("Open post by @melrobbins: ".length + 60);
   });
 });
+
+import { outlierBadgeModel, outlierMetric, outlierMetricWord } from "../outlier";
+import { TRACKABLE_PLATFORMS } from "../types";
+
+describe("outlier metric per platform", () => {
+  it("measures Pinterest in saves, Reddit and Threads in likes, everything else in views", () => {
+    expect(outlierMetric("pinterest")).toBe("saves");
+    expect(outlierMetric("reddit")).toBe("likes");
+    expect(outlierMetric("threads")).toBe("likes");
+    for (const p of ["tiktok", "instagram", "youtube", "linkedin", "facebook", "x", null, undefined]) {
+      expect(outlierMetric(p)).toBe("views");
+    }
+    expect(outlierMetricWord("likes", "reddit")).toBe("upvotes");
+  });
+  it("says the metric in the badge instead of claiming views", () => {
+    const base = { baselineViews: 100, percentile: 90, baselineWindow: 30, ageHours: 500 };
+    expect(formatMultiplierLong(6, "saves")).toBe("6.0× usual saves");
+    expect(outlierBadgeModel({ ...base, score: 6, metric: "saves" }).tooltip).toBe(
+      "6.0x this creator's median saves (100). Percentile 90 of last 30.",
+    );
+    expect(outlierBadgeModel({ ...base, score: 6 }).tooltip).toBe("6.0x this creator's median (100). Percentile 90 of last 30.");
+    expect(outlierBadgeModel({ ...base, score: null, metric: "saves", noViews: true }).text).toBe("No saves");
+    expect(outlierBadgeModel({ ...base, score: null, noViews: true }).text).toBe("No views");
+  });
+  it("tracks Pinterest and Reddit now; Snapchat stays unwired", () => {
+    expect(TRACKABLE_PLATFORMS.has("pinterest") && TRACKABLE_PLATFORMS.has("reddit")).toBe(true);
+    expect(TRACKABLE_PLATFORMS.has("snapchat")).toBe(false);
+  });
+});

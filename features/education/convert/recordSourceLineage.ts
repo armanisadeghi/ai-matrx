@@ -15,7 +15,9 @@
 
 import { associationsService } from "@/features/scopes/service/associationsService";
 import type { AssociationTargetType } from "@/features/scopes/types";
-import type { ConvertResult, ConvertSource } from "./types";
+import type { ConvertResult, ConvertSource, LineageOutcome } from "./types";
+
+const LINKED: LineageOutcome = { failed: [], kitMemberFailed: false };
 
 /**
  * Resolve the lineage anchor a converted artifact links back to. The durable
@@ -40,21 +42,21 @@ function resolveAnchor(
 }
 
 /**
- * Link a just-created artifact back to its source. Best-effort + LOUD on failure
- * (a converted artifact with no lineage is a defect we surface, not swallow); the
- * association RPC is idempotent (ON CONFLICT) so a re-run is safe.
+ * Link a just-created artifact back to its source. Never throws (the artifact
+ * IS saved) and never silent: the outcome names every edge that did not land,
+ * so the surface says "Saved, but not linked to the kit" with a Retry (law 4).
+ * The association RPC is idempotent (ON CONFLICT), so a retry is safe.
  */
 export async function recordSourceLineage(
-  result: ConvertResult,
+  result: Pick<ConvertResult, "resourceType" | "artifactId" | "targetKind" | "title" | "href" | "detail">,
   source: ConvertSource,
   orgId: string | undefined,
-): Promise<void> {
+): Promise<LineageOutcome> {
   if (source.ref?.kitId) {
-    await recordKitLineage(result, source, source.ref.kitId, orgId);
-    return;
+    return recordKitLineage(result, source, source.ref.kitId, orgId);
   }
   const anchor = resolveAnchor(source);
-  if (!anchor) return;
+  if (!anchor) return LINKED;
 
   const edge = await associationsService.add({
     sourceType: result.resourceType,
@@ -82,7 +84,9 @@ export async function recordSourceLineage(
       `[convert/lineage] source edge failed (${result.targetKind} → ${anchor.type}):`,
       edge.error,
     );
+    return { failed: [source.title ?? anchor.type], kitMemberFailed: false };
   }
+  return LINKED;
 }
 
 /**
@@ -93,11 +97,12 @@ export async function recordSourceLineage(
  * There is no merged copy to point at.
  */
 async function recordKitLineage(
-  result: ConvertResult,
+  result: Pick<ConvertResult, "resourceType" | "artifactId" | "targetKind" | "title" | "href" | "detail">,
   source: ConvertSource,
   kitId: string,
   orgId: string | undefined,
-): Promise<void> {
+): Promise<LineageOutcome> {
+  const failed: string[] = [];
   const shared = {
     targetKind: result.targetKind,
     href: result.href,
@@ -115,6 +120,7 @@ async function recordKitLineage(
   });
   if (!member.ok) {
     console.error(`[convert/lineage] kit member edge failed (${result.targetKind} → kit ${kitId}):`, member.error);
+    failed.push(source.title ?? "the kit");
   }
   for (const kitSource of source.ref?.kitSources ?? []) {
     const edge = await associationsService.add({
@@ -129,6 +135,27 @@ async function recordKitLineage(
     });
     if (!edge.ok) {
       console.error(`[convert/lineage] source edge failed (${result.targetKind} → ${kitSource.type}):`, edge.error);
+      failed.push(kitSource.title);
     }
   }
+  return { failed, kitMemberFailed: !member.ok };
+}
+
+/** The one line a surface shows when an aid saved but its links did not. */
+export function lineageFailureLine(outcome: LineageOutcome | undefined, inKit: boolean): string | null {
+  if (!outcome || outcome.failed.length === 0) return null;
+  return inKit || outcome.kitMemberFailed ? "Saved, but not linked to the kit." : "Saved, but not linked to its source.";
+}
+
+/** Link one artifact to several Sources; the outcome names every edge that failed. */
+export async function recordLineageForSources(
+  result: Pick<ConvertResult, "resourceType" | "artifactId" | "targetKind" | "title" | "href" | "detail">,
+  sources: readonly ConvertSource[],
+  orgId: string | undefined,
+): Promise<LineageOutcome> {
+  const outcomes = await Promise.all(sources.map((s) => recordSourceLineage(result, s, orgId)));
+  return {
+    failed: outcomes.flatMap((o) => o.failed),
+    kitMemberFailed: outcomes.some((o) => o.kitMemberFailed),
+  };
 }

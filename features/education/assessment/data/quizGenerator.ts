@@ -41,6 +41,38 @@ import {
   type ResolvedSourceSet,
 } from "@ai-matrx/agents/sources";
 import type { ConvertSource } from "@/features/education/convert/types";
+import { readExistingKitItems } from "@/features/education/convert/existingItems";
+import { steeredSectionIds } from "@/features/education/convert/steering";
+import {
+  readOutlineGroups,
+  type OutlineGroups,
+} from "@/features/education/kits/outline/outlineService";
+
+/**
+ * A kit's outline sections as the resolved "Sources" of a question run — one
+ * per section, its cited text chunk-marked (living-kit decision 4). The kit's
+ * own anchor rides each one so a citation still opens real material.
+ */
+function resolvedFromOutline(outline: OutlineGroups, source: ConvertSource): ResolvedSourceSet {
+  const ref = source.ref;
+  return {
+    __kind: RESOLVED_SOURCE_SET_KIND,
+    sources: outline.groups.map((g, i) => ({
+      ref: createSourceRef("outline_section", outline.sections[i].id),
+      label: g.label,
+      form_used: "text",
+      text: g.text,
+      segments: [],
+      ...(ref?.fileId ? { file_id: ref.fileId } : {}),
+      ...(ref?.processedDocumentId ? { processed_document_id: ref.processedDocumentId } : {}),
+      state: "ready",
+      truncated: false,
+      notes: [],
+    })),
+    dropped: [],
+    total_chars: outline.groups.reduce((n, g) => n + g.text.length, 0),
+  };
+}
 
 /**
  * The converter's one pasted/ingested source as the resolved shape the ONE
@@ -102,13 +134,26 @@ function makeRun(kind: "quiz" | "practice_test") {
       throw new Error("The source has no text to build questions from");
     }
 
+    // A KIT run (living-kit W2): never repeat a question any quiz or practice
+    // test of the kit holds; with an outline, run per section and stamp each
+    // question with its section.
+    const kitId = source.ref?.kitId;
+    const steer = options?.steer ?? {};
+    const existing = kitId
+      ? (await readExistingKitItems(kitId, "questions")).map((e) => ({ prompt: e.text, correctAnswer: e.answer }))
+      : [];
+    const outline = kitId ? await readOutlineGroups(kitId, steeredSectionIds(steer)) : null;
+    const instruction = [options?.focus?.trim(), steer.instruction?.trim()].filter(Boolean).join("\n\n");
+
     const covered = await generateQuestionsFromSources({
-      resolved: resolvedFromConvertSource(source),
+      resolved: outline ? resolvedFromOutline(outline, source) : resolvedFromConvertSource(source),
+      sectionPerSource: outline?.sections.map((s) => ({ id: s.id, title: s.title })),
+      existing,
       count: options?.count,
       difficulty: options?.difficulty ?? "Medium",
       depth: defaults.depth,
       title: source.title ?? "Study material",
-      steer: { instruction: options?.focus },
+      steer: { ...steer, instruction: instruction || undefined },
       coverageDepth: options?.depth,
       targetKind: kind,
       surfaceKey: `education-convert-${defaults.base}`,
@@ -150,7 +195,7 @@ function makeRun(kind: "quiz" | "practice_test") {
           count,
           difficulty: options?.difficulty ?? "Medium",
           depth: defaults.depth,
-          questionTypes: [],
+          questionTypes: steer.questionTypes ?? [],
           timeLimitSeconds: defaults.timeLimitSeconds,
           userRequest: options?.focus ?? null,
         },
@@ -181,7 +226,7 @@ function makeRun(kind: "quiz" | "practice_test") {
     // Canonical `source` lineage edge → the origin (ingest anchor file OR the
     // source entity for an entity-sourced convert). Parity with every other
     // generator; the flat source columns above stay for filter/learning-gain.
-    await recordSourceLineage(result, source, ctx.orgId);
+    result.lineage = await recordSourceLineage(result, source, ctx.orgId);
 
     return result;
   };

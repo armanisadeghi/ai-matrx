@@ -20,6 +20,7 @@ import type { CoverageDepth } from "./coverage";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 import type { SectionJournal } from "./sectionJournal";
+import type { GenerationSteer } from "./steering";
 
 /**
  * The study-artifact kinds a source can be converted INTO. This is the target
@@ -135,6 +136,14 @@ export interface ConvertOptions {
   focus?: string;
   /** Grade level hint, where a generator supports it. */
   gradeLevel?: string;
+  /**
+   * How the person steered this run (living-kit W2): their instruction, the
+   * card / question types wanted, and the outline sections to cover (gaps, or
+   * one picked section — a section WITH an id aims the run at that section's
+   * own material). Deck, quiz and practice test honour it; a kit run also never
+   * repeats a card or question any aid of the kit already holds.
+   */
+  steer?: GenerationSteer;
 }
 
 export interface ConvertRequest {
@@ -170,6 +179,21 @@ export interface ConvertResult {
    * rendering a ConvertResult MUST branch on this.
    */
   pending?: boolean;
+  /**
+   * Which lineage / kit-membership edges did not land (`recordSourceLineage`).
+   * The artifact is saved either way; a surface rendering this result says
+   * "Saved, but not linked to the kit" and offers Retry when `failed` is
+   * non-empty — never a console-only failure.
+   */
+  lineage?: LineageOutcome;
+}
+
+/** What `recordSourceLineage` could not link (empty = every edge landed). */
+export interface LineageOutcome {
+  /** Human names of the edges that failed (the kit, or a Source's title). */
+  failed: string[];
+  /** True when the aid did not join the kit itself. */
+  kitMemberFailed: boolean;
 }
 
 /** Context handed to a generator — the Redux plumbing + resolved identity. */

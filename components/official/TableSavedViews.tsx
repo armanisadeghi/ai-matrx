@@ -19,8 +19,21 @@ export function TableSavedViews(props: TableSavedViewsProps) {
   return <PersonalViews key={`${userId}:${props.tableId}`} {...props} actor={{ userId, accessToken, organizationId }} />;
 }
 
+/**
+ * The personal views a table last listed, per person and table. A table that sleeps and wakes (a board tile
+ * hidden and shown, a page left and reopened) already holds its list: it is not read again inside the window.
+ * Any write in this component bumps `reloadKey`, which always reads.
+ */
+const SAVED_VIEWS_FRESH_MS = 60_000;
+const listedViews = new Map<string, { views: PersonalTableView[]; at: number }>();
+const listedKey = (userId: string, tableId: string) => `${userId}:${tableId}`;
+const freshListing = (userId: string, tableId: string) => {
+  const held = listedViews.get(listedKey(userId, tableId));
+  return held && Date.now() - held.at < SAVED_VIEWS_FRESH_MS ? held : null;
+};
+
 function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentation, related, actor }: TableSavedViewsProps & { actor: TableViewActor }) {
-  const [views, setViews] = useState<PersonalTableView[]>([]);
+  const [views, setViews] = useState<PersonalTableView[]>(() => freshListing(actor.userId, tableId)?.views ?? []);
   // Pin the exact version the user selected. A list reload never silently advances it.
   const [active, setActive] = useState<PersonalTableView | null>(null);
   const activeRef = useRef<PersonalTableView | null>(null);
@@ -38,10 +51,15 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
     return () => { for (const request of writes) request.abort(); };
   }, [actor.accessToken]);
   useEffect(() => {
+    const held = reloadKey === 0 ? freshListing(actor.userId, tableId) : null;
+    if (held) { setViews(held.views); setError(null); setLoadedKey(requestKey); return undefined; }
     const request = new AbortController();
     const startedAtRevision = completedWriteRevision.current;
     void listPersonalTableViews(actor, tableId, request.signal).then((next) => {
-      if (!request.signal.aborted && startedAtRevision === completedWriteRevision.current) { setViews(next); setError(null); }
+      if (!request.signal.aborted && startedAtRevision === completedWriteRevision.current) {
+        listedViews.set(listedKey(actor.userId, tableId), { views: next, at: Date.now() });
+        setViews(next); setError(null);
+      }
     }).catch((cause: unknown) => {
       if (!request.signal.aborted && startedAtRevision === completedWriteRevision.current) setError(cause instanceof Error ? cause.message : "Could not load saved views. Try reloading them.");
     }).finally(() => { if (!request.signal.aborted) setLoadedKey(requestKey); });

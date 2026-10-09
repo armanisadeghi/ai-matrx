@@ -4,7 +4,7 @@
  * cards stay out, struggle-flagged cards lead, then lowest recall first.
  */
 import type { ItemMasteryRow } from "@/features/education/study/types";
-import { needsDeckPractice, rankDeckPractice } from "../deckPractice";
+import { needsDeckPractice, rankDeckPractice, rankTestStudy } from "../deckPractice";
 
 function row(
   id: string,
@@ -49,5 +49,23 @@ describe("rankDeckPractice", () => {
     expect(
       needsDeckPractice(row("x", { attempt_count: 0, struggle_flag: true }), now),
     ).toBe(false);
+  });
+});
+
+describe("rankTestStudy", () => {
+  it("lists every card once: needs practice, then never studied, then solid weakest-first", () => {
+    const ids = rankTestStudy(
+      ["strong", "new", "struggling", "new", "okay"],
+      [
+        row("strong", { mastery_score: 0.95 }),
+        row("struggling", { mastery_score: 0.2 }),
+        row("okay", { mastery_score: 0.9 }),
+      ],
+      now,
+    );
+    expect(ids).toHaveLength(4);
+    expect(ids[0]).toBe("struggling");
+    expect(ids[1]).toBe("new");
+    expect(new Set(ids)).toEqual(new Set(["strong", "new", "struggling", "okay"]));
   });
 });

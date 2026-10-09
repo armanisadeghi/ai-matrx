@@ -49,6 +49,8 @@ import {
 } from "@/features/sources/api/sourcesApi";
 import { AddClassContentSheet } from "./AddClassContentSheet";
 import { AddClassSourcesDialog } from "./AddClassSourcesDialog";
+import { ClassTestsSection } from "./ClassTestsSection";
+import { useClassTests } from "../hooks/useClassTests";
 
 const PART_PARAM = "unit";
 
@@ -64,6 +66,7 @@ export function ClassStudyContent({
   content: UseClassContentReturn;
 }) {
   const parts = useClassParts(cls, content);
+  const tests = useClassTests(cls, content, parts);
 
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -200,6 +203,14 @@ export function ClassStudyContent({
   const pickerKeys = selectedKeys ?? content.attachedKeys;
 
   return (
+    <>
+    <ClassTestsSection
+      classParam={cls.id}
+      tests={tests}
+      units={parts.parts}
+      unitNounPlural={parts.nounPlural}
+      canEdit
+    />
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-medium text-foreground">
@@ -385,6 +396,7 @@ export function ClassStudyContent({
         onConfirm={(name) => savePartName(name)}
       />
     </section>
+    </>
   );
 }
 

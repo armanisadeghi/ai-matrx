@@ -37,8 +37,9 @@ export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
 
 /**
  * Platforms whose profiles the server can fetch and track today (aidream
- * matrx-social `_CAPS` GET_PROFILE + LIST_POSTS). Pinterest, Reddit and
- * Snapchat are not wired; a row on them says so instead of failing on click.
+ * matrx-social `_CAPS` GET_PROFILE + LIST_POSTS). Snapchat is not wired; a row on
+ * it says so instead of failing on click. Pinterest tracks an account's boards'
+ * pins; Reddit tracks a subreddit (the provider has no Reddit user endpoint).
  */
 export const TRACKABLE_PLATFORMS: ReadonlySet<string> = new Set<SocialPlatform>([
   "tiktok",
@@ -48,6 +49,8 @@ export const TRACKABLE_PLATFORMS: ReadonlySet<string> = new Set<SocialPlatform>(
   "facebook",
   "x",
   "threads",
+  "pinterest",
+  "reddit",
 ]);
 
 export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
@@ -207,7 +210,12 @@ export interface SocialProgress {
 // View models (what the components render)
 // ---------------------------------------------------------------------------
 
+/** What a platform's outlier multiple is measured in: views, except Pinterest (saves), Reddit and Threads (likes). */
+export type OutlierMetric = "views" | "likes" | "saves";
+
 export interface OutlierInput {
+  /** The metric the multiple is measured in (`outlierMetric(platform)`); absent = views. */
+  metric?: OutlierMetric;
   score: number | null;
   baselineViews: number | null;
   percentile: number | null;

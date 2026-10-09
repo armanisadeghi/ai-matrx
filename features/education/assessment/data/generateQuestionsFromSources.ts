@@ -50,6 +50,12 @@ export interface QuestionsFromSourcesInput {
   existing?: readonly ExistingQuestion[];
   /** Groups the questions this run adds (so "Undo" finds exactly them). */
   batchId?: string;
+  /**
+   * One outline section per resolved Source, in the same order — set when the
+   * "Sources" ARE a kit's outline sections (living-kit decision 4). Every kept
+   * question is stamped with the section its group was made from.
+   */
+  sectionPerSource?: readonly QuestionSection[];
   /** How dense the whole run is (converter fan-out); omitted by the top-up. */
   coverageDepth?: CoverageDepth;
   /** Which converter this run belongs to (metering / mandate surface). */
@@ -93,6 +99,7 @@ export async function generateQuestionsFromSources({
   steer = {},
   existing = [],
   batchId,
+  sectionPerSource,
   coverageDepth,
   targetKind = "quiz",
   surfaceKey = "education-assessment-add-questions",
@@ -167,8 +174,16 @@ export async function generateQuestionsFromSources({
       ? sources.filter((_, g) => !covered.items.some((q) => covered.groupOf(q) === g))
       : []),
   ];
+  // Per-section stamping (a run over outline sections): topic + section id.
+  const questions = sectionPerSource
+    ? covered.items.map((q) => {
+        const g = covered.groupOf(q);
+        const own = g === undefined ? undefined : sectionPerSource[g];
+        return own ? stampQuestion(q, { section: own }) : q;
+      })
+    : covered.items;
   return {
-    questions: covered.items,
+    questions,
     sources,
     unusedSources,
     agentTitle,

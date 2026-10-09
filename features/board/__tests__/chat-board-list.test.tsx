@@ -33,11 +33,12 @@ import { installBrowserGaps } from "./remount-safety/browser-gaps";
 import { CONVERSATION_ID, seedChat } from "./remount-safety/fixtures-work";
 import { backendCalls } from "./remount-safety/fake-backend";
 
-// The conversation list reads only once it is in view (@ai-matrx/kit useInView); a tile on screen is in view.
+// The conversation list reads only once it is in view (@ai-matrx/kit useInView); the list on screen is in view.
+// Only the list reports in view: every other lazy chip keeps the inert observer, as in the bare chat tile's case.
 (globalThis as Record<string, unknown>).IntersectionObserver = class {
   constructor(private readonly callback: (entries: { isIntersecting: boolean }[]) => void) {}
-  observe() {
-    this.callback([{ isIntersecting: true }]);
+  observe(target: Element) {
+    if (target.closest("[data-board-chat-list]")) this.callback([{ isIntersecting: true }]);
   }
   unobserve() {}
   disconnect() {}

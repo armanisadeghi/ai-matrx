@@ -15,15 +15,10 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import {
-  selectAllScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/scopes/redux/selectors/admin";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { selectAllScopeTypes } from "@/features/scopes/redux/selectors/admin";
+import { ensureClassScopeType } from "./ensureClassScopeType";
 import {
   createScope,
-  createScopeType,
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
@@ -39,6 +34,7 @@ import {
   partScopeSlug,
   sortParts,
   type ClassPart,
+  type PartEdge,
 } from "../classParts";
 import type { UseClassContentReturn } from "./useClassContent";
 
@@ -46,12 +42,15 @@ interface MembershipRead {
   /** The comma-joined part ids this read answers for. */
   key: string;
   membership: Map<string, Set<string>>;
+  /** Every edge into the parts (membership AND the tests' `covers` edges). */
+  edges: PartEdge[];
   error: string | null;
 }
 
 const EMPTY_READ: MembershipRead = {
   key: "",
   membership: new Map(),
+  edges: [],
   error: null,
 };
 
@@ -64,9 +63,14 @@ async function fetchMembership(key: string): Promise<MembershipRead> {
       "[useClassParts] reading what the parts hold failed:",
       res.error,
     );
-    return { key, membership: new Map(), error: res.error.message };
+    return { key, membership: new Map(), edges: [], error: res.error.message };
   }
-  return { key, membership: partMembership(res.data.edges, ids), error: null };
+  return {
+    key,
+    membership: partMembership(res.data.edges, ids),
+    edges: res.data.edges,
+    error: null,
+  };
 }
 
 export interface UseClassPartsReturn {
@@ -79,6 +83,8 @@ export interface UseClassPartsReturn {
   /** Why reading what the parts hold failed (null when it succeeded). */
   membershipError: string | null;
   membershipLoading: boolean;
+  /** Every edge into the units — the tests' `covers` edges are read from it. */
+  unitEdges: PartEdge[];
   /** The ids of the parts that hold this item. */
   partsHolding: (token: string, id: string) => string[];
   createPart: (name: string) => Promise<ClassPart>;
@@ -147,26 +153,14 @@ export function useClassParts(
     if (partIdsKey) setRead(await fetchMembership(partIdsKey));
   }
 
-  async function ensurePartType(org: string): Promise<string> {
-    if (!selectScopeTypesLoadedForOrg(store.getState(), org))
-      await dispatch(ensureScopeTree());
-    const existing = selectScopeTypesByOrg(store.getState(), org).find(
-      (t) => t.slug === CLASS_PART_SCOPE_TYPE_SLUG,
+  const ensurePartType = (org: string) =>
+    ensureClassScopeType(
+      dispatch,
+      store,
+      org,
+      CLASS_PART_SCOPE_TYPE_SLUG,
+      CLASS_PART_SCOPE_TYPE_SEED,
     );
-    if (existing) return existing.id;
-    const created = await dispatch(
-      createScopeType({
-        org_id: org,
-        label_singular: CLASS_PART_SCOPE_TYPE_SEED.labelSingular,
-        label_plural: CLASS_PART_SCOPE_TYPE_SEED.labelPlural,
-        icon: CLASS_PART_SCOPE_TYPE_SEED.icon,
-        color: CLASS_PART_SCOPE_TYPE_SEED.color,
-        description: CLASS_PART_SCOPE_TYPE_SEED.description,
-        slug: CLASS_PART_SCOPE_TYPE_SLUG,
-      }),
-    ).then(unwrapScopesRpc);
-    return created.id;
-  }
 
   async function createPart(name: string): Promise<ClassPart> {
     const org = cls.organizationId;
@@ -266,6 +260,7 @@ export function useClassParts(
     membership,
     membershipError,
     membershipLoading,
+    unitEdges: partIdsKey ? read.edges : EMPTY_READ.edges,
     partsHolding,
     createPart,
     renamePart,

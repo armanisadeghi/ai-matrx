@@ -394,7 +394,7 @@ export function PostDetailBody({
     );
   }
   const { post, stat, profile } = detail.data;
-  const outlier = outlierInputFrom(stat, post.posted_at);
+  const outlier = outlierInputFrom(stat, post.posted_at, undefined, undefined, post.platform);
   const duration = formatDuration(post.duration_seconds === null ? null : Number(post.duration_seconds));
   const caption = post.caption ?? post.title ?? "";
   const currentRatio = ratio ?? guessAspect(post.format, post.platform);

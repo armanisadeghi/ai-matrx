@@ -35,10 +35,15 @@ import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABELS, type SocialPlatform } from ".
 import { PlatformMark } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
 
-const PICK_OPTIONS: SelectOption<SocialPlatform>[] = SOCIAL_PLATFORMS.map((p) => ({
-  value: p,
-  label: SOCIAL_PLATFORM_LABELS[p],
-}));
+// The design-system Select has no placeholder prop: "nothing picked" is a real
+// option whose label reads "Platform".
+const PICK_OPTIONS: SelectOption<SocialPlatform | "">[] = [
+  { value: "", label: "Platform" },
+  ...SOCIAL_PLATFORMS.map((p) => ({
+    value: p,
+    label: SOCIAL_PLATFORM_LABELS[p],
+  })),
+];
 
 export function useSocialAccountInput(args: {
   initialText?: string;
@@ -171,9 +176,8 @@ export function SocialAccountInput({
           <Select
             aria-label="Platform"
             value={input.picked ?? ""}
-            placeholder="Platform"
             options={PICK_OPTIONS}
-            onValueChange={(value) => input.setPicked(value)}
+            onValueChange={(value) => input.setPicked(value === "" ? null : value)}
             disabled={disabled}
             className="w-32 shrink-0"
           />

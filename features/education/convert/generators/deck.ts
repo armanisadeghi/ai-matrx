@@ -38,6 +38,10 @@ import type {
   ConvertResult,
 } from "../types";
 import { sectionRunTitle } from "../coverage";
+import { foldSteer, steeredSectionIds } from "../steering";
+import { dropRepeats, readExistingKitItems, type ExistingItem } from "../existingItems";
+import { readOutlineGroups } from "@/features/education/kits/outline/outlineService";
+import { OUTLINE_SECTION_KEY } from "@/features/education/kits/outline/types";
 
 async function run(
   request: ConvertRequest,
@@ -48,10 +52,28 @@ async function run(
   // The agent grounds cards against chunk markers + echoes document_id back.
   const docId = (source.ref?.processedDocumentId ?? anchorFileId) || "ingest";
   const baseTitle = source.title ?? "Study material";
+  const steer = options?.steer;
+  const kitId = source.ref?.kitId;
+
+  // A KIT run (living-kit W2): never repeat a card any deck of the kit holds,
+  // and when the kit has an outline, run per outline section (decision 4) —
+  // each section's cited text + key facts is one group, so every card knows
+  // its section and coverage counts it by id.
+  const existing: ExistingItem[] = kitId ? await readExistingKitItems(kitId, "cards") : [];
+  const outline = kitId ? await readOutlineGroups(kitId, steeredSectionIds(steer)) : null;
+  const focus = foldSteer(
+    { ...(steer ?? {}), existing: existing.map((e) => e.text) },
+    "cards",
+    options?.focus,
+  );
+  const runSource = outline
+    ? { ...source, text: outline.groups.map((g) => g.text).join("\n\n") }
+    : source;
 
   const covered = await segmentedGenerate<NewCardInput>({
     ctx,
-    source,
+    source: runSource,
+    groups: outline?.groups,
     targetKind: "deck",
     options,
     mandateKey: CONVERT_MANDATES.deckFromSource,
@@ -71,13 +93,17 @@ async function run(
           : baseTitle,
       count: String(segment.items),
       difficulty: options?.difficulty ?? "Mixed",
-      focus: options?.focus ?? "",
+      focus,
     }),
     extract: (value) =>
-      coerceCards(value, { anchorFileId, docId }).map((card) => ({
-        ...card,
-        trust: groundKitTrust(card.trust, source.ref?.kitSources),
-      })),
+      dropRepeats(
+        coerceCards(value, { anchorFileId, docId }).map((card) => ({
+          ...card,
+          trust: groundKitTrust(card.trust, source.ref?.kitSources),
+        })),
+        existing,
+        (card) => ({ text: card.front, answer: card.back }),
+      ),
     // Two sections that both define the same term produce the same card; ship
     // it once.
     identity: (card) => looseKey(card.front),
@@ -89,7 +115,19 @@ async function run(
       ),
   });
 
-  const cards = covered.items;
+  // Every card made from an outline section carries it (topic + section id).
+  const cards = outline
+    ? covered.items.map((card) => {
+        const g = covered.groupOf(card);
+        const section = g === undefined ? undefined : outline.sections[g];
+        if (!section) return card;
+        return {
+          ...card,
+          topic: section.title,
+          metadata: { ...(card.metadata ?? {}), [OUTLINE_SECTION_KEY]: section.id },
+        };
+      })
+    : covered.items;
   if (cards.length === 0) {
     throw new Error("The deck generator returned no usable cards");
   }
@@ -138,7 +176,7 @@ async function run(
   };
 
   // Set-level lineage edge -> the origin (ingest anchor file OR entity source).
-  await recordSourceLineage(result, source, ctx.orgId);
+  result.lineage = await recordSourceLineage(result, source, ctx.orgId);
 
   return result;
 }

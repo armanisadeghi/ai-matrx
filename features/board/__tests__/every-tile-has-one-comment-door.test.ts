@@ -15,7 +15,17 @@ import { BOARD_ITEM_TYPES } from "../items/catalog";
 import type { NodeSource } from "../board/document";
 
 /** Record types with no registered entity token, so no thread of their own (their tiles post on the board). */
-const NO_THREAD_OF_THEIR_OWN = new Set(["data-table", "list", "study-kit"]);
+const NO_THREAD_OF_THEIR_OWN = new Set([
+  "data-table",
+  "list",
+  "study-kit",
+  // The social records have no registered entity token yet (social posts, accounts, ads, collections).
+  "social-post",
+  "social-profile",
+  "social-outlier-feed",
+  "social-ad",
+  "social-swipe-collection",
+]);
 
 const recordTypes = BOARD_ITEM_TYPES.filter((t) => "name" in t.surface);
 const boardOnlyTypes = BOARD_ITEM_TYPES.filter((t) => "none" in t.surface);

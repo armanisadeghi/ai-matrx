@@ -18,7 +18,7 @@
 // write the `source` edge back to this same anchor — so whatever is made lands
 // in THIS kit rather than beside it.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { usePdfClient } from "@/features/pdf/api/client";
@@ -35,6 +35,15 @@ import { sourcesClient } from "@/features/resource-manager/source-input/sourceSe
 import { useIngest } from "@/features/education/onboard/useIngest";
 import { KIT_TOKEN, type KitSource } from "../kitScope";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import type { OutlineSection } from "../outline/types";
+
+/** A request from the kit page to open the dialog aimed at outline sections. */
+export interface AimedMakeMore {
+  sections: OutlineSection[];
+  kind: TargetKind;
+  /** Changes on every press, so the same section can be asked for twice. */
+  nonce: number;
+}
 
 /** The recovered material, held so a second target costs no second re-read. */
 interface Recovered {
@@ -59,7 +68,13 @@ export function MakeMoreFromKit({
   buttonClassName = "min-h-11 gap-1.5 sm:min-h-0",
   sources,
   organizationId,
+  outline,
+  aimed,
 }: {
+  /** The kit's outline + per-section counts (enables "Focus on gaps"). */
+  outline?: ComponentProps<typeof ConvertContentDialog>["outline"];
+  /** Coverage "Make more" / "Go deeper": open aimed at these sections. */
+  aimed?: AimedMakeMore | null;
   /** A multi-source kit's Sources — "Make more" reads ALL of them. */
   sources?: readonly KitSource[];
   /** The kit's organization (the Source read runs there). */
@@ -80,6 +95,8 @@ export function MakeMoreFromKit({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoOpened = useRef(false);
+  // The current aim (null = the plain "Make more from it" door).
+  const [aim, setAim] = useState<AimedMakeMore | null>(null);
 
   const openDialog = useCallback(async () => {
     setError(null);
@@ -138,6 +155,15 @@ export function MakeMoreFromKit({
     }
   }, [kitTitle, normalizeSources, organizationId, pdf, recovered, sourceId, sourceType, sources]);
 
+  // The kit page asked for a run aimed at sections (Coverage row actions).
+  const openAimed = useEffectEvent((next: AimedMakeMore) => {
+    setAim(next);
+    void openDialog();
+  });
+  useEffect(() => {
+    if (aimed) openAimed(aimed);
+  }, [aimed]);
+
   // A deep link is a request to be here with the work already started.
   useEffect(() => {
     if (!addTarget || autoOpened.current) return;
@@ -152,7 +178,10 @@ export function MakeMoreFromKit({
         variant={buttonVariant}
         className={buttonClassName}
         disabled={busy}
-        onClick={() => void openDialog()}
+        onClick={() => {
+          setAim(null);
+          void openDialog();
+        }}
       >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -172,13 +201,17 @@ export function MakeMoreFromKit({
 
       {recovered && (
         <ConvertContentDialog
+          key={aim ? `aim:${aim.nonce}` : "kit"}
           open={open}
           onOpenChange={setOpen}
           origin={recovered.origin}
           text={recovered.text}
           sourceRef={recovered.ref}
-          focusKind={addTarget}
+          focusKind={aim?.kind ?? addTarget}
           onConverted={onConverted}
+          outline={outline}
+          sections={aim?.sections}
+          orgId={organizationId}
         />
       )}
     </>

@@ -36,7 +36,8 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { readArtifactOrigins, type ArtifactOrigin } from "@/features/education/convert/lineage";
-import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import { recordLineageForSources } from "@/features/education/convert/recordSourceLineage";
+import { announceLineage } from "@/features/education/convert/announceLineage";
 import { newBatchId, type GenerationSteer } from "@/features/education/convert/steering";
 import type { ConvertProgress } from "@/features/education/convert/types";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
@@ -68,7 +69,7 @@ import { kindConfigFor } from "./kindConfig";
 /** The top-up never offers "Just a topic": the questions come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 
-const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
   true_false: "True / False",
   fill_blank: "Fill in the blank",
@@ -105,13 +106,19 @@ export function AddMoreQuestionsButton({
   assessment,
   items,
   onAdded,
+  initialOpen = false,
+  extraDrafts,
 }: {
   assessment: AssessmentRow;
   /** The questions the assessment already holds — what a new one must not repeat. */
   items: AssessmentItemRow[];
   onAdded?: () => void;
+  /** Open the dialog on mount (a host that loaded the assessment on the press). */
+  initialOpen?: boolean;
+  /** Material to preselect beside the assessment's own (a kit's Sources). */
+  extraDrafts?: readonly SourceDraft[];
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const tabRun = useTabBoundRun(addMoreQuestionsRunKey(assessment.id), restoreQuestionRunRequest);
   const [redo, setRedo] = useState<{ request: QuestionRunRequest; auto: boolean } | null>(null);
   const stopped = tabRun.stopped;
@@ -167,6 +174,7 @@ export function AddMoreQuestionsButton({
         <AddMoreQuestionsDialog
           assessment={assessment}
           items={items}
+          extraDrafts={extraDrafts}
           tabRun={tabRun}
           redo={redo}
           onClose={() => {
@@ -183,6 +191,7 @@ export function AddMoreQuestionsButton({
 function AddMoreQuestionsDialog({
   assessment,
   items,
+  extraDrafts,
   tabRun,
   redo,
   onClose,
@@ -190,6 +199,7 @@ function AddMoreQuestionsDialog({
 }: {
   assessment: AssessmentRow;
   items: AssessmentItemRow[];
+  extraDrafts?: readonly SourceDraft[];
   tabRun: TabBoundRun<QuestionRunRequest>;
   redo: { request: QuestionRunRequest; auto: boolean } | null;
   onClose: () => void;
@@ -228,7 +238,7 @@ function AddMoreQuestionsDialog({
       return;
     }
     const lineage = found.map(originToDraft).filter((d): d is SourceDraft => !!d?.ref);
-    for (const draft of lineage) {
+    for (const draft of [...lineage, ...(extraDrafts ?? [])]) {
       if (draft.ref && !set.hasRef(draft.ref.resource_type, draft.ref.resource_id)) {
         set.addReady(draft);
       }
@@ -336,8 +346,10 @@ function AddMoreQuestionsDialog({
             title: assessment.title,
             detail: `${questionCount(made.questions.length)} more`,
           };
-          await Promise.all(
-            made.sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), orgId)),
+          const linkSources = made.sources.map(lineageSourceOf);
+          announceLineage(
+            await recordLineageForSources(result, linkSources, orgId),
+            () => recordLineageForSources(result, linkSources, orgId),
           );
           await generation.commit();
           const addedIds = added.data.map((row) => row.id);

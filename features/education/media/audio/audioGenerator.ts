@@ -95,7 +95,7 @@ async function run(
   };
 
   // Lineage: link the artifact → its origin (ingest anchor file or entity source).
-  await recordSourceLineage(result, source, ctx.orgId);
+  result.lineage = await recordSourceLineage(result, source, ctx.orgId);
 
   return result;
 }

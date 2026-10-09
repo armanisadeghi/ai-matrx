@@ -173,7 +173,7 @@ async function run(
 
   // Lineage: link the note → its origin (ingest anchor file for the kit, or the
   // source entity — e.g. note→note, transcript→note — for a one-click convert).
-  await recordSourceLineage(result, source, ctx.orgId);
+  result.lineage = await recordSourceLineage(result, source, ctx.orgId);
 
   return result;
 }

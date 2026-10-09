@@ -69,6 +69,8 @@ import {
   useSelectedClassPart,
 } from "./ClassStudyContent";
 import { useClassParts } from "../hooks/useClassParts";
+import { useClassTests } from "../hooks/useClassTests";
+import { ClassTestsSection } from "./ClassTestsSection";
 import { groupsInPart } from "../classParts";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { ClassAccessPanel } from "./ClassAccessPanel";
@@ -609,6 +611,11 @@ function MemberClassView({
     { id: state.classId, organizationId: state.organizationId },
     content,
   );
+  const tests = useClassTests(
+    { id: state.classId, organizationId: state.organizationId },
+    content,
+    parts,
+  );
   const { selected: selectedPart, selectPart } = useSelectedClassPart(
     parts.parts,
   );
@@ -671,6 +678,13 @@ function MemberClassView({
             assignments={assignments}
             myProgress={myProgress}
           />
+          <ClassTestsSection
+            classParam={state.classId}
+            tests={tests}
+            units={parts.parts}
+            unitNounPlural={parts.nounPlural}
+            canEdit={false}
+          />
           <section className="space-y-3">
             <h2 className="text-sm font-medium text-foreground">
               Study content
@@ -729,7 +743,7 @@ function MemberClassView({
 }
 
 /** Shared content-group renderer for both the owner and member hubs. */
-function ContentGroups({
+export function ContentGroups({
   groups,
 }: {
   groups: ReturnType<typeof useClassContent>["groups"];

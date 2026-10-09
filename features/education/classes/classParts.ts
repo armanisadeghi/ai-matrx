@@ -13,7 +13,11 @@
 import type { ContainerLink } from "@ai-matrx/associations/react";
 import { isRegisteredPair, registeredEdgeLabel } from "@ai-matrx/associations";
 import { toSlug } from "@/features/scopes/utils/slugify";
-import { ASSIGNMENT_EDGE_ROLE, CLASS_PART_EDGE_ROLE } from "./constants";
+import {
+  ASSIGNMENT_EDGE_ROLE,
+  CLASS_PART_EDGE_ROLE,
+  CLASS_TEST_EDGE_KIND,
+} from "./constants";
 
 /** One part of a class, as the hub shows it. */
 export interface ClassPart {
@@ -48,10 +52,30 @@ export function titleHintFromEdgeLabel(
   return label === registeredEdgeLabel(token, "scope") ? null : label;
 }
 
+export function metadataOf(link: ContainerLink): { kind?: unknown; date?: unknown } {
+  const m = link.metadata;
+  return m && typeof m === "object" ? (m as { kind?: unknown; date?: unknown }) : {};
+}
+
+/** Is this class link a TEST (not a unit)? */
+export function isTestLink(link: ContainerLink): boolean {
+  return (
+    link.token === "scope" &&
+    link.role === CLASS_PART_EDGE_ROLE &&
+    metadataOf(link).kind === CLASS_TEST_EDGE_KIND
+  );
+}
+
 /** The ids of a class's parts — the sources of its incoming `part_of` edges. */
 export function classPartIds(links: readonly ContainerLink[]): string[] {
   return links
-    .filter((l) => l.token === "scope" && l.role === CLASS_PART_EDGE_ROLE)
+    .filter(
+      (l) =>
+        l.token === "scope" &&
+        l.role === CLASS_PART_EDGE_ROLE &&
+        // A test joins its class by the same edge; it is not a unit.
+        !isTestLink(l),
+    )
     .map((l) => l.resourceId);
 }
 

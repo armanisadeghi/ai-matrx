@@ -30,7 +30,7 @@ import { recordAttemptOfflineAware } from "@/features/education/study/offline/re
 import { toast } from "@/lib/toast";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
 import { needsWork } from "@/features/education/study/analytics/computeAnalytics";
-import { rankDeckPractice } from "./deckPractice";
+import { rankDeckPractice, rankTestStudy } from "./deckPractice";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
@@ -77,6 +77,14 @@ export function useWeakAreaDrill(
      */
     setId?: string | null;
     /**
+     * Study for a TEST: every deck of the units it covers, combined. The
+     * session files under no single deck (`source_set_id` null) and records
+     * `sourceQuery` ({test, units, decks}) so it counts toward the test.
+     */
+    deckIds?: readonly string[] | null;
+    /** What a test-study session records as its `source_query`. */
+    sourceQuery?: Record<string, unknown> | null;
+    /**
      * False while the session has no organization yet: a drill opens a
      * study_session, which is filed under one, so starting now would raise
      * the blocking "Which workspace?" prompt. The surface shows the inline
@@ -88,6 +96,9 @@ export function useWeakAreaDrill(
   const { limit = 20 } = options;
   const topic = options.topic?.trim() || null;
   const deckId = options.setId?.trim() || null;
+  // Joined so the effect re-runs on a different set of decks, not a new array.
+  const deckIdsKey = (options.deckIds ?? []).filter(Boolean).join(",");
+  const sourceQueryKey = options.sourceQuery ? JSON.stringify(options.sourceQuery) : "";
   const enabled = options.enabled ?? true;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
@@ -138,7 +149,26 @@ export function useWeakAreaDrill(
         return;
       }
       let candidates = weakRes.data ?? [];
-      if (deckId) {
+      let testCardIds: string[] | null = null;
+      if (deckIdsKey) {
+        const decks = await Promise.all(
+          deckIdsKey.split(",").map((id) => fcService.getSetWithCards(id)),
+        );
+        if (cancelled) return;
+        const failed = decks.find((d) => !d.data);
+        if (failed) {
+          setError(failed.error ?? "A deck for this test couldn't be loaded.");
+          setCards([]);
+          setResultsByCard({});
+          setLoading(false);
+          return;
+        }
+        testCardIds = rankTestStudy(
+          decks.flatMap((d) => d.data!.cards.map((c) => c.id)),
+          candidates.filter((m) => m.item_type === FC_CARD_ITEM_TYPE),
+          new Date(),
+        );
+      } else if (deckId) {
         const deckRes = await fcService.getSetWithCards(deckId);
         if (cancelled) return;
         if (!deckRes.data) {
@@ -183,14 +213,14 @@ export function useWeakAreaDrill(
 
       // 2. Re-rank by LIVE (decayed) retrievability, worst first, then cap.
       const now = new Date();
-      const ranked = deckId ? candidates : [...candidates].sort((a, b) => {
+      const ranked = deckId || testCardIds ? candidates : [...candidates].sort((a, b) => {
         const ra = currentRetrievability(a, now) ?? 0;
         const rb = currentRetrievability(b, now) ?? 0;
         if (a.struggle_flag !== b.struggle_flag) return a.struggle_flag ? -1 : 1;
         return ra - rb;
       });
       const worst = ranked.slice(0, limit);
-      const ids = worst.map((m) => m.item_id);
+      const ids = testCardIds ? testCardIds.slice(0, limit) : worst.map((m) => m.item_id);
       if (ids.length === 0) {
         setCards([]);
         setResultsByCard({});
@@ -223,6 +253,9 @@ export function useWeakAreaDrill(
             orgId: sessionOrgId,
             ...(deckId ? { sourceSetId: deckId } : {}),
             ...(topic ? { sourceQuery: { topic } } : {}),
+            ...(deckIdsKey && sourceQueryKey
+              ? { sourceQuery: JSON.parse(sourceQueryKey) as Record<string, unknown> }
+              : {}),
           }),
         );
         setLoading(false);
@@ -232,7 +265,7 @@ export function useWeakAreaDrill(
     return () => {
       cancelled = true;
     };
-  }, [limit, topic, deckId, enabled]);
+  }, [limit, topic, deckId, deckIdsKey, sourceQueryKey, enabled]);
 
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {

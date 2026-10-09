@@ -11,7 +11,28 @@
  *   young post  → "~4.2x" + "~ means provisional: still gaining views, so 4.2x will move."
  */
 
-import type { OutlierInput } from "./types";
+import type { OutlierInput, OutlierMetric } from "./types";
+
+/**
+ * The metric a platform's multiple is measured in — mirrors `PRIMARY_METRIC` in aidream
+ * `services/social/stats.py` (change one, change both). Pinterest pins carry no views, so a pin is
+ * compared by SAVES; Reddit by net upvotes (stored as likes); Threads by likes (its list reports no views).
+ */
+export const OUTLIER_METRIC_BY_PLATFORM: Readonly<Record<string, OutlierMetric>> = {
+  pinterest: "saves",
+  reddit: "likes",
+  threads: "likes",
+};
+
+export function outlierMetric(platform: string | null | undefined): OutlierMetric {
+  return OUTLIER_METRIC_BY_PLATFORM[platform ?? ""] ?? "views";
+}
+
+/** The metric as a word in a sentence about a multiple: "views", "likes" or "saves" (Reddit reads "upvotes"). */
+export function outlierMetricWord(metric: OutlierMetric | undefined, platform?: string | null): string {
+  if (platform === "reddit") return "upvotes";
+  return metric ?? "views";
+}
 
 /** Tier thresholds (knob defaults, UI-SPEC §1.1). */
 export const OUTLIER_TIER_THRESHOLDS = {
@@ -89,7 +110,11 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
   const { score, baselineViews, percentile, baselineWindow, ageHours } = input;
   if (score === null || !Number.isFinite(score)) {
     if (input.noViews) {
-      return { tier: "none", bars: 0, text: NO_VIEWS_TEXT, tilde: false, tooltip: "This post reports no view count, so there is no multiple" };
+      const word = outlierMetricWord(input.metric);
+      if (word === "views") {
+        return { tier: "none", bars: 0, text: NO_VIEWS_TEXT, tilde: false, tooltip: "This post reports no view count, so there is no multiple" };
+      }
+      return { tier: "none", bars: 0, text: `No ${word}`, tilde: false, tooltip: `This post reports no ${word} count, so there is no multiple` };
     }
     if (input.accountPosts === 0) {
       return { tier: "none", bars: 0, text: NO_POSTS_TEXT, tilde: false, tooltip: "This account has no posts yet" };
@@ -111,9 +136,10 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
       : percentile !== null
         ? ` Percentile ${Math.round(percentile)}.`
         : "";
+  const word = outlierMetricWord(input.metric);
   const tooltip = young
-    ? `~ means provisional: still gaining views, so ${formatMultiplier(score)} will move.`
-    : `${formatMultiplier(score)} this creator's median${base}.${pct}`;
+    ? `~ means provisional: still gaining ${word}, so ${formatMultiplier(score)} will move.`
+    : `${formatMultiplier(score)} this creator's median${word === "views" ? "" : ` ${word}`}${base}.${pct}`;
   return {
     tier,
     bars: TIER_BARS[tier],
@@ -124,20 +150,21 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
 }
 
 /** `2.4× usual views` — the sentence form of a multiple, for the post panel (the badge keeps `2.4x`). */
-export function formatMultiplierLong(score: number): string {
-  return `${formatMultiplier(score).replace(/x(\+?)$/, "×$1")} usual views`;
+export function formatMultiplierLong(score: number, word: string = "views"): string {
+  return `${formatMultiplier(score).replace(/x(\+?)$/, "×$1")} usual ${word}`;
 }
 
 /** The percentile and median in words, for the tooltip next to a multiple. */
-export function explainOutlier(input: Pick<OutlierInput, "score" | "baselineViews" | "percentile" | "baselineWindow">): string {
+export function explainOutlier(input: Pick<OutlierInput, "score" | "baselineViews" | "percentile" | "baselineWindow"> & { metric?: OutlierMetric }): string {
+  const word = outlierMetricWord(input.metric);
   const parts: string[] = [];
   if (input.percentile !== null && Number.isFinite(input.percentile)) {
     const pct = Math.round(input.percentile);
     const of = input.baselineWindow ? `this creator's last ${input.baselineWindow} posts` : "this creator's other posts";
-    parts.push(`Gets more views than ${pct}% of ${of}.`);
+    parts.push(`Gets more ${word} than ${pct}% of ${of}.`);
   }
   if (input.baselineViews !== null && Number.isFinite(input.baselineViews)) {
-    parts.push(`A usual post from them gets about ${formatCompact(input.baselineViews)} views.`);
+    parts.push(`A usual post from them gets about ${formatCompact(input.baselineViews)} ${word}.`);
   }
   return parts.join(" ");
 }

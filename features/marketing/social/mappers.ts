@@ -6,7 +6,7 @@
  * (rendered "—", never 0).
  */
 
-import { median, profileBaseline } from "./outlier";
+import { median, outlierMetric, profileBaseline } from "./outlier";
 import { canonicalPostUrl } from "./link";
 import type {
   AccountRow,
@@ -113,8 +113,12 @@ export function outlierInputFrom(
   postedAt: string | null,
   now = Date.now(),
   views?: number | null,
+  platform?: string | null,
 ): OutlierInput {
+  const metric = outlierMetric(platform);
   return {
+    ...(metric !== "views" ? { metric } : {}),
+    // `views` here is the value of the platform's PRIMARY metric (saves for Pinterest, likes for Reddit/Threads).
     ...(views === null && stat ? { noViews: true } : {}),
     score: num(stat?.outlier_score),
     baselineViews: num(stat?.baseline_views),
@@ -147,7 +151,8 @@ export function toPostCardModel(args: {
   now?: number;
 }): PostCardModel {
   const { post, stat, handle, analysisHook } = args;
-  const outlier = outlierInputFrom(stat, post.posted_at, args.now, stat ? num(stat.views) : undefined);
+  const metric = outlierMetric(post.platform);
+  const outlier = outlierInputFrom(stat, post.posted_at, args.now, stat ? num(stat[metric]) : undefined, post.platform);
   return {
     postId: post.id,
     platform: post.platform,

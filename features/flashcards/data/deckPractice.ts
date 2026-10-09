@@ -35,3 +35,37 @@ export function rankDeckPractice(
       return (displayMasteryPct(a, now) ?? 0) - (displayMasteryPct(b, now) ?? 0);
     });
 }
+
+/**
+ * The order a TEST's review opens its cards in: what needs practice first
+ * (worst first), then cards never studied (in the given order), then the solid
+ * ones, weakest first — so studying for a test with a fresh deck still opens
+ * real cards, and a half-learned one starts where the learner is weakest.
+ * Every id in `cardIds` appears exactly once.
+ */
+export function rankTestStudy(
+  cardIds: readonly string[],
+  masteries: readonly ItemMasteryRow[],
+  now: Date = new Date(),
+): string[] {
+  const byCard = new Map(masteries.map((m) => [m.item_id, m]));
+  const unique = [...new Set(cardIds)];
+  const weak = rankDeckPractice(
+    unique.flatMap((id) => {
+      const m = byCard.get(id);
+      return m ? [m] : [];
+    }),
+    now,
+  ).map((m) => m.item_id);
+  const weakSet = new Set(weak);
+  const fresh = unique.filter((id) => (byCard.get(id)?.attempt_count ?? 0) === 0);
+  const freshSet = new Set(fresh);
+  const solid = unique
+    .filter((id) => !weakSet.has(id) && !freshSet.has(id))
+    .sort(
+      (a, b) =>
+        (displayMasteryPct(byCard.get(a)!, now) ?? 0) -
+        (displayMasteryPct(byCard.get(b)!, now) ?? 0),
+    );
+  return [...weak, ...fresh, ...solid];
+}

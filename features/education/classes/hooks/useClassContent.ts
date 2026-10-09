@@ -14,6 +14,8 @@ import { isEntityTypeToken, type EntityTypeToken } from "@ai-matrx/associations"
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";
 import { CLASS_CONTENT_TOKENS } from "../constants";
 import { classContentLinks, classPartIds, titleHintFromEdgeLabel } from "../classParts";
+import { classTestLinks } from "../classTests";
+import type { ContainerLink } from "@ai-matrx/associations/react";
 import type { ClassContentItem } from "../types";
 
 export interface ClassContentGroup {
@@ -33,6 +35,8 @@ export interface UseClassContentReturn {
   attachedKeys: Set<string>;
   /** The class's parts (units, lessons, sections) — sources of its `part_of` edges. */
   partIds: string[];
+  /** The class's tests — its `part_of` edges marked as tests (never units, never content). */
+  testLinks: ContainerLink[];
   /** The class container's link store (parts attach/detach through it). */
   links: ReturnType<typeof useContainerLinks>;
   reload: () => Promise<void>;
@@ -64,6 +68,7 @@ export function useClassContent(
   };
   const rows = classContentLinks(allLinks).sort((a, b) => rank(a.token) - rank(b.token));
   const partIds = classPartIds(allLinks);
+  const testLinks = classTestLinks(allLinks);
 
   const hint = (r: (typeof rows)[number]) => titleHintFromEdgeLabel(r.token, r.label);
   const { titleFor, loading: titlesLoading } = useEntityTitles(
@@ -116,6 +121,7 @@ export function useClassContent(
     detach: links.detach,
     attachedKeys,
     partIds,
+    testLinks,
     links,
     reload: links.reload,
   };

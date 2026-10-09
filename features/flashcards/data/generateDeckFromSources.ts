@@ -27,7 +27,8 @@ import type {
 import type { Depth } from "@/features/education/assessment/data/types";
 import { attachRefsToCitation, recordKindOfResourceType } from "@/features/education/trust/grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
-import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import { recordLineageForSources } from "@/features/education/convert/recordSourceLineage";
+import { announceLineage } from "@/features/education/convert/announceLineage";
 import {
   isNearDuplicateQA,
   looseKey,
@@ -600,10 +601,12 @@ export async function generateDeckFromSources({
   // A table or pick list lives in the record store, which no lineage edge can
   // point at (its old tokens are retired); the deck's own `source_set` records
   // it, and "Made from" reads that list.
-  await Promise.all(
-    resolved.sources
-      .filter((s) => !RECORD_STORE_TYPES.has(s.ref.resource_type))
-      .map((s) => recordSourceLineage(result, lineageSourceOf(s), ctx.orgId)),
+  const linkSources = resolved.sources
+    .filter((s) => !RECORD_STORE_TYPES.has(s.ref.resource_type))
+    .map(lineageSourceOf);
+  announceLineage(
+    await recordLineageForSources(result, linkSources, ctx.orgId),
+    () => recordLineageForSources(result, linkSources, ctx.orgId),
   );
 
   return {

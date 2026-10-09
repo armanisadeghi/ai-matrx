@@ -54,6 +54,30 @@ export const CLASS_PART_SCOPE_TYPE_SEED = {
 export const CLASS_PART_EDGE_ROLE = "part_of" as const;
 
 /**
+ * A TEST of a class (a quiz, midterm or final) is a scope under a per-org
+ * "Test" scope type, resolved by THIS slug (the org may rename it "Exams").
+ * Test → class is the same `scope → scope` `part_of` edge a unit uses, marked
+ * `metadata.kind = "test"` (with the optional date) so a unit is never mistaken
+ * for a test — in the class's own org or a member's.
+ */
+export const CLASS_TEST_SCOPE_TYPE_SLUG = "class-test";
+
+/** Seed labels/appearance for the auto-created test scope type. */
+export const CLASS_TEST_SCOPE_TYPE_SEED = {
+  labelSingular: "Test",
+  labelPlural: "Tests",
+  icon: "clipboard-check",
+  color: "#f59e0b",
+  description: "Quizzes, midterms and finals that cover one or many units of a class.",
+} as const;
+
+/** Role on the test → unit edges (`scope → scope`): the test covers that unit. */
+export const CLASS_TEST_COVERS_ROLE = "covers" as const;
+
+/** `metadata.kind` on a test's `part_of` edge to its class. */
+export const CLASS_TEST_EDGE_KIND = "test" as const;
+
+/**
  * The education content tokens a class hub surfaces, in display order. Each is
  * a registered platform.entity_types token that can be tagged to the class
  * scope. Anything else tagged to the class falls into an "Other" group.

@@ -21,7 +21,7 @@ export interface GenerationSteer {
   /** Question types wanted; empty = the agent's own mix. */
   questionTypes?: QuestionType[];
   /** Outline sections this run must cover first (gaps or a picked section). */
-  sections?: Pick<OutlineSection, "title" | "facts">[];
+  sections?: (Pick<OutlineSection, "title" | "facts"> & { id?: string })[];
   /** What already exists (card fronts or question prompts) — never repeat these. */
   existing?: string[];
 }
@@ -124,4 +124,9 @@ export function gapSections<S extends { id: string }>(
 /** A new id that groups the items one run adds, so "Undo last add" can find them. */
 export function newBatchId(): string {
   return crypto.randomUUID();
+}
+
+/** The ids of the steered sections that carry one (empty = not aimed at sections). */
+export function steeredSectionIds(steer: GenerationSteer | undefined): string[] {
+  return (steer?.sections ?? []).map((s) => s.id).filter((id): id is string => typeof id === "string" && id.length > 0);
 }

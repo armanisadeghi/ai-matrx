@@ -48,7 +48,8 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { readArtifactOrigins, type ArtifactOrigin } from "@/features/education/convert/lineage";
-import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import { recordLineageForSources } from "@/features/education/convert/recordSourceLineage";
+import { announceLineage } from "@/features/education/convert/announceLineage";
 import type { ConvertProgress } from "@/features/education/convert/types";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
@@ -89,7 +90,7 @@ import { useTabBoundRun, type TabBoundRun } from "@/lib/wizard-draft/useTabBound
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 
 /** The card types a top-up can ask for; none picked = the writer's own mix. */
-const KIND_CHOICES: { kind: CardKind; label: string }[] = [
+export const KIND_CHOICES: { kind: CardKind; label: string }[] = [
   { kind: CARD_KIND.basic, label: "Basic" },
   { kind: CARD_KIND.cloze, label: "Cloze" },
   { kind: CARD_KIND.matching, label: "Matching" },
@@ -149,7 +150,13 @@ export function AddMoreCardsButton({
   onAdded,
   label = "Add more cards",
   variant = "outline",
+  initialOpen = false,
+  extraDrafts,
 }: {
+  /** Open the dialog on mount (a host that loaded the deck on the press). */
+  initialOpen?: boolean;
+  /** Material to preselect beside the deck's own (a kit's Sources). */
+  extraDrafts?: readonly SourceDraft[];
   setId: string;
   /** The trigger's words; the deck page's action bar uses "Add". */
   label?: string;
@@ -162,7 +169,7 @@ export function AddMoreCardsButton({
   existingCards: { front: string; back: string }[];
   onAdded?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   // The top-up runs in this tab (segmented fan-out + save). A reload mid-run
   // stops it; the run's request is kept so the deck page says so and repeats
   // the same request in one click (useTabBoundRun).
@@ -225,6 +232,7 @@ export function AddMoreCardsButton({
           deckName={deckName}
           deckOrganizationId={deckOrganizationId}
           existingCards={existingCards}
+          extraDrafts={extraDrafts}
           tabRun={tabRun}
           redo={redo}
           onClose={() => {
@@ -243,11 +251,13 @@ function AddMoreCardsDialog({
   deckName,
   deckOrganizationId,
   existingCards,
+  extraDrafts,
   tabRun,
   redo,
   onClose,
   onAdded,
 }: {
+  extraDrafts?: readonly SourceDraft[];
   setId: string;
   deckName?: string;
   deckOrganizationId?: string | null;
@@ -302,7 +312,7 @@ function AddMoreCardsDialog({
     const lineage = found.map(originToDraft).filter((d): d is SourceDraft => !!d?.ref);
     const start = topUpSeed(saved, lineage);
     setWholeSourcesOnly(start.wholeSourcesOnly);
-    for (const draft of start.drafts) {
+    for (const draft of [...start.drafts, ...(extraDrafts ?? [])]) {
       if (draft.ref && !set.hasRef(draft.ref.resource_type, draft.ref.resource_id)) {
         set.addReady(draft);
       }
@@ -394,8 +404,10 @@ function AddMoreCardsDialog({
           deckName?.trim() || "Your deck",
           `${made.cards.length} more cards`,
         );
-        await Promise.all(
-          made.sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), orgId)),
+        const linkSources = made.sources.map(lineageSourceOf);
+        announceLineage(
+          await recordLineageForSources(result, linkSources, orgId),
+          () => recordLineageForSources(result, linkSources, orgId),
         );
         // The next top-up starts from what this one used (V2-F #2).
         const notRecorded = await saveDeckSourceSet(setId, chosen, chosenNames);

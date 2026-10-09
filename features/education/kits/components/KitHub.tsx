@@ -64,7 +64,10 @@ import {
   type ManualKitSourceType,
   type StudyKit,
 } from "../kitService";
-import { MakeMoreFromKit } from "./MakeMoreFromKit";
+import { MakeMoreFromKit, type AimedMakeMore } from "./MakeMoreFromKit";
+import { KitCoverageSection, KitMemberAddMore, KitOutlineCard } from "./KitOutline";
+import { useKitOutline } from "../outline/useKitOutline";
+import { countsOf } from "../outline/coverage";
 import { KitSourcesPanel } from "./KitSourcesPanel";
 import { AddSavedAidsDialog } from "./AddSavedAidsDialog";
 import { newKitHref } from "@/features/education/onboard/startRoutes";
@@ -323,6 +326,17 @@ export function KitHub({
     enabled: kit !== null,
     staleAfterMs: 60_000,
   });
+  // The kit's Outline + coverage (living-kit W1/W3); refresh-safe run reattach.
+  const outline = useKitOutline(kit);
+  const [aimed, setAimed] = useState<AimedMakeMore | null>(null);
+  const outlineForDialog =
+    outline.sections && outline.sections.length > 0 && outline.coverage
+      ? {
+          sections: outline.sections,
+          cards: countsOf(outline.coverage, "cards"),
+          questions: countsOf(outline.coverage, "questions"),
+        }
+      : undefined;
   const loading = !kitRead.hasData && !kitRead.isError;
   const loadError = kitRead.isError;
   const stats: KitArtifactStats = statsRead.data ?? {};
@@ -624,6 +638,8 @@ export function KitHub({
         kitTitle={kit.title}
         addTarget={addTarget}
         onConverted={() => reload()}
+        outline={outlineForDialog}
+        aimed={aimed}
         buttonVariant="outline"
         buttonClassName={proposedButton}
       />
@@ -680,7 +696,12 @@ export function KitHub({
             sourceId={kit.sourceId}
             kitTitle={kit.title}
             addTarget={addTarget}
-            onConverted={() => reload()}
+            onConverted={() => {
+              reload();
+              outline.reload();
+            }}
+            outline={outlineForDialog}
+            aimed={aimed}
           />
           <AddSavedAidsDialog
             kit={kit}
@@ -736,6 +757,15 @@ export function KitHub({
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
         <KitSourcesPanel kit={kit} onChanged={reload} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
+        <KitOutlineCard outline={outline} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
+        {outline.coverage && outline.sections && outline.sections.length > 0 ? (
+          <KitCoverageSection
+            coverage={outline.coverage}
+            sections={outline.sections}
+            onMakeMore={(section) => setAimed({ sections: [section], kind: "deck", nonce: Date.now() })}
+            onGoDeeper={(section) => setAimed({ sections: [section], kind: "practice_test", nonce: Date.now() })}
+          />
+        ) : null}
 
 
         <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
@@ -852,13 +882,24 @@ export function KitHub({
                   </div>
                   <div className="space-y-3">
                     {stageArtifacts.map((artifact) => (
-                      <ArtifactCard
-                        key={artifact.edgeId}
-                        artifact={artifact}
-                        stats={stats[kitArtifactKey(artifact)]}
-                        statsLoading={statsLoading}
-                        statsFailed={statsFailed}
-                      />
+                      <div key={artifact.edgeId} className="space-y-2">
+                        <ArtifactCard
+                          artifact={artifact}
+                          stats={stats[kitArtifactKey(artifact)]}
+                          statsLoading={statsLoading}
+                          statsFailed={statsFailed}
+                        />
+                        {artifact.artifactType === "fc_set" || artifact.artifactType === "assessment" ? (
+                          <KitMemberAddMore
+                            artifact={artifact}
+                            sources={kit.sources}
+                            onAdded={() => {
+                              reload();
+                              outline.reload();
+                            }}
+                          />
+                        ) : null}
+                      </div>
                     ))}
                   </div>
                 </div>

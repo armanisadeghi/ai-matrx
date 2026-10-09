@@ -41,6 +41,10 @@ import type { SectionJournal } from "@/features/education/convert/sectionJournal
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
 import type { ResolvedSourceSet, SourceSet } from "@ai-matrx/agents/sources";
 import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
+import { toast } from "@/lib/toast";
+import { kitOutlineInputs, startKitOutline } from "@/features/education/kits/outline/outlineService";
+import { announceLineage } from "@/features/education/convert/announceLineage";
+import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 import { readKit, renameKit } from "@/features/education/kits/kitService";
 import { addKitSource, createKitScope, KIT_TOKEN } from "@/features/education/kits/kitScope";
@@ -337,6 +341,17 @@ export function useKitGeneration(): UseKitGeneration {
         }
         if (missed.length > 0) setSourcesNotFiled(missed);
       })();
+      // THE OUTLINE STARTS BESIDE THE AIDS (living-kit W1): a server run, so it
+      // survives this page closing; the kit page reattaches to it by subject.
+      // Never awaited — the aids do not wait on it.
+      void kitOutlineInputs(kitSources)
+        .then((inputs) =>
+          startKitOutline(dispatch, { kitId: scope.id, organizationId: orgId, sources: inputs.sources }),
+        )
+        .catch((e: unknown) => {
+          console.error("[useKitGeneration] the kit outline did not start:", e);
+          toast.warning("The outline did not start. Build it from the kit page.");
+        });
     }
     setKitTitle(journal.renamedTo ? { ...titleNow, title: journal.renamedTo } : titleNow);
     // A name that arrives after the deadline still names the kit (applied at
@@ -451,6 +466,13 @@ export function useKitGeneration(): UseKitGeneration {
               resourceType: r.resourceType,
               stillGenerating: r.pending === true,
             });
+            // Saved, but not linked to the kit: said, with Retry (law 4).
+            const linkSource = {
+              text: "",
+              title: journal.renamedTo ?? resolvedTitle.title,
+              ref: normalized.ref,
+            };
+            announceLineage(r.lineage, () => recordSourceLineage(r, linkSource, orgId), { inKit: true });
           } else {
             patchTarget(outcome.targetKind, {
               status: "error",
