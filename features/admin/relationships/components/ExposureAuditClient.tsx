@@ -589,58 +589,59 @@ export function ExposureAuditClient() {
           contentSource={{ type: "raw" }}
           resolveContextOnOpen={resolveContextOnOpen}
         >
-        <MatrxDataTable<ExposureAuditRow>
-          data={rows}
-          columns={COLUMNS}
-          getRowId={(row) => `${row.resource_type}:${row.resource_id}`}
-          query={{
-            mode: "controlled-append",
-            state: table.state,
-            pagination,
-            scroll: policy.scroll,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{ searchPlaceholder: "Search name, path, folder, or UUID…" }}
-          zebra
-          className="h-full text-xs"
-          copy={{
-            label: "Exposure finding",
-            listLabel: "Exposure audit results",
-            location:
-              "AI Matrx Admin — Relationships → Exposure Audit (/administration/database/relationships/exposure-audit)",
-            rowKind: "exposure-finding",
-            listKind: "exposure-findings",
-            humanRow: (row) =>
-              `${row.resource_type}:${row.resource_id} — ${row.display_name}\n${row.discovery_status}\n${row.exposure_reasons.join("; ")}`,
-            rowAttributes: (row) => ({
-              resource_type: row.resource_type,
-              visibility: row.visibility,
-              owner: row.owner_email,
-              broad_discovery: row.broad_discovery,
-            }),
-            listAttributes: (visible) => ({
-              visible: visible.length,
-              total,
-              exposure: exposureFilter,
-              resource: resourceFilter,
-            }),
-          }}
-          detail={{
-            title: (row) => row.display_name,
-            description: (row) =>
-              `${row.resource_type}:${row.resource_id} · ${row.discovery_status}`,
-          }}
-          window={{ enabled: true, title: (row) => row.display_name }}
-          read={readOf(
-            // A failed NEXT page is the footer's to say; the read fails only when nothing loaded.
-            { loading: pagination.loading, error: rows.length === 0 ? pagination.error : null, hasData: rows.length > 0 },
-            { what: "the exposure rows", onRetry: pagination.refresh },
-          )}
-          emptyState={{
-            title: "No matching exposure",
-            description: "No files or notes match this exposure, resource, and search combination.",
-          }}
-        />
+        <div className="h-full text-xs flex flex-col">
+          <MatrxDataTable<ExposureAuditRow>
+            data={rows}
+            columns={COLUMNS}
+            getRowId={(row) => `${row.resource_type}:${row.resource_id}`}
+            query={{
+              mode: "controlled-append",
+              state: table.state,
+              pagination,
+              scroll: policy.scroll,
+              onStateChange: table.onStateChange,
+            }}
+            toolbar={{ searchPlaceholder: "Search name, path, folder, or UUID…" }}
+            zebra
+            copy={{
+              label: "Exposure finding",
+              listLabel: "Exposure audit results",
+              location:
+                "AI Matrx Admin — Relationships → Exposure Audit (/administration/database/relationships/exposure-audit)",
+              rowKind: "exposure-finding",
+              listKind: "exposure-findings",
+              humanRow: (row) =>
+                `${row.resource_type}:${row.resource_id} — ${row.display_name}\n${row.discovery_status}\n${row.exposure_reasons.join("; ")}`,
+              rowAttributes: (row) => ({
+                resource_type: row.resource_type,
+                visibility: row.visibility,
+                owner: row.owner_email,
+                broad_discovery: row.broad_discovery,
+              }),
+              listAttributes: (visible) => ({
+                visible: visible.length,
+                total,
+                exposure: exposureFilter,
+                resource: resourceFilter,
+              }),
+            }}
+            detail={{
+              title: (row) => row.display_name,
+              description: (row) =>
+                `${row.resource_type}:${row.resource_id} · ${row.discovery_status}`,
+            }}
+            window={{ enabled: true, title: (row) => row.display_name }}
+            read={readOf(
+              // A failed NEXT page is the footer's to say; the read fails only when nothing loaded.
+              { loading: pagination.loading, error: rows.length === 0 ? pagination.error : null, hasData: rows.length > 0 },
+              { what: "the exposure rows", onRetry: pagination.refresh },
+            )}
+            emptyState={{
+              title: "No matching exposure",
+              description: "No files or notes match this exposure, resource, and search combination.",
+            }}
+          />
+        </div>
         </NonEditableContextMenu>
       </div>
     </section>

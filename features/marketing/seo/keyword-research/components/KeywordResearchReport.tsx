@@ -335,12 +335,12 @@ export default function KeywordResearchReport({
             extraSections={[keywordSection]}
           >
             <MatrxDataTable<KeywordReportMetricRow>
+              appearance="embedded"
               data={measuredRows}
               columns={marketColumns}
               getRowId={(row) => row.id}
               pageSize={25}
               zebra
-              className="border-0"
               copy={{
                 label: "Keyword",
                 listLabel: "Market data",

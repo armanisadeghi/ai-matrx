@@ -505,7 +505,6 @@ export function SourceResultsTable({
             },
           }
         : {})}
-      tableClassName="text-left"
     />
   );
 }

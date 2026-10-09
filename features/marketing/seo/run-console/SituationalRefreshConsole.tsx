@@ -425,25 +425,26 @@ export function SituationalRefreshConsole({
                       : []
                   }
                 >
-                  <MatrxDataTable<SituationalRow>
-                    data={rows}
-                    columns={columns}
-                    getRowId={(r) => r.site.id}
-                    isLoading={sitesLoading}
-                    toolbar={{
-                      search: true,
-                      searchPlaceholder: "Find a brand",
-                    }}
-                    selection={{
-                      selectedIds: selected,
-                      onSelectedIdsChange: onSelectedChange,
-                      noun: "brand",
-                    }}
-                    pageSize={0}
-                    zebra
-                    emptyState={{ title: "No brands match your search." }}
-                    className="h-full"
-                  />
+                  <div className="h-full flex flex-col">
+                    <MatrxDataTable<SituationalRow>
+                      data={rows}
+                      columns={columns}
+                      getRowId={(r) => r.site.id}
+                      isLoading={sitesLoading}
+                      toolbar={{
+                        search: true,
+                        searchPlaceholder: "Find a brand",
+                      }}
+                      selection={{
+                        selectedIds: selected,
+                        onSelectedIdsChange: onSelectedChange,
+                        noun: "brand",
+                      }}
+                      pageSize={0}
+                      zebra
+                      emptyState={{ title: "No brands match your search." }}
+                    />
+                  </div>
                 </NonEditableContextMenu>
               )}
             </div>

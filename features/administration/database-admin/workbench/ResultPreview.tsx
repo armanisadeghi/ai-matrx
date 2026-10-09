@@ -142,37 +142,38 @@ export function ResultPreview({
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <MatrxDataTable<PreviewRow>
-                data={tableRows}
-                columns={resultColumns(columns)}
-                getRowId={(preview) => String(preview.index)}
-                density="condensed"
-                stickyHeader
-                viewTabs={false}
-                pageSize={0}
-                detail={{ enabled: false }}
-                window={{ enabled: false }}
-                coverage={
-                  truncated
-                    ? {
-                        // `rows` is the result held by this preview. It is not a
-                        // claim about how many rows the SQL source could return.
-                        // The grid can search only the first `maxTableRows` rows.
-                        loaded: displayRows.length,
-                        total: rows.length,
-                        answeredBy: "client",
-                        noun: "result row",
-                      }
-                    : undefined
-                }
-                toolbar={{
-                  title: "Query results",
-                  search: true,
-                  searchPlaceholder: "Search result rows…",
-                }}
-                className="min-h-0 flex-1"
-                emptyState={{ title: emptyMessage }}
-              />
+              <div className="min-h-0 flex-1 flex flex-col">
+                <MatrxDataTable<PreviewRow>
+                  data={tableRows}
+                  columns={resultColumns(columns)}
+                  getRowId={(preview) => String(preview.index)}
+                  density="condensed"
+                  stickyHeader
+                  viewTabs={false}
+                  pageSize={0}
+                  detail={{ enabled: false }}
+                  window={{ enabled: false }}
+                  coverage={
+                    truncated
+                      ? {
+                          // `rows` is the result held by this preview. It is not a
+                          // claim about how many rows the SQL source could return.
+                          // The grid can search only the first `maxTableRows` rows.
+                          loaded: displayRows.length,
+                          total: rows.length,
+                          answeredBy: "client",
+                          noun: "result row",
+                        }
+                      : undefined
+                  }
+                  toolbar={{
+                    title: "Query results",
+                    search: true,
+                    searchPlaceholder: "Search result rows…",
+                  }}
+                  emptyState={{ title: emptyMessage }}
+                />
+              </div>
             </div>
           )}
         </TabsContent>

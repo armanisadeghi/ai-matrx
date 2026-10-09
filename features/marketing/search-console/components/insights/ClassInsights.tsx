@@ -871,68 +871,69 @@ export function QualityView({
         {movers.isError ? (
           <ErrorPanel error={movers.error} />
         ) : (
-          <MatrxDataTable<GscClassMoverRow>
-            urlState={{ id: "gsc-class-movers" }}
-            data={moverRows}
-            columns={moverColumns}
-            getRowId={(row) => row.key}
-            isLoading={movers.isLoading}
-            isFetching={movers.isFetching}
-            toolbar={{ searchPlaceholder: "Search movers…" }}
-            copy={{
-              label: "Class mover",
-              listLabel: "Search Console — Traffic quality movers",
-              location: webLocation("Search Console — Insights"),
-              rowKind: `web-gsc-class-mover-${dimension}`,
-              listKind: "web-gsc-class-mover-results",
-              rowDescription: `One ${dimension} ${direction === "gain" ? "gaining" : "losing"} clicks vs the compare period, with its traffic class.`,
-              listDescription: `${direction === "gain" ? "Gaining" : "Losing"} ${dimension === "query" ? "queries" : "pages"}${trafficClass ? ` in the ${trafficClass} class` : ""}${valueLevel ? ` at the ${levelLabel(valueLevel)} level` : ""}, decomposed by traffic class and value level server-side.`,
-              humanRow: (row) =>
-                humanLines([
-                  [dimension === "query" ? "Query" : "Page", row.key],
-                  ["Class", row.traffic_class],
-                  ["Level", row.value_band ? levelLabel(row.value_band) : "—"],
-                  ["Δ clicks", num(row.delta_clicks)],
-                  ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
-                  [
-                    "Impressions",
-                    `${num(row.impressions)} vs ${num(row.cmp_impressions)}`,
-                  ],
-                ]),
-              rowAttributes: (row) => ({
-                ...gscScopeAttributes(siteId, siteName, periods, {}),
-                insight: "quality",
-                dimension,
-                direction,
-                key: row.key,
-                traffic_class: row.traffic_class ?? "",
-              }),
-              listAttributes: (visible) => ({
-                ...gscScopeAttributes(siteId, siteName, periods, {}),
-                insight: "quality",
-                dimension,
-                direction,
-                traffic_class: trafficClass ?? "all",
-                value_level: valueLevel ?? "all",
-                visible_rows: visible.length,
-                fetched_rows: moverRows.length,
-                total_rows: moverTotal,
-              }),
-            }}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={(row) => onDrill(dimension, row.key)}
-            pageSize={25}
-            emptyState={{
-              icon: <Scale className="h-8 w-8 text-muted-foreground" />,
-              title:
-                direction === "loss"
-                  ? "Nothing is losing ground"
-                  : "Nothing is gaining ground",
-              description: `No ${trafficClass ? `${trafficClass} ` : ""}${valueLevel ? `${levelLabel(valueLevel)} ` : ""}row moved in this direction ${describeGscWindow(periods.current)} vs the compare period.`,
-            }}
-            className="h-full"
-          />
+          <div className="h-full flex flex-col">
+            <MatrxDataTable<GscClassMoverRow>
+              urlState={{ id: "gsc-class-movers" }}
+              data={moverRows}
+              columns={moverColumns}
+              getRowId={(row) => row.key}
+              isLoading={movers.isLoading}
+              isFetching={movers.isFetching}
+              toolbar={{ searchPlaceholder: "Search movers…" }}
+              copy={{
+                label: "Class mover",
+                listLabel: "Search Console — Traffic quality movers",
+                location: webLocation("Search Console — Insights"),
+                rowKind: `web-gsc-class-mover-${dimension}`,
+                listKind: "web-gsc-class-mover-results",
+                rowDescription: `One ${dimension} ${direction === "gain" ? "gaining" : "losing"} clicks vs the compare period, with its traffic class.`,
+                listDescription: `${direction === "gain" ? "Gaining" : "Losing"} ${dimension === "query" ? "queries" : "pages"}${trafficClass ? ` in the ${trafficClass} class` : ""}${valueLevel ? ` at the ${levelLabel(valueLevel)} level` : ""}, decomposed by traffic class and value level server-side.`,
+                humanRow: (row) =>
+                  humanLines([
+                    [dimension === "query" ? "Query" : "Page", row.key],
+                    ["Class", row.traffic_class],
+                    ["Level", row.value_band ? levelLabel(row.value_band) : "—"],
+                    ["Δ clicks", num(row.delta_clicks)],
+                    ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
+                    [
+                      "Impressions",
+                      `${num(row.impressions)} vs ${num(row.cmp_impressions)}`,
+                    ],
+                  ]),
+                rowAttributes: (row) => ({
+                  ...gscScopeAttributes(siteId, siteName, periods, {}),
+                  insight: "quality",
+                  dimension,
+                  direction,
+                  key: row.key,
+                  traffic_class: row.traffic_class ?? "",
+                }),
+                listAttributes: (visible) => ({
+                  ...gscScopeAttributes(siteId, siteName, periods, {}),
+                  insight: "quality",
+                  dimension,
+                  direction,
+                  traffic_class: trafficClass ?? "all",
+                  value_level: valueLevel ?? "all",
+                  visible_rows: visible.length,
+                  fetched_rows: moverRows.length,
+                  total_rows: moverTotal,
+                }),
+              }}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              onRowOpen={(row) => onDrill(dimension, row.key)}
+              pageSize={25}
+              emptyState={{
+                icon: <Scale className="h-8 w-8 text-muted-foreground" />,
+                title:
+                  direction === "loss"
+                    ? "Nothing is losing ground"
+                    : "Nothing is gaining ground",
+                description: `No ${trafficClass ? `${trafficClass} ` : ""}${valueLevel ? `${levelLabel(valueLevel)} ` : ""}row moved in this direction ${describeGscWindow(periods.current)} vs the compare period.`,
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -1094,75 +1095,76 @@ export function ShiftsView({
           Showing the top {rows.length} of {formatCount(total)} shifted queries.
         </p>
       ) : null}
-      <MatrxDataTable<GscShiftRow>
-        urlState={{ id: "gsc-class-shifts" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.query}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        toolbar={{ searchPlaceholder: "Search queries…" }}
-        copy={{
-          label: "Traffic shift",
-          listLabel: "Search Console — Traffic shifts",
-          location: webLocation("Search Console — Insights"),
-          rowKind: "web-gsc-shift",
-          listKind: "web-gsc-shift-results",
-          rowDescription:
-            "One query whose landing-page mix moved between the compare and current periods.",
-          listDescription:
-            "Queries whose page mix shifted (≥15% of impression share moved between pages), with class and click delta — a shift off a money page without click growth is a hidden loss.",
-          humanRow: (row) =>
-            humanLines([
-              ["Query", row.query],
-              ["Class", row.traffic_class],
-              [
-                "Shift",
-                row.shift_share === null
-                  ? null
-                  : `${(row.shift_share * 100).toFixed(0)}% of impression share moved`,
-              ],
-              ["Δ clicks", num(row.delta_clicks)],
-              ["Top page before", row.cmp_top_url],
-              ["Top page now", row.cur_top_url],
-            ]),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "shifts",
-            query: row.query,
-            traffic_class: row.traffic_class ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "shifts",
-            visible_rows: visible.length,
-            fetched_rows: rows.length,
-            total_rows: total,
-          }),
-        }}
-        detail={{ enabled: false }}
-        // Same law as cannibalization: the panel WRAPS the canonical component
-        // instead of re-rendering a partial page list of its own.
-        window={{ enabled: false }}
-        rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-              event.stopPropagation();
-              openDrilldown({
-                siteId,
-                siteName,
-                dimension: "page",
-                filters: { query_eq: row.query },
-                title: `Pages for “${row.query}”`,
-              });
-            }, tooltip: `Open the pages for “${row.query}” in a window` }]}
-        onRowOpen={(row) => onDrill("query", row.query)}
-        pageSize={25}
-        emptyState={{
-          icon: <Scale className="h-8 w-8 text-muted-foreground" />,
-          title: "No meaningful shifts",
-          description: `No query with enough clicks moved a meaningful share of its impressions between pages ${describeGscWindow(periods.current)} vs the compare period.`,
-        }}
-        className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<GscShiftRow>
+          urlState={{ id: "gsc-class-shifts" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.query}
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          toolbar={{ searchPlaceholder: "Search queries…" }}
+          copy={{
+            label: "Traffic shift",
+            listLabel: "Search Console — Traffic shifts",
+            location: webLocation("Search Console — Insights"),
+            rowKind: "web-gsc-shift",
+            listKind: "web-gsc-shift-results",
+            rowDescription:
+              "One query whose landing-page mix moved between the compare and current periods.",
+            listDescription:
+              "Queries whose page mix shifted (≥15% of impression share moved between pages), with class and click delta — a shift off a money page without click growth is a hidden loss.",
+            humanRow: (row) =>
+              humanLines([
+                ["Query", row.query],
+                ["Class", row.traffic_class],
+                [
+                  "Shift",
+                  row.shift_share === null
+                    ? null
+                    : `${(row.shift_share * 100).toFixed(0)}% of impression share moved`,
+                ],
+                ["Δ clicks", num(row.delta_clicks)],
+                ["Top page before", row.cmp_top_url],
+                ["Top page now", row.cur_top_url],
+              ]),
+            rowAttributes: (row) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "shifts",
+              query: row.query,
+              traffic_class: row.traffic_class ?? "",
+            }),
+            listAttributes: (visible) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "shifts",
+              visible_rows: visible.length,
+              fetched_rows: rows.length,
+              total_rows: total,
+            }),
+          }}
+          detail={{ enabled: false }}
+          // Same law as cannibalization: the panel WRAPS the canonical component
+          // instead of re-rendering a partial page list of its own.
+          window={{ enabled: false }}
+          rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+                event.stopPropagation();
+                openDrilldown({
+                  siteId,
+                  siteName,
+                  dimension: "page",
+                  filters: { query_eq: row.query },
+                  title: `Pages for “${row.query}”`,
+                });
+              }, tooltip: `Open the pages for “${row.query}” in a window` }]}
+          onRowOpen={(row) => onDrill("query", row.query)}
+          pageSize={25}
+          emptyState={{
+            icon: <Scale className="h-8 w-8 text-muted-foreground" />,
+            title: "No meaningful shifts",
+            description: `No query with enough clicks moved a meaningful share of its impressions between pages ${describeGscWindow(periods.current)} vs the compare period.`,
+          }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
   );
@@ -1317,62 +1319,63 @@ export function JuiceView({
           Showing the top {rows.length} of {formatCount(total)} pages.
         </p>
       ) : null}
-      <MatrxDataTable<GscJuiceRow>
-        urlState={{ id: "gsc-link-juice" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.key}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        toolbar={{ searchPlaceholder: "Search pages…" }}
-        copy={{
-          label: "Juice page",
-          listLabel: "Search Console — SEO Juice",
-          location: webLocation("Search Console — Insights"),
-          rowKind: "web-gsc-juice-page",
-          listKind: "web-gsc-juice-results",
-          rowDescription:
-            "One page with months of sustained educational traffic, beside its money return.",
-          listDescription:
-            "Pages strong on educational traffic for 3+ of the last 6 months. Zero money clicks beside months of educational strength means the credibility exists but the funnel to money pages does not.",
-          humanRow: (row) =>
-            humanLines([
-              ["Page", row.key],
-              ["Months strong (of 6)", String(row.edu_months_active)],
-              [
-                "Educational clicks (90d / prior 90d)",
-                `${num(row.edu_clicks)} / ${num(row.edu_clicks_prior)}`,
-              ],
-              ["Money clicks (90d)", num(row.money_clicks)],
-              ["Money impressions (90d)", num(row.money_impressions)],
-              ["Other clicks (90d)", num(row.other_clicks)],
-            ]),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "juice",
-            key: row.key,
-            page_id: row.page_id ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "juice",
-            visible_rows: visible.length,
-            fetched_rows: rows.length,
-            total_rows: total,
-          }),
-        }}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        onRowOpen={(row) => onDrill("page", row.key)}
-        pageSize={25}
-        emptyState={{
-          icon: <Scale className="h-8 w-8 text-muted-foreground" />,
-          title: "No sustained educational pages yet",
-          description:
-            "No page has held meaningful educational traffic for 3+ of the last 6 calendar months (this view's fixed window) — or the site's keywords are not classified yet (see the Unclassified bucket under Traffic quality).",
-        }}
-        className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<GscJuiceRow>
+          urlState={{ id: "gsc-link-juice" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.key}
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          toolbar={{ searchPlaceholder: "Search pages…" }}
+          copy={{
+            label: "Juice page",
+            listLabel: "Search Console — SEO Juice",
+            location: webLocation("Search Console — Insights"),
+            rowKind: "web-gsc-juice-page",
+            listKind: "web-gsc-juice-results",
+            rowDescription:
+              "One page with months of sustained educational traffic, beside its money return.",
+            listDescription:
+              "Pages strong on educational traffic for 3+ of the last 6 months. Zero money clicks beside months of educational strength means the credibility exists but the funnel to money pages does not.",
+            humanRow: (row) =>
+              humanLines([
+                ["Page", row.key],
+                ["Months strong (of 6)", String(row.edu_months_active)],
+                [
+                  "Educational clicks (90d / prior 90d)",
+                  `${num(row.edu_clicks)} / ${num(row.edu_clicks_prior)}`,
+                ],
+                ["Money clicks (90d)", num(row.money_clicks)],
+                ["Money impressions (90d)", num(row.money_impressions)],
+                ["Other clicks (90d)", num(row.other_clicks)],
+              ]),
+            rowAttributes: (row) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "juice",
+              key: row.key,
+              page_id: row.page_id ?? "",
+            }),
+            listAttributes: (visible) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "juice",
+              visible_rows: visible.length,
+              fetched_rows: rows.length,
+              total_rows: total,
+            }),
+          }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          onRowOpen={(row) => onDrill("page", row.key)}
+          pageSize={25}
+          emptyState={{
+            icon: <Scale className="h-8 w-8 text-muted-foreground" />,
+            title: "No sustained educational pages yet",
+            description:
+              "No page has held meaningful educational traffic for 3+ of the last 6 calendar months (this view's fixed window) — or the site's keywords are not classified yet (see the Unclassified bucket under Traffic quality).",
+          }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
   );

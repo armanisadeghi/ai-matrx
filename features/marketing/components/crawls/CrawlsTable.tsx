@@ -439,105 +439,106 @@ export function CrawlsTable() {
           },
         ]}
       >
-      <MatrxDataTable<CrawlSession>
-        className="min-h-0 flex-1"
-        data={crawls.data?.rows ?? []}
-        columns={columns}
-        getRowId={(row) => row.id}
-        isLoading={crawls.isLoading}
-        isFetching={crawls.isFetching}
-        query={{
-          mode: "controlled",
-          state: table.state,
-          totalItems: crawls.data?.total ?? 0,
-          onStateChange: table.onStateChange,
-        }}
-        toolbar={{
-          searchPlaceholder: "Search status, trigger, or error…",
-          actions: (
-            <div className="flex items-center gap-2">
-              <Button
-                icon={<RefreshCw
-                  className={
-                    crawls.isFetching
-                      ? "h-3.5 w-3.5 animate-spin"
-                      : "h-3.5 w-3.5"
-                  }
-                />}
-                variant="outline"
-                onClick={() => void crawls.refetch()}
-                disabled={crawls.isFetching}
-              >
-                Refresh
-              </Button>
-              {activeCrawl ? (
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<CrawlSession>
+          data={crawls.data?.rows ?? []}
+          columns={columns}
+          getRowId={(row) => row.id}
+          isLoading={crawls.isLoading}
+          isFetching={crawls.isFetching}
+          query={{
+            mode: "controlled",
+            state: table.state,
+            totalItems: crawls.data?.total ?? 0,
+            onStateChange: table.onStateChange,
+          }}
+          toolbar={{
+            searchPlaceholder: "Search status, trigger, or error…",
+            actions: (
+              <div className="flex items-center gap-2">
                 <Button
-                  icon={<Radio className="animate-pulse" />}
+                  icon={<RefreshCw
+                    className={
+                      crawls.isFetching
+                        ? "h-3.5 w-3.5 animate-spin"
+                        : "h-3.5 w-3.5"
+                    }
+                  />}
                   variant="outline"
-                  onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
-                > Open live
-                  crawl
+                  onClick={() => void crawls.refetch()}
+                  disabled={crawls.isFetching}
+                >
+                  Refresh
                 </Button>
-              ) : (
-                <Button
-                  icon={<Play />}
-                  variant="primary"
-                  onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
-                > Start crawl
-                </Button>
-              )}
-            </div>
-          ),
-        }}
-        copy={{
-          label: "Crawl session",
-          listLabel: "All crawl sessions",
-          location: webLocation(`Crawls — ${site.root_url}`),
-          rowKind: "web-crawl-session",
-          listKind: "web-crawl-sessions-list",
-          rowDescription: "One frozen crawl session for this site.",
-          listDescription:
-            "The currently loaded crawl session rows (respecting search, filters, sort, and pagination).",
-          humanRow: (row) =>
-            humanLines([
-              ["Session", row.id],
-              ["Status", row.status],
-              ["Trigger", row.trigger],
-              ["Started", formatCompactDate(row.started_at ?? row.created_at)],
-              ["Finished", formatCompactDate(row.finished_at)],
-              ["Duration", formatDuration(row.started_at, row.finished_at)],
-              ["Discovered", jsonNumber(row.stats, ["pages_discovered"])],
-              ["Captured", jsonNumber(row.stats, ["pages_fetched"])],
-              ["Error", row.error],
-            ]),
-          rowAttributes: (row) => ({
-            session_id: row.id,
-            site_id: site.id,
-            status: row.status,
-          }),
-          listAttributes: () => ({
-            site_id: site.id,
-            total_matching: crawls.data?.total ?? 0,
-          }),
-        }}
-        detail={{ enabled: false }}
-        onRowOpen={(row) =>
-          router.push(marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`))
-        }
-        rowActions={(row) => [...(ACTIVE_STATUSES.has(row.status) ? [{ id: "cancel", icon: Ban, tone: "destructive" as const, label: "Cancel crawl", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+                {activeCrawl ? (
+                  <Button
+                    icon={<Radio className="animate-pulse" />}
+                    variant="outline"
+                    onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
+                  > Open live
+                    crawl
+                  </Button>
+                ) : (
+                  <Button
+                    icon={<Play />}
+                    variant="primary"
+                    onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
+                  > Start crawl
+                  </Button>
+                )}
+              </div>
+            ),
+          }}
+          copy={{
+            label: "Crawl session",
+            listLabel: "All crawl sessions",
+            location: webLocation(`Crawls — ${site.root_url}`),
+            rowKind: "web-crawl-session",
+            listKind: "web-crawl-sessions-list",
+            rowDescription: "One frozen crawl session for this site.",
+            listDescription:
+              "The currently loaded crawl session rows (respecting search, filters, sort, and pagination).",
+            humanRow: (row) =>
+              humanLines([
+                ["Session", row.id],
+                ["Status", row.status],
+                ["Trigger", row.trigger],
+                ["Started", formatCompactDate(row.started_at ?? row.created_at)],
+                ["Finished", formatCompactDate(row.finished_at)],
+                ["Duration", formatDuration(row.started_at, row.finished_at)],
+                ["Discovered", jsonNumber(row.stats, ["pages_discovered"])],
+                ["Captured", jsonNumber(row.stats, ["pages_fetched"])],
+                ["Error", row.error],
+              ]),
+            rowAttributes: (row) => ({
+              session_id: row.id,
+              site_id: site.id,
+              status: row.status,
+            }),
+            listAttributes: () => ({
+              site_id: site.id,
+              total_matching: crawls.data?.total ?? 0,
+            }),
+          }}
+          detail={{ enabled: false }}
+          onRowOpen={(row) =>
+            router.push(marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`))
+          }
+          rowActions={(row) => [...(ACTIVE_STATUSES.has(row.status) ? [{ id: "cancel", icon: Ban, tone: "destructive" as const, label: "Cancel crawl", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+                    event.stopPropagation();
+                    void requestCancel(row);
+                  }, disabled: cancelingId === row.id, tooltip: "Cancel crawl" }] : []), ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: "Delete crawl session", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                   event.stopPropagation();
-                  void requestCancel(row);
-                }, disabled: cancelingId === row.id, tooltip: "Cancel crawl" }] : []), ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: "Delete crawl session", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-                event.stopPropagation();
-                setDeleting(row);
-              }, tooltip: "Delete crawl session" }]]}
-        emptyState={{
-          icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
-          title: "No crawl sessions",
-          description:
-            "Crawl commands are sent directly to the scraper; durable sessions will appear here from Supabase.",
-        }}
-      />
+                  setDeleting(row);
+                }, tooltip: "Delete crawl session" }]]}
+          emptyState={{
+            icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
+            title: "No crawl sessions",
+            description:
+              "Crawl commands are sent directly to the scraper; durable sessions will appear here from Supabase.",
+          }}
+        />
+      </div>
       </NonEditableContextMenu>
 
       <ConfirmDialog

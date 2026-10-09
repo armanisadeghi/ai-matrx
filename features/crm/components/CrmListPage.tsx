@@ -1256,10 +1256,7 @@ export function CrmListPage({
                 isFetching={list.isFetching}
                 zebra
                 pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
-                className={cn(
-                  prefs.density === "compact" &&
-                    "text-xs [&_td]:py-1 [&_th]:py-1",
-                )}
+                density={prefs.density === "compact" ? "condensed" : undefined}
                 query={{
                   mode: "controlled",
                   // While grouped the whole result is one page (the table counts what it holds).

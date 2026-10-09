@@ -297,103 +297,104 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
     else toast.error(`${label}: ${ids.length - failed} done, ${failed} failed`);
   };
   return (
-    <MatrxDataTable<KgEnrichedSuggestionRow>
-      tableId="knowledge-suggestions"
-      data={rows}
-      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row, controls) => (
-        <SuggestionActions
-          row={row}
-          expanded={controls.isExpanded ?? false}
-          onToggleExpand={() => controls.toggleExpanded?.()}
-          accept={accept}
-          reject={reject}
-          defer={defer}
-          restore={restore}
-        />
-      ) }]}
-      getRowId={(r) => r.id}
-      density="condensed"
-      viewTabs={false}
-      isLoading={loading && !rows.length}
-      isFetching={loading && !!rows.length}
-      read={read}
-      query={{
-        mode: "controlled",
-        state,
-        totalItems: total,
-        onStateChange,
-        sourceProcessing: {
-          search: "source",
-          sort: "source",
-          sourceTotal: total,
-        },
-      }}
-      toolbar={{
-        title: "Knowledge suggestions",
-        search: false,
-        leading: (
-          <SuggestionsFilterBar
-            query={query}
-            patchQuery={patchQuery}
-            rows={rows}
+    <div className="min-w-[72rem] flex flex-col">
+      <MatrxDataTable<KgEnrichedSuggestionRow>
+        tableId="knowledge-suggestions"
+        data={rows}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row, controls) => (
+          <SuggestionActions
+            row={row}
+            expanded={controls.isExpanded ?? false}
+            onToggleExpand={() => controls.toggleExpanded?.()}
+            accept={accept}
+            reject={reject}
+            defer={defer}
+            restore={restore}
           />
-        ),
-        refresh: { onRefresh: refresh },
-      }}
-      selection={{
-        selectedIds: [...selected],
-        onSelectedIdsChange: (ids) => onSelectedChange(new Set(ids)),
-        noun: "suggestion",
-        actions: (_rows, ids) => (
-          <div className="flex flex-wrap items-center gap-1">
-            <BulkAction
-              label="Accept"
-              className="text-success-ink hover:bg-success/10"
-              onClick={() => void runBulk("Accepted", ids, accept)}
-              icon={<Check className="h-3 w-3" />}
+        ) }]}
+        getRowId={(r) => r.id}
+        density="condensed"
+        viewTabs={false}
+        isLoading={loading && !rows.length}
+        isFetching={loading && !!rows.length}
+        read={read}
+        query={{
+          mode: "controlled",
+          state,
+          totalItems: total,
+          onStateChange,
+          sourceProcessing: {
+            search: "source",
+            sort: "source",
+            sourceTotal: total,
+          },
+        }}
+        toolbar={{
+          title: "Knowledge suggestions",
+          search: false,
+          leading: (
+            <SuggestionsFilterBar
+              query={query}
+              patchQuery={patchQuery}
+              rows={rows}
             />
-            <BulkAction
-              label="Defer"
-              className="text-muted-foreground hover:bg-accent"
-              onClick={() => void runBulk("Deferred", ids, defer)}
-              icon={<Clock className="h-3 w-3" />}
-            />
-            <BulkAction
-              label="Reject"
-              className="text-destructive-ink hover:bg-destructive/10"
-              onClick={() => void runBulk("Rejected", ids, reject)}
-              icon={<X className="h-3 w-3" />}
-            />
-            <BulkAction
-              label="Star"
-              className="text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
-              onClick={() =>
-                void runBulk("Starred", ids, (id) => star(id, true))
-              }
-              icon={<Star className="h-3 w-3" />}
-            />
-          </div>
-        ),
-      }}
-      expandedDetail={{
-        expandedId,
-        onExpandedIdChange,
-        render: (row) => (
-          <div className="max-w-3xl py-1">
-            <KgSuggestionRowItem
-              row={row}
-              accept={accept}
-              reject={reject}
-              defer={defer}
-            />
-          </div>
-        ),
-      }}
+          ),
+          refresh: { onRefresh: refresh },
+        }}
+        selection={{
+          selectedIds: [...selected],
+          onSelectedIdsChange: (ids) => onSelectedChange(new Set(ids)),
+          noun: "suggestion",
+          actions: (_rows, ids) => (
+            <div className="flex flex-wrap items-center gap-1">
+              <BulkAction
+                label="Accept"
+                className="text-success-ink hover:bg-success/10"
+                onClick={() => void runBulk("Accepted", ids, accept)}
+                icon={<Check className="h-3 w-3" />}
+              />
+              <BulkAction
+                label="Defer"
+                className="text-muted-foreground hover:bg-accent"
+                onClick={() => void runBulk("Deferred", ids, defer)}
+                icon={<Clock className="h-3 w-3" />}
+              />
+              <BulkAction
+                label="Reject"
+                className="text-destructive-ink hover:bg-destructive/10"
+                onClick={() => void runBulk("Rejected", ids, reject)}
+                icon={<X className="h-3 w-3" />}
+              />
+              <BulkAction
+                label="Star"
+                className="text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
+                onClick={() =>
+                  void runBulk("Starred", ids, (id) => star(id, true))
+                }
+                icon={<Star className="h-3 w-3" />}
+              />
+            </div>
+          ),
+        }}
+        expandedDetail={{
+          expandedId,
+          onExpandedIdChange,
+          render: (row) => (
+            <div className="max-w-3xl py-1">
+              <KgSuggestionRowItem
+                row={row}
+                accept={accept}
+                reject={reject}
+                defer={defer}
+              />
+            </div>
+          ),
+        }}
 
-      copy={copy}
-      emptyState={{ title: "No suggestions match these filters." }}
-      className="min-w-[72rem]"
-    />
+        copy={copy}
+        emptyState={{ title: "No suggestions match these filters." }}
+      />
+    </div>
   );
 }
 

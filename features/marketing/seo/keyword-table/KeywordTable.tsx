@@ -1092,81 +1092,82 @@ export function KeywordTable({
   ) : null;
 
   const table = (
-    <MatrxDataTable<GscBreakdownRow>
-      data={topicRows}
-      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: customActions ? (row) => customActions(row, controls) : undefined }]}
-      getRowId={(row) => row.key}
-      isLoading={data.isLoading}
-      isFetching={data.isFetching}
-      read={readOf(data, { what: surface.listLabel.toLowerCase() })}
-      query={{
-        mode: "controlled",
-        totalItems: total,
-        state: tableQuery,
-        onStateChange: onQueryStateChange,
-      }}
-      selection={{
-        selectedIds,
-        onSelectedIdsChange: (ids) => {
-          setSelectedIds(ids);
-          onSelectedKeywordIdsChange?.(
-            ids
-              .map((key) => rowById.get(key)?.keyword_id)
-              .filter((id): id is string => !!id),
-          );
-        },
-        noun: "keyword",
-        actions: () =>
-          selectionActions?.({
-            ...controls,
-            keywordIds: selectedKeywordIds,
-            rows: selectedWritableRows,
-            clear: () => setSelectedIds([]),
-          }) ?? null,
-      }}
+    <div className="flex-1 flex flex-col">
+      <MatrxDataTable<GscBreakdownRow>
+        data={topicRows}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: customActions ? (row) => customActions(row, controls) : undefined }]}
+        getRowId={(row) => row.key}
+        isLoading={data.isLoading}
+        isFetching={data.isFetching}
+        read={readOf(data, { what: surface.listLabel.toLowerCase() })}
+        query={{
+          mode: "controlled",
+          totalItems: total,
+          state: tableQuery,
+          onStateChange: onQueryStateChange,
+        }}
+        selection={{
+          selectedIds,
+          onSelectedIdsChange: (ids) => {
+            setSelectedIds(ids);
+            onSelectedKeywordIdsChange?.(
+              ids
+                .map((key) => rowById.get(key)?.keyword_id)
+                .filter((id): id is string => !!id),
+            );
+          },
+          noun: "keyword",
+          actions: () =>
+            selectionActions?.({
+              ...controls,
+              keywordIds: selectedKeywordIds,
+              rows: selectedWritableRows,
+              clear: () => setSelectedIds([]),
+            }) ?? null,
+        }}
 
-      toolbar={{
-        searchPlaceholder: "Search keywords…",
-        leading: toolbarLeading?.(view),
-      }}
-      copy={{
-        label: surface.label,
-        listLabel: surface.listLabel,
-        location: webLocation(surface.location),
-        rowKind: `web-${surface.id}-row`,
-        listKind: `web-${surface.id}-table`,
-        rowDescription:
-          "One keyword's search performance, class, score, level and stamped dimensions for this site.",
-        listDescription:
-          "The visible keyword rows (respecting search, filters, sort and pagination).",
-        humanRow: (row) =>
-          humanLines(gscMetricCopyLines("Keyword", "query", row)),
-        rowAttributes: (row) => ({
-          ...gscScopeAttributes(siteId, siteDomain, periods, effectiveFilters),
-          key: row.key,
-          keyword_id: row.keyword_id ?? "",
-        }),
-        listAttributes: (visible) => ({
-          ...gscScopeAttributes(siteId, siteDomain, periods, effectiveFilters),
-          visible_rows: visible.length,
-          total_rows: total,
-          dimension_columns: state.dimensions.join(","),
-        }),
-      }}
-      detail={{ enabled: false }}
-      window={{ enabled: false }}
-      mobileCards={renderMobileCard}
-      pageSize={state.pageSize}
-      emptyState={
-        emptyState ?? {
-          icon: <SearchX className="h-8 w-8 text-muted-foreground" />,
-          title: "No keywords match",
-          description:
-            "Nothing in this window carries every filter you set. Widen the date range, drop a filter chip, or clear the search.",
+        toolbar={{
+          searchPlaceholder: "Search keywords…",
+          leading: toolbarLeading?.(view),
+        }}
+        copy={{
+          label: surface.label,
+          listLabel: surface.listLabel,
+          location: webLocation(surface.location),
+          rowKind: `web-${surface.id}-row`,
+          listKind: `web-${surface.id}-table`,
+          rowDescription:
+            "One keyword's search performance, class, score, level and stamped dimensions for this site.",
+          listDescription:
+            "The visible keyword rows (respecting search, filters, sort and pagination).",
+          humanRow: (row) =>
+            humanLines(gscMetricCopyLines("Keyword", "query", row)),
+          rowAttributes: (row) => ({
+            ...gscScopeAttributes(siteId, siteDomain, periods, effectiveFilters),
+            key: row.key,
+            keyword_id: row.keyword_id ?? "",
+          }),
+          listAttributes: (visible) => ({
+            ...gscScopeAttributes(siteId, siteDomain, periods, effectiveFilters),
+            visible_rows: visible.length,
+            total_rows: total,
+            dimension_columns: state.dimensions.join(","),
+          }),
+        }}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        mobileCards={renderMobileCard}
+        pageSize={state.pageSize}
+        emptyState={
+          emptyState ?? {
+            icon: <SearchX className="h-8 w-8 text-muted-foreground" />,
+            title: "No keywords match",
+            description:
+              "Nothing in this window carries every filter you set. Widen the date range, drop a filter chip, or clear the search.",
+          }
         }
-      }
-      className="flex-1"
-    />
+      />
+    </div>
   );
 
   return (

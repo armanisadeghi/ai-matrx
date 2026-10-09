@@ -530,7 +530,6 @@ export default function HtmlPageListView({
                 ? "Publish an HTML page from chat, the code editor, or a presentation and it will appear here."
                 : "Clear a filter or change the search to see published pages.",
           }}
-          tableClassName="text-left"
         />
       )}
 

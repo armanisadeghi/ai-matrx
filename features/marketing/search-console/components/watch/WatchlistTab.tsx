@@ -392,57 +392,58 @@ export function WatchlistTab({
               {keywordSurfaces.isOpen ? (
                 <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
               ) : null}
-              <MatrxDataTable<GscWatchRow>
-                urlState={{ id: "gsc-watchlist" }}
-                data={rows}
-                columns={columns}
-                getRowId={rowId}
-                isLoading={watched.isLoading || rowsQuery.isLoading}
-                isFetching={rowsQuery.isFetching}
-                toolbar={{ searchPlaceholder: "Search watchlist…" }}
-                copy={{
-                  label: "Watched item",
-                  listLabel: "Search Console watchlist",
-                  location: webLocation("Search Console — Watchlist"),
-                  rowKind: "web-gsc-watch-item",
-                  listKind: "web-gsc-watchlist",
-                  rowDescription:
-                    "One watched query or page with its search performance for the selected site and period.",
-                  listDescription:
-                    "Every watched query/page for this site, including zero-impression rows.",
-                  humanRow: (row) =>
-                    humanLines(
-                      gscMetricCopyLines(
-                        row.kind === "query" ? "Query" : "Page",
-                        row.kind === "query" ? "query" : "page",
-                        row,
+              <div className="flex-1 flex flex-col">
+                <MatrxDataTable<GscWatchRow>
+                  urlState={{ id: "gsc-watchlist" }}
+                  data={rows}
+                  columns={columns}
+                  getRowId={rowId}
+                  isLoading={watched.isLoading || rowsQuery.isLoading}
+                  isFetching={rowsQuery.isFetching}
+                  toolbar={{ searchPlaceholder: "Search watchlist…" }}
+                  copy={{
+                    label: "Watched item",
+                    listLabel: "Search Console watchlist",
+                    location: webLocation("Search Console — Watchlist"),
+                    rowKind: "web-gsc-watch-item",
+                    listKind: "web-gsc-watchlist",
+                    rowDescription:
+                      "One watched query or page with its search performance for the selected site and period.",
+                    listDescription:
+                      "Every watched query/page for this site, including zero-impression rows.",
+                    humanRow: (row) =>
+                      humanLines(
+                        gscMetricCopyLines(
+                          row.kind === "query" ? "Query" : "Page",
+                          row.kind === "query" ? "query" : "page",
+                          row,
+                        ),
                       ),
-                    ),
-                  rowAttributes: (row) => ({
-                    ...gscScopeAttributes(siteId, siteName, periods, {}),
-                    kind: row.kind,
-                    entity_id: row.entity_id,
-                    key: row.key,
-                  }),
-                  listAttributes: (visible) => ({
-                    ...gscScopeAttributes(siteId, siteName, periods, {}),
-                    visible_rows: visible.length,
-                    watched_pages: pageIds.length,
-                    watched_queries: keywordIds.length,
-                  }),
-                }}
-                detail={{ enabled: false }}
-                window={{ enabled: false }}
-                onRowOpen={onDrill}
-                pageSize={50}
-                emptyState={{
-                  icon: <Eye className="h-8 w-8 text-muted-foreground" />,
-                  title: "No watched items of this type",
-                  description:
-                    "Switch the filter above, or watch more queries and pages from any table.",
-                }}
-                className="flex-1"
-              />
+                    rowAttributes: (row) => ({
+                      ...gscScopeAttributes(siteId, siteName, periods, {}),
+                      kind: row.kind,
+                      entity_id: row.entity_id,
+                      key: row.key,
+                    }),
+                    listAttributes: (visible) => ({
+                      ...gscScopeAttributes(siteId, siteName, periods, {}),
+                      visible_rows: visible.length,
+                      watched_pages: pageIds.length,
+                      watched_queries: keywordIds.length,
+                    }),
+                  }}
+                  detail={{ enabled: false }}
+                  window={{ enabled: false }}
+                  onRowOpen={onDrill}
+                  pageSize={50}
+                  emptyState={{
+                    icon: <Eye className="h-8 w-8 text-muted-foreground" />,
+                    title: "No watched items of this type",
+                    description:
+                      "Switch the filter above, or watch more queries and pages from any table.",
+                  }}
+                />
+              </div>
             </div>
           </NonEditableContextMenu>
         )}

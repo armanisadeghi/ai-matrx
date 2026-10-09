@@ -662,95 +662,96 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
               onRetry={() => void changes.refetch()}
             />
           ) : (
-            <MatrxDataTable<BacklinkChangeEventRow>
-              data={rows}
-              columns={columns}
-              getRowId={(row) => row.id}
-              isLoading={changes.isLoading}
-              isFetching={changes.isFetching}
-              selectedId={highlightId}
-              query={{
-                mode: "controlled",
-                totalItems: total,
-                state: table.state,
-                onStateChange: table.onStateChange,
-              }}
-              toolbar={{
-                searchPlaceholder:
-                  "Search by linking site, page, or your page…",
-              }}
-              copy={{
-                label: "Link change",
-                listLabel: activeLensLabel
-                  ? `Link changes — ${activeLensLabel}`
-                  : "Link changes",
-                location,
-                rowKind: "web-backlink-change",
-                listKind: "web-backlink-change-table",
-                rowDescription:
-                  "One recorded change to a link pointing at this site: what the publisher did, what it means, how urgent it is, and the before/after we compared.",
-                listDescription:
-                  "The changes currently on screen (respecting the search, sort, filters, view, and page you are on).",
-                humanRow: humanChangeRow,
-                agentRow: projectChangeRow,
-                rowAttributes: (row) => ({
-                  site_id: siteId,
-                  id: row.id,
-                  change_kind: row.change_kind,
-                  severity: row.severity,
-                  source_domain: row.source_domain,
-                  backlink_id: row.backlink_id,
-                }),
-                listAttributes: (visible) => ({
-                  site_id: siteId,
-                  lens: activeLensLabel ?? undefined,
-                  page: table.state.page,
-                  visible_rows: visible.length,
-                  total_rows: total,
-                  search: table.state.search || undefined,
-                }),
-              }}
-              detail={{
-                title: (row) => changeVerdict(row).headline,
-                description: (row) => changeVerdict(row).detail,
-                render: (row) => (
-                  <ChangeDetail
-                    row={row}
-                    linkRecordHref={linkRecordHref(row)}
-                  />
-                ),
-              }}
-              window={{
-                title: (row) => changeVerdict(row).headline,
-                renderView: (row) => (
-                  <ChangeDetail
-                    row={row}
-                    linkRecordHref={linkRecordHref(row)}
-                  />
-                ),
-                renderEdit: false,
-                defaultTab: "view",
-              }}
-              pageSize={50}
-              pageSizeOptions={[25, 50, 100, 250]}
-              emptyState={{
-                icon: <Activity className="h-8 w-8 text-muted-foreground" />,
-                title: activeLensLabel
-                  ? `${activeLensLabel}: nothing found`
-                  : "Nothing has changed",
-                description:
-                  changes.isSuccess &&
-                  (activeLensLabel || table.queryState.search)
-                    ? "Nothing here — which for this list is good news."
-                    : // NOT `backlinkEmptyHint`: that line tells the user to hit
-                      // Refresh, and Refresh cannot produce a change row. We
-                      // compare each night's links against the night before, so
-                      // an empty list means nothing moved — never "you have not
-                      // run anything yet".
-                      "We check every night for links that appear, disappear, or change, and list what we find here. Nothing has moved yet.",
-              }}
-              className="min-h-0 flex-1"
-            />
+            <div className="min-h-0 flex-1 flex flex-col">
+              <MatrxDataTable<BacklinkChangeEventRow>
+                data={rows}
+                columns={columns}
+                getRowId={(row) => row.id}
+                isLoading={changes.isLoading}
+                isFetching={changes.isFetching}
+                selectedId={highlightId}
+                query={{
+                  mode: "controlled",
+                  totalItems: total,
+                  state: table.state,
+                  onStateChange: table.onStateChange,
+                }}
+                toolbar={{
+                  searchPlaceholder:
+                    "Search by linking site, page, or your page…",
+                }}
+                copy={{
+                  label: "Link change",
+                  listLabel: activeLensLabel
+                    ? `Link changes — ${activeLensLabel}`
+                    : "Link changes",
+                  location,
+                  rowKind: "web-backlink-change",
+                  listKind: "web-backlink-change-table",
+                  rowDescription:
+                    "One recorded change to a link pointing at this site: what the publisher did, what it means, how urgent it is, and the before/after we compared.",
+                  listDescription:
+                    "The changes currently on screen (respecting the search, sort, filters, view, and page you are on).",
+                  humanRow: humanChangeRow,
+                  agentRow: projectChangeRow,
+                  rowAttributes: (row) => ({
+                    site_id: siteId,
+                    id: row.id,
+                    change_kind: row.change_kind,
+                    severity: row.severity,
+                    source_domain: row.source_domain,
+                    backlink_id: row.backlink_id,
+                  }),
+                  listAttributes: (visible) => ({
+                    site_id: siteId,
+                    lens: activeLensLabel ?? undefined,
+                    page: table.state.page,
+                    visible_rows: visible.length,
+                    total_rows: total,
+                    search: table.state.search || undefined,
+                  }),
+                }}
+                detail={{
+                  title: (row) => changeVerdict(row).headline,
+                  description: (row) => changeVerdict(row).detail,
+                  render: (row) => (
+                    <ChangeDetail
+                      row={row}
+                      linkRecordHref={linkRecordHref(row)}
+                    />
+                  ),
+                }}
+                window={{
+                  title: (row) => changeVerdict(row).headline,
+                  renderView: (row) => (
+                    <ChangeDetail
+                      row={row}
+                      linkRecordHref={linkRecordHref(row)}
+                    />
+                  ),
+                  renderEdit: false,
+                  defaultTab: "view",
+                }}
+                pageSize={50}
+                pageSizeOptions={[25, 50, 100, 250]}
+                emptyState={{
+                  icon: <Activity className="h-8 w-8 text-muted-foreground" />,
+                  title: activeLensLabel
+                    ? `${activeLensLabel}: nothing found`
+                    : "Nothing has changed",
+                  description:
+                    changes.isSuccess &&
+                    (activeLensLabel || table.queryState.search)
+                      ? "Nothing here — which for this list is good news."
+                      : // NOT `backlinkEmptyHint`: that line tells the user to hit
+                        // Refresh, and Refresh cannot produce a change row. We
+                        // compare each night's links against the night before, so
+                        // an empty list means nothing moved — never "you have not
+                        // run anything yet".
+                        "We check every night for links that appear, disappear, or change, and list what we find here. Nothing has moved yet.",
+                }}
+              />
+            </div>
           )}
         </div>
       </NonEditableContextMenu>

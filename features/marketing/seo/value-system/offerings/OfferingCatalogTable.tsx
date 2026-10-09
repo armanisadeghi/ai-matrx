@@ -370,97 +370,97 @@ export function OfferingCatalogTable({
     : allColumns;
 
   const table = (
-    <MatrxDataTable
-      data={rows}
-      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
-        const node = nodeOf(row.id);
-        return node ? <RowActions node={node} actions={actions} busy={busy} brandOnly={brandOnly} /> : null;
-      } }]}
-      getRowId={(row) => row.id}
-      searchText={(row) => row.description}
-      processLocalRows={(allRows, state) => processCatalogRows(allRows, state, columns, collapsed)}
-      urlState={{ id: CATALOG_TABLE_ID, selectedRow: false }}
-      toolbar={{
-        searchPlaceholder: "Search this brand's offerings…",
-        searchMatch: {},
-        leading: brandOnly ? undefined : (
-          <span className="hidden text-xs text-muted-foreground xl:inline">
-            Drag onto a row&apos;s edge to reorder · middle to nest it inside.
-          </span>
-        ),
-        actions: (
-          <Button icon={<Plus />} variant="primary" onClick={onAdd}>
-            Add offering
-          </Button>
-        ),
-      }}
-      selection={brandOnly ? undefined : {
-        selectedIds,
-        onSelectedIdsChange,
-        noun: "offering",
-        actions: (_selected, ids) => (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              variant="outline"
-              disabled={busy || ids.length === 0}
-              onClick={() => actions.onBulkAvailability(ids, true)}
-            >
-              Offer on this site
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy || ids.length === 0}
-              onClick={() => actions.onBulkAvailability(ids, false)}
-            >
-              Stop offering here…
-            </Button>
-          </div>
-        ),
-      }}
-      edit={{ enabled: !brandOnly, autoSave: true, onSave: onSaveEdits }}
-      hierarchy={{
-        getParentId: (row) => row.parentId,
-        onMove: (row, move) => {
+    <div className="h-[50dvh] min-h-[336px] max-h-[672px] lg:h-[55dvh] lg:min-h-[378px] flex flex-col">
+      <MatrxDataTable
+        data={rows}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
           const node = nodeOf(row.id);
-          if (node) actions.onMove(node, move.parentId, destinationSiblingOrder(rows, row.id, move));
-        },
-        manualOrder: true,
-        canReparent: () => !busy && !brandOnly,
-        itemLabel: (row) => row.name,
-        rootDropLabel: "Place first at the top level",
-      }}
-      copy={{
-        label: "Offering",
-        listLabel: "Brand offerings",
-        location: webLocation("Offerings"),
-        rowKind: "web-offering",
-        listKind: "web-offering-list",
-        humanRow: (row) =>
-          humanLines([
-            ["Offering", row.name],
-            ["Offered on this site", row.available ? "Yes" : "No"],
-            ["Kind", row.kind],
-            ["Price", formatOfferingPrice(prices[row.id]) ?? "No price"],
-            ["Worth here", row.worthPoints === null ? "No ruling" : formatPoints(row.worthPoints)],
-            ["Worth used", row.worthSource],
-            ["Keywords here", row.keywordsHere],
-            ["Keywords in branch", row.keywordsBranch],
-          ]),
-        agentRow: (row) => row,
-      }}
-      selectedId={selectedId}
-      onRowOpen={(row) => onSelect(row.id)}
-      detail={{ enabled: false }}
+          return node ? <RowActions node={node} actions={actions} busy={busy} brandOnly={brandOnly} /> : null;
+        } }]}
+        getRowId={(row) => row.id}
+        searchText={(row) => row.description}
+        processLocalRows={(allRows, state) => processCatalogRows(allRows, state, columns, collapsed)}
+        urlState={{ id: CATALOG_TABLE_ID, selectedRow: false }}
+        toolbar={{
+          searchPlaceholder: "Search this brand's offerings…",
+          searchMatch: {},
+          leading: brandOnly ? undefined : (
+            <span className="hidden text-xs text-muted-foreground xl:inline">
+              Drag onto a row&apos;s edge to reorder · middle to nest it inside.
+            </span>
+          ),
+          actions: (
+            <Button icon={<Plus />} variant="primary" onClick={onAdd}>
+              Add offering
+            </Button>
+          ),
+        }}
+        selection={brandOnly ? undefined : {
+          selectedIds,
+          onSelectedIdsChange,
+          noun: "offering",
+          actions: (_selected, ids) => (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                variant="outline"
+                disabled={busy || ids.length === 0}
+                onClick={() => actions.onBulkAvailability(ids, true)}
+              >
+                Offer on this site
+              </Button>
+              <Button
+                variant="outline"
+                disabled={busy || ids.length === 0}
+                onClick={() => actions.onBulkAvailability(ids, false)}
+              >
+                Stop offering here…
+              </Button>
+            </div>
+          ),
+        }}
+        edit={{ enabled: !brandOnly, autoSave: true, onSave: onSaveEdits }}
+        hierarchy={{
+          getParentId: (row) => row.parentId,
+          onMove: (row, move) => {
+            const node = nodeOf(row.id);
+            if (node) actions.onMove(node, move.parentId, destinationSiblingOrder(rows, row.id, move));
+          },
+          manualOrder: true,
+          canReparent: () => !busy && !brandOnly,
+          itemLabel: (row) => row.name,
+          rootDropLabel: "Place first at the top level",
+        }}
+        copy={{
+          label: "Offering",
+          listLabel: "Brand offerings",
+          location: webLocation("Offerings"),
+          rowKind: "web-offering",
+          listKind: "web-offering-list",
+          humanRow: (row) =>
+            humanLines([
+              ["Offering", row.name],
+              ["Offered on this site", row.available ? "Yes" : "No"],
+              ["Kind", row.kind],
+              ["Price", formatOfferingPrice(prices[row.id]) ?? "No price"],
+              ["Worth here", row.worthPoints === null ? "No ruling" : formatPoints(row.worthPoints)],
+              ["Worth used", row.worthSource],
+              ["Keywords here", row.keywordsHere],
+              ["Keywords in branch", row.keywordsBranch],
+            ]),
+          agentRow: (row) => row,
+        }}
+        selectedId={selectedId}
+        onRowOpen={(row) => onSelect(row.id)}
+        detail={{ enabled: false }}
 
-      emptyState={{
-        title: "No offerings match",
-        description: "Clear a filter, or add what this business sells.",
-      }}
-      pageSize={0}
-      zebra
-      className="h-[50dvh] min-h-[336px] max-h-[672px] lg:h-[55dvh] lg:min-h-[378px]"
-      tableClassName="rounded-t-none"
-    />
+        emptyState={{
+          title: "No offerings match",
+          description: "Clear a filter, or add what this business sells.",
+        }}
+        pageSize={0}
+        zebra
+      />
+    </div>
   );
 
   return <>{wrapTable ? wrapTable(table) : table}</>;

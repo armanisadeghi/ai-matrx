@@ -597,61 +597,62 @@ function CtrGapTable({
           tighten the threshold to narrow the set.
         </p>
       ) : null}
-      <MatrxDataTable<GscCtrGapRow>
-        urlState={{ id: "gsc-ctr-gaps" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.key}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        toolbar={{ searchPlaceholder: "Search results…" }}
-        copy={{
-          label: "CTR gap",
-          listLabel: "Search Console — CTR gaps",
-          location: webLocation("Search Console — Insights"),
-          rowKind: `web-gsc-ctr-gap-${dimension}`,
-          listKind: "web-gsc-ctr-gap-results",
-          rowDescription: `One ${dimension} whose CTR sits below this site's own CTR-by-position curve.`,
-          listDescription:
-            "Rankings underperforming the site's own expected CTR at their position, with estimated missed clicks (server-side algorithm).",
-          humanRow: (row) =>
-            humanLines([
-              [columnLabel, row.key],
-              ["Missed clicks", num(row.missed_clicks)],
-              ["CTR", formatCtr(row.ctr)],
-              ["Expected CTR", formatCtr(row.expected_ctr)],
-              ["Position", formatPosition(row.avg_position)],
-              ["Impressions", num(row.impressions)],
-              ["Clicks", num(row.clicks)],
-            ]),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "ctr-gap",
-            dimension,
-            key: row.key,
-            page_id: row.page_id ?? "",
-            keyword_id: row.keyword_id ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "ctr-gap",
-            dimension,
-            visible_rows: visible.length,
-            fetched_rows: rows.length,
-            total_rows: total,
-          }),
-        }}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        onRowOpen={(row) => onDrill(dimension, row.key)}
-        pageSize={50}
-        emptyState={{
-          icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
-          title: "No CTR gaps found",
-          description: `Nothing with enough impressions sits below this site's expected CTR curve ${describeGscWindow(periods.current)}. Lower the impressions threshold or widen the range.`,
-        }}
-        className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<GscCtrGapRow>
+          urlState={{ id: "gsc-ctr-gaps" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.key}
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          toolbar={{ searchPlaceholder: "Search results…" }}
+          copy={{
+            label: "CTR gap",
+            listLabel: "Search Console — CTR gaps",
+            location: webLocation("Search Console — Insights"),
+            rowKind: `web-gsc-ctr-gap-${dimension}`,
+            listKind: "web-gsc-ctr-gap-results",
+            rowDescription: `One ${dimension} whose CTR sits below this site's own CTR-by-position curve.`,
+            listDescription:
+              "Rankings underperforming the site's own expected CTR at their position, with estimated missed clicks (server-side algorithm).",
+            humanRow: (row) =>
+              humanLines([
+                [columnLabel, row.key],
+                ["Missed clicks", num(row.missed_clicks)],
+                ["CTR", formatCtr(row.ctr)],
+                ["Expected CTR", formatCtr(row.expected_ctr)],
+                ["Position", formatPosition(row.avg_position)],
+                ["Impressions", num(row.impressions)],
+                ["Clicks", num(row.clicks)],
+              ]),
+            rowAttributes: (row) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "ctr-gap",
+              dimension,
+              key: row.key,
+              page_id: row.page_id ?? "",
+              keyword_id: row.keyword_id ?? "",
+            }),
+            listAttributes: (visible) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "ctr-gap",
+              dimension,
+              visible_rows: visible.length,
+              fetched_rows: rows.length,
+              total_rows: total,
+            }),
+          }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          onRowOpen={(row) => onDrill(dimension, row.key)}
+          pageSize={50}
+          emptyState={{
+            icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
+            title: "No CTR gaps found",
+            description: `Nothing with enough impressions sits below this site's expected CTR curve ${describeGscWindow(periods.current)}. Lower the impressions threshold or widen the range.`,
+          }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
   );
@@ -802,81 +803,82 @@ function CannibalizationTable({
           tighten the threshold to narrow the set.
         </p>
       ) : null}
-      <MatrxDataTable<Row>
-        urlState={{ id: "gsc-cannibalization" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.key}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        toolbar={{ searchPlaceholder: "Search queries…" }}
-        copy={{
-          label: "Cannibalized query",
-          listLabel: "Search Console — Cannibalization",
-          location: webLocation("Search Console — Insights"),
-          rowKind: "web-gsc-cannibalization",
-          listKind: "web-gsc-cannibalization-results",
-          rowDescription:
-            "One query where two or more of this site's pages split the impressions.",
-          listDescription:
-            "Queries with multiple competing pages (each holding ≥20% of impressions), detected server-side on the query×page profile.",
-          humanRow: (row) =>
-            humanLines([
-              ["Query", row.query],
-              ["Competing pages", String(row.competing_pages)],
-              ["Top page share", pct(row.top_share, 0)],
-              ["Impressions", num(row.impressions)],
-              ["Clicks", num(row.clicks)],
-              ["Position", formatPosition(row.avg_position)],
-              ...(Array.isArray(row.pages)
-                ? (row.pages as unknown as CannibalPageEntry[]).map(
-                    (page, index): [string, string | null] => [
-                      `Page ${index + 1}`,
-                      `${page.url} — ${formatCount(page.impressions)} impressions (${pct(page.impression_share, 0)}), ${formatCount(page.clicks)} clicks, pos ${page.position ?? "—"}`,
-                    ],
-                  )
-                : []),
-            ]),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "cannibalization",
-            query: row.query,
-            keyword_id: row.keyword_id ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: "cannibalization",
-            visible_rows: visible.length,
-            fetched_rows: rows.length,
-            total_rows: total,
-          }),
-        }}
-        detail={{ enabled: false }}
-        // THE PANEL WRAPS THE CANONICAL COMPONENT, never a hand-rolled copy.
-        // The old inline body re-rendered a truncated 5-page list of its own —
-        // which both lied about the page count and duplicated a view we
-        // already own. `GscDrilldownWindow` IS this page filtered to one
-        // query: KPI band, chart, and the real paginated Pages table.
-        window={{ enabled: false }}
-        rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the ${row.total_pages} pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-              event.stopPropagation();
-              openDrilldown({
-                siteId,
-                siteName,
-                dimension: "page",
-                filters: { query_eq: row.query },
-                title: `Pages for “${row.query}”`,
-              });
-            }, tooltip: `Open the ${row.total_pages} pages for “${row.query}” in a window` }]}
-        onRowOpen={(row) => onDrill("query", row.query)}
-        pageSize={50}
-        emptyState={{
-          icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
-          title: "No cannibalization detected",
-          description: `No query has two or more pages each holding a meaningful share of its impressions ${describeGscWindow(periods.current)}.`,
-        }}
-        className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<Row>
+          urlState={{ id: "gsc-cannibalization" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.key}
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          toolbar={{ searchPlaceholder: "Search queries…" }}
+          copy={{
+            label: "Cannibalized query",
+            listLabel: "Search Console — Cannibalization",
+            location: webLocation("Search Console — Insights"),
+            rowKind: "web-gsc-cannibalization",
+            listKind: "web-gsc-cannibalization-results",
+            rowDescription:
+              "One query where two or more of this site's pages split the impressions.",
+            listDescription:
+              "Queries with multiple competing pages (each holding ≥20% of impressions), detected server-side on the query×page profile.",
+            humanRow: (row) =>
+              humanLines([
+                ["Query", row.query],
+                ["Competing pages", String(row.competing_pages)],
+                ["Top page share", pct(row.top_share, 0)],
+                ["Impressions", num(row.impressions)],
+                ["Clicks", num(row.clicks)],
+                ["Position", formatPosition(row.avg_position)],
+                ...(Array.isArray(row.pages)
+                  ? (row.pages as unknown as CannibalPageEntry[]).map(
+                      (page, index): [string, string | null] => [
+                        `Page ${index + 1}`,
+                        `${page.url} — ${formatCount(page.impressions)} impressions (${pct(page.impression_share, 0)}), ${formatCount(page.clicks)} clicks, pos ${page.position ?? "—"}`,
+                      ],
+                    )
+                  : []),
+              ]),
+            rowAttributes: (row) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "cannibalization",
+              query: row.query,
+              keyword_id: row.keyword_id ?? "",
+            }),
+            listAttributes: (visible) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: "cannibalization",
+              visible_rows: visible.length,
+              fetched_rows: rows.length,
+              total_rows: total,
+            }),
+          }}
+          detail={{ enabled: false }}
+          // THE PANEL WRAPS THE CANONICAL COMPONENT, never a hand-rolled copy.
+          // The old inline body re-rendered a truncated 5-page list of its own —
+          // which both lied about the page count and duplicated a view we
+          // already own. `GscDrilldownWindow` IS this page filtered to one
+          // query: KPI band, chart, and the real paginated Pages table.
+          window={{ enabled: false }}
+          rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the ${row.total_pages} pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+                event.stopPropagation();
+                openDrilldown({
+                  siteId,
+                  siteName,
+                  dimension: "page",
+                  filters: { query_eq: row.query },
+                  title: `Pages for “${row.query}”`,
+                });
+              }, tooltip: `Open the ${row.total_pages} pages for “${row.query}” in a window` }]}
+          onRowOpen={(row) => onDrill("query", row.query)}
+          pageSize={50}
+          emptyState={{
+            icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
+            title: "No cannibalization detected",
+            description: `No query has two or more pages each holding a meaningful share of its impressions ${describeGscWindow(periods.current)}.`,
+          }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
   );
@@ -1082,77 +1084,78 @@ function TrendTable({
           tighten the threshold to narrow the set.
         </p>
       ) : null}
-      <MatrxDataTable<GscTrendRow>
-        urlState={{ id: "gsc-trends" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.key}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        toolbar={{ searchPlaceholder: "Search results…" }}
-        copy={{
-          label: direction === "decay" ? "Declining item" : "Rising item",
-          listLabel:
-            direction === "decay"
-              ? "Search Console — Declining"
-              : "Search Console — Rising",
-          location: webLocation("Search Console — Insights"),
-          rowKind: `web-gsc-trend-${direction}-${dimension}`,
-          listKind: `web-gsc-trend-${direction}-results`,
-          rowDescription: `One ${dimension} with a sustained ${direction === "decay" ? "decline" : "rise"} across the period (half-vs-half plus weekly slope, computed server-side).`,
-          listDescription: `${direction === "decay" ? "Declining" : "Rising"} ${dimension === "query" ? "queries" : "pages"}: second half of the period vs the first, with weekly trend slope.`,
-          humanRow: (row) =>
-            humanLines([
-              [columnLabel, row.key],
-              ["Δ clicks", num(row.change_clicks)],
-              [
-                "Δ %",
-                row.change_pct === null
-                  ? null
-                  : `${row.change_pct.toFixed(0)}%`,
-              ],
-              ["First half", num(row.first_half_clicks)],
-              ["Second half", num(row.second_half_clicks)],
-              [
-                "Weekly slope",
-                row.slope_per_week === null
-                  ? null
-                  : `${row.slope_per_week.toFixed(1)}/wk`,
-              ],
-              ["Clicks", num(row.clicks)],
-              ["Position", formatPosition(row.avg_position)],
-            ]),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: direction,
-            dimension,
-            key: row.key,
-            page_id: row.page_id ?? "",
-            keyword_id: row.keyword_id ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(siteId, siteName, periods, {}),
-            insight: direction,
-            dimension,
-            visible_rows: visible.length,
-            fetched_rows: rows.length,
-            total_rows: total,
-          }),
-        }}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        onRowOpen={(row) => onDrill(dimension, row.key)}
-        pageSize={50}
-        emptyState={{
-          icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
-          title:
-            direction === "decay"
-              ? "Nothing is declining"
-              : "Nothing is rising yet",
-          description: `No row with enough clicks moved meaningfully between the two halves of the period ${describeGscWindow(periods.current)}. Lower the clicks threshold or widen the range.`,
-        }}
-        className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable<GscTrendRow>
+          urlState={{ id: "gsc-trends" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.key}
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          toolbar={{ searchPlaceholder: "Search results…" }}
+          copy={{
+            label: direction === "decay" ? "Declining item" : "Rising item",
+            listLabel:
+              direction === "decay"
+                ? "Search Console — Declining"
+                : "Search Console — Rising",
+            location: webLocation("Search Console — Insights"),
+            rowKind: `web-gsc-trend-${direction}-${dimension}`,
+            listKind: `web-gsc-trend-${direction}-results`,
+            rowDescription: `One ${dimension} with a sustained ${direction === "decay" ? "decline" : "rise"} across the period (half-vs-half plus weekly slope, computed server-side).`,
+            listDescription: `${direction === "decay" ? "Declining" : "Rising"} ${dimension === "query" ? "queries" : "pages"}: second half of the period vs the first, with weekly trend slope.`,
+            humanRow: (row) =>
+              humanLines([
+                [columnLabel, row.key],
+                ["Δ clicks", num(row.change_clicks)],
+                [
+                  "Δ %",
+                  row.change_pct === null
+                    ? null
+                    : `${row.change_pct.toFixed(0)}%`,
+                ],
+                ["First half", num(row.first_half_clicks)],
+                ["Second half", num(row.second_half_clicks)],
+                [
+                  "Weekly slope",
+                  row.slope_per_week === null
+                    ? null
+                    : `${row.slope_per_week.toFixed(1)}/wk`,
+                ],
+                ["Clicks", num(row.clicks)],
+                ["Position", formatPosition(row.avg_position)],
+              ]),
+            rowAttributes: (row) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: direction,
+              dimension,
+              key: row.key,
+              page_id: row.page_id ?? "",
+              keyword_id: row.keyword_id ?? "",
+            }),
+            listAttributes: (visible) => ({
+              ...gscScopeAttributes(siteId, siteName, periods, {}),
+              insight: direction,
+              dimension,
+              visible_rows: visible.length,
+              fetched_rows: rows.length,
+              total_rows: total,
+            }),
+          }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          onRowOpen={(row) => onDrill(dimension, row.key)}
+          pageSize={50}
+          emptyState={{
+            icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
+            title:
+              direction === "decay"
+                ? "Nothing is declining"
+                : "Nothing is rising yet",
+            description: `No row with enough clicks moved meaningfully between the two halves of the period ${describeGscWindow(periods.current)}. Lower the clicks threshold or widen the range.`,
+          }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
   );
