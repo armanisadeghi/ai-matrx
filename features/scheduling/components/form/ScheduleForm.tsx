@@ -79,6 +79,7 @@ function makeDefault(
   initialAgentId?: string | null,
   initialPrompt?: string,
   initialTrigger?: TriggerConfig | null,
+  initialConversationId?: string | null,
 ): FormState {
   if (task) {
     const t = task.triggers[0];
@@ -107,7 +108,7 @@ function makeDefault(
     prompt: initialPrompt ?? "",
     agentId: initialAgentId ?? null,
     variables: {},
-    persistentConversationId: "",
+    persistentConversationId: initialConversationId ?? "",
     authMode: "ask",
     maxRuntimeSeconds: 600,
     maxConcurrent: 1,
@@ -146,16 +147,24 @@ interface Props {
   initialPrompt?: string;
   /** Prefilled trigger for create mode — e.g. a data table's "when a row changes, run…" door. */
   initialTrigger?: TriggerConfig | null;
+  /** Every run appends to this conversation (e.g. a manager agent's room member). */
+  initialConversationId?: string | null;
 }
 
-export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigger }: Props) {
+export function ScheduleForm({
+  task,
+  initialAgentId,
+  initialPrompt,
+  initialTrigger,
+  initialConversationId,
+}: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [pending, startTransition] = useTransition();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<FormState>(() =>
-    makeDefault(task, initialAgentId, initialPrompt, initialTrigger),
+    makeDefault(task, initialAgentId, initialPrompt, initialTrigger, initialConversationId),
   );
   // VariablesEditor intentionally owns incomplete key/value rows while the
   // human types (an empty key cannot live in the canonical object yet). An

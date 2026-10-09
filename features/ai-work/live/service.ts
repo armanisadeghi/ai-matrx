@@ -105,10 +105,12 @@ export async function fetchSessionMembers(ownerId: string): Promise<SessionMembe
 }
 
 async function roomsCall(body: {
-  room_op: "direct" | "create" | "add" | "remove";
-  to: string;
+  room_op: "direct" | "create" | "add" | "remove" | "add_agent";
+  to?: string;
   room?: string;
   name?: string;
+  agent_id?: string;
+  goal?: string;
 }): Promise<{ roomId: string; name: string | null }> {
   try {
     const { data } = await apiPost("/agent-messages", { action: "rooms", ...body });
@@ -136,4 +138,79 @@ export function addSessionToRoom(roomId: string, sessionAddress: string) {
 
 export function removeSessionFromRoom(roomId: string, sessionAddress: string) {
   return roomsCall({ room_op: "remove", room: roomId, to: sessionAddress });
+}
+
+/** An agent the person may add to a room as its manager (it carries the agent_messages tool). */
+export interface ManagerCandidate {
+  agentId: string;
+  name: string;
+  description: string | null;
+}
+
+/** The person's own agents and published agents that can message a room. */
+export async function listManagerAgents(): Promise<ManagerCandidate[]> {
+  try {
+    const { data } = await apiPost("/agent-messages", { action: "rooms", room_op: "agents" });
+    const list = Array.isArray(data.agents) ? data.agents : [];
+    return list.flatMap((item) => {
+      if (!isJsonObject(item) || typeof item.agent_id !== "string") return [];
+      return [
+        {
+          agentId: item.agent_id,
+          name: typeof item.name === "string" && item.name ? item.name : "Unnamed agent",
+          description: typeof item.description === "string" ? item.description : null,
+        },
+      ];
+    });
+  } catch (cause) {
+    throw new Error(getUserMessage(cause));
+  }
+}
+
+/** Put a manager agent in the room; its first turn (the briefing with `goal`) starts at once. */
+export function addAgentToRoom(roomId: string, agentId: string, goal: string) {
+  return roomsCall({ room_op: "add_agent", room: roomId, agent_id: agentId, goal: goal.trim() || undefined });
+}
+
+/** What the hub shows for one manager-agent member: its agent and its own conversation. */
+export interface AgentMemberInfo {
+  conversationId: string;
+  agentId: string | null;
+  agentName: string | null;
+  /** The conversation's last run status (e.g. running, completed, failed), when it has run. */
+  lastRunStatus: string | null;
+  updatedAt: string;
+}
+
+/** Names and run status for manager-agent members (member_id is the agent's conversation). */
+export async function fetchAgentMemberInfo(conversationIds: readonly string[]): Promise<Record<string, AgentMemberInfo>> {
+  if (conversationIds.length === 0) return {};
+  const { data: convs, error } = await supabase
+    .schema("chat")
+    .from("conversation")
+    .select("id, initial_agent_id, last_request_status, updated_at")
+    .in("id", [...conversationIds]);
+  if (error) throw operationFailed("load manager agents", error);
+  const agentIds = [...new Set(convs.map((c) => c.initial_agent_id).filter((id): id is string => !!id))];
+  const names = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: defs, error: defError } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, name")
+      .in("id", agentIds);
+    if (defError) throw operationFailed("load manager agent names", defError);
+    for (const d of defs) names.set(d.id, d.name);
+  }
+  const out: Record<string, AgentMemberInfo> = {};
+  for (const c of convs) {
+    out[c.id] = {
+      conversationId: c.id,
+      agentId: c.initial_agent_id,
+      agentName: c.initial_agent_id ? (names.get(c.initial_agent_id) ?? null) : null,
+      lastRunStatus: c.last_request_status,
+      updatedAt: c.updated_at,
+    };
+  }
+  return out;
 }

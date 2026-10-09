@@ -34,7 +34,7 @@ export function LiveHub() {
   const pathname = usePathname();
   const params = useSearchParams();
   const selection = readSelection(new URLSearchParams(params.toString()));
-  const { sessions, members, rooms, roomsComplete, loaded, loading, error, nowMs, refresh } =
+  const { sessions, members, agentInfo, rooms, roomsComplete, loaded, loading, error, nowMs, refresh } =
     useLiveHub();
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [createdDirect, setCreatedDirect] = useState<Record<string, string>>({});
@@ -89,6 +89,7 @@ export function LiveHub() {
         <LiveSidebar
           sessions={sessions}
           members={members}
+          agentInfo={agentInfo}
           rooms={rooms}
           selection={selection}
           nowMs={nowMs}
@@ -128,10 +129,12 @@ export function LiveHub() {
             key={room.conversation.id}
             room={room}
             members={members}
+            agentInfo={agentInfo}
             sessions={sessions}
             nowMs={nowMs}
             onBack={() => select(null)}
             onOpenSession={(address) => select({ kind: "session", address })}
+            onChanged={refresh}
           />
         ) : selection ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">

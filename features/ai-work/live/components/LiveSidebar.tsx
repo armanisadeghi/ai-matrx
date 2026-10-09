@@ -25,7 +25,7 @@ import {
   type AgentRoomKind,
 } from "../presence";
 import type { LiveSession } from "../useLiveHub";
-import type { SessionMemberRow } from "../service";
+import type { AgentMemberInfo, SessionMemberRow } from "../service";
 import { LagMarker, PresenceDot, PresenceLegend, worstLag } from "./LiveBits";
 
 export type LiveSelection =
@@ -174,6 +174,7 @@ function RoomRow({
 export function LiveSidebar({
   sessions,
   members,
+  agentInfo,
   rooms,
   selection,
   nowMs,
@@ -186,6 +187,7 @@ export function LiveSidebar({
 }: {
   sessions: readonly LiveSession[];
   members: readonly SessionMemberRow[];
+  agentInfo: Readonly<Record<string, AgentMemberInfo>>;
   rooms: readonly ConversationSummary[];
   selection: LiveSelection;
   nowMs: number;
@@ -379,25 +381,40 @@ export function LiveSidebar({
           </>
         )}
 
-        <SectionHeader label="Manager agents" count={agentMembers.length} />
-        {agentMembers.length === 0 ? (
+        <SectionHeader label="Manager agents" count={loaded ? agentMembers.length : undefined} />
+        {!loaded ? (
+          <div className="mx-2.5 my-1 h-9 animate-pulse rounded-md bg-muted/60" />
+        ) : agentMembers.length === 0 ? (
           <p className="px-3 py-1.5 text-xs text-muted-foreground">
-            AI Matrx agents you add to a room appear here, with what they are watching.
+            None yet. Open a room and use + Manager agent to add one.
           </p>
         ) : (
-          agentMembers.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => onSelect({ kind: "room", id: m.conversation_id })}
-              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-accent/50"
-            >
-              <AGENT_ICON className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate text-sm">
-                {rooms.find((r) => r.conversation.id === m.conversation_id)?.displayName ?? "Agent room"}
-              </span>
-            </button>
-          ))
+          agentMembers.map((m) => {
+            const info = agentInfo[m.member_id];
+            const roomName =
+              rooms.find((r) => r.conversation.id === m.conversation_id)?.displayName ?? "Room not in your inbox";
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onSelect({ kind: "room", id: m.conversation_id })}
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-accent/50",
+                  selection?.kind === "room" && selection.id === m.conversation_id && "bg-accent",
+                )}
+              >
+                <AGENT_ICON className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">{info?.agentName ?? "AI Matrx agent"}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {roomName}
+                    {info?.lastRunStatus ? ` · ${info.lastRunStatus}` : ""}
+                  </span>
+                </span>
+                <LagMarker lag={deliveryLag(m, nowMs)} />
+              </button>
+            );
+          })
         )}
       </div>
     </div>

@@ -27,7 +27,13 @@ import { workspaceName } from "../lib/codingSessionPresentation";
 import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
 import { cleanTitle, effectivePresence, type LivePresence } from "./presence";
 import type { ConversationSummary } from "@ai-matrx/messaging";
-import { fetchAgentRooms, fetchSessionMembers, type SessionMemberRow } from "./service";
+import {
+  fetchAgentMemberInfo,
+  fetchAgentRooms,
+  fetchSessionMembers,
+  type AgentMemberInfo,
+  type SessionMemberRow,
+} from "./service";
 
 const liveChannel = defineChannelNamespace({
   namespace: "work-live",
@@ -110,6 +116,8 @@ function toLive(
 export interface LiveHubState {
   sessions: LiveSession[];
   members: SessionMemberRow[];
+  /** Manager-agent members by their conversation id (member_id): agent name and run status. */
+  agentInfo: Record<string, AgentMemberInfo>;
   rooms: ConversationSummary[];
   /** False when the room list stopped at its page budget: show "N+", never N. */
   roomsComplete: boolean;
@@ -125,6 +133,7 @@ export function useLiveHub(): LiveHubState {
   const userId = useAppSelector(selectUserId);
   const [rows, setRows] = useState<CodingSessionView[]>([]);
   const [members, setMembers] = useState<SessionMemberRow[]>([]);
+  const [agentInfo, setAgentInfo] = useState<Record<string, AgentMemberInfo>>({});
   const [rooms, setRooms] = useState<ConversationSummary[]>([]);
   const [roomsComplete, setRoomsComplete] = useState(true);
   const [loaded, setLoaded] = useState(false);
@@ -170,10 +179,15 @@ export function useLiveHub(): LiveHubState {
     if (!userId) return;
     let current = true;
     void Promise.all([fetchCodingSessions(), fetchSessionMembers(userId), fetchAgentRooms()])
-      .then(([page, memberRows, roomRows]) => {
+      .then(async ([page, memberRows, roomRows]) => {
+        const agentIds = memberRows
+          .filter((m) => m.member_kind === "agent_conversation")
+          .map((m) => m.member_id);
+        const info = await fetchAgentMemberInfo(agentIds);
         if (!current) return;
         setRows(page.sessions);
         setMembers(memberRows);
+        setAgentInfo(info);
         setRooms(roomRows.rooms);
         setRoomsComplete(roomRows.complete);
         setLoaded(true);
@@ -254,6 +268,7 @@ export function useLiveHub(): LiveHubState {
   return {
     sessions,
     members,
+    agentInfo,
     rooms,
     roomsComplete,
     loaded,

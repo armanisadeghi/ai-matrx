@@ -19,6 +19,9 @@ function NewScheduleContent() {
   const searchParams = useSearchParams();
   const agentId = searchParams.get("agentId");
   const prompt = searchParams.get("prompt");
+  // `?conversationId=<uuid>`: every run appends to that conversation — the /work Live hub's
+  // "Run on a schedule" for a manager agent sends the agent's own room conversation.
+  const conversationId = searchParams.get("conversationId");
   // A data table's "when a row changes, run…" door: `?trigger=event&tableId=<uuid>`.
   const trigger = searchParams.get("trigger");
   const tableId = searchParams.get("tableId");
@@ -41,6 +44,7 @@ function NewScheduleContent() {
       initialAgentId={agentId || null}
       initialPrompt={prompt || undefined}
       initialTrigger={initialTrigger}
+      initialConversationId={conversationId || null}
     />
   );
 }
