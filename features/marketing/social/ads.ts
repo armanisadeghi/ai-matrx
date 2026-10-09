@@ -136,3 +136,44 @@ export function creditsLabel(credits: number | null | undefined): string {
   if (n === null) return "Cost not reported";
   return `${n} ${n === 1 ? "credit" : "credits"}`;
 }
+
+export interface MixCount {
+  format: string;
+  count: number;
+}
+
+/** Format mix of a set of ads (Spyder's video / image / carousel summary). */
+export function formatMix(ads: readonly Pick<AdCardModel, "format">[]): MixCount[] {
+  const counts = new Map<string, number>();
+  for (const a of ads) counts.set(a.format || "other", (counts.get(a.format || "other") ?? 0) + 1);
+  return [...counts].map(([format, count]) => ({ format, count })).sort((a, b) => b.count - a.count || a.format.localeCompare(b.format));
+}
+
+export interface LandingRank {
+  url: string;
+  count: number;
+  /** Share of the ACTIVE ads that point here, 0..1. */
+  share: number;
+}
+
+/** Landing pages ranked by how many active ads send people there. */
+export function landingPageRanking(ads: readonly Pick<AdCardModel, "landingUrl" | "status">[], limit = 5): LandingRank[] {
+  const active = ads.filter((a) => a.status === "active");
+  const counts = new Map<string, number>();
+  for (const a of active) {
+    if (!a.landingUrl) continue;
+    counts.set(a.landingUrl, (counts.get(a.landingUrl) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([url, count]) => ({ url, count, share: active.length ? count / active.length : 0 }))
+    .sort((a, b) => b.count - a.count || a.url.localeCompare(b.url))
+    .slice(0, limit);
+}
+
+/** Ads narrowed by the result filters (active only, format). */
+export function filterAds(
+  ads: readonly AdCardModel[],
+  f: { activeOnly: boolean; format: string },
+): AdCardModel[] {
+  return ads.filter((a) => (!f.activeOnly || a.status === "active") && (f.format === "all" || a.format === f.format));
+}

@@ -86,3 +86,29 @@ describe("advertiser definition", () => {
     expect(creditsLabel(null)).toBe("Cost not reported");
   });
 });
+
+import { filterAds, formatMix, landingPageRanking } from "../ads";
+
+describe("advertiser summary", () => {
+  const ads = [
+    ad({ adId: "1", format: "video", landingUrl: "https://a.test" }),
+    ad({ adId: "2", format: "video", landingUrl: "https://a.test" }),
+    ad({ adId: "3", format: "image", landingUrl: "https://b.test" }),
+    ad({ adId: "4", format: "image", landingUrl: "https://b.test", status: "inactive" }),
+    ad({ adId: "5", format: "carousel", landingUrl: null }),
+  ];
+  it("counts the format mix, biggest first", () => {
+    expect(formatMix(ads)).toEqual([
+      { format: "image", count: 2 }, { format: "video", count: 2 }, { format: "carousel", count: 1 },
+    ]);
+  });
+  it("ranks landing pages by share of ACTIVE ads", () => {
+    const r = landingPageRanking(ads);
+    expect(r[0]).toEqual({ url: "https://a.test", count: 2, share: 0.5 });
+    expect(r[1]).toEqual({ url: "https://b.test", count: 1, share: 0.25 });
+  });
+  it("filters active only and by format", () => {
+    expect(filterAds(ads, { activeOnly: true, format: "all" })).toHaveLength(4);
+    expect(filterAds(ads, { activeOnly: false, format: "image" })).toHaveLength(2);
+  });
+});
