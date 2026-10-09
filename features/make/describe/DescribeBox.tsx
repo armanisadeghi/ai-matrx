@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useSpaceBuild, type SpaceBuildOutcome } from "@/features/spaces/embed/useSpaceBuild";
+import { SpaceBuildRefused, useSpaceBuild, type SpaceBuildOutcome } from "@/features/spaces/embed/useSpaceBuild";
 import * as doors from "@/features/unified-data/hub/doors";
 import { createClient } from "@/utils/supabase/client";
 import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
@@ -48,16 +48,15 @@ import { secondsWords } from "./made";
 import { followUpsFor, planFor, STEP_WORDS, type MakePlan, type MakeStepId } from "./plan";
 import {
   AnswerRefused,
-  applySafeReuses,
   bindReuses,
-  checkDescribeTemplate,
-  coerceDescribeAnswer,
   declareDescribeSpec,
+  DesignRefused,
   describeVariables,
   findBuiltSpace,
   readExistingTables,
+  readDesign,
   readOrganizationFacts,
-  type DescribeAnswer,
+  type ReadDesign,
 } from "./describeTemplate";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -65,9 +64,6 @@ import { keepRun, keptRun, newRequestKey, stampOf } from "./runStore";
 // What the person reads when a step fails — plain, no internal words; the reason is in the console.
 const WRITTEN_WRONG = "That did not come out right. Try again, or say it a little differently.";
 const STOPPED = "That stopped before it finished. Try again.";
-
-/** A model answer the check refused: Try again designs again rather than resuming. */
-class DesignRefused extends Error {}
 
 const DESCRIBE = MANDATE_KEYS.make__describe_template;
 const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
@@ -177,38 +173,33 @@ export function DescribeBox() {
             : [];
           const tables = await readExistingTables(client, r.organizationId, own);
           for (let attempt = 0; attempt < 2; attempt++) {
-            const answer = await writer.run<DescribeAnswer>({
-              mandateKey: DESCRIBE,
-              label: "Designing your tables and forms",
-              surfaceKey: "make:describe",
-              sourceFeature: "udt",
-              expect: "json",
-              initiation: "user",
-              organizationId: r.organizationId,
-              variables: describeVariables(r.sentence, facts, tables),
-              coerce: (v) => {
-                try {
-                  return coerceDescribeAnswer(v);
-                } catch (e) {
-                  throw new AnswerRefused(e instanceof Error ? e.message : String(e));
-                }
-              },
-            });
-            mark("design", "done");
-            current = "check";
-            mark("check", "doing");
-            const safe = applySafeReuses(answer, tables);
-            const checked = checkDescribeTemplate(safe.template, tables);
-            if (!checked.ok) {
-              console.warn("[make:describe] the store's check refused the spec", checked.line, checked.problems, checked.autoFixes);
+            let design: ReadDesign;
+            try {
+              // readDesign is the run's coerce: a refused answer (unreadable, or refused by the store's check) fails the run itself.
+              design = await writer.run<ReadDesign>({
+                mandateKey: DESCRIBE,
+                label: "Designing your tables and forms",
+                surfaceKey: "make:describe",
+                sourceFeature: "udt",
+                expect: "json",
+                initiation: "user",
+                organizationId: r.organizationId,
+                variables: describeVariables(r.sentence, facts, tables),
+                coerce: (v) => readDesign(v, tables),
+              });
+            } catch (e) {
               // ONE automatic second design before the person is asked: a refused design costs one more model run,
               // never a press. The second refusal is said plainly and Try again designs afresh.
-              if (attempt === 1) throw new DesignRefused(checked.line);
+              if (!(e instanceof DesignRefused) || attempt === 1) throw e;
               commit({ ...r, redesigned: true, step: { ...r.step, design: undefined, check: undefined } });
               current = "design";
               mark("design", "doing");
               continue;
             }
+            mark("design", "done");
+            current = "check";
+            mark("check", "doing");
+            const { answer, safe, checked } = design;
             // The request key names the template: a second declare for this press updates the same one, never a second.
             const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stampOf(r.key));
             commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
@@ -244,7 +235,7 @@ export function DescribeBox() {
       const why =
         err instanceof AnswerRefused || err instanceof HeadlessAgentRunError || err instanceof DesignRefused
           ? WRITTEN_WRONG
-          : current === "space" && err instanceof Error
+          : err instanceof SpaceBuildRefused
             ? err.message
             : STOPPED;
       mark(current, "failed");

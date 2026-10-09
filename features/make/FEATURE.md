@@ -62,3 +62,4 @@ dialog on the page — no builder is forked.
 - 2026-10-09 (M3): describe agent output schema + prompt (individual, fewest tables, sample rows, nothing invented); failed-run
   recording; plain failure copy; kept press while the organization loads; 14 abandoned installs settled.
 <!-- matrx-auto-git-docs-resolution-needed-delete-this-when-resolved — end of both versions -->
+- 2026-10-09 — lane F13: the design run's `coerce` is `readDesign` (read + safe reuses + the store's check), so every refused answer fails the run itself and the person reads a plain sentence, never a JS error; a Space build shows only its own person-written refusals (`SpaceBuildRefused`). Guard: `the-live-personal-requests-build.test.ts` (the three live v8 answers).
