@@ -26,7 +26,7 @@ import {
 } from "@/features/marketing/data/personas";
 import { brandKindCopy, type BrandKindCopy } from "@/features/marketing/lib/brand-kind";
 import {
-  PERSONA_DEMOGRAPHIC_FIELDS,
+  personaFieldsFor,
   personaDemographics,
   type BrandPersona,
   type BrandPersonaValues,
@@ -131,6 +131,7 @@ export function BrandAudiencePage({
       {editing ? (
         <PersonaDialog
           audience={audience}
+          kind={brandKind}
           persona={editing === "new" ? null : editing}
           busy={create.isPending || update.isPending}
           onCancel={() => setEditing(null)}
@@ -195,12 +196,14 @@ function PersonaCard({
 
 function PersonaDialog({
   audience,
+  kind,
   persona,
   busy,
   onCancel,
   onSave,
 }: {
   audience: BrandKindCopy["audience"];
+  kind?: string | null;
   persona: BrandPersona | null;
   busy: boolean;
   onCancel: () => void;
@@ -231,7 +234,7 @@ function PersonaDialog({
             <ProTextarea aria-label="Summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="text-base sm:text-sm" />
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {PERSONA_DEMOGRAPHIC_FIELDS.map((field) => (
+            {personaFieldsFor(kind).map((field) => (
               <div key={field.key} className="grid gap-1.5">
                 <Label className="text-xs">{field.label}</Label>
                 <Input

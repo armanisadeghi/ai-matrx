@@ -96,6 +96,8 @@ export interface BrandKindCopy {
     noun: string;
     plural: string;
     namePlaceholder: string;
+    /** Which stored demographics keys the editor shows, in order (labels in persona-model). */
+    fields: readonly string[];
   };
   rooms: Record<BrandRoom, { name: string; description: string }>;
 }
@@ -133,6 +135,7 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
       noun: "persona",
       plural: "personas",
       namePlaceholder: "IT director at a mid-size company",
+      fields: ["age_range", "location", "job_titles", "income", "company_size"],
     },
     rooms: {
       media: {
@@ -212,6 +215,7 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
       noun: "audience profile",
       plural: "audience profiles",
       namePlaceholder: "Busy lifter who trains three days a week",
+      fields: ["age_range", "location", "life_stage", "interests", "platforms"],
     },
     rooms: {
       media: { name: "Media", description: "Their photos, videos, captures and generated imagery." },

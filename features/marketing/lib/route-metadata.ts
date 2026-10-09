@@ -4,6 +4,7 @@ import {
   getCrawlReport,
   isCrawlReportKey,
 } from "@/features/marketing/lib/crawl-reports";
+import { BRAND_KIND_COPY, brandKindOf, type BrandKind } from "@/features/marketing/lib/brand-kind";
 import { MARKETING_RESERVED_SEGMENTS } from "@/features/marketing/lib/keys";
 import { MARKETING_BRAND_SECTIONS } from "@/features/marketing/lib/brand-sections";
 import {
@@ -221,7 +222,11 @@ function brandSectionIdentity(
  * Resolves a stable title, description, and unique badge for every Marketing
  * route without coupling metadata to client-side workspace data fetching.
  */
-export function getMarketingRouteMetadata(pathname: string): Metadata {
+export function getMarketingRouteMetadata(
+  pathname: string,
+  kindValue?: BrandKind | string | null,
+): Metadata {
+  const kind = brandKindOf(kindValue);
   const normalizedPath = normalizePathname(pathname);
   const staticIdentity = STATIC_ROUTES[normalizedPath];
   if (staticIdentity) {
@@ -328,7 +333,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       },
     };
     const identity = room[segments[3]];
-    if (identity) return createMarketingMetadata(normalizedPath, identity);
+    if (identity) return createMarketingMetadata(normalizedPath, forKind(identity, kind));
   }
 
   if (section === "locations" && segments[3]) {
@@ -479,7 +484,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       },
     };
     const view = competitorViews[segments[4]];
-    if (view) return createMarketingMetadata(normalizedPath, view);
+    if (view) return createMarketingMetadata(normalizedPath, forKind(view, kind));
   }
 
   if (section === "intelligence" && segments[3] === "monitoring" && segments[4] === "setup") {
@@ -543,10 +548,23 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       : undefined,
   );
   if (brandIdentity) {
-    return createMarketingMetadata(normalizedPath, brandIdentity);
+    return createMarketingMetadata(normalizedPath, forKind(brandIdentity, kind));
   }
 
   return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
+}
+
+/**
+ * A person brand's tab names: the Competitors screens read Peers and
+ * "Audience & Personas" reads Audience — the words come from brand-kind.ts.
+ */
+function forKind(identity: MarketingRouteIdentity, kind: BrandKind): MarketingRouteIdentity {
+  if (kind !== "person" || !identity.titlePrefix) return identity;
+  const rivals = BRAND_KIND_COPY.person.rivals.title;
+  const titlePrefix = identity.titlePrefix
+    .replace(/Competitors$/, rivals)
+    .replace(/^Audience & Personas$/, BRAND_KIND_COPY.person.rooms.audience.name);
+  return titlePrefix === identity.titlePrefix ? identity : { ...identity, titlePrefix };
 }
 
 function websiteIdentity(rest: readonly string[]): MarketingRouteIdentity {

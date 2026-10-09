@@ -176,3 +176,17 @@ describe("getMarketingRouteMetadata", () => {
     );
   });
 });
+
+describe("person brand tab titles", () => {
+  const title = (path: string, kind?: string) => String(getMarketingRouteMetadata(path, kind).title);
+  it("reads Peers and Audience on a person brand", () => {
+    expect(title(`${B}/identity/audience`, "person")).toContain("Audience");
+    expect(title(`${B}/identity/audience`, "person")).not.toContain("Personas");
+    expect(title(`${B}/intelligence/competitors`, "person")).toContain("Peers");
+    expect(title(`${B}/intelligence/competitors`, "person")).not.toContain("Competitors");
+  });
+  it("keeps company words by default", () => {
+    expect(title(`${B}/identity/audience`)).toContain("Personas");
+    expect(title(`${B}/intelligence/competitors`, "company")).toContain("Competitors");
+  });
+});

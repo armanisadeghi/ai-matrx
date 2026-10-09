@@ -1,5 +1,6 @@
 /** Pure persona model (`web.brand_persona`) — no React, no data access. */
 
+import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import type { Json } from "@/types/database.types";
 
 export interface PersonaDemographics {
@@ -8,6 +9,9 @@ export interface PersonaDemographics {
   job_titles?: string;
   income?: string;
   company_size?: string;
+  life_stage?: string;
+  interests?: string;
+  platforms?: string;
 }
 
 export const PERSONA_DEMOGRAPHIC_FIELDS: ReadonlyArray<{
@@ -20,7 +24,18 @@ export const PERSONA_DEMOGRAPHIC_FIELDS: ReadonlyArray<{
   { key: "job_titles", label: "Job titles", placeholder: "IT director, office manager" },
   { key: "income", label: "Income", placeholder: "$90k-$140k" },
   { key: "company_size", label: "Company size", placeholder: "50-500 employees" },
+  { key: "life_stage", label: "Life stage", placeholder: "New parent, college, retired" },
+  { key: "interests", label: "Interests", placeholder: "Strength training, nutrition" },
+  { key: "platforms", label: "Follows on", placeholder: "Instagram, YouTube" },
 ];
+
+/** The fields the editor shows for a brand kind (brand-kind.ts decides which). */
+export function personaFieldsFor(kind: string | null | undefined) {
+  const keys = brandKindCopy(kind).audience.fields;
+  return keys
+    .map((key) => PERSONA_DEMOGRAPHIC_FIELDS.find((f) => f.key === key))
+    .filter((f): f is (typeof PERSONA_DEMOGRAPHIC_FIELDS)[number] => Boolean(f));
+}
 
 export interface BrandPersona {
   id: string;
