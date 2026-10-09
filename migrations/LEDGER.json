@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T00:31:42.225Z",
+  "generated_at": "2026-10-09T00:37:36.630Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -157,6 +157,12 @@
       "filename": "appsondata_a_the_data_home_knows_a_page_from_a_dashboard.sql",
       "checksum": "ae95116b8cc09f8f6ad17c0f12a34857c84ba6dbfb82609832858551196e5ed7",
       "applied_at": "2026-10-05 03:42:17.476034+00"
+    },
+    "migrations/campaign/archivedorgrestore_a_a_public_reader_in_an_archived_org_is_told_so.sql": {
+      "source": "matrx-frontend",
+      "filename": "archivedorgrestore_a_a_public_reader_in_an_archived_org_is_told_so.sql",
+      "checksum": "3a72d7ef4f5a130bd301b54a7d0f786ca5c856bd5c40d59c9bf1ff0d3a3ac7b2",
+      "applied_at": "2026-10-09 00:35:54.408591+00"
     },
     "migrations/campaign/archorgwork_an_archived_organization_takes_its_waiting_work_with_it.sql": {
       "source": "campaign",
@@ -4742,6 +4748,12 @@
       "checksum": "c03d8e4fce5eb9f5ef79b85216730f7c71ecbec4abeee0f437c20f3d2e0425e0",
       "applied_at": "2026-10-09 00:19:56.038463+00"
     },
+    "migrations/campaign/memosweep_c_the_memo_sweep_runs_twice_an_hour.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_c_the_memo_sweep_runs_twice_an_hour.sql",
+      "checksum": "cea5e61b9142570aa8e54acea4f03cfa1fa5e1d97bb77b0a57b9527e82a5dab7",
+      "applied_at": "2026-10-09 00:35:42.108853+00"
+    },
     "migrations/campaign/memosweep_d_pages_are_read_only_for_seats_that_can_open_the_table.sql": {
       "source": "matrx-frontend",
       "filename": "memosweep_d_pages_are_read_only_for_seats_that_can_open_the_table.sql",
@@ -4765,6 +4777,18 @@
       "filename": "memosweep_g_the_relations_table_is_one_a_member_can_open.sql",
       "checksum": "f48a536f705d591e67bdc99d7c806f10700a2143b42bbad8e9b6525295308479",
       "applied_at": "2026-10-09 00:31:40.817038+00"
+    },
+    "migrations/campaign/memosweep_h_the_log_row_names_a_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_h_the_log_row_names_a_person.sql",
+      "checksum": "4f8d8e7bb64d35568ddb776deb2135da95983169576bfe153b5f0a6001de0508",
+      "applied_at": "2026-10-09 00:34:48.358671+00"
+    },
+    "migrations/campaign/memosweep_i_a_disagreement_row_has_no_count.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_i_a_disagreement_row_has_no_count.sql",
+      "checksum": "14d81844456ddc8aa69c196981e154be35a35c8619bd6a81e2ab1f2ba812c271",
+      "applied_at": "2026-10-09 00:37:35.309186+00"
     },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",
