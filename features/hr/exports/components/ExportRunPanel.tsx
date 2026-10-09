@@ -47,6 +47,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
@@ -145,6 +150,63 @@ function FormatOption({
   );
 }
 
+type ExportCodeLine = ExportPreviewResult["by_earning_code"][number];
+
+function payCodeColumns(showsAmounts: boolean): MatrxColumnDef<ExportCodeLine>[] {
+  const columns: MatrxColumnDef<ExportCodeLine>[] = [
+    {
+      id: "code",
+      header: "Pay code",
+      accessorFn: (line) => line.earning_code,
+      cell: (line) => (
+        <span className="font-mono text-xs text-foreground">
+          {line.earning_code}
+        </span>
+      ),
+      filter: "text",
+      width: 160,
+    },
+    {
+      id: "hours",
+      header: "Hours",
+      accessorFn: (line) => Number(line.hours),
+      cell: (line) => (
+        <span className="font-mono text-foreground">{line.hours}</span>
+      ),
+      copyValue: (line) => line.hours,
+      filter: "number",
+      align: "right",
+      width: 120,
+    },
+  ];
+  if (showsAmounts) {
+    columns.push({
+      id: "amount",
+      header: "Amount",
+      accessorFn: (line) => (line.amount ? Number(line.amount) : null),
+      // A withheld amount is a sentence, never a bare dash (see PreviewSummary).
+      cell: (line) => <ExportAmount value={line.amount} />,
+      copyValue: (line) => line.amount ?? "Withheld",
+      filter: "number",
+      align: "right",
+      width: 140,
+    });
+  }
+  return columns;
+}
+
+const PAY_CODE_COPY: MatrxDataTableCopyConfig<ExportCodeLine> = {
+  label: "Pay code",
+  listLabel: "Pay codes (this view)",
+  location: "Payroll export — preview by pay code",
+  rowKind: "payroll-export-pay-code",
+  listKind: "payroll-export-pay-codes",
+  rowDescription: "Hours and amount for one pay code in a payroll export.",
+  listDescription: "Hours and amounts by pay code in a payroll export preview.",
+  humanRow: (line) =>
+    `Pay code: ${line.earning_code}\nHours: ${line.hours}\nAmount: ${line.amount ?? "Withheld"}`,
+};
+
 function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
   // 🚨 THREE STATES, NOT TWO (coordinator ruling, 2026-08-27 — superseding the earlier two-state
   // reading, which collapsed "withheld" into "absent" and so said nothing at all).
@@ -197,44 +259,20 @@ function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
       {amountWithheld || anyLineWithheld ? <AmountWithheldNote /> : null}
 
       {preview.by_earning_code.length > 0 ? (
-        <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">
-                  Pay code
-                </th>
-                <th className="px-3 py-1.5 text-right font-medium text-muted-foreground">
-                  Hours
-                </th>
-                {showsAmounts ? (
-                  <th className="px-3 py-1.5 text-right font-medium text-muted-foreground">
-                    Amount
-                  </th>
-                ) : null}
-              </tr>
-            </thead>
-            <tbody>
-              {preview.by_earning_code.map((line) => (
-                <tr key={line.earning_code} className="border-t border-border">
-                  <td className="px-3 py-1.5 font-mono text-xs text-foreground">
-                    {line.earning_code}
-                  </td>
-                  <td className="px-3 py-1.5 text-right font-mono text-foreground">
-                    {line.hours}
-                  </td>
-                  {showsAmounts ? (
-                    // A cell must hold its grid position, so the withheld marker goes here and the
-                    // full sentence is rendered once above — but it is never a bare dash.
-                    <td className="px-3 py-1.5 text-right text-foreground">
-                      <ExportAmount value={line.amount} />
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable<ExportCodeLine>
+          tableId="hr/exports/pay-codes"
+          data={preview.by_earning_code}
+          columns={payCodeColumns(showsAmounts)}
+          getRowId={(line) => line.earning_code}
+          appearance="embedded"
+          viewTabs={false}
+          pageSize={0}
+          density="condensed"
+          searchText={(line) => line.earning_code}
+          toolbar={{ searchPlaceholder: "Search pay codes" }}
+          detail={{ enabled: false }}
+          copy={PAY_CODE_COPY}
+        />
       ) : null}
     </div>
   );

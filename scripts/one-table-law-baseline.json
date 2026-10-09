@@ -70,7 +70,6 @@
     "features/flashcards/fast-fire/debug/AudioCaptureDebugPanel.tsx",
     "features/google-workspace/GoogleWorkspaceReviewWorkspace.tsx",
     "features/google-workspace/directory/DirectoryReview.tsx",
-    "features/hr/exports/components/ExportRunPanel.tsx",
     "features/hr/leave/components/LeaveLedgerView.tsx",
     "features/hr/leave/components/LeaveRequestForm.tsx",
     "features/hr/time/timesheet/BulkApproveDialog.tsx",
