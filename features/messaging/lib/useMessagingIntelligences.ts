@@ -112,11 +112,12 @@ export function useMessagingIntelligences(options: {
 
   // The transcript cap is the same class of question as the four mandates —
   // it describes how the conversation pane behaves — so it rides the same
-  // demand. `useScopedKnobs` already treats a null organization as "nothing to
-  // read", which is exactly the honest shape here: no org in play for this
-  // question yet, so no request and no answer.
+  // demand: no demand, no request and no answer. (A null organization is NOT
+  // "nothing to read" — the index answers the platform defaults for it — so
+  // the demand travels as `enabled`.)
   const knobs = useScopedKnobs({
-    organizationId: enabled ? organizationId : null,
+    enabled,
+    organizationId,
     featurePrefix: MESSAGING_AI_KNOB_FEATURE,
     ...(userId ? { userId } : {}),
   });

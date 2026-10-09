@@ -5,7 +5,7 @@
 // Table UI feedback: /Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/TABLE-UI-ISSUES.md
 // Read and update that checklist before fixing table UI feedback in any host.
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -141,13 +141,33 @@ const ports: TableHost = {
   MenuIcon: TableMenuIcon,
   // Lane 7 W5 — every table that names its rows' registry token (`rowToken`) gets that token's
   // custom-field columns, for the organizations its rows belong to.
-  useCustomFieldColumns: useTableCustomFieldColumns,
+  useCustomFieldColumns: useHostTableCustomFieldColumns,
 };
+
+// THE FIRST TABLE ASKS FOR THE DENSITY KNOB. The host wraps every page, so resolving its density
+// knob in the provider was a startup read on pages with no table at all. Every MatrxDataTable calls
+// the `useCustomFieldColumns` port unconditionally, so that port is the "a table mounted" signal.
+let tableMounted = false;
+const tableMountListeners = new Set<() => void>();
+function subscribeTableMounted(listener: () => void): () => void {
+  tableMountListeners.add(listener);
+  return () => tableMountListeners.delete(listener);
+}
+function markTableMounted(): void {
+  if (tableMounted) return;
+  tableMounted = true;
+  for (const listener of tableMountListeners) listener();
+}
+function useHostTableCustomFieldColumns<T>(token: string | null, organizationIds: readonly string[]) {
+  useEffect(markTableMounted, []);
+  return useTableCustomFieldColumns<T>(token, organizationIds);
+}
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const organizationId = useAppSelector(selectOrganizationId);
   const userId = useAppSelector(selectUserId);
+  const anyTable = useSyncExternalStore(subscribeTableMounted, () => tableMounted, () => false);
   const defaultDensity = tableDensityFromKnob(
-    useEffectiveKnob(organizationId, userId, TABLE_DENSITY_KNOB_KEY),
+    useEffectiveKnob(organizationId, userId, TABLE_DENSITY_KNOB_KEY, undefined, { enabled: anyTable }),
   );
   // A RECORD'S OWN MENU (lane DRILL-WIRE): a table naming a person on an administration page offers
   // the admin user menu (`TableDoors.menu`); every other record keeps its open and preview doors.
