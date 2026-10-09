@@ -1,7 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState, useEffect } from 'react';
 import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
@@ -62,8 +62,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
   onSelectQuery
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [queries, setQueries] = useState<StoredQuery[]>([]);
   const [searchText, setSearchText] = useState('');

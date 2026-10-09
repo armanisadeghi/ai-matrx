@@ -26,6 +26,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Copy, Eye, LifeBuoy, Trash2, Undo2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -108,8 +109,7 @@ export function NoteDraftRecoveryBanner({
   onRestore,
 }: NoteDraftRecoveryBannerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const userId = useAppSelector((state) => state.userAuth.id);
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";

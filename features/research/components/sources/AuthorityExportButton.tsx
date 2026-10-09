@@ -39,6 +39,7 @@ import {
   writeExportClipboard,
 } from "../../utils/authorityExportMenu";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 interface AuthorityExportButtonProps {
   topicId: string;
@@ -135,7 +136,7 @@ export function AuthorityExportButton({
             },
           );
         } else {
-          toast.success(`Copied ${chunk.sourceCount} sources ${label}`);
+          copyNotify(`Copied ${chunk.sourceCount} sources ${label}`, "success");
         }
         if (next >= list.length) setCursor(0);
       } catch (err) {

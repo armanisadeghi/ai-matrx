@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 import { copyImage } from "@ai-matrx/kit/clipboard";
 import { canvasAttachOptions } from "./attachOptions";
 import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 function parsedData(value: unknown): unknown {
   if (typeof value !== "string") return value;
@@ -72,7 +73,7 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
   copyImage: async (image) => {
     const ok = await copyImage(image);
     if (!ok) throw new Error("the clipboard refused the image");
-    toast.success("Image copied");
+    copyNotify("Image copied", "success");
   },
   // "Attach to chat ▸" — screenshot · code · text (attach lane, L3).
   // `capture` is the canvas's own resolution (kind capture, then this port) — the one Copy image uses.

@@ -9,7 +9,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState, useCallback } from "react";
 import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
@@ -53,8 +53,7 @@ function PlatformIcon({ platform }: { platform: string | null }) {
 
 export default function LocalDevicesPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [instances, setInstances] = useState<LocalInstance[]>([]);
   const [loading, setLoading] = useState(true);

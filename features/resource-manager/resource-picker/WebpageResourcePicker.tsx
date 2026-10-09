@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useEffectEvent, useState } from "react";
 import {
   ArrowRight,
@@ -161,8 +161,7 @@ export function WebpageResourcePickerCore({
   onBack,
 }: WebpageResourcePickerCoreProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [url, setUrl] = useState(initialUrl || "");
   const [showPreview, setShowPreview] = useState(false);

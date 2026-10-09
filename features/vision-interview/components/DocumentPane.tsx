@@ -12,6 +12,7 @@
 // failure, just fewer folds.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, FileText, History } from "lucide-react";
 import {
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/accordion";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -138,8 +138,7 @@ function splitSections(markdown: string): {
 
 export function DocumentPane() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const session = useAppSelector(selectRoomSession);
   const hydrated = useAppSelector(selectRoomHydrated);

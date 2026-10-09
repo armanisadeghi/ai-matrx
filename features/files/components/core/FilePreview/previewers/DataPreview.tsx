@@ -21,7 +21,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -69,8 +69,7 @@ function detectKind(fileName: string): DataKind {
 
 export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const kind = useMemo(() => detectKind(fileName), [fileName]);
 

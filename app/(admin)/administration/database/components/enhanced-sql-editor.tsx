@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useRef, useState, useEffect } from "react";
@@ -85,8 +86,7 @@ export const EnhancedSQLEditor = ({
   className,
 }: EnhancedSQLEditorProps) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const sqlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [sqlQuery, setSqlQuery] = useState("");

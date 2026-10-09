@@ -698,7 +698,10 @@ export const ProTextarea = React.forwardRef<
       const textarea = textareaRef.current;
       textarea.style.height = "auto";
 
-      let newHeight = textarea.scrollHeight;
+      // scrollHeight excludes the border; a border-box field sized to it
+      // alone kept a 2px scroll, so the last line slid under the control row.
+      let newHeight =
+        textarea.scrollHeight + (textarea.offsetHeight - textarea.clientHeight);
       if (minHeight) newHeight = Math.max(newHeight, minHeight);
       if (maxHeight) newHeight = Math.min(newHeight, maxHeight);
 

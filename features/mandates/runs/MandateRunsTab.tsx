@@ -107,13 +107,13 @@ function SelectedRun({
   outputKind: string | null;
   audience: "admin" | "product";
 }) {
-  const stored = useStoredRun(conversationId);
+  const stored = useStoredRun(conversationId, mandateKey);
   return (
     <div className="h-[calc(100dvh-14rem)] min-h-[32rem] rounded-lg border border-border bg-card">
       <ResizablePanelGroup orientation="horizontal" className="h-full">
         <ResizablePanel id="mandate-run-left" defaultSize="50%" minSize="25%">
           <div className="h-full overflow-y-auto p-3">
-            <RunAsItHappened stored={stored} audience={audience} />
+            <RunAsItHappened stored={stored} audience={audience} mandateKey={mandateKey} />
           </div>
         </ResizablePanel>
         <ResizableHandle />

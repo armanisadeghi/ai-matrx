@@ -1,9 +1,9 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, Database, ExternalLink, FileText, Layers3 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { Button } from "@/components/ui/button";
@@ -85,8 +85,7 @@ function RagAiCopyWindowInner({
   onClose: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [options, setOptions] = useState<RagAiCopyOptions>(() =>
     initialOptions(bundle, initialSections),

@@ -120,7 +120,7 @@ import { rowsToMarkdownTable } from "@ai-matrx/design-system/data-table/copy-hel
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { readSearchKindValue, text } from "../search-kinds/search-kind-data";
@@ -205,8 +205,7 @@ function compareCells(a: unknown, b: unknown): number {
 export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
   const { value, isComplete } = readSearchKindValue<"data_table">(serverData);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const openTableWindow = useOpenTableViewerWindow();
   const openSaveToTable = useOpenSaveToTable();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, ExternalLink, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,6 @@ import {
   ICON_MAX_DIM,
   SQUARE_ASPECT_TOLERANCE,
 } from "@/lib/media/categorization";
-import { toast } from "@/lib/toast";
 
 interface MediaDebugPanelProps {
   topicId: string;
@@ -33,8 +33,7 @@ export default function MediaDebugPanel({
   className,
 }: MediaDebugPanelProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
 

@@ -49,6 +49,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -114,8 +115,7 @@ export function useApplyFsChangesToOpenTabs(
   opts: UseApplyFsChangesOptions = {},
 ): void {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { silent = false } = opts;
   const dispatch = useAppDispatch();

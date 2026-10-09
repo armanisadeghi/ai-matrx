@@ -17,6 +17,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toast as copyToast } from "@ai-matrx/chat/host/notify";
 import { useState, useEffect, useCallback } from "react";
 import { kindTextToMarkdown } from "@ai-matrx/content-ir/surfaces";
@@ -93,8 +94,7 @@ export function DirectTestMode({
   apiEndpointMode: ApiEndpointMode;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const { launchAgent, close } = useAgentLauncher();
   const [conversationId, setConversationId] = useState<string | null>(null);

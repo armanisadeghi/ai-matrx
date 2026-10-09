@@ -1,6 +1,6 @@
 // components/admin/controls/LargeIndicator.tsx
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { Suspense, lazy, useState, useCallback, useMemo } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
@@ -70,8 +70,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   onSizeSmall,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const [copied, setCopied] = useState(false);

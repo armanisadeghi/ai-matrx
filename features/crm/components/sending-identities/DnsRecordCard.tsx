@@ -14,7 +14,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,7 @@ const REGISTRAR_GUIDES: { name: string; href: string }[] = [
 
 function CopyField({ label, value }: { label: string; value: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   return (

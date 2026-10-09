@@ -13,6 +13,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -51,8 +52,7 @@ function errorMessage(e: unknown): string {
 
 export default function ApiKeysTab() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { organizations, loading: orgsLoading, error: orgsError } =
     useUserOrganizations();

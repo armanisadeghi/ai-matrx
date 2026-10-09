@@ -23,6 +23,7 @@ import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
 import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
+import { ProtectedAccountRunsButton } from "./ProtectedAccountRuns";
 import {
   agentSpendDetailHref,
   agentSpendFlags,
@@ -494,6 +495,7 @@ export function AgentSpendBoard({
             searchPlaceholder: "Search agents and mandates…",
             actions: (
               <div className="flex items-center gap-2">
+                {seat === "admin" && <ProtectedAccountRunsButton days={days} />}
                 <SegmentedControl<"7" | "30">
                   aria-label="Window"
                   value={String(days) as "7" | "30"}

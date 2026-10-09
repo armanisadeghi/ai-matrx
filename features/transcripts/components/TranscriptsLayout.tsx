@@ -16,6 +16,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 interface TranscriptsLayoutProps {
   className?: string;
@@ -115,7 +116,7 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     if (!activeTranscript) return;
     try {
       await copyTranscript(activeTranscript.id);
-      toast.success("Transcript copied");
+      copyNotify("Transcript copied", "success");
     } catch (error) {
       console.error("Error copying transcript:", error);
       toast.error("Failed to copy transcript");

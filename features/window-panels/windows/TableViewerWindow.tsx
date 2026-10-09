@@ -48,6 +48,7 @@ import {
   TABLE_VIEWER_SURFACE_NAME,
   createTableViewerScope,
 } from "@/features/surfaces/manifests/table-viewer.manifest";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 // context-menu-exempt: entity — renders an ad hoc markdown table string; no id is threaded through any caller, so there is no record to attach
 
 const StreamingTableRenderer = lazy(() =>
@@ -106,7 +107,7 @@ function TableViewerWindowInner({
   const copy = (text: string, what: string) => {
     void copyContent(text, {
       formatJson: false,
-      onSuccess: () => toast.success(`${what} copied`),
+      onSuccess: () => copyNotify(`${what} copied`, "success"),
       onError: () => toast.error(`Could not copy ${what.toLowerCase()}`),
     });
   };

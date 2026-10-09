@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toDelimited } from "@ai-matrx/kit/delimited";
 import * as React from "react";
 import {
@@ -10,7 +11,6 @@ import {
   Info,
   Loader2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -233,8 +233,7 @@ export function RatingBreakdownTable({
   className,
 }: RatingBreakdownTableProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const rows = React.useMemo(() => buildInjuryRows(result), [result]);
   const combined = result.result?.combined_rating;

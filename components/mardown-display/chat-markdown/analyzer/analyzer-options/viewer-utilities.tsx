@@ -1,7 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import {
   Copy, Check, FileText, Code, Table, List, Hash, Type, BookOpen,
   CheckSquare, Braces, Minus, Archive, Link, Quote, Image,
@@ -392,8 +392,7 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   
   const handleCopy = async () => {

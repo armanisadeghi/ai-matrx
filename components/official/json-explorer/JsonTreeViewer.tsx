@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, {
   useState,
   useCallback,
@@ -184,8 +184,7 @@ export function JsonTreeViewer({
 
 function JsonTreeViewerBody({ data }: { data: unknown }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
 
@@ -224,8 +223,7 @@ function JsonTreeViewerBody({ data }: { data: unknown }) {
 
 function RawJsonView({ data }: { data: unknown }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const jsonString = JSON.stringify(data, null, 2);

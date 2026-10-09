@@ -14,9 +14,9 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { HTML_PAGE_CONTEXT_MENU_PROPS } from "../agent-context/htmlPageContextMenuProps";
 import { buildHtmlPagesListContextData } from "../agent-context/buildHtmlPagesListContextData";
@@ -41,8 +41,7 @@ export function HtmlPagesContextMenu({
   children,
 }: HtmlPagesContextMenuProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
 

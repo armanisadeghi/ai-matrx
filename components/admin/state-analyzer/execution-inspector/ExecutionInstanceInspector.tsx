@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -132,8 +132,7 @@ function roleClasses(role: string) {
 
 function IdWithTooltip({ id, label }: { id: string; label?: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   return (

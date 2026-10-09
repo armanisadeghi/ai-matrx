@@ -102,6 +102,10 @@ export interface StoredRun {
   provisions: RunProvisionValue[];
   /** What the record delivered — the only values an old run (no placement) has. */
   delivered: { variables: JsonObject; context: JsonObject; userInput: string | null };
+  /** `agent_run` — a run of the Holder agent that kept no mandate record (shown, never refused). */
+  recordedAs: "mandate_run" | "agent_run";
+  /** The server's one line when the run is not a full mandate record. */
+  notice: string | null;
 }
 
 /** Variable fates the contract paints red. */
@@ -241,6 +245,8 @@ function parseStoredRun(conversationId: string, data: unknown): StoredRun {
     modelName: str(settings.model_name),
     configOverrides: obj(settings.config_overrides),
     success: typeof d.success === "boolean" ? d.success : null,
+    recordedAs: d.recorded_as === "agent_run" ? "agent_run" : "mandate_run",
+    notice: str(d.notice),
     error: str(d.error),
     cost: num(d.cost),
     durationMs: num(d.duration_ms),
@@ -272,8 +278,19 @@ function contractCall(dispatch: AppDispatch, call: ContractCall) {
 
 const seg = encodeURIComponent;
 
-export async function fetchStoredRun(dispatch: AppDispatch, conversationId: string): Promise<StoredRun> {
-  const res = await contractCall(dispatch, { path: `/mandates/runs/${seg(conversationId)}`, method: "GET" });
+/** `?mandate_key=` — the page's mandate, so a Holder-agent run without a mandate record opens. */
+const forMandate = (mandateKey: string | null) => (mandateKey ? `?mandate_key=${seg(mandateKey)}` : "");
+
+export async function fetchStoredRun(
+  dispatch: AppDispatch,
+  conversationId: string,
+  /** Null for a run this page just made (it carries its own mandate record). */
+  mandateKey: string | null,
+): Promise<StoredRun> {
+  const res = await contractCall(dispatch, {
+    path: `/mandates/runs/${seg(conversationId)}${forMandate(mandateKey)}`,
+    method: "GET",
+  });
   if (res.error) throw new Error(res.error.message || "The run could not be read.");
   return parseStoredRun(conversationId, res.data);
 }
@@ -376,7 +393,12 @@ export function streamTestRun(
 export function streamReplay(
   dispatch: AppDispatch,
   conversationId: string,
+  mandateKey: string,
   onAdopted: (ids: { requestId: string; conversationId: string }) => void,
 ): Promise<StreamedRun> {
-  return streamContract(dispatch, { path: `/mandates/runs/${seg(conversationId)}/replay`, body: {} }, onAdopted);
+  return streamContract(
+    dispatch,
+    { path: `/mandates/runs/${seg(conversationId)}/replay${forMandate(mandateKey)}`, body: {} },
+    onAdopted,
+  );
 }

@@ -1,5 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
@@ -62,8 +63,7 @@ export default function MultiFileCodeEditor({
   height = "600px",
 }: MultiFileCodeEditorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [ref, { height: measuredHeight }] = useMeasure();
   // Measures the exact height of the Monaco editor wrapper div so we can give

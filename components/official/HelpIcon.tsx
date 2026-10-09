@@ -1,6 +1,6 @@
 // New usages: a label's one-sentence definition belongs in `components/official/InfoHint.tsx` (reachable by mouse, keyboard and touch); this icon opens on mouse hover only.
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { Button } from "@ai-matrx/design-system/controls";
 import { InfoIcon, HelpCircleIcon, CopyIcon, CheckIcon, CircleDot } from 'lucide-react';
@@ -24,8 +24,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({
   onAiAssistance
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   
   const [copied, setCopied] = useState(false);

@@ -1,6 +1,6 @@
 import { copyText, type CopyTextOptions } from "@ai-matrx/kit/clipboard";
 
-import { toast } from "@/lib/toast";
+import { copyNotify } from "./copy-notify";
 
 /**
  * The app's one plain-text copy for code outside a React component (menu configs, action handlers,
@@ -11,6 +11,6 @@ export function copyToClipboard(text: string, successMessage?: string, options?:
   return copyText(text, {
     ...options,
     successMessage,
-    notify: (message, kind) => (kind === "error" ? toast.error(message) : toast.success(message)),
+    notify: copyNotify,
   });
 }

@@ -13,8 +13,8 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useState } from "react";
-import { toast } from "@/lib/toast";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
@@ -105,8 +105,7 @@ export function ShareLinkDialogBody({
   appOrigin,
 }: ShareLinkDialogBodyProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const links = useAppSelector((s) =>

@@ -18,6 +18,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useCallback, useEffect } from "react";
 import {
   ChevronLeft,
@@ -48,7 +49,6 @@ import {
 } from "@/features/surfaces/manifests/image-viewer.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { toast } from "@/lib/toast";
 import { downloadUrl } from "@ai-matrx/kit/download";
 import { Button } from "@ai-matrx/design-system/controls";
 // context-menu-exempt: entity — the fallback viewer for a PLAIN URL image — a durable file_id routes to openFilePreview instead, so a record here does not exist
@@ -402,8 +402,7 @@ export function ImageViewerWindow({
   instanceId = "default",
 }: ImageViewerWindowProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [index, setIndex] = useState(initialIndex);
   const hasMany = images.length > 1;

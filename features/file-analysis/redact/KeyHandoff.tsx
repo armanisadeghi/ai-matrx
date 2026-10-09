@@ -17,7 +17,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, Download, KeyRound, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,7 @@ export function KeyHandoff({
   onDownloadMasked,
 }: KeyHandoffProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [acknowledged, setAcknowledged] = useState(false);
   const [copied, setCopied] = useState(false);

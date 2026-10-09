@@ -18,7 +18,6 @@ import { PathArray, Bookmark } from "./types";
 import { isJsonArray, isJsonObject, isJsonPrimitive, type JsonValue } from "@/types/json";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { toast } from "@/lib/toast";
 
 // Import extracted components
 import BookmarkDialog from "./BookmarkDialog";
@@ -28,6 +27,7 @@ import NavigationSelects from "./NavigationSelects";
 import ActionButtons from "./ActionButtons";
 import CopyPathObjectDialog from "./CopyPathObjectDialog";
 import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 interface RawJsonExplorerProps {
   pageData: unknown;
@@ -329,7 +329,7 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
   const handleExportBookmarks = async () => {
     const exported = exportBookmarks(bookmarks);
     if (!(await copyToClipboard(exported))) return;
-    toast.success("Bookmarks copied to clipboard as JSON");
+    copyNotify("Bookmarks copied to clipboard as JSON", "success");
   };
 
   // Convert any bracket notation paths to dot notation for consistency

@@ -14,6 +14,7 @@
 // stays up until they match again.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
@@ -184,8 +185,7 @@ interface Props {
 
 export function EntityTypesClient({ entityTypes }: Props) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);

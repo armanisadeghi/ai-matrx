@@ -14,7 +14,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 // Rendered through the ONE markdown core (same parser, math and page-break
@@ -42,8 +42,7 @@ export function MarkdownPreview({
   className,
 }: MarkdownPreviewProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   // Same-origin blob via the Python download endpoint — no S3 CORS to fight.
   const { blob, loading: blobLoading, error: blobError } = useFileBlob(fileId);

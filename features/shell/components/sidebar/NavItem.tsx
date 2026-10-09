@@ -38,7 +38,7 @@ export default function NavItem({ item }: NavItemProps) {
   }
 
   return (
-    <AppLink
+    <AppLink prefetch={false}
       href={item.href}
       title={item.label}
       data-nav-href={item.href}

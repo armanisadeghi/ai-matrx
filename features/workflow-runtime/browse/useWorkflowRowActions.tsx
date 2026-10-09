@@ -12,6 +12,7 @@
 // tax. The kebab carries the FULL action list, same handlers, one code path.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
@@ -65,8 +66,7 @@ export function useWorkflowRowActions({
   refresh,
 }: UseWorkflowRowActionsArgs): WorkflowRowActionsHost {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const [shareWorkflow, setShareWorkflow] = useState<WorkflowBrowseRow | null>(

@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { buildCodeEditorSessionOffer } from "@/features/code-editor/utils/codeEditorSessionOffer";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -91,8 +91,7 @@ export function useAICodeEditor({
   context,
 }: UseAICodeEditorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();

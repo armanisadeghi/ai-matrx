@@ -71,13 +71,22 @@ function DeliveredTable({ run }: { run: StoredRun }) {
   );
 }
 
-export function RunAsItHappened({ stored, audience }: { stored: StoredRunState; audience: "admin" | "product" }) {
+export function RunAsItHappened({
+  stored,
+  audience,
+  mandateKey,
+}: {
+  stored: StoredRunState;
+  audience: "admin" | "product";
+  mandateKey: string;
+}) {
   const replay = useStreamedRun();
   return (
     <StoredRunGate stored={stored}>
       {(run) => (
         <div>
           <RunSectionTitle>As it happened</RunSectionTitle>
+          {run.notice ? <p className="mb-1.5 text-[12px] text-amber-700 dark:text-amber-400">{run.notice}</p> : null}
           <RunFacts run={run} audience={audience} />
 
           <RunSectionTitle>Values and placement</RunSectionTitle>
@@ -85,7 +94,9 @@ export function RunAsItHappened({ stored, audience }: { stored: StoredRunState; 
             <PlacementTable label="Placement of this run" placement={run.placement} values={run.provisions} />
           ) : (
             <div className="space-y-1.5">
-              <p className="text-[12px] text-muted-foreground">Recorded before placement was saved</p>
+              <p className="text-[12px] text-muted-foreground">
+                {run.recordedAs === "agent_run" ? "What the agent received" : "Recorded before placement was saved"}
+              </p>
               <DeliveredTable run={run} />
             </div>
           )}
@@ -105,7 +116,7 @@ export function RunAsItHappened({ stored, audience }: { stored: StoredRunState; 
               variant="outline"
               disabled={replay.running}
               title="Runs the model again and stores a test run"
-              onClick={() => void replay.start((dispatch, onAdopted) => streamReplay(dispatch, run.conversationId, onAdopted))}
+              onClick={() => void replay.start((dispatch, onAdopted) => streamReplay(dispatch, run.conversationId, mandateKey, onAdopted))}
             >
               {replay.running ? "Replaying…" : "Replay exactly"}
             </Button>

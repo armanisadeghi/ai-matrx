@@ -3,7 +3,7 @@
 // CANONICAL: This is the canonical application-wide JSON Display component.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -188,8 +188,7 @@ function JsonInspectorBody({
   className,
 }: JsonInspectorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const editable = typeof onUpdate === "function";
   const showEditOnly = editOnly && editable;

@@ -15,9 +15,9 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { emitPayloadFence, emitPayloadJson } from "@ai-matrx/content-ir/wire";
 
 export interface KindEmitTemplateProps {
@@ -30,8 +30,7 @@ export default function KindEmitTemplate({
   value,
 }: KindEmitTemplateProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState<"json" | "fence" | null>(null);
 

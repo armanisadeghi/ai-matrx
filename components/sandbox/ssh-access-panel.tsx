@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback } from "react";
 import {
   KeyRound,
@@ -32,8 +32,7 @@ export function SshAccessPanel({
   disabled = false,
 }: SshAccessPanelProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

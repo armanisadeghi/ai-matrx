@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect, useRef } from "react";
 import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,7 @@ export function GeneralSettings({
   onOrganizationUpdated,
 }: GeneralSettingsProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatchThunk = useDispatchThunk();
   const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();

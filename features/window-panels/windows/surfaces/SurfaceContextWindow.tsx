@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import {
   Braces,
@@ -125,8 +126,7 @@ export default function SurfaceContextWindow({
   isEditable = false,
 }: SurfaceContextWindowProps) {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const live = useLiveSurfaceScope({ enabled: isOpen, surfaceName });
   // A value's machine name is an engineer's handle — admin-only, like the

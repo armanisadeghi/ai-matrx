@@ -9,6 +9,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { ReadFailure } from "@ai-matrx/design-system";
 import React, { useState, useEffect } from "react";
 import {
@@ -77,8 +78,7 @@ interface RecoveryItemProps {
 
 function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const { getAudioBlob } = useAudioRecovery();
   const dispatch = useAppDispatch();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useEffect, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
@@ -279,8 +279,7 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
  */
 export function AgentViewContent({ agentId, recordSections }: { agentId: string; recordSections?: ReactNode }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const [mounted, setMounted] = useState(false);

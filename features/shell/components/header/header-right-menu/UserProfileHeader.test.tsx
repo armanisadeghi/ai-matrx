@@ -20,6 +20,11 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { UserProfileHeader } from "./UserProfileHeader";
+
+// The header reads the live avatar from Redux; no store here means "no live value".
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => null,
+}));
 import type { UserData } from "@/utils/userDataMapper";
 
 function baseUserData(overrides: Partial<UserData["userMetadata"]> & { email?: string | null } = {}): UserData {

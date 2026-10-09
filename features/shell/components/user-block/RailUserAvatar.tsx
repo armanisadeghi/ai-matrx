@@ -3,6 +3,8 @@
 import { User } from "lucide-react";
 import { organizationColor } from "@ai-matrx/design-system";
 import { ShellUserAvatarImage } from "../header/header-right-menu/ShellUserAvatarImage";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserAvatarUrl } from "@/lib/redux/selectors/userSelectors";
 
 /**
  * The person's 24px mark in the account rail: their photo, else their initial
@@ -21,6 +23,10 @@ export function RailUserAvatar({
   avatarUrl: string | null | undefined;
   displayName: string;
 }) {
+  // The server-rendered prop is the first paint; the live Redux avatar wins
+  // once a save dispatches `setUserMetadata`, so a new photo shows at once.
+  const liveAvatarUrl = useAppSelector(selectUserAvatarUrl);
+  avatarUrl = liveAvatarUrl || avatarUrl;
   return (
     <span className="relative flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
       {avatarUrl ? (

@@ -102,6 +102,7 @@ import {
 import { fetchAidreamAcceptAdapters, markFindingOk } from "./acceptApi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { ReadOutcome } from "@ai-matrx/design-system";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
 /** How a check's findings are accepted (model.ts AcceptInfo); the route builds it from accept-rules.json. */
@@ -136,7 +137,7 @@ function messageOf(error: unknown): string {
 function copyText(text: string, label: string) {
   return copyContent(text, {
     formatJson: false,
-    onSuccess: () => toast.success(`${label} copied`),
+    onSuccess: () => copyNotify(`${label} copied`, "success"),
   });
 }
 

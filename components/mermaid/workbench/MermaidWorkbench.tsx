@@ -96,6 +96,7 @@ import { AgentEditRail } from "./AgentEditRail";
 import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";
 import { useMermaidEditor, type WorkbenchMode } from "./useMermaidEditor";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 const THEME_CHOICES: MermaidThemePreference[] = [
   "auto",
@@ -682,7 +683,7 @@ export default function MermaidWorkbench({
                   <DropdownMenuItem
                     onClick={async () => {
                       await copyMermaidSource(state.source);
-                      toast.success("Diagram source copied");
+                      copyNotify("Diagram source copied", "success");
                     }}
                   >
                     Copy source

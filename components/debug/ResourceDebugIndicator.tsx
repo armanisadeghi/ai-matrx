@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Database,
@@ -22,7 +23,6 @@ import { selectInstanceResources } from "@ai-matrx/chat/agents/redux/execution-s
 import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { makeSelectAssembledRequest } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import type { AssembledAgentStartRequest } from "@ai-matrx/chat/agents/types/request.types";
-import { toast } from "@/lib/toast";
 
 interface ResourceDebugIndicatorProps {
   /** Agent execution conversation id (legacy admin debug still stores this as `runId`). */
@@ -54,8 +54,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
   onClose,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const instance = useAppSelector((state) =>
     selectInstance(conversationId)(state),

@@ -262,12 +262,22 @@ export function RunsTable({
             accessorFn: (run: MandateRun) => run.holderName ?? "",
             cell: (run: MandateRun) =>
               run.holderId ? (
-                <EntityRef
-                  token={run.holderType}
-                  id={run.holderId}
-                  name={run.holderName ?? (run.holderType === "workflow" ? "Workflow" : "Agent")}
-                  className="min-w-0 max-w-full"
-                />
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <EntityRef
+                    token={run.holderType}
+                    id={run.holderId}
+                    name={run.holderName ?? (run.holderType === "workflow" ? "Workflow" : "Agent")}
+                    className="min-w-0 max-w-full"
+                  />
+                  {run.foundBy === "holder_agent" ? (
+                    <span
+                      className="shrink-0 text-[11px] text-amber-700 dark:text-amber-400"
+                      title="A run of this mandate's agent that was not recorded under the mandate"
+                    >
+                      Agent run
+                    </span>
+                  ) : null}
+                </span>
               ) : (
                 <span className="text-muted-foreground" title="Not recorded for this run">
                   —

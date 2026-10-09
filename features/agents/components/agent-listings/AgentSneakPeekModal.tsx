@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -743,8 +744,7 @@ function JsonBlock({ json }: { json: string }) {
  */
 export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const record = useAgentView(agentId);
   const definition = useAppSelector((state) =>

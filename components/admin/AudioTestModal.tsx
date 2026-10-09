@@ -1,6 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -76,8 +77,7 @@ function AudioTestModalContent({
   setCopied: (copied: boolean) => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const {
     connectionState,

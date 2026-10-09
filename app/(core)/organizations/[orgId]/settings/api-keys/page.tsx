@@ -11,7 +11,7 @@
 // rests in the database.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, Copy, KeyRound, Loader2, Plus } from "lucide-react";
@@ -59,8 +59,7 @@ function formatDate(value: string | null): string {
 
 export default function OrgApiKeysPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const params = useParams();
   const orgId = params.orgId as string;

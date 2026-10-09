@@ -10,10 +10,10 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, Copy, List, MapPin, TriangleAlert } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -43,8 +43,7 @@ export const MapBlock: React.FC<MapBlockProps> = ({
   className,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const parsed = useMemo(
     () => (isStreamActive ? null : parseMap(content)),

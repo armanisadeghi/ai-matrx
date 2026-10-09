@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useCallback } from "react";
 import {
   Dialog,
@@ -48,8 +48,7 @@ export function ContextDebugModal({
   contextData,
 }: ContextDebugModalProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 

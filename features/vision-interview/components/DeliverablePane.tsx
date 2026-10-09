@@ -10,6 +10,7 @@
 // document pane carries: copy + download. Never a bespoke renderer.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, Download, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,8 +37,7 @@ export function DeliverablePane({
   finalizedAt,
 }: DeliverablePaneProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
 

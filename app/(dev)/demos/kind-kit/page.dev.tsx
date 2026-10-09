@@ -8,7 +8,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import {
   ArrowUpFromDot,
@@ -103,8 +103,7 @@ const INITIAL_STEPS: Step[] = [
 
 export default function KindKitDemoPage() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [buckets, setBuckets] = useState<Bucket[]>(INITIAL_BUCKETS);
   const [selected, setSelected] = useState<string[]>(["kanban board"]);

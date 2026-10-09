@@ -10,6 +10,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import Link from "next/link";
@@ -67,8 +68,7 @@ export function ConversationPreviewContent({
   onOpen,
 }: ConversationPreviewContentProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const conv = useAppSelector(selectInstance(conversationId));
   const agentName = useAgentName(conv?.agentId ?? "");

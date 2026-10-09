@@ -9,6 +9,7 @@
 // hub cards carried.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -46,8 +47,7 @@ export function useTranscriptRowActions(
   list: EntityListController<TranscriptListRow>,
 ): EntityRowActionsResult<TranscriptListRow> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
 

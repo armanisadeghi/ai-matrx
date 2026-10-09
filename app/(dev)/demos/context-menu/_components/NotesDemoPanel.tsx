@@ -25,6 +25,7 @@ import {
   DEMO_NOTES_MAP,
 } from "../_fixtures/notes-demo";
 import { DemoProTextarea } from "./DemoProTextarea";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 export interface NotesDemoPanelProps {
   title: string;
@@ -101,7 +102,7 @@ export function NotesDemoPanel({
     onDuplicate: () => toast.success("Duplicated (demo)"),
     onExport: () => toast.success("Exported (demo)"),
     onShareLink: () => toast.success("Share link (demo)"),
-    onShareClipboard: () => toast.success("Copied to clipboard (demo)"),
+    onShareClipboard: () => copyNotify("Copied to clipboard (demo)", "success"),
     onMoveToFolder: (folder) => toast.success(`Moved to ${folder} (demo)`),
     onMoveDialog: () => toast.success("Move dialog (demo)"),
     onCreateFolder: () => toast.success("New folder (demo)"),

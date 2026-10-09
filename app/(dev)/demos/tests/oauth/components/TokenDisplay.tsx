@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useEffect } from 'react';
 import { ProviderState } from '../types/oauth';
 import { OAUTH_PROVIDERS } from '../providers/providers';
@@ -10,8 +10,7 @@ interface TokenDisplayProps {
 
 const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);

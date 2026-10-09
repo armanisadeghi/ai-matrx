@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * DirectiveBuilderPanel — "trigger via a few dropdowns".
@@ -224,8 +225,7 @@ export function DirectiveBuilderPanel({
   pick?: DirectiveBuilderPick | null;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const verbs = DIRECTIVE_VERBS.filter(isDirectiveVerb);
   const nouns = catalog.nouns;

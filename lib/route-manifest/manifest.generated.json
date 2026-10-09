@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1374,
+  "routeCount": 1376,
   "routes": [
     {
       "pattern": "/",
@@ -1837,6 +1837,11 @@
       "pattern": "/applets/[slug]/[[...path]]",
       "status": "live",
       "source": "app/(link)/applets/[slug]/[[...path]]/page.tsx"
+    },
+    {
+      "pattern": "/applets/admin",
+      "status": "live",
+      "source": "app/(core)/applets/admin/page.tsx"
     },
     {
       "pattern": "/applets/build",
@@ -5249,6 +5254,11 @@
       "status": "placeholder",
       "source": "app/(core)/medical/page.tsx",
       "promiseKey": "medical.workspace"
+    },
+    {
+      "pattern": "/meet",
+      "status": "live",
+      "source": "app/(meet)/meet/page.tsx"
     },
     {
       "pattern": "/meet/[slug]",

@@ -3,30 +3,26 @@
 /**
  * features/image-manager/components/ProfilePhotoTab.tsx
  *
- * Profile photo manager. Wraps `<ImageAssetUploader preset="avatar">`
- * and, when an upload completes, updates the user's Supabase auth
- * metadata (`avatar_url` + `picture` for OAuth-style consumers) so the
- * new image becomes the canonical avatar across the app.
- *
- * Note: there's no pre-existing avatar-update flow elsewhere in the
- * codebase (we audited the inventory before building this) — this tab
- * is the first place that writes `avatar_url` into auth metadata. If a
- * dedicated server action lands later, we should replace the direct
- * client call here with that action.
+ * Profile photo manager. Wraps `<ImageAssetUploader preset="avatar">` and,
+ * when an upload completes, saves through the ONE profile-photo door
+ * (`PATCH /api/user/profile`: auth metadata + user.profiles) and dispatches
+ * the shared `setUserMetadata`, so every avatar updates at once — the same
+ * path as Settings → Profile.
  */
 
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import React, { useState } from "react";
 import { Loader2, ShieldAlert, User } from "lucide-react";
 import {
   ImageAssetUploader,
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
 import {
   selectUserAvatarUrl,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -35,6 +31,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);
   const userId = useAppSelector(selectUserId);
+  const dispatch = useAppDispatch();
   const [persisting, setPersisting] = useState(false);
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
   const [persistError, setPersistError] = useState<string | null>(null);
@@ -47,13 +44,20 @@ export function ProfilePhotoTab() {
     setPersisting(true);
     setPersistError(null);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
+      // The ONE profile-photo door (same as Settings → Profile): auth
+      // metadata AND user.profiles (the chat-visible avatar), then the shared
+      // Redux metadata so every avatar on the page updates at once.
+      const res = await fetchWithOrganization("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           avatar_url: avatarUrl,
           picture: avatarUrl,
-        },
+          avatar_file_id: result.file_id || null,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error("Couldn't update profile photo");
+      dispatch(setUserMetadata({ avatarUrl, picture: avatarUrl }));
       setSavedUrl(avatarUrl);
       toast.success("Profile photo updated");
     } catch (err) {
@@ -126,8 +130,7 @@ export function ProfilePhotoTab() {
 
       {savedUrl ? (
         <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success-ink">
-          Profile photo saved. The new avatar will appear everywhere on next
-          page-load — sign out and back in to refresh other tabs.
+          Profile photo saved.
         </div>
       ) : null}
     </div>

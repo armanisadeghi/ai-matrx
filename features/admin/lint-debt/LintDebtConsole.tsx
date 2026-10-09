@@ -28,6 +28,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -39,7 +40,6 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Alert as PackageAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -157,8 +157,7 @@ export function LintDebtConsole({
   problems,
 }: LintDebtConsoleProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);

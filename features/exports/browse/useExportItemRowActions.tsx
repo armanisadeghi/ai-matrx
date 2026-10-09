@@ -16,9 +16,9 @@
 // in. Metadata, completely, and nothing else.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { ClipboardCopy, Filter, Info, User } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
@@ -35,8 +35,7 @@ export function useExportItemRowActions(
   list: EntityListController<ExportItem>,
 ): EntityRowActionsResult<ExportItem> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [detailed, setDetailed] = useState<ExportItem | null>(null);
 

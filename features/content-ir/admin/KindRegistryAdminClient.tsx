@@ -13,6 +13,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -123,8 +124,7 @@ function fieldKindRefs(field: FieldSchema): string[] {
 
 export default function KindRegistryAdminClient() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [catalog, setCatalog] = useState<KindCatalogEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);

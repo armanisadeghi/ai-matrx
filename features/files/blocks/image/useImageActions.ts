@@ -31,6 +31,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 import { shareableMediaUrl } from "@/lib/media/durability";
@@ -94,8 +95,7 @@ export function useImageActions({
   fileId,
 }: UseImageActionsArgs): ImageActionsApi {
   const { copyText, copyImage: copyImageToClipboard } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const isMatrx = block.origin === "matrx";
 

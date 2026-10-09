@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import {
@@ -60,8 +61,7 @@ export function VaultPasswordGenerator({
   onUse,
 }: VaultPasswordGeneratorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { listVoices } from "@/lib/cartesia/cartesiaUtils";
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -23,8 +23,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VoicesList: React.FC = () => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   const { loading, error, getOneData, setOneData, setLoading, setError } =
     useAiAudio();

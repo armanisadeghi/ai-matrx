@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from "react";
 import {
@@ -238,8 +238,7 @@ export const AgentExecutionDebugPanel: React.FC<
   AgentExecutionDebugPanelProps
 > = ({ instanceId, onClose }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [expandedSection, setExpandedSection] = useState<SectionId>("overview");
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
