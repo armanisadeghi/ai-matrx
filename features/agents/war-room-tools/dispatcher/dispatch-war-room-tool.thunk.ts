@@ -30,9 +30,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 import type { RootState, AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
-import { submitToolResult } from "@ai-matrx/chat/agents/api/submit-tool-results";
 import { setInstanceStatus } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
-import { upsertToolLifecycle } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import { postDelegatedToolOutcome } from "@ai-matrx/chat/agents/redux/execution-system/thunks/post-delegated-tool-outcome";
 import {
   setThreadAutoApprove,
   clearThreadAutoApprove,
@@ -67,63 +66,25 @@ export const dispatchWarRoomTool = createAsyncThunk<
     const state = getState();
     const userId = state.userAuth?.id ?? null;
 
-    // Small helpers so every exit goes through the funnel + closes the
-    // lifecycle (so the LiveToolCallCard never shimmers waiting forever).
+    // Every exit goes through the one outcome funnel + closes the lifecycle
+    // (so the LiveToolCallCard never shimmers waiting forever).
+    const base = { conversationId, requestId, callId, toolName };
     const fail = (
       errorType: string,
       message: string,
       durationMs?: number,
-    ): void => {
-      dispatch(
-        upsertToolLifecycle({
-          requestId,
-          callId,
-          toolName,
-          status: "error",
-          isDelegated: true,
-          errorType,
-          errorMessage: message,
-          result: { ok: false, reason: errorType, message },
-        }),
-      );
-      dispatch(
-        submitToolResult({
-          conversationId,
-          call_id: callId,
-          tool_name: toolName,
-          is_error: true,
-          output: { ok: false, reason: errorType, message },
-          error_message: message,
-          ...(durationMs !== undefined ? { duration_ms: durationMs } : {}),
-        }),
-      );
-    };
+    ): void =>
+      postDelegatedToolOutcome(dispatch, {
+        ...base,
+        output: { ok: false, reason: errorType, message },
+        error: { type: errorType, message },
+        durationMs,
+      });
 
     const complete = (
       output: Record<string, unknown>,
       durationMs: number,
-    ): void => {
-      dispatch(
-        upsertToolLifecycle({
-          requestId,
-          callId,
-          toolName,
-          status: "completed",
-          isDelegated: true,
-          result: output,
-        }),
-      );
-      dispatch(
-        submitToolResult({
-          conversationId,
-          call_id: callId,
-          tool_name: toolName,
-          is_error: false,
-          output,
-          duration_ms: durationMs,
-        }),
-      );
-    };
+    ): void => postDelegatedToolOutcome(dispatch, { ...base, output, durationMs });
 
     if (!userId) {
       fail("unauthenticated", "user not authenticated");

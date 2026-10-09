@@ -1,5 +1,8 @@
 const from = jest.fn();
 const addMembership = jest.fn();
+const mockReadAllRows = jest.fn();
+const forUser = jest.fn();
+const counts = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {},
@@ -8,6 +11,8 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/utils/supabase/projectsDb", () => ({
   projectsDb: () => ({ from }),
 }));
+
+jest.mock("@ai-matrx/data/db", () => ({ readAllRows: mockReadAllRows }));
 
 jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "00000000-0000-4000-8000-000000000001",
@@ -18,19 +23,51 @@ jest.mock("@/lib/organizations/ensureOrgId", () => ({
 }));
 
 jest.mock("@/features/organizations/service/membershipsService", () => ({
-  membershipsService: { add: addMembership },
+  membershipsService: { add: addMembership, forUser, counts },
 }));
 
 jest.mock("@/features/organizations/service/invitationsService", () => ({
   invitationsService: {},
 }));
 
-import { createProject, isProjectSlugAvailable } from "./service";
+import {
+  createProject,
+  getUserProjects,
+  isProjectSlugAvailable,
+} from "./service";
+
+const PROVIDER_ACCESS_LAUNCH = {
+  id: "042f5378-e46e-4d59-be7b-54664e3016bb",
+  name: "Provider Access Launch",
+  slug: "provider-access-launch",
+  description: "Coordinate provider access work.",
+  organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+  created_by: "c4e9c42d-3af4-4d76-92ef-1082b19a8bbb",
+  settings: {},
+  status: "active",
+  priority: null,
+  start_date: null,
+  target_date: null,
+  created_at: "2026-10-01T09:00:00.000Z",
+  updated_at: "2026-10-02T09:00:00.000Z",
+  deleted_at: null,
+};
+
+function readableProjectsQuery() {
+  const query: Record<string, jest.Mock> = {};
+  for (const method of ["select", "is", "order", "range"]) {
+    query[method] = jest.fn(() => query);
+  }
+  return query;
+}
 
 describe("project creation", () => {
   beforeEach(() => {
     from.mockReset();
     addMembership.mockReset();
+    mockReadAllRows.mockReset();
+    forUser.mockReset();
+    counts.mockReset();
   });
 
   it("relies on the project insert trigger to bootstrap the owner membership", async () => {
@@ -140,5 +177,49 @@ describe("isProjectSlugAvailable", () => {
     );
 
     consoleError.mockRestore();
+  });
+});
+
+describe("getUserProjects", () => {
+  beforeEach(() => {
+    from.mockReset();
+    mockReadAllRows.mockReset();
+    forUser.mockReset();
+    counts.mockReset();
+    forUser.mockResolvedValue({ ok: true, data: { memberships: [] } });
+    counts.mockResolvedValue({ ok: true, data: { counts: [] } });
+  });
+
+  it("includes an RLS-readable organization project when the viewer has no direct project membership", async () => {
+    const query = readableProjectsQuery();
+    from.mockReturnValue(query);
+    mockReadAllRows.mockImplementation(async (factory) => {
+      await factory({ from: 0, to: 499 });
+      return [PROVIDER_ACCESS_LAUNCH];
+    });
+
+    await expect(getUserProjects()).resolves.toEqual([
+      expect.objectContaining({
+        id: PROVIDER_ACCESS_LAUNCH.id,
+        name: "Provider Access Launch",
+        organizationId: PROVIDER_ACCESS_LAUNCH.organization_id,
+        role: "member",
+        memberCount: 0,
+      }),
+    ]);
+
+    expect(forUser).toHaveBeenCalledWith("project");
+    expect(query.is).toHaveBeenCalledWith("deleted_at", null);
+    expect(query.order).toHaveBeenNthCalledWith(1, "updated_at", {
+      ascending: false,
+    });
+    expect(query.order).toHaveBeenNthCalledWith(2, "id", { ascending: true });
+    expect(query.range).toHaveBeenCalledWith(0, 499);
+  });
+
+  it("rejects when the complete RLS project read fails instead of reporting no projects", async () => {
+    mockReadAllRows.mockRejectedValue(new Error("project read unavailable"));
+
+    await expect(getUserProjects()).rejects.toThrow("project read unavailable");
   });
 });

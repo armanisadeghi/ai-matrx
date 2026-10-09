@@ -11,10 +11,11 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { TablesUpdate } from "@/types/database.types";
+import type { Database, TablesUpdate } from "@/types/database.types";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
+import { readAllRows } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -285,54 +286,55 @@ export async function getProjectBySlug(
 }
 
 /**
- * Load the current user's project memberships and the matching project rows in
- * one pass — the canonical replacement for the old project-member junction
- * join (`role` + project). Reads
- * memberships from `membershipsService.forUser('project')`, loads those
- * projects from `ctx_projects`, and batches member counts via
- * `membershipsService.counts` (replacing the per-project N+1 count queries).
+ * Discover every project RLS lets the current person read, then decorate rows
+ * with an optional direct-project role and member count. Organization-level
+ * access is sufficient to read a project, so memberships cannot be the
+ * discovery filter: doing that hid organization projects from normal context
+ * assignment whenever the person was not directly added to the project.
  */
 async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
-  const membersResult = await membershipsService.forUser("project");
+  const [projectRows, membersResult] = await Promise.all([
+    readAllRows<Database["projects"]["Tables"]["projects"]["Row"]>(
+      ({ from, to }) =>
+        projectsDb(supabase)
+          .from("projects")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "projects.projects" },
+    ),
+    membershipsService.forUser("project"),
+  ]);
+
   if (isScopesRpcErr(membersResult)) {
-    console.error(
-      "Error fetching project memberships:",
-      membersResult.error.message,
+    throw new Error(
+      membersResult.error.message || "Could not read project memberships",
     );
-    return [];
   }
 
   const memberships = membersResult.data.memberships;
-  if (memberships.length === 0) return [];
-
   const roleById = new Map<string, ProjectRole>();
   for (const m of memberships) {
     roleById.set(m.containerId, m.role as ProjectRole);
   }
   const projectIds = Array.from(roleById.keys());
 
-  const { data: projectRows, error: projectsError } = await projectsDb(
-    supabase,
-  )
-    .from("projects")
-    .select(`*`)
-    .is("deleted_at", null)
-    .in("id", projectIds);
-
-  if (projectsError) {
-    console.error("Error fetching projects:", projectsError.message);
-    return [];
-  }
-
-  const countsResult = await membershipsService.counts("project", projectIds);
   const countById = new Map<string, number>();
-  if (!isScopesRpcErr(countsResult)) {
+  if (projectIds.length > 0) {
+    const countsResult = await membershipsService.counts("project", projectIds);
+    if (isScopesRpcErr(countsResult)) {
+      throw new Error(
+        countsResult.error.message || "Could not read project member counts",
+      );
+    }
     for (const c of countsResult.data.counts) {
       countById.set(c.containerId, c.memberCount);
     }
   }
 
-  return (projectRows ?? []).map((row: Record<string, unknown>) => {
+  return projectRows.map((row) => {
     const proj = transformProjectFromDb(row);
     return {
       ...proj,
@@ -345,20 +347,11 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
 export async function getOrgProjects(
   organizationId: string,
 ): Promise<ProjectWithRole[]> {
-  try {
-    requireUserId();
-    const projects = (await loadUserProjectsWithRole()).filter(
-      (p) => p.organizationId === organizationId,
-    );
-
-    return projects.sort((a, b) => a.name.localeCompare(b.name));
-  } catch (error: unknown) {
-    const err = error as { code?: string; message?: string };
-    if (err?.code === "42P01" || err?.message?.includes("does not exist"))
-      return [];
-    console.error("Error in getOrgProjects:", error);
-    return [];
-  }
+  requireUserId();
+  const projects = (await loadUserProjectsWithRole()).filter(
+    (p) => p.organizationId === organizationId,
+  );
+  return projects.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -543,7 +536,9 @@ export async function getProjectUserRole(
 
     const result = await membershipsService.forUser("project");
     if (isScopesRpcErr(result)) {
-      throw new Error(result.error.message || "Could not read your role in this project");
+      throw new Error(
+        result.error.message || "Could not read your role in this project",
+      );
     }
 
     const membership = result.data.memberships.find(
@@ -793,7 +788,9 @@ export async function getUserProjectInvitations(): Promise<
         "Error fetching user project invitations:",
         result.error.message,
       );
-      throw new Error(result.error.message || "Could not read your project invitations");
+      throw new Error(
+        result.error.message || "Could not read your project invitations",
+      );
     }
 
     const invitations = result.data.invitations.filter(

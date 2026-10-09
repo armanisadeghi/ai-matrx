@@ -43,6 +43,11 @@ export function seedPlatform(): void {
   // features/organizations/service/membershipsService.ts `MbrCountRow`
   seedRpc("mbr_count", [{ container_id: ORGANIZATION.id, member_count: 4 }]);
   seedRpc("knob_snapshot", { resolved: KNOBS, stamp: "2026-10-02T08:00:00.000Z" });
+  // KNOB-SNAPSHOT (2026-10-08): the same answer in its two halves. `knob_defaults` is the platform's values
+  // (kept once per tab, in memory + localStorage), `knob_snapshot_delta` the person's difference (nothing here).
+  // Unseeded, both fail, and a failed read is never kept - every wake would ask again.
+  seedRpc("knob_defaults", { version: "d1", unchanged: false, defaults: KNOBS });
+  seedRpc("knob_snapshot_delta", { etag: "e1", defaults_version: "d1", unchanged: false, overrides: {} });
   // lib/list-scope/shownTo.ts `ShownToContext`
   seedRpc("shown_to_context", { [ORGANIZATION.id]: { d: "everyone", t: [PERSON.id] } });
   // utils/permissions/service.ts — the person owns what the tile shows.

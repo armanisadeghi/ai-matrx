@@ -23,7 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { publicForm, submitPublicForm } from "@/features/forms/service";
-import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
+import { typedAnswersFor } from "@ai-matrx/records/forms";
 
 export const dynamic = "force-dynamic";
 

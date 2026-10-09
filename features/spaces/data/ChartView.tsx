@@ -8,7 +8,7 @@
 // and the tile says so, as Notion does ("Only showing 200 options").
 
 import { ChartBlock } from "@ai-matrx/records-ui";
-import { choiceSlug, measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
+import { choiceSlug, measureKey, useFields, useRecords, useRecordsClient, useRecordWrites, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
 import { useEffect, useRef, useState } from "react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -121,7 +121,9 @@ export function useChartData(tableId: string, settings: ChartSettings, overRows 
   const group = settings.groupBy ?? null;
   const groupField = fields.find((f) => f.key === group);
   const choices = choicesOfField(groupField);
-  const ask = JSON.stringify([tableId, group, measure, settings.sort ?? "manual", Object.keys(filter).length ? filter : null]);
+  // Every add, edit, archive or duplicate made on this page asks the chart again (the grid re-reads its page the same way).
+  const writes = useRecordWrites();
+  const ask = JSON.stringify([tableId, group, measure, settings.sort ?? "manual", Object.keys(filter).length ? filter : null, writes]);
   // The two questions (round 36: the server asks the same — page/space-page-seed.server.ts) and their
   // answers from this block's seed, when it holds them: drawn at once, never asked again.
   const specs = chartTileSpecs(settings, filter);

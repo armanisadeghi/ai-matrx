@@ -92,7 +92,8 @@ import {
 import type { EntityOverlayMap, EntityTypeToken } from "@ai-matrx/associations";
 import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 import { listHrEmployeeCandidates } from "@/features/hr/entry-points/employeeCandidates";
-import { listStoreRecordCandidates } from "@/features/unified-data/storeRecordCandidates";
+import { listStoreRecordCandidates } from "@ai-matrx/records/search";
+import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
 import { associationsErrorSink } from "@/features/scopes/host/errorSink";
 import { openPath } from "@/lib/deep-link/openPath";
 
@@ -542,7 +543,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // "Link a record…" find a store record. It opens at the one address that resolves any id.
   record: {
     Icon: Rows3,
-    listCandidates: listStoreRecordCandidates,
+    listCandidates: (args) => listStoreRecordCandidates(createBrowserSupabase(), args),
     hrefFor: (id) => openPath(id),
   },
   google_document: {

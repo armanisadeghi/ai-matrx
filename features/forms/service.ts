@@ -32,7 +32,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
+import { typedAnswersFor } from "@ai-matrx/records/forms";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { PortalStyle } from "@/features/portals/service";
