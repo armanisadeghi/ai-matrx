@@ -2,6 +2,8 @@
 
 import {
   useState,
+  useEffect,
+  useRef,
   useCallback,
   useMemo,
   useTransition,
@@ -413,11 +415,35 @@ function selectedChoice(value: ColumnFilterValue | undefined): string | null {
 
 /** The expanded detail under a row: authority reasoning + search snippets. */
 function SourceExpandedDetail({ source }: { source: ResearchSource }) {
+  // The detail row spans the table's full (possibly scrolled) width, so its
+  // text would run past the visible edge. Pin it to the left and hold it to the
+  // scroller's visible width so it wraps inside what the person can see.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [visibleWidth, setVisibleWidth] = useState<number | null>(null);
+  useEffect(() => {
+    let scroller: HTMLElement | null = rootRef.current?.parentElement ?? null;
+    while (scroller) {
+      const overflowX = getComputedStyle(scroller).overflowX;
+      if (overflowX === "auto" || overflowX === "scroll") break;
+      scroller = scroller.parentElement;
+    }
+    if (!scroller) return;
+    const el = scroller;
+    const measure = () => setVisibleWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const snippets = stringArrayFromJson(source.extra_snippets);
   const hasSnippets = snippets.length > 0;
   const hasReasoning = !!source.authority_reasoning;
   return (
-    <div className="space-y-2.5 px-4 py-3">
+    <div
+      ref={rootRef}
+      className="sticky left-0 space-y-2.5 break-words px-4 py-3"
+      style={visibleWidth ? { width: Math.max(visibleWidth - 32, 200) } : undefined}
+    >
       {hasReasoning && (
         <div>
           <div className="flex items-center gap-2">
@@ -1622,7 +1648,6 @@ export default function SourceList() {
         pageSize={pageSize}
         pageSizeOptions={pageSizeOptions}
         fitToWidth="grow"
-        rowHeight={124}
         query={{
           mode: "controlled-local",
           state: tableState,
