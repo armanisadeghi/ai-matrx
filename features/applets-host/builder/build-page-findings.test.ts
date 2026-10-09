@@ -77,10 +77,12 @@ describe("B4 — plain words", () => {
 });
 
 describe("B13 — the window resolves and gets out of the way", () => {
-  it("keeps the run's instance until the save, then closes the window", () => {
+  it("keeps the run's instance, closes the window on save, and keeps the build's conversation", () => {
     expect(builder).toContain("keepInstance: true");
     expect(builder).toMatch(/shown\.current = `\$\{id\}\|\$\{entry\.id\}:saved`;\s*closeRunWindow\(\);/);
-    expect(builder).toContain("destroyInstanceIfAllowed(open.conversationId)");
+    // F6b: a build is ONE conversation, shown in the left panel and continued by every later round,
+    // so closing the run window must never destroy its instance.
+    expect(builder).not.toContain("destroyInstanceIfAllowed");
   });
 });
 

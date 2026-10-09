@@ -3,7 +3,7 @@
 // THE PIPE (BUILD-LOOP §4; no second path):
 //   1. the catalogue is read AS HER (`@ai-matrx/applets/catalogue`) — her tables, fields, sample rows,
 //      the jobs that fit her sentence — so the builder copies ids, never guesses them;
-//   2. the mandate `applets.build` (or `applets.fix` with the captured error) answers ONE whole Applet
+//   2. the mandate `applets.build` answers ONE whole Applet; a fix round is the next turn of the same conversation
 //      record; whoever holds the mandate owns its quality — this file writes no instruction;
 //   3. the record is written to `app.definition` as her, with its organization explicit. A new Applet is
 //      born a draft (preview with held-back writes); every later save is a new version
@@ -61,8 +61,13 @@ export function boundTableIds(applet: Pick<BuilderApplet, "sources">): string[] 
 }
 
 /** The tables an answer will make, for the person to see before she presses "Use it". */
-export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[] }[] {
-  return applet.sources.flatMap((s) => ("new_table" in s ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label) }] : []));
+export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[]; examples: number }[] {
+  // `examples`: the sample rows she gave in her message, written once when the table is made (F7).
+  return applet.sources.flatMap((s) =>
+    "new_table" in s
+      ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label), examples: Array.isArray(s.new_table.rows) ? s.new_table.rows.length : 0 }]
+      : [],
+  );
 }
 
 export interface BuildAnswer {

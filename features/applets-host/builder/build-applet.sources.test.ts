@@ -3,7 +3,7 @@
  * a `{ alias, entity }` source without one spans every organization the viewer belongs to, which is how
  * a client's contacts page listed platform test contacts (bug desk, 2026-10-08).
  */
-import { coerceBuildAnswer, scopeEntitySources, type BuilderSource } from "./build-applet";
+import { coerceBuildAnswer, scopeEntitySources, tablesToMake, type BuilderSource } from "./build-applet";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
@@ -37,5 +37,37 @@ describe("scopeEntitySources", () => {
       note: "",
     });
     expect(applet.sources).toEqual([{ alias: "contacts", entity: "party", organization_id: ORG }]);
+  });
+});
+
+describe("tablesToMake — the example rows she gave (F7)", () => {
+  it("counts each new table's sample rows, and keeps them through the answer's coercion", () => {
+    const answer = coerceBuildAnswer({
+      note: "A grooming tracker.",
+      applet: {
+        name: "Grooming",
+        slug: "grooming",
+        description: "Dogs and visits",
+        entry: "App.tsx",
+        files: [{ name: "App.tsx", source: "export default function App() { return null; }" }],
+        pages: [{ path: "/", title: "Home", file: "App.tsx" }],
+        mandates: [],
+        sources: [
+          {
+            alias: "dogs",
+            new_table: {
+              name: "Dogs",
+              fields: [{ key: "name", label: "Name", type: "text" }],
+              rows: [{ cells: [{ key: "name", value: "Biscuit" }] }, { cells: [{ key: "name", value: "Pepper" }] }],
+            },
+          },
+          { alias: "notes", new_table: { name: "Notes", fields: [{ key: "body", label: "Body", type: "text" }] } },
+        ],
+      },
+    });
+    expect(tablesToMake(answer.applet).map((t) => [t.name, t.examples])).toEqual([
+      ["Dogs", 2],
+      ["Notes", 0],
+    ]);
   });
 });
