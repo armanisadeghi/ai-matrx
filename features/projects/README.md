@@ -30,11 +30,11 @@ organizations → projects → iam.memberships → auth.users
 
 ### Canonical project memberships (`iam.memberships`)
 
-| Column       | Type         | Notes                      |
-| ------------ | ------------ | -------------------------- |
-| `role`       | project_role | `owner \| admin \| member` |
-| `joined_at`  | timestamptz  | Auto-set                   |
-| `invited_by` | uuid         | FK → auth.users            |
+| Column       | Type        | Notes                                     |
+| ------------ | ----------- | ----------------------------------------- |
+| `role`       | text        | Project roles: `owner \| admin \| member` |
+| `created_at` | timestamptz | Auto-set                                  |
+| `invited_by` | uuid        | FK → auth.users                           |
 
 ### Canonical project invitations (`iam.invitations`)
 
