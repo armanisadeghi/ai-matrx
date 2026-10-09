@@ -318,3 +318,71 @@ export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject
 export function isMarkerSample(sample: Pick<PerfSample, "metadata">): boolean {
   return isRecord(sample.metadata) && sample.metadata.perf_marker === true;
 }
+
+// ── collector health and page-speed progress (ops.perf_watch_board: 'collectors', 'vitals') ──
+
+/** One perf cron job's newest run, as the board reports it. */
+export interface PerfCollector {
+  job: string;
+  schedule: string;
+  timeout_seconds: number | null;
+  /** Probe jobs only: the door group (admin or member seat) the job measures. */
+  group: string | null;
+  doors: number | null;
+  last_started_at: string | null;
+  last_seconds: number | null;
+  last_status: string | null;
+}
+
+/** Loads counted for one metric on one route over the roll-up window. */
+export interface PerfVitalRoute {
+  metric: string;
+  route: string;
+  n_window: number;
+  n_hour: number;
+  has_watch: boolean;
+}
+
+export interface PerfVitals {
+  min_n: number;
+  window_hours: number;
+  sample_rate: number | null;
+  routes: PerfVitalRoute[];
+}
+
+/** The probe keeps 15 s of its job timeout for writing; a collector's usable time is the rest. */
+export const PROBE_WRITE_RESERVE_SECONDS = 15;
+
+/** The seconds a collector job may spend measuring: its timeout, less the probe's write reserve. */
+export function collectorCapSeconds(c: Pick<PerfCollector, "timeout_seconds" | "group">): number | null {
+  if (c.timeout_seconds == null) return null;
+  return c.group ? Math.max(1, c.timeout_seconds - PROBE_WRITE_RESERVE_SECONDS) : c.timeout_seconds;
+}
+
+/** Share of its cap the last run used, 0..n (above 0.8 is worth a look); null when unknown. */
+export function collectorUse(c: Pick<PerfCollector, "timeout_seconds" | "group" | "last_seconds">): number | null {
+  const cap = collectorCapSeconds(c);
+  return cap == null || c.last_seconds == null ? null : c.last_seconds / cap;
+}
+
+/** Probe jobs first (admin, then member), then the other collectors by name. */
+export function sortCollectors(list: readonly PerfCollector[]): PerfCollector[] {
+  return list.slice().sort((a, b) => Number(!!b.group) - Number(!!a.group) || a.job.localeCompare(b.job));
+}
+
+export interface VitalProgress {
+  /** "n of min" while a route is under the minimum; the plain count once it has enough. */
+  label: string;
+  enough: boolean;
+}
+
+/** A route's loads against the roll-up minimum: never silence for a quiet route. */
+export function vitalProgress(route: Pick<PerfVitalRoute, "n_window" | "has_watch">, minN: number): VitalProgress {
+  const enough = route.has_watch || route.n_window >= minN;
+  return { label: enough ? String(route.n_window) : `${route.n_window} of ${minN}`, enough };
+}
+
+/** Routes with loads but no watch yet, most loads first. */
+export function vitalsWaiting(vitals: PerfVitals | null): PerfVitalRoute[] {
+  return (vitals?.routes ?? []).filter((r) => !r.has_watch).sort((a, b) => b.n_window - a.n_window);
+}

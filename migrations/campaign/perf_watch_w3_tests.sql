@@ -169,7 +169,7 @@ declare
   v_n int;
 begin
   v_r := ops.perf_job_collect();
-  select * into w from ops.proof_check where slug = 'job:perf-watch-probe';
+  select * into w from ops.proof_check where slug = 'job:perf-watch-probe-admin';
   if w.id is null or w.perf_kind <> 'job' or w.budget_ms < 1000 or w.perf_subject->>'budget_basis' not like '%p95%' then
     raise exception '(k) the probe job was not declared with a based budget: % / %', to_jsonb(w), v_r;
   end if;
@@ -185,7 +185,7 @@ begin
     from cron.job j,
          (values (1, 'succeeded', '1 row', interval '2 seconds'), (2, 'succeeded', '1 row', interval '4 seconds'),
                  (3, 'failed', 'ERROR:  w3 job test', interval '6 seconds')) x(k, status, msg, dur)
-   where j.jobname = 'perf-watch-probe';
+   where j.jobname = 'perf-watch-probe-admin';
   v_r := ops.perf_job_collect();
   -- Every sample of this transaction shares now(): the one carrying the planted failure is the second collection's.
   select * into v_s from ops.perf_sample where check_id = w.id and source = 'job' and measured_at >= now() and note like '%w3 job test%';

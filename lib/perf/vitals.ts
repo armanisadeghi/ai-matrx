@@ -82,6 +82,38 @@ export function isSampled(draw: number, rate: number): boolean {
   return rate > 0 && draw < rate;
 }
 
+/** Where a sampled load keeps the rate it resolved, so the next load decides without any read. */
+export const RATE_STORAGE_KEY = "matrx.perf.client_sample_rate";
+
+export type RateStorage = Pick<Storage, "getItem" | "setItem">;
+
+/** The last rate a sampled load resolved from the knob, else the platform default. Never throws. */
+export function readStoredRate(storage: Pick<Storage, "getItem"> | null): number {
+  try {
+    const raw = storage?.getItem(RATE_STORAGE_KEY);
+    return raw == null ? DEFAULT_CLIENT_SAMPLE_RATE : sampleRateOf(raw);
+  } catch {
+    return DEFAULT_CLIENT_SAMPLE_RATE;
+  }
+}
+
+export function writeStoredRate(storage: Pick<Storage, "setItem"> | null, rate: number): void {
+  try {
+    storage?.setItem(RATE_STORAGE_KEY, String(rate));
+  } catch {
+    // Storage is a cache of the knob; a full or blocked store only costs the next load a default draw.
+  }
+}
+
+/**
+ * The whole decision of an UNSAMPLED load: one random draw against the stored (or default) rate.
+ * No observer, no settings read, no network. A sampled load then resolves the real knob and
+ * refreshes the stored rate (a raised rate reaches every device through its sampled loads).
+ */
+export function loadIsSampled(draw: number, storage: Pick<Storage, "getItem"> | null): boolean {
+  return isSampled(draw, readStoredRate(storage));
+}
+
 /**
  * Collects one value per metric for this page load. LCP / FCP / TTFB keep their
  * first value; INP and CLS keep growing until the page is hidden, so the latest

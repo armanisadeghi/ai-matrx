@@ -1,5 +1,11 @@
 import {
   budgetTone,
+  collectorCapSeconds,
+  collectorUse,
+  sortCollectors,
+  vitalProgress,
+  vitalsWaiting,
+  type PerfCollector,
   isLargeTwin,
   isMarkerSample,
   judgedValue,
@@ -245,5 +251,42 @@ describe("isMarkerSample", () => {
     expect(isMarkerSample({ metadata: { perf_marker: true, perf_marker_kind: "event" } })).toBe(true);
     expect(isMarkerSample({ metadata: {} })).toBe(false);
     expect(isMarkerSample({ metadata: null })).toBe(false);
+  });
+});
+
+describe("collector health", () => {
+  const c = (over: Partial<PerfCollector>): PerfCollector => ({
+    job: "perf-watch-statements", schedule: "5 * * * *", timeout_seconds: 60, group: null, doors: null,
+    last_started_at: null, last_seconds: null, last_status: null, ...over,
+  });
+  it("a probe job's cap is its timeout less the 15 s write reserve; other jobs use the whole timeout", () => {
+    expect(collectorCapSeconds(c({ job: "perf-watch-probe-admin", group: "admin", timeout_seconds: 90 }))).toBe(75);
+    expect(collectorCapSeconds(c({}))).toBe(60);
+    expect(collectorCapSeconds(c({ timeout_seconds: null }))).toBeNull();
+  });
+  it("use is the last run's seconds over the cap, null when unknown", () => {
+    expect(collectorUse(c({ group: "member", timeout_seconds: 90, last_seconds: 30 }))).toBeCloseTo(0.4);
+    expect(collectorUse(c({ last_seconds: null }))).toBeNull();
+  });
+  it("lists the two probe jobs first, admin before member", () => {
+    const sorted = sortCollectors([c({ job: "perf-watch-health" }), c({ job: "perf-watch-probe-member", group: "member" }), c({ job: "perf-watch-probe-admin", group: "admin" })]);
+    expect(sorted.map((x) => x.job)).toEqual(["perf-watch-probe-admin", "perf-watch-probe-member", "perf-watch-health"]);
+  });
+});
+
+describe("page-speed progress", () => {
+  it("shows n against the minimum while a route has no watch, never silence", () => {
+    expect(vitalProgress({ n_window: 12, has_watch: false }, 30)).toEqual({ label: "12 of 30", enough: false });
+    expect(vitalProgress({ n_window: 41, has_watch: true }, 30)).toEqual({ label: "41", enough: true });
+    expect(vitalProgress({ n_window: 31, has_watch: false }, 30).enough).toBe(true);
+  });
+  it("waiting routes are the ones without a watch, most loads first", () => {
+    const v = { min_n: 30, window_hours: 24, sample_rate: 0.05, routes: [
+      { metric: "LCP", route: "/a", n_window: 3, n_hour: 0, has_watch: false },
+      { metric: "LCP", route: "/b", n_window: 40, n_hour: 2, has_watch: true },
+      { metric: "CLS", route: "/c", n_window: 9, n_hour: 1, has_watch: false },
+    ] };
+    expect(vitalsWaiting(v).map((r) => r.route)).toEqual(["/c", "/a"]);
+    expect(vitalsWaiting(null)).toEqual([]);
   });
 });

@@ -175,7 +175,7 @@ begin
   insert into cron.job_run_details (runid, jobid, job_pid, database, username, command, status, return_message, start_time, end_time)
   select (select max(runid) + 1000000 from cron.job_run_details), j.jobid, 0, current_database(), 'postgres', j.command, 'failed', 'ERROR:  canceling statement due to statement timeout',
          now() + interval '1 second', now() + interval '91 seconds'
-    from cron.job j where j.jobname = 'perf-watch-probe';
+    from cron.job j where j.jobname = 'perf-watch-probe-admin';
   v_r := ops.perf_health_run();
   v_r := ops.perf_health_run();
   if (select count(*) from ops.system_error where error_type = 'perf_watch:collector:probe:failed_run' and created_at >= now()) <> 1

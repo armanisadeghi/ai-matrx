@@ -1,36 +1,56 @@
 "use client";
 
 // Real-user page speed (performance-watch PLAN §2). Mounted once at the root
-// layout; renders nothing. One random draw per page load against the knob
-// `perf.client_sample_rate` (0 = off; a person may raise it for themselves):
-// an unsampled load keeps nothing and sends nothing. A sampled, signed-in load
-// sends ONE batch (route TEMPLATE, never a raw id) to `ops.perf_client_report`
-// when the page is first hidden, with `keepalive` so the request outlives it.
+// layout; renders nothing. One random draw per page load against the rate the
+// device last resolved from `perf.client_sample_rate` (stored locally; the
+// platform default until a sampled load has resolved it; 0 = off).
+//
+// An UNSAMPLED load does exactly that draw and nothing else: no observers, no
+// settings read, no auth call, no listener — `PerfVitalsReporter` has no hooks
+// and returns null. Only a sampled load mounts `SampledReporter`, which
+// resolves the real knob (refreshing the stored rate, and dropping the load if
+// the knob now says it should not have been sampled), collects LCP/INP/CLS/TTFB
+// and sends ONE batch (route TEMPLATE, never a raw id) to
+// `ops.perf_client_report` when the page is first hidden, with `keepalive`.
 
 import { useEffect } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { useReportWebVitals } from "next/web-vitals";
 import { supabase } from "@/utils/supabase/client";
-import { getSessionKnob, resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { addVital, isSampled, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
+import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import {
+  addVital,
+  isSampled,
+  loadIsSampled,
+  routeTemplate,
+  sampleRateOf,
+  writeStoredRate,
+  type VitalName,
+  type VitalSample,
+} from "./vitals";
 
-const DRAW = typeof window === "undefined" ? 1 : Math.random();
 const RATE_KNOB = "perf.client_sample_rate";
-const batch = new Map<VitalName, VitalSample>();
-let sent = false;
-let accessToken: string | null = null;
-let loadRoute: string | null = null;
-let resolvedRate: number | null = null;
 
-function rateNow(): number {
-  if (resolvedRate !== null) return resolvedRate;
-  const cached = getSessionKnob(RATE_KNOB);
-  return sampleRateOf(cached);
+function deviceStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
+// The one draw of this page load, and the one decision it buys.
+const DRAW = typeof window === "undefined" ? 1 : Math.random();
+const SAMPLED = typeof window !== "undefined" && loadIsSampled(DRAW, deviceStorage());
+
+const batch = new Map<VitalName, VitalSample>();
+let sent = false;
+let dropped = false;
+let accessToken: string | null = null;
+let loadRoute: string | null = null;
+
 function flush(): void {
-  if (sent || batch.size === 0 || !accessToken) return;
-  if (!isSampled(DRAW, rateNow())) return;
+  if (sent || dropped || batch.size === 0 || !accessToken) return;
   sent = true;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -57,13 +77,11 @@ function flush(): void {
 
 // One stable callback (a new reference would replay every metric again).
 function onMetric(metric: { name: string; value: number; rating?: string; navigationType?: string }): void {
-  // A load already known to be unsampled keeps nothing.
-  const known = resolvedRate ?? (getSessionKnob(RATE_KNOB) === undefined ? null : rateNow());
-  if (known !== null && !isSampled(DRAW, known)) return;
+  if (dropped) return;
   addVital(batch, metric, loadRoute ?? "/");
 }
 
-export function PerfVitalsReporter() {
+function SampledReporter() {
   const pathname = usePathname();
   const params = useParams();
   // The route of THIS page load, set once (later soft navigations are not this load's numbers).
@@ -76,10 +94,17 @@ export function PerfVitalsReporter() {
   useReportWebVitals(onMetric);
 
   useEffect(() => {
-    // Resolve the knob now so the decision is made by the time the page hides.
+    // Resolve the knob now: refresh the stored rate for the next load, and drop this one if the
+    // knob has since been lowered below this load's draw.
     void resolveSessionKnob(RATE_KNOB)
       .then((v) => {
-        if (v !== undefined) resolvedRate = sampleRateOf(v);
+        if (v === undefined) return;
+        const rate = sampleRateOf(v);
+        writeStoredRate(deviceStorage(), rate);
+        if (!isSampled(DRAW, rate)) {
+          dropped = true;
+          batch.clear();
+        }
       })
       .catch((error: unknown) => console.error("[perf-vitals] the sample rate could not be resolved", error));
     void supabase.auth.getSession().then(({ data }) => {
@@ -101,4 +126,8 @@ export function PerfVitalsReporter() {
   }, []);
 
   return null;
+}
+
+export function PerfVitalsReporter() {
+  return SAMPLED ? <SampledReporter /> : null;
 }

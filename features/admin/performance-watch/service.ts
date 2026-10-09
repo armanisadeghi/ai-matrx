@@ -10,14 +10,21 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import type { PerfSample, PerfWatch, PerfWatchEdit } from "./model";
+import type { PerfCollector, PerfSample, PerfVitals, PerfWatch, PerfWatchEdit } from "./model";
 
 
 export interface PerfSnapshot {
   watches: PerfWatch[];
-  /** Per watch: newest sample, markers and up to 60 evenly spaced samples of the last 7 days. */
+  /** Per watch: newest sample and markers (with their words) and up to BOARD_POINTS evenly spaced numbers of the last 7 days. */
   recent: PerfSample[];
+  /** Every perf cron job's newest run (the probe's two seat groups included). */
+  collectors: PerfCollector[];
+  /** Page-speed loads per route over the roll-up window; null if the board did not answer with it. */
+  vitals: PerfVitals | null;
 }
+
+/** Sparkline points kept per watch; the board caps the request at 120 whatever is asked. */
+export const BOARD_POINTS = 30;
 
 export interface PerfSource {
   loadSnapshot: () => Promise<PerfSnapshot>;
@@ -34,10 +41,10 @@ function ops() {
 async function loadSnapshot(): Promise<PerfSnapshot> {
   // One call: every watch + per watch its newest sample, its markers and an evenly spaced sparkline
   // series (ops.perf_watch_board). Paging every raw 7-day sample used to cost hundreds of requests.
-  const { data, error } = await ops().rpc("perf_watch_board", { p_days: 7, p_points: 60 });
+  const { data, error } = await ops().rpc("perf_watch_board", { p_days: 7, p_points: BOARD_POINTS });
   if (error) throw new Error(error.message);
-  const board = (data ?? {}) as { watches?: PerfWatch[]; recent?: PerfSample[] };
-  return { watches: board.watches ?? [], recent: board.recent ?? [] };
+  const board = (data ?? {}) as { watches?: PerfWatch[]; recent?: PerfSample[]; collectors?: PerfCollector[]; vitals?: PerfVitals };
+  return { watches: board.watches ?? [], recent: board.recent ?? [], collectors: board.collectors ?? [], vitals: board.vitals ?? null };
 }
 
 async function loadHistory(watchId: string): Promise<PerfSample[]> {

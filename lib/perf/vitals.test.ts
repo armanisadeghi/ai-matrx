@@ -1,4 +1,4 @@
-import { addVital, isSampled, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
+import { addVital, isSampled, loadIsSampled, readStoredRate, RATE_STORAGE_KEY, writeStoredRate, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
 
 describe("routeTemplate", () => {
   it("names dynamic params instead of their values", () => {
@@ -38,5 +38,25 @@ describe("addVital", () => {
     addVital(b, { name: "FID", value: 3 }, "/a");
     addVital(b, { name: "TTFB", value: 80, navigationType: "soft-navigation" }, "/b");
     expect([...b.values()].map((s) => [s.name, s.value])).toEqual([["LCP", 1200], ["CLS", 0.05]]);
+  });
+});
+
+describe("the stored rate", () => {
+  const store = (v: string | null) => ({ getItem: (k: string) => (k === RATE_STORAGE_KEY ? v : null) });
+  it("is the platform default until a sampled load has stored one", () => {
+    expect(readStoredRate(null)).toBe(0.05);
+    expect(readStoredRate(store(null))).toBe(0.05);
+    expect(readStoredRate(store("0.25"))).toBe(0.25);
+    expect(readStoredRate(store("junk"))).toBe(0.05);
+  });
+  it("never throws on a blocked store", () => {
+    const blocked = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+    expect(readStoredRate(blocked)).toBe(0.05);
+    expect(() => writeStoredRate(blocked, 0.1)).not.toThrow();
+  });
+  it("decides a load with one draw", () => {
+    expect(loadIsSampled(0.04, store(null))).toBe(true);
+    expect(loadIsSampled(0.06, store(null))).toBe(false);
+    expect(loadIsSampled(0.001, store("0"))).toBe(false);
   });
 });

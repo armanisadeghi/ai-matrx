@@ -14,6 +14,7 @@ import { Suspense, useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Gauge, Pause, Pin, PinOff, Play, RefreshCw, XCircle } from "lucide-react";
 import { Field } from "@ai-matrx/design-system/controls";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,16 +32,23 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   PERF_STATES,
   PERF_STATE_LABELS,
+  collectorCapSeconds,
+  collectorUse,
   judgedValue,
   measuresLine,
   sparklinePoints,
   stateCounts,
+  sortCollectors,
   stateHistory,
   subjectFields,
   isMarkerSample,
+  vitalProgress,
+  vitalsWaiting,
   summarizeWatches,
   watchReason,
+  type PerfCollector,
   type PerfSample,
+  type PerfVitals,
   type PerfWatch,
   type PerfWatchEdit,
   type PerfState,
@@ -144,6 +152,9 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
               ))}
             </div>
           ) : null}
+          {snapshot.status === "ready" ? (
+            <CollectorsPopover collectors={snapshot.data.collectors} vitals={snapshot.data.vitals} />
+          ) : null}
           <Button
             icon={<RefreshCw className={`h-3.5 w-3.5 ${snapshot.status === "loading" ? "animate-spin" : ""}`} />}
             variant="quiet"
@@ -179,6 +190,90 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
         )}
       </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+// Collector health and page-speed progress live in a popover off the header, never as a new row.
+function CollectorsPopover({ collectors, vitals }: { collectors: PerfCollector[]; vitals: PerfVitals | null }) {
+  const jobs = sortCollectors(collectors);
+  const waiting = vitalsWaiting(vitals);
+  const slow = jobs.filter((c) => (collectorUse(c) ?? 0) > 0.8 || (c.last_status != null && c.last_status !== "succeeded")).length;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="quiet" className="text-xs">
+          Collectors
+          {slow ? <span className="ml-1 font-medium text-warning">{slow}</span> : null}
+          {waiting.length ? <span className="ml-1 text-muted-foreground">· {waiting.length} routes sampling</span> : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[34rem] max-w-[92vw] space-y-3 p-2 text-xs">
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th className="px-1 py-0.5 font-medium">Collector</th>
+              <th className="px-1 py-0.5 font-medium">Schedule</th>
+              <th className="px-1 py-0.5 text-right font-medium">Doors</th>
+              <th className="px-1 py-0.5 text-right font-medium">Last run</th>
+              <th className="px-1 py-0.5 text-right font-medium">Took of cap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.map((c) => {
+              const use = collectorUse(c);
+              const cap = collectorCapSeconds(c);
+              const bad = c.last_status != null && c.last_status !== "succeeded";
+              return (
+                <tr key={c.job} className="border-t border-border/50">
+                  <td className="px-1 py-0.5 font-mono text-[11px]">{c.job.replace(/^perf-watch-/, "")}</td>
+                  <td className="px-1 py-0.5 font-mono text-[11px] text-muted-foreground">{c.schedule}</td>
+                  <td className="px-1 py-0.5 text-right tabular-nums">{c.doors ?? ""}</td>
+                  <td className={`px-1 py-0.5 text-right ${bad ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+                    {c.last_started_at ? formatRelativeTime(c.last_started_at) : "never"}
+                    {bad ? ` · ${c.last_status}` : ""}
+                  </td>
+                  <td className={`px-1 py-0.5 text-right tabular-nums ${use != null && use > 0.8 ? "font-medium text-warning" : "text-muted-foreground"}`}>
+                    {c.last_seconds != null && cap != null ? `${c.last_seconds} s of ${cap} s` : ""}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {vitals ? (
+          <table className="w-full">
+            <thead>
+              <tr className="text-left text-muted-foreground">
+                <th className="px-1 py-0.5 font-medium">Page speed route</th>
+                <th className="px-1 py-0.5 font-medium">Metric</th>
+                <th className="px-1 py-0.5 text-right font-medium">Loads in {vitals.window_hours} h</th>
+                <th className="px-1 py-0.5 text-right font-medium">Watch</th>
+              </tr>
+            </thead>
+            <tbody>
+              {waiting.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-1 py-0.5 text-muted-foreground">
+                    Every sampled route has a watch
+                  </td>
+                </tr>
+              ) : (
+                waiting.slice(0, 20).map((r) => (
+                  <tr key={`${r.metric}:${r.route}`} className="border-t border-border/50">
+                    <td className="max-w-[16rem] truncate px-1 py-0.5 font-mono text-[11px]" title={r.route}>
+                      {r.route}
+                    </td>
+                    <td className="px-1 py-0.5">{r.metric}</td>
+                    <td className="px-1 py-0.5 text-right tabular-nums">{vitalProgress(r, vitals.min_n).label}</td>
+                    <td className="px-1 py-0.5 text-right text-muted-foreground">not enough samples yet</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }
 

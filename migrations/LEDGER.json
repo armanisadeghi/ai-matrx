@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T23:52:48.171Z",
+  "generated_at": "2026-10-09T00:22:08.549Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4718,6 +4718,18 @@
       "checksum": "4fbf6d2d9e09053ce2f07a408adf6f0c948ca207cb0245cf852e830a84c550a0",
       "applied_at": "2026-10-03 03:43:24.967389+00"
     },
+    "migrations/campaign/memosweep_a_the_memo_path_is_compared_with_the_plain_path_every_half_hour.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_a_the_memo_path_is_compared_with_the_plain_path_every_half_hour.sql",
+      "checksum": "9aad0d8fed7f3750512358d623224b6e0406071221b903938fa4a7a6430d0790",
+      "applied_at": "2026-10-09 00:08:42.142074+00"
+    },
+    "migrations/campaign/memosweep_b_a_planted_fault_is_seen_and_the_probe_proves_the_memo_ran.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_b_a_planted_fault_is_seen_and_the_probe_proves_the_memo_ran.sql",
+      "checksum": "c03d8e4fce5eb9f5ef79b85216730f7c71ecbec4abeee0f437c20f3d2e0425e0",
+      "applied_at": "2026-10-09 00:19:56.038463+00"
+    },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",
       "filename": "merge7_the_merged_grid_is_a_feature_knob.sql",
@@ -5065,6 +5077,42 @@
       "filename": "paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql",
       "checksum": "b4fc35e4d8b0c67493c9e474a38a56d50bc69de2b1b8177791f177b7410c84bd",
       "applied_at": "2026-09-25 14:24:13.036153+00"
+    },
+    "migrations/campaign/perf_watch_tail_a_split_probe.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_a_split_probe.sql",
+      "checksum": "fd8235b60cc14c507e6d703cf61cdb73098416167ef42d2d559c560fa425fcb2",
+      "applied_at": "2026-10-09 00:15:25.429184+00"
+    },
+    "migrations/campaign/perf_watch_tail_b_vital_rollup_window.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_b_vital_rollup_window.sql",
+      "checksum": "610d381018ac611eb3d8a70c1406c5b918abaeda5b0734d0141f700b4638a0c6",
+      "applied_at": "2026-10-09 00:15:57.819113+00"
+    },
+    "migrations/campaign/perf_watch_tail_c_board_slim_and_collectors.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_c_board_slim_and_collectors.sql",
+      "checksum": "d58f0ab87dfa39a2cc8200074f6153e62fb7f0b46274063e73c9a31f99486b78",
+      "applied_at": "2026-10-09 00:16:12.156347+00"
+    },
+    "migrations/campaign/perf_watch_tail_d_job_budgets.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_d_job_budgets.sql",
+      "checksum": "87d069dbec07d72c3a35546fc1f5ebed36cd47306b46f1dbf584345273c4340e",
+      "applied_at": "2026-10-09 00:16:22.462445+00"
+    },
+    "migrations/campaign/perf_watch_tail_e_retire_probe_job_watch.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_e_retire_probe_job_watch.sql",
+      "checksum": "5016e3e9979d2e6cb4c5306aa9341a8be4c150893af0d59d3369d04a13cdf929",
+      "applied_at": "2026-10-09 00:18:41.567563+00"
+    },
+    "migrations/campaign/perf_watch_tail_f_board_slimmer.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_tail_f_board_slimmer.sql",
+      "checksum": "6557f8e8de0c534b62d7e2c2a53c8ffa890795e86fa22f57ebd83a9990ef2240",
+      "applied_at": "2026-10-09 00:22:07.25275+00"
     },
     "migrations/campaign/perf_watch_w1_a_catalog_and_sample.sql": {
       "source": "matrx-frontend",

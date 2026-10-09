@@ -33,6 +33,7 @@ import {
 import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import type { CanvasKind, CanvasOutputRequest } from "@ai-matrx/canvas/react";
 import { fileHandler } from "@/features/files/handler/handler";
+import { resolveArtifactData } from "@/features/canvas/artifact-types/resolveArtifactData";
 import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
 import { blobToDataUrl } from "./capturePort";
 import { printCapturedImage } from "./printCapture";
@@ -389,9 +390,11 @@ registerBlockPrinter(["presentation"], presentationPrinter);
 
 // ─── the canvas tab: the same adapters, from the tab's own data ──────────────
 
-function tabData(request: CanvasOutputRequest): unknown {
+/** The tab's content. A materialized artifact keeps only a pointer in the tab; its body is resolved first. */
+async function tabData(request: CanvasOutputRequest): Promise<unknown> {
   const stored = readArtifactItemData(request.item.data);
-  const data = stored ? contentOf(stored).data : null;
+  const raw = stored ? contentOf(stored).data : null;
+  const data = await resolveArtifactData(raw);
   if (typeof data === "string") {
     const json = parseJson<unknown>(data);
     return json && typeof json === "object" ? json : data;
@@ -426,17 +429,17 @@ const captureLiveGraph: Capture = async (request) => {
 export const GRAPH_OUTPUT = { print: printLiveGraph, capture: captureLiveGraph };
 
 export const SVG_OUTPUT = {
-  print: ((request) => runPrinter(svgPrinter, tabData(request))) satisfies Print,
+  print: ((request) => tabData(request).then((data) => runPrinter(svgPrinter, data))) satisfies Print,
   capture: (async (request) => {
-    const svg = extractSvgMarkup(sourceText(tabData(request)));
+    const svg = extractSvgMarkup(sourceText(await tabData(request)));
     if (!svg) throw new Error("this graphic has no drawing");
     return svgMarkupToImage(svg);
   }) satisfies Capture,
 };
 
 export const IMAGE_OUTPUT = {
-  print: ((request) => runPrinter(imagePrinter, tabData(request))) satisfies Print,
-  capture: ((request) => imageBlob(imageSource(tabData(request)))) satisfies Capture,
+  print: ((request) => tabData(request).then((data) => runPrinter(imagePrinter, data))) satisfies Print,
+  capture: ((request) => tabData(request).then((data) => imageBlob(imageSource(data)))) satisfies Capture,
 };
 
 /** The chart prints as drawn (vector); its picture is the same drawing. */
@@ -444,11 +447,13 @@ export const CHART_OUTPUT = {
   print: ((request) => {
     const element = request.element;
     if (element) return void printElement(element, { title: request.title });
-    return runPrinter(chartPrinter, tabData(request));
+    return tabData(request).then((data) => runPrinter(chartPrinter, data));
   }) satisfies Print,
+  // A clean picture of the chart (a DOM copy of the pane carries the pointer's hover tooltip).
+  capture: ((request) => tabData(request).then((data) => chartPicture(sourceText(data)))) satisfies Capture,
 };
 
 export const PRESENTATION_OUTPUT = {
-  print: ((request) => runPrinter(presentationPrinter, tabData(request))) satisfies Print,
-  capture: ((request) => deckStackPicture(tabData(request))) satisfies Capture,
+  print: ((request) => tabData(request).then((data) => runPrinter(presentationPrinter, data))) satisfies Print,
+  capture: ((request) => tabData(request).then(deckStackPicture)) satisfies Capture,
 };
