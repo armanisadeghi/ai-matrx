@@ -48,7 +48,9 @@ SMS-only validator was removed after all consumers moved atomically.
 - Lifecycle callback URL: `https://www.aimatrx.com/api/webhooks/twilio/voice/status`
 - Relay-end callback: `/api/webhooks/twilio/voice/relay-ended` is the signed `<Connect action>`
   target. Unexpected closure explains the interruption then hangs up; explicit app completion
-  gets a farewell and completed calls stay silent. Never speak provider error or handoff payloads
+  gets a farewell and completed calls stay silent. An explicit human-handoff code uses the
+  admitted destination's configured transfer number and signed `/voice/transfer-ended` result
+  callback; unanswered attempts explain the failure and hang up without redial. Never speak provider error or handoff payloads
   and never reconnect or start a second recording from this callback.
 - Runtime: short Node.js route handler on Vercel; no long-lived WebSocket.
 - Admission: the signed request must match the exactly-one active `ai_matrx_owner_beta`
