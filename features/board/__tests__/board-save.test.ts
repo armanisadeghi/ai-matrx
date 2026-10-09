@@ -125,7 +125,8 @@ describe("saveBoardDocument", () => {
       expect(init.headers).toMatchObject({
         Authorization: "Bearer token-1",
         apikey: "pk_test",
-        "Content-Profile": "workspace",
+        "Content-Profile": "projects",
+        "Accept-Profile": "projects",
       });
       expect(JSON.parse(String(init.body))).toEqual({ nodes, edges, version: 8 });
       expect(calls).toHaveLength(0); // the Supabase client was not used for the write
