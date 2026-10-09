@@ -22,7 +22,7 @@
  * read. `acting_person_can_edit` is the store's own answer (`myLevels`), never a guess.
  */
 
-import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource } from "@ai-matrx/records";
+import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource, RowAgentTarget } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
 import type { DataTableRowActionOffer } from "@ai-matrx/agents/generated/provision-offers";
@@ -35,17 +35,7 @@ import type { DataTableRowActionOffer } from "@ai-matrx/agents/generated/provisi
  * press — records-ui 0.85.7 sends all four; a target missing one is refused by name rather than
  * silently read again (see `runRowAgentAction`).
  */
-export interface RowAgentActionTarget {
-  tableId: string;
-  recordId: string;
-  title: string;
-  action: string;
-  prompt: string;
-  tableName: string;
-  fields: readonly Field[];
-  document: RecordDocument;
-  level: PermissionLevel | null;
-}
+export type RowAgentActionTarget = RowAgentTarget;
 
 /** One column of the offer, as `data.table_row_action` names it. */
 interface OfferedColumn {

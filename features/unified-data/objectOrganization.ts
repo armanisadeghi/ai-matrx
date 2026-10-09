@@ -40,103 +40,24 @@ import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import { useTablePageSeed } from "@/features/unified-data/page-seed/tablePageSeedContext";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
-/**
- * What kind of object the id is, as `custom.where_id_opens` names it: table, record, dashboard,
- * digest, form, booking, portal, rendered_document, table_part. Carried as the door's own word.
- */
-export type ObjectKind = string;
+// THE READER AND THE DOOR LIVE IN `@ai-matrx/records` (step 10, 2026-10-08): `resolveObjectOrganization`,
+// `readObjectOrganizationAnswer` and the answer type are the store's "which organization owns this record"
+// port. This file is the website's implementation of that port: answers kept per object for the session and
+// seeded from the server render.
+export {
+  readObjectOrganizationAnswer,
+  resolveObjectOrganization,
+  type ObjectKind,
+  type ObjectOrganizationAnswer,
+} from "@ai-matrx/records";
+import { readObjectOrganizationAnswer, resolveObjectOrganization, type ObjectOrganizationAnswer, type RecordOrganizationPort } from "@ai-matrx/records";
 
-/** What `custom.where_id_opens` answers (null when the person may not open it). */
-interface WhereIdOpens {
-  kind?: unknown;
-  organization_id?: unknown;
-  path?: unknown;
-  live?: unknown;
-  resolved_id?: unknown;
-}
-
-export type ObjectOrganizationAnswer =
-  /** The store named the object's organization, and the person may open the object. */
-  | {
-      state: "found";
-      organizationId: string;
-      kind: ObjectKind;
-      /** The screen the store says opens it (`/data/<table>?record=…`), or null for a part with none. */
-      path: string | null;
-      /** False when it is in the trash — the person may still open it, to bring it back. */
-      live: boolean;
-      /** The id it answers as — a merged record's survivor. */
-      resolvedId: string;
-    }
-  /** Not given to this person — or not there at all. The store does not say which, on purpose. */
-  | { state: "not-given" }
-  /** We could not ask. NOT an answer about the person's access. */
-  | { state: "unavailable"; why: string };
-
-const DOOR = "where_id_opens";
-
-/** PostgREST's "no such function" and Postgres's "undefined function" — the door is absent. */
-function doorIsAbsent(error: { code?: string | null; message?: string | null }): boolean {
-  if (error.code === "PGRST202" || error.code === "42883") return true;
-  return /could not find the function/i.test(error.message ?? "");
-}
-
-const DOOR_ABSENT_WHY =
-  "custom.where_id_opens is missing from this database, so this page cannot tell which " +
-  "organization the record lives in and holds instead of guessing. Remedy: the chair applies " +
-  "migrations/campaign/openbyid_one_address_opens_any_id.sql and openbyid_the_resolver_can_be_reached.sql.";
-
-/**
- * Ask the store which organization `id` lives in. The ONE call every object page makes before
- * it calls any other door about that object.
- */
-export async function resolveObjectOrganization(
-  dataSource: Pick<RecordsDataSource, "rpc">,
-  id: string,
-): Promise<ObjectOrganizationAnswer> {
-  let answered: { data: unknown; error: { code?: string | null; message?: string | null } | null };
-  try {
-    answered = (await dataSource.rpc(DOOR, { p_id: id }, { schema: "custom" })) as typeof answered;
-  } catch (thrown) {
-    return {
-      state: "unavailable",
-      why: thrown instanceof Error ? thrown.message : "The record store did not answer.",
-    };
-  }
-  return readObjectOrganizationAnswer(answered, id);
-}
-
-/**
- * Read one `custom.where_id_opens` answer — asked from here, or asked by the server render as the
- * same person and streamed in (lane PAGE-BUNDLE-2, `features/unified-data/page-seed`).
- */
-export function readObjectOrganizationAnswer(
-  answered: { data: unknown; error: { code?: string | null; message?: string | null } | null },
-  id: string,
-): ObjectOrganizationAnswer {
-  if (answered.error) {
-    if (doorIsAbsent(answered.error)) {
-      console.warn(`[objectOrganization] ${DOOR_ABSENT_WHY}`);
-      return { state: "unavailable", why: DOOR_ABSENT_WHY };
-    }
-    return {
-      state: "unavailable",
-      why: answered.error.message ?? "The record store refused to say where this is.",
-    };
-  }
-  const row = answered.data as WhereIdOpens | null;
-  if (row === null || row === undefined) return { state: "not-given" };
-  // READ STRICTLY. An answer this module cannot read is "could not ask", never a guess.
-  if (typeof row !== "object" || typeof row.organization_id !== "string" || typeof row.kind !== "string") {
-    return { state: "unavailable", why: "The record store answered something this page cannot read." };
-  }
+/** The website's `RecordOrganizationPort` (`createRecords({ organizationOf })`): kept answers, asked once. */
+export function keptObjectOrganizationPort(dataSource: Pick<RecordsDataSource, "rpc">): RecordOrganizationPort {
   return {
-    state: "found",
-    organizationId: row.organization_id,
-    kind: row.kind,
-    path: typeof row.path === "string" ? row.path : null,
-    live: row.live !== false,
-    resolvedId: typeof row.resolved_id === "string" ? row.resolved_id : id,
+    async organizationOf(id) {
+      return (await ensureObjectOrganization(dataSource, id)) ?? { state: "unavailable", why: "The record store did not answer." };
+    },
   };
 }
 
