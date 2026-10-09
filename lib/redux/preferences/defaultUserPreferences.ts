@@ -50,6 +50,7 @@ export const defaultUserPreferences: UserPreferences = {
     preferredProvider: "default",
     preferredModel: "default",
     directiveApplyPolicy: "default",
+    showCreatorPanel: false,
   },
   email: {
     primaryEmail: "",
