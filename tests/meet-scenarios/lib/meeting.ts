@@ -7,6 +7,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
 import { baseURL, supabasePublic } from "./env";
+import { adminProfileOverrides } from "./fixtures";
 import { NO_GESTURE, evaluateIn, observe, summarize, type CallPhase, type Observation } from "./observe";
 
 export interface Meeting {
@@ -390,10 +391,54 @@ export async function setHostBehaviorProfile(meeting: Meeting, profile: "meet" |
     { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: s.userId, p_organization_id: row.organization_id, p_value: profile, p_note: null },
     s.token,
   )) as { ok?: boolean; reason?: string; detail?: string } | null;
+  // Registered BEFORE the verdict on the write: whatever happens next, the scope is cleared at cleanup.
+  profileScopes.set(meeting.host, [...(profileScopes.get(meeting.host) ?? []), { userId: s.userId, organizationId: String(row.organization_id) }]);
   expect(set?.ok, `meet_policy_set refused the host's profile: ${JSON.stringify(set)}`).not.toBe(false);
   const back = await rpc("meet_policy", { p_meeting_id: row.id, p_key: "behavior_profile" }, s.token);
   meeting.host.note(`host behavior profile = ${JSON.stringify(back)} (set through meet_policy_set, user rung)`);
   expect(String(back).replace(/"/g, ""), `meet_policy should answer behavior_profile=${profile} after the host chose it`).toBe(profile);
+}
+
+/** Host-level profile overrides a scenario set, per host, so cleanup can clear exactly those. */
+const profileScopes = new Map<Actor, { userId: string; organizationId: string }[]>();
+
+/**
+ * Cleanup for `setHostBehaviorProfile`, run by the cast's final sweep even when the scenario failed:
+ * clears each user-rung override the scenario wrote (a NULL value through the same `meet_policy_set`
+ * door removes the override, so the host is back on the default profile), then reads the live
+ * overrides back. Returns failure descriptions (never throws).
+ */
+export async function restoreHostProfiles(actors: Actor[]): Promise<string[]> {
+  const failures: string[] = [];
+  let touched = false;
+  for (const host of actors) {
+    const scopes = profileScopes.get(host);
+    if (!scopes?.length) continue;
+    touched = true;
+    const s = await host.session();
+    if (!s) {
+      failures.push(`CLEANUP FAILURE: ${host.opts.label} has no session to restore the behavior profile with`);
+      continue;
+    }
+    for (const sc of scopes) {
+      try {
+        const out = (await rpc(
+          "meet_policy_set",
+          { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: sc.userId, p_organization_id: sc.organizationId, p_value: null, p_note: null },
+          s.token,
+        )) as { ok?: boolean } | null;
+        if (out?.ok === false) failures.push(`CLEANUP FAILURE: clearing the host behavior profile was refused: ${JSON.stringify(out)}`);
+      } catch (e) {
+        failures.push(`CLEANUP FAILURE: clearing the host behavior profile threw: ${(e as Error).message.slice(0, 160)}`);
+      }
+    }
+    profileScopes.delete(host);
+  }
+  if (touched) {
+    const left = await adminProfileOverrides().catch((e: Error) => ({ overrides: [{ organization_id: `read failed: ${e.message.slice(0, 80)}`, value: null }] }));
+    if (left.overrides.length) failures.push(`CLEANUP FAILURE: admin still holds behavior_profile overrides after restore: ${JSON.stringify(left.overrides)}`);
+  }
+  return failures;
 }
 
 /** The host lifts a denial the way the product does (`meet_undeny`), for the guest the lobby knew by name. */

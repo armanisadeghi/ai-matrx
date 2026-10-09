@@ -5,7 +5,7 @@
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { expect } from "@playwright/test";
 import { TIMEOUTS } from "../lib/env";
-import { meetingTruth, roomTruth } from "../lib/fixtures";
+import { deadlineTruth, meetingTruth, roomTruth } from "../lib/fixtures";
 import {
   endForEveryone,
   firstTokenRequest,
@@ -192,6 +192,26 @@ scenario(
     const drivers = Object.entries(truth.auto_end ?? {})
       .filter(([k]) => k !== "reason")
       .filter(([, v]) => typeof v === "string" && /webhook|timer|scheduled|cron|worker/i.test(v as string));
+    // THE TIMER, ISOLATED FROM LIVEKIT'S room_finished WEBHOOK. The harness cannot stop LiveKit from
+    // sending that webhook (it goes LiveKit Cloud -> the production server), so isolation is proven from
+    // the server's own records instead: (1) the end's driver is the deadline TIMER, (2) the timer job
+    // that ended it was armed by something other than room_finished, (3) the run's empty clock
+    // (emptied_at) was set BEFORE any room_finished was processed, so the webhook was a no-op for the
+    // clock and (record_room_finished only records + CAS-sets the clock) cannot have ended anything.
+    const dl = await deadlineTruth(cast.meeting!.slug);
+    const run = dl.sessions[dl.sessions.length - 1];
+    const ender = dl.jobs.find((j) => j.kind === "auto_end_check" && /^ENDED/.test(j.outcome ?? ""));
+    host.note(`deadline truth: run emptied_at=${run?.emptied_at} ended_at=${run?.ended_at} room_finished_processed_at=${run?.last_room_finished_at ?? "never"}; ending job ${ender?.id} armed_by="${ender?.armed_by}" outcome="${ender?.outcome}"`);
+    expect(JSON.stringify(truth.auto_end), "auto_end driver must be the deadline timer").toMatch(/timer: auto_end_check deadline job/);
+    expect(ender, "an auto_end_check deadline job must have ended the run").toBeTruthy();
+    expect(ender?.armed_by ?? "", "the timer that ended the meeting was armed by the room_finished webhook").not.toMatch(/room_finished/);
+    expect(run?.emptied_at, "the run's empty clock must be set").toBeTruthy();
+    if (run?.last_room_finished_at) {
+      expect(new Date(String(run.emptied_at)).getTime(), "room_finished arrived BEFORE the empty clock, so it could be the clock's origin").toBeLessThanOrEqual(new Date(run.last_room_finished_at).getTime());
+      host.note("room_finished WAS processed (LiveKit sent it) but only after the clock was already running; the end is the timer's");
+    } else {
+      host.note("room_finished was never processed for this run: the timer is fully isolated");
+    }
     expect(
       drivers.length > 0,
       `auto-end recorded no server-driven cause (fields: ${Object.keys(truth.auto_end ?? {}).join(", ")}); a sweep spawned by request traffic cannot be excluded`,

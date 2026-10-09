@@ -13,10 +13,10 @@ import { test as base, type Browser, type BrowserType } from "@playwright/test";
 import { chromium, webkit } from "@playwright/test";
 import { Actor, type ActorOptions } from "./actor";
 import { catalogStates } from "./catalog";
-import { createOrgMember, deleteOrgMember, meetingTruth, type OrgMember } from "./fixtures";
-import { UNPROVEN_PREFIX } from "./env";
+import { adminProfileOverrides, createOrgMember, deleteOrgMember, meetingTruth, type OrgMember } from "./fixtures";
+import { ENV_SETUP_PREFIX, UNPROVEN_PREFIX } from "./env";
 import { activeSkinName, setActiveSkin } from "./skins";
-import { ensureEnded, type EndOutcome, type Meeting } from "./meeting";
+import { ensureEnded, restoreHostProfiles, type EndOutcome, type Meeting } from "./meeting";
 
 export class Cast {
   readonly actors: Actor[] = [];
@@ -98,11 +98,27 @@ export const CHROMIUM_ARGS_BASE = [
   "--autoplay-policy=no-user-gesture-required",
 ];
 
+/**
+ * Run-start check (once per process): the test host's behavior profile must be the default. A leaked
+ * user-level override silently re-rules every Meet-style scenario, so a dirty start is an environment
+ * setup failure (reported ENV), never a product verdict.
+ */
+let startCheck: Promise<void> | null = null;
+function assertDefaultProfileAtStart(): Promise<void> {
+  startCheck ??= adminProfileOverrides().then((r) => {
+    if (r.overrides.length) {
+      throw new Error(`${ENV_SETUP_PREFIX} admin@admin.com holds a user-level meet.behavior_profile override (${JSON.stringify(r.overrides)}); Meet-style scenarios would run under the wrong rules. Clear it, then rerun.`);
+    }
+  });
+  return startCheck;
+}
+
 const test = base.extend<{ cast: Cast }>({
   cast: async ({ browser }, use, testInfo) => {
     setActiveSkin(((testInfo.project.metadata as { skin?: string } | undefined)?.skin) ?? "meet");
     const launch = (testInfo.project.use as { launchOptions?: { args?: string[] } }).launchOptions;
     const cast = new Cast(browser, launch?.args ?? []);
+    await assertDefaultProfileAtStart();
     // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts) during EVERY wait,
     // not just between steps: an explicit-activity request every 30 s (window is minutes) through a
     // signed-in person's browser context. It needs no open tab (a closed host tab or about:blank is fine).
@@ -121,6 +137,8 @@ const test = base.extend<{ cast: Cast }>({
         const out: EndOutcome = await ensureEnded(m).catch((e: Error) => ({ detail: `CLEANUP FAILURE: cleanup threw: ${e.message}`, failed: true }));
         testInfo.annotations.push({ type: out.failed ? "cleanup-failure" : "cleanup", description: `${m.path}: ${out.detail}` });
       }
+      // Whatever the scenario changed on the host's account is put back, even after a failure.
+      for (const f of await restoreHostProfiles(cast.actors)) testInfo.annotations.push({ type: "cleanup-failure", description: f });
       const teardown = await cast.dispose();
       for (const t of teardown) testInfo.annotations.push({ type: "persona", description: t });
       await testInfo.attach("timeline", { body: cast.timeline(), contentType: "text/plain" });

@@ -73,3 +73,24 @@ export interface RoomTruth {
 }
 
 export const roomTruth = (room: string): Promise<RoomTruth> => fixture<RoomTruth>(["room", "--name", room], 60_000);
+
+export interface DeadlineTruth {
+  found: boolean;
+  meeting_id?: string;
+  sessions: { id: string; started_at: string; ended_at: string | null; emptied_at: string | null; last_room_finished_at: string | null }[];
+  jobs: { id: string; status: string; created_at: string; updated_at: string; kind: string; slot: string; armed_by: string | null; outcome: string | null }[];
+}
+/** Read-only: the meeting's runs and every deadline job (workflow.run rows) armed for it. */
+export const deadlineTruth = (slug: string): Promise<DeadlineTruth> => fixture<DeadlineTruth>(["deadlines", "--slug", slug], 60_000);
+
+export interface NotificationTruth {
+  count: number;
+  rows: { id: string; event_key: string; channel: string; status: string; recipient_user_id: string; subject: string | null; created_at: string }[];
+}
+/** Read-only: platform notification rows for one meeting + event. */
+export const notificationTruth = (meetingId: string, event = "meet.knock_waiting"): Promise<NotificationTruth> =>
+  fixture<NotificationTruth>(["notifications", "--meeting-id", meetingId, "--event", event], 60_000);
+
+/** Read-only: user-level meet.behavior_profile overrides admin@admin.com holds right now (none = the default profile). */
+export const adminProfileOverrides = (): Promise<{ overrides: { organization_id: string; value: unknown }[] }> =>
+  fixture(["profile-check"], 60_000);

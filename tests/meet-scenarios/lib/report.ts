@@ -22,7 +22,7 @@ import path from "node:path";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { P0_IDS } from "./catalog";
 import { SKINS } from "./skins";
-import { baseURL, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX } from "./env";
+import { baseURL, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX, ENV_SETUP_PREFIX } from "./env";
 
 const ENV_WINDOW_MS = 3 * 60_000;
 
@@ -112,8 +112,9 @@ export default class MeetReport implements Reporter {
       // A park that took a live call away makes the whole run environment, whenever it struck.
       .concat(ev.envEvents.filter((e) => e.fatal && !(end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0))));
     const unprovenReason = firstEvidence(result).startsWith(UNPROVEN_PREFIX);
+    const setupFailed = result.status !== "passed" && firstEvidence(result).includes(ENV_SETUP_PREFIX);
     const status =
-      result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 ? "ENV" : unprovenReason ? "UNPROVEN" : "FAIL";
+      result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 || setupFailed ? "ENV" : unprovenReason ? "UNPROVEN" : "FAIL";
     const annotations = [...test.annotations, ...((result as { annotations?: { type: string; description?: string }[] }).annotations ?? [])]
       .filter((a) => a.type === "cleanup" || a.type === "cleanup-failure" || a.type === "persona")
       .map((a) => `${a.type}: ${a.description ?? ""}`);
@@ -125,7 +126,7 @@ export default class MeetReport implements Reporter {
       evidence: firstEvidence(result),
       skin: ev.skin ?? (test.parent.project()?.metadata as { skin?: string } | undefined)?.skin ?? "meet",
       loaded: ev.loaded ?? [],
-      envProof: proof.map((e) => `${new Date(e.at).toISOString().slice(11, 19)} [${e.who}] ${e.what}`).join("; "),
+      envProof: setupFailed ? "run-start check: the test host's profile is not the default" : proof.map((e) => `${new Date(e.at).toISOString().slice(11, 19)} [${e.who}] ${e.what}`).join("; "),
       sources: Object.entries(ev.sources).map(([k, v]) => `${k}:${v}`).join(" ") || "none",
       levers: [...new Set(ev.levers.flatMap((l) => l.levers.map((x) => `${l.who}: ${x}`)))],
       annotations: [...new Set(annotations)],

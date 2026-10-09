@@ -4,6 +4,7 @@
  */
 import { expect } from "@playwright/test";
 import { TIMEOUTS } from "../lib/env";
+import { deadlineTruth, meetingTruth, notificationTruth } from "../lib/fixtures";
 import { observe, type CallPhase } from "../lib/observe";
 import {
   admit,
@@ -113,6 +114,24 @@ scenario("wr-no-host-to-admit", async ({ cast }) => {
   // The waiting person is told nobody who can admit them is here.
   await seeUntil(guest, "the host is not here", (o) => o.hostPresent === false || o.phase === "waiting-for-host", TIMEOUTS.noticeMs);
   await keepsSeeing(guest, "still waiting, not in the room", (o) => o.phase === "knocking" || o.phase === "waiting-for-host", 5000);
+  // The knock stays unanswered past the knock-waiting deadline (policy knock_notify_after_seconds, 20 s):
+  // the platform must tell the host (meet.knock_waiting). Read back from the live database, read-only;
+  // the meeting is NOT ended until the notification (or the wait's end) is seen.
+  const truth = await meetingTruth(cast.meeting!.slug);
+  const hostId = (await host.session())?.userId;
+  const meetingId = String(truth.id);
+  const waitUntil = Date.now() + 20_000 + 100_000;
+  let notes = await notificationTruth(meetingId);
+  while (notes.count === 0 && Date.now() < waitUntil) {
+    await keepsSeeing(guest, "still waiting while the knock goes unanswered", (o) => o.phase === "knocking" || o.phase === "waiting-for-host", 10_000);
+    notes = await notificationTruth(meetingId);
+  }
+  const dl = await deadlineTruth(cast.meeting!.slug);
+  const job = dl.jobs.find((j) => j.kind === "knock_unanswered");
+  host.note(`knock deadline job: ${job ? `${job.id} ${job.status} "${job.outcome}"` : "none armed"}; notifications: ${JSON.stringify(notes.rows.map((r) => ({ id: r.id, channel: r.channel, status: r.status, to: r.recipient_user_id })))}`);
+  expect(notes.count, "no meet.knock_waiting notification row appeared for the host after the knock went unanswered").toBeGreaterThan(0);
+  expect(notes.rows.some((r) => r.recipient_user_id === hostId), `knock_waiting notification must be addressed to the host (${hostId}); got ${JSON.stringify(notes.rows.map((r) => r.recipient_user_id))}`).toBe(true);
+  expect(job?.outcome ?? "", "the knock_unanswered deadline job should have told the host").toMatch(/^TOLD [1-9]/);
   waiting.stop();
 });
 

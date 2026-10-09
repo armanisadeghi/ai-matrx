@@ -109,3 +109,6 @@ export const AIDREAM_ROOT = process.env.MEET_AIDREAM_ROOT ?? path.resolve(REPO_R
 
 /** The message prefix a scenario throws when its product verdict cannot be produced (see scenario.ts `unproven`). */
 export const UNPROVEN_PREFIX = "UNPROVEN:";
+
+/** The message prefix for a run that cannot start because the environment is not in its default state (reported ENV). */
+export const ENV_SETUP_PREFIX = "ENV-SETUP:";

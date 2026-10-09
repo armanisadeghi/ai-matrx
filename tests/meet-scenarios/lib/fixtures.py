@@ -118,6 +118,60 @@ def meeting(slug: str) -> None:
     _print({"found": row is not None, **(row or {})})
 
 
+def _conn():
+    import psycopg
+    from psycopg.rows import dict_row
+
+    from aidream.testing.live_database import live_database_url
+
+    return psycopg.connect(live_database_url(), row_factory=dict_row)
+
+
+def deadlines(slug: str) -> None:
+    """Read-only: the run(s) of this meeting and every deadline job (workflow.run) armed for it."""
+    with _conn() as conn:
+        m = conn.execute("select id from communication.meet_meetings where slug = %s", (slug,)).fetchone()
+        if not m:
+            _print({"found": False})
+            return
+        sessions = conn.execute(
+            """select id, started_at, ended_at, emptied_at, metadata ->> 'last_room_finished_at' as last_room_finished_at
+                 from communication.meet_sessions where meeting_id = %s order by started_at""",
+            (m["id"],),
+        ).fetchall()
+        jobs = conn.execute(
+            """select id, status, created_at, updated_at, input ->> 'kind' as kind, input ->> 'slot' as slot,
+                      input ->> 'armed_by' as armed_by, output -> 'decide_deadline' ->> 'outcome' as outcome
+                 from workflow.run where input ->> 'meeting_id' = %s and input ? 'kind' order by created_at""",
+            (str(m["id"]),),
+        ).fetchall()
+    _print({"found": True, "meeting_id": str(m["id"]), "sessions": sessions, "jobs": jobs})
+
+
+def notifications(meeting_id: str, event_key: str) -> None:
+    """Read-only: platform notification rows for one meeting + event."""
+    with _conn() as conn:
+        rows = conn.execute(
+            """select id, event_key, channel, status, recipient_user_id, subject, created_at
+                 from communication.notification
+                where target_id = %s and event_key = %s and deleted_at is null order by created_at""",
+            (meeting_id, event_key),
+        ).fetchall()
+    _print({"count": len(rows), "rows": rows})
+
+
+def profile_check() -> None:
+    """Read-only: user-level meet.behavior_profile overrides held by admin@admin.com (should be none)."""
+    with _conn() as conn:
+        rows = conn.execute(
+            """select o.organization_id, o.value, o.updated_at
+                 from platform.knob_override o join auth.users u on u.id = o.scope_id
+                where o.feature = 'meet' and o.key = 'behavior_profile' and o.scope_kind = 'user'
+                  and u.email = 'admin@admin.com'""",
+        ).fetchall()
+    _print({"overrides": rows})
+
+
 def room(name: str) -> None:
     import os
     from pathlib import Path
@@ -156,6 +210,12 @@ def main() -> None:
     d.add_argument("--org")
     g = sub.add_parser("meeting")
     g.add_argument("--slug", required=True)
+    dl = sub.add_parser("deadlines")
+    dl.add_argument("--slug", required=True)
+    nt = sub.add_parser("notifications")
+    nt.add_argument("--meeting-id", required=True)
+    nt.add_argument("--event", default="meet.knock_waiting")
+    sub.add_parser("profile-check")
     r = sub.add_parser("room")
     r.add_argument("--name", required=True)
     a = parser.parse_args()
@@ -165,6 +225,12 @@ def main() -> None:
         delete(a.user, a.org)
     elif a.cmd == "meeting":
         meeting(a.slug)
+    elif a.cmd == "deadlines":
+        deadlines(a.slug)
+    elif a.cmd == "notifications":
+        notifications(a.meeting_id, a.event)
+    elif a.cmd == "profile-check":
+        profile_check()
     else:
         room(a.name)
 
