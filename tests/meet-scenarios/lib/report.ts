@@ -111,7 +111,7 @@ export default class MeetReport implements Reporter {
     const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0))
       // A park that took a live call away makes the whole run environment, whenever it struck.
       .concat(ev.envEvents.filter((e) => e.fatal && !(end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0))));
-    const unprovenReason = firstEvidence(result).startsWith(UNPROVEN_PREFIX);
+    const unprovenReason = firstEvidence(result).replace(/^Error:\s*/, "").startsWith(UNPROVEN_PREFIX);
     const setupFailed = result.status !== "passed" && firstEvidence(result).includes(ENV_SETUP_PREFIX);
     const status =
       result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 || setupFailed ? "ENV" : unprovenReason ? "UNPROVEN" : "FAIL";

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  X,
   Eye,
   EyeOff,
   AlertTriangle,
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface BulkActionBarProps {
-  selectedCount: number;
   tags: { id: string; name: string }[];
   onInclude: () => void;
   onExclude: () => void;
@@ -29,12 +27,11 @@ interface BulkActionBarProps {
   onMarkComplete: () => void;
   onAddTag: (tagId: string) => void;
   onCreateTag: () => void;
-  onClear: () => void;
   busy?: boolean;
 }
 
+/** The research sources bulk actions, drawn inside the table's own selection bar (it owns the count and Clear). */
 export function BulkActionBar({
-  selectedCount,
   tags,
   onInclude,
   onExclude,
@@ -42,20 +39,13 @@ export function BulkActionBar({
   onMarkComplete,
   onAddTag,
   onCreateTag,
-  onClear,
   busy,
 }: BulkActionBarProps) {
-  if (selectedCount === 0) return null;
-
   return (
-    <div className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 rounded-xl border border-border bg-card shadow-lg px-3 py-2 mb-safe">
-      <span className="type-title tabular-nums mr-1">
-        {selectedCount} selected
-      </span>
+    <>
       {busy && (
         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
       )}
-      <div className="h-4 w-px bg-border" />
       <Button
         icon={<Eye />}
         variant="quiet"
@@ -115,13 +105,6 @@ export function BulkActionBar({
       >
         Stale
       </Button>
-      <Button
-        icon={<X />} aria-label="Clear"
-        variant="quiet"
-        onClick={onClear}
-        disabled={busy}
-        className="ml-1"
-      />
-    </div>
+    </>
   );
 }

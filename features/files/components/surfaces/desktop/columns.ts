@@ -133,3 +133,29 @@ export function visibleColumnIds(
   // for every existing user.
   return COLUMN_ORDER.filter((id) => visible[id] ?? DEFAULT_VISIBLE_COLUMNS[id]);
 }
+
+/** Type filter choices, in the order the Type column's filter lists them. */
+export const TYPE_FILTER_LABELS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "FOLDER", label: "Folders" },
+  { value: "IMAGE", label: "Images" },
+  { value: "VIDEO", label: "Videos" },
+  { value: "AUDIO", label: "Audio" },
+  { value: "DOCUMENT", label: "Documents" },
+  { value: "CODE", label: "Code" },
+  { value: "DATA", label: "Data" },
+  { value: "NOTEBOOK", label: "Notebooks" },
+  { value: "ARCHIVE", label: "Archives" },
+  { value: "EBOOK", label: "Ebooks" },
+  { value: "EMAIL", label: "Emails" },
+  { value: "SUBTITLES", label: "Subtitles" },
+  { value: "MODEL_3D", label: "3D models" },
+  { value: "UNKNOWN", label: "Other" },
+];
+
+/** Knowledge status choices for the Knowledge column's filter. */
+export const RAG_FILTER_LABELS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "indexed", label: "Indexed" },
+  { value: "not_indexed", label: "Not indexed" },
+  { value: "pending", label: "Checking…" },
+  { value: "unknown", label: "Unknown" },
+];
