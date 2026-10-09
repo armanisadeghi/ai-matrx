@@ -3,7 +3,7 @@
 /**
  * N9 — Notion's database Automations, on the store's automation door (`@ai-matrx/records` 0.77.1
  * `automation.ts`; records FEATURE.md § "Automations on a table"). A trigger (page added, property edited
- * [to a value], form answered; a schedule is refused by the store, so it is shown unavailable), an optional
+ * [to a value], form answered; a date arriving at a time of day, N days before or after; every day, week or month), an optional
  * condition, actions (set, add page, edit pages, notify, webhook, agent), an on/off switch, archive and
  * restore, and each automation's runs with every step's status and words. Properties are named by Field id.
  * Nothing here decides access: every call runs as the person and the store refuses in its own words.
@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { History, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import type { AutomationAction, AutomationItem, AutomationRun, AutomationSpec, AutomationValue } from "@ai-matrx/records";
+import type { AutomationAction, AutomationItem, AutomationRun, AutomationSpec, AutomationTrigger, AutomationValue, AutomationWeekday } from "@ai-matrx/records";
 import { useRecordsClient, type Field } from "@ai-matrx/records/react";
 
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
@@ -19,12 +19,15 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 /** How many runs the history shows: the `spaces.automation_runs_shown` knob (admin → org → person). */
 const RUNS_KNOB = { feature: "spaces", key: "automation_runs_shown" } as const;
 
-type TriggerOn = "row_added" | "property_edited" | "form_answered";
+type TriggerOn = AutomationTrigger["on"];
+type Every = "day" | "week" | "month";
+type DateWhen = "before" | "on" | "after";
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 type ValueKind = "text" | "now" | "me" | "clear" | "from";
 /** One action as the panel edits it; `toAction` turns it into the store's spec. */
 type Draft =
   | { kind: "set"; field: string; value: ValueKind; text: string; from: string }
-  | { kind: "add"; title: string }
+  | { kind: "add"; title: string; dateField: string; inDays: string }
   | { kind: "edit"; whereField: string; whereIs: string; field: string; value: ValueKind; text: string; from: string }
   | { kind: "notify"; to: "author" | string; text: string }
   | { kind: "webhook"; url: string }
@@ -43,7 +46,11 @@ function toAction(d: Draft, tableId: string, titleField: string): AutomationActi
     case "set":
       return { do: "set", values: { [d.field]: valueOf(d.value, d.text, d.from) } };
     case "add":
-      return { do: "add_row", table_id: tableId, values: { [titleField]: d.title } };
+      return {
+        do: "add_row",
+        table_id: tableId,
+        values: { [titleField]: d.title, ...(d.dateField && d.inDays.trim() !== "" ? { [d.dateField]: { in_days: Number(d.inDays) || 0 } } : {}) },
+      };
     case "edit":
       return { do: "edit_rows", table_id: tableId, where: { op: "eq", args: [{ field: d.whereField }, { const: d.whereIs }] }, values: { [d.field]: valueOf(d.value, d.text, d.from) } };
     case "notify":
@@ -66,8 +73,16 @@ function toDraft(a: AutomationAction, firstField: string): Draft {
   switch (a.do) {
     case "set":
       return { kind: "set", ...one(a.values) };
-    case "add_row":
-      return { kind: "add", title: String(Object.values(a.values)[0] ?? "") };
+    case "add_row": {
+      const [titleId] = Object.keys(a.values);
+      const dated = Object.entries(a.values).find(([, v]) => v && typeof v === "object" && "in_days" in (v as object));
+      return {
+        kind: "add",
+        title: String(a.values[titleId ?? ""] ?? ""),
+        dateField: dated?.[0] ?? "",
+        inDays: dated ? String((dated[1] as { in_days: number }).in_days) : "",
+      };
+    }
     case "edit_rows": {
       const args = (a.where as { args?: Array<{ field?: string; const?: unknown }> }).args ?? [];
       return { kind: "edit", whereField: args[0]?.field ?? firstField, whereIs: String(args[1]?.const ?? ""), ...one(a.values) };
@@ -83,10 +98,38 @@ function toDraft(a: AutomationAction, firstField: string): Draft {
 
 const nameOf = (fields: Field[], id: string | undefined) => fields.find((f) => f.id === id)?.label ?? "a property";
 
+/** A date or date-time property: what "when a date arrives" can wait for. */
+const isDateField = (f: Field) => {
+  const kind = String((f.config as Record<string, unknown> | undefined)?.["kind"] ?? "");
+  return String(f.type) === "range" && (kind === "date" || kind === "datetime");
+};
+
+const clock = (at: string | undefined) => at || "09:00";
+
+function describeTrigger(t: AutomationTrigger, fields: Field[]): string {
+  switch (t.on) {
+    case "row_added":
+      return "Page added";
+    case "form_answered":
+      return "Form answered";
+    case "property_edited":
+      return `${nameOf(fields, t.field)} edited${t.to !== undefined && t.to !== null && t.to !== "" ? ` to ${String(t.to)}` : ""}`;
+    case "date_arrives": {
+      const n = t.offset_days ?? 0;
+      const rel = n === 0 ? "on" : n < 0 ? `${-n}d before` : `${n}d after`;
+      return `${nameOf(fields, t.field)} ${rel}, ${clock(t.at)}`;
+    }
+    case "schedule":
+      return t.every === "day"
+        ? `Every day, ${clock(t.at)}`
+        : t.every === "week"
+          ? `Every ${WEEKDAYS[(t.weekday ?? 1) - 1]}, ${clock(t.at)}`
+          : `Monthly on day ${t.day ?? 1}, ${clock(t.at)}`;
+  }
+}
+
 export function describeSpec(spec: AutomationSpec, fields: Field[]): string {
-  const t = spec.trigger;
-  const when =
-    t.on === "row_added" ? "Page added" : t.on === "form_answered" ? "Form answered" : `${nameOf(fields, t.field)} edited${t.to !== undefined && t.to !== null && t.to !== "" ? ` to ${String(t.to)}` : ""}`;
+  const when = describeTrigger(spec.trigger, fields);
   const does = spec.actions.map((a) => (a.do === "set" ? `set ${Object.keys(a.values).map((id) => nameOf(fields, id)).join(", ")}` : a.do === "add_row" ? "add page" : a.do === "edit_rows" ? "edit pages" : a.do === "notify" ? "notify" : a.do));
   return `${when} → ${does.join(", ")}`;
 }
@@ -111,8 +154,8 @@ function FieldPills({ fields, value, onPick }: { fields: Field[]; value: string;
   );
 }
 
-function ValueEditor({ fields, d, put }: { fields: Field[]; d: { value: ValueKind; text: string; from: string }; put: (p: Partial<{ value: ValueKind; text: string; from: string }>) => void }) {
-  const kinds: Array<[ValueKind, string]> = [["text", "Value"], ["now", "Now"], ["me", "Me"], ["clear", "Empty"], ["from", "Copy from"]];
+function ValueEditor({ fields, d, put, noCopy }: { fields: Field[]; d: { value: ValueKind; text: string; from: string }; put: (p: Partial<{ value: ValueKind; text: string; from: string }>) => void; noCopy?: boolean }) {
+  const kinds: Array<[ValueKind, string]> = [["text", "Value"], ["now", "Now"], ["me", "Me"], ["clear", "Empty"], ...(noCopy ? [] : ([["from", "Copy from"]] as Array<[ValueKind, string]>))];
   return (
     <>
       {kinds.map(([k, label]) => (
@@ -176,11 +219,19 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
   const [on, setOn] = useState<TriggerOn>("row_added");
   const [trigField, setTrigField] = useState("");
   const [trigTo, setTrigTo] = useState("");
+  const [dateWhen, setDateWhen] = useState<DateWhen>("before");
+  const [dateDays, setDateDays] = useState("2");
+  const [at, setAt] = useState("09:00");
+  const [every, setEvery] = useState<Every>("week");
+  const [weekday, setWeekday] = useState<AutomationWeekday>(1);
+  const [monthDay, setMonthDay] = useState("1");
   const [condField, setCondField] = useState<string | null>(null);
   const [condIs, setCondIs] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [said, setSaid] = useState<string | null>(null);
   const firstField = fields[0]?.id ?? "";
+  const dateFields = fields.filter(isDateField);
+  const timed = on === "schedule";
   const [epoch, setEpoch] = useState(0);
   const reread = () => setEpoch((n) => n + 1);
 
@@ -205,6 +256,12 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
     setOn("row_added");
     setTrigField(firstField);
     setTrigTo("");
+    setDateWhen("before");
+    setDateDays("2");
+    setAt("09:00");
+    setEvery("week");
+    setWeekday(1);
+    setMonthDay("1");
     setCondField(null);
     setCondIs("");
     setDrafts([]);
@@ -215,8 +272,15 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
     setEditing({ id: a.id });
     setName(a.spec.name);
     setOn(t.on);
-    setTrigField(t.on === "property_edited" ? t.field : firstField);
+    setTrigField(t.on === "property_edited" || t.on === "date_arrives" ? t.field : firstField);
     setTrigTo(t.on === "property_edited" && t.to !== undefined && t.to !== null ? String(t.to) : "");
+    const n = t.on === "date_arrives" ? (t.offset_days ?? 0) : 2;
+    setDateWhen(n < 0 ? "before" : n > 0 ? "after" : "on");
+    setDateDays(String(Math.abs(n)));
+    setAt(t.on === "date_arrives" || t.on === "schedule" ? clock(t.at) : "09:00");
+    setEvery(t.on === "schedule" ? t.every : "week");
+    setWeekday(t.on === "schedule" ? (t.weekday ?? 1) : 1);
+    setMonthDay(t.on === "schedule" ? String(t.day ?? 1) : "1");
     const c = a.spec.condition as { args?: Array<{ field?: string; const?: unknown }> } | null | undefined;
     setCondField(c?.args?.[0]?.field ?? null);
     setCondIs(String(c?.args?.[1]?.const ?? ""));
@@ -228,11 +292,27 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
     setSaid(got.ok ? null : got.error?.message || "That did not change.");
     reread();
   };
+  const triggerSpec = (): AutomationTrigger => {
+    if (on === "property_edited") return { on, field: trigField, ...(trigTo ? { to: trigTo } : {}) };
+    if (on === "date_arrives") {
+      const n = Math.abs(Math.trunc(Number(dateDays) || 0));
+      return { on, field: trigField, offset_days: dateWhen === "before" ? -n : dateWhen === "after" ? n : 0, at };
+    }
+    if (on === "schedule") {
+      return { on, every, at, ...(every === "week" ? { weekday } : {}), ...(every === "month" ? { day: Math.trunc(Number(monthDay) || 1) } : {}) };
+    }
+    return { on };
+  };
+  const pickTrigger = (next: TriggerOn) => {
+    setOn(next);
+    if (next === "date_arrives") setTrigField(dateFields[0]?.id ?? "");
+    if (next === "schedule") setDrafts(drafts.filter((d) => d.kind !== "set"));
+  };
   const save = async () => {
     const spec: AutomationSpec = {
       name: name.trim(),
-      trigger: on === "property_edited" ? { on, field: trigField, ...(trigTo ? { to: trigTo } : {}) } : { on },
-      condition: condField ? { op: "eq", args: [{ field: condField }, { const: condIs }] } : null,
+      trigger: triggerSpec(),
+      condition: condField && !timed ? { op: "eq", args: [{ field: condField }, { const: condIs }] } : null,
       actions: drafts.map((d) => toAction(d, tableId, firstField)),
     };
     const got = await client.automationDeclare({ table_id: tableId as never, spec, automation_id: (editing?.id ?? null) as never });
@@ -253,23 +333,56 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
           <Input aria-label="Automation name" placeholder="Automation name" value={name} onChange={(e) => setName(e.target.value)} />
           <span className="type-secondary text-muted-foreground">When</span>
           <div className="flex flex-wrap gap-1">
-            <Pill on={on === "row_added"} onClick={() => setOn("row_added")}>Page added</Pill>
-            <Pill on={on === "property_edited"} onClick={() => setOn("property_edited")}>Property edited</Pill>
-            <Pill on={on === "form_answered"} onClick={() => setOn("form_answered")}>Form answered</Pill>
-            <Pill on={false} disabledReason="Schedules are not available for automations yet">Every…</Pill>
+            <Pill on={on === "row_added"} onClick={() => pickTrigger("row_added")}>Page added</Pill>
+            <Pill on={on === "property_edited"} onClick={() => pickTrigger("property_edited")}>Property edited</Pill>
+            <Pill on={on === "form_answered"} onClick={() => pickTrigger("form_answered")}>Form answered</Pill>
+            <Pill on={on === "date_arrives"} onClick={() => pickTrigger("date_arrives")} disabledReason={dateFields.length === 0 ? "Add a date property first" : undefined}>Date arrives</Pill>
+            <Pill on={on === "schedule"} onClick={() => pickTrigger("schedule")}>Every…</Pill>
           </div>
+          {on === "date_arrives" ? (
+            <div className="flex flex-wrap items-center gap-1" data-testid="spaces-automation-date-trigger">
+              <FieldPills fields={dateFields} value={trigField} onPick={setTrigField} />
+              <Pill on={dateWhen === "before"} onClick={() => setDateWhen("before")}>Before</Pill>
+              <Pill on={dateWhen === "on"} onClick={() => setDateWhen("on")}>On the day</Pill>
+              <Pill on={dateWhen === "after"} onClick={() => setDateWhen("after")}>After</Pill>
+              {dateWhen !== "on" ? <Input aria-label="Days" type="number" min={0} max={365} className="w-16" value={dateDays} onChange={(e) => setDateDays(e.target.value)} /> : null}
+              {dateWhen !== "on" ? <span className="type-secondary">days at</span> : <span className="type-secondary">at</span>}
+              <Input aria-label="Time" type="time" className="w-28" value={at} onChange={(e) => setAt(e.target.value)} />
+            </div>
+          ) : null}
+          {on === "schedule" ? (
+            <div className="flex flex-wrap items-center gap-1" data-testid="spaces-automation-schedule-trigger">
+              <Pill on={every === "day"} onClick={() => setEvery("day")}>Day</Pill>
+              <Pill on={every === "week"} onClick={() => setEvery("week")}>Week</Pill>
+              <Pill on={every === "month"} onClick={() => setEvery("month")}>Month</Pill>
+              {every === "week"
+                ? WEEKDAYS.map((w, i) => (
+                    <Pill key={w} on={weekday === i + 1} onClick={() => setWeekday((i + 1) as AutomationWeekday)}>
+                      {w}
+                    </Pill>
+                  ))
+                : null}
+              {every === "month" ? <Input aria-label="Day of month" type="number" min={1} max={31} className="w-16" value={monthDay} onChange={(e) => setMonthDay(e.target.value)} /> : null}
+              <span className="type-secondary">at</span>
+              <Input aria-label="Time" type="time" className="w-28" value={at} onChange={(e) => setAt(e.target.value)} />
+            </div>
+          ) : null}
           {on === "property_edited" ? (
             <div className="flex flex-wrap items-center gap-1">
               <FieldPills fields={fields} value={trigField} onPick={setTrigField} />
               <Input aria-label="Edited to" placeholder="to any value" value={trigTo} onChange={(e) => setTrigTo(e.target.value)} />
             </div>
           ) : null}
-          <span className="type-secondary text-muted-foreground">Only if</span>
-          <div className="flex flex-wrap items-center gap-1">
-            <Pill on={condField === null} onClick={() => setCondField(null)}>Always</Pill>
-            <FieldPills fields={fields} value={condField ?? ""} onPick={setCondField} />
-            {condField ? <Input aria-label="Condition value" placeholder="is" value={condIs} onChange={(e) => setCondIs(e.target.value)} /> : null}
-          </div>
+          {timed ? null : (
+            <>
+              <span className="type-secondary text-muted-foreground">Only if</span>
+              <div className="flex flex-wrap items-center gap-1">
+                <Pill on={condField === null} onClick={() => setCondField(null)}>Always</Pill>
+                <FieldPills fields={fields} value={condField ?? ""} onPick={setCondField} />
+                {condField ? <Input aria-label="Condition value" placeholder="is" value={condIs} onChange={(e) => setCondIs(e.target.value)} /> : null}
+              </div>
+            </>
+          )}
           <span className="type-secondary text-muted-foreground">Do</span>
           {drafts.map((d, i) => (
             <div key={i} className="flex flex-wrap items-center gap-1" data-testid="spaces-automation-action">
@@ -280,7 +393,15 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
                   <ValueEditor fields={fields} d={d} put={(p) => put(i, p)} />
                 </>
               ) : d.kind === "add" ? (
-                <Input aria-label="New page name" placeholder="Add a page named" value={d.title} onChange={(e) => put(i, { title: e.target.value })} />
+                <>
+                  <Input aria-label="New page name" placeholder="Add a page named" value={d.title} onChange={(e) => put(i, { title: e.target.value })} />
+                  {dateFields.length > 0 ? (
+                    <>
+                      <FieldPills fields={dateFields} value={d.dateField} onPick={(dateField) => put(i, { dateField: d.dateField === dateField ? "" : dateField })} />
+                      {d.dateField ? <Input aria-label="Days from now" type="number" className="w-16" placeholder="days" value={d.inDays} onChange={(e) => put(i, { inDays: e.target.value })} /> : null}
+                    </>
+                  ) : null}
+                </>
               ) : d.kind === "edit" ? (
                 <>
                   <span className="type-secondary">Edit pages where</span>
@@ -288,13 +409,13 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
                   <Input aria-label="Where value" placeholder="is" value={d.whereIs} onChange={(e) => put(i, { whereIs: e.target.value })} />
                   <span className="type-secondary">set</span>
                   <FieldPills fields={fields} value={d.field} onPick={(field) => put(i, { field })} />
-                  <ValueEditor fields={fields} d={d} put={(p) => put(i, p)} />
+                  <ValueEditor fields={fields} d={d} put={(p) => put(i, p)} noCopy={timed} />
                 </>
               ) : d.kind === "notify" ? (
                 <>
                   <span className="type-secondary">Notify</span>
                   <Pill on={d.to === "author"} onClick={() => put(i, { to: "author" })}>The author</Pill>
-                  {fields
+                  {(timed ? [] : fields)
                     .filter((f) => /person|member|user/i.test(String(f.type)) || /person|member/i.test(String((f.config as Record<string, unknown> | undefined)?.["kind"] ?? "")))
                     .map((f) => (
                       <Pill key={f.id} on={d.to === f.id} onClick={() => put(i, { to: f.id })}>
@@ -312,8 +433,8 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
             </div>
           ))}
           <div className="flex flex-wrap gap-1">
-            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "set", field: firstField, value: "text", text: "", from: firstField }])}>Set property</Button>
-            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "add", title: "" }])}>Add page</Button>
+            {timed ? null : <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "set", field: firstField, value: "text", text: "", from: firstField }])}>Set property</Button>}
+            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "add", title: "", dateField: "", inDays: "" }])}>Add page</Button>
             <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "edit", whereField: firstField, whereIs: "", field: firstField, value: "text", text: "", from: firstField }])}>Edit pages</Button>
             <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "notify", to: "author", text: "" }])}>Send notification</Button>
             <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "webhook", url: "" }])}>Webhook</Button>

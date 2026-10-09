@@ -199,11 +199,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   because the snapshot schema refuses layout `form` (NEEDS). (3) A built-in table block saved before its "+ New page" row reads its
   stored size with 34px added (`paintedSizesOf`, `nr` marker on new saves, 0dc23598bf). (4) The advanced-filter popover is opaque
   (solid surface, white, no backdrop). (5) N9 Automations (`data/Automations.tsx`, b614bdc129) on `@ai-matrx/records` 0.77.1's
-  automation doors: trigger (page added / property edited [to] / form answered; schedule shown unavailable), condition, actions
+  automation doors: trigger (page added / property edited [to] / form answered / date arrives / every day, week, month), condition, actions
   (set with value / now / me / empty / copy-from, add page, edit pages, notify author or a person property, webhook, agent), on/off,
   archive / restore, run history with each step (count = knob `spaces.automation_runs_shown`); walk `automations.walk.mjs`.
   (6) Width drag fixed in design-system 0.73.1 (3ca9d4ef31): the grip sat half outside its clipping header cell. NEEDS rows: N3
   suggested edits, N11 "Can edit content" + share wording, Form layout in the snapshot schema, duplicate values door.
+- 2026-10-08 — AUTOMATION-TIME: the Automations editor gains two triggers on the store's tick (`custom.automation_time_tick`, pg_cron every 5 min, runs listed in the same history): "Date arrives" (a date property, N days before / on / after, at a time, once per row per date value; changing the date re-arms) and "Every…" (day / week + weekday / month + day, at a time; no condition and no Set step, since a schedule has no row). Add page can set a date N days from the run (the repeating row). Migrations `automationtime_a_/b_`, suite `scripts/campaign-tests/automationtime_green.sql`.
 - 2026-10-07 — builder round 30: (1) built-in tables: a magnifier search holds still (rows held dimmed while the read
   runs, the grid remounts per answer, the body keeps its height while a term is on, the count keeps its width; CLS 0.21 -> 0,
   walk `entity-search.walk.mjs`); the "70 unrelated rows" were the page's other tables counted page-wide; built-in tables get
