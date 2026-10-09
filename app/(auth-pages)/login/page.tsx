@@ -28,6 +28,7 @@ import {
   readInviteToken,
   withInviteToken,
 } from "@/utils/auth/invitation-links";
+import { guestRecordsNote, readGuestRecordCount } from "@/lib/guest/guest-record-count";
 import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
 import { RememberedSignInHeading } from "@/features/auth/components/RememberedSignInHeading";
 
@@ -66,6 +67,8 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
   console.log("Login page - destination:", redirectTo ?? "(none)");
 
+  // A guest who came from an Applet's account line: their records come along (lib/guest/).
+  const guestNote = guestRecordsNote(await readGuestRecordCount());
   const error = awaitedSearchParams.error as string;
   const success = awaitedSearchParams.success as string;
 
@@ -105,6 +108,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
         </>
       }
       message={message}
+      note={guestNote}
     >
       <HardRedirectForm
         action={loginWithRedirect}
@@ -167,6 +171,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
         <div>
           <SubmitButton
+            needsScript
             pendingText="Signing In..."
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >

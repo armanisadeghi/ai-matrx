@@ -8,6 +8,8 @@ export interface AuthPageContainerProps {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   message?: AuthMessageType;
+  /** One quiet line above the form (e.g. a guest's records coming along). */
+  note?: string | null;
 }
 
 export default function AuthPageContainer({
@@ -15,6 +17,7 @@ export default function AuthPageContainer({
   title,
   subtitle,
   message,
+  note,
 }: AuthPageContainerProps) {
   return (
     <div className="min-h-dvh w-full flex flex-col items-center justify-start overflow-y-auto bg-gradient-to-br from-gray-100 to-gray-200 dark:from-neutral-900 dark:to-neutral-800 px-3 py-6 sm:py-10">
@@ -32,6 +35,15 @@ export default function AuthPageContainer({
             <div className="mt-1.5 sm:mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
               {subtitle}
             </div>
+          )}
+          {note && (
+            <p
+              role="status"
+              data-testid="auth-guest-note"
+              className="mt-3 text-center text-sm text-gray-700 dark:text-gray-300"
+            >
+              {note}
+            </p>
           )}
           {message && (
             <div className="mt-4 sm:mt-6">

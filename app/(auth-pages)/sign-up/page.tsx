@@ -27,6 +27,7 @@ import {
   readInviteToken,
   withInviteToken,
 } from "@/utils/auth/invitation-links";
+import { guestRecordsNote, readGuestRecordCount } from "@/lib/guest/guest-record-count";
 import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
 import { lookupSignerEmail, readSignerHint } from "@/utils/auth/signer-email-lookup";
 import {
@@ -69,6 +70,8 @@ export default async function SignUp({ searchParams }: SignUpProps) {
   // Someone who just signed a document from an emailed link: the same pattern, a one-time hint
   // resolved to the address they signed with (utils/auth/signer-email-lookup.ts).
   const signerEmail = invitedEmail ? null : await lookupSignerEmail(readSignerHint(awaitedSearchParams));
+  // A guest who came from an Applet's account line: their records come along (lib/guest/).
+  const guestNote = guestRecordsNote(await readGuestRecordCount());
   const error = awaitedSearchParams.error as string;
   const success = awaitedSearchParams.success as string;
 
@@ -107,6 +110,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
         </>
       }
       message={message as AuthMessageType}
+      note={guestNote}
     >
       <CouponOfferBanner preview={couponPreview} />
       <HardRedirectForm
@@ -199,6 +203,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
             value={redirectTo ?? ""}
           />
           <SubmitButton
+            needsScript
             pendingText="Creating Account..."
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >

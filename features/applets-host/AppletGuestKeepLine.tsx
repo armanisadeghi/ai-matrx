@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@ai-matrx/design-system/controls";
 import type { GuestSaveStatus } from "@ai-matrx/applets";
+import { guestCeilingSentence } from "@ai-matrx/applets/platform";
 
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
@@ -25,10 +26,19 @@ export function AppletGuestKeepLine({ status }: { status: GuestSaveStatus }) {
   const signUp = useLoginHref("/sign-up");
   const logIn = useLoginHref("/login");
   const n = status.saved;
+  // At the ceiling the form below stays open with the typed entry and a Save that cannot land: say so, in the
+  // package's one sentence, and keep it in view while the form is scrolled (lane F12).
+  const atCeiling = n >= status.ceiling;
   return (
-    <div role="status" className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-2 text-sm text-foreground">
+    <div
+      role="status"
+      data-at-ceiling={atCeiling || undefined}
+      className={`mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-2 text-sm text-foreground${atCeiling ? " sticky top-0 z-10 bg-background" : ""}`}
+    >
       <span>
-        Create a free account to keep these — your {n} {n === 1 ? "record comes" : "records come"} with you
+        {atCeiling
+          ? guestCeilingSentence(status.ceiling)
+          : `Create a free account to keep these — your ${n} ${n === 1 ? "record comes" : "records come"} with you`}
       </span>
       <Button variant="primary" disabled={pending} onClick={() => startTransition(() => router.push(signUp))}>
         Create free account
