@@ -16,7 +16,8 @@ declare global {
 /**
  * Sends first-party AI Matrx product page views only for the internal
  * super-admin audience selected by the server layout. Education is excluded
- * again here so a client-side navigation cannot cross that boundary.
+ * again here so a client-side navigation cannot cross that boundary. Both scripts load
+ * `lazyOnload` (after the window load, at browser idle): analytics never competes with paint.
  */
 export function InternalGoogleAnalytics() {
   const pathname = usePathname();
@@ -35,11 +36,11 @@ export function InternalGoogleAnalytics() {
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
       <Script
         id="ai-matrx-internal-google-analytics"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onReady={() => setReady(true)}
       >
         {`
