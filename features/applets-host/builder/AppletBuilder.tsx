@@ -563,10 +563,10 @@ export function AppletBuilder({
               <div className="flex flex-col gap-1" data-applet-new-tables="">
                 <span className="text-xs font-medium">Using it creates {saved.toMake.length === 1 ? "1 table" : `${saved.toMake.length} tables`}</span>
                 {saved.toMake.map((t) => (
-                  <div key={t.alias} className="flex min-w-0 items-center gap-2 text-xs">
+                  <div key={t.alias} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                     <Table2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="shrink-0 font-medium">{t.name}</span>
-                    <span className="truncate text-muted-foreground" title={t.fields.join(", ")}>
+                    <span className="min-w-0 max-w-full truncate text-muted-foreground" title={t.fields.join(", ")}>
                       {t.fields.join(", ")}
                     </span>
                     {t.examples ? (
@@ -659,8 +659,8 @@ function AppletLinkRow({ slug }: { slug: string }) {
   const url = hydrated ? appletLink(window.location.origin, slug) : null;
   if (!url) return null;
   return (
-    <div className="flex min-w-0 items-center gap-2 text-xs" data-applet-link="">
-      <a href={url} target="_blank" rel="noreferrer" className="min-w-0 truncate text-primary" title={url}>
+    <div className="flex min-w-0 items-start gap-2 text-xs" data-applet-link="">
+      <a href={url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 break-all text-primary" title={url}>
         {url}
       </a>
       <Button variant="quiet" icon={<Copy className="h-3.5 w-3.5" />} aria-label="Copy link" title="Copy link" onClick={() => void copyText(url)}>

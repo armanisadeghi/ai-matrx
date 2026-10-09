@@ -121,6 +121,8 @@ The layout settles a pending claim on a signed-in load (`settlePendingGuestClaim
 
 ## Change Log
 
+- 2026-10-09 (lane F11): the saved card's new-table line wraps (the example count drops to its own line when narrow) and the Applet link shows in full (`break-all`; Copy was already the full link). A reload no longer breaks the build conversation panel: `@ai-matrx/rich-content` bare kind floor supplies its own content-IR provider (or text) and the host gate calls `use()` every render; guard `builder/build-conversation-reload.test.tsx`. `platform.knob_defaults` stays signed-in only (it returns the whole register); the cold read no longer leaves an unhandled rejection. New-table naming field is required by default and `rowLabel` is the one "Untitled" (`@ai-matrx/applets`).
+
 - 2026-10-09 — G2 guest data: `visitor` mode on `AppletHostMount` (guest client, `ensureGuestSession`,
   `onGuestSaved`), `AppletGuestKeepLine`, pending-claim settle in the layout; adopts `@ai-matrx/applets` 0.18.0.
 
