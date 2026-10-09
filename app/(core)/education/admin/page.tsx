@@ -312,7 +312,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Sub-routes: /new (generate), /[id] (view), /[id]/edit (owner controls)",
-        "Feature: features/education/media/mindmap/** · agent d13184d4-6a46-4b08-aff4-a95b7be93fc5",
+        "Feature: features/education/media/mindmap/** · the mind-map generator agent",
       ],
     },
     {
@@ -324,7 +324,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Sub-routes: /new (generate), /[id] (view), /[id]/edit (owner controls, EDIT-gated)",
-        "Feature: features/education/memory/** · agents: memory_aid 826aaa26-baaf-4e87-b5a3-2e4bba37f053 · memory_hint 4c5dd04a-4b22-43cd-bd8b-781a4d6dedb5",
+        "Feature: features/education/memory/** · agents: memory_aid · memory_hint",
         "Metered: education.memory_generate (useEntitlementGuard + EntitlementMeter, limit shown pre-action)",
       ],
     },
@@ -406,7 +406,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Feature: features/education/assessment/grade-work/** (GradeWorkSurface · useGradeWork · GradeWorkClient) + shared primitives HandwrittenWorkInput + StepBreakdown + data/imageGrading.ts (upload→vision grader→coerce)",
-        "New agent: Trust — Grade Handwritten Work (Vision) 77db0f64-15a3-43dd-96f7-ec9380057be8 (Gemini Flash Latest, vision); output = GradeVerdict core + steps[] + transcription (coerceStepGradeVerdict, features/education/trust)",
+        "New agent: Trust — Grade Handwritten Work (Vision) (Gemini Flash Latest, vision); output = GradeVerdict core + steps[] + transcription (coerceStepGradeVerdict, features/education/trust)",
         "Grading branch: gradeAnswerImage in features/education/assessment/data/grading.ts (does NOT fork the grader — the image branch of grade-on-meaning)",
         "Metered via education.image_grade (enforced:false; 20/day + 8/1h burst); photo travels through fileHandler only (system-files/image-grade)",
       ],

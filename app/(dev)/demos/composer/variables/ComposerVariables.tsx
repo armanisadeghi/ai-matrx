@@ -44,21 +44,26 @@ interface QuickPick {
   types: string;
 }
 
+// Demo roster ids — declared once as seeds (scripts/check_no_direct_holder_runs.py reads *_SEED_AGENT_ID).
+const STUDY_PLANNER_SEED_AGENT_ID = "49d3c256-fdb4-4c9c-8965-6b35e638f698";
+const YOUTUBE_RESEARCH_SEED_AGENT_ID = "7402d782-81ea-4765-bb24-d08a639c4aa8";
+const CUSTOM_SPEECH_SEED_AGENT_ID = "04f69dff-a258-4791-a44e-b7b87f346b9d";
+
 const QUICK_PICKS: readonly QuickPick[] = [
   { id: "35461e07-bbd1-46cc-81a7-910850815703", label: "Balanced News", types: "textarea" },
   { id: "3079bb13-6016-43bb-8dc1-db2878ed3902", label: "Content Extractor", types: "radio" },
   { id: "8b205923-3efa-4018-bb68-2088af362e4c", label: "Flashcards", types: "number" },
   { id: "6f92950c-23c9-48d2-bfe8-02d54f21c185", label: "Science Tutor", types: "select" },
   { id: "616543f2-eeb0-4b73-8c43-c777337aa8e2", label: "Multi-Perspective", types: "toggle" },
-  { id: "49d3c256-fdb4-4c9c-8965-6b35e638f698", label: "Study Planner", types: "number + checkbox" },
+  { id: STUDY_PLANNER_SEED_AGENT_ID, label: "Study Planner", types: "number + checkbox" },
   { id: "3bf7e37d-26b4-4581-ac29-450462c18b22", label: "Shot Studio", types: "pill-toggle" },
   { id: "1f1607f5-9866-4ab2-93e4-8dc4ef1e9376", label: "Images + Styles", types: "buttons + list" },
   { id: "44d3b270-d516-4485-86a5-a958968e15c9", label: "Feedback triage", types: "url + select" },
   { id: "c76517de-fa2e-4066-b5cf-131747b3c36b", label: "Photo Studio", types: "image" },
   { id: "bd1ee03d-b7eb-4258-b51f-88e00e446eff", label: "PDF Extract", types: "document" },
-  { id: "7402d782-81ea-4765-bb24-d08a639c4aa8", label: "YouTube Research", types: "youtube + toggle" },
+  { id: YOUTUBE_RESEARCH_SEED_AGENT_ID, label: "YouTube Research", types: "youtube + toggle" },
   { id: "4cd676c6-f55d-4426-b7eb-a9d0273566ec", label: "Your Tables", types: "table + tables" },
-  { id: "04f69dff-a258-4791-a44e-b7b87f346b9d", label: "Custom speech", types: "select + list" },
+  { id: CUSTOM_SPEECH_SEED_AGENT_ID, label: "Custom speech", types: "select + list" },
   { id: "8d02d271-f007-4db3-90f2-3cc596190db0", label: "Model Config Sync", types: "textarea + list" },
 ];
 

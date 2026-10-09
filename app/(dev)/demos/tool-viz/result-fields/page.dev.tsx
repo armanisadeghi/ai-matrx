@@ -1049,11 +1049,11 @@ const IMAGE_AGENT_CALL_ENTRY = entry({
   toolName: "agent_call",
   displayName: "Sub-agent",
   arguments: {
-    agent_id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+    agent_id: SAMPLE_IMAGE_SEED_AGENT_ID,
     variables: { image_description: "A TikTok algorithm infographic" },
   },
   result: {
-    agent_id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+    agent_id: SAMPLE_IMAGE_SEED_AGENT_ID,
     agent_name: "Matrx Image Ultra",
     result:
       "https://matrx-user-files.s3.amazonaws.com/4cf62e4e-2679-484f-b652-034e697418df/6feae31a-945b-4dcc-8fc0-2041bb76c6b1?response-content-disposition=inline%3B%20filename%3D%22tiktok-algorithm.png%22&response-content-type=image%2Fpng&AWSAccessKeyId=AKIA4WJPWQC7PVFDDC42&Signature=RpqmXw%2Fg0Se8uAR3SMVcp9gg7MY%3D&Expires=1786485620",
@@ -1260,6 +1260,9 @@ const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
     },
   }),
 ];
+
+// A sample tool result's sub-agent id, declared once as a seed (the guard reads *_SEED_AGENT_ID).
+const SAMPLE_IMAGE_SEED_AGENT_ID = "bcc69216-d4fa-4e28-a090-8a7749123bc5";
 
 const CLOUD_BROWSER_SCREENSHOT =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='675' viewBox='0 0 1200 675'%3E%3Crect width='1200' height='675' fill='%23f8fafc'/%3E%3Crect x='36' y='34' width='1128' height='607' rx='22' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Crect x='36' y='34' width='1128' height='58' rx='22' fill='%23f1f5f9'/%3E%3Ccircle cx='70' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='96' cy='63' r='8' fill='%2394a3b8'/%3E%3Ccircle cx='122' cy='63' r='8' fill='%2394a3b8'/%3E%3Crect x='170' y='49' width='770' height='28' rx='14' fill='%23ffffff' stroke='%23cbd5e1'/%3E%3Ctext x='194' y='69' font-family='Arial,sans-serif' font-size='14' fill='%23475569'%3Email.google.com/mail/u/0/%23inbox%3C/text%3E%3Ctext x='85' y='158' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%230f172a'%3EInbox%3C/text%3E%3Crect x='85' y='196' width='1030' height='1' fill='%23e2e8f0'/%3E%3Crect x='85' y='224' width='820' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='267' width='680' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='318' width='950' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='361' width='600' height='16' rx='8' fill='%23e2e8f0'/%3E%3Crect x='85' y='412' width='880' height='20' rx='10' fill='%23cbd5e1'/%3E%3Crect x='85' y='455' width='720' height='16' rx='8' fill='%23e2e8f0'/%3E%3C/svg%3E";
