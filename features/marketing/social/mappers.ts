@@ -109,8 +109,10 @@ export function outlierInputFrom(
   stat: Pick<PostStatRow, "outlier_score" | "baseline_views" | "percentile" | "baseline_window"> | null,
   postedAt: string | null,
   now = Date.now(),
+  views?: number | null,
 ): OutlierInput {
   return {
+    ...(views === null && stat ? { noViews: true } : {}),
     score: num(stat?.outlier_score),
     baselineViews: num(stat?.baseline_views),
     percentile: num(stat?.percentile),
@@ -137,7 +139,7 @@ export function toPostCardModel(args: {
   now?: number;
 }): PostCardModel {
   const { post, stat, handle, analysisHook } = args;
-  const outlier = outlierInputFrom(stat, post.posted_at, args.now);
+  const outlier = outlierInputFrom(stat, post.posted_at, args.now, stat ? num(stat.views) : undefined);
   return {
     postId: post.id,
     platform: post.platform,

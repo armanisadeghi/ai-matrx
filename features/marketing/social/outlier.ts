@@ -5,7 +5,9 @@
  *
  *   4.2x  — one decimal under 10x, integer from 10x, `99x+` cap
  *   <2x   plain muted text, no fill   · 2–4x neutral · 4–10x accent · ≥10x strong
- *   no baseline → "11+ posts" + "Needs 10 other posts to compare" (never 0x / 1.0x)
+ *   no baseline → the REASON, never 0x / 1.0x:
+ *     post has no view count → "No views"   · account has 0 posts → "No posts"
+ *     too few posts          → "11+ posts" + "Needs 10 other posts to compare"
  *   young post  → "~4.2x" + "~ means provisional: still gaining views, so 4.2x will move."
  */
 
@@ -29,6 +31,9 @@ export const OUTLIER_YOUNG_HOURS = 24;
 
 /** The visible no-baseline state (UI-SPEC §1.1): a profile needs OUTLIER_MIN_POSTS + 1 posts. */
 export const NO_BASELINE_TEXT = `${OUTLIER_MIN_POSTS + 1}+ posts`;
+
+export const NO_VIEWS_TEXT = "No views";
+export const NO_POSTS_TEXT = "No posts";
 
 export type OutlierTier = "none" | "plain" | "neutral" | "accent" | "strong";
 
@@ -83,6 +88,12 @@ function trim(n: number): string {
 export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
   const { score, baselineViews, percentile, baselineWindow, ageHours } = input;
   if (score === null || !Number.isFinite(score)) {
+    if (input.noViews) {
+      return { tier: "none", bars: 0, text: NO_VIEWS_TEXT, tilde: false, tooltip: "This post reports no view count, so there is no multiple" };
+    }
+    if (input.accountPosts === 0) {
+      return { tier: "none", bars: 0, text: NO_POSTS_TEXT, tilde: false, tooltip: "This account has no posts yet" };
+    }
     return {
       tier: "none",
       bars: 0,

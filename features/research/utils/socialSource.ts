@@ -107,6 +107,7 @@ export function socialPostCardModel(
       percentile: null,
       baselineWindow: facts.baselineWindow,
       ageHours,
+      ...(facts.views === null ? { noViews: true } : {}),
     },
     outlierScore: facts.outlierScore,
     percentile: null,

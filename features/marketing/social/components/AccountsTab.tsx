@@ -228,12 +228,12 @@ export function AccountsTab() {
         label: "Best multiple",
         header: "Best multiple",
         accessorFn: (r) => r.bestScore,
-        copyValue: (r) => outlierBadgeModel({ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null }).text,
+        copyValue: (r) => outlierBadgeModel({ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null, accountPosts: r.postsTracked }).text,
         align: "right",
         filter: "number",
         cell: (r) => (
           <OutlierBadge
-            input={{ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null }}
+            input={{ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null, accountPosts: r.postsTracked }}
           />
         ),
       },
