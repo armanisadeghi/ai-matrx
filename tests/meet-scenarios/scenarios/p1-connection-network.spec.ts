@@ -25,7 +25,7 @@ scenario("net-blip", async ({ cast }) => {
 
 scenario("net-full-reconnect-identity", async ({ cast }) => {
   const { guest } = await callWithGuest(cast);
-  await press(guest, "Raise hand", guest.page.getByRole("button", { name: /^Raise hand$/ }), 8000);
+  await press(guest, "Raise hand", guest.page.getByRole("button", { name: /^Raise hand\b/ }), 8000);
   await guest.dropFor(60_000);
   // Past the SDK's give-up: the guest is back through the supported route, with their state, never as a stranger.
   let o = await seeUntil(guest, "the call, or a Rejoin offer", (x) => x.phase === "in-call" || x.phase === "disconnected", TIMEOUTS.reconnectGiveUpMs);
@@ -34,7 +34,7 @@ scenario("net-full-reconnect-identity", async ({ cast }) => {
     o = await seePhase(guest, ["in-call"], 60_000);
   }
   expect(o.phase, `back in the call with no name step and no second knock; saw ${summarize(o)}`).toBe("in-call");
-  expect(await hasButton(guest.page, /^Lower hand$/), "the raised hand is still raised after the full reconnect").toBe(true);
+  expect(await hasButton(guest.page, /^Lower hand\b/), "the raised hand is still raised after the full reconnect").toBe(true);
   expect(o.role, "the role survives the reconnect").not.toBe("none");
 });
 
