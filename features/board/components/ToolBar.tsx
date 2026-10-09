@@ -52,9 +52,21 @@ const MAIN_TOOLS: BoardTool[] = ["select", "hand", "text", "frame", "note", "pen
 /** Tools that stay on the strip at phone width; the rest fold into one "More tools" menu. */
 export const PHONE_TOOLS: readonly BoardTool[] = ["select", "hand"];
 
-export function ToolBar({ leading, className }: { leading?: ReactNode; className?: string }) {
+export function ToolBar({
+  leading,
+  className,
+  tools,
+}: {
+  leading?: ReactNode;
+  className?: string;
+  /** A preset's tool list; omitted = every tool. */
+  tools?: readonly BoardTool[];
+}) {
   const store = useBoardCameraStore();
   const active = useActiveTool();
+  const has = (t: BoardTool) => !tools || tools.includes(t);
+  const mainTools = MAIN_TOOLS.filter(has);
+  const shapeTools = SHAPE_TOOLS.filter(has);
   const shapeActive = (SHAPE_TOOLS as readonly BoardTool[]).includes(active);
   const ShapeIcon = shapeActive ? ICON[active] : Shapes;
 
@@ -70,7 +82,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
     >
       {leading}
       {leading && <span className="mx-1 h-5 w-px bg-border" />}
-      {MAIN_TOOLS.map((tool) => (
+      {mainTools.map((tool) => (
         <ToolButton
           key={tool}
           tool={tool}
@@ -98,7 +110,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-44" data-board-chrome>
-          {[...MAIN_TOOLS.filter((t) => !PHONE_TOOLS.includes(t)), ...SHAPE_TOOLS].map((tool) => {
+          {[...mainTools.filter((t) => !PHONE_TOOLS.includes(t)), ...shapeTools].map((tool) => {
             const Icon = ICON[tool];
             return (
               <DropdownMenuItem key={tool} onSelect={() => store.setTool(tool)}>
@@ -110,7 +122,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
           })}
         </DropdownMenuContent>
       </DropdownMenu>
-      <DropdownMenu>
+      {shapeTools.length > 0 && (<DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
@@ -126,7 +138,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-44" data-board-chrome>
-          {SHAPE_TOOLS.map((tool: ShapeTool, i) => {
+          {shapeTools.map((tool: ShapeTool, i) => {
             const Icon = ICON[tool];
             return (
               <div key={tool}>
@@ -140,7 +152,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             );
           })}
         </DropdownMenuContent>
-      </DropdownMenu>
+      </DropdownMenu>)}
     </div>
   );
 }

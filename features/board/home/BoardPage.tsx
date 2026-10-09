@@ -26,6 +26,7 @@ import { BoardOrganizationProvider } from "../items/board-organization";
 import { BoardChatsProvider, BoardHomeChatFiler } from "../items/board-chats";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
 import { BOARD_TOKEN } from "../persistence/boardsService";
+import type { BoardPreset } from "../presets/board-preset";
 import { useCreateBoard } from "../persistence/useCreateBoard";
 
 const OPENING = "Opening your board…";
@@ -39,11 +40,14 @@ export function BoardPage({
   target,
   workspaceId,
   initialLayout,
+  preset,
 }: {
   target: SavedBoardTarget;
   /** The workspace's remembered layout (the chat's is the shell chat's: `shellChatHome`). */
   workspaceId: string;
   initialLayout: CanvasWorkspaceLayout;
+  /** A focus for this board (`presets/`); none = the whole board. */
+  preset?: BoardPreset;
 }) {
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
@@ -127,6 +131,7 @@ export function BoardPage({
                     <BoardHomeChatFiler />
                     <UserBoard
                       key={ready.board.id}
+                      preset={preset}
                       boardId={ready.board.id}
                       title={ready.board.title}
                       doc={ready.board.doc}

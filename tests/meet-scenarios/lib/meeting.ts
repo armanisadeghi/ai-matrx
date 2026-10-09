@@ -373,72 +373,59 @@ export async function setMeetingPolicy(meeting: Meeting, key: string, value: str
   expect(String(back).replace(/"/g, ""), `meet_policy should answer ${key}=${value} after the host set it`).toBe(String(value));
 }
 
+/** The organization harness meetings are created in (the same default the series run uses); override with MEET_SCENARIO_ORG. */
+const SCENARIO_ORG = () => process.env.MEET_SCENARIO_ORG ?? process.env.SERIES_ORG ?? "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+
 /**
- * Choose the host's behavior profile (`meet`/`zoom`/`teams`) through the product's own settings door:
- * `communication.meet_policy_set` at the host's USER rung (CORE-DESIGN §4.1: "each host's own choice"),
- * with the host's own session - never a row edit. A meeting whose own `behavior_profile` column is
- * unset runs its host's rules, so this applies to every meeting the harness host starts. Call it
- * BEFORE anyone joins: the run caches the resolved rules when it opens. Reads the answer back
- * through `meet_policy`.
+ * Create ONE meeting that runs `profile` rules (`meet`/`zoom`/`teams`) through the product's own
+ * scheduling door (`communication.meet_schedule_meeting` with `p_settings.behavior_profile`, which
+ * writes the meeting's own `behavior_profile` column - CORE-DESIGN §4.1), with the host's own session.
+ * Never a user-level override: that is account-wide, so every other lane's run starting while it is set
+ * would run under these rules too. No start time = an instant meeting, same as "Start now". The meeting's
+ * own column is read back before returning.
  */
-export async function setHostBehaviorProfile(meeting: Meeting, profile: "meet" | "zoom" | "teams"): Promise<void> {
-  const s = await meeting.host.session();
-  if (!s) throw new Error("the host has no session to set a profile with");
-  const row = await meetingRow(meeting);
-  if (!row?.id || !row.organization_id) throw new Error("the meeting row is not readable by its host");
-  const set = (await rpc(
-    "meet_policy_set",
-    { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: s.userId, p_organization_id: row.organization_id, p_value: profile, p_note: null },
+export async function createMeetingWithProfile(host: Actor, profile: "meet" | "zoom" | "teams"): Promise<Meeting> {
+  const s = await host.session();
+  if (!s) throw new Error("the host has no session to create a meeting with");
+  const out = (await rpc(
+    "meet_schedule_meeting",
+    {
+      p_organization_id: SCENARIO_ORG(),
+      p_host_user_id: s.userId,
+      p_title: "Meeting",
+      p_scheduled_for: null,
+      p_time_zone: null,
+      p_duration_minutes: null,
+      p_agenda: null,
+      p_recurrence_rule: null,
+      p_settings: { behavior_profile: profile },
+    },
     s.token,
-  )) as { ok?: boolean; reason?: string; detail?: string } | null;
-  // Registered BEFORE the verdict on the write: whatever happens next, the scope is cleared at cleanup.
-  profileScopes.set(meeting.host, [...(profileScopes.get(meeting.host) ?? []), { userId: s.userId, organizationId: String(row.organization_id) }]);
-  expect(set?.ok, `meet_policy_set refused the host's profile: ${JSON.stringify(set)}`).not.toBe(false);
-  const back = await rpc("meet_policy", { p_meeting_id: row.id, p_key: "behavior_profile" }, s.token);
-  meeting.host.note(`host behavior profile = ${JSON.stringify(back)} (set through meet_policy_set, user rung)`);
-  expect(String(back).replace(/"/g, ""), `meet_policy should answer behavior_profile=${profile} after the host chose it`).toBe(profile);
+  )) as { slug?: string; behavior_profile?: string } | { slug?: string; behavior_profile?: string }[];
+  const row = Array.isArray(out) ? out[0] : out;
+  if (!row?.slug) throw new Error(`meet_schedule_meeting answered no slug: ${JSON.stringify(out).slice(0, 200)}`);
+  expect(row.behavior_profile, `the meeting's own behavior_profile column after meet_schedule_meeting`).toBe(profile);
+  host.note(`meeting ${row.slug} created with its own behavior_profile=${profile} (meet_schedule_meeting; no user-level override)`);
+  return { slug: row.slug, path: skin().meetingPath(row.slug), host };
 }
 
-/** Host-level profile overrides a scenario set, per host, so cleanup can clear exactly those. */
-const profileScopes = new Map<Actor, { userId: string; organizationId: string }[]>();
-
 /**
- * Cleanup for `setHostBehaviorProfile`, run by the cast's final sweep even when the scenario failed:
- * clears each user-rung override the scenario wrote (a NULL value through the same `meet_policy_set`
- * door removes the override, so the host is back on the default profile), then reads the live
- * overrides back. Returns failure descriptions (never throws).
+ * Run-start repair: clear admin's user-level behavior_profile overrides through the product's own
+ * settings door (a NULL value through `meet_policy_set` removes the override), with the host's session.
+ * Returns the overrides still held afterwards (empty = default profile).
  */
-export async function restoreHostProfiles(actors: Actor[]): Promise<string[]> {
-  const failures: string[] = [];
-  let touched = false;
-  for (const host of actors) {
-    const scopes = profileScopes.get(host);
-    if (!scopes?.length) continue;
-    touched = true;
-    const s = await host.session();
-    if (!s) {
-      failures.push(`CLEANUP FAILURE: ${host.opts.label} has no session to restore the behavior profile with`);
-      continue;
-    }
-    for (const sc of scopes) {
-      try {
-        const out = (await rpc(
-          "meet_policy_set",
-          { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: sc.userId, p_organization_id: sc.organizationId, p_value: null, p_note: null },
-          s.token,
-        )) as { ok?: boolean } | null;
-        if (out?.ok === false) failures.push(`CLEANUP FAILURE: clearing the host behavior profile was refused: ${JSON.stringify(out)}`);
-      } catch (e) {
-        failures.push(`CLEANUP FAILURE: clearing the host behavior profile threw: ${(e as Error).message.slice(0, 160)}`);
-      }
-    }
-    profileScopes.delete(host);
+export async function clearUserProfileOverrides(host: Actor): Promise<{ organization_id: string; value: unknown }[]> {
+  const s = await host.session();
+  if (!s) throw new Error("no session to clear the user-level behavior profile with");
+  const held = await adminProfileOverrides();
+  for (const o of held.overrides) {
+    await rpc(
+      "meet_policy_set",
+      { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: s.userId, p_organization_id: o.organization_id, p_value: null, p_note: null },
+      s.token,
+    );
   }
-  if (touched) {
-    const left = await adminProfileOverrides().catch((e: Error) => ({ overrides: [{ organization_id: `read failed: ${e.message.slice(0, 80)}`, value: null }] }));
-    if (left.overrides.length) failures.push(`CLEANUP FAILURE: admin still holds behavior_profile overrides after restore: ${JSON.stringify(left.overrides)}`);
-  }
-  return failures;
+  return (await adminProfileOverrides()).overrides;
 }
 
 /** The host lifts a denial the way the product does (`meet_undeny`), for the guest the lobby knew by name. */

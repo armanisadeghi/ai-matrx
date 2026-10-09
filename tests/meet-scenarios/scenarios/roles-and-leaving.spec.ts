@@ -14,7 +14,7 @@ import {
   seePhase,
   seeUntil,
   refused,
-  setHostBehaviorProfile,
+  createMeetingWithProfile,
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
@@ -101,9 +101,10 @@ scenario(
 scenario(
   "host-leaves-unassigned-zoom",
   async ({ cast }) => {
-    const host = await hostWithMeeting(cast);
-    // The host chooses the Zoom profile through the product's settings door, before anyone joins.
-    await setHostBehaviorProfile(cast.meeting!, "zoom");
+    // The meeting itself is created with the Zoom profile (its own behavior_profile column, through the
+    // product's scheduling door) - never a user-level override, which would re-rule every other run.
+    const host = await cast.add({ label: "host", seat: "admin" });
+    cast.meeting = await createMeetingWithProfile(host, "zoom");
     const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
     await walkIn(host, cast.meeting!, { until: ["in-call"] });
     await walkIn(guest, cast.meeting!, { until: ["knocking", "in-call"], gesture: true });

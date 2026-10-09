@@ -20,7 +20,7 @@ hyper-specialized — the exact instructions, the exact variables, the exact con
 exact tools, and the exact response shape it needs to produce one specific deliverable
 with near-perfect reliability. **Nothing more, nothing less.**
 
-🚨 **This skill is never run on an agent's own authority.** No agent creates, rewrites, or
+🚨 **This skill is never run on an agent's own authority.** The route for a coding agent is a mandate (provision, output, goal) plus ≥3 real inputs, handed to the factory ([factory-route.md](factory-route.md)). No agent creates, rewrites, or
 tunes a platform agent's instructions or a mandate's prompt by itself — the loop runs
 problem → Arman vision session → mandate brief → the agent-generation agent → results read
 WITH him on small real data → he edits and re-runs. Read
@@ -91,6 +91,7 @@ below is visible in that one agent.
 **Branch files — read only when your run reaches them:**
 - Agent emits content-IR kinds → [kind-registration.md](kind-registration.md) (step 5).
 - Converting an existing blob agent → [blob-agent-conversion.md](blob-agent-conversion.md).
+- Starting any build as a coding agent (step 6, before `agent_author create`) → [factory-route.md](factory-route.md): mandate, 3 real inputs, idempotency key, outcomes.
 
 ## The order of operations
 
@@ -219,17 +220,12 @@ variables (`variables` itself is refused). One `update` may carry `model_id` +
 `variable_definitions` + `messages` together, so a whole agent flip is one versioned call. Optional variables render as empty strings, so keep
 them on labeled lines after the conversational opening rather than mid-sentence.
 
-**When `create` returns a `build_id` instead of an `agent_id`,** your organization builds
-through the Agent Factory: it writes the agent, then proves it on your `sample_inputs`
-before keeping it. Send ≥3 real cases as a JSON array (each object one case's variables),
-or the build is refused before anything is spent. Poll `agent_author action=build_status
-build_id=…` about every 30 s; only `agent_kept: true` gives you an `agent_id`. Any other
-outcome kept no agent and says why. `needs_new_kind` means no registered shape fits:
-call `create_structured` with your own `output_schema`. For any other outcome, fix the
-input and create again. When the person named a format, pass their words in
-`output_format` (e.g. "a Markdown table with columns Owner | Task | Due");
-`response_format` only takes text/json/json_schema. The create response carries an
-`idempotency_key`; send it to retry, so you rejoin the build instead of starting a second one.
+**Our coding agents build through the Agent Factory — read [factory-route.md](factory-route.md) before the first `create`.**
+`create` may return a `build_id` instead of an `agent_id`: poll `agent_author action=build_status`;
+only `agent_kept: true` gives an `agent_id`. A headless caller must send ≥3 REAL examples in
+`sample_inputs` up front or the server refuses (nothing spent); always send an `idempotency_key`.
+When the person named a format, pass their words in `output_format` (e.g. "a Markdown table with
+columns Owner | Task | Due"); `response_format` only takes text/json/json_schema.
 
 For structured output, the schema must pass the provider gate: object root,
 `additionalProperties: false` on every object, every property in `required` (optional =

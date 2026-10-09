@@ -8,24 +8,30 @@
  *   StartPanel  what an empty board shows: one click and you are working.
  */
 
-import { ChevronDown, Plus, Upload } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Ellipsis, Plus, Upload } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { startNewEntries, type BoardItemType, type StartNewEntry } from "../items/types";
 
 interface AddProps {
   types: readonly BoardItemType[];
+  /** A preset's less-important types: folded behind a "…" control (none = no control). */
+  more?: readonly BoardItemType[];
   onStartNew: (type: BoardItemType, entry: StartNewEntry) => void;
   onBringIn: (type: BoardItemType) => void;
 }
 
-export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
+export function AddMenu({ types, more = [], onStartNew, onBringIn }: AddProps) {
   const news = types.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
   const ins = types.filter((t) => t.bringIn);
   return (
@@ -61,14 +67,48 @@ export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
             {t.bringIn?.label}
           </DropdownMenuItem>
         ))}
+        {more.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger aria-label="More">
+                <Ellipsis className="mr-2 h-4 w-4" />
+                More
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-80 w-64 overflow-y-auto" data-board-chrome>
+                {more.flatMap((t) => [
+                  ...startNewEntries(t).map((entry, i) => {
+                    const Icon = entry.icon ?? t.icon;
+                    return (
+                      <DropdownMenuItem key={`new:${t.key}:${i}`} onSelect={() => onStartNew(t, entry)}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        {entry.label}
+                      </DropdownMenuItem>
+                    );
+                  }),
+                  ...(t.bringIn
+                    ? [
+                        <DropdownMenuItem key={`in:${t.key}`} onSelect={() => onBringIn(t)}>
+                          <t.icon className="mr-2 h-4 w-4" />
+                          {t.bringIn.label}
+                        </DropdownMenuItem>,
+                      ]
+                    : []),
+                ])}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
-  const news = types.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
-  const ins = types.filter((t) => t.bringIn);
+export function StartPanel({ types, more = [], onStartNew, onBringIn }: AddProps) {
+  const [showMore, setShowMore] = useState(false);
+  const shown = showMore ? [...types, ...more] : types;
+  const news = shown.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
+  const ins = shown.filter((t) => t.bringIn);
   return (
     <div
       data-start-panel-frame
@@ -126,6 +166,17 @@ export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
               ))}
             </div>
           </>
+        )}
+        {more.length > 0 && !showMore && (
+          <button
+            type="button"
+            aria-label="More"
+            title="More"
+            onClick={() => setShowMore(true)}
+            className="mt-3 flex h-8 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
+          >
+            <Ellipsis className="h-4 w-4" />
+          </button>
         )}
         <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
           <Upload className="h-3.5 w-3.5" />
