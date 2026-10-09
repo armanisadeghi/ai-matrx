@@ -107,6 +107,26 @@ export class Actor {
       await context.addInitScript(mediaFaultsInit, opts.faults);
       actor.levers.push(`init script: media faults ${JSON.stringify(opts.faults)}`);
     }
+    if (opts.noGesture) {
+      // 🚨 THE UNKNOWN ACTIVATION (autoplay-blocked was UNPROVEN, 2026-10-09): when a page logs a
+      // DOM element (`console.error("…", el)` — the design system's dev pill-guard does), Playwright
+      // builds an ElementHandle preview with Runtime.callFunctionOn userGesture:true, which grants
+      // the page sticky user activation and unlocks autoplay. No real person's browser does that.
+      // On a no-gesture page every console argument that is a DOM node is logged as its tag name.
+      await context.addInitScript(() => {
+        const plain = (value: unknown): unknown =>
+          typeof Node !== "undefined" && value instanceof Node ? `<${value.nodeName.toLowerCase()}>` : value;
+        const methods = ["log", "info", "warn", "error", "debug", "trace", "dir", "dirxml", "table", "group", "groupCollapsed", "assert", "count", "timeLog"] as const;
+        for (const method of methods) {
+          const original = (console as unknown as Record<string, (...args: unknown[]) => void>)[method];
+          if (typeof original !== "function") continue;
+          (console as unknown as Record<string, (...args: unknown[]) => void>)[method] = function (this: Console, ...args: unknown[]) {
+            return original.apply(this, args.map(plain));
+          };
+        }
+      });
+      actor.levers.push("init script: console DOM-node args logged as tag names (Playwright's element preview grants user activation)");
+    }
     actor.watch(context);
     const page = await context.newPage();
     actor.track(page);

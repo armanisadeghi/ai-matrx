@@ -38,7 +38,9 @@ copy of the scenarios (mutation proofs) — never edit the real ones to prove a 
 - **UNPROVEN** is a scenario saying its own product verdict cannot be produced right now (its
   precondition is unreachable, e.g. autoplay-blocked when the browser never blocked the audio). It
   is neither pass nor fail, carries the reason, and the summary counts it separately. A scenario
-  declares it with `unproven(reason)` from `lib/scenario.ts`.
+  declares it with `unproven(reason)` from `lib/scenario.ts`. A no-gesture person (autoplay) gets
+  one init script: a DOM node passed to `console.*` is logged as its tag name, because Playwright's
+  element preview of that argument grants the page user activation (found 2026-10-09).
 - **ENV** only when the run's own evidence proves the environment within 3 minutes of the failure:
   a walk-cap park ("Resume this preview"), or the dev server answering 5xx for a page, a chunk or
   the sign-in door, or a compile error on screen. Those lines start with `ENV:` in the timeline.
