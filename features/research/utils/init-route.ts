@@ -1,9 +1,12 @@
 import { safeRelativePath } from "@/utils/auth/safe-redirect";
+import { setSubjectParams, type ResearchSubjectInput } from "./subject";
 
 export interface ResearchInitHrefInput {
   subject: string;
   instructions?: string | null;
   returnTo?: string | null;
+  /** Typed subject (company / brand / person / creator + identifiers). */
+  subjectInfo?: ResearchSubjectInput | null;
 }
 
 /**
@@ -19,6 +22,7 @@ export function researchInitHref(input: ResearchInitHrefInput): string {
   if (input.instructions?.trim()) {
     params.set("instructions", input.instructions.trim());
   }
+  if (input.subjectInfo) setSubjectParams(params, input.subjectInfo);
   const returnTo = safeRelativePath(input.returnTo, "");
   if (returnTo) params.set("return_to", returnTo);
   return `/research/topics/new?${params.toString()}`;
@@ -40,4 +44,22 @@ export function researchStartDestination(
   const destination = new URL(safe, "https://aimatrx.local");
   destination.searchParams.set("researchTopic", topicId);
   return `${destination.pathname}${destination.search}${destination.hash}`;
+}
+
+/**
+ * "Research this" — the ONE door any surface (a board tile, a brand, a social
+ * profile) uses to start research about a known subject: the intake opens
+ * with the subject type and identifiers already filled in, and nothing runs
+ * until the person approves.
+ */
+export function researchThisHref(input: {
+  name: string;
+  subject: ResearchSubjectInput;
+  returnTo?: string | null;
+}): string {
+  return researchInitHref({
+    subject: input.name,
+    subjectInfo: input.subject,
+    returnTo: input.returnTo,
+  });
 }

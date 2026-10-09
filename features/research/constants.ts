@@ -172,6 +172,7 @@ export const SOURCE_TYPE_CONFIG: Record<
   pdf: { label: "PDF", icon: "FileText" },
   file: { label: "File", icon: "File" },
   manual: { label: "Manual", icon: "Pencil" },
+  social: { label: "Social", icon: "AtSign" },
 };
 
 export const ORIGIN_CONFIG: Record<
@@ -196,6 +197,9 @@ export const ORIGIN_CONFIG: Record<
     label: "Upload",
     color:
       "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },  social_capture: {
+    label: "Social",
+    color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
   },
 };
 

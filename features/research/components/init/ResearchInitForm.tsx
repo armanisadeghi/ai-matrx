@@ -82,6 +82,12 @@ import {
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/research/agent-context/buildResearchContextData";
 import { researchStartDestination } from "@/features/research/utils/init-route";
+import {
+  subjectColumns,
+  subjectFromParams,
+  type ResearchSubjectInput,
+} from "@/features/research/utils/subject";
+import { SubjectFields } from "./SubjectFields";
 
 // Universal v3 context menu — lightweight shell, imported statically;
 // MenuContent lazy-loads on first open.
@@ -1231,6 +1237,11 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
     searchParams.get("instructions") ?? "",
   ); // AI: user_input
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  // What the research is ABOUT — prefilled by "Research this" doors
+  // (researchInitHref with a subject), editable here.
+  const [subject, setSubject] = useState<ResearchSubjectInput>(() =>
+    subjectFromParams(searchParams),
+  );
   const [selectedTemplate, setSelectedTemplate] =
     useState<ResearchTemplate | null>(null);
 
@@ -1522,6 +1533,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
           name: subjectDescription.trim(),
           autonomy_level: "auto",
           template_id: null,
+          ...subjectColumns(subject),
         },
         selectedProjectId ? { projectId: selectedProjectId } : undefined,
       );
@@ -2395,6 +2407,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
               </div>
 
               <div className="space-y-6">
+                <SubjectFields value={subject} onChange={setSubject} />
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
                     Subject

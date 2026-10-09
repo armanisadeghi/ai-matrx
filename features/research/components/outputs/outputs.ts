@@ -27,6 +27,8 @@ export type OutputKind =
   | "gap_analysis"
   | "literature_review"
   | "competitive_landscape"
+  /** Brand card: role, offers, audience, speaking style, tone, do/don't, proof. */
+  | "brand_card"
   /**
    * A topical map authored from this research (`seo.map_author`,
    * `existing_research`). The map lives in `seo.topical_map`, never in
@@ -112,6 +114,7 @@ export const OUTPUT_KINDS: OutputKind[] = [
   "gap_analysis",
   "literature_review",
   "competitive_landscape",
+  "brand_card",
 ];
 
 function isAsset(v: unknown): v is OutputAsset {

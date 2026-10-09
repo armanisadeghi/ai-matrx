@@ -263,6 +263,8 @@ export async function createTopic(
     description: input.description?.trim() || null,
     autonomy_level: input.autonomy_level ?? "semi",
     template_id: input.template_id ?? null,
+    subject_type: input.subject_type ?? null,
+    subject: input.subject ?? {},
   };
 
   // The legacy Python creator copied the template's agent overrides onto the

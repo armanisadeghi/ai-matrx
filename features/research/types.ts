@@ -14,6 +14,9 @@ export type TopicCreate = {
   description?: string | null;
   autonomy_level?: AutonomyLevel;
   template_id?: string | null;
+  /** Typed subject (utils/subject.ts `subjectColumns`); null = untyped topic. */
+  subject_type?: string | null;
+  subject?: Json;
 };
 
 export type TopicUpdate = {
@@ -222,9 +225,13 @@ export type ScrapeStatus =
   // Honest user-driven terminal verdicts (2026-06-18, from matrx-extend).
   | "ignored"
   | "content_mismatch";
-export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual";
+export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual" | "social";
 export type SourceOrigin =
-  "search" | "manual" | "link_extraction" | "file_upload";
+  | "search"
+  | "manual"
+  | "link_extraction"
+  | "file_upload"
+  | "social_capture";
 /**
  * Canonical synthesis scopes. `topic` = whole-topic synthesis (formerly
  * misnamed `project`). Legacy `rs_synthesis` rows and not-yet-cut-over
@@ -1243,12 +1250,14 @@ const SOURCE_TYPES_SET = new Set<string>([
   "pdf",
   "file",
   "manual",
+  "social",
 ]);
 const SOURCE_ORIGINS_SET = new Set<string>([
   "search",
   "manual",
   "link_extraction",
   "file_upload",
+  "social_capture",
 ]);
 
 export function sourceTypeFromDb(value: string): SourceType {

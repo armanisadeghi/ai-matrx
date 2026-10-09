@@ -415,6 +415,21 @@ function DomainReportsCard({
               key={def.slug}
               className="px-3 py-2 hover:bg-accent/40 transition-colors"
             >
+              {def.agentPending ? (
+                <div className="flex items-center gap-2" aria-disabled="true">
+                  <div className="min-w-0 flex-1">
+                    <div className="type-secondary font-medium text-foreground">
+                      {def.label}
+                    </div>
+                    <div className="type-meta text-muted-foreground line-clamp-2">
+                      {def.description}
+                    </div>
+                  </div>
+                  <span className="type-meta text-muted-foreground shrink-0">
+                    Agent not yet built
+                  </span>
+                </div>
+              ) : (
               <div className="flex items-center gap-2">
                 <Link
                   href={domainOutputHref(def, topicId)}
@@ -444,6 +459,7 @@ function DomainReportsCard({
                   className="shrink-0"
                 />
               </div>
+              )}
               {existing.length > 0 && (
                 <div className="mt-1.5 space-y-1">
                   {existing.map((a) => (

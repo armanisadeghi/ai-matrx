@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe, Play, FileText, File, Pencil } from 'lucide-react';
+import { Globe, Play, FileText, File, Pencil, AtSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SourceType } from '../../types';
 
@@ -10,6 +10,7 @@ const ICON_MAP: Record<SourceType, typeof Globe> = {
     pdf: FileText,
     file: File,
     manual: Pencil,
+    social: AtSign,
 };
 
 interface SourceTypeIconProps {

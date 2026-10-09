@@ -55,6 +55,8 @@ const TOPIC_ROW: Database["research"]["Tables"]["rs_topic"]["Row"] = {
   updated_by: null,
   version: 1,
   videos_per_keyword: 0,
+  subject_type: null,
+  subject: {},
   visibility: "personal",
   published_to_web: false,
   published_to_web_at: null,

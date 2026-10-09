@@ -1,0 +1,65 @@
+"use client";
+
+/**
+ * What the research is ABOUT: subject type + identifiers (website, social
+ * handles). Written to rs_topic.subject_type / rs_topic.subject at creation;
+ * the server's social capture lane and voice stage read them
+ * (aidream research/subject.py). Shape + URL params: utils/subject.ts.
+ */
+
+import { Field, Select } from "@ai-matrx/design-system/controls";
+import {
+  SOCIAL_PLATFORMS,
+  SUBJECT_TYPES,
+  type ResearchSubjectInput,
+  type SubjectType,
+} from "@/features/research/utils/subject";
+
+export function SubjectFields({
+  value,
+  onChange,
+}: {
+  value: ResearchSubjectInput;
+  onChange: (next: ResearchSubjectInput) => void;
+}) {
+  const typed = value.type !== "topic";
+  const setHandle = (platform: string, handle: string) =>
+    onChange({ ...value, handles: { ...(value.handles ?? {}), [platform]: handle } });
+
+  return (
+    <div className="space-y-3" data-testid="research-subject-fields">
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-foreground shrink-0">
+          Researching a
+        </label>
+        <Select<SubjectType>
+          aria-label="Subject type"
+          value={value.type}
+          options={SUBJECT_TYPES}
+          onValueChange={(type) => onChange({ ...value, type })}
+        />
+      </div>
+      {typed && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* ui-exception: a website domain is a raw value, not prose */}
+          <Field
+            aria-label="Website"
+            placeholder="Website (example.com)"
+            value={value.domain ?? ""}
+            onChange={(e) => onChange({ ...value, domain: e.target.value })}
+          />
+          {SOCIAL_PLATFORMS.map((p) => (
+            // ui-exception: a social handle is a raw value, not prose
+            <Field
+              key={p.value}
+              aria-label={`${p.label} handle`}
+              placeholder={`${p.label} handle`}
+              value={value.handles?.[p.value] ?? ""}
+              onChange={(e) => setHandle(p.value, e.target.value)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

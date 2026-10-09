@@ -31,8 +31,8 @@
  */
 
 import type { OutputKind } from "./outputs";
-import type { MandateKey } from "@ai-matrx/agents/mandates";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, storedMandateKey } from "@ai-matrx/agents/mandates";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The bundle every publishing output uses — the report, and nothing else. */
@@ -45,7 +45,7 @@ export interface DomainOutputDefinition {
   /** One line: what this produces and what it reads. */
   description: string;
   /** The mandate whose resolved agent writes it (`research_client.output_*`). */
-  mandateKey: MandateKey;
+  mandateKey: AnyMandateKey;
   /** System bundle feeding the Context Builder; null when openHref owns the run path. */
   bundleSlug: string | null;
   /** Slot in `rs_topic.outputs` where a generated report persists (D5). */
@@ -57,6 +57,12 @@ export interface DomainOutputDefinition {
    * screen). Exactly one of `bundleSlug` / `openHref` is the run path.
    */
   openHref?: (topicId: string) => string;
+  /**
+   * The mandate is declared but no agent has come out of the agent factory
+   * yet. The card shows "Agent not yet built" and opens nothing — an honest
+   * absent state, never a run that silently fails.
+   */
+  agentPending?: boolean;
 }
 
 /**
@@ -122,6 +128,22 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     mandateKey: MANDATE_KEYS.research_client__output_competitive_landscape,
     bundleSlug: "research-competitive-landscape",
     outputKind: "competitive_landscape",
+  },
+  {
+    // Social Intelligence SI-09: the brand card for a typed subject (brand,
+    // person, creator) — reads its social posts (engagement + outlier score)
+    // and pages. The mandate is seedless until the agent factory builds its
+    // Holder; swap `storedMandateKey` for
+    // MANDATE_KEYS.research_client__output_brand_card once the published
+    // @ai-matrx/agents carries the key (declared in aidream ef94915fdb).
+    slug: "research-brand-card",
+    label: "Brand card",
+    description:
+      "Role, offers, audience, voice, tone, do/don't and proof.",
+    mandateKey: storedMandateKey("research_client.output_brand_card"),
+    bundleSlug: "research-brand-card",
+    outputKind: "brand_card",
+    agentPending: true,
   },
   {
     // The research → map handoff (R8): a finished company topic-tree research

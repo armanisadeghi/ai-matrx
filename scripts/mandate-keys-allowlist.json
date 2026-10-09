@@ -2,7 +2,7 @@
   {
     "file": "features/mandates/authoring/constants.ts",
     "key": "mandate.goal_writer",
-    "reason": "origin='user' — Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
+    "reason": "origin='user' \u2014 Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
   },
   {
     "file": "features/surfaces/manifests/mandate-workspace.manifest.ts",
@@ -12,11 +12,16 @@
   {
     "file": "features/mandates/authoring/constants.ts",
     "key": "mandates.kind_converter",
-    "reason": "DELIBERATELY UNASSIGNED — no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete — the refusal is the feature."
+    "reason": "DELIBERATELY UNASSIGNED \u2014 no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete \u2014 the refusal is the feature."
   },
   {
     "file": "features/masterwork/drive/useDriveSettings.ts",
     "key": "masterwork.drive.interviewer_mandate_key",
-    "reason": "NOT A MANDATE KEY — it is the platform.feature_knob key whose VALUE is a mandate key (no mandate.definition row exists, verified live 2026-09-17). The guard is positional and the constant's name contains 'mandate', so the knob id lands in a mandate-key position; the knob's value is typed at its boundary by readMandateKey() -> storedMandateKey(). Named here rather than hidden, so the false-positive class is on the record instead of being coded around."
+    "reason": "NOT A MANDATE KEY \u2014 it is the platform.feature_knob key whose VALUE is a mandate key (no mandate.definition row exists, verified live 2026-09-17). The guard is positional and the constant's name contains 'mandate', so the knob id lands in a mandate-key position; the knob's value is typed at its boundary by readMandateKey() -> storedMandateKey(). Named here rather than hidden, so the false-positive class is on the record instead of being coded around."
+  },
+  {
+    "file": "features/research/components/outputs/outputDefinitions.ts",
+    "key": "research_client.output_brand_card",
+    "reason": "Declared in aidream client_mandates.py (commit ef94915fdb, 2026-10-08, lane SI-09) and generated into apps/shared/matrx-agents keys.generated.ts; the installed @ai-matrx/agents predates that publish. Swap to MANDATE_KEYS.research_client__output_brand_card on the next package adoption and delete this entry."
   }
 ]

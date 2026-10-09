@@ -113529,6 +113529,8 @@ export type Database = {
           scrapes_per_keyword: number
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
+          subject: Json
+          subject_type: string | null
           tag_suggestions: Json | null
           template_id: string | null
           tone_profile: string | null
@@ -113578,6 +113580,8 @@ export type Database = {
           scrapes_per_keyword?: number
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
+          subject?: Json
+          subject_type?: string | null
           tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null
@@ -113627,6 +113631,8 @@ export type Database = {
           scrapes_per_keyword?: number
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
+          subject?: Json
+          subject_type?: string | null
           tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null

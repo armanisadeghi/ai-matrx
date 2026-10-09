@@ -206,6 +206,8 @@ export const topicRow = {
   updated_by: PERSON.id,
   version: 3,
   videos_per_keyword: 0,
+  subject_type: null,
+  subject: {},
   visibility: "internal",
 } satisfies Row<"research", "rs_topic">;
 

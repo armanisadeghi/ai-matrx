@@ -9,6 +9,7 @@ import {
   type LucideIcon,
   Compass,
   PenLine,
+  Telescope,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,9 @@ import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { createClient } from "@/utils/supabase/server";
+import { researchThisHref } from "@/features/research/utils/init-route";
+import { subjectFromBrandProperties } from "@/features/research/utils/subject";
 
 /**
  * Brand Home — who this client IS, as opposed to what it owns or what the
@@ -32,6 +36,20 @@ export default async function BrandIdentityPage({
   if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   const seg = marketingSeg(brand);
   const identity = marketingRoutes.brandIdentity(seg);
+  // "Research this brand": the intake opens with the brand's own website and
+  // social handles (web.property) as the typed research subject.
+  const supabase = await createClient();
+  const { data: properties } = await supabase
+    .schema("web")
+    .from("property")
+    .select("kind, url, handle")
+    .eq("brand_id", brand.id)
+    .is("deleted_at", null);
+  const researchHref = researchThisHref({
+    name: brand.name,
+    subject: subjectFromBrandProperties(brand.id, properties ?? []),
+    returnTo: identity,
+  });
 
   const rooms: Array<{
     name: string;
@@ -81,6 +99,13 @@ export default async function BrandIdentityPage({
         "How this brand actually writes, measured from its real writing. Every pitch, reply, subject line and statement in its name is checked against it.",
       href: `${identity}/voice`,
       icon: PenLine,
+    },
+    {
+      name: "Research",
+      description:
+        "Website, socials, top posts and speaking style.",
+      href: researchHref,
+      icon: Telescope,
     },
     {
       name: "Audience",

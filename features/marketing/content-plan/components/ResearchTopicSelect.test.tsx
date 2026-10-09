@@ -120,6 +120,8 @@ function topic(id: string, name: string): ResearchTopic {
     updated_by: null,
     version: 1,
     videos_per_keyword: 2,
+    subject_type: null,
+    subject: {},
     visibility: "personal",
     published_to_web: false,
     published_to_web_at: null,
