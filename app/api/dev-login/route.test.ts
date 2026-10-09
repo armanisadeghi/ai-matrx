@@ -45,6 +45,10 @@ const NONCE_FILE = nonceFile("localhost", A_NONCE);
 const signInWithPassword = jest.fn(
   async (): Promise<{ error: unknown }> => ({ error: null }),
 );
+// The guest handover reads cookies and the admin client; here it only passes the sign-in through.
+jest.mock("@/lib/guest/session-handover", () => ({
+  handOverSession: (_via: string, replace: () => Promise<unknown>) => replace(),
+}));
 jest.mock("@/utils/supabase/server", () => ({
   createClient: jest.fn(async () => ({
     auth: mockWithClaims({

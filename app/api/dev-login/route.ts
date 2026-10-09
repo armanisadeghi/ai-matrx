@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { handOverSession } from "@/lib/guest/session-handover";
 import { agentTrafficOf, agentTrafficSetCookie } from "@/lib/agent-traffic/marker";
 import { readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -405,7 +406,7 @@ async function signIn(request: NextRequest): Promise<NextResponse> {
   if (password) {
     ({ error } = await retryTransport(
       "signInWithPassword",
-      () => supabase.auth.signInWithPassword({ email, password }),
+      () => handOverSession("dev_login", () => supabase.auth.signInWithPassword({ email, password })),
       attempts,
     ));
     if (!error) {
@@ -547,7 +548,7 @@ async function signIn(request: NextRequest): Promise<NextResponse> {
   }
   const verified = await retryTransport(
     "verifyOtp",
-    () => supabase.auth.verifyOtp({ email, token: otp, type: "email" }),
+    () => handOverSession("dev_login", () => supabase.auth.verifyOtp({ email, token: otp, type: "email" })),
     attempts,
   );
   if (verified.error) {

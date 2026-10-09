@@ -325,6 +325,10 @@ jobs:
         # the exact 2026-09-07 shape and asserts the detector reports it, that
         # --fix repairs it, and that the repair is idempotent.
         run: pnpm check:parse:self-test
+      - name: Every session replacement goes through the one guest handover
+        # G2 guest data (2026-10-09): a sign-in, OAuth callback, email confirm/recovery or dev-login that
+        # bypasses lib/guest/session-handover.ts orphans a guest's records. Self-test proves it can fail.
+        run: pnpm check:session-handover && pnpm check:session-handover:self-test
       - name: A fingerprinted kernel replace must re-record in the same change
         # 2026-09-19: levelfix replaced iam.has_access_for_base and shipped
         # without iam.entity_read_kernel_expected(). Self-test is fixtures-only;

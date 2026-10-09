@@ -10,7 +10,7 @@ import {
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import { requestOrigin } from "@/utils/auth/request-origin";
-import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
+import { handOverSession, rememberGuestVisitorId } from "@/lib/guest/session-handover";
 import {
   clearPendingSignupEmail,
   rememberPendingSignupEmail,
@@ -67,7 +67,12 @@ export async function login(redirectToArg: string, formData: FormData) {
   }
 
   const data = { email, password };
-  const { error } = await supabase.auth.signInWithPassword(data);
+  // Logging in to an existing account brings this browser's guest records with it (G2 guest data).
+  const { error } = await handOverSession(
+    "password_login",
+    () => supabase.auth.signInWithPassword(data),
+    { visitorId: formData.get("guestFingerprint")?.toString() ?? null },
+  );
   if (error) {
     console.error(`[${timestamp}] Login error:`, error);
     if (error.code === "email_not_confirmed") {
@@ -151,7 +156,7 @@ export async function loginWithGoogle(
 
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
   // console.log(`[${timestamp}] 🚨 IMPORTANT: This URL must be whitelisted in Supabase Dashboard → Authentication → URL Configuration`);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -204,7 +209,7 @@ export async function loginWithGithub(
 
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -255,7 +260,7 @@ export async function loginWithApple(
 
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",
