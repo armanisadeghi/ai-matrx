@@ -99,12 +99,15 @@ export function workflowTriggersHref(id: string, base: string = WORKFLOWS_BASE_P
 export function workflowRunsListHref(id: string, base: string = WORKFLOWS_BASE_PATH): string {
   return `${base}/${id}/runs`;
 }
-/** Every run the caller can see (`/workflows/runs`, or its admin mirror). */
+/** The admin system's every-run page (the platform runs explorer). */
+export const ADMIN_WORKFLOW_RUNS_PATH = "/administration/automation/workflow-runs";
+/** Every run the caller can see: `/workflows/runs`, or the platform runs page on an admin page. */
 export function allWorkflowRunsHref(base: string = WORKFLOWS_BASE_PATH): string {
-  return `${base}/runs`;
+  return base === ADMIN_WORKFLOWS_BASE_PATH ? ADMIN_WORKFLOW_RUNS_PATH : `${base}/runs`;
 }
+/** Runs as numbers: `/workflows/runs/analyze`, or the platform runs explorer on an admin page. */
 export function analyzeWorkflowRunsHref(base: string = WORKFLOWS_BASE_PATH): string {
-  return `${base}/runs/analyze`;
+  return base === ADMIN_WORKFLOWS_BASE_PATH ? ADMIN_WORKFLOW_RUNS_PATH : `${base}/runs/analyze`;
 }
 /** The workflows list: `/workflows/all` for a person, System Workflows on an admin page. */
 export function workflowsListHref(base: string = WORKFLOWS_BASE_PATH): string {
