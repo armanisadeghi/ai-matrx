@@ -3,7 +3,9 @@
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye, Undo2 } from "lucide-react";
-import { useAppDispatch } from "@ai-matrx/chat/store/hooks";
+import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { TopTierModelBadge } from "@/features/ai-models/TopTierModelBadge";
 import {
   resetAllAgentFields,
 } from "@/features/agents/redux/agent-builder.slice";
@@ -54,6 +56,7 @@ export function AgentSaveStatus({
   } = useAgentSaveAction(agentId, { editModeOverride });
 
   const dispatch = useAppDispatch();
+  const modelId = useAppSelector((state) => selectAgentById(state, agentId)?.modelId ?? null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   // The unsaved-changes diff is the agent's canvas tab; the eye toggles it.
@@ -70,6 +73,7 @@ export function AgentSaveStatus({
   return (
     <>
       <div className="flex items-center gap-1.5">
+        <TopTierModelBadge modelId={modelId} />
         {version != null && (
           <span
             className={cn(

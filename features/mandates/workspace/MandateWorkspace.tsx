@@ -71,6 +71,7 @@ import {
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import { TopTierModelBadge } from "@/features/ai-models/TopTierModelBadge";
 import {
   OneBindingWorkspace,
   type BindingWorkspaceSection,
@@ -594,6 +595,7 @@ function OneMandateWorkspace({
                 label: data.mandate.label?.trim() || "Display name unavailable",
               },
             ]}
+            right={<TopTierModelBadge modelId={holderModelIdOf(data)} />}
           />
         ) : null}
         {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
@@ -609,6 +611,7 @@ function OneMandateWorkspace({
                   {data.mandate.label?.trim() || "Display name unavailable"}
                 </h2>
               </div>
+              <TopTierModelBadge modelId={holderModelIdOf(data)} />
               {authoring ? adminActions?.(data, refresh) : null}
             </div>
           )}
@@ -976,6 +979,13 @@ export function systemRungFactsOf(
     holderSet: holderId !== null || holderIsWorkflow,
     home: scope,
   };
+}
+
+/** The model the Mandate's agent Holder runs on (a workflow Holder has no single model). */
+function holderModelIdOf(data: MandateWorkspaceData): string | null {
+  if (data.mandate.default_holder_type === "workflow") return null;
+  const holderId = holderOfMandate(data.mandate).holderId;
+  return holderId ? (data.agentsById[holderId]?.modelId ?? null) : null;
 }
 
 export function systemRungHealthOf(

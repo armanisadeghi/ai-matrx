@@ -56,6 +56,8 @@ export interface WorkspaceAgentInfo {
   name: string;
   agentType: string | null;
   isArchived: boolean;
+  /** `agent.definition.model_id` — drives the top-tier warning icon. */
+  modelId?: string | null;
   /**
    * `agent.definition.version` — an optimistic-concurrency COUNTER, not a
    * version (R36 / Amendment 3b). Never printed as "latest"; the newest
@@ -292,7 +294,7 @@ export function useMandateWorkspaceData(
         const { data: agentRows, error: agentError } = await supabase
           .schema("agent")
           .from("definition")
-          .select("id, name, agent_type, is_archived, version")
+          .select("id, name, agent_type, is_archived, version, model_id")
           .in("id", [...new Set(agentIds)]);
         if (agentError)
           throw operationFailed(
@@ -305,6 +307,7 @@ export function useMandateWorkspaceData(
             name: row.name,
             agentType: row.agent_type,
             isArchived: row.is_archived === true,
+            modelId: row.model_id ?? null,
             liveCounter: row.version ?? null,
           };
         }
