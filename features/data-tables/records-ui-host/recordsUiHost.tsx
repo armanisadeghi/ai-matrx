@@ -46,6 +46,7 @@ import { useOpenLinkRecordSheet } from "@/features/overlays/openers/linkRecordSh
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
+import { CALENDAR_FEED_PORT } from "@/features/calendar-feed/calendarFeedPort";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
@@ -191,6 +192,8 @@ export function recordsUiHostFor({ ports, merged, gridContext, rights }: Records
     // The older Sheet's AI pieces (Sheet retirement): "Help with this…" in the formula box runs
     // data.formula_writing, and the settings panel is the matrx-user/table-settings surface.
     ...RECORDS_AGENT_PORTS,
+    // "Subscribe in your calendar…" on a view with a date field (records-ui ≥0.113.36 `calendarFeed`).
+    calendarFeed: CALENDAR_FEED_PORT,
     ...(rights ? { rights } : {}),
   };
 }

@@ -233,7 +233,9 @@ describe("persisted envelope cache (stream → parts → reload)", () => {
       .map((block) => envelopeOf(block.metadata))
       .find((envelope): envelope is CanonicalBlockIR => envelope !== null);
 
-    expect(reloaded).toBe(persistedEnvelope);
+    // No re-parse: the reload reads the persisted envelope, or the very object the stream's
+    // own splitter reading already holds (one block splitter, one region memo).
+    expect([persistedEnvelope, streamed]).toContain(reloaded);
   });
 
   it("round-trips the streamed envelope through cx content parts with ZERO re-parse", () => {
@@ -303,7 +305,7 @@ describe("persisted envelope cache (stream → parts → reload)", () => {
     // Mechanical no-re-parse proof: a kind-parser run always builds a FRESH
     // envelope object, so identity with the persisted object can only come
     // from the seeded-cache short-circuit.
-    expect(reloaded).toBe(persistedEnvelope);
+    expect([persistedEnvelope, streamedEnvelope]).toContain(reloaded);
     // And the reload envelope EQUALS the streamed one, byte for byte.
     expect(reloaded).toEqual(streamedEnvelope);
   });

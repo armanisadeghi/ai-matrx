@@ -7881,6 +7881,7 @@ export type Database = {
           origin_class: string
         }[]
       }
+      run_approval_reconcile: { Args: never; Returns: number }
       run_approval_status: {
         Args: { p_org_id?: string }
         Returns: {
@@ -24264,6 +24265,19 @@ export type Database = {
         }
         Returns: Json
       }
+      space_published: {
+        Args: { p_org?: string }
+        Returns: {
+          icon: string
+          id: string
+          organization_id: string
+          published_at: string
+          search_engine_indexed: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }[]
+      }
       space_save: {
         Args: {
           p_document_id: string
@@ -30155,6 +30169,30 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_fired: {
+        Row: {
+          automation_id: string
+          fire_key: string
+          fired_at: string
+          organization_id: string
+          subject_id: string
+        }
+        Insert: {
+          automation_id: string
+          fire_key: string
+          fired_at?: string
+          organization_id: string
+          subject_id: string
+        }
+        Update: {
+          automation_id?: string
+          fire_key?: string
+          fired_at?: string
+          organization_id?: string
+          subject_id?: string
+        }
+        Relationships: []
+      }
       carrying_rule: {
         Row: {
           container_side: string
@@ -33296,6 +33334,10 @@ export type Database = {
         Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
         Returns: Json
       }
+      _automation_check_timed: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: Json
+      }
       _automation_fields: {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: Json
@@ -33318,6 +33360,7 @@ export type Database = {
           table_id: string
         }[]
       }
+      _automation_now: { Args: never; Returns: string }
       _automation_run: {
         Args: {
           p_automation: Json
@@ -33330,6 +33373,15 @@ export type Database = {
           p_trigger: Json
         }
         Returns: string
+      }
+      _automation_time_item: {
+        Args: {
+          p_automation: Json
+          p_now: string
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: number
       }
       _automation_value: {
         Args: { p_me: string; p_value: Json; p_values: Json }
@@ -34484,6 +34536,18 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      admin_all_tables: {
+        Args: never
+        Returns: {
+          organization_id: string
+          organization_name: string
+          platform_owned: boolean
+          system: boolean
+          table_id: string
+          table_name: string
+          updated_at: string
+        }[]
+      }
       agent_change_approval: {
         Args: {
           p_conversation?: string
@@ -35016,6 +35080,7 @@ export type Database = {
         }
         Returns: Json
       }
+      automation_time_tick: { Args: never; Returns: Json }
       automations: {
         Args: {
           p_include_archived?: boolean
@@ -37138,11 +37203,21 @@ export type Database = {
         }[]
       }
       hot_doors_6_on: { Args: { p_person: string }; Returns: boolean }
+      hot_doors_7_on: { Args: { p_person: string }; Returns: boolean }
       hub_changed_by: {
         Args: { p_ids: string[]; p_kind: string; p_organization_id: string }
         Returns: {
           at: string
           id: string
+          who: string
+        }[]
+      }
+      hub_changed_by_many: {
+        Args: { p_asks: Json; p_door?: string }
+        Returns: {
+          at: string
+          id: string
+          organization_id: string
           who: string
         }[]
       }
@@ -37541,6 +37616,16 @@ export type Database = {
           p_old_table: string
         }
         Returns: boolean
+      }
+      kernel_viewer_sets: {
+        Args: { p_orgs: string[]; p_user: string }
+        Returns: {
+          all_visible: boolean
+          carried_visible: string[]
+          fallback: boolean
+          granted_all: string[]
+          organization_id: string
+        }[]
       }
       ladder_replanners: {
         Args: { p_roots?: string[] }
@@ -39298,6 +39383,7 @@ export type Database = {
           words: string
         }[]
       }
+      relative_window_resolve: { Args: { p_window: Json }; Returns: Json }
       reopen_declared_doors: {
         Args: never
         Returns: {
@@ -39465,6 +39551,7 @@ export type Database = {
         }
         Returns: string
       }
+      rule_is_me: { Args: { p_a: Json; p_op: string }; Returns: Json }
       rule_kernel_id: { Args: never; Returns: string }
       rule_members: {
         Args: { p_organization_id: string; p_rule_id: string }
@@ -80266,6 +80353,7 @@ export type Database = {
           last_seen_revision: string | null
           last_seen_scan_id: string | null
           line: number | null
+          line_end: number | null
           mandate_id: string | null
           mandate_key: string
           metadata: Json
@@ -80308,6 +80396,7 @@ export type Database = {
           last_seen_revision?: string | null
           last_seen_scan_id?: string | null
           line?: number | null
+          line_end?: number | null
           mandate_id?: string | null
           mandate_key: string
           metadata?: Json
@@ -80350,6 +80439,7 @@ export type Database = {
           last_seen_revision?: string | null
           last_seen_scan_id?: string | null
           line?: number | null
+          line_end?: number | null
           mandate_id?: string | null
           mandate_key?: string
           metadata?: Json
@@ -81137,6 +81227,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      code_locations: { Args: { p_keys?: string[] }; Returns: Json }
       definition_restore: { Args: { p_mandate_id: string }; Returns: boolean }
       duplicate_mandate: {
         Args: {
@@ -81158,7 +81249,6 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
-      code_locations: { Args: { p_keys?: string[] }; Returns: Json }
       latest_references: {
         Args: {
           p_exclude_type_ids?: string[]
@@ -93757,6 +93847,7 @@ export type Database = {
           status: string
         }[]
       }
+      _public_placement_guard_impl: { Args: never; Returns: undefined }
       _published_to_web_sql: {
         Args: { p_has_is_published: boolean; p_has_status: boolean }
         Returns: string
@@ -93770,6 +93861,10 @@ export type Database = {
           p_token: string
         }
         Returns: number
+      }
+      _registered_at_birth_schema_rename_impl: {
+        Args: never
+        Returns: undefined
       }
       _reopen_declared_doors_after_revoke_impl: {
         Args: never
@@ -93855,6 +93950,7 @@ export type Database = {
           tb: string
         }[]
       }
+      _sign_in_table_guard_impl: { Args: never; Returns: undefined }
       _soft_delete_cascade_enqueue: {
         Args: {
           p_direction: string
@@ -94165,6 +94261,7 @@ export type Database = {
           turns: number
         }[]
       }
+      agent_test_account_ids: { Args: never; Returns: string[] }
       ai_latency_filter_options: {
         Args: { p_from: string; p_stage?: string; p_to: string }
         Returns: {
@@ -95230,7 +95327,6 @@ export type Database = {
           run_count: number
           success_count: number
           total_cost: number
-          warning_count: number
         }[]
       }
       extensibility_knob: {
@@ -95844,6 +95940,10 @@ export type Database = {
         Args: { a: Database["platform"]["Tables"]["associations"]["Row"] }
         Returns: string
       }
+      platform_admin_may: {
+        Args: { p_id: string; p_token: string; p_write?: boolean }
+        Returns: boolean
+      }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
@@ -96429,6 +96529,11 @@ export type Database = {
           updated_at: string
         }[]
       }
+      run_driver: {
+        Args: { p_origin: string; p_source: string; p_test_account: boolean }
+        Returns: string
+      }
+      run_driver_rank: { Args: { p_driver: string }; Returns: number }
       schema_exposure_violations: {
         Args: { p_schema?: string }
         Returns: {
@@ -109108,7 +109213,6 @@ export type Database = {
           updated_at: string
           version: number
           visibility: string
-          warning_count: number
           workflow_type: string
         }[]
       }
@@ -131294,6 +131398,96 @@ export type Database = {
           },
         ]
       }
+      calendar_feed: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_field: string | null
+          deleted_at: string | null
+          description_field: string | null
+          end_field: string | null
+          expires_at: string | null
+          id: string
+          last_read_at: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          read_count: number
+          revoked_at: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string
+          time_zone: string
+          title: string
+          token_hash: string
+          token_prefix: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          view_id: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_field?: string | null
+          deleted_at?: string | null
+          description_field?: string | null
+          end_field?: string | null
+          expires_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          read_count?: number
+          revoked_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string
+          time_zone?: string
+          title: string
+          token_hash: string
+          token_prefix: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_id?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_field?: string | null
+          deleted_at?: string | null
+          description_field?: string | null
+          end_field?: string | null
+          expires_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          read_count?: number
+          revoked_at?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          table_id?: string
+          time_zone?: string
+          title?: string
+          token_hash?: string
+          token_prefix?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_id?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       credential_attachments: {
         Row: {
           created_at: string
@@ -133465,6 +133659,8 @@ export type Database = {
       }
     }
     Functions: {
+      _calendar_feed_hash: { Args: { p_token: string }; Returns: string }
+      _calendar_feed_token: { Args: never; Returns: string }
       _set_own_organization_choice: {
         Args: { p_column: string; p_organization_id: string }
         Returns: string
@@ -133520,6 +133716,26 @@ export type Database = {
           points_month: number
           user_id: string
         }[]
+      }
+      calendar_feed_create: {
+        Args: {
+          p_description_field?: string
+          p_expires_days?: number
+          p_organization_id: string
+          p_table_id: string
+          p_time_zone?: string
+          p_title: string
+          p_view_id: string
+        }
+        Returns: Json
+      }
+      calendar_feed_default_days: { Args: never; Returns: number }
+      calendar_feed_list: { Args: never; Returns: Json }
+      calendar_feed_read: { Args: { p_token: string }; Returns: Json }
+      calendar_feed_revoke: { Args: { p_id: string }; Returns: Json }
+      calendar_feed_rotate: {
+        Args: { p_expires_days?: number; p_id: string }
+        Returns: Json
       }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
