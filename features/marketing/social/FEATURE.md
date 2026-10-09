@@ -203,3 +203,7 @@ brands list "Socials" column shows `tracked/accounts`; same source as the list.
 - Add/edit property in the UI: write `handle` from `classifySocialLink(url)?.handle` (`link.ts`) — the same rule the
   server uses (`profile_handle_cases.json` case table, identical in both repos, both test suites run it). Owner:
   update `owner_kind` (`company`|`person`) and `owner_party_id` (person only; DB CHECK refuses a party on a company row).
+
+**Swipe tab is brand-scoped (SOC-FIX-E, 2026-10-09).** Collections carry an optional `brand_id`. The Swipe tab
+defaults to "This brand" (collections linked to the brand); "All collections" shows every one, including unlinked.
+Each collection's menu has Link to / Unlink from this brand (`setCollectionBrand`). Rules: `collectionsForBrandScope`.
