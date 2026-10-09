@@ -195,6 +195,11 @@ export function triggerRunHref(
   return orgSlug ? orgTriggerRunHref(orgSlug, triggerId, run.run_id) : null;
 }
 
-/** Where a trigger's workflow opens, by seat (null = use the canonical EntityRef door). */
-export const triggerWorkflowHref = (seat: "admin" | "org", definitionId: string): string | null =>
-  seat === "admin" ? `/workflows/${definitionId}/triggers` : null;
+/**
+ * Where a trigger's workflow opens: the workflow's own triggers page, for both seats. An org admin
+ * can read their organization's workflow definitions (workflow.definition std_select: my_admin_orgs),
+ * so the page opens for them — the run page stays owner-only, which is why triggerRunHref differs.
+ * Never null: a workflow name in the manager is always a door, not a peek-only reference.
+ */
+export const triggerWorkflowHref = (_seat: "admin" | "org", definitionId: string): string =>
+  `/workflows/${definitionId}/triggers`;
