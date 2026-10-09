@@ -579,6 +579,28 @@ export function formsReseededFromRow(file: BuilderFile): string[] {
   return [...out];
 }
 
+/**
+ * A row WRITTEN from an effect — `useEffect(() => { if (rows.length === 0) posts.create(SAMPLE) }, …)`. The
+ * offer-breakdowns build (2026-10-09) seeded its example that way: the effect re-runs on every empty list, and
+ * in the preview the write is held, so the example vanished. A sample row is declared as the new table's
+ * `rows` instead (applets 0.17.1). Names the method each offending effect calls (`create`, `save`, …).
+ */
+export function writesFromEffects(file: BuilderFile): string[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const out = new Set<string>();
+  walk(ast, (node) => {
+    if ((node.type !== "CallExpression" && node.type !== "OptionalCallExpression") || !isUseEffect(node)) return;
+    const [effect] = node.arguments;
+    if (!effect) return;
+    walk(effect, (n) => {
+      if ((n.type !== "CallExpression" && n.type !== "OptionalCallExpression") || memberName(n.callee) !== "create") return;
+      out.add("create");
+    });
+  });
+  return [...out];
+}
+
 /** The words a confirm's title / description / confirmLabel say. */
 function confirmWords(arg: t.Node | undefined): string {
   if (!arg || arg.type !== "ObjectExpression") return "";
