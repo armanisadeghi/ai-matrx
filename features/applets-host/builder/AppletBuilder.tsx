@@ -16,13 +16,14 @@ import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } fro
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { readAppletCatalogue, readJobInputs } from "@ai-matrx/applets/catalogue";
+import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { Badge, Button, EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
-import { AppWindow, ExternalLink, Loader2, Table2, Wrench } from "lucide-react";
+import { AppWindow, Copy, ExternalLink, Loader2, Table2, Wrench } from "lucide-react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { createClient } from "@/utils/supabase/client";
@@ -52,7 +53,7 @@ import {
   type BuilderSource,
   type SavedApplet,
 } from "./build-applet";
-import { buildingStep, fixLabel, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
+import { appletLink, buildingStep, doneLine, fixLabel, fixNarration, heldHint, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
 import { UseAppletDialog } from "./UseAppletDialog";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
@@ -65,6 +66,9 @@ const AppletHostMount = dynamic(() => import("@/features/applets-host/AppletHost
   ssr: false,
   loading: () => <RegionSkeleton />,
 });
+
+/** ONE live window per build: a fix round re-binds the build's window, never stacks a second (F6). */
+const buildWindowId = (appletId: string | null) => `applet-build:${appletId ?? "new"}`;
 
 const noopSubscribe = () => () => {};
 /** False in the server HTML and the hydration render, true once the page answers clicks. */
@@ -158,8 +162,8 @@ export function AppletBuilder({
     routed,
     onRejoin: (entry) => {
       setPhase({ kind: "building" });
-      setStep({ label: entry.fix ? "Fixing your Applet" : "Writing your Applet", since: Date.parse(entry.started_at) || Date.now() });
-      rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your Applet" : "Building your Applet" });
+      setStep({ label: entry.fix ? fixNarration(entry.fix.message) : "Writing your Applet", since: Date.parse(entry.started_at) || Date.now() });
+      rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your Applet" : "Building your Applet", instanceId: buildWindowId(initialId) });
       runWindow.current = { handle: rejoinWindow.current, conversationId: null };
     },
     onReopenedAnswer: async ({ entry, value }) => {
@@ -171,16 +175,16 @@ export function AppletBuilder({
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
-        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value));
         const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
         // A run rejoined after a refresh is refused exactly like a live one: it goes to the fix round too
         // (its own live window; the rejoined run's window stops waiting first).
         if (repairs(entry, err)) {
-          rejoinWindow.current?.update({ pending: false });
+          // ONE window at a time (F6): the refused run's window closes; the fix round's opens in its place.
+          closeRunWindow();
           rejoinWindow.current = null;
           await repairRefusal(entry, err);
         }
@@ -299,7 +303,7 @@ export function AppletBuilder({
   const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet; refusedEntryId: string } | null = null) => {
     setPhase({ kind: "building" });
     // The clock starts once, here; every later step keeps it (B3).
-    setStep({ label: retry ? "Fixing what the check found" : "Saving your request", since: Date.now() });
+    setStep({ label: retry && fix ? fixNarration(fix.message) : "Saving your request", since: Date.now() });
     const client = createClient();
     const live: { handle: LiveRunWindowHandle | null } = { handle: null };
     let started: { id: string; entry: BuildEntry } | null = null;
@@ -330,8 +334,6 @@ export function AppletBuilder({
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
       const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
-      // The input names of every job the builder may use — its answer's job.run names are checked against them.
-      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null));
       // The frame (already the preview's) answers which names each module really exports; the checks read
       // the code's syntax tree, so both load here, on demand — never with the builder's first screen.
       const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
@@ -357,11 +359,11 @@ export function AppletBuilder({
         onConversationCreated: (cid) => {
           entry.conversation_id = cid;
           attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
-          live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet" });
+          live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet", instanceId: buildWindowId(record.id) });
           runWindow.current = { handle: live.handle, conversationId: cid };
-          stepTo(fix ? "Fixing your Applet" : "Writing your Applet");
+          stepTo(fix ? fixNarration(fix.message) : "Writing your Applet");
         },
-        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs }),
+        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems }),
       });
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
@@ -369,7 +371,9 @@ export function AppletBuilder({
       if (started) await failed(started.id, started.entry, err);
       else setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
       if (started && repairs(started.entry, err)) {
-        live.handle?.update({ pending: false });
+        // ONE window at a time (F6: "Building — Done" sat over "Fixing — processing"): close it first.
+        if (live.handle && runWindow.current?.handle === live.handle) closeRunWindow();
+        else live.handle?.close();
         live.handle = null;
         await repairRefusal(started.entry, err);
         return;
@@ -470,6 +474,7 @@ export function AppletBuilder({
             </div>
             {saved.description ? <p className="text-muted-foreground">{saved.description}</p> : null}
             {saved.note && saved.note !== saved.description ? <p>{saved.note}</p> : null}
+            {!busy ? <p className="text-xs font-medium" data-applet-done="">{doneLine(appletState(saved).kind)}</p> : null}
             {saved.bound.length ? (
               <div className="flex flex-wrap items-center gap-2 text-xs" data-applet-bound-tables="">
                 {saved.bound.map((id) => (
@@ -512,14 +517,15 @@ export function AppletBuilder({
                   <Wrench className="h-4 w-4" /> Fix it to use it
                 </Button>
               ) : appletState(saved).kind === "draft" ? (
-                <Button variant="primary" disabled={busy || !userId} onClick={() => setUseItOpen(true)}>
+                <Button variant="primary" disabled={busy || !userId} title="Choose who can open it, then it goes live" onClick={() => setUseItOpen(true)}>
                   Use it
                 </Button>
               ) : null}
-              <Link href={`/applets/${saved.slug}`} target="_blank" className="inline-flex items-center gap-1 text-primary">
+              <Link href={`/applets/${saved.slug}`} target="_blank" title="Try it in a new tab" className="inline-flex items-center gap-1 text-primary">
                 <ExternalLink className="h-4 w-4" /> Open
               </Link>
             </div>
+            <AppletLinkRow slug={saved.slug} />
           </div>
         ) : null}
       </div>
@@ -530,7 +536,11 @@ export function AppletBuilder({
               <span>
                 {previewLine(appletVersionLabel(saved.content_version))}
               </span>
-              {held ? <Badge tone="warning">{held} not saved</Badge> : null}
+              {held ? (
+                <Badge tone="warning" title={heldHint(held)} data-applet-held="">
+                  {held} held in preview
+                </Badge>
+              ) : null}
               {shownStep ? <BuildStep step={shownStep} inline /> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
@@ -562,6 +572,24 @@ export function AppletBuilder({
           onConfirm={(audience) => void putInUse(audience)}
         />
       ) : null}
+    </div>
+  );
+}
+
+/** The Applet's full address, with a copy button — the real link, never a bare path (F6). */
+function AppletLinkRow({ slug }: { slug: string }) {
+  const hydrated = useHydrated();
+  // The address is this site's own origin, read once the page is live (the server render has none).
+  const url = hydrated ? appletLink(window.location.origin, slug) : null;
+  if (!url) return null;
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-xs" data-applet-link="">
+      <a href={url} target="_blank" rel="noreferrer" className="min-w-0 truncate text-primary" title={url}>
+        {url}
+      </a>
+      <Button variant="quiet" icon={<Copy className="h-3.5 w-3.5" />} aria-label="Copy link" title="Copy link" onClick={() => void copyText(url)}>
+        Copy
+      </Button>
     </div>
   );
 }
