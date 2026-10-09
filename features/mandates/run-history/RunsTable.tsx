@@ -245,8 +245,8 @@ export function RunsTable({
                   {mandateDisplayName(storedMandateKey(run.mandateKey), null)}
                 </Link>
               ) : (
-                <span className="text-muted-foreground" title="Used directly, not through a mandate">
-                  Direct
+                <span className="text-muted-foreground" title="Run directly by its agent, not through a mandate">
+                  Direct run
                 </span>
               ),
           } satisfies MatrxColumnDef<MandateRun>,
@@ -272,9 +272,9 @@ export function RunsTable({
                   {run.foundBy === "holder_agent" ? (
                     <span
                       className="shrink-0 text-[11px] text-amber-700 dark:text-amber-400"
-                      title="A run of this mandate's agent that was not recorded under the mandate"
+                      title="Run directly by its agent, not through this mandate"
                     >
-                      Agent run
+                      Direct run
                     </span>
                   ) : null}
                 </span>
