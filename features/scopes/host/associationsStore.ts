@@ -46,7 +46,10 @@ import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityR
 // every function through @ai-matrx/data's generated doors (`schema("public").rpc(...)`) and
 // reads the four edge lists (assoc_for_entity / _sources / _targets / assoc_members_visible)
 // COMPLETE itself — the host-side paging adapter (readAssociationPages) retired with it.
-export const associationsDataSource: AssociationsDataSource = supabase;
+// Typed as the client itself (its `.rpc` serves the cmt_* seams); it satisfies the package port.
+export const associationsDataSource = supabase;
+const _port: AssociationsDataSource = associationsDataSource;
+void _port;
 
 let store: AssociationsStore | null = null;
 
