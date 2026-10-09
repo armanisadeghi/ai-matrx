@@ -53,7 +53,6 @@ import {
   DesignRefused,
   describeVariables,
   dropOrphanRows,
-  findBuiltSpace,
   readExistingTables,
   readDesign,
   readOrganizationFacts,
@@ -71,11 +70,6 @@ const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence 
 
 type StepState = "waiting" | "doing" | "done" | "failed";
 
-/** A Space step started earlier is looked for this long before a second build is allowed to start. */
-const SPACE_WAIT_MS = 3 * 60_000;
-const SPACE_LOOK_EVERY_MS = 10_000;
-const SPACE_RUN_MS = 12 * 60_000;
-
 /**
  * One guided run. What each finished step produced is kept — in state and in this browser (runStore) — so Try again,
  * a reload or a paused tab resumes where it stopped and never starts a second build for the same press.
@@ -90,6 +84,8 @@ interface Run {
   endedAt: number | null;
   step: Partial<Record<MakeStepId, { state: StepState; at: number; ms?: number }>>;
   space: SpaceBuildOutcome | null;
+  /** The Space build's conversation, kept the moment it exists: a reload reattaches to it, never builds again. */
+  spaceConversationId?: string | null;
   templateId: string | null;
   install: TemplateDoorAnswer | null;
   notes: string[];
@@ -152,14 +148,18 @@ export function DescribeBox() {
       for (const id of r.plan.steps) {
         current = id;
         if (r.step[id]?.state === "done") continue;
-        // When this step was started before (a reload, a paused tab, Try again), the server may have finished it already.
-        const startedBefore = r.step[id]?.at ?? null;
         mark(id, "doing");
         if (id === "space") {
-          const adopted = startedBefore ? await awaitBuiltSpace(client, r.organizationId, startedBefore) : null;
-          const built =
-            adopted ??
-            (await spaces.build({ request: r.sentence, organizationId: r.organizationId, label: "Building your workspace" }));
+          // The conversation id was kept when the build began: follow that run (or read its result), never start another.
+          // No id kept means the build never got going, so a fresh one is safe.
+          const built = r.spaceConversationId
+            ? await spaces.reattach(r.spaceConversationId, { label: "Building your workspace" })
+            : await spaces.build({
+                request: r.sentence,
+                organizationId: r.organizationId,
+                label: "Building your workspace",
+                onConversationCreated: (conversationId) => commit({ ...r, spaceConversationId: conversationId }),
+              });
           commit({ ...r, space: built });
         } else if (id === "design") {
           const [facts, listed] = await Promise.all([readOrganizationFacts(client, r.organizationId), doors.dataHomeTables(source, r.organizationId)]);
@@ -439,18 +439,4 @@ function Notes({ notes }: { notes: string[] }) {
       ))}
     </ul>
   );
-}
-
-/**
- * The Space a step started at `since` built, waited for: looked for at once, then every 10 s for up to three minutes while
- * that build could still be running on the server. Null when none landed — only then may a new build start.
- */
-async function awaitBuiltSpace(client: ReturnType<typeof createClient>, organizationId: string, since: number): Promise<SpaceBuildOutcome | null> {
-  const until = Math.min(Date.now() + SPACE_WAIT_MS, since + SPACE_RUN_MS);
-  for (;;) {
-    const found = await findBuiltSpace(client, organizationId, since);
-    if (found) return { summary: found.title, rootSpaceId: found.id, url: `/spaces/${found.id}`, spaceIds: [found.id], tableIds: [] };
-    if (Date.now() + SPACE_LOOK_EVERY_MS > until) return null;
-    await new Promise((resolve) => setTimeout(resolve, SPACE_LOOK_EVERY_MS));
-  }
 }

@@ -22,6 +22,7 @@ const TABLE = "a7c1f0e2-6b1d-4c55-8e0a-3d9f2b6c4e81";
 const push = jest.fn();
 const writerRun = jest.fn();
 const spaceBuild = jest.fn();
+const spaceReattach = jest.fn();
 const runTemplateDoor = jest.fn();
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -53,7 +54,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
 }));
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({ useOrganizationRequired: () => ({ organizationId: ORG, organizationState: "ready" }) }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/features/spaces/embed/useSpaceBuild", () => ({ SpaceBuildRefused: class extends Error {}, useSpaceBuild: () => ({ build: spaceBuild, isRunning: false, available: true }) }));
+jest.mock("@/features/spaces/embed/useSpaceBuild", () => ({ SpaceBuildRefused: class extends Error {}, useSpaceBuild: () => ({ build: spaceBuild, reattach: spaceReattach, isRunning: false, available: true }) }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHomeTables: async () => ({ ok: true, data: [] }) }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("../../gallery/TemplateGallery", () => ({ Landing: () => null, Progress: () => null }));
@@ -173,32 +174,58 @@ describe("the guided run on /make", () => {
     expect(host.querySelector("[data-make-describe]")?.getAttribute("data-make-describe")).toBe("installed");
   });
 
-  it("a workspace whose build was started before a pause is found and opened, never built a second time", async () => {
-    const mod = jest.requireMock("../describeTemplate") as { findBuiltSpace: (...a: unknown[]) => Promise<unknown> };
-    const real = mod.findBuiltSpace;
-    const looked: unknown[][] = [];
-    mod.findBuiltSpace = async (...a: unknown[]) => (looked.push(a), { id: "s9", title: "Agency OS" });
+  const keepSpaceRun = (key: string, extra: Record<string, unknown>) => {
     const startedAt = Date.now() - 90_000;
     localStorage.setItem(
       `make.describe.run.v1:${ORG}`,
       JSON.stringify({
-        key: "9f1c2d3e-0000-4000-8000-000000000002", sentence: "an agency OS with clients, retainers, a dashboard and a 90-day plan", organizationId: ORG,
+        key, sentence: "an agency OS with clients, retainers, a dashboard and a 90-day plan", organizationId: ORG,
         plan: { route: "page", steps: ["space", "open"] }, startedAt, endedAt: null,
-        step: { space: { state: "failed", at: startedAt } }, space: null, templateId: null, install: null, notes: [],
-        failed: { at: "space", why: "That stopped before it finished. Try again." },
+        space: null, templateId: null, install: null, notes: [], ...extra,
       }),
     );
+    return startedAt;
+  };
+
+  it("a reload mid-build follows the kept conversation and never starts a second build", async () => {
+    const startedAt = Date.now() - 90_000;
+    keepSpaceRun("9f1c2d3e-0000-4000-8000-000000000002", { step: { space: { state: "doing", at: startedAt } }, spaceConversationId: "conv-7", failed: null });
+    spaceReattach.mockResolvedValue({ summary: "Agency OS", rootSpaceId: "s9", url: "/spaces/s9", spaceIds: ["s9"], tableIds: [] });
+    await mount();
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+
+    expect(spaceBuild).not.toHaveBeenCalled();
+    expect(spaceReattach).toHaveBeenCalledTimes(1);
+    expect(spaceReattach.mock.calls[0]![0]).toBe("conv-7");
+    expect(push).toHaveBeenCalledWith("/spaces/s9");
+  });
+
+  it("Try again after a failed Space step with a kept conversation opens the finished result, not a new build", async () => {
+    keepSpaceRun("9f1c2d3e-0000-4000-8000-000000000003", {
+      step: { space: { state: "failed", at: Date.now() - 90_000 } }, spaceConversationId: "conv-8",
+      failed: { at: "space", why: "That stopped before it finished. Try again." },
+    });
+    spaceReattach.mockResolvedValue({ summary: "Agency OS", rootSpaceId: "s10", url: "/spaces/s10", spaceIds: ["s10"], tableIds: [] });
     const host = await mount();
-    // A failed run is shown as it ended; Try again looks for the Space that build made before building again.
     expect(host.querySelector("[data-make-describe-refusal]")).not.toBeNull();
     await act(async () => (host.querySelector("[data-retry]") as HTMLButtonElement).click());
     await act(async () => new Promise((r) => setTimeout(r, 20)));
-    mod.findBuiltSpace = real;
 
     expect(spaceBuild).not.toHaveBeenCalled();
-    expect(looked[0]![1]).toBe(ORG);
-    expect(looked[0]![2]).toBe(startedAt);
-    expect(push).toHaveBeenCalledWith("/spaces/s9");
+    expect(spaceReattach.mock.calls[0]![0]).toBe("conv-8");
+    expect(push).toHaveBeenCalledWith("/spaces/s10");
+  });
+
+  it("keeps the conversation id the moment the build creates it", async () => {
+    spaceBuild.mockImplementation(async (a: { onConversationCreated?: (id: string) => void }) => {
+      a.onConversationCreated?.("conv-new");
+      expect(JSON.parse(localStorage.getItem(`make.describe.run.v1:${ORG}`)!).spaceConversationId).toBe("conv-new");
+      return { summary: "Agency OS", rootSpaceId: "s1", url: "/spaces/s1", spaceIds: ["s1"], tableIds: [] };
+    });
+    const host = await mount();
+    await say(host, "an agency OS with clients, a dashboard and a 90-day plan");
+    expect(spaceBuild).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith("/spaces/s1");
   });
 
   it("sends a workspace to the Space Builder with the person's exact words and opens it", async () => {
