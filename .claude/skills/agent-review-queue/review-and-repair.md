@@ -56,7 +56,7 @@ he is using, and close only the tabs/groups you created.
 Production review does not require a localhost preview. Start or reuse the managed preview
 only when a repair needs local testing, after checking its status and the repository's lifecycle.
 Routine managed stop/install/start is pre-authorized even when another task started the server;
-do it yourself without asking Arman or waking peer tasks. Preserve source edits and application
+do it yourself without asking Arman. Preserve source edits and application
 data. Arman's 2026-09-15 ruling supersedes the former ban on restarting another task's preview:
 “you can always restart” and “Never do that again!!!!!!!!!!” about stopping work for permission.
 On exit close only this run's tabs and restore changed viewport settings. Do not stop a healthy
