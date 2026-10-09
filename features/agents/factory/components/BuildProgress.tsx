@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ExternalLink, Repeat } from "lucide-react";
 import { Badge, Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ import {
 } from "../types";
 import { buildRows, StatusIcon, type RowStatus } from "./FactoryBuildPage";
 import { formatDuration } from "./factory-shared";
+import { refineAgentHref } from "../refine-link";
 import { catalogProseText } from "@/features/content-ir/surfaces/kind-one-line";
 
 const POLL_MS = 3000;
@@ -56,6 +58,12 @@ export interface BuildProgressProps {
   onRebuilt?: (buildId: string) => void;
   /** Called with the agent "Keep it anyway" kept — a door that places the agent (a mandate's holder) uses it. */
   onKept?: (agentId: string) => void;
+  /**
+   * R58: the moment a build keeps a NEW agent (passed or saved), go to it in the builder
+   * with the Side Chat open beside it (`refineAgentHref`). Doors that place the agent
+   * somewhere themselves (a mandate's holder controls) leave this off.
+   */
+  forwardWhenKept?: boolean;
   className?: string;
 }
 
@@ -111,7 +119,7 @@ function OutcomePanel({
 
   const openAgent = agentId ? (
     <Button asChild variant="primary">
-      <Link href={`/agents/${agentId}/build`}>Open agent</Link>
+      <Link href={refineAgentHref(agentId)}>Open agent</Link>
     </Button>
   ) : null;
 
@@ -121,7 +129,7 @@ function OutcomePanel({
     line = "Ready. It passed its proof.";
     actions = openAgent;
   } else if (outcome === "saved_unproven") {
-    line = "Saved unproven. Its first 3 runs are judged.";
+    line = "Saved. Its first 3 runs prove it.";
     actions = openAgent;
   } else if ((outcome === "send_backs_exhausted" || outcome === "judge_not_blind") && agentId) {
     line = greenfield
@@ -193,7 +201,8 @@ function OutcomePanel({
   );
 }
 
-export function BuildProgress({ buildId, onFinished, onRebuilt, onKept, className }: BuildProgressProps) {
+export function BuildProgress({ buildId, onFinished, onRebuilt, onKept, forwardWhenKept, className }: BuildProgressProps) {
+  const router = useRouter();
   // A "Build unproven" follow-up replaces the build this view tracks.
   const [rebuiltId, setRebuiltId] = useState<string | null>(null);
   const currentId = rebuiltId ?? buildId;
@@ -234,8 +243,10 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, onKept, classNam
     if (over && detail?.state && reported.current !== currentId) {
       reported.current = currentId;
       onFinished?.(detail.state);
+      const kept = detail.state.outcome && KEPT_OUTCOMES.has(detail.state.outcome) ? detail.state.agent_id : null;
+      if (forwardWhenKept && kept) router.push(refineAgentHref(kept));
     }
-  }, [over, detail, currentId, onFinished]);
+  }, [over, detail, currentId, onFinished, forwardWhenKept, router]);
 
   const cells = detail ? stepCells(detail) : [];
 

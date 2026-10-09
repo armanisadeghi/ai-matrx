@@ -10,8 +10,11 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-/** `unproven` = saved unproven / kept anyway, first runs not judged yet. */
-export type AgentProofStatus = "unproven" | "failed_proof" | null;
+/**
+ * `unproven` = saved unproven / kept anyway, first runs not judged yet; `proven` = its first
+ * 3 real runs passed (R34/R59, judged automatically); `failed_proof` = they did not.
+ */
+export type AgentProofStatus = "unproven" | "proven" | "failed_proof" | null;
 
 interface Row {
   id: string;
@@ -27,7 +30,7 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 export function proofStatusOf(row: Pick<Row, "outcome" | "kept" | "first_runs">): AgentProofStatus {
   const unproven = row.outcome === "saved_unproven" || Boolean(row.kept);
   if (!unproven) return null;
-  if (row.first_runs === "passed") return null;
+  if (row.first_runs === "passed") return "proven";
   if (row.first_runs === "failed") return "failed_proof";
   return "unproven";
 }
