@@ -212,7 +212,6 @@ async function show(node: React.ReactElement, presentation: CanvasPresentation |
 async function showPackageTable(width: number, height: number, isFullscreen = false) {
   const store = createCanvasStore();
   store.dispatch(canvasActions.open({ kind: TABLE_KIND, key: "table" }));
-  if (isFullscreen) store.dispatch(canvasActions.setFullscreen(true));
   const getRect = HTMLElement.prototype.getBoundingClientRect;
   HTMLElement.prototype.getBoundingClientRect = function () {
     if (this.classList.contains("mxc-pane-slot")) {
@@ -231,6 +230,11 @@ async function showPackageTable(width: number, height: number, isFullscreen = fa
         </CanvasProvider>,
       );
     });
+    if (isFullscreen) {
+      await act(async () => {
+        store.dispatch(canvasActions.setFullscreen(true));
+      });
+    }
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
