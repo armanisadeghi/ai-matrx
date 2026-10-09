@@ -39,8 +39,12 @@ async function openCard(page: Page) {
 
 /** Every control in the header, each answered by a hit test at its centre. */
 async function hitTests(page: Page) {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
     const header = document.querySelector("[data-html-figure] [data-html-preview-header]") as HTMLElement;
+    // Measure where a person would press: the header on screen (the transcript may
+    // have scrolled itself to the newest turn since the card mounted).
+    header.scrollIntoView({ block: "center" });
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     const figure = header.closest("[data-html-figure]") as HTMLElement;
     const controls = [...header.querySelectorAll<HTMLElement>("button")].filter((b) => {
       const r = b.getBoundingClientRect();
@@ -57,6 +61,8 @@ async function hitTests(page: Page) {
         return {
           name: b.getAttribute("aria-label") ?? b.textContent?.trim() ?? "?",
           x: Math.round(x),
+          y: Math.round(y),
+          hit: hit ? `${hit.tagName.toLowerCase()}.${String(hit.className).slice(0, 60)}` : null,
           reachable: !!hit && (hit === b || b.contains(hit)),
         };
       }),
@@ -78,6 +84,10 @@ for (const viewport of [
     expect(result.controls.map((c) => c.name)).toContain("Attach screenshot to chat");
     // Every action is either on the row or in the "More" menu — each one a press can land on.
     expect(result.controls.filter((c) => !c.reachable)).toEqual([]);
+    for (const c of result.controls) {
+      expect(c.x, `${c.name} inside the card`).toBeGreaterThan(result.figure.left);
+      expect(c.x, `${c.name} inside the card`).toBeLessThan(result.figure.left + result.figure.width);
+    }
     if (viewport.width >= 1200) expect(result.figure.width, "the figure breaks out of the column").toBeGreaterThan(800);
   });
 }

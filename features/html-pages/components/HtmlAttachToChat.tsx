@@ -33,6 +33,7 @@ import {
   captureRecordOnServer,
   frameCapture,
   renderedRecordFor,
+  screenshotFileName,
   viewerColorScheme,
 } from "@/features/html-pages/capture/renderedCapture";
 
@@ -72,6 +73,7 @@ export function HtmlAttachToChat({
             ...record,
             width: frame()?.clientWidth || 1024,
             colorScheme: viewerColorScheme(),
+            fileName: screenshotFileName(title),
           });
           return {
             kind: "stored",

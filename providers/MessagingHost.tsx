@@ -87,6 +87,7 @@ import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSel
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { withSharedRpcReads } from "@/lib/supabase/sharedRpcReads";
 import { getUserId } from "@/utils/auth/getUserId";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
 import { MESSAGE_ACTION_SURFACES } from "@/features/messaging/actions/messageActionSurfaces";
 import {
   MessagingConversationRowChrome,
@@ -106,6 +107,17 @@ const messagingClient = withSharedRpcReads(supabase, {
   rpcs: ["get_dm_conversations_with_details", "get_dm_pending_soft_expiries"],
   person: getUserId,
 });
+
+/**
+ * Realtime postgres_changes carry no request headers, so on the admin seat
+ * (/administration reading a thread the admin is not a member of) no live row
+ * ever arrives. There the open conversation is re-read every few seconds and on
+ * window focus; on every user page `active()` is false and nothing polls.
+ */
+const OBSERVER_REFRESH = {
+  intervalMs: 5_000,
+  active: browserAdminLaneOpen,
+} as const;
 
 export interface MessagingHostProps {
   children: ReactNode;
@@ -289,6 +301,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         // Seeds the engine at creation; `<MessagingArchiveKnob>` below owns
         // every later value of the same setting (see its comment).
         archiveFilter={archiveKnob}
+        observerRefresh={OBSERVER_REFRESH}
         actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
         // App chrome around the package's own surfaces: the data attributes the

@@ -10,6 +10,7 @@ import type {
 } from "@/features/admin/agent-review/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
 
 /**
  * The board shows a true count per filter value, so the queue is a list treated
@@ -86,11 +87,14 @@ export async function loadReviewQueueItem(id: string): Promise<ReviewQueueRow> {
 export async function recordHumanReviewAction({
   row,
   userId,
+  actorLabel,
   content,
   status,
 }: {
   row: ReviewQueueRow;
   userId: string;
+  /** The signed-in reviewer's own name — stamped on the message, never a fixed one. */
+  actorLabel: string;
   content: string;
   status: ReviewStatus;
 }): Promise<void> {
@@ -103,42 +107,64 @@ export async function recordHumanReviewAction({
   }
 
   const supabase = createClient();
-  const { data: conversation, error: conversationError } = await supabase
-    .schema("communication")
-    .from("dm_conversations")
-    .select("organization_id")
-    .eq("id", row.conversation_id)
-    .single();
-  if (conversationError)
-    throw operationFailed("send your review feedback", conversationError);
-  const organizationId = await ensureOrgId(conversation.organization_id);
   const message =
     trimmed ||
     (status === "approved"
       ? "Approved. Complete the follow-through and archive this review."
       : (REVIEW_ACTION_DEFAULTS[status] ?? status));
+  const clientMessageId = `agent-review:${row.id}:${status}:${crypto.randomUUID()}`;
 
-  const { error: messageError } = await supabase
-    .schema("communication")
-    .from("dm_messages")
-    .insert({
-      conversation_id: row.conversation_id,
-      sender_id: userId,
-      content: message,
-      message_type: "text",
-      status: "sent",
-      client_message_id: `agent-review:${row.id}:${status}:${crypto.randomUUID()}`,
-      organization_id: organizationId,
-      created_by: userId,
-      metadata: {
-        actor_kind: "human",
-        actor_label: "Arman",
-        review_event: status,
-        review_queue_id: row.id,
-      },
+  if (browserAdminLaneOpen()) {
+    // THE ADMIN SEAT. The thread is private to its members, and the admin
+    // reading it is usually not one (a refused INSERT, measured 2026-10-08), so
+    // the write goes through the lane-gated admin door instead of row security.
+    const response = await fetch("/api/admin/agent-review/feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        reviewId: row.id,
+        content: message,
+        status,
+        actorLabel,
+        clientMessageId,
+      }),
     });
-  if (messageError)
-    throw operationFailed("send your review feedback", messageError);
+    if (!response.ok) {
+      const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw operationFailed("send your review feedback", new Error(detail?.error ?? `HTTP ${response.status}`));
+    }
+  } else {
+    const { data: conversation, error: conversationError } = await supabase
+      .schema("communication")
+      .from("dm_conversations")
+      .select("organization_id")
+      .eq("id", row.conversation_id)
+      .single();
+    if (conversationError)
+      throw operationFailed("send your review feedback", conversationError);
+    const organizationId = await ensureOrgId(conversation.organization_id);
+    const { error: messageError } = await supabase
+      .schema("communication")
+      .from("dm_messages")
+      .insert({
+        conversation_id: row.conversation_id,
+        sender_id: userId,
+        content: message,
+        message_type: "text",
+        status: "sent",
+        client_message_id: clientMessageId,
+        organization_id: organizationId,
+        created_by: userId,
+        metadata: {
+          actor_kind: "human",
+          actor_label: actorLabel,
+          review_event: status,
+          review_queue_id: row.id,
+        },
+      });
+    if (messageError)
+      throw operationFailed("send your review feedback", messageError);
+  }
 
   await updateReviewQueueRow(row.id, {
     status,

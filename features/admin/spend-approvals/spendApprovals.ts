@@ -52,8 +52,24 @@ export const SUBJECT_KIND_LABEL: Record<ApprovalSubjectKind, string> = {
   workflow_trigger: "Workflow trigger",
 };
 
+/** chat.user_request.origin_class of the first over-threshold run -> the label people read. */
+export const RUN_ORIGIN_LABEL: Record<string, string> = {
+  human: "Person",
+  child_agent: "Sub-agent",
+  workflow: "Workflow",
+  scheduled: "Scheduled",
+  api: "API",
+  system: "System",
+  client_auto: "Automatic",
+  unknown: "Unknown",
+};
+export const runOriginLabel = (origin: string | null | undefined): string =>
+  RUN_ORIGIN_LABEL[origin ?? "unknown"] ?? "Unknown";
+
 export interface SpendApprovalRow {
   id: string;
+  /** How the first over-threshold run was started (raw origin_class; label via runOriginLabel). */
+  first_run_origin: string;
   subject_kind: ApprovalSubjectKind;
   subject_id: string;
   subject_name: string | null;
@@ -123,10 +139,18 @@ const asStatus = (v: string): ApprovalStatus => (v === "approved" || v === "reje
 const asKind = (v: string): ApprovalSubjectKind => (v in SUBJECT_KIND_LABEL ? (v as ApprovalSubjectKind) : "agent");
 
 export async function fetchSpendApprovals(orgId: string | null): Promise<SpendApprovalRow[]> {
-  const { data, error } = await supabase.schema("billing").rpc("run_approval_list", { p_org_id: orgId ?? undefined });
+  const [{ data, error }, origins] = await Promise.all([
+    supabase.schema("billing").rpc("run_approval_list", { p_org_id: orgId ?? undefined }),
+    // The origin column is secondary; a failure leaves it "Unknown" instead of hiding the register.
+    supabase
+      .schema("billing")
+      .rpc("run_approval_origin", { p_org_id: orgId ?? undefined })
+      .then(({ data: o, error: e }) => new Map((e ? [] : (o ?? [])).map((x) => [x.id, x.origin_class]))),
+  ]);
   if (error) throw pgErrorToError(error);
   return (data ?? []).map((r) => ({
     id: r.id,
+    first_run_origin: origins.get(r.id) ?? "unknown",
     subject_kind: asKind(r.subject_kind),
     subject_id: r.subject_id,
     subject_name: r.subject_name,
@@ -179,6 +203,22 @@ export async function decideSpendApproval(
   });
   if (error) throw pgErrorToError(error);
   invalidateApprovalStatus();
+}
+
+export interface BatchDecisionResult {
+  ok: string[];
+  failed: { id: string; message: string }[];
+}
+
+/** One run_approval_decide per row (each permission-checked server-side); never throws for a row. */
+export async function decideSpendApprovalsBatch(ids: string[], decision: ApprovalDecision): Promise<BatchDecisionResult> {
+  const settled = await Promise.allSettled(ids.map((id) => decideSpendApproval(id, decision, { note: "Batch decision" })));
+  const out: BatchDecisionResult = { ok: [], failed: [] };
+  settled.forEach((s, i) => {
+    if (s.status === "fulfilled") out.ok.push(ids[i]);
+    else out.failed.push({ id: ids[i], message: s.reason instanceof Error ? s.reason.message : String(s.reason) });
+  });
+  return out;
 }
 
 export async function fetchSpendApprovalHistory(id: string): Promise<SpendApprovalEvent[]> {

@@ -58,6 +58,8 @@ export type ApproveAndRaiseInput = {
   userId: string;
   /** What the human typed. It becomes the conversation note AND the item. */
   note: string;
+  /** The signed-in reviewer's own name, stamped on the approval message. */
+  actorLabel: string;
   /**
    * The organization the reviewer is acting in, read from Redux by the surface
    * and CARRIED into the filing. `submitFeedback` is a Server Action, which
@@ -82,6 +84,7 @@ function messageOf(error: unknown, fallback: string): string {
 export async function approveAndRaise({
   row,
   userId,
+  actorLabel,
   note,
   organizationId,
   alreadyApproved = false,
@@ -111,6 +114,7 @@ export async function approveAndRaise({
       await recordHumanReviewAction({
         row,
         userId,
+        actorLabel,
         content: trimmed,
         status: "approved",
       });

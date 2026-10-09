@@ -34,6 +34,14 @@ export interface ServerCaptureRequest extends RenderedRecord {
   colorScheme: "light" | "dark";
   /** Also return the PNG bytes (Copy image needs pixels now). */
   includeImage?: boolean;
+  /** What the stored image is called — see `screenshotFileName`. */
+  fileName?: string;
+}
+
+/** The stored screenshot's name: "<page title> screenshot.png" (the chip shows the same). */
+export function screenshotFileName(title: string): string {
+  const base = title.trim().replace(/[^\w\s.-]+/g, "").trim().slice(0, 60) || "page";
+  return `${base} screenshot.png`;
 }
 
 export interface ServerCaptureResult {
@@ -107,6 +115,7 @@ export async function captureRecordOnServer(
         ? 1
         : Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
     include_image: request.includeImage === true,
+    ...(request.fileName ? { file_name: request.fileName } : {}),
   });
   if (
     !isRecord(body) ||

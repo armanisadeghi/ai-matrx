@@ -94,6 +94,12 @@ export interface KeptTextSelection {
   direction: "forward" | "backward" | "none";
 }
 
+/** A caret / selection of the rich editor, as the text around its ends (the editor's `getCaret`). */
+export interface KeptRichCaret {
+  from: { before: string; after: string };
+  to: { before: string; after: string } | null;
+}
+
 export interface WorkingCopiesState {
   byKey: Record<string, WorkingCopyEntry>;
   /**
@@ -103,6 +109,11 @@ export interface WorkingCopiesState {
    * person left it (`useKeptTextSelection`).
    */
   selections?: Record<string, KeptTextSelection>;
+  /**
+   * The same for THE ONE EDITOR (Write / Source): its caret as text around its
+   * ends (`useKeptRichCaret`), because a rich view has no textarea offsets.
+   */
+  richCarets?: Record<string, KeptRichCaret>;
 }
 
 const initialState: WorkingCopiesState = { byKey: {} };
@@ -440,6 +451,11 @@ const workingCopySlice = createSlice({
       state.selections ??= {};
       state.selections[key] = selection;
     },
+    /** A rich editor of the record is going away: keep its caret / selection. */
+    workingCopyRichCaretKept(state, action: PayloadAction<{ key: string; caret: KeptRichCaret }>) {
+      state.richCarets ??= {};
+      state.richCarets[action.payload.key] = action.payload.caret;
+    },
     /** No view, nothing pending: the record's own store is the truth again. */
     workingCopyReleased(state, action: PayloadAction<{ key: string }>) {
       const entry = state.byKey[action.payload.key];
@@ -467,6 +483,7 @@ export const {
   workingCopyReset,
   workingCopyRecordLoaded,
   workingCopySelectionKept,
+  workingCopyRichCaretKept,
   workingCopyReleased,
 } = workingCopySlice.actions;
 
@@ -513,4 +530,9 @@ export const selectWorkingCopyStatus = createSelector(
 /** Where the caret / selection was in the record's text when a view of it last went away. */
 export function getKeptTextSelection(state: WithWorkingCopies, key: string): KeptTextSelection | undefined {
   return state.workingCopies?.selections?.[key];
+}
+
+/** The rich editor's caret / selection when a view of the record last went away. */
+export function getKeptRichCaret(state: WithWorkingCopies, key: string): KeptRichCaret | undefined {
+  return state.workingCopies?.richCarets?.[key];
 }

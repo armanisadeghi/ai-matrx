@@ -16,7 +16,7 @@ jest.mock("next/navigation", () => jest.requireActual("./remount-safety/next-nav
 
 import { act } from "react";
 import { BOARD_ITEM_TYPES } from "../items/catalog";
-import { expectRemountSafe, richEditorIn, runCycle, settle, showSplitView, typeInto, typeIntoRich } from "./remount-safety/harness";
+import { expectRemountSafe, richEditorIn, richSelectionOf, runCycle, selectInRich, settle, showNoteView, showSplitView, typeInto, typeIntoRich } from "./remount-safety/harness";
 import { installBrowserGaps } from "./remount-safety/browser-gaps";
 import { CHAT_REPLY, CONVERSATION_ID, FILE_ID, NOTE_ID, NOTE_TEXT, seedChat, seedFile, seedNote } from "./remount-safety/fixtures-work";
 import { remountType } from "./remount-safety/cases";
@@ -34,6 +34,8 @@ const type = (key: string) => {
 const SECOND_PARAGRAPH = "Replace the smoke detector batteries before the walkthrough.";
 const TYPED = `${NOTE_TEXT}\n\n${SECOND_PARAGRAPH}`;
 const CARET: [number, number] = [TYPED.indexOf("smoke"), TYPED.indexOf("smoke") + "smoke detector".length];
+const WRITE_WORDS = "batteries before";
+let writeRange: [number, number] = [0, 0];
 const NOTE_RECORD = [/^workbench\.notes$/];
 
 /** Undo once in the note's editor, read the stored text, redo. */
@@ -64,12 +66,19 @@ remountType(
         if (!rich) throw new Error("the note's Write editor never rendered");
         await typeIntoRich(rich, ["", SECOND_PARAGRAPH]);
         await settle(3500);
+        // The person selects words in Write, then looks at the note in Split and back.
+        writeRange = selectInRich(rich, WRITE_WORDS);
         await showSplitView(tile);
         const ta = tile.container.querySelector("textarea");
         if (!ta) throw new Error("the note's Split view never rendered its textarea");
         act(() => ta.setSelectionRange(CARET[0], CARET[1]));
+        // ...and leaves the tile on Write, with both carets kept.
+        await showNoteView(tile, "Write");
       },
-      kept: (tile) => {
+      kept: async (tile) => {
+        // Write first (the tile shows what the person left), then Split for the textarea's own probes.
+        const write = richSelectionOf(tile.container);
+        await showSplitView(tile);
         const ta = tile.container.querySelector("textarea")!;
         const caret = [ta.selectionStart, ta.selectionEnd];
         const stored = () => tile.store.getState().notes.notes[NOTE_ID]?.content;
@@ -78,7 +87,8 @@ remountType(
         // The round trip is this probe's, not the person's: leave the caret
         // where the person left it for the next step of the cycle.
         act(() => ta.setSelectionRange(caret[0] ?? 0, caret[1] ?? 0));
-        return { shown, stored: stored(), caret, afterUndo };
+        await showNoteView(tile, "Write");
+        return { shown, stored: stored(), caret, afterUndo, write };
       },
     }),
   (r) =>
@@ -93,6 +103,12 @@ remountType(
       expect({ wake: pick(r.keptAfterWake, "caret"), remount: pick(r.keptAfterRemount, "caret") }).toEqual({
         wake: { caret: CARET },
         remount: { caret: CARET },
+      }),
+    // The selection the person left in the Write editor (the rich one), not just the Split textarea's.
+    "write caret": (r) =>
+      expect({ wake: pick(r.keptAfterWake, "write"), remount: pick(r.keptAfterRemount, "write") }).toEqual({
+        wake: { write: { range: writeRange, text: WRITE_WORDS } },
+        remount: { write: { range: writeRange, text: WRITE_WORDS } },
       }),
     // ⌘Z after waking / remounting still undoes the typing (history is the note's, in Redux).
     "split-view undo": (r) =>

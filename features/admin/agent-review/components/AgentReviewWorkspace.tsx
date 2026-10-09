@@ -21,7 +21,7 @@ import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectDisplayName, selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { toast } from "@/lib/toast";
 import {
@@ -85,6 +85,7 @@ export default function AgentReviewWorkspace({
 }) {
   const router = useRouter();
   const user = useAppSelector(selectUser);
+  const reviewerName = useAppSelector(selectDisplayName);
   // The organization the reviewer is acting in — carried into "Approve and
   // raise", whose feedback item is filed under one organization.
   const selectedOrganizationId = useServerOrganizationId();
@@ -289,6 +290,7 @@ export default function AgentReviewWorkspace({
       await recordHumanReviewAction({
         row,
         userId: user.id,
+        actorLabel: reviewerName,
         content,
         status: nextStatus,
       });
@@ -319,6 +321,7 @@ export default function AgentReviewWorkspace({
       const result = await approveAndRaise({
         row,
         userId: user.id,
+        actorLabel: reviewerName,
         note,
         organizationId: selectedOrganizationId,
         alreadyApproved,

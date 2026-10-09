@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1367,
+  "routeCount": 1368,
   "routes": [
     {
       "pattern": "/",
@@ -4863,6 +4863,11 @@
       "pattern": "/marketing/monitoring",
       "status": "live",
       "source": "app/(core)/marketing/monitoring/page.tsx"
+    },
+    {
+      "pattern": "/marketing/monitoring/[trackerId]",
+      "status": "live",
+      "source": "app/(core)/marketing/monitoring/[trackerId]/page.tsx"
     },
     {
       "pattern": "/marketing/operations/approvals",

@@ -1,5 +1,10 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Note tile: the Write editor keeps the caret across sleep and remount
+
+- Root cause: the Split textarea's caret was kept per note (`useKeptTextSelection`), the one editor's (Write / Source) was not — a tile waking or remounting put the caret at the document start (work was kept). `@ai-matrx/rich-editor` 0.5.43 adds `getCaret` / `restoreCaret(carry, { focus })` to its controller; `lib/working-copy/useKeptRichCaret.ts` tracks the caret while the editor is up, keeps it per note under the working-copy key (`workingCopies.richCarets`), and puts it back on wake/mount without taking focus (never over a field the person types in elsewhere).
+- Guard: remount-safety `note:write caret` (red with the hook off: caret at 2,2 and no text; green with it).
+
 ## 2026-10-09 — Chat tile sidebar: empty state, title-first rows, header follows the conversation
 
 - Empty list: a board with no chats shows "No chats on this board yet" (the sidebar's `emptyState`) instead of a blank column.

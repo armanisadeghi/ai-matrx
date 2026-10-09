@@ -21,6 +21,7 @@ import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordRefer
 import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   buildWorkflowMenu,
+  useWorkflowsBasePath,
   workflowDesignHref,
   workflowRunHref,
 } from "./workflowActionRegistry";
@@ -198,18 +199,20 @@ export function useWorkflowRowActions({
     [removeRow],
   );
 
+  const basePath = useWorkflowsBasePath();
   const openRow = useCallback(
-    (row: WorkflowBrowseRow) => router.push(workflowRunHref(row.id)),
-    [router],
+    (row: WorkflowBrowseRow) => router.push(workflowRunHref(row.id, basePath)),
+    [router, basePath],
   );
 
   const menuFor = useCallback(
     (row: WorkflowBrowseRow) => () =>
       buildWorkflowMenu({
         workflow: row,
+        basePath,
 
-        onRun: () => router.push(workflowRunHref(row.id)),
-        onDesign: () => router.push(workflowDesignHref(row.id)),
+        onRun: () => router.push(workflowRunHref(row.id, basePath)),
+        onDesign: () => router.push(workflowDesignHref(row.id, basePath)),
 
         onDuplicate: () => void duplicate(row),
         onShare: () => setShareWorkflow(row),
@@ -226,7 +229,7 @@ export function useWorkflowRowActions({
           ),
 
         onCopyLink: () => {
-          const url = `${window.location.origin}${workflowRunHref(row.id)}`;
+          const url = `${window.location.origin}${workflowRunHref(row.id, basePath)}`;
           void copyText(url, "Link copied");
         },
 
@@ -242,7 +245,7 @@ export function useWorkflowRowActions({
 
         onDelete: () => void remove(row),
       }),
-    [duplicate, remove, router, saveFlag, toggleFavorite],
+    [duplicate, remove, router, saveFlag, toggleFavorite, basePath],
   );
 
   return useMemo(

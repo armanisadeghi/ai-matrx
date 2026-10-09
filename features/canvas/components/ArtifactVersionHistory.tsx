@@ -14,7 +14,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * read + the existing owner-checked `saveUserVersion` RPC — no schema coupling.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   History,
   RotateCcw,
@@ -54,11 +54,19 @@ interface ArtifactVersionHistoryProps {
   canvasItemId: string;
   /** Classes for the trigger button (so callers control the affordance look). */
   triggerClassName?: string;
+  /** Controlled open state — for opening it from a menu entry. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** No visible button: a zero-size anchor the popover opens from (the entry lives in a menu). */
+  anchorOnly?: boolean;
 }
 
 export function ArtifactVersionHistory({
   canvasItemId,
   triggerClassName,
+  open,
+  onOpenChange,
+  anchorOnly,
 }: ArtifactVersionHistoryProps) {
   const [rows, setRows] = useState<CanvasArtifactRow[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -113,21 +121,32 @@ export function ArtifactVersionHistory({
   const current = rows?.[0] ?? null;
   const openDiff = useOpenDiffViewerWindow();
 
+  // Opened from a menu entry (controlled): onOpenChange does not fire, so load here.
+  useEffect(() => {
+    if (open) void load();
+  }, [open, load]);
+
   return (
     <Popover
-      onOpenChange={(open) => {
-        if (open) void load();
+      {...(open === undefined ? {} : { open })}
+      onOpenChange={(next) => {
+        if (next) void load();
+        onOpenChange?.(next);
       }}
     >
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={triggerClassName}
-          title="Version history"
-          aria-label="Version history"
-        >
-          <History className="h-3.5 w-3.5" />
-        </button>
+        {anchorOnly ? (
+          <span aria-hidden className="block h-0 w-0" data-version-history-anchor="" />
+        ) : (
+          <button
+            type="button"
+            className={triggerClassName}
+            title="Version history"
+            aria-label="Version history"
+          >
+            <History className="h-3.5 w-3.5" />
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" className="p-0">
         <div className="flex items-center gap-1.5 border-b border-border px-3 py-2 text-xs font-medium text-foreground">

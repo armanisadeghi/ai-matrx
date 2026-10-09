@@ -56,6 +56,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
 import { noteWorkingCopy } from "../utils/noteLiveContent";
 import { useKeptTextSelection } from "@/lib/working-copy/useKeptTextSelection";
+import { useKeptRichCaret } from "@/lib/working-copy/useKeptRichCaret";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -242,6 +243,14 @@ export function NoteContentEditor({
     noteWorkingCopy.key(noteId),
     textareaRef,
     Boolean(noteExists) && bodyLoaded && !richMode,
+  );
+  // Same for the Write / Source editor (the one editor): its caret as text
+  // around the ends, put back without taking focus on wake and remount.
+  useKeptRichCaret(
+    noteWorkingCopy.key(noteId),
+    richEditorRef,
+    editorRootRef,
+    Boolean(noteExists) && bodyLoaded && richMode,
   );
   // The record's last value this view saw — only to tell an outside change
   // (realtime, undo) from this note's own commit, for the recent-change flash.

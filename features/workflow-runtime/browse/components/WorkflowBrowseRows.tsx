@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import type { WorkflowBrowseRow } from "../types";
+import { useWorkflowsBasePath, workflowRunPermalinkHref } from "../workflowActionRegistry";
 
 interface Props {
   rows: WorkflowBrowseRow[];
@@ -38,6 +39,7 @@ export function WorkflowBrowseRows({
   onToggleFavorite,
   hrefFor,
 }: Props) {
+  const basePath = useWorkflowsBasePath();
   const compact = density === "compact";
 
   return (
@@ -117,7 +119,7 @@ export function WorkflowBrowseRows({
               {row.last_run_status ? (
                 row.last_run_id ? (
                   <Link
-                    href={`/workflows/runs/${row.last_run_id}`}
+                    href={workflowRunPermalinkHref(row.last_run_id, basePath)}
                     onClick={(e) => e.stopPropagation()}
                     title="Open the last run"
                   >

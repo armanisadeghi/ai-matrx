@@ -11,12 +11,24 @@ import { createContext, useContext, type ReactNode } from "react";
 export interface HtmlPreviewChrome {
   /** Used when the page has no <title>. */
   title?: string;
-  /** Extra header actions (version history, detach). */
+  /** Extra header actions (version history, detach) — on the row when the card has room. */
   actions?: ReactNode;
+  /** The same actions as "More" menu entries, for a card too narrow for the row (a phone). */
+  menuItems?: readonly HtmlPreviewChromeMenuItem[];
+  /** Always rendered at the end of the row — e.g. the anchor a menu entry's popover opens from. */
+  menuAnchors?: ReactNode;
   /** The holder's canvas opener (same `html` canvas path, keeps its tab identity). */
   openInCanvas?: () => void;
   /** True while this block's canvas tab is in front. */
   canvasOpen?: boolean;
+}
+
+export interface HtmlPreviewChromeMenuItem {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  onSelect: () => void;
+  disabled?: boolean;
 }
 
 const HtmlPreviewChromeContext = createContext<HtmlPreviewChrome | null>(null);

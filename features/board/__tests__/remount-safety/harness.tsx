@@ -339,14 +339,41 @@ export async function typeIntoRich(rich: RichEditorHandle, lines: readonly strin
   });
 }
 
-/** Switch the open note to its Split view with the mode switch, the way a person does. */
-export async function showSplitView(tile: { container: Element }): Promise<void> {
+/** Switch the open note to a view ("Split", "Write", …) with the mode switch, the way a person does. */
+export async function showNoteView(tile: { container: Element }, label: string): Promise<void> {
   const button = [...tile.container.querySelectorAll<HTMLElement>("button, [role=radio], [role=tab]")].find(
-    (b) => b.getAttribute("aria-label") === "Split" || b.textContent?.trim() === "Split",
+    (b) => b.getAttribute("aria-label") === label || b.textContent?.trim() === label,
   );
-  if (!button) throw new Error("the note's Split view switch never rendered");
+  if (!button) throw new Error(`the note's ${label} view switch never rendered`);
   await act(async () => void button.click());
   await settle(300);
+}
+
+export const showSplitView = (tile: { container: Element }) => showNoteView(tile, "Split");
+
+/** Select text in the rich editor by what it says (`text` inside the document), like a person dragging over it. */
+export function selectInRich(rich: RichEditorHandle, text: string): [number, number] {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
+  let range: [number, number] | null = null;
+  rich.view.state.doc.descendants((node: { isText?: boolean; text?: string }, pos: number) => {
+    if (range || !node.isText || !node.text) return true;
+    const i = node.text.indexOf(text);
+    if (i >= 0) range = [pos + i, pos + i + text.length];
+    return true;
+  });
+  if (!range) throw new Error(`"${text}" is not in the rich editor`);
+  const [from, to] = range as [number, number];
+  act(() => void rich.view.dispatch(rich.view.state.tr.setSelection(TextSelection.create(rich.view.state.doc, from, to))));
+  return [from, to];
+}
+
+/** The selection the person left in the rich editor: its range and the text it covers. */
+export function richSelectionOf(container: Element, index = 0): { range: [number, number]; text: string } | undefined {
+  const rich = richEditorIn(container, index);
+  if (!rich) return undefined;
+  const { from, to } = rich.view.state.selection;
+  return { range: [from, to], text: rich.view.state.doc.textBetween(from, to) };
 }
 
 export interface CycleResult {

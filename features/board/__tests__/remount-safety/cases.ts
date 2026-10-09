@@ -35,6 +35,7 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "note": { status: "passing" },
   "note:quiet": { status: "passing" },
   "note:split-view caret": { status: "passing" },
+  "note:write caret": { status: "passing" },
   "note:split-view undo": { status: "passing" },
   "file": { status: "passing" },
   "file:quiet": { status: "passing" },

@@ -17,6 +17,7 @@ import { isMaterializedArtifactId } from "@ai-matrx/rich-content/utils/lifted/ar
 import {
   type RenderedRecord,
   captureRecordOnServer,
+  screenshotFileName,
   renderedRecordFor,
   viewerColorScheme,
 } from "@/features/html-pages/capture/renderedCapture";
@@ -197,6 +198,7 @@ export function canvasAttachOptions(
             ...(pageRecord ?? record),
             width: request.element?.clientWidth || 1024,
             colorScheme: viewerColorScheme(),
+            fileName: screenshotFileName(request.title),
           });
           return { kind: "stored", fileId: result.fileId, width: result.width, height: result.height };
         },

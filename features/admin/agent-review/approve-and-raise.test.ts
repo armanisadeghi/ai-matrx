@@ -113,7 +113,7 @@ describe("approveAndRaise", () => {
     });
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
+      approveAndRaise({ row: ROW, userId: "user-1", actorLabel: "Reviewer", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_and_raised",
       feedbackId: "fb-1111",
@@ -124,6 +124,7 @@ describe("approveAndRaise", () => {
     expect(mockRecordHumanReviewAction).toHaveBeenCalledWith({
       row: ROW,
       userId: "user-1",
+      actorLabel: "Reviewer",
       content: TRIMMED,
       status: "approved",
     });
@@ -142,7 +143,7 @@ describe("approveAndRaise", () => {
 
   it("refuses without an organization BEFORE approving — never an approved row whose note can never file", async () => {
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: null }),
+      approveAndRaise({ row: ROW, userId: "user-1", actorLabel: "Reviewer", note: NOTE, organizationId: null }),
     ).resolves.toEqual({
       status: "not_approved",
       reason:
@@ -157,6 +158,7 @@ describe("approveAndRaise", () => {
       approveAndRaise({
         row: ROW,
         userId: "user-1",
+        actorLabel: "Reviewer",
         note: NOTE,
         organizationId: "  ",
         alreadyApproved: true,
@@ -174,7 +176,7 @@ describe("approveAndRaise", () => {
     });
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
+      approveAndRaise({ row: ROW, userId: "user-1", actorLabel: "Reviewer", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_not_raised",
       reason: "new row violates row-level security policy",
@@ -186,7 +188,7 @@ describe("approveAndRaise", () => {
     mockSubmitFeedback.mockRejectedValue(new Error("Failed to fetch"));
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
+      approveAndRaise({ row: ROW, userId: "user-1", actorLabel: "Reviewer", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_not_raised",
       reason: "Failed to fetch",
@@ -199,7 +201,7 @@ describe("approveAndRaise", () => {
     );
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
+      approveAndRaise({ row: ROW, userId: "user-1", actorLabel: "Reviewer", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "not_approved",
       reason: "This review item has no conversation thread.",
@@ -217,6 +219,7 @@ describe("approveAndRaise", () => {
       approveAndRaise({
         row: ROW,
         userId: "user-1",
+        actorLabel: "Reviewer",
         note: NOTE,
         organizationId: ORG,
         alreadyApproved: true,
@@ -236,6 +239,7 @@ describe("approveAndRaise", () => {
       approveAndRaise({
         row: ROW,
         userId: "user-1",
+        actorLabel: "Reviewer",
         note: "   ",
         organizationId: ORG,
       }),

@@ -28,6 +28,8 @@ import {
   APPROVAL_STATUS_LABEL,
   SUBJECT_KIND_LABEL,
   decideSpendApproval,
+  decideSpendApprovalsBatch,
+  runOriginLabel,
   fetchSpendApprovalHistory,
   fetchSpendApprovals,
   firstRunHref,
@@ -223,6 +225,9 @@ export function SpendApprovalsBoard({
   const focusId = params.get("id");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [pending, setPending] = useState<Pending | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulk, setBulk] = useState<{ decision: "approve" | "reject"; rows: SpendApprovalRow[] } | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const visible = rows.filter((r) => (focusId ? r.id === focusId : status === "all" || r.status === status));
   const waiting = rows.filter((r) => r.status === "waiting");
@@ -241,6 +246,28 @@ export function SpendApprovalsBoard({
       toast.error(e instanceof Error ? e.message : String(e));
     }
   };
+
+  const decideBulk = async () => {
+    if (!bulk) return;
+    const { decision, rows: targets } = bulk;
+    const next: ApprovalStatus = decision === "approve" ? "approved" : "rejected";
+    const before = new Map(targets.map((t) => [t.id, t.status]));
+    setBulkBusy(true);
+    setRows((rs) => rs.map((x) => (before.has(x.id) ? { ...x, status: next } : x)));
+    const res = await decideSpendApprovalsBatch(targets.map((t) => t.id), decision);
+    if (res.failed.length) {
+      const failed = new Set(res.failed.map((f) => f.id));
+      setRows((rs) => rs.map((x) => (failed.has(x.id) ? { ...x, status: before.get(x.id) ?? x.status } : x)));
+      toast.error(`${res.failed.length} of ${targets.length} failed: ${res.failed[0].message}`);
+    }
+    if (res.ok.length) toast.success(`${APPROVAL_STATUS_LABEL[next]}: ${res.ok.length}`);
+    setSelectedIds(res.failed.map((f) => f.id));
+    setBulkBusy(false);
+    setBulk(null);
+  };
+  const bulkTargets = (selected: SpendApprovalRow[], decision: "approve" | "reject") =>
+    selected.filter((r) => r.can_decide && r.status !== (decision === "approve" ? "approved" : "rejected"));
+  const bulkMonthly = bulk ? bulk.rows.reduce((s, r) => s + r.est_monthly_cost, 0) : 0;
 
   const columns: MatrxColumnDef<SpendApprovalRow>[] = [
     {
@@ -380,8 +407,16 @@ export function SpendApprovalsBoard({
       ),
     },
     {
+      id: "started_by",
+      header: "Started by",
+      accessorFn: (r) => runOriginLabel(r.first_run_origin),
+      filter: "select",
+      width: 110,
+      cell: (r) => <span className="whitespace-nowrap text-xs">{runOriginLabel(r.first_run_origin)}</span>,
+    },
+    {
       id: "who",
-      header: "First run by",
+      header: "Run by",
       accessorFn: (r) => r.first_run_person_email ?? "",
       filter: "text",
       width: 200,
@@ -473,7 +508,25 @@ export function SpendApprovalsBoard({
           getRowId={(r) => r.id}
           isLoading={loading}
           emptyState={{ title: focusId ? "That approval is not in this view" : "No spend approvals" }}
+          selection={{
+            selectedIds,
+            onSelectedIdsChange: setSelectedIds,
+            scopeKey: orgId ?? "all",
+            isRowSelectable: (r) => r.can_decide,
+            noun: "approval",
+            actions: (selected) => (
+              <>
+                <Button variant="outline" disabled={bulkBusy || !bulkTargets(selected, "approve").length} onClick={() => setBulk({ decision: "approve", rows: bulkTargets(selected, "approve") })}>
+                  <Check className="h-4 w-4" /> Approve selected
+                </Button>
+                <Button variant="outline" disabled={bulkBusy || !bulkTargets(selected, "reject").length} onClick={() => setBulk({ decision: "reject", rows: bulkTargets(selected, "reject") })}>
+                  <X className="h-4 w-4" /> Reject selected
+                </Button>
+              </>
+            ),
+          }}
           toolbar={{
+            title: "Only automated runs are held — people's own chats never are.",
             search: true,
             searchPlaceholder: "Search agents, mandates, automations…",
             actions: (
@@ -522,6 +575,19 @@ export function SpendApprovalsBoard({
           }}
         />
       </div>
+      {bulk && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && !bulkBusy && setBulk(null)}
+          title={`${bulk.decision === "approve" ? "Approve" : "Reject"} ${bulk.rows.length} ${bulk.rows.length === 1 ? "approval" : "approvals"}?`}
+          description={`${format(bulkMonthly)} a month combined.`}
+          variant={bulk.decision === "reject" ? "destructive" : "default"}
+          confirmLabel={bulk.decision === "approve" ? "Approve" : "Reject"}
+          cancelLabel="Cancel"
+          busy={bulkBusy}
+          onConfirm={decideBulk}
+        />
+      )}
       <DecisionDialog pending={pending} onClose={() => setPending(null)} onDone={reload} />
     </div>
   );

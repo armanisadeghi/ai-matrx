@@ -1,8 +1,8 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import React, { Suspense, lazy, useMemo } from "react";
-import { Copy, Maximize2, Unlink } from "lucide-react";
+import React, { Suspense, lazy, useMemo, useState } from "react";
+import { Copy, History, Maximize2, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { artifactContentToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
@@ -163,6 +163,8 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     messageId,
     conversationId,
   });
+  // A phone-width html card carries version history in its "More" menu; the entry opens this.
+  const [historyFromMenu, setHistoryFromMenu] = useState(false);
 
   const handleUnbind = async () => {
     const ok = await confirm({
@@ -321,6 +323,28 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
               )}
             </>
           ),
+          menuItems: [
+            ...(isMaterializedArtifactId(artifactId)
+              ? [{
+                  key: "versions",
+                  label: "Version history",
+                  icon: <History />,
+                  // After the menu has closed and handed focus back, or its close takes the popover with it.
+                  onSelect: () => window.setTimeout(() => setHistoryFromMenu(true), 0),
+                }]
+              : []),
+            ...(canUnbind
+              ? [{ key: "detach", label: "Detach as text", icon: <Unlink />, onSelect: () => void handleUnbind(), disabled: unbindBusy }]
+              : []),
+          ],
+          menuAnchors: isMaterializedArtifactId(artifactId) ? (
+            <ArtifactVersionHistory
+              canvasItemId={artifactId}
+              anchorOnly
+              open={historyFromMenu}
+              onOpenChange={setHistoryFromMenu}
+            />
+          ) : null,
         }}
       >
         <div className="relative my-2" data-artifact-type="html">

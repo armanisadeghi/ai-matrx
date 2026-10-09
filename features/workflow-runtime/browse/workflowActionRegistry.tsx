@@ -27,6 +27,7 @@ import {
   StarOff,
   Trash2,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { WorkflowBrowseRow } from "./types";
 
@@ -36,6 +37,8 @@ import type { WorkflowBrowseRow } from "./types";
  */
 export interface WorkflowMenuContext {
   workflow: WorkflowBrowseRow;
+  /** `useWorkflowsBasePath()` — keeps admin-page links on admin routes. */
+  basePath?: string;
 
   onRun: () => void;
   onDesign: () => void;
@@ -49,15 +52,51 @@ export interface WorkflowMenuContext {
   onDelete: () => void;
 }
 
-export function workflowRunHref(id: string): string {
-  return `/workflows/${id}`;
+/** Where a workflow lives in the user shell. */
+export const WORKFLOWS_BASE_PATH = "/workflows";
+/**
+ * Where a workflow lives inside the admin system (System Workflows). THE ADMIN
+ * SEAT: a platform admin keeps full access inside the admin system and only
+ * there (the admin lane is open only on admin pages), so a workflow opened
+ * from an admin page must stay on an admin route — a user route would drop the
+ * admin back to an ordinary person mid-edit.
+ */
+export const ADMIN_WORKFLOWS_BASE_PATH = "/administration/automation/workflows";
+
+/** The base a workflow link uses on this page. */
+export function workflowsBasePath(pathname: string | null | undefined): string {
+  return pathname?.startsWith("/administration")
+    ? ADMIN_WORKFLOWS_BASE_PATH
+    : WORKFLOWS_BASE_PATH;
 }
-export function workflowDesignHref(id: string): string {
-  return `/workflows/${id}/design`;
+
+/**
+ * The base for a non-React caller (list config doors), read from the page at
+ * call time. Only for links built from client-fetched rows, which never render
+ * on the server, so there is no hydration mismatch.
+ */
+export function currentWorkflowsBasePath(): string {
+  return workflowsBasePath(typeof window === "undefined" ? null : window.location.pathname);
+}
+
+/** React door for `workflowsBasePath` (same answer on the server and client). */
+export function useWorkflowsBasePath(): string {
+  return workflowsBasePath(usePathname());
+}
+
+export function workflowRunHref(id: string, base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/${id}`;
+}
+export function workflowDesignHref(id: string, base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/${id}/design`;
+}
+export function workflowRunPermalinkHref(runId: string, base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/runs/${runId}`;
 }
 
 export function buildWorkflowMenu(ctx: WorkflowMenuContext): ItemMenuConfig {
   const { workflow } = ctx;
+  const base = ctx.basePath ?? WORKFLOWS_BASE_PATH;
   // Shared workflows are read-only for everything that mutates the record. The
   // entries stay VISIBLE with a reason rather than vanishing — a menu whose
   // shape changes per row teaches the user nothing.
@@ -86,7 +125,7 @@ export function buildWorkflowMenu(ctx: WorkflowMenuContext): ItemMenuConfig {
                   id: "last-run",
                   label: "Open the last run",
                   icon: History,
-                  href: `/workflows/runs/${workflow.last_run_id}`,
+                  href: workflowRunPermalinkHref(workflow.last_run_id, base),
                 },
               ]
             : []),
@@ -98,14 +137,14 @@ export function buildWorkflowMenu(ctx: WorkflowMenuContext): ItemMenuConfig {
             id: "triggers",
             label: "Run it without me",
             icon: CalendarClock,
-            href: `/workflows/${workflow.id}/triggers`,
+            href: `${base}/${workflow.id}/triggers`,
           },
           {
             kind: "link",
             id: "open-new-tab",
             label: "Open in new tab",
             icon: ExternalLink,
-            href: workflowRunHref(workflow.id),
+            href: workflowRunHref(workflow.id, base),
             target: "_blank",
           },
         ],
