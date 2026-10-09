@@ -12,6 +12,10 @@
 - Opening a saved board never asks for an organization: tiles read the board's own (`items/board-organization.tsx`); only creating something goes through the gate. Right-click inside a multi-selection acts on the selection; Shift/⌘ also work from a click event alone; far-zoom status chips fall back to the tile's saved `basics` (details and open platform-level findings in CHANGELOG 2026-10-05).
 - Feature boards mount the same engine: War Room (Board mode), meetings (`UserBoard` over a saved board linked by `settings.meeting_id`), workflow runs (run board).
 
+## Presets — the same board with a focus (2026-10-08)
+
+`presets/board-preset.ts` (contract) + `presets/registry.ts` (`BOARD_PRESETS`). A `BoardPreset` is `{ key, label, featured, more, hidden?, starter?, agentId?, toolbar? }`; entries are item keys or `group:<BoardItemGroup>`; `more: "rest"` = every other type. `UserBoard` / `BoardPage` take `preset?`; `resolvePresetTypes(preset, guestFilteredTypes)` splits the catalog: `featured` fill the Add menu and Start panel top level, `more` sit behind a "…" (Add menu: More submenu; Start panel: "…" button), `hidden` appear nowhere. The agent host's `itemTypes` is `featured + more`, so `board_add_items` / `board_find_records` cannot reach a hidden type. Guest filtering (`guestSafe`) runs first. `toolbar` filters the ToolBar's tools. No preset = exactly the whole board (as before). Mount: `components/PresetBoard.tsx` (`<PresetBoard preset="marketing-social" boardId=… initialLayout=… />`). Seams not yet consumed: `starter` (template id or `BoardDocument` factory; none ship) and `agentId` (the chat workspace has no agent prop yet). Registered: `marketing-social` (chat, note, web page, image, file, research, document, table; the social tiles are added by a later lane — one string in `featured`). Guard: `__tests__/board-presets.test.ts` fails on a key or group the catalog lacks.
+
 ## Vision — Arman's words
 
 (Verbatim from the retired `docs/handoffs/master-board.md`, written 2026-09-30. Per the docs skill, §5 these also belong in a node `VISION.md`; the owner's instruction put them in this file.)
