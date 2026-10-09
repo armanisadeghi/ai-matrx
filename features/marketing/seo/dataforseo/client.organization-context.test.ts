@@ -52,7 +52,7 @@ describe("dataforseo client organization admission", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    getState.mockReturnValue({ organizationId: ORGANIZATION_ID, appContext: { organization_id: ORGANIZATION_ID } });
+    getState.mockReturnValue({ organizationId: ORGANIZATION_ID, appContext: { organization_id: ORGANIZATION_ID, orgBootstrapResolved: true } });
   });
 
   afterEach(() => {
@@ -112,7 +112,7 @@ describe("dataforseo client organization admission", () => {
   });
 
   it("fails closed before networking when no organization is selected", async () => {
-    getState.mockReturnValue({ organizationId: null, appContext: { organization_id: null } });
+    getState.mockReturnValue({ organizationId: null, appContext: { organization_id: null, orgBootstrapResolved: true } });
     const fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
 
