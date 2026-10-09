@@ -38,7 +38,7 @@ function value(
   return { name, label, description, valueType, alwaysAvailable, typicalCharCount, group, sortOrder };
 }
 
-const NO_ARGS = { type: "object", properties: {}, required: [] } as const;
+const NO_ARGS: SurfaceClientTool["inputSchema"] = { type: "object", properties: {}, required: [] };
 
 function manifest(args: {
   local: string;
