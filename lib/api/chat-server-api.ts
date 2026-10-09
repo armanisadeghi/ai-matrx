@@ -61,7 +61,7 @@ import { apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
 import { getAccessTokenOrNull, postJson, requestRaw, resolveBaseUrl } from "@/lib/python-client";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { mintCredential } from "@/lib/api/broker/client";
-import { reportBrowserProviderFailure } from "@/lib/api/provider-session-failure";
+import { reportBrowserProviderFailure, reportBrowserProviderUsage } from "@/lib/api/provider-session-failure";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type { LLMParams } from "@/lib/api/types";
 import {
@@ -130,6 +130,7 @@ export const appChatServerApi = {
   // credentials broker + browser-held provider sessions
   mintCredential,
   reportBrowserProviderFailure,
+  reportBrowserProviderUsage,
   // the NDJSON stream every run reads
   parseNdjsonStream,
   // the server selection

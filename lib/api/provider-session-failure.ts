@@ -21,15 +21,18 @@ import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
 import type { RootState } from "@/lib/redux/store";
 import {
+  createProviderUsageReporter,
   reportProviderSessionFailure,
+  reportProviderSessionUsage,
   type ProviderSessionFailure,
   type ProviderSessionFailureVerdict,
+  type ProviderSessionUsage,
 } from "@ai-matrx/agents/matrx";
 import { waitForAuthReady } from "@/lib/api/call-api";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 
-export type { ProviderSessionFailure, ProviderSessionFailureVerdict };
+export type { ProviderSessionFailure, ProviderSessionFailureVerdict, ProviderSessionUsage };
 
 /**
  * Report a browser-held provider session failure over the global transport.
@@ -81,4 +84,36 @@ export async function reportBrowserProviderFailureFromStore(
     store.getState as () => RootState,
     undefined,
   );
+}
+
+/**
+ * What a browser-held provider session SPENT (`POST /broker/usage`). Fire-and-forget: the shared
+ * reporter queues each unit, retries transient failures with backoff, drops a unit the server
+ * refused for good, and sends a usage id once — the server bills each id once too, so a repeat is
+ * always safe. The server prices from the provider's own figures; the client never states a cost.
+ */
+const usageReporter = createProviderUsageReporter({
+  send: async (usage) => {
+    const store = getStoreSingleton();
+    if (!store) return "retry";
+    try {
+      const getState = store.getState as () => RootState;
+      await waitForAuthReady(getState);
+      return await reportProviderSessionUsage(
+        createMatrxTransport(getState, { source: "providerSessionUsage" }),
+        usage,
+      );
+    } catch {
+      return "retry";
+    }
+  },
+});
+
+export function reportBrowserProviderUsage(usage: ProviderSessionUsage): void {
+  usageReporter.report(usage);
+}
+
+/** Resolves when every queued usage report has been delivered or given up on (tests, page hide). */
+export function flushBrowserProviderUsage(): Promise<void> {
+  return usageReporter.flush();
 }
