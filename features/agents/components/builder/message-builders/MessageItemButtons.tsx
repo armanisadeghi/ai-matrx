@@ -1,4 +1,5 @@
-import { Maximize2, Braces, Copy, Eraser, X, FileText } from "lucide-react";
+import { Maximize2, Braces, Copy, Check, Eraser, X, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
@@ -63,6 +64,15 @@ export function MessageItemButtons({
   onVoiceTranscription,
   sheetTitle = "Message Actions",
 }: MessageItemButtonsProps) {
+  // Copy confirms on the button itself (check for 1.5 s) — never a toast.
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
+  const flashCopied = () => {
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    setCopied(true);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+  };
   const variableButton: IconButtonConfig = hasVariableSupport
     ? {
         id: "variable",
@@ -106,8 +116,8 @@ export function MessageItemButtons({
     variableButton,
     {
       id: "copy",
-      icon: Copy,
-      tooltip: "Copy message",
+      icon: copied ? Check : Copy,
+      tooltip: copied ? "Copied" : "Copy message",
       mobileLabel: "Copy Message",
       onClick: async (e) => {
         e?.stopPropagation();
@@ -117,7 +127,7 @@ export function MessageItemButtons({
         }
         await copyContent(templateCurrentContent, {
           formatJson: false,
-          onSuccess: () => toast.success("Copied to clipboard"),
+          onSuccess: flashCopied,
           onError: () => toast.error("Failed to copy"),
         });
       },
