@@ -16,6 +16,7 @@
 
 "use client";
 
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -313,7 +314,7 @@ function HeaderSection({ account }: { account: UserAccountData }) {
     const fileId = result?.file_id || null;
     const nextFileId = url ? fileId : null;
     try {
-      const res = await fetch("/api/user/profile", {
+      const res = await fetchWithOrganization("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
