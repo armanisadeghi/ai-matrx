@@ -50,7 +50,7 @@ export function SitesPopover() {
           {pages?.map((p) => {
             const url = publicPageUrl(p.key);
             return (
-              <div key={p.id} className="spaces-trash-row h-auto min-h-[44px] py-1" data-testid="spaces-site-row">
+              <div key={p.id} className="spaces-trash-row min-h-[52px] py-1" style={{ height: "auto" }} data-testid="spaces-site-row">
                 <SpaceIcon media={p.icon} size={17} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate type-body">{p.title}</div>
