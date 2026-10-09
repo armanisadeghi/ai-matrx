@@ -59,7 +59,6 @@
   "toConvert": {
     "features/admin/limits/components/KnobOverridesAdmin.tsx": "overrides list (level/for/org/value/set by/when) with per-row actions",
     "features/admin/performance-watch/PerformanceWatchConsole.tsx": "collector list; partly MatrxDataTable already, remaining hand table",
-    "features/files/components/surfaces/desktop/FileTable.tsx": "desktop file list (sort/select/filters)",
     "features/mandates/admin/MandateReferenceBoardView.tsx": "mandate board rows; partly MatrxDataTable already",
     "features/research/components/curation/CurationTable.tsx": "research sources curation list",
     "features/scope-system/components/ScopesList.tsx": "scopes list by name",
@@ -99,7 +98,6 @@
     "features/file-analysis/content/MetadataContent.tsx",
     "features/file-analysis/content/TablesContent.tsx",
     "features/files/components/core/FilePreview/previewers/DataPreview.tsx",
-    "features/files/components/surfaces/desktop/FileTable.tsx",
     "features/flashcards/fast-fire/debug/AudioCaptureDebugPanel.tsx",
     "features/hr/leave/components/LeaveRequestForm.tsx",
     "features/hr/time/timesheet/WeekBlocks.tsx",

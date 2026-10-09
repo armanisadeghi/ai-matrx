@@ -1,15 +1,19 @@
 /**
  * features/files/components/surfaces/desktop/FileTable.tsx
  *
- * Sortable, configurable file table — Box.com / Google-Drive-style. Columns
- * are driven by `cloudFiles.ui.visibleColumns` so users can mount/unmount
- * Type, Owner, Created, Extension, MIME, Path, and Version on top of the
- * always-on Name + Access columns.
+ * The Files list — the shared `MatrxDataTable`, run CONTROLLED on the files
+ * Redux state (`cloudFiles.ui`). Sort, the per-column filters and the visible
+ * columns live there because the grid view, the address bar (url-state) and
+ * the agent context read the same state; the table only shows and edits it.
  *
- * Sort and per-column filter state live in Redux (`cloudFiles.ui`). This
- * component is responsible only for rendering, computing dropdown
- * options (owner counts, type counts) and dispatching changes — every
- * column's body is rendered by `FileTableRow`.
+ *   - Rows come from `buildRows` (section / search / chip / kind / column
+ *     filters / sort), so the table's sort and filters are SOURCE-owned.
+ *   - The table's own search narrows this list (names) before windowing.
+ *   - Infinite scroll: `useInfiniteWindow` reveals 50 rows at a time and grows
+ *     to reveal a programmatically focused row; the table's append mode asks it
+ *     for more as the person scrolls.
+ *   - Drag, drop, right-click menu and surface attributes ride the row shell
+ *     (`FileTableRowShell`, the table's `rowWrapper`).
  */
 
 "use client";
@@ -17,15 +21,20 @@
 import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type {
+  ColumnFiltersState,
+  ColumnFilterValue,
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   selectActiveFileId,
   selectColumnFilters,
   selectFocusedId,
-  selectIsRagFetching,
   selectKindFilter,
   selectAllFoldersMap,
   selectRagStatuses,
@@ -34,14 +43,13 @@ import {
   selectVisibleColumns,
 } from "@/features/files/redux/selectors";
 import {
-  clearSelection,
   setActiveFileId,
   setActiveFolderId,
   setColumnFilter,
+  setColumnVisibility,
   setFocusedId,
   setSelection,
   setSort,
-  toggleSelection,
 } from "@/features/files/redux/slice";
 import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
 import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
@@ -50,17 +58,16 @@ import type {
   CloudFilePermission,
   CloudFileRecord,
   CloudFolderRecord,
+  ColumnFilters,
   ColumnId,
   ModifiedFilter,
   RagStatus,
   SizeFilter,
   SortBy,
-  SortDirection,
 } from "@/features/files/types";
-import {
-  type FileCategory,
-  getFileTypeDetails,
-} from "@/features/files/utils/file-types";
+import { DEFAULT_VISIBLE_COLUMNS } from "@/features/files/types";
+import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { formatFileSize } from "@/features/files/utils/format";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import { useFilesSurfaceClientTools } from "../useFilesSurfaceClientTools";
@@ -69,16 +76,22 @@ import {
   buildRows,
   isSharedResource,
   memberCountForResource,
+  type RowItem,
 } from "./row-data";
 import type { FilterChipKey } from "./FilterChips";
-import { FileTableRow, type FileTableRowCommands } from "./FileTableRow";
-import { ColumnHeader } from "./ColumnHeader";
+import {
+  FileTableCell,
+  FileTableRowShell,
+  type FileListRow,
+  type FileTableRowCommands,
+} from "./FileTableRow";
 import { ActiveColumnFilters } from "./ActiveColumnFilters";
-import { ColumnSettings } from "./ColumnSettings";
-import { COLUMN_SPECS, visibleColumnIds } from "./columns";
-import { TypeFilterPicker } from "./TypeFilterPicker";
-import { OwnerFilterPicker, type OwnerOption } from "./OwnerFilterPicker";
-import { RagFilterPicker } from "./RagFilterPicker";
+import {
+  COLUMN_ORDER,
+  COLUMN_SPECS,
+  RAG_FILTER_LABELS,
+  TYPE_FILTER_LABELS,
+} from "./columns";
 
 export interface FileTableProps {
   folders: CloudFolderRecord[];
@@ -102,15 +115,110 @@ interface ShareDialogState {
   resourceType: "file" | "folder";
 }
 
-/**
- * Total number of <th> + <td> cells per row, used by the loading sentinel
- * and the "Showing all N items." footer's `colSpan`. Recomputed on every
- * render — visibleIds.length grows / shrinks with the column-settings
- * dropdown, and the +2 covers the leading checkbox cell and the trailing
- * gear cell.
- */
-function totalColSpan(visibleCount: number): number {
-  return visibleCount + 2;
+const FILES_TABLE_LOCATION = "AI Matrx — Files";
+const PAGE_SIZE = 50;
+
+const MODIFIED_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "week", label: "Last 7 days" },
+  { value: "month", label: "Last 30 days" },
+];
+const SIZE_OPTIONS = [
+  { value: "small", label: "≤ 1 MB" },
+  { value: "medium", label: "1 – 10 MB" },
+  { value: "large", label: "10 – 100 MB" },
+  { value: "huge", label: "> 100 MB" },
+];
+const ACCESS_OPTIONS = [
+  { value: "personal", label: "Personal" },
+  { value: "internal", label: "Organization" },
+  { value: "link", label: "Link" },
+  { value: "public", label: "Public" },
+];
+
+const SIZE_VALUES: readonly SizeFilter[] = ["any", "small", "medium", "large", "huge"];
+const MODIFIED_VALUES: readonly ModifiedFilter[] = ["any", "today", "week", "month"];
+const ACCESS_VALUES: readonly AccessFilter[] = ["any", "personal", "internal", "link", "public"];
+
+/** The picked choice when it is one of `allowed`, else "any" (cleared). */
+function oneOf<V extends string>(allowed: readonly V[], value: string | undefined): V {
+  const found = allowed.find((v) => v === value);
+  return found ?? allowed[0]!;
+}
+
+// ── Redux column filters <-> table column filters ─────────────────────────
+
+/** Which Redux filter each table column edits, and its shape. */
+const FILTER_BINDINGS: Partial<
+  Record<
+    ColumnId,
+    | { key: "name" | "extension" | "mime" | "path"; shape: "text" }
+    | { key: "type" | "owner" | "rag"; shape: "multi" }
+    | { key: "size" | "modified" | "created" | "access"; shape: "single" }
+  >
+> = {
+  name: { key: "name", shape: "text" },
+  extension: { key: "extension", shape: "text" },
+  mime: { key: "mime", shape: "text" },
+  path: { key: "path", shape: "text" },
+  type: { key: "type", shape: "multi" },
+  owner: { key: "owner", shape: "multi" },
+  rag_status: { key: "rag", shape: "multi" },
+  size: { key: "size", shape: "single" },
+  updated_at: { key: "modified", shape: "single" },
+  created_at: { key: "created", shape: "single" },
+  access: { key: "access", shape: "single" },
+};
+
+function toTableFilters(filters: ColumnFilters): ColumnFiltersState {
+  const out: ColumnFiltersState = {};
+  for (const [columnId, binding] of Object.entries(FILTER_BINDINGS)) {
+    if (!binding) continue;
+    if (binding.shape === "text") {
+      const value = filters[binding.key];
+      if (value) out[columnId] = { kind: "text", value };
+    } else if (binding.shape === "multi") {
+      const values = filters[binding.key];
+      if (values.length > 0) {
+        out[columnId] = { kind: "select", value: values[0] ?? "", values: [...values] };
+      }
+    } else {
+      const value = filters[binding.key];
+      if (value !== "any") out[columnId] = { kind: "select", value, values: [value] };
+    }
+  }
+  return out;
+}
+
+function textOf(value: ColumnFilterValue | undefined): string {
+  return value?.kind === "text" ? value.value : "";
+}
+
+function valuesOf(value: ColumnFilterValue | undefined): string[] {
+  if (value?.kind !== "select") return [];
+  return value.values ?? (value.value ? [value.value] : []);
+}
+
+function sameValue(a: ColumnFilterValue | undefined, b: ColumnFilterValue | undefined) {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
+function withCount(label: string, count: number | undefined): string {
+  return count ? `${label} (${count.toLocaleString()})` : label;
+}
+
+/** First 6 characters of an opaque ownerId, used until the backend exposes
+ *  display names. Mirrors the same logic in `OwnerCell` for consistency. */
+function shortLabelFor(id: string): string {
+  return id.replace(/-/g, "").slice(0, 6);
+}
+
+function rowIdOf(item: RowItem): string {
+  return item.kind === "file" ? item.file.id : item.folder.id;
+}
+
+function rowNameOf(item: RowItem): string {
+  return item.kind === "file" ? item.file.fileName : item.folder.folderName;
 }
 
 export function FileTable({
@@ -138,14 +246,8 @@ export function FileTable({
   const currentUserId = useAppSelector(selectUserId);
   const foldersById = useAppSelector(selectAllFoldersMap);
   const ragStatuses = useAppSelector(selectRagStatuses);
-  const isRagFetching = useAppSelector(selectIsRagFetching);
 
-  const visibleIds = useMemo(
-    () => visibleColumnIds(visibleColumns),
-    [visibleColumns],
-  );
-
-  const { rows, totalBeforeCap, capped } = useMemo(
+  const { rows: builtRows, totalBeforeCap, capped } = useMemo(
     () =>
       buildRows({
         folders,
@@ -177,94 +279,84 @@ export function FileTable({
     ],
   );
 
-  // Surface client tools (`matrx-user/files`). Registered HERE, not on
-  // PageShell's provider, because `rows` above is the only place the exactly-
-  // rendered set exists — see useFilesSurfaceClientTools for why that is what
-  // stops a reveal from returning ok while the page does not move. FileGrid
-  // registers the same tools; the two never mount together.
+  // The table's own search narrows THIS list by name (the page's search box is
+  // the tree-wide one). Applied before windowing so it covers every row.
+  const [tableSearch, setTableSearch] = useState("");
+  const rows = useMemo(() => {
+    const term = tableSearch.trim().toLowerCase();
+    if (!term) return builtRows;
+    return builtRows.filter((r) => rowNameOf(r).toLowerCase().includes(term));
+  }, [builtRows, tableSearch]);
+
+  // Surface client tools (`matrx-user/files`) are registered HERE because
+  // `rows` is the exactly-rendered set — see useFilesSurfaceClientTools.
+  // FileGrid registers the same tools; the two never mount together.
   useFilesSurfaceClientTools({ rows, viewLabel: "list" });
 
-  // Owner options for the Owner column dropdown. Computed from the input
-  // (unfiltered by other columns) so users always see every owner they
-  // *could* filter to — Google Drive does the same. The current user is
-  // pinned to the top and labeled "You". Counts reflect the unfiltered
-  // input set so they're stable as the user toggles other filters.
-  const ownerOptions = useMemo<OwnerOption[]>(() => {
+  // Owner choices: every owner in the unfiltered input, "You" first, with
+  // counts that stay stable as other filters change (Google Drive does the same).
+  const ownerOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const f of files) {
-      if (!f.ownerId) continue;
-      counts.set(f.ownerId, (counts.get(f.ownerId) ?? 0) + 1);
+      if (f.ownerId) counts.set(f.ownerId, (counts.get(f.ownerId) ?? 0) + 1);
     }
     for (const fo of folders) {
-      if (!fo.ownerId) continue;
-      counts.set(fo.ownerId, (counts.get(fo.ownerId) ?? 0) + 1);
+      if (fo.ownerId) counts.set(fo.ownerId, (counts.get(fo.ownerId) ?? 0) + 1);
     }
-    const out: OwnerOption[] = [];
-    for (const [ownerId, count] of counts) {
-      out.push({
-        ownerId,
-        label: ownerId === currentUserId ? "You" : shortLabelFor(ownerId),
-        count,
-      });
-    }
-    out.sort((a, b) => {
-      if (a.ownerId === currentUserId) return -1;
-      if (b.ownerId === currentUserId) return 1;
-      return b.count - a.count;
-    });
-    return out;
+    return [...counts.entries()]
+      .sort(([a, ac], [b, bc]) =>
+        a === currentUserId ? -1 : b === currentUserId ? 1 : bc - ac,
+      )
+      .map(([ownerId, count]) => ({
+        value: ownerId,
+        label: withCount(ownerId === currentUserId ? "You" : shortLabelFor(ownerId), count),
+      }));
   }, [files, folders, currentUserId]);
 
-  // Type counts for the Type column dropdown. Same "from raw input" rule:
-  // counts are stable across other filter changes so users can keep their
-  // mental map of how the dataset breaks down by category.
-  const typeCounts = useMemo<Partial<Record<FileCategory, number>>>(() => {
-    const out: Partial<Record<FileCategory, number>> = {};
-    if (folders.length > 0) {
-      out.FOLDER = folders.length;
-    }
+  // Type choices with counts from the raw input (stable across other filters).
+  const typeOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (folders.length > 0) counts.FOLDER = folders.length;
     for (const f of files) {
       const cat = getFileTypeDetails(f.fileName).category;
-      out[cat] = (out[cat] ?? 0) + 1;
+      counts[cat] = (counts[cat] ?? 0) + 1;
     }
-    return out;
-  }, [files, folders]);
+    return TYPE_FILTER_LABELS.filter(
+      (o) => counts[o.value] || columnFilters.type.includes(o.value),
+    ).map((o) => ({ value: o.value, label: withCount(o.label, counts[o.value]) }));
+  }, [files, folders, columnFilters.type]);
 
-  // Knowledge status counts for the Knowledge column dropdown. We deliberately count
-  // against the FILE input set (not the rendered rows) so the breakdown
-  // reflects the universe the user could re-filter to. Files with no
-  // status yet are bucketed into `unknown` so the column always has a
-  // truthful "X files not yet checked" line in the picker.
+  // Knowledge choices: counted over the FILE input; files with no status yet
+  // are bucketed as `unknown`.
   const ragColumnVisible = !!visibleColumns.rag_status;
   const ragFileIds = useMemo(() => files.map((f) => f.id), [files]);
-  const ragCounts = useMemo<Partial<Record<RagStatus, number>>>(() => {
-    const out: Partial<Record<RagStatus, number>> = {};
+  const ragOptions = useMemo(() => {
+    const counts: Partial<Record<RagStatus, number>> = {};
     for (const id of ragFileIds) {
       const st = ragStatuses[id] ?? "unknown";
-      out[st] = (out[st] ?? 0) + 1;
+      counts[st] = (counts[st] ?? 0) + 1;
     }
-    return out;
+    return RAG_FILTER_LABELS.map((o) => ({
+      value: o.value,
+      label: withCount(o.label, counts[o.value as RagStatus]),
+    }));
   }, [ragFileIds, ragStatuses]);
 
-  // Auto-prefetch Knowledge status for every file in the current dataset
-  // whenever the column is visible. The thunk skips ids whose status is
-  // already known, so toggling other filters / scrolling does not refire
-  // the fetch — only newly-loaded files trigger work.
+  // Auto-prefetch Knowledge status while the column is visible; the thunk
+  // skips ids already known, so only newly loaded files trigger work.
   useEffect(() => {
-    if (!ragColumnVisible) return;
-    if (ragFileIds.length === 0) return;
-    void dispatch(
-      prefetchRagStatusesForFiles({ fileIds: ragFileIds, force: false }),
-    );
+    if (!ragColumnVisible || ragFileIds.length === 0) return;
+    void dispatch(prefetchRagStatusesForFiles({ fileIds: ragFileIds, force: false }));
   }, [ragColumnVisible, ragFileIds, dispatch]);
 
-  // Prime the row-scope store: ONE bulk association query per page of files in
-  // view (primeEntityScopes itself skips already-known ids). Both the Context
-  // column AND the Access column read it — Access needs it because a file
-  // reachable through a scope is NOT "only you", and this is the only container
-  // signal a list can afford.
-  const rowScopesNeeded =
-    visibleIds.includes("context") || visibleIds.includes("access");
+  const visibleIds = useMemo(
+    () => COLUMN_ORDER.filter((id) => visibleColumns[id] ?? DEFAULT_VISIBLE_COLUMNS[id]),
+    [visibleColumns],
+  );
+
+  // Prime the row-scope store: ONE bulk association query per page of files
+  // (Context AND Access read it).
+  const rowScopesNeeded = visibleIds.includes("context") || visibleIds.includes("access");
   useEffect(() => {
     if (!rowScopesNeeded || files.length === 0) return;
     primeEntityScopes(
@@ -275,41 +367,27 @@ export function FileTable({
 
   const refreshRagStatuses = useCallback(() => {
     if (ragFileIds.length === 0) return;
-    void dispatch(
-      prefetchRagStatusesForFiles({ fileIds: ragFileIds, force: true }),
-    );
+    void dispatch(prefetchRagStatusesForFiles({ fileIds: ragFileIds, force: true }));
   }, [ragFileIds, dispatch]);
 
-  // Infinite scroll — slice the rows window. Resets to the top
-  // whenever the user changes context (section / folder / filters /
-  // search / sort / visible columns).
-  const resetKey = `${section}|${searchQuery}|${filter ?? ""}|${kindFilter}|${sortBy}:${sortDir}|${JSON.stringify(columnFilters)}|${visibleIds.join(",")}`;
-  const { visibleCount, hasMore, sentinelRef, ensureIndexVisible } =
-    useInfiniteWindow({
-      total: rows.length,
-      initial: 50,
-      pageSize: 50,
-      resetKey,
-    });
-  const visibleRows = useMemo(
-    () => rows.slice(0, visibleCount),
-    [rows, visibleCount],
-  );
+  // Infinite scroll — the rows window resets to the top on any context change.
+  const resetKey = `${section}|${searchQuery}|${tableSearch}|${filter ?? ""}|${kindFilter}|${sortBy}:${sortDir}|${JSON.stringify(columnFilters)}|${visibleIds.join(",")}`;
+  const { visibleCount, hasMore, loadMore, ensureIndexVisible } = useInfiniteWindow({
+    total: rows.length,
+    initial: PAGE_SIZE,
+    pageSize: PAGE_SIZE,
+    resetKey,
+  });
 
-  // When a row gets focused programmatically (e.g. a just-uploaded file),
-  // grow the window so its row actually mounts — otherwise FileTableRow's
-  // scrollIntoView never fires because the node isn't rendered.
+  // A programmatically focused row (a just-uploaded file) is revealed so its
+  // shell can scroll it into view.
   useEffect(() => {
     if (!focusedId) return;
-    const idx = rows.findIndex((r) =>
-      r.kind === "file" ? r.file.id === focusedId : r.folder.id === focusedId,
-    );
+    const idx = rows.findIndex((r) => rowIdOf(r) === focusedId);
     if (idx >= 0) ensureIndexVisible(idx);
   }, [focusedId, rows, ensureIndexVisible]);
 
-  // Resolve "Parent/Child" path for a given folder id. Cached per-render via
-  // `useCallback` + `Map`; folder hierarchies are typically <5 levels deep so
-  // the recursion cost is negligible.
+  // "Parent / Child" path for a folder id (search mode breadcrumb).
   const resolveFolderPath = useCallback(
     (folderId: string | null): string => {
       if (!folderId) return "/";
@@ -328,67 +406,265 @@ export function FileTable({
     [foldersById],
   );
 
+  // Table rows carry their sharing facts, built once per data change (never
+  // per render), so the table's row memo holds every row that did not change.
+  const listRows = useMemo<FileListRow[]>(
+    () =>
+      rows.slice(0, visibleCount).map((item) => {
+        const id = rowIdOf(item);
+        const visibility = item.kind === "file" ? item.file.visibility : item.folder.visibility;
+        const perms = permissionsByResourceId[id] ?? [];
+        const parentFolderId = item.kind === "file" ? item.file.parentFolderId : item.folder.parentId;
+        return {
+          id,
+          item,
+          // Public grants have no real grantee — never a fake avatar.
+          granteeIds: perms.filter((p) => p.granteeType !== "public").map((p) => p.granteeId),
+          memberCount: memberCountForResource(id, permissionsByResourceId),
+          isShared: isSharedResource(id, visibility, permissionsByResourceId),
+          parentPath: treeWideSearch ? resolveFolderPath(parentFolderId ?? null) : null,
+        };
+      }),
+    [rows, visibleCount, permissionsByResourceId, treeWideSearch, resolveFolderPath],
+  );
+
   const [shareTarget, setShareTarget] = useState<ShareDialogState | null>(null);
 
-  const allIds = useMemo(
-    () => rows.map((r) => (r.kind === "file" ? r.file.id : r.folder.id)),
-    [rows],
-  );
-  const allSelected =
-    allIds.length > 0 &&
-    allIds.every((id) => selection.selectedIds.includes(id));
-
-  const toggleAll = useCallback(() => {
-    if (allSelected) {
-      dispatch(clearSelection());
-    } else {
-      dispatch(setSelection({ selectedIds: allIds, anchorId: null }));
-    }
-  }, [dispatch, allIds, allSelected]);
-
   const handleRowActivate = useCallback(
-    (row: (typeof rows)[number]) => {
-      if (row.kind === "folder") {
-        dispatch(setActiveFolderId(row.folder.id));
+    (item: RowItem) => {
+      if (item.kind === "folder") {
+        dispatch(setActiveFolderId(item.folder.id));
         dispatch(setActiveFileId(null));
-        dispatch(setFocusedId(row.folder.id));
-        onActivateFolder(row.folder.id);
+        dispatch(setFocusedId(item.folder.id));
+        onActivateFolder(item.folder.id);
       } else {
-        dispatch(setActiveFileId(row.file.id));
-        dispatch(setFocusedId(row.file.id));
-        onActivateFile(row.file.id);
+        dispatch(setActiveFileId(item.file.id));
+        dispatch(setFocusedId(item.file.id));
+        onActivateFile(item.file.id);
       }
     },
     [dispatch, onActivateFolder, onActivateFile],
   );
 
-  // 🚨 ONE STABLE COMMANDS OBJECT FOR EVERY ROW. Rows used to get three inline
-  // handlers each, so any render of this table — opening a file moves
-  // `activeFileId` — handed every row new functions and redrew all of them
-  // (50 of 51 rows on /files, measured 2026-10-07). The commands are created
-  // once and read this render's logic at click time, so `FileTableRow`'s memo
-  // holds every row whose data did not change.
-  const latestCommands = useRef<FileTableRowCommands | null>(null);
+  // ONE stable commands object for every row's cells: a table render (opening
+  // a file moves `activeFileId`) never hands a row new functions.
+  const latestRows = useRef(rows);
+  const latestActivate = useRef(handleRowActivate);
   useEffect(() => {
-    latestCommands.current = {
-      toggleSelected: (id) => {
-        dispatch(toggleSelection({ id }));
-        dispatch(setFocusedId(id));
-      },
-      activate: (id) => {
-        const row = rows.find((r) => (r.kind === "file" ? r.file.id : r.folder.id) === id);
-        if (row) handleRowActivate(row);
-      },
-      openShare: (id, kind) => setShareTarget({ resourceId: id, resourceType: kind }),
-    };
+    latestRows.current = rows;
+    latestActivate.current = handleRowActivate;
   });
-  const [rowCommands] = useState<FileTableRowCommands>(() => ({
-    toggleSelected: (id) => latestCommands.current?.toggleSelected(id),
-    activate: (id) => latestCommands.current?.activate(id),
-    openShare: (id, kind) => latestCommands.current?.openShare(id, kind),
+  const [commands] = useState<FileTableRowCommands>(() => ({
+    activate: (id) => {
+      const item = latestRows.current.find((r) => rowIdOf(r) === id);
+      if (item) latestActivate.current(item);
+    },
+    openShare: (id, kind) => setShareTarget({ resourceId: id, resourceType: kind }),
   }));
 
-  if (rows.length === 0) {
+  // ── Controlled query state, bound to Redux ──────────────────────────────
+  const tableFilters = useMemo(() => toTableFilters(columnFilters), [columnFilters]);
+  const queryState = useMemo<MatrxDataTableQueryState>(
+    () => ({
+      page: 1,
+      pageSize: PAGE_SIZE,
+      search: tableSearch,
+      anyOf: "",
+      columnFilters: tableFilters,
+      sort: { id: sortBy, direction: sortDir },
+    }),
+    [tableSearch, tableFilters, sortBy, sortDir],
+  );
+
+  const onQueryChange = useCallback(
+    (next: MatrxDataTableQueryState) => {
+      if (next.search !== tableSearch) setTableSearch(next.search);
+      // Sort: the files list is always sorted; clearing returns to the default.
+      const nextSort = next.sort ?? { id: "updated_at", direction: "desc" as const };
+      if (nextSort.id !== sortBy || nextSort.direction !== sortDir) {
+        dispatch(setSort({ sortBy: nextSort.id as SortBy, sortDir: nextSort.direction }));
+      }
+      for (const [columnId, binding] of Object.entries(FILTER_BINDINGS)) {
+        if (!binding) continue;
+        const value = next.columnFilters[columnId];
+        if (sameValue(value, tableFilters[columnId])) continue;
+        if (binding.shape === "text") {
+          let text = textOf(value);
+          if (binding.key === "extension") text = text.replace(/^\./, "").toLowerCase().slice(0, 24);
+          if (binding.key === "mime") text = text.slice(0, 64);
+          if (binding.key === "path") text = text.slice(0, 128);
+          dispatch(setColumnFilter({ column: binding.key, value: text }));
+        } else if (binding.shape === "multi") {
+          dispatch(setColumnFilter({ column: binding.key, value: valuesOf(value) }));
+        } else {
+          const picked = valuesOf(value);
+          const last = picked[picked.length - 1];
+          if (binding.key === "size") {
+            dispatch(setColumnFilter({ column: "size", value: oneOf(SIZE_VALUES, last) }));
+          } else if (binding.key === "access") {
+            dispatch(setColumnFilter({ column: "access", value: oneOf(ACCESS_VALUES, last) }));
+          } else {
+            dispatch(setColumnFilter({ column: binding.key, value: oneOf(MODIFIED_VALUES, last) }));
+          }
+        }
+      }
+    },
+    [dispatch, sortBy, sortDir, tableFilters, tableSearch],
+  );
+
+  // ── Columns ─────────────────────────────────────────────────────────────
+  const columns = useMemo<MatrxColumnDef<FileListRow>[]>(() => {
+    const cell = (id: ColumnId) => (row: FileListRow) => (
+      <FileTableCell id={id} row={row} currentUserId={currentUserId ?? null} commands={commands} />
+    );
+    const base = (id: ColumnId, width: number): MatrxColumnDef<FileListRow> => ({
+      id,
+      header: COLUMN_SPECS[id].label,
+      label: COLUMN_SPECS[id].label,
+      width,
+      align: COLUMN_SPECS[id].align ?? "left",
+      sortable: COLUMN_SPECS[id].sortKey !== null,
+      cell: cell(id),
+      filter: false,
+    });
+    const fileOnly = (row: FileListRow, read: (f: CloudFileRecord) => unknown) =>
+      row.item.kind === "file" ? read(row.item.file) : null;
+    const updated = (row: FileListRow) =>
+      row.item.kind === "file" ? row.item.file.updatedAt : row.item.folder.updatedAt;
+    const created = (row: FileListRow) =>
+      row.item.kind === "file" ? row.item.file.createdAt : row.item.folder.createdAt;
+    const byId: Record<ColumnId, MatrxColumnDef<FileListRow>> = {
+      name: {
+        ...base("name", 560),
+        hideable: false,
+        minWidth: 280,
+        accessorFn: (row) => rowNameOf(row.item),
+        filter: "text",
+      },
+      type: {
+        ...base("type", 150),
+        accessorFn: (row) =>
+          row.item.kind === "folder" ? "FOLDER" : getFileTypeDetails(row.item.file.fileName).category,
+        copyValue: (row) =>
+          row.item.kind === "folder" ? "Folder" : getFileTypeDetails(row.item.file.fileName).category,
+        filter: "select",
+        filterOptions: typeOptions,
+      },
+      extension: {
+        ...base("extension", 80),
+        accessorFn: (row) => fileOnly(row, (f) => f.fileName.split(".").pop()?.toLowerCase() ?? ""),
+        filter: "text",
+      },
+      mime: { ...base("mime", 180), accessorFn: (row) => fileOnly(row, (f) => f.mimeType), filter: "text" },
+      path: {
+        ...base("path", 220),
+        accessorFn: (row) => (row.item.kind === "file" ? row.item.file.filePath : row.item.folder.folderPath),
+        filter: "text",
+      },
+      owner: {
+        ...base("owner", 120),
+        minWidth: 96,
+        accessorFn: (row) => (row.item.kind === "file" ? row.item.file.ownerId : row.item.folder.ownerId),
+        copyValue: (row) => {
+          const owner = row.item.kind === "file" ? row.item.file.ownerId : row.item.folder.ownerId;
+          return owner === currentUserId ? "You" : owner;
+        },
+        filter: "select",
+        filterOptions: ownerOptions,
+      },
+      size: {
+        ...base("size", 100),
+        minWidth: 84,
+        accessorFn: (row) => fileOnly(row, (f) => f.fileSize),
+        copyValue: (row) => fileOnly(row, (f) => formatFileSize(f.fileSize)),
+        filter: "select",
+        filterSingle: true,
+        filterOptions: SIZE_OPTIONS,
+      },
+      version: { ...base("version", 70), accessorFn: (row) => fileOnly(row, (f) => f.currentVersion) },
+      updated_at: {
+        ...base("updated_at", 130),
+        accessorFn: updated,
+        defaultSortDirection: "desc",
+        filter: "select",
+        filterSingle: true,
+        filterOptions: MODIFIED_OPTIONS,
+      },
+      created_at: {
+        ...base("created_at", 130),
+        accessorFn: created,
+        defaultSortDirection: "desc",
+        filter: "select",
+        filterSingle: true,
+        filterOptions: MODIFIED_OPTIONS,
+      },
+      access: {
+        ...base("access", 140),
+        accessorFn: (row) => (row.item.kind === "file" ? row.item.file.visibility : row.item.folder.visibility),
+        filter: "select",
+        filterSingle: true,
+        filterOptions: ACCESS_OPTIONS,
+      },
+      context: { ...base("context", 110) },
+      rag_status: {
+        ...base("rag_status", 130),
+        accessorFn: (row) => (row.item.kind === "file" ? (ragStatuses[row.id] ?? "unknown") : null),
+        filter: "select",
+        filterOptions: ragOptions,
+        headerMenu: [
+          { id: "refresh-knowledge", label: "Refresh knowledge status", onSelect: refreshRagStatuses },
+        ],
+      },
+    };
+    return COLUMN_ORDER.map((id) => byId[id]);
+  }, [commands, currentUserId, ownerOptions, typeOptions, ragOptions, ragStatuses, refreshRagStatuses]);
+
+  const hiddenColumnIds = useMemo(
+    () => COLUMN_ORDER.filter((id) => !visibleIds.includes(id)),
+    [visibleIds],
+  );
+  const defaultHidden = useMemo(
+    () => COLUMN_ORDER.filter((id) => !DEFAULT_VISIBLE_COLUMNS[id]),
+    [],
+  );
+  // Column order is this table's own (the grid view has no columns); which
+  // columns show is the shared state.
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => [...COLUMN_ORDER]);
+  const onColumnStateChange = useCallback(
+    (next: { order: string[]; hidden: string[] }) => {
+      setColumnOrder(next.order);
+      for (const id of COLUMN_ORDER) {
+        const visible = !next.hidden.includes(id);
+        if (visible !== visibleIds.includes(id)) {
+          dispatch(setColumnVisibility({ column: id, visible }));
+        }
+      }
+    },
+    [dispatch, visibleIds],
+  );
+
+  const onSelectedIdsChange = useCallback(
+    (ids: string[]) => {
+      const before = new Set(selection.selectedIds);
+      const changed = ids.filter((id) => !before.has(id));
+      const removed = selection.selectedIds.filter((id) => !ids.includes(id));
+      dispatch(setSelection({ selectedIds: ids, anchorId: null }));
+      const toggled = [...changed, ...removed];
+      if (toggled.length === 1) dispatch(setFocusedId(toggled[0]!));
+    },
+    [dispatch, selection.selectedIds],
+  );
+
+  const rowWrapper = useCallback(
+    (row: FileListRow, children: React.ReactNode) => (
+      <FileTableRowShell row={row}>{children}</FileTableRowShell>
+    ),
+    [],
+  );
+
+  const focusedIndex = focusedId ? listRows.findIndex((r) => r.id === focusedId) : -1;
+
+  if (builtRows.length === 0) {
     if (treeWideSearch) {
       return (
         <div
@@ -426,15 +702,13 @@ export function FileTable({
   }
 
   return (
-    <div
-      className={cn("flex h-full w-full flex-col overflow-hidden", className)}
-    >
+    <div className={cn("flex h-full w-full flex-col overflow-hidden", className)}>
       {treeWideSearch ? (
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground shrink-0">
           <SearchIcon className="h-3.5 w-3.5" />
           <span>
             {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
-            Showing {rows.length} {rows.length === 1 ? "result" : "results"}{" "}
+            Showing {builtRows.length} {builtRows.length === 1 ? "result" : "results"}{" "}
             from all folders for &ldquo;
             <span className="font-medium text-foreground">{searchQuery}</span>
             &rdquo;
@@ -445,123 +719,76 @@ export function FileTable({
         <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-xs text-warning-ink shrink-0">
           <span>
             {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
-            Showing the {rows.length.toLocaleString()} most-recent of{" "}
-            <span className="font-medium">
-              {totalBeforeCap.toLocaleString()}
-            </span>{" "}
+            Showing the {builtRows.length.toLocaleString()} most-recent of{" "}
+            <span className="font-medium">{totalBeforeCap.toLocaleString()}</span>{" "}
             items. Open a folder or use search to see older history.
           </span>
         </div>
       ) : null}
       <ActiveColumnFilters />
-      <div className="flex-1 min-h-0 overflow-auto">
-        <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-background">
-            <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="w-8 px-2 py-2">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all"
-                />
-              </th>
-              {visibleIds.map((id) => (
-                <FileTableHeaderCell
-                  key={id}
-                  id={id}
-                  activeSortBy={sortBy}
-                  activeSortDir={sortDir}
-                  onChangeSort={(next) => dispatch(setSort(next))}
-                  columnFilters={columnFilters}
-                  onChangeFilter={(action) => dispatch(setColumnFilter(action))}
-                  ownerOptions={ownerOptions}
-                  typeCounts={typeCounts}
-                  ragCounts={ragCounts}
-                  isRagFetching={isRagFetching}
-                  onRefreshRag={refreshRagStatuses}
-                />
-              ))}
-              <th className="w-10 px-1 py-1 text-right">
-                <ColumnSettings className="ml-auto" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((row) => {
-              const id = row.kind === "file" ? row.file.id : row.folder.id;
-              const visibility =
-                row.kind === "file"
-                  ? row.file.visibility
-                  : row.folder.visibility;
-              const perms = permissionsByResourceId[id] ?? [];
-              // Exclude public grants — they have no real grantee, so their
-              // row id must not surface as a fake avatar in the stack.
-              const granteeIds = perms
-                .filter((p) => p.granteeType !== "public")
-                .map((p) => p.granteeId);
-              const memberCount = memberCountForResource(
-                id,
-                permissionsByResourceId,
-              );
-              const isShared = isSharedResource(
-                id,
-                visibility,
-                permissionsByResourceId,
-              );
-              const selected = selection.selectedIds.includes(id);
-              const isPreviewActive =
-                row.kind === "file" && row.file.id === activeFileId;
-              const parentFolderId =
-                row.kind === "file"
-                  ? row.file.parentFolderId
-                  : row.folder.parentId;
-              const parentPath = treeWideSearch
-                ? resolveFolderPath(parentFolderId ?? null)
-                : null;
-              return (
-                <FileTableRow
-                  key={id}
-                  kind={row.kind}
-                  file={row.kind === "file" ? row.file : undefined}
-                  folder={row.kind === "folder" ? row.folder : undefined}
-                  selected={selected}
-                  isPreviewActive={isPreviewActive}
-                  isFocused={focusedId === id}
-                  visibleColumnIds={visibleIds}
-                  currentUserId={currentUserId}
-                  commands={rowCommands}
-                  isShared={isShared}
-                  memberCount={memberCount}
-                  granteeIds={granteeIds}
-                  parentPath={parentPath}
-                />
-              );
-            })}
-            {hasMore ? (
-              <tr ref={sentinelRef as React.LegacyRef<HTMLTableRowElement>}>
-                <td
-                  colSpan={totalColSpan(visibleIds.length)}
-                  className="px-4 py-4 text-center"
-                >
-                  <span className="inline-flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    Loading more…
-                  </span>
-                </td>
-              </tr>
-            ) : rows.length > 50 ? (
-              <tr>
-                <td
-                  colSpan={totalColSpan(visibleIds.length)}
-                  className="px-4 py-3 text-center text-[11px] text-muted-foreground"
-                >
-                  {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
-                  Showing all {rows.length.toLocaleString()} items.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+      <div className="flex-1 min-h-0">
+        <MatrxDataTable<FileListRow>
+          tableId="files-list"
+          data={listRows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          viewTabs={false}
+          frameHeight="fill"
+          fitToWidth="grow"
+          detail={{ enabled: false }}
+          onRowOpen={(row) => handleRowActivate(row.item)}
+          selectedId={activeFileId}
+          highlightedIndex={focusedIndex >= 0 ? focusedIndex : undefined}
+          rowClassName={(row) =>
+            row.id === activeFileId ? "border-l-2 border-l-primary" : undefined
+          }
+          rowWrapper={rowWrapper}
+          toolbar={{ searchPlaceholder: "Filter this list" }}
+          columnState={{
+            order: columnOrder,
+            hidden: hiddenColumnIds,
+            onChange: onColumnStateChange,
+            defaults: { order: [...COLUMN_ORDER], hidden: defaultHidden },
+          }}
+          selection={{
+            selectedIds: selection.selectedIds,
+            onSelectedIdsChange,
+            noun: "item",
+          }}
+          query={{
+            mode: "controlled-append",
+            state: queryState,
+            onStateChange: onQueryChange,
+            sourceProcessing: {
+              search: "source",
+              columnFilters: "source",
+              sort: "source",
+              sourceTotal: rows.length,
+            },
+            pagination: {
+              queryKey: resetKey,
+              rows: listRows,
+              loading: false,
+              isFetchingNextPage: false,
+              error: null,
+              hasNextPage: hasMore,
+              loadNextPage: async () => loadMore(),
+              refresh: () => undefined,
+              totalItems: rows.length,
+            },
+          }}
+          copy={{
+            label: "File",
+            listLabel: "Files",
+            location: FILES_TABLE_LOCATION,
+            rowKind: "file",
+            listKind: "files",
+            humanRow: (row) =>
+              row.item.kind === "folder"
+                ? `${row.item.folder.folderName} — folder, ${row.item.folder.folderPath}`
+                : `${row.item.file.fileName} — ${getFileTypeDetails(row.item.file.fileName).category.toLowerCase()}, ${formatFileSize(row.item.file.fileSize)}, ${row.item.file.filePath}`,
+          }}
+        />
       </div>
 
       {shareTarget ? (
@@ -576,344 +803,4 @@ export function FileTable({
       ) : null}
     </div>
   );
-}
-
-// ── Header cell — picks the right filter UI per column id ─────────────────
-
-interface FileTableHeaderCellProps {
-  id: ColumnId;
-  activeSortBy: SortBy;
-  activeSortDir: SortDirection;
-  onChangeSort: (next: { sortBy: SortBy; sortDir: SortDirection }) => void;
-  columnFilters: ReturnType<typeof selectColumnFilters>;
-  onChangeFilter: (action: Parameters<typeof setColumnFilter>[0]) => void;
-  ownerOptions: OwnerOption[];
-  typeCounts: Partial<Record<FileCategory, number>>;
-  ragCounts: Partial<Record<RagStatus, number>>;
-  isRagFetching: boolean;
-  onRefreshRag: () => void;
-}
-
-function FileTableHeaderCell({
-  id,
-  activeSortBy,
-  activeSortDir,
-  onChangeSort,
-  columnFilters,
-  onChangeFilter,
-  ownerOptions,
-  typeCounts,
-  ragCounts,
-  isRagFetching,
-  onRefreshRag,
-}: FileTableHeaderCellProps) {
-  const spec = COLUMN_SPECS[id];
-  const filter = columnFiltersFor(id, columnFilters, onChangeFilter, {
-    ownerOptions,
-    typeCounts,
-    ragCounts,
-    isRagFetching,
-    onRefreshRag,
-  });
-  return (
-    <ColumnHeader
-      label={spec.label}
-      sortKey={spec.sortKey}
-      activeSortBy={activeSortBy}
-      activeSortDir={activeSortDir}
-      onChangeSort={onChangeSort}
-      align={spec.align}
-      ascLabel={spec.ascLabel}
-      descLabel={spec.descLabel}
-      hasActiveFilter={filter.active}
-      filterContent={filter.content}
-    />
-  );
-}
-
-interface ColumnFilterResolved {
-  active: boolean;
-  content: React.ReactNode | null;
-}
-
-function columnFiltersFor(
-  id: ColumnId,
-  filters: ReturnType<typeof selectColumnFilters>,
-  onChange: (action: Parameters<typeof setColumnFilter>[0]) => void,
-  context: {
-    ownerOptions: OwnerOption[];
-    typeCounts: Partial<Record<FileCategory, number>>;
-    ragCounts: Partial<Record<RagStatus, number>>;
-    isRagFetching: boolean;
-    onRefreshRag: () => void;
-  },
-): ColumnFilterResolved {
-  switch (id) {
-    case "name":
-      return {
-        active: filters.name.length > 0,
-        content: (
-          <input
-            type="text"
-            value={filters.name}
-            onChange={(e) =>
-              onChange({ column: "name", value: e.target.value })
-            }
-            placeholder="Filter by name…"
-            className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        ),
-      };
-    case "type":
-      return {
-        active: filters.type.length > 0,
-        content: (
-          <TypeFilterPicker
-            value={filters.type}
-            onChange={(value) => onChange({ column: "type", value })}
-            counts={context.typeCounts}
-          />
-        ),
-      };
-    case "extension":
-      return {
-        active: filters.extension.length > 0,
-        content: (
-          <input
-            type="text"
-            value={filters.extension}
-            onChange={(e) =>
-              onChange({
-                column: "extension",
-                value: e.target.value
-                  .replace(/^\./, "")
-                  .toLowerCase()
-                  .slice(0, 24),
-              })
-            }
-            placeholder="pdf, jp, mp4…"
-            className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        ),
-      };
-    case "mime":
-      return {
-        active: filters.mime.length > 0,
-        content: (
-          <input
-            type="text"
-            value={filters.mime}
-            onChange={(e) =>
-              onChange({ column: "mime", value: e.target.value.slice(0, 64) })
-            }
-            placeholder="image/, application/pdf…"
-            className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        ),
-      };
-    case "path":
-      return {
-        active: filters.path.length > 0,
-        content: (
-          <input
-            type="text"
-            value={filters.path}
-            onChange={(e) =>
-              onChange({ column: "path", value: e.target.value.slice(0, 128) })
-            }
-            placeholder="folder name fragment…"
-            className="w-full rounded-md border bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        ),
-      };
-    case "owner":
-      return {
-        active: filters.owner.length > 0,
-        content: (
-          <OwnerFilterPicker
-            value={filters.owner}
-            onChange={(value) => onChange({ column: "owner", value })}
-            options={context.ownerOptions}
-          />
-        ),
-      };
-    case "size":
-      return {
-        active: filters.size !== "any",
-        content: (
-          <SizeFilterPicker
-            value={filters.size}
-            onChange={(value) => onChange({ column: "size", value })}
-          />
-        ),
-      };
-    case "version":
-      return { active: false, content: null };
-    case "updated_at":
-      return {
-        active: filters.modified !== "any",
-        content: (
-          <ModifiedFilterPicker
-            value={filters.modified}
-            onChange={(value) => onChange({ column: "modified", value })}
-          />
-        ),
-      };
-    case "created_at":
-      return {
-        active: filters.created !== "any",
-        content: (
-          <ModifiedFilterPicker
-            value={filters.created}
-            onChange={(value) => onChange({ column: "created", value })}
-          />
-        ),
-      };
-    case "access":
-      return {
-        active: filters.access !== "any",
-        content: (
-          <AccessFilterPicker
-            value={filters.access}
-            onChange={(value) => onChange({ column: "access", value })}
-          />
-        ),
-      };
-    case "rag_status":
-      return {
-        active: filters.rag.length > 0,
-        content: (
-          <RagFilterPicker
-            value={filters.rag}
-            onChange={(value) => onChange({ column: "rag", value })}
-            counts={context.ragCounts}
-            isFetching={context.isRagFetching}
-            onRefresh={context.onRefreshRag}
-          />
-        ),
-      };
-    case "context":
-      // Context is a status/assignment column — no header filter yet.
-      return { active: false, content: null };
-  }
-}
-
-// ── Per-column filter pickers ──────────────────────────────────────────────
-
-interface ModifiedFilterPickerProps {
-  value: ModifiedFilter;
-  onChange: (next: ModifiedFilter) => void;
-}
-
-const MODIFIED_OPTIONS: ReadonlyArray<{
-  value: ModifiedFilter;
-  label: string;
-}> = [
-  { value: "any", label: "Any time" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "Last 30 days" },
-];
-
-function ModifiedFilterPicker({ value, onChange }: ModifiedFilterPickerProps) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      {MODIFIED_OPTIONS.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            "rounded px-2 py-1 text-left text-xs hover:bg-accent",
-            value === opt.value && "bg-accent font-medium",
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-interface SizeFilterPickerProps {
-  value: SizeFilter;
-  onChange: (next: SizeFilter) => void;
-}
-
-const SIZE_OPTIONS: ReadonlyArray<{ value: SizeFilter; label: string }> = [
-  { value: "any", label: "Any size" },
-  { value: "small", label: "≤ 1 MB" },
-  { value: "medium", label: "1 – 10 MB" },
-  { value: "large", label: "10 – 100 MB" },
-  { value: "huge", label: "> 100 MB" },
-];
-
-function SizeFilterPicker({ value, onChange }: SizeFilterPickerProps) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      {SIZE_OPTIONS.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            "rounded px-2 py-1 text-left text-xs hover:bg-accent",
-            value === opt.value && "bg-accent font-medium",
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-interface AccessFilterPickerProps {
-  value: AccessFilter;
-  onChange: (next: AccessFilter) => void;
-}
-
-const ACCESS_OPTIONS: ReadonlyArray<{ value: AccessFilter; label: string }> = [
-  { value: "any", label: "Any" },
-  { value: "personal", label: "Personal" },
-  { value: "internal", label: "Organization" },
-  { value: "link", label: "Link" },
-  { value: "public", label: "Public" },
-];
-
-function AccessFilterPicker({ value, onChange }: AccessFilterPickerProps) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      {ACCESS_OPTIONS.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            "rounded px-2 py-1 text-left text-xs hover:bg-accent",
-            value === opt.value && "bg-accent font-medium",
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** First 6 characters of an opaque ownerId, used until the backend exposes
- *  display names. Mirrors the same logic in `OwnerCell` for consistency. */
-function shortLabelFor(id: string): string {
-  const clean = id.replace(/-/g, "");
-  return clean.slice(0, 6);
 }

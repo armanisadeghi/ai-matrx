@@ -1,44 +1,38 @@
 /**
  * features/files/components/surfaces/desktop/FileTableRow.tsx
  *
- * One row inside the file table. Cells are rendered based on the
- * `visibleColumnIds` array passed from the parent — Box.com-/Drive-style
- * configurable columns. On hover, a row reveals the inline action toolbar
- * (Share / Copy link / Star / More).
+ * The file table's row pieces. The table itself is the shared `MatrxDataTable`
+ * (FileTable.tsx); this module supplies what only Files knows:
  *
- * Activation contract — Dropbox-web style:
- *   - Single-click ANYWHERE on the row activates: files open the
- *     preview, folders navigate into. The row carries `cursor-pointer`
- *     so the affordance is obvious.
- *   - Inline action buttons (checkbox, Share, Copy link, More, name
- *     button for keyboard) MUST `e.stopPropagation()` on click so they
- *     don't accidentally trigger row activation.
- *   - dnd-kit's PointerSensor distance:6 ensures a press-and-hold-drag
- *     past 6px is a drag (no click fires) while a release within 6px
- *     fires the click as expected.
+ *   - `FileTableRowShell` — the table's `rowWrapper`. It owns the whole `<tr>`:
+ *     drag (files and folders), drop (folders), the right-click menu, the
+ *     surface-value attributes agent context reads, and scroll-into-view when the
+ *     row is focused programmatically (a just-uploaded file). It renders the
+ *     package's `<tr>` cloned with those props (never a wrapper element).
+ *   - the cell bodies, one per `ColumnId`, for files and folders.
  *
- * Folders gracefully degrade to em-dash for file-only columns
- * (Extension, MIME, Size, Version) so the row stays aligned with no
- * empty gaps.
+ * Activation contract — Dropbox-web style: a single click anywhere on the row
+ * activates (the table's `onRowOpen`); the table ignores clicks from portalled
+ * menus and from interactive descendants, so the inline actions never activate
+ * the row. dnd-kit's PointerSensor distance:6 keeps a click a click.
  *
- * THE DOOR LAW (common-docs/policies/no-dead-ends.md): the name itself
- * stays a `<button>` because its click means "preview here", not
- * "navigate" — so the doors ride alongside it as `<EntityDoorControls>`
- * (Open + new tab), the sanctioned sibling form. Peek is deliberately
- * off: single-clicking the row already opens the full preview pane, so a
- * peek button would be a strictly worse duplicate of this surface's own
- * answer to "which one is that?". Only REAL rows get doors — a virtual
- * file/folder (a feature-backed adapter row) has no `/files/f/<id>` row
- * and no stable `folder_path`, and a link that 404s is worse than none.
+ * Folders degrade to an em-dash in file-only columns (Extension, MIME, Size,
+ * Version, Knowledge, Context) so the row stays aligned.
+ *
+ * THE DOOR LAW (common-docs/policies/no-dead-ends.md): the file name is an
+ * `EntityRef` (plain click previews in place, modified clicks open
+ * `/files/f/<id>`); real, live rows carry `EntityDoorControls`. Peek is off: the
+ * row click already opens the full preview pane.
  */
 
 "use client";
 
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Copy, MoreHorizontal, Share2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectFocusedId } from "@/features/files/redux/selectors";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
@@ -60,128 +54,55 @@ import {
 } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { FolderIconWithMembers } from "./FolderIconWithMembers";
 import { AccessCell } from "./AccessCell";
 import { FileTypeBadge } from "./FileTypeBadge";
 import { OwnerCell } from "./OwnerCell";
 import { RagStatusCell } from "./RagStatusCell";
 import { FileContextCell } from "./FileContextCell";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import type { RowItem } from "./row-data";
 
-export interface FileTableRowProps {
-  kind: "file" | "folder";
-  file?: CloudFileRecord;
-  folder?: CloudFolderRecord;
-  selected: boolean;
-  /** True when this file is currently open in the preview pane. */
-  isPreviewActive?: boolean;
-  /**
-   * True when this item has visual focus (Google-Drive-style blue ring).
-   * Set automatically after create/upload so the user can see the new item.
-   */
-  isFocused?: boolean;
-  /** Ordered list of columns to render after the leading checkbox cell. */
-  visibleColumnIds: ReadonlyArray<ColumnId>;
-  /** Authenticated user id — drives the "You" label in the Owner cell. */
-  currentUserId?: string | null;
-  onToggleSelected: () => void;
-  onActivate: () => void;
-  onOpenShare: () => void;
+/** One table row: the built record plus the sharing facts its cells show. */
+export interface FileListRow {
+  id: string;
+  item: RowItem;
   isShared: boolean;
   memberCount: number;
   granteeIds: string[];
-  /** When set (search mode only), shown as a small breadcrumb under the
-   * file/folder name so the user knows which folder this result lives in. */
-  parentPath?: string | null;
+  /** Search mode only: the folder this result lives in. */
+  parentPath: string | null;
 }
 
-/**
- * The table's row commands, addressed by id. The table hands ONE stable object
- * to every row and routes each call to its latest logic, so a table render
- * never gives a row a new function.
- */
+/** Row commands the cells call; one stable object for every row. */
 export interface FileTableRowCommands {
-  toggleSelected: (id: string) => void;
   activate: (id: string) => void;
   openShare: (id: string, kind: "file" | "folder") => void;
 }
 
-type FileTableRowOuterProps = Omit<FileTableRowProps, "onToggleSelected" | "onActivate" | "onOpenShare"> & {
-  commands: FileTableRowCommands;
-};
+// ── Row shell (rowWrapper) ─────────────────────────────────────────────────
 
-/**
- * A row redraws only when what it shows changed: its record, its own flags, the
- * column set or its sharing facts. `granteeIds` and `visibleColumnIds` are
- * compared by value — the table rebuilds both arrays on every render.
- */
-function sameRowProps(a: FileTableRowOuterProps, b: FileTableRowOuterProps): boolean {
-  for (const key of Object.keys(b) as (keyof FileTableRowOuterProps)[]) {
-    if (key === "granteeIds" || key === "visibleColumnIds") continue;
-    if (!Object.is(a[key], b[key])) return false;
-  }
-  if (Object.keys(a).length !== Object.keys(b).length) return false;
-  const sameList = (x: readonly string[], y: readonly string[]) =>
-    x.length === y.length && x.every((v, i) => v === y[i]);
-  return sameList(a.granteeIds, b.granteeIds) && sameList(a.visibleColumnIds, b.visibleColumnIds);
-}
+type TrProps = React.ComponentPropsWithRef<"tr"> & Record<`data-${string}`, string | undefined>;
 
-export const FileTableRow = memo(function FileTableRow({ commands, ...props }: FileTableRowOuterProps) {
-  const id = props.kind === "file" ? props.file?.id : props.folder?.id;
-  if (!id) return null;
-  const handlers = {
-    onToggleSelected: () => commands.toggleSelected(id),
-    onActivate: () => commands.activate(id),
-    onOpenShare: () => commands.openShare(id, props.kind),
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
+  return (node) => {
+    for (const ref of refs) {
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.RefObject<T | null>).current = node;
+    }
   };
-  if (props.kind === "file" && props.file) {
-    return <FileRow {...props} {...handlers} file={props.file} />;
-  }
-  if (props.kind === "folder" && props.folder) {
-    return <FolderRow {...props} {...handlers} folder={props.folder} />;
-  }
-  return null;
-}, sameRowProps);
-
-// Trailing cell for the Column-Settings gear column. Empty in body rows so
-// the gear stays anchored to the header. Width matches the header's gear
-// cell so the table grid stays aligned.
-function GearTrailingCell() {
-  return <td className="w-10 px-1 py-2" aria-hidden="true" />;
 }
 
-function extOf(filename: string): string {
-  const i = filename.lastIndexOf(".");
-  if (i <= 0 || i === filename.length - 1) return "";
-  return filename.slice(i + 1).toLowerCase();
-}
-
-interface FileRowProps extends FileTableRowProps {
-  file: CloudFileRecord;
-}
-
-function FileRow({
-  file,
-  selected,
-  isPreviewActive,
-  isFocused,
-  visibleColumnIds,
-  currentUserId,
-  onToggleSelected,
-  onActivate,
-  onOpenShare,
-  isShared,
-  memberCount,
-  granteeIds,
-  parentPath,
-}: FileRowProps) {
-  const [hovered, setHovered] = useState(false);
-  const actions = useFileActions(file.id);
-  const rowRef = useRef<HTMLTableRowElement>(null);
-
-  const handleCopyLink = useCallback(() => {
-    void actions.copyShareUrl();
-  }, [actions]);
+export function FileTableRowShell({
+  row,
+  children,
+}: {
+  row: FileListRow;
+  children: React.ReactNode;
+}) {
+  const isFolder = row.item.kind === "folder";
+  const isFocused = useAppSelector(selectFocusedId) === row.id;
+  const rowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (isFocused) {
@@ -189,114 +110,119 @@ function FileRow({
     }
   }, [isFocused]);
 
-  // Files are draggable — they can be dropped onto folder rows to move.
-  // The drag handle covers the whole row, but the activation distance on
-  // the parent DndContext PointerSensor (6px) preserves single-click
-  // selection.
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `file-${file.id}`,
-    data: { type: "file", id: file.id },
+  // Files and folders are draggable (drop onto a folder row or the tree to
+  // move); folders are also drop targets.
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } =
+    useDraggable({
+      id: isFolder ? `folder-drag-${row.id}` : `file-${row.id}`,
+      data: { type: isFolder ? "folder" : "file", id: row.id },
+    });
+  const { isOver, setNodeRef: setDropRef } = useDroppable({
+    id: `folder-${row.id}`,
+    data: { type: "folder", id: row.id },
+    disabled: !isFolder,
   });
-
-  const mergeRef = (node: HTMLTableRowElement | null) => {
-    (rowRef as React.MutableRefObject<HTMLTableRowElement | null>).current =
-      node;
-    setNodeRef(node);
+  const setRef = (node: HTMLTableRowElement | null) => {
+    rowRef.current = node;
+    setDragRef(node);
+    if (isFolder) setDropRef(node);
   };
 
-  return (
-    <FileRowContextMenu fileId={file.id}>
-      <tr
-        ref={mergeRef}
-        data-surface-value="visible_files"
-        data-surface-record-id={file.id}
-        className={cn(
-          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
-          isPreviewActive
-            ? "bg-primary/10 border-l-2 border-l-primary"
-            : isFocused
-              ? "bg-primary/15 ring-1 ring-inset ring-primary/40"
-              : selected
-                ? "bg-accent/70"
-                : "hover:bg-accent/40",
-          isDragging && "opacity-50",
-        )}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={(e) => {
-          // React portal events follow the component tree even though the
-          // menu item is not a DOM child of this row. Ignore those events or
-          // choosing Rename/Move/Delete also activates the file row.
-          if (!e.currentTarget.contains(e.target as Node)) return;
-          // Belt-and-suspenders vs D72: never treat a click that landed
-          // inside the row-actions toolbar as a row activation, and never
-          // let a mid-hover hit-test race reach onShare via the row path.
-          if ((e.target as HTMLElement).closest("[data-row-actions]")) return;
-          onActivate();
-        }}
-        {...attributes}
-        {...listeners}
-      >
-        <td className="w-6 px-3 py-2" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggleSelected}
-            aria-label={`Select ${file.fileName}`}
-          />
-        </td>
-        {visibleColumnIds.map((id) => (
-          <FileCell
-            key={id}
-            id={id}
-            file={file}
-            currentUserId={currentUserId}
-            isShared={isShared}
-            memberCount={memberCount}
-            granteeIds={granteeIds}
-            hovered={hovered}
-            onActivate={onActivate}
-            onShare={onOpenShare}
-            onCopyLink={handleCopyLink}
-            parentPath={parentPath ?? null}
-          />
-        ))}
-        <GearTrailingCell />
-      </tr>
-    </FileRowContextMenu>
+  // The table's own `<tr>` gets the drag props, the surface attributes and the
+  // ref by cloning, so the row menu below slots straight onto an intrinsic
+  // `<tr>` (a component child would make the menu wrap the row in a <div>).
+  if (!React.isValidElement<TrProps>(children)) return <>{children}</>;
+  const own = children.props;
+  const handlers: Record<string, unknown> = {};
+  for (const [name, handler] of Object.entries(listeners ?? {})) {
+    const theirs = own[name as keyof TrProps];
+    handlers[name] = (event: React.SyntheticEvent) => {
+      if (typeof theirs === "function") (theirs as (e: React.SyntheticEvent) => void)(event);
+      (handler as (e: React.SyntheticEvent) => void)(event);
+    };
+  }
+  const tr = React.cloneElement(children, {
+    ...attributes,
+    ...handlers,
+    ref: mergeRefs(own.ref, setRef),
+    "data-surface-value": isFolder ? "visible_folders" : "visible_files",
+    "data-surface-record-id": row.id,
+    className: cn(
+      own.className,
+      "group/entity-ref",
+      isFocused && "ring-1 ring-inset ring-primary/40",
+      isFolder && isOver && "ring-1 ring-inset ring-primary",
+      isDragging && "opacity-50",
+    ),
+  } as TrProps);
+
+  return isFolder ? (
+    <FolderRowContextMenu folderId={row.id}>{tr}</FolderRowContextMenu>
+  ) : (
+    <FileRowContextMenu fileId={row.id}>{tr}</FileRowContextMenu>
   );
 }
 
-interface FileCellProps {
+// ── Cells ──────────────────────────────────────────────────────────────────
+
+function extOf(filename: string): string {
+  const i = filename.lastIndexOf(".");
+  if (i <= 0 || i === filename.length - 1) return "";
+  return filename.slice(i + 1).toLowerCase();
+}
+
+const DASH = <span className="text-xs text-muted-foreground/60">—</span>;
+
+export function FileTableCell({
+  id,
+  row,
+  currentUserId,
+  commands,
+}: {
   id: ColumnId;
-  file: CloudFileRecord;
-  currentUserId?: string | null;
-  isShared: boolean;
-  memberCount: number;
-  granteeIds: string[];
-  hovered: boolean;
-  onActivate: () => void;
-  onShare: () => void;
-  onCopyLink: () => void;
-  parentPath: string | null;
+  row: FileListRow;
+  currentUserId: string | null;
+  commands: FileTableRowCommands;
+}) {
+  if (row.item.kind === "folder") {
+    return (
+      <FolderCell
+        id={id}
+        row={row}
+        folder={row.item.folder}
+        currentUserId={currentUserId}
+        commands={commands}
+      />
+    );
+  }
+  return (
+    <FileCell
+      id={id}
+      row={row}
+      file={row.item.file}
+      currentUserId={currentUserId}
+      commands={commands}
+    />
+  );
 }
 
 function FileCell({
   id,
+  row,
   file,
   currentUserId,
-  isShared,
-  memberCount,
-  granteeIds,
-  hovered,
-  onActivate,
-  onShare,
-  onCopyLink,
-  parentPath,
-}: FileCellProps) {
+  commands,
+}: {
+  id: ColumnId;
+  row: FileListRow;
+  file: CloudFileRecord;
+  currentUserId: string | null;
+  commands: FileTableRowCommands;
+}) {
   switch (id) {
     case "name":
       return (
-        <td className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)] px-2 py-2">
+        <div className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)]">
           <div className="flex items-center gap-2 min-w-0">
             <FileIcon
               fileName={file.fileName}
@@ -305,33 +231,20 @@ function FileCell({
             />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <span className="flex min-w-0 items-center gap-1">
-                {/* The name was a bare <button>, so opening a file into a new
-                    tab — cmd-click, middle-click — was impossible; the ONLY
-                    gesture was a plain click. `EntityRef` keeps that click
-                    doing exactly what it did (`onActivate` opens the file
-                    in-app) while making the name a real anchor to
-                    `/files/f/{id}`, so modified clicks work natively, and it
-                    adds the file peek. */}
+                {/* Plain click previews in place (`onOpen`); modified clicks
+                    open `/files/f/{id}` natively — the name is a real anchor. */}
                 <EntityRef
                   token="file"
                   id={file.id}
                   name={file.fileName}
                   showIcon={false}
-                  onOpen={onActivate}
+                  onOpen={() => commands.activate(file.id)}
                   className="min-w-0 font-medium text-foreground"
                 />
                 <FileRagBadge fileId={file.id} className="shrink-0" />
-                {/*
-                  TWO conditions, and they are different questions.
-                  `source.kind === "real"` asks "does this row have a
-                  files.files id at all?" (adapter-backed rows do not).
-                  `!file.deletedAt` asks "is that record still live?" —
-                  /files/f/[fileId] selects `.is("deleted_at", null)` and
-                  notFound()s otherwise, so every row on /files/trash would
-                  otherwise ship a door straight to a 404. Keyed off the
-                  record, not the section, so a trashed row surfacing in
-                  search results is covered too.
-                */}
+                {/* Two questions: has a files.files id at all (adapter rows do
+                    not), and is that record still live (a trashed row's door
+                    would 404). */}
                 {file.source.kind === "real" && !file.deletedAt && (
                   <EntityDoorControls
                     token="file"
@@ -342,424 +255,235 @@ function FileCell({
                   />
                 )}
               </span>
-              {parentPath ? (
+              {row.parentPath ? (
                 <span
                   className="truncate text-[11px] text-muted-foreground leading-tight"
-                  title={`In ${parentPath}`}
+                  title={`In ${row.parentPath}`}
                 >
-                  in {parentPath}
+                  in {row.parentPath}
                 </span>
               ) : null}
             </div>
-            <RowActions
-              visible={hovered}
-              onShare={onShare}
-              onCopyLink={onCopyLink}
+            <FileRowActions
               fileId={file.id}
+              onShare={() => commands.openShare(file.id, "file")}
             />
           </div>
-        </td>
+        </div>
       );
     case "type":
-      return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <FileTypeBadge fileName={file.fileName} mimeType={file.mimeType} />
-        </td>
+      return <FileTypeBadge fileName={file.fileName} mimeType={file.mimeType} />;
+    case "extension": {
+      const ext = extOf(file.fileName);
+      return ext ? (
+        <span className="rounded-sm border border-border bg-muted/40 px-1.5 py-px text-[10px] font-semibold tracking-wide text-muted-foreground">
+          {ext.toUpperCase()}
+        </span>
+      ) : (
+        DASH
       );
-    case "extension":
-      return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
-          {extOf(file.fileName) ? (
-            <span className="rounded-sm border border-border bg-muted/40 px-1.5 py-px text-[10px] font-semibold tracking-wide">
-              {extOf(file.fileName).toUpperCase()}
-            </span>
-          ) : (
-            <span className="text-muted-foreground/60">—</span>
-          )}
-        </td>
-      );
+    }
     case "mime":
       return (
-        <td
-          className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap"
+        <span
+          className="block truncate text-xs text-muted-foreground"
           title={file.mimeType ?? undefined}
         >
-          <span className="truncate inline-block max-w-[14rem] align-middle">
-            {file.mimeType ?? "—"}
-          </span>
-        </td>
+          {file.mimeType ?? "—"}
+        </span>
       );
     case "path":
       return (
-        <td
-          className="px-4 py-2 text-xs text-muted-foreground"
+        <span
+          className="block truncate text-xs text-muted-foreground"
           title={file.filePath}
         >
-          <span className="block truncate max-w-[18rem]">{file.filePath}</span>
-        </td>
+          {file.filePath}
+        </span>
       );
     case "owner":
-      return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <OwnerCell
-            ownerId={file.ownerId}
-            currentUserId={currentUserId ?? null}
-          />
-        </td>
-      );
+      return <OwnerCell ownerId={file.ownerId} currentUserId={currentUserId} />;
     case "size":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {formatFileSize(file.fileSize)}
-        </td>
+        </span>
       );
     case "version":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           v{file.currentVersion}
-        </td>
+        </span>
       );
     case "updated_at":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeTime(file.updatedAt)}
-        </td>
+        </span>
       );
     case "created_at":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeTime(file.createdAt)}
-        </td>
+        </span>
       );
     case "access":
       return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <AccessCell
-            entityType="file"
-            entityId={file.id}
-            visibility={file.visibility}
-            memberCount={memberCount}
-            isShared={isShared}
-            granteeIds={granteeIds}
-          />
-        </td>
+        <AccessCell
+          entityType="file"
+          entityId={file.id}
+          visibility={file.visibility}
+          memberCount={row.memberCount}
+          isShared={row.isShared}
+          granteeIds={row.granteeIds}
+        />
       );
     case "rag_status":
-      return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <RagStatusCell fileId={file.id} />
-        </td>
-      );
+      return <RagStatusCell fileId={file.id} />;
     case "context":
-      return (
-        // No side padding: the context button is a tap button and carries its own 3px.
-        <td className="py-2 whitespace-nowrap">
-          <FileContextCell fileId={file.id} fileName={file.fileName} />
-        </td>
-      );
+      return <FileContextCell fileId={file.id} fileName={file.fileName} />;
   }
-}
-
-interface FolderRowProps extends FileTableRowProps {
-  folder: CloudFolderRecord;
-}
-
-function FolderRow({
-  folder,
-  selected,
-  isFocused,
-  visibleColumnIds,
-  currentUserId,
-  onToggleSelected,
-  onActivate,
-  isShared,
-  memberCount,
-  granteeIds,
-  onOpenShare,
-  parentPath,
-}: FolderRowProps) {
-  const [hovered, setHovered] = useState(false);
-  const rowRef = useRef<HTMLTableRowElement>(null);
-
-  useEffect(() => {
-    if (isFocused) {
-      rowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }, [isFocused]);
-
-  // Folders are both drop targets AND draggable. Drop: another file or
-  // folder lands here and we move it under this folder. Drag: this folder
-  // can be dropped onto another folder (or the tree sidebar) to be moved.
-  const { isOver, setNodeRef: setDropRef } = useDroppable({
-    id: `folder-${folder.id}`,
-    data: { type: "folder", id: folder.id },
-  });
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragRef,
-    isDragging,
-  } = useDraggable({
-    id: `folder-drag-${folder.id}`,
-    data: { type: "folder", id: folder.id },
-  });
-  const setMergedRef = (node: HTMLTableRowElement | null) => {
-    (rowRef as React.MutableRefObject<HTMLTableRowElement | null>).current =
-      node;
-    setDropRef(node);
-    setDragRef(node);
-  };
-
-  return (
-    <FolderRowContextMenu folderId={folder.id}>
-      <tr
-        ref={setMergedRef}
-        data-surface-value="visible_folders"
-        data-surface-record-id={folder.id}
-        className={cn(
-          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
-          isFocused
-            ? "bg-primary/15 ring-1 ring-inset ring-primary/40"
-            : selected
-              ? "bg-accent/70"
-              : "hover:bg-accent/40",
-          isOver && "bg-primary/10 ring-1 ring-inset ring-primary",
-          isDragging && "opacity-50",
-        )}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={(e) => {
-          // Dropdown and context-menu items render in React portals. Their
-          // synthetic click still follows this component tree, so reject it
-          // unless the clicked DOM node actually belongs to the row.
-          if (!e.currentTarget.contains(e.target as Node)) return;
-          // Belt-and-suspenders vs D72 — see FileRow above.
-          if ((e.target as HTMLElement).closest("[data-row-actions]")) return;
-          onActivate();
-        }}
-        {...attributes}
-        {...listeners}
-      >
-        <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggleSelected}
-            aria-label={`Select ${folder.folderName}`}
-          />
-        </td>
-        {visibleColumnIds.map((id) => (
-          <FolderCell
-            key={id}
-            id={id}
-            folder={folder}
-            currentUserId={currentUserId}
-            isShared={isShared}
-            memberCount={memberCount}
-            granteeIds={granteeIds}
-            hovered={hovered}
-            onActivate={onActivate}
-            onShare={onOpenShare}
-            parentPath={parentPath ?? null}
-          />
-        ))}
-        <GearTrailingCell />
-      </tr>
-    </FolderRowContextMenu>
-  );
-}
-
-interface FolderCellProps {
-  id: ColumnId;
-  folder: CloudFolderRecord;
-  currentUserId?: string | null;
-  isShared: boolean;
-  memberCount: number;
-  granteeIds: string[];
-  hovered: boolean;
-  onActivate: () => void;
-  onShare: () => void;
-  parentPath: string | null;
 }
 
 function FolderCell({
   id,
+  row,
   folder,
   currentUserId,
-  isShared,
-  memberCount,
-  granteeIds,
-  hovered,
-  onActivate,
-  onShare,
-  parentPath,
-}: FolderCellProps) {
+  commands,
+}: {
+  id: ColumnId;
+  row: FileListRow;
+  folder: CloudFolderRecord;
+  currentUserId: string | null;
+  commands: FileTableRowCommands;
+}) {
   switch (id) {
     case "name":
       return (
-        <td className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)] px-2 py-2">
+        <div className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)]">
           <div className="flex items-center gap-2 min-w-0">
-            <FolderIconWithMembers isShared={isShared} size={18} />
+            <FolderIconWithMembers isShared={row.isShared} size={18} />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onActivate();
+                  commands.activate(folder.id);
                 }}
-                className="truncate text-left font-medium text-foreground "
+                className="truncate text-left font-medium text-foreground"
               >
                 {folder.folderName}
               </button>
-              {parentPath ? (
+              {row.parentPath ? (
                 <span
                   className="truncate text-[11px] text-muted-foreground leading-tight"
-                  title={`In ${parentPath}`}
+                  title={`In ${row.parentPath}`}
                 >
-                  in {parentPath}
+                  in {row.parentPath}
                 </span>
               ) : null}
             </div>
-            {/* Same two questions as the file cell above: has an id, and is
-                still live. A deleted folder's path resolves to nothing, so the
-                door would open an empty folder view rather than the record. */}
+            {/* Has an id, and is still live: a deleted folder's path resolves
+                to nothing. Folders are addressed by PATH (no registry hrefFor). */}
             {folder.source.kind === "real" && !folder.deletedAt && (
               <EntityDoorControls
                 token="folder"
                 id={folder.id}
                 name={folder.folderName}
-                // `folder` has no registry `hrefFor` — folders are addressed by
-                // PATH, not id. `buildFilesAllFolderUrl` is the canonical
-                // builder the shell itself navigates with, so this is the same
-                // destination the row click reaches (and now middle-clickable).
                 href={buildFilesAllFolderUrl(folder.folderPath, "")}
                 showOpen
                 disablePeek
               />
             )}
             <FolderRowActions
-              visible={hovered}
-              onShare={onShare}
               folderId={folder.id}
+              onShare={() => commands.openShare(folder.id, "folder")}
             />
           </div>
-        </td>
+        </div>
       );
     case "type":
-      return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <FileTypeBadge fileName={folder.folderName} isFolder />
-        </td>
-      );
+      return <FileTypeBadge fileName={folder.folderName} isFolder />;
     case "extension":
     case "mime":
     case "size":
     case "version":
     case "rag_status":
     case "context":
-      return (
-        <td className="px-4 py-2 text-xs text-muted-foreground/60 whitespace-nowrap">
-          —
-        </td>
-      );
+      return DASH;
     case "path":
       return (
-        <td
-          className="px-4 py-2 text-xs text-muted-foreground"
+        <span
+          className="block truncate text-xs text-muted-foreground"
           title={folder.folderPath}
         >
-          <span className="block truncate max-w-[18rem]">
-            {folder.folderPath}
-          </span>
-        </td>
+          {folder.folderPath}
+        </span>
       );
     case "owner":
-      return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <OwnerCell
-            ownerId={folder.ownerId}
-            currentUserId={currentUserId ?? null}
-          />
-        </td>
-      );
+      return <OwnerCell ownerId={folder.ownerId} currentUserId={currentUserId} />;
     case "updated_at":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeTime(folder.updatedAt)}
-        </td>
+        </span>
       );
     case "created_at":
       return (
-        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeTime(folder.createdAt)}
-        </td>
+        </span>
       );
     case "access":
       return (
-        <td className="px-4 py-2 whitespace-nowrap">
-          <AccessCell
-            entityType="folder"
-            entityId={folder.id}
-            visibility={folder.visibility}
-            memberCount={memberCount}
-            isShared={isShared}
-            granteeIds={granteeIds}
-          />
-        </td>
+        <AccessCell
+          entityType="folder"
+          entityId={folder.id}
+          visibility={folder.visibility}
+          memberCount={row.memberCount}
+          isShared={row.isShared}
+          granteeIds={row.granteeIds}
+        />
       );
   }
 }
 
-interface RowActionsProps {
-  visible: boolean;
-  onShare: () => void;
-  onCopyLink: () => void;
-  fileId: string;
-}
+// ── Hover actions ──────────────────────────────────────────────────────────
 
-function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
+// Revealed by hovering the row (the table's `group/matrx-row`). Desktop hides
+// them until then; tablet has no dependable hover, so its 44px More action
+// stays visible beside the name while the secondary actions stay desktop-only.
+const ROW_ACTIONS_CLASS = cn(
+  "flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto",
+  "lg:opacity-0 lg:group-hover/matrx-row:opacity-100 lg:focus-within:opacity-100",
+  // pointer-events off while hidden (D72): invisible buttons never swallow a
+  // click meant for the row, and hit areas never move mid-click.
+  "lg:pointer-events-none lg:group-hover/matrx-row:pointer-events-auto lg:focus-within:pointer-events-auto",
+);
+
+function FileRowActions({
+  fileId,
+  onShare,
+}: {
+  fileId: string;
+  onShare: () => void;
+}) {
+  const actions = useFileActions(fileId);
   return (
-    <div
-      data-row-actions=""
-      className={cn(
-        "flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto",
-        // pointer-events-none while hidden (D72): the toolbar stays mounted
-        // so hover transitions never shift hit areas mid-click, and its
-        // invisible buttons can never swallow a click meant for the row.
-        // Tablet has no dependable hover, so its 44px More action remains
-        // visible beside the item identity while secondary actions stay
-        // desktop-only.
-        visible
-          ? "opacity-100"
-          : "opacity-100 lg:pointer-events-none lg:opacity-0",
-      )}
-    >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onShare();
-        }}
-        className="hidden items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 lg:inline-flex"
-      >
-        <Share2 className="h-3 w-3" aria-hidden="true" />
-        Share
-      </button>
+    <div data-row-actions="" className={ROW_ACTIONS_CLASS}>
+      <ShareButton onShare={onShare} />
       <IconButton
         label="Copy link"
         className="hidden lg:flex"
         onClick={(e) => {
           e.stopPropagation();
-          onCopyLink();
+          void actions.copyShareUrl();
         }}
       >
         <Copy className="h-3.5 w-3.5" />
       </IconButton>
-      <IconButton
-        label="Star"
-        title="Coming soon"
-        className="hidden lg:flex"
-        disabled
-      >
+      <IconButton label="Star" title="Coming soon" className="hidden lg:flex" disabled>
         <Star className="h-3.5 w-3.5" />
       </IconButton>
       <FileContextMenu fileId={fileId}>
@@ -776,45 +500,17 @@ function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
   );
 }
 
-interface FolderRowActionsProps {
-  visible: boolean;
-  onShare: () => void;
-  folderId: string;
-}
-
 function FolderRowActions({
-  visible,
-  onShare,
   folderId,
-}: FolderRowActionsProps) {
+  onShare,
+}: {
+  folderId: string;
+  onShare: () => void;
+}) {
   const folderActions = useFolderActions(folderId);
   return (
-    <div
-      data-row-actions=""
-      className={cn(
-        "flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto",
-        // pointer-events-none while hidden (D72): the toolbar stays mounted
-        // so hover transitions never shift hit areas mid-click, and its
-        // invisible buttons can never swallow a click meant for the row.
-        // Tablet has no dependable hover, so its 44px More action remains
-        // visible beside the item identity while secondary actions stay
-        // desktop-only.
-        visible
-          ? "opacity-100"
-          : "opacity-100 lg:pointer-events-none lg:opacity-0",
-      )}
-    >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onShare();
-        }}
-        className="hidden items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 lg:inline-flex"
-      >
-        <Share2 className="h-3 w-3" aria-hidden="true" />
-        Share
-      </button>
+    <div data-row-actions="" className={ROW_ACTIONS_CLASS}>
+      <ShareButton onShare={onShare} />
       <IconButton
         label="Copy link"
         className="hidden lg:flex"
@@ -825,12 +521,7 @@ function FolderRowActions({
       >
         <Copy className="h-3.5 w-3.5" />
       </IconButton>
-      <IconButton
-        label="Star"
-        title="Coming soon"
-        className="hidden lg:flex"
-        disabled
-      >
+      <IconButton label="Star" title="Coming soon" className="hidden lg:flex" disabled>
         <Star className="h-3.5 w-3.5" />
       </IconButton>
       <FolderContextMenu folderId={folderId}>
@@ -847,22 +538,34 @@ function FolderRowActions({
   );
 }
 
+function ShareButton({ onShare }: { onShare: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onShare();
+      }}
+      className="hidden items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 lg:inline-flex"
+    >
+      <Share2 className="h-3 w-3" aria-hidden="true" />
+      Share
+    </button>
+  );
+}
+
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   children: React.ReactNode;
 }
 
 /**
- * forwardRef + spread {...rest} is mandatory for use with Radix's
- * `<DropdownMenuTrigger asChild>`. Without ref forwarding Radix can't anchor
- * the menu and click-to-open silently fails on some renders. Without prop
- * spread, Radix's injected `onClick`/`aria-*`/`data-state` props get dropped.
+ * forwardRef + spread {...rest} is mandatory for `<DropdownMenuTrigger asChild>`:
+ * without the ref Radix cannot anchor the menu, without the spread its injected
+ * `onClick`/`aria-*`/`data-state` props are dropped.
  */
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  function IconButton(
-    { label, title, disabled, className, children, ...rest },
-    ref,
-  ) {
+  function IconButton({ label, title, disabled, className, children, ...rest }, ref) {
     return (
       <button
         ref={ref}
@@ -874,7 +577,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground",
           "hover:bg-accent hover:text-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-          disabled && "pointer-events-none opacity-40",
+          disabled && "opacity-40",
           className,
         )}
         {...rest}

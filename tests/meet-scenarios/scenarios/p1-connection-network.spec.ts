@@ -62,7 +62,10 @@ scenario("net-cannot-connect", async ({ cast }) => {
   await hostWithMeeting(cast);
   const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
   await walkIn(guest, cast.meeting!, { until: ["prejoin"] }).catch(() => undefined);
-  await guest.cutServersOnly();
+  // Our servers and the media server are unreachable while the page itself (already loaded) and the browser stay online.
+  await guest.context.route("**/v1/meet/**", (r) => r.abort("connectionrefused"));
+  await guest.page.routeWebSocket(/livekit/i, (ws) => ws.close());
+  guest.note("lever: /v1/meet/** requests refused and LiveKit WebSocket closed; browser still online");
   const join = guest.page.getByRole("button", { name: /^Join now$/ });
   if (await join.isVisible().catch(() => false)) await join.click().catch(() => undefined);
   // A typed, specific failure — not a spinner, not a blank page.

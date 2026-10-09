@@ -181,38 +181,79 @@ export function repairReuseIds(spec: TemplateSpec, reuses: DescribeAnswer["reuse
   });
 }
 
+/** What the person's reused table holds right now: how many rows, and the words each one shows (for matching a sample row to it). */
+export interface ReusedRows {
+  total: number;
+  rows: Array<{ id: string; words: string[] }>;
+}
+
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
 /**
- * ROWS THAT CANNOT LAND ARE LEFT OUT, NEVER INSTALLED TO FAIL: a table bound to one the person already has seeds none of its
- * rows, so a new table whose example rows point at a bound table's rows (a post "for" a client) would be refused by the store
- * ("Client is required") and the whole install would stop. Its example rows are dropped, one line says so, and the tables,
- * views, forms and reminders still install. Run after bindReuses.
+ * A SAMPLE ROW IS NEVER DROPPED WHOLE. A reused (bound) table the person already has is handled by what it holds:
+ *  - EMPTY: the template's sample rows for it are seeded into it (`seedRows`), so every example row that points at one lands linked;
+ *  - HAS ROWS: each sample row is matched to an existing row by its words (its key or any of its text values equal to a word the
+ *    existing row shows) and the link lands on that row (`rowIds`); a sample row with no match keeps its own row and loses only
+ *    that one link.
+ * The notes say only what landed. Run after bindReuses. `held` is read per bound table id; a table not read is treated as having rows
+ * with no matches (its links are left empty, never the row).
  */
-export function dropOrphanRows(spec: TemplateSpec): { spec: TemplateSpec; notes: string[] } {
-  type Row = { key?: string; values?: Record<string, unknown> };
-  const tables = spec.tables as unknown as Array<{ token: string; name?: string; bindsTo?: unknown; rows?: Row[]; fields: Array<{ key: string; parityType?: string; relationTarget?: string }> }>;
-  const dropped = new Map<string, true>();
-  const holdsRows = (token: string) => {
-    const t = tables.find((x) => x.token === token);
-    return !!t && !t.bindsTo && (t.rows?.length ?? 0) > 0 && !dropped.has(token);
-  };
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (const t of tables) {
-      if (t.bindsTo || !t.rows?.length || dropped.has(t.token)) continue;
-      const orphan = t.fields.some(
-        (f) => f.parityType === "relation" && f.relationTarget && f.relationTarget !== t.token && !holdsRows(f.relationTarget) && t.rows!.some((r) => r.values?.[f.key] != null && r.values[f.key] !== ""),
-      );
-      if (orphan) {
-        dropped.set(t.token, true);
-        changed = true;
+export function landReusedRows(spec: TemplateSpec, held: Record<string, ReusedRows>): { spec: TemplateSpec; notes: string[] } {
+  type Row = { key: string; values?: Record<string, unknown> };
+  type T = { token: string; name?: string; bindsTo?: { tableId: string; fields: string[]; seedRows?: boolean; rowIds?: Record<string, string> }; rows?: Row[]; fields: Array<{ key: string; parityType?: string; relationTarget?: string }> };
+  const tables = spec.tables as unknown as T[];
+  const notes: string[] = [];
+  const bound = tables.filter((t) => t.bindsTo);
+  if (!bound.length) return { spec, notes };
+  const out = new Map<string, T["bindsTo"]>();
+  for (const b of bound) {
+    const mine = held[b.bindsTo!.tableId];
+    const sample = b.rows ?? [];
+    const pointedAt = new Set<string>(
+      tables.flatMap((t) => (t.rows ?? []).flatMap((r) => t.fields.filter((f) => f.parityType === "relation" && f.relationTarget === b.token).flatMap((f) => [r.values?.[f.key]].flat().filter((v) => v != null && v !== "").map(String)))),
+    );
+    if (mine && mine.total === 0) {
+      if (sample.length) {
+        out.set(b.token, { ...b.bindsTo!, seedRows: true });
+        notes.push(`${b.name ?? b.token}: ${sample.length} example row${sample.length === 1 ? " is" : "s are"} added to your empty table.`);
+      }
+      continue;
+    }
+    const rowIds: Record<string, string> = {};
+    const taken = new Set<string>();
+    for (const r of sample) {
+      const wanted = new Set([norm(r.key), ...Object.values(r.values ?? {}).filter((v) => typeof v === "string").map(norm)].filter(Boolean));
+      const hit = (mine?.rows ?? []).find((e) => !taken.has(e.id) && e.words.some((w) => wanted.has(norm(w))));
+      if (hit) {
+        rowIds[r.key] = hit.id;
+        taken.add(hit.id);
       }
     }
+    out.set(b.token, { ...b.bindsTo!, rowIds });
+    const unmatched = [...pointedAt].filter((k) => !rowIds[k]).length;
+    if (unmatched) notes.push(`${b.name ?? b.token}: ${unmatched} example link${unmatched === 1 ? "" : "s"} left empty (nothing in your table matches ${unmatched === 1 ? "it" : "them"}); the example rows themselves are kept.`);
   }
-  if (!dropped.size) return { spec, notes: [] };
-  return {
-    spec: { ...spec, tables: spec.tables.map((t) => (dropped.has(t.token) ? ({ ...t, rows: [] } as typeof t) : t)) },
-    notes: tables.filter((t) => dropped.has(t.token)).map((t) => `${t.name ?? t.token}: example rows left out (they point at rows of a table you already have).`),
-  };
+  if (!out.size) return { spec, notes };
+  return { spec: { ...spec, tables: spec.tables.map((t) => (out.has(t.token) ? ({ ...t, bindsTo: out.get(t.token) } as typeof t) : t)) }, notes };
+}
+
+/** Read what each bound table holds: its row count and the words its first rows show. Capped (a match needs names, not a census). */
+export async function readReusedRows(client: SupabaseClient, organizationId: string, tableIds: string[]): Promise<Record<string, ReusedRows>> {
+  const out: Record<string, ReusedRows> = {};
+  await Promise.all(
+    tableIds.map(async (id) => {
+      const page = await client.schema("custom").rpc("read_records_page", { p_organization_id: organizationId, p_table_id: id, p_limit: 200, p_offset: 0 });
+      if (page.error || !page.data) return;
+      const d = page.data as { rows?: Array<{ id: string; document?: Record<string, unknown> }>; total?: number };
+      const words = (doc: Record<string, unknown> | undefined) => {
+        const vals = (doc?._values ?? {}) as Record<string, unknown>;
+        const pick = (v: unknown): unknown => (v && typeof v === "object" && "v" in (v as object) ? (v as { v: unknown }).v : v);
+        return [...Object.values(vals).map(pick), ...Object.entries(doc ?? {}).filter(([k]) => !k.startsWith("_")).map(([, v]) => v)].filter((v): v is string => typeof v === "string" && v.trim() !== "");
+      };
+      out[id] = { total: Number(d.total ?? d.rows?.length ?? 0), rows: (d.rows ?? []).map((r) => ({ id: r.id, words: words(r.document) })) };
+    }),
+  );
+  return out;
 }
 
 /**
