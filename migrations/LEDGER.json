@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T05:26:39.583Z",
+  "generated_at": "2026-10-09T05:42:56.639Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5077,6 +5077,24 @@
       "filename": "notionprops_b_a_formula_shows_its_answer_as_it_is_typed.sql",
       "checksum": "084f902097833d94c8b966567945dd45bd3e600c1dc70c0e65d4bb247c625c04",
       "applied_at": "2026-10-08 14:59:22.93421+00"
+    },
+    "migrations/campaign/notionsmall2_a_a_view_can_be_locked.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall2_a_a_view_can_be_locked.sql",
+      "checksum": "618ce5746abb901c447f13ff3e3db5c6565ae95dd41a8da2d14b90468f160042",
+      "applied_at": "2026-10-09 05:42:27.132553+00"
+    },
+    "migrations/campaign/notionsmall2_b_a_filter_can_say_me_and_today.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall2_b_a_filter_can_say_me_and_today.sql",
+      "checksum": "93098928f78995c3bb34003d892d956b0fbd2d29cae3fd787c273a48fc45c696",
+      "applied_at": "2026-10-09 05:42:38.738295+00"
+    },
+    "migrations/campaign/notionsmall2_c_in_days_must_be_a_number.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall2_c_in_days_must_be_a_number.sql",
+      "checksum": "d7ebe367eec7b7cbd065aa8fafd1c5ad5c1213611e7a3414b41f1d31294c7b4a",
+      "applied_at": "2026-10-09 05:42:55.442549+00"
     },
     "migrations/campaign/olderdoors_a_moved_older_table_reads_marked_and_refuses_writes.sql": {
       "source": "matrx-frontend",
