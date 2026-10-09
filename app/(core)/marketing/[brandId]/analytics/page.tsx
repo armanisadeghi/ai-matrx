@@ -4,6 +4,7 @@ import { MarketingAddressUnavailable } from "@/features/marketing/components/sha
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandAnalyticsWorkspace } from "@/features/marketing/analytics/components/BrandAnalyticsWorkspace";
 import { BrandChannelPanel } from "@/features/marketing/youtube/components/BrandChannelPanel";
+import { SocialAnalyticsPanel } from "@/features/marketing/social/components/SocialAnalyticsPanel";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 
 /**
@@ -33,11 +34,18 @@ export default async function BrandAnalyticsPage({
       <Suspense fallback={<LoadingSurface label="Loading this client's Analytics…" />}>
         <BrandAnalyticsWorkspace brandId={brand.id} />
       </Suspense>
-      <div className="mt-3">
+      <div className="mt-3 grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
         <Suspense
           fallback={<LoadingSurface label="Loading this client's YouTube channel…" />}
         >
           <BrandChannelPanel brandId={brand.id} />
+        </Suspense>
+        <Suspense fallback={<LoadingSurface label="Loading social numbers…" />}>
+          <SocialAnalyticsPanel
+            brandId={brand.id}
+            organizationId={brand.organization_id}
+            brandSeg={brand.slug ?? brand.id}
+          />
         </Suspense>
       </div>
     </div>

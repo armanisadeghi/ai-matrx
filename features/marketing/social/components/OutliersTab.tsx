@@ -1,0 +1,493 @@
+"use client";
+
+/**
+ * Outliers (UI-SPEC §7): posts beating their creator's own baseline across the
+ * brand's tracked accounts — multiplier first, raw views beside it (OutlierKit /
+ * Spotter pattern). Filters sit in ONE row; the same result set renders as
+ * `SocialPostCard`s or a `MatrxDataTable`; a click opens `PostDrawer`.
+ *
+ * A watchlist is a saved filter (`platform.saved_view`, surface
+ * `social.outliers`). Its hits are computed on view; marking a post seen or
+ * dismissed writes `social.watchlist_hit`. Nothing runs on a schedule and
+ * nothing notifies anyone: alerts are the disabled control below
+ * (`OUTLIER_ALERTS_ENABLED`).
+ */
+
+import { useState } from "react";
+import { BellOff, CheckCheck, ExternalLink, Lightbulb, Plus, Trash2 } from "lucide-react";
+
+import {
+  Button,
+  RegionSkeleton,
+  SegmentedControl,
+  Select,
+  Switch,
+  type SelectOption,
+} from "@ai-matrx/design-system/controls";
+import { TextInputDialog } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+
+import { useBrandSocialData, useInvalidateSocial, useWatchlistHits, useWatchlists } from "../hooks";
+import { relativeAge } from "../mappers";
+import { formatCompact, formatPercentile } from "../outlier";
+import {
+  DEFAULT_OUTLIER_FILTER,
+  OUTLIER_ALERTS_ENABLED,
+  OUTLIER_MIN_MULTIPLES,
+  OUTLIER_WINDOWS,
+  applyOutlierFilter,
+  countNewHits,
+  resolveHits,
+  sameOutlierFilter,
+  sortOutliers,
+  visibleHits,
+  type HitState,
+  type OutlierFilter,
+  type OutlierSort,
+  type OutlierWindow,
+} from "../outliers";
+import { socialErrorMessage } from "../server";
+import { archiveWatchlist, createWatchlist, setHitStates } from "../service";
+import {
+  SOCIAL_PLATFORM_LABELS,
+  TRACKED_ROLES,
+  TRACKED_ROLE_LABELS,
+  isSocialPlatform,
+  isTrackedRole,
+  type BrandPost,
+  type PostCardModel,
+} from "../types";
+import { OutlierBadge } from "./OutlierBadge";
+import { PlatformMark } from "./PlatformMark";
+import { PostDrawer, type DetailTab } from "./PostDetail";
+import { SocialPostCard } from "./SocialPostCard";
+import { useSocials } from "./SocialsContext";
+
+interface FeedItem {
+  post: BrandPost;
+  /** null outside a watchlist (no triage there). */
+  state: HitState | null;
+}
+
+const ALL = "all";
+const SEVERAL = "several";
+
+const SORT_OPTIONS = [
+  { value: "multiple", label: "Multiple" },
+  { value: "views", label: "Views" },
+  { value: "newest", label: "Newest" },
+] as const;
+
+const WINDOW_OPTIONS: SelectOption[] = OUTLIER_WINDOWS.map((d) => ({
+  value: String(d),
+  label: `Last ${d} days`,
+}));
+const MIN_OPTIONS: SelectOption[] = OUTLIER_MIN_MULTIPLES.map((m) => ({
+  value: String(m),
+  label: `${m}x and up`,
+}));
+
+function platformLabel(p: string): string {
+  return isSocialPlatform(p) ? SOCIAL_PLATFORM_LABELS[p] : p;
+}
+
+export function OutliersTab() {
+  const { brandId, brandSeg, organizationId, openTrack } = useSocials();
+  const data = useBrandSocialData(organizationId, brandId);
+  const watchlists = useWatchlists(brandId);
+  const lists = watchlists.data ?? [];
+  const hits = useWatchlistHits(lists.map((w) => w.id));
+  const invalidate = useInvalidateSocial();
+
+  const [filter, setFilter] = useState<OutlierFilter>(DEFAULT_OUTLIER_FILTER);
+  const [selected, setSelected] = useState<string>(ALL);
+  const [sort, setSort] = useState<OutlierSort>("multiple");
+  const [view, setView] = useState<"grid" | "table">("grid");
+  const [showDismissed, setShowDismissed] = useState(false);
+  const [open, setOpen] = useState<{ post: PostCardModel; tab: DetailTab } | null>(null);
+  const [naming, setNaming] = useState(false);
+  const [now] = useState(() => Date.now());
+
+  const posts = data.data?.posts ?? [];
+  const accounts = data.data?.accounts ?? [];
+  const hitRows = hits.data ?? [];
+  const active = lists.find((w) => w.id === selected) ?? null;
+
+  const matches = sortOutliers(applyOutlierFilter(posts, filter, now), sort);
+  const resolved = active
+    ? resolveHits(
+        matches,
+        hitRows.filter((h) => h.saved_view_id === active.id),
+      )
+    : [];
+  const items: FeedItem[] = active
+    ? visibleHits(resolved, showDismissed).map((h) => ({ post: h.post, state: h.state }))
+    : matches.map((post) => ({ post, state: null }));
+  const newCount = active ? countNewHits(resolved) : 0;
+
+  const platformsPresent = [...new Set(accounts.map((a) => a.platform))].sort();
+  const formatsPresent = [...new Set(posts.map((p) => p.format))].sort();
+  const platformValue =
+    filter.platforms.length === 0 ? ALL : filter.platforms.length === 1 ? filter.platforms[0]! : SEVERAL;
+  const roleValue = filter.roles.length === 0 ? ALL : filter.roles.length === 1 ? filter.roles[0]! : SEVERAL;
+
+  const watchlistOptions: SelectOption[] = [
+    { value: ALL, label: "All tracked" },
+    ...lists.map((w) => {
+      const n = countNewHits(
+        resolveHits(
+          applyOutlierFilter(posts, w.filter, now),
+          hitRows.filter((h) => h.saved_view_id === w.id),
+        ),
+      );
+      return { value: w.id, label: n > 0 ? `${w.name} (${n} new)` : w.name };
+    }),
+  ];
+  const platformOptions: SelectOption[] = [
+    { value: ALL, label: "All platforms" },
+    ...(platformValue === SEVERAL ? [{ value: SEVERAL, label: "Several platforms" }] : []),
+    ...platformsPresent.map((p) => ({ value: p, label: platformLabel(p) })),
+  ];
+  const roleOptions: SelectOption[] = [
+    { value: ALL, label: "All roles" },
+    ...(roleValue === SEVERAL ? [{ value: SEVERAL, label: "Several roles" }] : []),
+    ...TRACKED_ROLES.map((r) => ({ value: r, label: TRACKED_ROLE_LABELS[r] })),
+  ];
+  const formatOptions: SelectOption[] = [
+    { value: ALL, label: "All formats" },
+    ...formatsPresent.map((f) => ({ value: f, label: f })),
+  ];
+
+  function pickWatchlist(id: string) {
+    setSelected(id);
+    const w = lists.find((x) => x.id === id);
+    setFilter(w ? w.filter : { ...DEFAULT_OUTLIER_FILTER });
+    setShowDismissed(false);
+  }
+
+  async function writeStates(targets: FeedItem[], state: HitState) {
+    if (!active || targets.length === 0) return;
+    try {
+      await setHitStates({
+        organizationId,
+        savedViewId: active.id,
+        items: targets.map((t) => ({ postId: t.post.postId, score: t.post.outlierScore })),
+        state,
+      });
+      await invalidate();
+    } catch (err) {
+      toast.error(socialErrorMessage(err, "Couldn't update the watchlist"));
+    }
+  }
+
+  function openPost(item: FeedItem, tab: DetailTab = "overview") {
+    setOpen({ post: item.post, tab });
+    if (item.state === "new") void writeStates([item], "seen");
+  }
+
+  async function saveWatchlist(name: string) {
+    try {
+      const id = await createWatchlist({ organizationId, brandId, name, filter });
+      await invalidate();
+      setSelected(id);
+      setNaming(false);
+      toast.success("Watchlist saved");
+    } catch (err) {
+      toast.error(socialErrorMessage(err, "Couldn't save the watchlist"));
+    }
+  }
+
+  async function removeWatchlist() {
+    if (!active) return;
+    const ok = await confirm({
+      title: `Remove "${active.name}"?`,
+      description: "Archives this watchlist and its seen / dismissed marks. Posts are untouched.",
+      confirmLabel: "Remove",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveWatchlist(active.id);
+      await invalidate();
+      pickWatchlist(ALL);
+    } catch (err) {
+      toast.error(socialErrorMessage(err, "Couldn't remove the watchlist"));
+    }
+  }
+
+  const columns: MatrxColumnDef<FeedItem>[] = [
+    {
+      id: "post",
+      label: "Post",
+      header: "Post",
+      accessorFn: (r) => r.post.hookLine,
+      filter: "text",
+      minWidth: 240,
+      cell: (r) => <span className="block max-w-[28rem] truncate">{r.post.hookLine || "No caption"}</span>,
+    },
+    {
+      id: "creator",
+      label: "Creator",
+      header: "Creator",
+      accessorFn: (r) => r.post.handle ?? "",
+      filter: "text",
+      cell: (r) => (r.post.handle ? `@${r.post.handle}` : "—"),
+    },
+    {
+      id: "platform",
+      label: "Platform",
+      header: "Platform",
+      accessorFn: (r) => r.post.platform,
+      copyValue: (r) => platformLabel(r.post.platform),
+      filter: "select",
+      filterOptions: Object.entries(SOCIAL_PLATFORM_LABELS).map(([value, label]) => ({ value, label })),
+      cell: (r) => (
+        <span className="flex items-center gap-1.5">
+          <PlatformMark platform={r.post.platform} size={16} />
+          {platformLabel(r.post.platform)}
+        </span>
+      ),
+    },
+    {
+      id: "role",
+      label: "Role",
+      header: "Role",
+      accessorFn: (r) => r.post.role,
+      copyValue: (r) => TRACKED_ROLE_LABELS[r.post.role],
+      filter: "select",
+      filterOptions: TRACKED_ROLES.map((r) => ({ value: r, label: TRACKED_ROLE_LABELS[r] })),
+      cell: (r) => (isTrackedRole(r.post.role) ? TRACKED_ROLE_LABELS[r.post.role] : r.post.role),
+    },
+    {
+      id: "multiple",
+      label: "Multiple",
+      header: "Multiple",
+      accessorFn: (r) => r.post.outlierScore,
+      align: "right",
+      filter: "number",
+      cell: (r) => <OutlierBadge input={r.post.outlier} />,
+    },
+    {
+      id: "percentile",
+      label: "Percentile",
+      header: "Pctl",
+      accessorFn: (r) => r.post.percentile,
+      copyValue: (r) => formatPercentile(r.post.percentile),
+      align: "right",
+      filter: "number",
+      hidden: true,
+      cell: (r) => formatPercentile(r.post.percentile),
+    },
+    {
+      id: "views",
+      label: "Views",
+      header: "Views",
+      accessorFn: (r) => r.post.views,
+      align: "right",
+      filter: "number",
+      cell: (r) => <span className="tabular-nums">{formatCompact(r.post.views)}</span>,
+    },
+    {
+      id: "format",
+      label: "Format",
+      header: "Format",
+      accessorFn: (r) => r.post.format,
+      filter: "select",
+    },
+    {
+      id: "age",
+      label: "Posted",
+      header: "Posted",
+      accessorFn: (r) => r.post.postedAt,
+      filter: "date",
+      cell: (r) => relativeAge(r.post.postedAt),
+    },
+    ...(active
+      ? [
+          {
+            id: "state",
+            label: "State",
+            header: "State",
+            accessorFn: (r: FeedItem) => r.state ?? "",
+            filter: "select" as const,
+            cell: (r: FeedItem) => (r.state === "new" ? "New" : r.state === "dismissed" ? "Dismissed" : r.state === "saved" ? "Saved" : "Seen"),
+          },
+        ]
+      : []),
+  ];
+
+  if (data.isLoading) return <RegionSkeleton shape="cards" count={6} />;
+  if (data.isError) {
+    return (
+      <div className="flex flex-col items-start gap-2 p-3">
+        <p className="text-sm text-foreground">Couldn't load outliers</p>
+        <Button variant="outline" onClick={() => void data.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+  if (accounts.length === 0) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-2">
+        <p className="text-sm text-foreground">Track accounts first</p>
+        <Button variant="primary" icon={<Plus />} onClick={openTrack}>
+          Track account
+        </Button>
+      </div>
+    );
+  }
+
+  const modified = active ? !sameOutlierFilter(filter, active.filter) : !sameOutlierFilter(filter, DEFAULT_OUTLIER_FILTER);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          aria-label="Watchlist"
+          value={selected}
+          options={watchlistOptions}
+          onValueChange={pickWatchlist}
+        />
+        <Select
+          aria-label="Platform"
+          value={platformValue}
+          options={platformOptions}
+          onValueChange={(v) => setFilter({ ...filter, platforms: v === ALL || v === SEVERAL ? (v === SEVERAL ? filter.platforms : []) : [v] })}
+        />
+        <Select
+          aria-label="Role"
+          value={roleValue}
+          options={roleOptions}
+          onValueChange={(v) =>
+            setFilter({
+              ...filter,
+              roles: v === ALL ? [] : v === SEVERAL ? filter.roles : isTrackedRole(v) ? [v] : [],
+            })
+          }
+        />
+        <Select
+          aria-label="Window"
+          value={String(filter.windowDays)}
+          options={WINDOW_OPTIONS}
+          onValueChange={(v) => setFilter({ ...filter, windowDays: Number(v) as OutlierWindow })}
+        />
+        <Select
+          aria-label="Minimum multiple"
+          value={String(filter.minMultiple)}
+          options={MIN_OPTIONS}
+          onValueChange={(v) => setFilter({ ...filter, minMultiple: Number(v) })}
+        />
+        <Select
+          aria-label="Format"
+          value={filter.format}
+          options={formatOptions}
+          onValueChange={(v) => setFilter({ ...filter, format: v })}
+        />
+        <SegmentedControl aria-label="Sort" value={sort} onValueChange={setSort} data={SORT_OPTIONS} />
+        <SegmentedControl
+          aria-label="View"
+          value={view}
+          onValueChange={setView}
+          data={[
+            { value: "grid", label: "Cards" },
+            { value: "table", label: "Table" },
+          ]}
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant={modified || !active ? "outline" : "quiet"} icon={<Plus />} onClick={() => setNaming(true)}>
+          Save as watchlist
+        </Button>
+        {active ? (
+          <>
+            <Button
+              variant="outline"
+              icon={<CheckCheck />}
+              disabled={newCount === 0}
+              onClick={() => void writeStates(items.filter((i) => i.state === "new"), "seen")}
+            >
+              {newCount > 0 ? `Mark ${newCount} seen` : "All seen"}
+            </Button>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Switch checked={showDismissed} onCheckedChange={setShowDismissed} aria-label="Show dismissed" />
+              Dismissed
+            </label>
+            <Button variant="quiet" icon={<Trash2 />} aria-label="Remove watchlist" onClick={() => void removeWatchlist()} />
+          </>
+        ) : null}
+        <Button
+          variant="quiet"
+          icon={<BellOff />}
+          disabled={!OUTLIER_ALERTS_ENABLED}
+          title="Alerts are off until they are approved"
+        >
+          Alerts
+        </Button>
+        <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+          {items.length} {items.length === 1 ? "post" : "posts"}
+        </span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-2">
+          <p className="text-sm text-foreground">No outliers in range</p>
+          <Button
+            variant="outline"
+            onClick={() => setFilter({ ...filter, windowDays: 90, minMultiple: 2, format: ALL, platforms: [], roles: [] })}
+          >
+            Widen window
+          </Button>
+        </div>
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {items.map((item) => (
+            <SocialPostCard
+              key={item.post.postId}
+              post={item.post}
+              isNew={item.state === "new"}
+              onOpen={() => openPost(item)}
+              extraActions={[
+                { id: "why", label: "Why it worked", onSelect: () => openPost(item, "breakdown") },
+                ...(active
+                  ? [
+                      item.state === "dismissed"
+                        ? { id: "restore", label: "Restore", onSelect: () => void writeStates([item], "seen") }
+                        : { id: "dismiss", label: "Dismiss", onSelect: () => void writeStates([item], "dismissed") },
+                    ]
+                  : []),
+              ]}
+            />
+          ))}
+        </div>
+      ) : (
+        <MatrxDataTable<FeedItem>
+          tableId="marketing-social-outliers"
+          data={items}
+          columns={columns}
+          getRowId={(r) => r.post.postId}
+          toolbar={{ searchPlaceholder: "Search outliers…" }}
+          defaultSort={{ id: "multiple", direction: "desc" }}
+          rowActions={(r) => [
+            { id: "open", icon: ExternalLink, label: "Open post", onClick: () => openPost(r) },
+            { id: "why", icon: Lightbulb, label: "Why it worked", onClick: () => openPost(r, "breakdown") },
+          ]}
+        />
+      )}
+
+      <PostDrawer post={open?.post ?? null} initialTab={open?.tab} onClose={() => setOpen(null)} />
+      <TextInputDialog
+        open={naming}
+        onOpenChange={setNaming}
+        title="Save as watchlist"
+        placeholder="e.g. Creator reels, 7 days"
+        confirmLabel="Save"
+        validate={(value) => (value.trim() ? null : "Name the watchlist")}
+        onConfirm={(value: string) => void saveWatchlist(value)}
+      />
+    </div>
+  );
+}

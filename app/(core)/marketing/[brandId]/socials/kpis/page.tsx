@@ -1,5 +1,5 @@
-import { SocialsTabPlaceholder } from "@/features/marketing/social/components/SocialsTabPlaceholder";
+import { KpisTab } from "@/features/marketing/social/components/KpisTab";
 
 export default function BrandSocialKpisPage() {
-  return <SocialsTabPlaceholder comingSoonId="marketing.social.kpis" />;
+  return <KpisTab />;
 }

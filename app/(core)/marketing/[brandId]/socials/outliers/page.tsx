@@ -1,5 +1,5 @@
-import { SocialsTabPlaceholder } from "@/features/marketing/social/components/SocialsTabPlaceholder";
+import { OutliersTab } from "@/features/marketing/social/components/OutliersTab";
 
 export default function BrandSocialOutliersPage() {
-  return <SocialsTabPlaceholder comingSoonId="marketing.social.outliers" />;
+  return <OutliersTab />;
 }

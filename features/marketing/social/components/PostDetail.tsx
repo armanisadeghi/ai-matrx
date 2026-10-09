@@ -73,7 +73,7 @@ import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 
-type DetailTab = "overview" | "transcript" | "metrics" | "breakdown";
+export type DetailTab = "overview" | "transcript" | "metrics" | "breakdown";
 const DETAIL_TABS = [
   { value: "overview", label: "Overview" },
   { value: "transcript", label: "Transcript" },
@@ -377,11 +377,11 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
 // Body
 // ---------------------------------------------------------------------------
 
-export function PostDetailBody({ postId, organizationId, brandSeg }: { postId: string; organizationId: string; brandSeg: string }) {
+export function PostDetailBody({ postId, organizationId, brandSeg, initialTab = "overview" }: { postId: string; organizationId: string; brandSeg: string; initialTab?: DetailTab }) {
   const detail = usePostDetail(postId);
   const collections = useSwipeCollections(organizationId);
   const client = useQueryClient();
-  const [tab, setTab] = useState<DetailTab>("overview");
+  const [tab, setTab] = useState<DetailTab>(initialTab);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -532,9 +532,11 @@ export function PostDetailBody({ postId, organizationId, brandSeg }: { postId: s
 export function PostDrawer({
   post,
   onClose,
+  initialTab,
 }: {
   post: PostCardModel | null;
   onClose: () => void;
+  initialTab?: DetailTab;
 }) {
   const brand = useMarketingBrand();
   return (
@@ -551,7 +553,7 @@ export function PostDrawer({
           </div>
         </DrawerHeader>
         <DrawerBody className="px-3 pb-4">
-          {post ? <PostDetailBody postId={post.postId} organizationId={brand.organizationId} brandSeg={brand.seg} /> : null}
+          {post ? <PostDetailBody key={`${post.postId}:${initialTab ?? ""}`} postId={post.postId} organizationId={brand.organizationId} brandSeg={brand.seg} initialTab={initialTab} /> : null}
         </DrawerBody>
       </DrawerContent>
     </Drawer>

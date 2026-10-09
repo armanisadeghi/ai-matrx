@@ -49,12 +49,16 @@ export interface SocialPostCardProps {
   onOpen?: (post: PostCardModel) => void;
   /** Present -> the `⋯` offers "Save to swipe file". */
   onSave?: (post: PostCardModel) => void;
+  /** Extra `⋯` items (an Outliers feed adds Why it worked / Dismiss). */
+  extraActions?: ReadonlyArray<{ id: string; label: string; onSelect: (post: PostCardModel) => void }>;
+  /** A small "new" dot on the thumbnail (unseen watchlist hit). */
+  isNew?: boolean;
   /** Compact density: thumbnail + badge + views only. */
   compact?: boolean;
   className?: string;
 }
 
-export function SocialPostCard({ post, onOpen, onSave, compact, className }: SocialPostCardProps) {
+export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, className }: SocialPostCardProps) {
   const [thumbFailed, setThumbFailed] = useState(false);
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
@@ -93,6 +97,14 @@ export function SocialPostCard({ post, onOpen, onSave, compact, className }: Soc
         <span className="absolute left-1.5 top-1.5">
           <PlatformMark platform={post.platform} size={20} />
         </span>
+        {isNew ? (
+          <span
+            role="img"
+            aria-label="New"
+            title="New since you last looked"
+            className="absolute left-1.5 top-8 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card"
+          />
+        ) : null}
         <span className="absolute right-1.5 top-1.5 rounded-full bg-card/90">
           <OutlierBadge model={badge} />
         </span>
@@ -151,6 +163,11 @@ export function SocialPostCard({ post, onOpen, onSave, compact, className }: Soc
                 <Copy className="mr-2 h-4 w-4" />
                 Copy link
               </DropdownMenuItem>
+              {extraActions?.map((a) => (
+                <DropdownMenuItem key={a.id} onSelect={() => a.onSelect(post)}>
+                  {a.label}
+                </DropdownMenuItem>
+              ))}
               {onSave ? (
                 <DropdownMenuItem onSelect={() => onSave(post)}>
                   <Bookmark className="mr-2 h-4 w-4" />
