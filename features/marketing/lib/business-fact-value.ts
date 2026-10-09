@@ -1,3 +1,5 @@
+import type { Json } from "@/types/database.types";
+
 /**
  * The ONE readable text for a business fact's jsonb `value`.
  *
@@ -90,4 +92,88 @@ export function businessFactValueText(value: unknown): string {
   if (pairs.length > 0) return pairs.join("; ");
 
   return JSON.stringify(value);
+}
+
+
+/** The five fields a person edits for an address fact. */
+export interface PostalAddressFields {
+  street: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+}
+
+/** The PostalAddress record a fact holds, whether wrapped or flat; null when none. */
+function postalAddressOf(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  if (isPostalAddress(value)) return value;
+  if (isRecord(value.address) && isPostalAddress(value.address)) return value.address;
+  return null;
+}
+
+/**
+ * An address fact's five editable fields. Text that is not a PostalAddress
+ * (a legacy plain string) lands in the street field, so editing never drops it.
+ */
+export function postalAddressFields(value: unknown): PostalAddressFields {
+  const address = postalAddressOf(value);
+  if (!address) {
+    return { street: businessFactValueText(value), city: "", region: "", postalCode: "", country: "" };
+  }
+  return {
+    street: textOf(address.streetAddress),
+    city: textOf(address.addressLocality),
+    region: textOf(address.addressRegion),
+    postalCode: textOf(address.postalCode),
+    country: textOf(address.addressCountry),
+  };
+}
+
+/**
+ * Writes edited address fields back into the fact's own jsonb shape. Keys the
+ * editor does not show (postOfficeBoxNumber, an unknown @context) survive, the
+ * wrapper `{ address: … }` survives, and a nested country `{ "@type": "Country",
+ * name }` keeps its nesting. A field cleared to empty is removed, not blanked.
+ */
+export function applyPostalAddressFields(value: unknown, fields: PostalAddressFields): Json {
+  const existing = postalAddressOf(value);
+  const next: Record<string, Json> = existing
+    ? (structuredClone(existing) as Record<string, Json>)
+    : { "@type": "PostalAddress" };
+
+  const writeField = (key: string, text: string) => {
+    if (!text) {
+      delete next[key];
+      return;
+    }
+    const current = next[key];
+    // A nested { "@type", name } keeps its nesting; only its name changes.
+    if (isRecord(current) && "name" in current) {
+      next[key] = { ...current, name: text };
+      return;
+    }
+    next[key] = text;
+  };
+  writeField("streetAddress", fields.street.trim());
+  writeField("addressLocality", fields.city.trim());
+  writeField("addressRegion", fields.region.trim());
+  writeField("postalCode", fields.postalCode.trim());
+  writeField("addressCountry", fields.country.trim());
+
+  if (existing && isRecord(value) && isRecord(value.address)) {
+    return { ...(value as Record<string, Json>), address: next };
+  }
+  return next;
+}
+
+/**
+ * Writes an edited single line back into a structured (non-address) value. The
+ * line replaces the key that carries the readable text, and every other key
+ * stays. Returns a plain string when the stored value is not a record.
+ */
+export function withFactText(value: unknown, text: string): string | Json {
+  if (!isRecord(value)) return text;
+  const key = TEXT_KEYS.find((candidate) => textOf(value[candidate]) !== "") ?? "text";
+  return { ...(value as Record<string, Json>), [key]: text };
 }

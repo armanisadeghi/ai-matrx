@@ -750,8 +750,12 @@ export interface CreateBusinessFactInput {
   brandId: string;
   kind: BusinessFactKind;
   label: string | null;
-  /** Stored as `{ text }` (or `{ url }` when the value is a URL). */
-  value: string;
+  /**
+   * A string is stored as `{ text }` (or `{ url }` when it is a URL). A
+   * structured value is stored exactly as given — an address keeps its
+   * schema.org PostalAddress shape.
+   */
+  value: string | Json;
 }
 
 export interface UpdateBusinessFactInput {
@@ -759,7 +763,8 @@ export interface UpdateBusinessFactInput {
   expectedVersion: number;
   kind: BusinessFactKind;
   label: string | null;
-  value: string;
+  /** Same rule as CreateBusinessFactInput.value. */
+  value: string | Json;
 }
 
 export type DiscoveredItemStatus = "pending" | "confirmed" | "dismissed";

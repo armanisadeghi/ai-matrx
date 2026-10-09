@@ -3877,7 +3877,9 @@ export async function deleteBrandAsset(assetId: string): Promise<void> {
 // Business facts — full CRUD (manual create; promotion lives above)
 // ============================================================================
 
-function factValuePayload(value: string): { [key: string]: string } {
+/** A typed string becomes `{ text }` or `{ url }`; a structured value is stored as given. */
+function factValuePayload(value: string | Json): Json {
+  if (typeof value !== "string") return value;
   return /^https?:\/\//i.test(value.trim())
     ? { url: value.trim() }
     : { text: value.trim() };

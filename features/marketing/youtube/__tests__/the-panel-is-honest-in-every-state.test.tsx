@@ -16,6 +16,7 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import type { BrandChannelBinding } from "../types";
 
@@ -107,6 +108,12 @@ jest.mock("../knobs", () => ({
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
+  // Mirrors the real export (lib/redux/hooks.ts): a store handle, not a selector.
+  useAppStore: () => ({
+    getState: () => ({}),
+    dispatch: jest.fn(),
+    subscribe: () => () => undefined,
+  }),
   useAppSelector: (selector: unknown) =>
     String(selector).includes("organization")
       ? "5dc930e9-bd65-44a1-8369-af773f6e1a5b"
@@ -225,8 +232,11 @@ async function mount() {
   });
   await act(async () => {
     root.render(
+      // The app root mounts TooltipProvider (app/Providers.tsx); the panel's tooltips need it.
       <QueryClientProvider client={client}>
-        <BrandChannelPanel brandId={BRAND_ID} />
+        <TooltipProvider>
+          <BrandChannelPanel brandId={BRAND_ID} />
+        </TooltipProvider>
       </QueryClientProvider>,
     );
   });
