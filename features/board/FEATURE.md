@@ -222,6 +222,35 @@ hardware with a production build before tuning further.
   starts a new run; a drop places at the drop point. Flying to each new tile made 15 adds a
   7,000-unit diagonal staircase (the next search started on the last tile).
 
+## Shapes and drawings — first-class objects (2026-10-09; tldraw / FigJam / Figma)
+
+- **Model (`engine/shapes.ts`, `BoardStore`).** A shape is `{ id, kind: rect|oval|line|arrow|pen, points, style?, text?, bind? }`. `style` is stored PARTIAL (only what differs from `DEFAULT_SHAPE_STYLE`: stroke + fill from a 9-key semantic palette — `ink slate blue violet rose orange amber emerald teal`, light + dark from `board-accents.css` — weight `s|m|l|xl` = 2/4/8/14 world px, `dash`, `opacity`, `textSize`, `textAlign`). Shapes ride in `nodes` flagged `shape: true` (`serializeShape` / `parseShape`): an old row (id, kind, points) parses unchanged; a bad style field is dropped and NAMED, never the shape. Store ops, each one undo step: `addShape(s)`, `updateShape`, `restyleShapes(ids, patch)`, `resizeShape` / `setShapeEnd` (gestures, coalesced like a drag), `reorderShapes(ids, forward|backward|front|back)`, `duplicateShapes`, and `dragMany` / `moveMany` / `removeMany` carry shapes with tiles and frames. Shapes have their OWN channel (`subscribeShapes` / `getShapes`) and are NOT in `BoardLayout`: dragging a drawing re-renders the shapes layer only.
+- **One selection model.** Each shape registers in the camera store as a MARK (`registerItem(id, rect, { mark: true })`): marquee, ⌘A, shift/⌘-click, group move with smart guides, nudge, Delete and Fit everything (⇧1) / the minimap include it; marks never join the tile life budget, reading order or full screen (`isMark`). Hit testing is JS, not DOM (`topShapeAt` via `store.setShapeHost`, read by `BoardViewport`'s capture-phase press): a stroke within 6 SCREEN px or a filled body wins even over a tile; a hollow rect/oval interior counts on empty board only, the smallest wins; a stroke beats a hollow interior above it.
+- **Z-order:** frames < tiles < drawings (`ShapesLayer` renders after the tiles, z 6), so a stroke over a tile stays visible. ⌘] / ⌘[ (⌥ to front/back) and the toolbar reorder drawings among themselves.
+- **Handles:** a lone selected rect / oval / pen stroke has the eight `ResizeHandles` (min 8×8; a pen stroke scales with its box, a line keeps its direction); a line / arrow has two end handles — drop an end on a tile or a rect/oval and it BINDS (target outlined while dragging; ⌥ drops without binding). A bound end is drawn where the line toward the other end meets the target's outline (`connectorEnds`) and follows it; dragging an arrow alone lets its ends go (tldraw); deleting a target leaves the end where it was drawn (`bakeBindings`).
+- **Connectors, one model:** drawing an arrow from one TILE onto another is still a connection (`BoardConnection`, the chat-context line, see Lines are context); any other end on a tile or box shape is a bound arrow/line shape. The agent's `board_shape` follows the same rule.
+- **Text:** double-click (or Enter on) a rectangle / oval types centred text in place (`ShapeTextEditor`; Esc, ⌘Enter, clicking away keep it; one undo step).
+- **Eraser (E):** sweeps every drawing within 8 screen px of its path (sampled every 4 px), fades them while dragging, removes them on release as one step; stays active like the pen.
+- **Keyboard focus:** any press inside the board takes the keyboard from a field OUTSIDE it (the chat composer focused since load no longer keeps Delete / ⌘Z / tool keys); a press on a drawing also leaves a tile's field. Esc inside board chrome (a toolbar popover) never deselects.
+- **Frames:** double-click a frame's title to rename it (`BoardFrameView onRename`).
+- **Start panel** steps aside once anything exists (tile, parked tile, frame or drawing).
+- Guard: `__tests__/shapes-first-class.test.ts` (hit testing inside / near strokes, mixed group drag one undo, resize per kind, binding follows a moved tile and lets go on delete, style round-trip + old rows, Fit includes shapes, marks never in life / reading order). Known compiler trap: a value derived from the live store must take what it reads as INPUTS (`useDrawnPoints` takes the bound tiles' records and the shapes list), or the React Compiler memoises it stale.
+
+### The floating selection toolbar — a primitive (`components/SelectionToolbar.tsx`)
+
+ONE toolbar over the current selection (FigJam): centred above the selection's bounds (below when there is no room), follows pan / zoom / moves by writing its own style, hidden while a press is down, the camera moves, a tile is being worked in or full screen, or a creation tool is active. It knows nothing about what is selected — the host passes SECTIONS:
+
+```ts
+interface SelectionToolbarSection {
+  key: string;
+  applies: (selection: readonly string[]) => boolean; // ids of tiles, frames (plain id) and shapes
+  render: (selection: readonly string[]) => ReactNode;
+}
+<SelectionToolbar sections={[shapeStyleSection(board), selectionActionsSection({ board, duplicate, remove })]} />
+```
+
+Building blocks for a section: `SelectionToolbarButton` (icon + `label` tooltip + `shortcut`), `SelectionToolbarMenu` (button → popover, `data-board-chrome`), `SelectionToolbarDivider`, `ColorSwatches` (the palette; `withNone`, `alpha` for fill tints), `ChoiceRow` (labelled options). The shape sections live in `components/ShapeToolbarSections.tsx`. A later lane (sticky notes, text, frames) adds a section to `/board`'s `toolbarSections` in `UserBoard` — never a second toolbar.
+
 ## Agent tools — the board is a surface
 
 Every host wraps its board in **`components/BoardSurface.tsx`**: it mounts the
@@ -288,7 +317,7 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
 
 | Piece | File |
 |---|---|
-| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/board.manifest.ts`) |
+| Tool declarations: `board_read` (now lists shapes: id, kind, rect, style, text, bound ends; ≤200), `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_shape` (create / update / delete drawings in one step; `from_id`/`to_id` bind line/arrow ends to tiles or shapes, `ref` names a shape for later entries in the same call; an arrow between two tiles is a connection), `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/board.manifest.ts`) |
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
 | The bridge: per-tile capture index, `board_items` overview, open / act on any item | `tools/item-surfaces.ts` |
 | Pure layout math | `engine/arrange.ts` |

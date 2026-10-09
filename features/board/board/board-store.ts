@@ -254,7 +254,7 @@ export class BoardStore<T extends BoardTileBase> {
   targetOf = (id: string): BindTarget | undefined => {
     const now = this.h.now;
     const tile = now.byId[id];
-    if (tile && !now.parked.includes(id)) return { rect: tile.rect, outline: "rect" };
+    if (tile) return { rect: tile.rect, outline: "rect" };
     const shape = now.shapes.find((s) => s.id === id);
     if (shape && isBoxKind(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
     return undefined;
@@ -419,7 +419,7 @@ export class BoardStore<T extends BoardTileBase> {
   private lookupIn(s: Snapshot<T>) {
     return (id: string): BindTarget | undefined => {
       const tile = s.byId[id];
-      if (tile && !s.parked.includes(id)) return { rect: tile.rect, outline: "rect" };
+      if (tile) return { rect: tile.rect, outline: "rect" };
       const shape = s.shapes.find((x) => x.id === id);
       if (shape && isBoxKind(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
       return undefined;

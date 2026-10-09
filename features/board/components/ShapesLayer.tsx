@@ -26,6 +26,7 @@ import { useBoardTile } from "../board/useBoard";
 import { screenToWorld, type Rect } from "../engine/camera";
 import { useBoardCameraStore, useEditingTile, useIsEditing, useSelectedTile } from "../engine/react";
 import {
+  type BindTarget,
   type BoardShape,
   type Point,
   FILL_ALPHA,
@@ -70,24 +71,39 @@ export function ShapesLayer<T extends BoardTileBase>({ board }: { board: BoardSt
   return (
     <div data-board-shapes className="pointer-events-none absolute left-0 top-0 z-[6] h-px w-px max-w-none overflow-visible">
       {shapes.map((s) => (
-        <ShapeView key={s.id} shape={s} board={b} />
+        <ShapeView key={s.id} shape={s} board={b} shapes={shapes} />
       ))}
       <ShapeChrome board={b} shapes={shapes} />
     </div>
   );
 }
 
-/** A shape's drawn points, re-read when a tile it is bound to moves. */
-function useDrawnPoints(shape: BoardShape, board: AnyBoard): Point[] {
+/**
+ * A shape's drawn points, re-read when what it is bound to moves. The bound
+ * tiles' records and the shapes list are INPUTS of the lookup on purpose: the
+ * React Compiler memoises on inputs, so a lookup that only read the live store
+ * kept an arrow pointing where its tile used to be.
+ */
+function useDrawnPoints(shape: BoardShape, board: AnyBoard, shapes: readonly BoardShape[]): Point[] {
   // Subscribing to the bound tiles' records wakes this shape (only) when one moves.
-  useBoardTile(board, shape.bind?.start ?? "");
-  useBoardTile(board, shape.bind?.end ?? "");
-  return drawnPoints(shape, board.targetOf);
+  const startTile = useBoardTile(board, shape.bind?.start ?? "");
+  const endTile = useBoardTile(board, shape.bind?.end ?? "");
+  if (!shape.bind) return shape.points;
+  const lookup = (id: string): BindTarget | undefined => {
+    const tile = id === startTile?.id ? startTile : id === endTile?.id ? endTile : undefined;
+    if (tile) return { rect: tile.rect, outline: "rect" };
+    const target = shapes.find((s) => s.id === id);
+    if (target && isBoxKind(target.kind)) {
+      return { rect: boundsOfPoints(target.points), outline: target.kind === "oval" ? "oval" : "rect" };
+    }
+    return undefined;
+  };
+  return drawnPoints(shape, lookup);
 }
 
-function ShapeView({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
+function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoard; shapes: readonly BoardShape[] }) {
   const store = useBoardCameraStore();
-  const pts = useDrawnPoints(shape, board);
+  const pts = useDrawnPoints(shape, board, shapes);
   const box = boundsOfPoints(pts);
   const editing = useIsEditing(shape.id);
   const boxRef = useRef(box);
@@ -190,7 +206,7 @@ function ShapeChrome({ board, shapes }: { board: AnyBoard; shapes: readonly Boar
   const shape = selected ? shapes.find((s) => s.id === selected) : undefined;
   if (!shape) return null;
   if (editing === shape.id && textCapable(shape.kind)) return <ShapeTextEditor key={shape.id} shape={shape} board={board} />;
-  return isConnector(shape.kind) ? <EndHandles shape={shape} board={board} /> : <BoxHandles shape={shape} board={board} />;
+  return isConnector(shape.kind) ? <EndHandles shape={shape} board={board} shapes={shapes} /> : <BoxHandles shape={shape} board={board} />;
 }
 
 function BoxHandles({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
@@ -225,9 +241,9 @@ function bindTargetAt(board: AnyBoard, items: ReadonlyMap<string, Rect>, isMark:
   return hit;
 }
 
-function EndHandles({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
+function EndHandles({ shape, board, shapes }: { shape: BoardShape; board: AnyBoard; shapes: readonly BoardShape[] }) {
   const store = useBoardCameraStore();
-  const pts = useDrawnPoints(shape, board);
+  const pts = useDrawnPoints(shape, board, shapes);
   const [target, setTarget] = useState<string | null>(null);
   const gesture = useRef<(() => void) | null>(null);
   useEffect(() => () => gesture.current?.(), []);

@@ -434,6 +434,13 @@ export function BoardViewport({
     // the selection with smart guides, ONE undo step; a click in a group narrows to it.
     let shapeGesture: (() => void) | null = null;
     const pressShape = (e: PointerEvent, id: string) => {
+      // Leave the field you were typing in (a tile's input, an editor): Delete, ⌘Z and the tool
+      // keys now act on the drawing, never type into the tile (Figma).
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== root && root.contains(active)) {
+        active.blur();
+        root.focus({ preventScroll: true });
+      }
       const additive = e.shiftKey || e.metaKey;
       const inGroup = store.isSelected(id) && store.getSelection().length > 1;
       if (additive) {
@@ -677,6 +684,9 @@ export function BoardViewport({
   // ── keyboard navigation ──────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Esc in the board's own chrome (a toolbar popover closing) is that chrome's — it never
+      // also deselects or leaves the tool.
+      if (e.key === "Escape" && (e.target as HTMLElement | null)?.closest?.("[data-board-chrome]")) return;
       // Esc in a field inside a tile leaves the field (Figma), so the next
       // Esc and the board's keys work again without reaching for the mouse.
       if (e.key === "Escape" && isTyping(e.target)) {

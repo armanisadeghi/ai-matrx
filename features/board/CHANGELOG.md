@@ -1,5 +1,14 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Shapes and drawings are first-class objects; one floating selection toolbar
+
+- Shapes (rect, oval, line, arrow, pen) joined the tiles' selection model: click inside a hollow shape or near a thin stroke, marquee, ⌘A, shift/⌘-click, group move with smart guides, nudge, Delete, undo — one step each, mixed with tiles. Before: shapes were never registered with the camera store, the viewport treated a press on one as empty board, only the 2px stroke was clickable, and they drew UNDER tiles (a stroke over a tile vanished).
+- Resize handles (8 for boxes and pen strokes, end handles for lines/arrows); stored style (stroke, fill, weight, dash, opacity, text size/align) with migration-safe parsing; centred text in rect/oval (double-click or Enter); line/arrow ends bind to tiles and box shapes and follow them; drawings render above tiles; ⌘D duplicate, ⌘] / ⌘[ order; Eraser tool (E); Fit and the minimap include shapes; the Start panel hides once anything exists.
+- `SelectionToolbar`: one floating, section-based context toolbar over the selection (colour, fill, line style, text, order, duplicate, delete) — the primitive later lanes extend (API in FEATURE.md).
+- Fixes: the board takes the keyboard on any press inside it (after a reload the chat composer kept Delete / ⌘Z / typing); a press on a drawing leaves a tile's field; Esc closing a toolbar popover no longer deselects; double-click a frame title renames it.
+- Agent: `board_shape` (create / update / delete, connectors between ids); `board_read` lists shapes. Manifest synced (`matrx-user/board`).
+- Guard: `__tests__/shapes-first-class.test.ts` (15 cases; red before the model existed).
+
 ## 2026-10-09 — Social tiles look like products (SOC-TILES)
 
 - Profile tile showed a bare header and "No outlier posts yet" even when the account had stored posts (multiples need 10+ posts). It now shows the stored posts as thumbnails ranked by multiple then views, responsive to the tile size, with Track / Open account. Post, outlier feed, ad and swipe tiles got real images and dense info; no vendor or credit wording in the chrome. Layout rules + guard: `items/social-tile-model.ts`, `items/__tests__/social-tile-model.test.ts`.
