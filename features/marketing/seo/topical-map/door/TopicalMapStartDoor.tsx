@@ -19,6 +19,7 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker";
 import { useBrand } from "@/features/marketing/data/hooks";
+import { brandKindOf } from "@/features/marketing/lib/brand-kind";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { extractErrorMessage } from "@/utils/errors";
@@ -53,6 +54,7 @@ export function TopicalMapStartDoor() {
           name: brand.data.name,
           organizationId: brand.data.organization_id,
           seg: marketingSeg(brand.data),
+          kind: brandKindOf(brand.data),
         }
       : null;
 
