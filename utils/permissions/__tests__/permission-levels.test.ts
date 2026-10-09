@@ -255,7 +255,7 @@ describe("no ladder site restates the level union", () => {
     expect(source).not.toMatch(RESTATED_ARRAY);
     expect(source).not.toMatch(SILENT_DOWNGRADE);
     // and it reaches the canonical module, directly or by re-export
-    expect(source).toMatch(/permissions\/levels|from "\.\/levels"/);
+    expect(source).toMatch(/permissions\/levels|ui\/permission-levels|from "\.\/levels"/);
   });
 });
 
