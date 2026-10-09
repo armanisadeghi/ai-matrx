@@ -351,6 +351,10 @@ const nextConfig = {
     // cold compile), but .next/cache + node_modules reached 6.47 GB against
     // Vercel's 4.75 GB build-cache cap, so Vercel discarded the WHOLE cache and
     // every later build would start cold. Not viable on Vercel's cache.
+    // Re-measured 2026-10-09 on main (cfb8899f8, after the fan-out fixes): cold
+    // build peak 39.2 GB for the whole tree (OK), WARM compile 71 s vs ~4-5 min,
+    // but .next/cache = 6.7 GB + node_modules 3.4 GB, still far over the cap.
+    // Only viable with the cache stored outside Vercel's build cache.
     turbopackFileSystemCacheForBuild: false,
     // Avoid the dev snapshot-coordinator panic that drops active review pages.
     turbopackFileSystemCacheForDev: false,

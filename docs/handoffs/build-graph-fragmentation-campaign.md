@@ -31,6 +31,9 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 | 8 | One `next build` pass with 8 workers instead of compile + generate processes | **live 2026-10-09 01:43** (first green 1-pass release, no memory problems) | lab whole-tree peak 32.8 GB of 60; Vercel post-compile ~2.4 → ~1.5 min |
 | 9 | `@ai-matrx/chat` in `transpilePackages` | **done — leave it** | lab H: −0.9 GB RSS, no chunk change (noise) |
 | 10 | THE TRACE LAW: server functions shipping source folders (admin layout 573 files × 275 functions; /data/try-everything 3,451; check-findings ~22,000 incl. migrations/docs/scripts) | **done 2026-10-09** (cfb8899f8) | build-time route tree + `appDir()`; check-findings reads pure JSON; guard `check-server-trace-scope` (post-build, self-tested) → 1,644 bundles clean. Lab build of main: compile 3.1 min, whole build 3m58s, RSS 25 GB |
+| 11 | Do the generate workers slow compile? (A/B/A, cpus 8/1/8) | **done — no** | 4.7*/3.5/3.7 min (*high load); wall 316/263/256 s |
+| 12 | Compile cost of the one lazy Lucide catalog chunk | **done — negligible** | same chunks, RSS 25.4 vs 25.6 GB |
+| 13 | Turbopack persistent build cache | **measured, not shippable on Vercel's cache** | warm compile 71 s (vs 4-5 min), cold peak 39.2 GB, cache 6.7 GB + node_modules 3.4 GB vs 4.75 GB cap. Next lever if Arman wants it: keep the cache outside Vercel (download before, upload after) |
 | 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
