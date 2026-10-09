@@ -83,20 +83,38 @@ export async function listPlaceableApplets(): Promise<AppletCardInfo[]> {
   return ((data ?? []) as CardRow[]).map(toCard);
 }
 
+/**
+ * A signed-out visitor (a published Site's reader) may read an Applet's public columns but never `created_by`: naming it
+ * makes PostgREST refuse the whole read (42501, a 401 — live 2026-10-09, a Site showed no Applet card to anyone signed
+ * out). That refusal is answered by the SAME read without the owner column — row security then answers exactly the
+ * Applets that are published to the web, the rows `/applets/<slug>` opens for a guest.
+ */
+const GUEST_CARD_COLUMNS = "id, name, slug, description, status, published_to_web, deleted_at";
+const refusedColumn = (error: { code?: string } | null) => error?.code === "42501";
+
+type CardQuery = (columns: string) => PromiseLike<{ data: unknown; error: { code?: string; message: string } | null }>;
+
+/** Read with the card columns, or — when the viewer may not read the owner column — the guest columns. */
+async function readCards(query: CardQuery): Promise<CardRow[]> {
+  let { data, error } = await query(CARD_COLUMNS);
+  if (refusedColumn(error)) ({ data, error } = await query(GUEST_CARD_COLUMNS));
+  if (error) throw new Error("The Applet could not be read.", { cause: error });
+  const rows = (Array.isArray(data) ? data : data ? [data] : []) as Array<Partial<CardRow>>;
+  return rows.map((r) => ({ ...r, created_by: r.created_by ?? null }) as CardRow);
+}
+
 /** These Applets by id, as the viewer may read them; an id she cannot open is simply absent. */
 export async function readAppletCards(ids: readonly string[]): Promise<Map<string, AppletCardInfo>> {
   const unique = [...new Set(ids)].filter(Boolean);
   if (!unique.length) return new Map();
-  const { data, error } = await createClient().schema("app").from("definition").select(CARD_COLUMNS).in("id", unique).is("deleted_at", null);
-  if (error) throw new Error("The Applet could not be read.", { cause: error });
-  return new Map(((data ?? []) as CardRow[]).map((r) => [r.id, toCard(r)]));
+  const rows = await readCards((columns) => createClient().schema("app").from("definition").select(columns).in("id", unique).is("deleted_at", null));
+  return new Map(rows.map((r) => [r.id, toCard(r)]));
 }
 
 /** The Applet a pasted `/applets/<slug>` link names, when the viewer can open it. */
 export async function readAppletBySlug(slug: string): Promise<AppletCardInfo | null> {
-  const { data, error } = await createClient().schema("app").from("definition").select(CARD_COLUMNS).eq("slug", slug).is("deleted_at", null).maybeSingle();
-  if (error) throw new Error("The Applet could not be read.", { cause: error });
-  return data ? toCard(data as CardRow) : null;
+  const rows = await readCards((columns) => createClient().schema("app").from("definition").select(columns).eq("slug", slug).is("deleted_at", null).maybeSingle());
+  return rows[0] ? toCard(rows[0]) : null;
 }
 
 /** Every applet this person can see, newest first — the apps home's own read (RLS is the ceiling). */

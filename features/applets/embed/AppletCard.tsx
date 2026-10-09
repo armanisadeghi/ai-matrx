@@ -20,7 +20,11 @@ export default function AppletCard({ appId }: { appId: string }) {
     let cancelled = false;
     readAppletCards([appId]).then(
       (cards) => !cancelled && setApp(cards.get(appId) ?? null),
-      () => !cancelled && setApp(null),
+      (err: unknown) => {
+        // A fault, said as one in the console; the Site shows nothing broken.
+        console.error("[applet-card] the Applet could not be read", appId, err);
+        if (!cancelled) setApp(null);
+      },
     );
     return () => {
       cancelled = true;
