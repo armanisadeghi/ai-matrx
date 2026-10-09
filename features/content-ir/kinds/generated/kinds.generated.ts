@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "51a327eb9665";
+export const KIND_REGISTRY_FINGERPRINT = "97504b5729a7";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -15244,7 +15244,7 @@ export interface OperationResult {
 /**
  * One post of a tracked account that beat that account's own baseline (the outlier feed row).
  *  *
- *  * Kind `outlier_row` (registry v2).
+ *  * Kind `outlier_row` (registry v4).
  */
 export interface OutlierRow {
   url?: string | null;
@@ -15267,6 +15267,7 @@ export interface OutlierRow {
   thumbnail_url?: string | null;
   baseline_views?: number | null;
   engagement_rate?: number | null;
+  thumbnail_file_id?: string | null;
 }
 
 /**
@@ -21022,7 +21023,7 @@ export interface SlugResult {
  * One public post (TikTok, Instagram, YouTube, LinkedIn, Facebook, X, Threads) as stored in the shared
  * cache, with its stored media, transcript status and outlier stat. Provider is a field, never a slug.
  *  *
- *  * Kind `social_post` (registry v2).
+ *  * Kind `social_post` (registry v4).
  */
 export interface SocialPost {
   url?: string | null;
@@ -21051,6 +21052,7 @@ export interface SocialPost {
   comments_stored?: number | null;
   duration_seconds?: number | null;
   platform_post_id: string;
+  thumbnail_file_id?: string | null;
 }
 
 /**
