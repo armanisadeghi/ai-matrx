@@ -69,6 +69,7 @@ import { intakeText } from "./board-intake";
 import { type PlacementRun, placeTiles } from "./place-run";
 import { planPlacement } from "../board/plan-placement";
 import { AddMenu, StartPanel } from "./AddMenu";
+import { resolvePresetTypes, type BoardPreset } from "../presets/board-preset";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 import { StatusChip } from "../components/TileFace";
 import { runArrange } from "../board/arrange-board";
@@ -113,6 +114,7 @@ export function UserBoard({
   onChange,
   onCamera,
   guest = false,
+  preset,
 }: {
   /** The saved board's id: comments on board-only tiles go on its thread. Null = no board record. */
   boardId?: string | null;
@@ -127,8 +129,13 @@ export function UserBoard({
   onCamera?: (camera: Camera) => void;
   /** A meeting guest (no account): the Add menu and Start panel offer only `guestSafe` types. */
   guest?: boolean;
+  /** A focus for this board (`presets/`): what the Add menu, Start panel and agent offer. None = every type. */
+  preset?: BoardPreset;
 }) {
-  const addableTypes = guest ? BOARD_ITEM_TYPES.filter((t) => t.guestSafe) : BOARD_ITEM_TYPES;
+  const guestTypes = guest ? BOARD_ITEM_TYPES.filter((t) => t.guestSafe) : BOARD_ITEM_TYPES;
+  const presetTypes = resolvePresetTypes(preset, guestTypes);
+  const addableTypes = presetTypes.featured;
+  const moreTypes = presetTypes.more;
   const board = useBoardStore<UserBoardTile>(() => ({
     tiles: doc.nodes.map((n) => ({
       id: n.id,
@@ -583,7 +590,7 @@ export function UserBoard({
     storedBasics: (tile) => tile.basics ?? null,
     createTile: (id, input, size) => agentTile(id, input, size),
     // board_add_items / board_find_records: the catalog, and the ONE placement path every way in uses.
-    itemTypes: BOARD_ITEM_TYPES,
+    itemTypes: preset ? presetTypes.allowed : BOARD_ITEM_TYPES,
     placeItems: (batch) => {
       const out: ({ id: string; already: boolean } | null)[] = new Array(batch.length).fill(null);
       const flowing = batch.flatMap((b, i) => (b.at ? [] : [i]));
@@ -643,7 +650,7 @@ export function UserBoard({
             overlay={
               <>
                 <CreationLayer onCreate={onCreate} />
-                <ToolBar leading={<AddMenu types={addableTypes} onStartNew={startNew} onBringIn={bringIn} />} />
+                <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />} />
                 <div
                   data-board-chrome
                   className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
@@ -676,7 +683,7 @@ export function UserBoard({
                   }))}
                   onRestore={unpark}
                 />
-                {empty && <StartPanel types={addableTypes} onStartNew={startNew} onBringIn={bringIn} />}
+                {empty && <StartPanel types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />}
                 {dropping && (
                   <div className="pointer-events-none absolute inset-3 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/5">
                     <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">

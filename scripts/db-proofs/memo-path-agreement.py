@@ -16,6 +16,8 @@ custom.reaches_directly_many and custom.read_records_page on one snapshot. This 
                 person-aware ask and the person-independent ask in one message both say off, an unlisted person is
                 untouched, and the listed person's answers are identical to memo-off.
 
+HOT-DOORS-7-GUARD adds kind 'home_hub' (data_home_items then data_home_changed_by in one statement: the only ask that runs the checklist-template shortcut), its plant, the
+fallback check and the own-off-switch check.
 HOT-DOORS-5 paths are covered too (iam.my_team_reach, custom._record_shown_to_ctx, custom.data_home_items): plants 4-5 break the memo-on
 arm of the first and the last in a rolled-back transaction and the check must name them. HOT-DOORS-7 adds custom.kernel_viewer_sets
 and custom.hub_changed_by_many (kinds 'kvs' and 'hub'). PLANTS_ONLY=<label substring> runs only those plants.
@@ -132,7 +134,7 @@ HD5 = {
 # the memo-on arm run under the existing mx.kernel_batch = 'on_written' hook because a plant is DDL, a write):
 HD6 = {
     "custom.data_home_items: the booking shortcut (non-owner arm only) drops every booking page": ("custom.data_home_items(uuid)",
-        "                then true\n                else custom.my_level", "                then false\n                else custom.my_level"),
+        "                then true\n                -- HOT-DOORS-6 e:", "                then false\n                -- HOT-DOORS-6 e:"),
 }
 # the three set paths, planted by renaming the live function and putting a wrapper in its place that flips the memo-on answer
 HD6_WRAP = {
@@ -187,6 +189,38 @@ for label, (reg, sch, fn, args, rets, body) in HD6_WRAP.items():
     print(f'plant [{label}]:', summary(r))
     check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == f'{sch}.{fn}' for d in r['diffs']), summary(r))
 
+# HOT-DOORS-7-GUARD (2026-10-09): the checklist-template shortcut of custom.hub_changed_by_many. Only the comparison kind 'home_hub'
+# (custom.data_home_items, then custom.data_home_changed_by, one statement) leaves the template memo it reads, so a fault on that branch
+# is seen there and nowhere else. The memo-on arm of the branch is made to answer the opposite; the check MUST name stratum 'home_hub'.
+HD7_TPL = {
+    "custom.hub_changed_by_many: the checklist-template memo branch answers the opposite": ("custom.hub_changed_by_many(jsonb,text)",
+        "then coalesce((v_tplm -> s.id::text ->> 's')::boolean, false)", "then not coalesce((v_tplm -> s.id::text ->> 's')::boolean, false)"),
+}
+for label, (reg, old, new) in HD7_TPL.items():
+    if not wanted(label):
+        continue
+    def planted7(cur, reg=reg, old=old, new=new):
+        cur.execute(patched_def(cur, reg, old, new))
+        return run_compare(cur, after_write=True)
+    r = with_txn(planted7)
+    print(f'plant [{label}]:', summary(r))
+    check(f"PLANT {label}: the check FAILS, in the home_hub comparison",
+          (not r['ok']) and any(d['fn'] == 'custom.hub_changed_by_many' and d['stratum'] == 'home_hub' for d in r['diffs']), summary(r))
+    seen = {d['person'] for d in r['diffs'] if d['stratum'] == 'home_hub'}
+    check(f"PLANT {label}: more than one seat sees it", len(seen) >= 1, f"seats={len(seen)}")
+# and the same branch with its arm broken so a template falls through to the last CASE arm: the answers must STAY identical (the
+# arm asks custom.hub_changed_by about the row instead of hiding it) and the fallback must say so with a WARNING
+FALLBACK = ("custom.hub_changed_by_many(jsonb,text)", "                 when v_tplm ? s.id::text\n", "                 when false\n")
+if wanted("fallback"):
+    def planted_fb(cur):
+        notices = []
+        cur.connection.add_notice_handler(lambda n: notices.append(n.message_primary))
+        cur.execute(patched_def(cur, *FALLBACK))
+        return run_compare(cur, after_write=True), notices
+    (r, notices) = with_txn(planted_fb)
+    print('fallback arm reached:', summary(r), 'warnings:', len(notices))
+    check("fallback: an unreachable arm reached still answers the same (no row hidden)", r['ok'] and not r['diffs'], summary(r))
+    check("fallback: reaching it said so (WARNING)", any('per-row fallback' in (n or '') for n in notices), f"{len(notices)} warnings")
 for label, (reg, old, new) in HD5.items():
     if not wanted(label):
         continue
@@ -250,6 +284,24 @@ check("off_for: nobody listed -> the person-aware and person-independent asks bo
 check("off_for: a listed person -> BOTH asks in the message say off", tuple(r['listed']) == (False, False), str(r['listed']))
 check("off_for: an unlisted person is untouched", tuple(r['other']) == (True, True), str(r['other']))
 check("off_for: the listed person's answers are identical to memo-off", r['knob'] == r['off'] and r['knob'][0] is not None, f"{len(r['knob'][0])} bytes")
+
+# 6. HOT-DOORS-7's own off switch (access/kernel_batch off_paths): default on; listing it turns it off alone, kernel_batch stays on
+def hd7_switch(cur):
+    cur.execute("select set_config('mx.kernel_batch', 'on_written', true)")
+    out = {}
+    cur.execute("update platform.feature_knob set value = jsonb_set(value, '{off_paths}', '[]'::jsonb) where feature='access' and key='kernel_batch'")
+    cur.execute("select custom.hot_doors_7_on(null), iam.kernel_batch_on(null)"); out['default'] = cur.fetchone()
+    cur.execute("select platform.memo_clear()")
+    cur.execute("update platform.feature_knob set value = jsonb_set(value, '{off_paths}', '[\"hot_doors_7\"]'::jsonb) where feature='access' and key='kernel_batch'")
+    cur.execute("select custom.hot_doors_7_on(null), iam.kernel_batch_on(null)"); out['listed'] = cur.fetchone()
+    cur.execute("select platform.memo_clear()")
+    cur.execute("update platform.feature_knob set value = value - 'off_paths' where feature='access' and key='kernel_batch'")
+    cur.execute("select custom.hot_doors_7_on(null)"); out['absent'] = cur.fetchone()
+    return out
+r = with_txn(hd7_switch)
+check("hot_doors_7 switch: default (empty list) -> on", tuple(r['default']) == (True, True), str(r['default']))
+check("hot_doors_7 switch: listed in off_paths -> off alone (kernel_batch still on)", tuple(r['listed']) == (False, True), str(r['listed']))
+check("hot_doors_7 switch: no off_paths key at all -> on", tuple(r['absent']) == (True,), str(r['absent']))
 
 print()
 if failures:
