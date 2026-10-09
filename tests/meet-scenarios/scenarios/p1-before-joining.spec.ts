@@ -52,12 +52,14 @@ scenario("before-start-early-entry", async ({ cast }) => {
 
 scenario("access-sign-in-required", async ({ cast }) => {
   const host = await hostWithMeeting(cast);
-  await setPolicies(cast.meeting!, [["access_type", "trusted"]]);
+  // Google Meet: "Trusted" lets outsiders ASK; only with "Anyone with the link can ask to join" off is a signed-out person sent to sign in.
+  await setPolicies(cast.meeting!, [["access_type", "trusted"], ["allow_ask_to_join", "false"]]);
   const guest = await cast.add({ label: "signed-out guest", seat: "guest", displayName: GUEST });
   const o = await openLink(guest, cast.meeting!);
   expect(o.phase, `a signed-out person at a signed-in-only meeting must be told to sign in; saw ${summarize(o)}`).toBe("refused:sign_in_required");
   await press(guest, "Sign in", guest.page.getByRole("link", { name: /sign in/i }).or(guest.page.getByRole("button", { name: /sign in/i })), 5000);
-  // A signed-in person who is not in the host's organization is NOT refused by this rule: they may ask to join.
+  // With asking back on, a signed-in person who is not in the host's organization is NOT refused: they may ask to join.
+  await setPolicies(cast.meeting!, [["allow_ask_to_join", "true"]]);
   const outsider = await cast.add({ label: "signed-in outsider", seat: "member" });
   await walkIn(host, cast.meeting!, { until: ["in-call"] });
   const o2 = await openLink(outsider, cast.meeting!);
