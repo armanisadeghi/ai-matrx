@@ -19,7 +19,7 @@
  * starts inside a frame selects its tiles, never the frame.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Rect } from "../engine/camera";
@@ -44,9 +44,12 @@ interface BoardFrameViewProps {
   onRemove?: (id: string) => void;
   /** Resizes the frame (tiles stay where they are); absent = its size is the host's. */
   onResize?: (id: string, rect: Rect) => void;
+  /** Renames the frame (double-click its title); absent = the title is the host's. */
+  onRename?: (id: string, title: string) => void;
 }
 
-export function BoardFrameView({ id, rect, title, note, onRemove, onResize }: BoardFrameViewProps) {
+export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRename }: BoardFrameViewProps) {
+  const [renaming, setRenaming] = useState(false);
   const store = useBoardCameraStore();
   const key = frameKey(id);
   const selected = useIsSelected(id);
@@ -156,15 +159,47 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize }: Bo
         data-board-frame-strip
         onPointerDown={(e) => press(e, true)}
         onClick={clicked}
+        onDoubleClick={(e) => {
+          if (!onRename || (e.target as HTMLElement).closest("[data-board-frame-action]")) return;
+          e.stopPropagation();
+          setRenaming(true);
+        }}
         className="pointer-events-auto absolute bottom-full left-0 flex max-w-none cursor-grab touch-none items-center gap-2 pb-3 active:cursor-grabbing"
         title={`Drag to move ${title} with its tiles · click to fly there`}
       >
-        <span
-          className="whitespace-nowrap font-semibold tracking-tight text-foreground"
-          style={{ fontSize: "max(26px, min(calc(13px / var(--board-z)), 160px))" }}
-        >
-          {title}
-        </span>
+        {renaming && onRename ? (
+          // ui-exception: a frame's name typed in place on the canvas (Figma); a raw short name
+          <input
+            data-board-frame-action
+            aria-label="Frame name"
+            autoFocus
+            defaultValue={title}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={(e) => {
+              const next = e.currentTarget.value.trim();
+              setRenaming(false);
+              if (next && next !== title) onRename(id, next);
+            }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") e.currentTarget.blur();
+              else if (e.key === "Escape") {
+                e.currentTarget.value = title;
+                e.currentTarget.blur();
+              }
+            }}
+            className="min-w-0 rounded-md border border-primary bg-background px-1 font-semibold tracking-tight text-foreground outline-none"
+            style={{ fontSize: "max(26px, min(calc(13px / var(--board-z)), 160px))", width: `${Math.max(title.length, 6) + 2}ch` }}
+          />
+        ) : (
+          <span
+            className="whitespace-nowrap font-semibold tracking-tight text-foreground"
+            style={{ fontSize: "max(26px, min(calc(13px / var(--board-z)), 160px))" }}
+            title={onRename ? "Double-click to rename" : undefined}
+          >
+            {title}
+          </span>
+        )}
         {note && (
           <span
             className="truncate text-muted-foreground"

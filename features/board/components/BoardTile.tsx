@@ -27,6 +27,7 @@ import { Activity, type ReactNode, useContext, useEffect, useLayoutEffect, useRe
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AfterFirstPaint, TileSkeleton } from "./AfterFirstPaint";
 import type { Rect } from "../engine/camera";
 import {
   RESIZE_CURSOR,
@@ -564,7 +565,7 @@ export function BoardTile({
                     </div>
                   )}
                 >
-                  {children(tier)}
+                  <AfterFirstPaint placeholder={<TileSkeleton typeLabel={typeLabel ?? ""} />}>{children(tier)}</AfterFirstPaint>
                 </ErrorBoundaryWithCapture>
               </TileNavigationBoundary>
             </Activity>
@@ -683,11 +684,14 @@ export function ResizeHandles({
   rect,
   selected,
   onResize,
+  min = MIN_TILE_SIZE,
 }: {
   id: string;
   rect: Rect;
   selected: boolean;
   onResize: (id: string, rect: Rect) => void;
+  /** Smallest size a drag may reach (tiles: `MIN_TILE_SIZE`; a drawn shape is smaller). */
+  min?: { w: number; h: number };
 }) {
   const store = useBoardCameraStore();
   const [active, setActive] = useState<ResizeHandle | null>(null);
@@ -722,10 +726,11 @@ export function ResizeHandles({
             resizeRect(start, handle, m.clientX - px, m.clientY - py, {
               z: store.getCamera().z,
               keepAspect: m.shiftKey,
+              min,
             }),
             handle,
             m,
-            MIN_TILE_SIZE,
+            min,
           ),
         ),
       onEnd: (how) => {

@@ -84,7 +84,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_read",
     label: "Read board",
     description:
-      "Returns what is on the Board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
+      "Returns what is on the Board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, every drawn shape (id, kind, rect, style, text, the ids its line/arrow ends are bound to), the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
     inputSchema: {
       type: "object",
       properties: {
@@ -268,6 +268,50 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
         to_id: { type: "string" },
       },
       required: ["from_id", "to_id"],
+    },
+    mode: "draft",
+  },
+  {
+    name: "board_shape",
+    label: "Draw shapes",
+    description:
+      "Draws, changes or erases shapes on the Board so you can sketch a diagram: rectangles and ovals (with centred text), lines and arrows, and pen strokes. One call is ONE undoable step. action \"create\": each entry has `kind` (rect | oval | line | arrow | pen); a rect/oval takes `x`,`y`,`w`,`h` (board px; default 240x160 at the view centre) and optional `text`; a line/arrow joins `from_id` → `to_id` (tile ids, shape ids, or the `ref` of a shape created earlier in the same call — its ends then FOLLOW those objects when they move) or goes between points `from` {x,y} → `to` {x,y}; a pen stroke takes `points` [{x,y}…]. An arrow between two TILES is a connection (the same as board_connect: it hands a chat tile the other tile's content). Style on any entry: `stroke` and `fill` (ink, slate, blue, violet, rose, orange, amber, emerald, teal; fill also none), `size` (s|m|l|xl), `dash` (solid|dashed|dotted), `opacity` (0.1–1), `text_size` (s|m|l|xl), `text_align` (start|center|end). action \"update\": entries carry `id` plus any of the fields above (`x`,`y`,`w`,`h` move or resize it; `from_id`/`to_id` rebind an end). action \"delete\": `ids`. Returns the shape ids in order. board_read lists every shape with its id, kind, rect, style and text.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["create", "update", "delete"] },
+        shapes: {
+          type: "array",
+          description: "For create / update.",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "update: the shape to change." },
+              ref: { type: "string", description: "create: a name later entries in this call can bind to." },
+              kind: { type: "string", enum: ["rect", "oval", "line", "arrow", "pen"] },
+              x: { type: "number" },
+              y: { type: "number" },
+              w: { type: "number" },
+              h: { type: "number" },
+              text: { type: "string" },
+              from_id: { type: "string" },
+              to_id: { type: "string" },
+              from: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } },
+              to: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } },
+              points: { type: "array", items: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } } },
+              stroke: { type: "string" },
+              fill: { type: "string" },
+              size: { type: "string", enum: ["s", "m", "l", "xl"] },
+              dash: { type: "string", enum: ["solid", "dashed", "dotted"] },
+              opacity: { type: "number" },
+              text_size: { type: "string", enum: ["s", "m", "l", "xl"] },
+              text_align: { type: "string", enum: ["start", "center", "end"] },
+            },
+          },
+        },
+        ids: { type: "array", items: { type: "string" }, description: "For delete." },
+      },
+      required: ["action"],
     },
     mode: "draft",
   },

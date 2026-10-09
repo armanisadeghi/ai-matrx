@@ -49,7 +49,9 @@ import { FocusHostContext, BoardCameraStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 import { SnapGuidesLayer } from "./SnapGuidesLayer";
 import { SelectionBox } from "./SelectionBox";
-import { allSelectable, groupMoveSet, marqueeHits, rectFromCorners, shiftMoves } from "../engine/selection";
+import { allSelectable, boundsOf, groupMoveSet, marqueeHits, rectFromCorners, shiftMoves } from "../engine/selection";
+import { startPointerGesture } from "../engine/pointer-gesture";
+import { beginSnap } from "../engine/snap-gesture";
 import { GRID_SIZE } from "../engine/snapping";
 import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
 
@@ -62,6 +64,11 @@ const REVEAL_SETTLE_MS = 700;
 const NUDGE_PX = 8;
 /** Screen px a press must travel before it is a marquee rather than a click. */
 const MARQUEE_SLOP_PX = 3;
+/** Screen px a press may miss a thin stroke by and still select it. */
+const SHAPE_HIT_SLOP_PX = 6;
+/** What a press on these never reaches a shape under it through. */
+const NOT_THROUGH_TO_SHAPES =
+  "[data-board-chrome], [data-board-resize], [data-board-shape-editor], [data-board-focus], [data-board-creation], [data-board-marquee]";
 
 interface BoardViewportProps {
   initialCamera?: Camera;
@@ -413,6 +420,62 @@ export function BoardViewport({
       }
     };
 
+    // The board takes the keyboard on any press inside it: a composer or field OUTSIDE the board
+    // (the chat beside it, focused since the page loaded) never keeps Delete / ⌘Z / typing from a
+    // canvas interaction. A press on a control inside a tile still moves focus there natively.
+    const takeKeyboard = () => {
+      const active = document.activeElement;
+      if (active === root || (active instanceof Node && root.contains(active))) return;
+      if (active instanceof HTMLElement) active.blur();
+      root.focus({ preventScroll: true });
+    };
+
+    // A press on a drawn shape (tldraw / FigJam): select it — shift / ⌘ add or remove — and drag
+    // the selection with smart guides, ONE undo step; a click in a group narrows to it.
+    let shapeGesture: (() => void) | null = null;
+    const pressShape = (e: PointerEvent, id: string) => {
+      const additive = e.shiftKey || e.metaKey;
+      const inGroup = store.isSelected(id) && store.getSelection().length > 1;
+      if (additive) {
+        store.toggleSelected(id);
+        if (!store.isSelected(id)) return;
+      } else if (!store.isSelected(id)) store.select(id);
+      if (store.getEditing() && store.getEditing() !== id) store.setEditing(null);
+      const mover = store.getMover();
+      const set = groupMoveSet(store.getSelection(), store.getItems());
+      const box = boundsOf(set.values());
+      const px = e.clientX;
+      const py = e.clientY;
+      let moved = false;
+      const snap = mover && box ? beginSnap(store, new Set(set.keys())) : null;
+      shapeGesture?.();
+      shapeGesture = startPointerGesture(e, root, {
+        onMove: (m) => {
+          if (!mover || !box || !snap) return;
+          if (!moved && Math.hypot(m.clientX - px, m.clientY - py) < MARQUEE_SLOP_PX) return;
+          moved = true;
+          const z = store.getCamera().z;
+          const at = snap.move({ ...box, x: box.x + (m.clientX - px) / z, y: box.y + (m.clientY - py) / z }, m);
+          mover.dragMany(shiftMoves(set, at.x - box.x, at.y - box.y));
+        },
+        onEnd: (how) => {
+          shapeGesture = null;
+          snap?.end();
+          if (how === "escape" && moved && mover) mover.dragMany(shiftMoves(set, 0, 0));
+          else if (how === "up" && !moved && !additive && inGroup) store.select(id);
+        },
+      });
+    };
+    const shapeAt = (e: { clientX: number; clientY: number }, background: boolean): string | null => {
+      const host = store.getShapeHost();
+      if (!host) return null;
+      const bounds = root.getBoundingClientRect();
+      const cam = store.getCamera();
+      return host.hit(screenToWorld(cam, e.clientX - bounds.left, e.clientY - bounds.top), SHAPE_HIT_SLOP_PX / cam.z, {
+        background,
+      });
+    };
+
     const onDown = (e: PointerEvent) => {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       // Only the bare plane starts a pan. Tiles, chrome and any control keep
@@ -420,6 +483,25 @@ export function BoardViewport({
       const onBackground = !(e.target as HTMLElement).closest(
         "[data-board-tile], [data-board-chrome], [data-board-frame-strip], [data-board-frame-border], [data-board-resize], button, a, input, textarea, select, canvas",
       );
+      if (!(e.target as HTMLElement).closest("[data-board-chrome], [data-board-focus]")) takeKeyboard();
+      // Drawings sit ABOVE tiles: a press on a stroke or a filled body selects the drawing even
+      // over a tile; a hollow interior counts only on empty board (the tile under it wins).
+      if (
+        pointers.size === 1 &&
+        e.button === 0 &&
+        !e.ctrlKey &&
+        !spaceDown &&
+        store.getTool() === "select" &&
+        !(e.target as HTMLElement).closest(NOT_THROUGH_TO_SHAPES)
+      ) {
+        const hit = shapeAt(e, onBackground);
+        if (hit) {
+          e.stopPropagation();
+          e.preventDefault();
+          pressShape(e, hit);
+          return;
+        }
+      }
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
@@ -547,7 +629,21 @@ export function BoardViewport({
       }
     };
 
+    // Double-click a rectangle or oval: type in it (FigJam). The press captured the pointer, so
+    // the dblclick lands on the root — read the point, not the target.
+    const onDoubleClick = (e: MouseEvent) => {
+      if (store.getTool() !== "select" || (e.target as HTMLElement).closest(NOT_THROUGH_TO_SHAPES)) return;
+      const onBackground = !(e.target as HTMLElement).closest("[data-board-tile], [data-board-frame-strip]");
+      const hit = shapeAt(e, onBackground);
+      if (!hit || !store.getShapeHost()?.editable(hit)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      store.select(hit);
+      store.setEditing(hit);
+    };
+
     root.addEventListener("pointerdown", onDown, true);
+    root.addEventListener("dblclick", onDoubleClick, true);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
@@ -555,7 +651,9 @@ export function BoardViewport({
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     return () => {
+      shapeGesture?.();
       root.removeEventListener("pointerdown", onDown, true);
+      root.removeEventListener("dblclick", onDoubleClick, true);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -633,7 +731,11 @@ export function BoardViewport({
       } else if (e.key === "Enter" && !e.shiftKey) {
         const sel = store.getSelected();
         if (!sel) return;
-        store.focus(sel);
+        // A drawing has no full screen: Enter types in a rectangle or oval (FigJam).
+        if (store.isMark(sel)) {
+          if (!store.getShapeHost()?.editable(sel)) return;
+          store.setEditing(sel);
+        } else store.focus(sel);
       } else if (e.shiftKey && e.code === "KeyG") store.setGuides(!store.getGuides());
       else if (e.shiftKey && e.code === "Digit1") store.fitAll();
       else if (e.shiftKey && e.code === "Digit2") {
@@ -675,11 +777,13 @@ export function BoardViewport({
       <div
         ref={rootRef}
         className={cn(
-          "relative h-full w-full touch-none select-none overflow-clip bg-muted/40",
+          "relative h-full w-full touch-none select-none overflow-clip bg-muted/40 outline-none",
           className,
         )}
         aria-label="Board — drag to pan, pinch or ctrl+scroll to zoom, shift+1 to fit everything"
         role="application"
+        data-board-root
+        tabIndex={-1}
       >
         <div
           ref={gridRef}

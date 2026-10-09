@@ -15,7 +15,8 @@
  */
 
 import type { Camera, Rect } from "../engine/camera";
-import type { BoardShape, ShapeKind } from "./useBoard";
+import type { BoardShape } from "./useBoard";
+import { parseShape, serializeShape } from "../engine/shapes";
 
 export type NodeSource =
   /** A live or finished agent run, by request id. */
@@ -106,7 +107,6 @@ export interface BoardDocument {
   shapes: BoardShape[];
 }
 
-const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen"];
 
 /** Validate a stored document at the read boundary. Anything malformed is
  * REPORTED (with the node that failed), never silently dropped. */
@@ -123,10 +123,11 @@ export function parseBoardDocument(raw: {
   const shapes: BoardShape[] = [];
   for (const [i, n] of (Array.isArray(raw.nodes) ? raw.nodes : []).entries()) {
     if (isObject(n) && n.shape === true) {
-      const kind = SHAPE_KINDS.find((k) => k === n.kind);
-      const points = Array.isArray(n.points) ? n.points.filter(isPoint) : [];
-      if (typeof n.id === "string" && kind && points.length >= 2) shapes.push({ id: n.id, kind, points });
-      else problems.push(`shape ${i} is missing id, kind or points`);
+      const { shape: _flag, ...stored } = n;
+      void _flag;
+      const parsed = parseShape(stored, `shape ${i}`);
+      if (parsed.shape) shapes.push(parsed.shape);
+      problems.push(...parsed.problems);
       continue;
     }
     if (!isObject(n) || typeof n.id !== "string" || !isRect(n.rect) || typeof n.title !== "string") {
@@ -169,7 +170,7 @@ export function serializeBoardDocument(doc: BoardDocument) {
     camera: doc.camera,
     nodes: [
       ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, group: true })),
-      ...doc.shapes.map((sh) => ({ id: sh.id, kind: sh.kind, points: sh.points, shape: true })),
+      ...doc.shapes.map((sh) => ({ ...serializeShape(sh), shape: true })),
       ...doc.nodes,
     ],
     edges: doc.edges,
@@ -232,9 +233,6 @@ function isFiniteNumber(v: unknown): v is number {
 }
 function isCamera(v: unknown): v is Camera {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.z) && v.z > 0;
-}
-function isPoint(v: unknown): v is { x: number; y: number } {
-  return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y);
 }
 function isRect(v: unknown): v is Rect {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.w) && isFiniteNumber(v.h);

@@ -690,7 +690,7 @@ export function BoardDemo({
           {tiles.frames.map((f) => (
             <BoardFrameView key={f.id} {...f} />
           ))}
-          <ShapesLayer shapes={tiles.shapes} />
+          <ShapesLayer board={tiles.store} />
           {stress && <BoardFrameView key={stress.frame.id} {...stress.frame} />}
           {board.pipeline.map(([a, b]) => {
             const from = byId.get(a);

@@ -44,6 +44,17 @@ import type {
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
 import type { BoardCameraStore } from "../engine/camera-store";
+import {
+  type BindTarget,
+  type BoardShape,
+  type ShapeStyle,
+  isBoxKind,
+  isConnector,
+  parseShapeStyle,
+  resizeShapeTo,
+  shapeBounds,
+  styleOf,
+} from "../engine/shapes";
 import { boundBoardContext, type RawBoardTile } from "./board-snapshot";
 import type { BoardTileKindInput } from "./board-tools";
 import {
@@ -101,8 +112,15 @@ export interface BoardToolRefusals {
 export interface BoardToolTarget<T extends BoardTileBase> {
   /** The board as of the LAST change (sequences of tool calls in one tick). */
   read: () => BoardToolView<T>;
-  /** Drawn marks, counted by board_read. */
-  shapes?: readonly unknown[];
+  /** Drawn shapes, listed by board_read. */
+  shapes?: readonly BoardShape[];
+  /** board_shape: add shapes as ONE step; absent = drawing refused. */
+  addShapes?: (shapes: BoardShape[]) => void;
+  updateShape?: (id: string, patch: Partial<Omit<BoardShape, "id">>) => void;
+  /** Remove tiles, frames and shapes as ONE step. */
+  removeMany?: (ids: readonly string[]) => void;
+  /** What a line / arrow end binds to (a tile or a box shape). */
+  targetOf?: (id: string) => BindTarget | undefined;
   /** Move tiles (and frames) as one step. A failure refuses the whole move. */
   moveMany: (moves: { id: string; x: number; y: number }[]) => void | Failure;
   /** Take a tile off the board; returns a function that puts it back. */
@@ -174,6 +192,9 @@ const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
 };
 
 const fail = (error: string): Failure => ({ ok: false, error });
+
+/** Most shapes board_read lists (a big sketch keeps its count in drawn_mark_count). */
+const SHAPES_READ_MAX = 200;
 
 /** How long a tile an agent reached stays awake after the call, so its result can be read. */
 const AGENT_HOLD_MS = 2000;
@@ -297,6 +318,15 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         frames: now.frames.map((f) => ({ id: f.id, title: f.title, rect: round(f.rect) })),
         connections: now.connections.map((c) => ({ id: c.id, from_id: c.from, to_id: c.to })),
         drawn_mark_count: board.shapes?.length ?? 0,
+        shapes: (board.shapes ?? []).slice(0, SHAPES_READ_MAX).map((sh) => ({
+          id: sh.id,
+          kind: sh.kind,
+          rect: round(shapeBounds(sh, board.targetOf)),
+          style: styleOf(sh),
+          ...(sh.text ? { text: sh.text } : {}),
+          ...(sh.bind?.start ? { from_id: sh.bind.start } : {}),
+          ...(sh.bind?.end ? { to_id: sh.bind.end } : {}),
+        })),
         view: view ? round(view) : null,
       },
     };
@@ -541,6 +571,162 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const connect = board.connect;
     asAgent(() => connect({ id, from: String(a.from_id), to: String(a.to_id) }));
     return { ok: true, id };
+  };
+
+  /** board_shape: draw, change or erase shapes (one undoable step per call). */
+  const shapeTool = (input: unknown) => {
+    const a = record(input);
+    const { addShapes, updateShape, removeMany, targetOf } = board;
+    if (!addShapes || !updateShape || !removeMany) return fail("This board cannot hold drawings.");
+    const lookup = targetOf ?? (() => undefined);
+    const shapeIds = new Set((board.shapes ?? []).map((sh) => sh.id));
+    const isTarget = (id: string) => !!find(id) || shapeIds.has(id);
+    const warnings: string[] = [];
+    const styleFrom = (e: Record<string, unknown>, label: string): Partial<ShapeStyle> | undefined =>
+      parseShapeStyle(
+        Object.fromEntries(
+          Object.entries({
+            stroke: e.stroke,
+            fill: e.fill,
+            size: e.size,
+            dash: e.dash,
+            opacity: e.opacity,
+            textSize: e.text_size,
+            textAlign: e.text_align,
+          }).filter(([, v]) => v !== undefined),
+        ),
+        warnings,
+        label,
+      );
+    const pointOf = (v: unknown) => {
+      const r = record(v);
+      const x = num(r.x);
+      const y = num(r.y);
+      return x !== undefined && y !== undefined ? { x, y } : undefined;
+    };
+    const entries = Array.isArray(a.shapes) ? a.shapes.map(record) : [];
+
+    if (a.action === "delete") {
+      const ids = (Array.isArray(a.ids) ? a.ids : []).filter((id): id is string => typeof id === "string");
+      const gone = ids.filter((id) => shapeIds.has(id));
+      if (gone.length === 0) return fail("No shape with those ids is on this board. Call board_read for the current ids.");
+      asAgent(() => removeMany(gone));
+      return { ok: true, deleted: gone, ...(gone.length < ids.length ? { not_found: ids.filter((id) => !shapeIds.has(id)) } : {}) };
+    }
+
+    if (a.action === "create") {
+      if (entries.length === 0) return fail("Pass `shapes`: one entry per shape to draw.");
+      const refs = new Map<string, string>();
+      const made: BoardShape[] = [];
+      const links: { from: string; to: string }[] = [];
+      const centre = viewCentre();
+      const resolve = (v: unknown) => (typeof v === "string" ? (refs.get(v) ?? v) : undefined);
+      const madeBox = (id: string): BindTarget | undefined => {
+        const sh = made.find((m) => m.id === id);
+        return sh && isBoxKind(sh.kind) ? { rect: shapeBounds(sh), outline: sh.kind === "oval" ? "oval" : "rect" } : undefined;
+      };
+      const rectOf = (id: string) => madeBox(id)?.rect ?? lookup(id)?.rect;
+      for (const [i, e] of entries.entries()) {
+        const kind = typeof e.kind === "string" ? e.kind : "";
+        const id = `${kind}:${crypto.randomUUID().slice(0, 8)}`;
+        const label = `shape ${i}`;
+        const style = styleFrom(e, label);
+        const extra = { ...(style ? { style } : {}) };
+        if (kind === "rect" || kind === "oval") {
+          const w = num(e.w) ?? 240;
+          const h = num(e.h) ?? 160;
+          const x = num(e.x) ?? centre.x - w / 2;
+          const y = num(e.y) ?? centre.y - h / 2;
+          made.push({ id, kind, points: [{ x, y }, { x: x + w, y: y + h }], ...extra, ...(str(e.text) ? { text: String(e.text) } : {}) });
+        } else if (kind === "line" || kind === "arrow") {
+          const fromId = resolve(e.from_id);
+          const toId = resolve(e.to_id);
+          for (const ref of [fromId, toId]) {
+            if (ref && !isTarget(ref) && !made.some((m) => m.id === ref)) return fail(`${label}: no tile or shape "${ref}". Call board_read for the current ids.`);
+          }
+          if (kind === "arrow" && fromId && toId && find(fromId) && find(toId) && board.connect) {
+            links.push({ from: fromId, to: toId });
+            continue;
+          }
+          const fromRect = fromId ? rectOf(fromId) : undefined;
+          const toRect = toId ? rectOf(toId) : undefined;
+          const mid = (r: Rect) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+          const p0 = pointOf(e.from) ?? (fromRect ? mid(fromRect) : undefined);
+          const p1 = pointOf(e.to) ?? (toRect ? mid(toRect) : undefined);
+          if (!p0 || !p1) return fail(`${label}: a ${kind} needs from_id or from {x,y}, and to_id or to {x,y}.`);
+          const bind = { ...(fromId ? { start: fromId } : {}), ...(toId ? { end: toId } : {}) };
+          made.push({ id, kind, points: [p0, p1], ...extra, ...(fromId || toId ? { bind } : {}) });
+        } else if (kind === "pen") {
+          const points = (Array.isArray(e.points) ? e.points : []).map(pointOf).filter((p): p is { x: number; y: number } => !!p);
+          if (points.length < 2) return fail(`${label}: a pen stroke needs at least two points.`);
+          made.push({ id, kind, points, ...extra });
+        } else return fail(`${label}: kind must be rect, oval, line, arrow or pen.`);
+        if (typeof e.ref === "string") refs.set(e.ref, id);
+      }
+      const connections: string[] = [];
+      const connect = board.connect;
+      asAgent(() => {
+        const run = () => {
+          if (made.length) addShapes(made);
+          for (const l of links) {
+            const cid = `link:${crypto.randomUUID().slice(0, 8)}`;
+            connect?.({ id: cid, from: l.from, to: l.to });
+            connections.push(cid);
+          }
+        };
+        if (board.batch) board.batch(run);
+        else run();
+      });
+      return {
+        ok: true,
+        ids: made.map((m) => m.id),
+        ...(refs.size ? { refs: Object.fromEntries(refs) } : {}),
+        ...(connections.length ? { connection_ids: connections } : {}),
+        ...(warnings.length ? { warnings } : {}),
+      };
+    }
+
+    if (a.action === "update") {
+      if (entries.length === 0) return fail("Pass `shapes`: one entry per shape to change, each with its `id`.");
+      const current = new Map((board.shapes ?? []).map((sh) => [sh.id, sh]));
+      const patches: { id: string; patch: Partial<Omit<BoardShape, "id">> }[] = [];
+      for (const [i, e] of entries.entries()) {
+        const id = typeof e.id === "string" ? e.id : "";
+        const sh = current.get(id);
+        if (!sh) return fail(`shape ${i}: no shape "${id}". Call board_read for the current ids.`);
+        const style = styleFrom(e, `shape ${i}`);
+        let next: BoardShape = style ? { ...sh, style: { ...sh.style, ...style } } : sh;
+        const box = shapeBounds(next, lookup);
+        const x = num(e.x);
+        const y = num(e.y);
+        const w = num(e.w);
+        const h = num(e.h);
+        if (x !== undefined || y !== undefined || w !== undefined || h !== undefined) {
+          next = resizeShapeTo(next, { x: x ?? box.x, y: y ?? box.y, w: w ?? box.w, h: h ?? box.h });
+        }
+        if (typeof e.text === "string") next = { ...next, text: e.text };
+        if (isConnector(sh.kind) && (typeof e.from_id === "string" || typeof e.to_id === "string")) {
+          for (const ref of [e.from_id, e.to_id]) {
+            if (typeof ref === "string" && ref && !isTarget(ref)) return fail(`shape ${i}: no tile or shape "${ref}".`);
+          }
+          const bind = {
+            ...(typeof e.from_id === "string" ? (e.from_id ? { start: e.from_id } : {}) : sh.bind?.start ? { start: sh.bind.start } : {}),
+            ...(typeof e.to_id === "string" ? (e.to_id ? { end: e.to_id } : {}) : sh.bind?.end ? { end: sh.bind.end } : {}),
+          };
+          next = { ...next, bind };
+        }
+        const { id: _id, ...patch } = next;
+        void _id;
+        patches.push({ id, patch });
+      }
+      asAgent(() => {
+        const run = () => patches.forEach((p) => updateShape(p.id, p.patch));
+        if (board.batch) board.batch(run);
+        else run();
+      });
+      return { ok: true, ids: patches.map((p) => p.id), ...(warnings.length ? { warnings } : {}) };
+    }
+    return fail('action must be "create", "update" or "delete".');
   };
 
   const focusTool = (input: unknown) => {
@@ -818,6 +1004,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     board_arrange: arrangeTool,
     board_group: group,
     board_connect: connectTool,
+    board_shape: shapeTool,
     board_focus: focusTool,
     board_open_item: openItem,
     board_item_act: itemAct,

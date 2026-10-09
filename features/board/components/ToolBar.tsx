@@ -2,7 +2,7 @@
 
 /**
  * ToolBar — the board's tools (Claude Design / FigJam layout): Select, Hand,
- * Text, Frame, Note, Draw, and a Shapes menu (rectangle, oval, arrow, line),
+ * Text, Frame, Note, Draw, Eraser, and a Shapes menu (rectangle, oval, arrow, line),
  * each with its key. Screen-space chrome; the active tool lives in the store.
  */
 
@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Circle,
   Ellipsis,
+  Eraser,
   Frame,
   Hand,
   Minus,
@@ -42,13 +43,14 @@ const ICON: Record<BoardTool, LucideIcon> = {
   frame: Frame,
   note: StickyNote,
   pen: Pencil,
+  eraser: Eraser,
   rect: Square,
   oval: Circle,
   arrow: ArrowUpRight,
   line: Minus,
 };
 
-const MAIN_TOOLS: BoardTool[] = ["select", "hand", "text", "frame", "note", "pen"];
+const MAIN_TOOLS: BoardTool[] = ["select", "hand", "text", "frame", "note", "pen", "eraser"];
 /** Tools that stay on the strip at phone width; the rest fold into one "More tools" menu. */
 export const PHONE_TOOLS: readonly BoardTool[] = ["select", "hand"];
 

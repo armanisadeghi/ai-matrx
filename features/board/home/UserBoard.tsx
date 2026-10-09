@@ -18,7 +18,7 @@
  * reported through `onChange` as a `BoardDocument` (the saved form).
  */
 
-import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
@@ -47,6 +47,9 @@ import { BoardTile } from "../components/BoardTile";
 import { BoardFrameView } from "../components/BoardFrameView";
 import { BoardEdgeLine } from "../components/BoardEdgeLine";
 import { ShapesLayer } from "../components/ShapesLayer";
+import { SelectionToolbar } from "../components/SelectionToolbar";
+import { selectionActionsSection, shapeStyleSection } from "../components/ShapeToolbarSections";
+import { hitShape, isBoxKind } from "../engine/shapes";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
@@ -385,6 +388,14 @@ export function UserBoard({
     board
       .read()
       .tiles.find((t) => p.x >= t.rect.x && p.x <= t.rect.x + t.rect.w && p.y >= t.rect.y && p.y <= t.rect.y + t.rect.h);
+  /** A rectangle / oval under a world point (topmost), if any — an arrow end binds to it. */
+  const boxShapeAtPoint = (p: { x: number; y: number }) => {
+    const shapes = board.getShapes();
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (isBoxKind(shapes[i].kind) && hitShape(shapes[i], p, 0, board.targetOf)) return shapes[i];
+    }
+    return undefined;
+  };
 
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
@@ -416,19 +427,30 @@ export function UserBoard({
       case "line": {
         // An arrow drawn from one tile onto another is a LINE between them (a connection): the
         // second tile becomes context for a chat tile, in either direction. Anywhere else it is a mark.
-        const from = tileAtPoint(c.from);
-        const to = tileAtPoint(c.to);
+        // Drawings sit above tiles, so a box shape under an end is the nearer target.
+        const fromShape = boxShapeAtPoint(c.from);
+        const toShape = boxShapeAtPoint(c.to);
+        const from = fromShape ? undefined : tileAtPoint(c.from);
+        const to = toShape ? undefined : tileAtPoint(c.to);
         if (c.tool === "arrow" && from && to && from.id !== to.id) {
           board.connect({ id: `link:${crypto.randomUUID().slice(0, 8)}`, from: from.id, to: to.id });
           toast(`Connected "${from.title}" to "${to.title}"`);
           return;
         }
-        board.addShape({ id, kind: c.tool, points: [c.from, c.to] });
+        // An end dropped on a tile or a rectangle / oval BINDS to it and follows it (tldraw).
+        const start = fromShape?.id ?? from?.id;
+        const end = toShape?.id ?? to?.id;
+        const bind = start !== end && (start || end) ? { ...(start ? { start } : {}), ...(end ? { end } : {}) } : undefined;
+        board.addShape({ id, kind: c.tool, points: [c.from, c.to], ...(bind ? { bind } : {}) });
         break;
       }
       case "pen":
         board.addShape({ id, kind: "pen", points: c.points });
         break;
+      case "eraser":
+        board.removeMany(c.ids);
+        if (store && c.ids.some((x) => store.isSelected(x))) store.select(null);
+        return;
     }
     requestAnimationFrame(() => store?.select(id));
   };
@@ -564,18 +586,23 @@ export function UserBoard({
     if (ids.length === 0) return;
     if (ids.length === 1) {
       const id = ids[0];
-      if (board.shapes.some((sh) => sh.id === id)) board.removeShape(id);
+      if (board.getShape(id)) {
+        board.removeShape(id);
+        store?.select(null);
+      }
       else if (board.frames.some((f) => f.id === id)) deleteFrame(id);
       else if (tileOf(id)) takeOff(id);
       return;
     }
     const tiles = ids.filter((id) => tileOf(id));
     const frames = ids.filter((id) => board.frames.some((f) => f.id === id));
+    const marks = ids.filter((id) => board.getShape(id));
     board.removeMany(ids);
     store?.select(null);
     const parts = [
       tiles.length ? `${tiles.length} ${tiles.length === 1 ? "tile" : "tiles"}` : "",
       frames.length ? `${frames.length} ${frames.length === 1 ? "frame" : "frames"}` : "",
+      marks.length ? `${marks.length} ${marks.length === 1 ? "drawing" : "drawings"}` : "",
     ].filter(Boolean);
     toast(`Took ${parts.join(" and ")} off the board`, { action: { label: "Undo", onClick: board.undo } });
   };
@@ -595,13 +622,29 @@ export function UserBoard({
   // Group gestures (a multi-selection drag, a frame carrying its tiles, arrow nudges) move
   // through the board model as one undo step.
   useEffect(() => store?.registerMover({ dragMany: board.dragMany }), [store, board]);
+  // ⌘D: copies of the selected drawings, selected (tiles are live records — not duplicated here).
+  const duplicateSelected = (): boolean => {
+    const ids = (store?.getSelection() ?? []).filter((id) => board.getShape(id));
+    if (ids.length === 0) return false;
+    const copies = board.duplicateShapes(ids);
+    requestAnimationFrame(() => store?.setSelection(copies));
+    return true;
+  };
+  const reorderSelected = (dir: "forward" | "backward" | "front" | "back") =>
+    board.reorderShapes((store?.getSelection() ?? []).filter((id) => board.getShape(id)), dir);
   useBoardKeys({
     undo: board.undo,
     redo: board.redo,
     deleteSelected,
     enabled: () => !store?.getEditing(),
     arrange: arrangeBoard,
+    duplicate: duplicateSelected,
+    reorder: reorderSelected,
   });
+  const toolbarSections = [
+    shapeStyleSection(board),
+    selectionActionsSection({ board, duplicate: duplicateSelected, remove: deleteSelected }),
+  ];
 
   // ── agents: the board_* tools act through the same paths ─────────────────
   const agentHost: BoardToolHost<UserBoardTile> = {
@@ -656,7 +699,13 @@ export function UserBoard({
       return true;
     },
   };
-  const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0;
+  // The Start panel steps aside once ANYTHING is on the board — a tile, a frame or a drawing.
+  const hasShapes = useSyncExternalStore(
+    board.subscribeShapes,
+    () => board.getShapes().length > 0,
+    () => board.getShapes().length > 0,
+  );
+  const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0 && layout.frames.length === 0 && !hasShapes;
   const parkedTiles = layout.parked;
 
   return (
@@ -686,13 +735,14 @@ export function UserBoard({
           <BoardNavigationContext.Provider value={boardNavigation}>
           <BoardViewport
             initialCamera={viewerCamera ?? doc.camera}
-            fitOnMount={viewerCamera === null && doc.nodes.length > 0}
+            fitOnMount={viewerCamera === null && (doc.nodes.length > 0 || doc.shapes.length > 0 || doc.groups.length > 0)}
             insets={{ top: 72, bottom: 56 }}
             wheelMode={wheelMode}
             onStore={setStore}
             overlay={
               <>
                 <CreationLayer onCreate={onCreate} />
+                <SelectionToolbar sections={toolbarSections} />
                 <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />} />
                 <div
                   data-board-chrome
@@ -748,9 +798,14 @@ export function UserBoard({
             }
           >
             {layout.frames.map((f) => (
-              <BoardFrameView key={f.id} {...f} onRemove={deleteFrame} onResize={board.resizeTile} />
+              <BoardFrameView
+                key={f.id}
+                {...f}
+                onRemove={deleteFrame}
+                onResize={board.resizeTile}
+                onRename={(id, next) => board.updateFrame(id, { title: next })}
+              />
             ))}
-            <ShapesLayer shapes={layout.shapes} />
             {layout.connections.map((c) =>
               onBoard.has(c.from) && onBoard.has(c.to) ? (
                 <BoardEdge key={c.id} board={board} from={c.from} to={c.to} />
@@ -766,6 +821,8 @@ export function UserBoard({
                 onThrow={onThrow}
               />
             ))}
+            {/* Drawings render ABOVE tiles (frames < tiles < drawings), so a stroke over a tile stays visible. */}
+            <ShapesLayer board={board} />
           </BoardViewport>
           </BoardNavigationContext.Provider>
           </ReuseContext.Provider>
