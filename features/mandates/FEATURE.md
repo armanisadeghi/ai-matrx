@@ -68,10 +68,12 @@ Every admin-suite href is built in `admin-routes.ts` (`adminMandateRecordHref`, 
 - Notes carry an explicit `organization_id` (`ensureOrgId`); never fed to an agent.
 - A call site that PERSISTS an agent id: the mandate decides only new records; surface-manifest `defaultAgentId` is a `SEED MIRROR`, never an authority.
 - `EffectiveConfigLayers` renders stored pin keys only ("Constraints: None" when empty); never claim runtime enforcement.
+- Open a holder from an id alone (agent, agent version, workflow, workflow version): `intelligenceGoHref(id, lane)` → `/intelligence/go/<id>` (member view) or `/administration/intelligence/go/<id>` (system agents open in the System Agents tree). One resolver: `features/mandates/go/`; `/agents/go` shares it.
 - New AI step: declare in aidream `aidream/services/mandates/client_mandates.py`, release, then use the generated `MANDATE_KEYS` member; hardcoded-id sweep recipe = run site → `mandateKey`; non-run site → `useMandate` + gate; thunk → `await resolveMandate`.
 
 ## Change log
 
+- **2026-10-08** — `/intelligence/go` + `/administration/intelligence/go`: one resolver for agent / agent-version / workflow / workflow-version ids; `/agents/go` delegates to it (the admin-lane rule had made it send every system agent to the member view). Holder row gains an open-in-new-tab button; agent/workflow pickers there size to their label.
 - **2026-10-08** — Admin list: Model column + filter, Cost (USD) / Points over a URL-backed period with a filtered total (usage ledger via `drill_ask`; database half in `mnd_admin_list_model_and_spend_columns.sql`).
 - **2026-10-06** — ALC-16: transfer imports moved off the retired `@ai-matrx/alchemy/core` / `@ai-matrx/kit/content-transfer` onto `@ai-matrx/alchemy/operate` (same functions, same bytes).
 - **2026-10-02** — Restored the split imports for simple Overrides model controls so the frontend type gate can parse the module.
