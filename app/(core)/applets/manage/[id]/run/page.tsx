@@ -24,8 +24,10 @@ export default async function AppletRunPage({ params }: RunPageProps) {
         initialPublishedToWeb={app.published_to_web}
         active="run"
       />
-      <div className="h-full min-h-0 overflow-auto">
-        <AppletHostMount appletId={app.id} slug={app.slug} />
+      {/* Below the header, never under it: the Applet's own page tabs sat behind the header bar (audit M9).
+          Embedded: its pages change in place, so Run never leaves the manage page for the public address. */}
+      <div className="h-full min-h-0 overflow-auto pt-[var(--shell-header-h)]">
+        <AppletHostMount appletId={app.id} slug={app.slug} embedded />
       </div>
     </>
   );

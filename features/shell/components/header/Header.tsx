@@ -2,7 +2,7 @@ import HamburgerButton from "./header-left-menu/HamburgerButton";
 import { HeaderControlSet } from "./HeaderControlSet";
 import { HeaderCrowdingGuard } from "./HeaderCrowdingGuard";
 import ShellChatToggle from "./ShellChatToggle";
-import { GuestPhoneBrand, GuestPhoneSignIn } from "./GuestPhoneHeader";
+import { GuestBrand, GuestSignIn } from "./GuestHeader";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -27,14 +27,14 @@ export default function Header({ isAuthenticated }: HeaderProps) {
     <header className="shell-header">
       <div className="shell-header-fade" data-shell-header-fade aria-hidden="true" />
       <HamburgerButton />
-      {isAuthenticated ? <ShellChatToggle /> : <GuestPhoneBrand />}
+      {isAuthenticated ? <ShellChatToggle /> : <GuestBrand />}
       <HeaderCrowdingGuard />
 
       <div className="shell-header-center" id="shell-header-center" />
 
       <div className="shell-header-right" data-header-right-set>
         <div className="shell-header-right-inject" id="shell-header-right" />
-        {isAuthenticated ? null : <GuestPhoneSignIn />}
+        {isAuthenticated ? null : <GuestSignIn />}
         <HeaderControlSet isAuthenticated={isAuthenticated} />
       </div>
     </header>

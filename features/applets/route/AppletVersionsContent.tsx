@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { History, RotateCcw } from "lucide-react";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast-service";
@@ -165,16 +165,13 @@ export function AppletVersionsContent({
                         <span className="text-sm font-medium text-foreground truncate">
                           {v.name ?? "—"}
                         </span>
-                        {isCurrent && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary-ink">
-                            current
-                          </span>
-                        )}
-                        {statusLabel && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
-                            {statusLabel}
-                          </span>
-                        )}
+                        {/* ONE chip (audit M8): the current version is the Applet — its state is the header's —
+                            so it says "Current"; an older row says the state its snapshot was saved in. */}
+                        {isCurrent ? (
+                          <Badge tone="primary">Current</Badge>
+                        ) : statusLabel ? (
+                          <Badge>{statusLabel}</Badge>
+                        ) : null}
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {formatDateTime(v.changed_at)} · {summary}

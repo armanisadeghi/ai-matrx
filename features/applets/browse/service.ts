@@ -42,7 +42,9 @@ import { readMemberOrganizationRows } from "@/features/organizations/service/mem
 
 type DefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
 
-export const APPLET_LIST_SCOPES = ["all", "mine", "public"] as const;
+// The access ladder's lanes an Applet can be in (audit L4: an Applet shared with you had no lane of its own).
+// An Applet is homed to an organization, never a team, so the config declares My team absent.
+export const APPLET_LIST_SCOPES = ["all", "mine", "orgs", "shared", "public"] as const;
 type AppletLane = (typeof APPLET_LIST_SCOPES)[number];
 
 /** One row of the /applets list — the person-facing facts only. */
@@ -191,6 +193,9 @@ export function inLane(row: AppletListRow, lane: AppletLane): boolean {
   if (!shownToViewer(row)) return false;
   if (lane === "mine") return row.is_mine;
   if (lane === "public") return row.is_public;
+  if (lane === "orgs") return row.in_my_orgs;
+  // Shared: someone else's, outside her organizations, not public — readable only because it was shared with her.
+  if (lane === "shared") return !row.is_mine && !row.in_my_orgs && !row.is_public;
   // All = Mine ∪ My Orgs ∪ Shared. A row that is someone else's, outside her organizations and public is
   // in Public only; one that is not public can only be readable because it was shared with her.
   return row.is_mine || row.in_my_orgs || !row.is_public;

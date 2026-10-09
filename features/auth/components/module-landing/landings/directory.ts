@@ -72,7 +72,7 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     href: "/agents",
     icon: Webhook,
     teaser:
-      "Build, run, and share AI agents with tools, scopes, and a digital workforce mindset.",
+      "AI helpers that do real work for you, step by step, and show their sources.",
     group: "Conversational",
   },
   {

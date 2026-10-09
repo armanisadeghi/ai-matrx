@@ -191,6 +191,15 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- 2026-10-09 — Lane F5 (live UI audit): lanes All · Mine · My Orgs · Shared · Public (L4; My team declared
+  absent); About is not a sort (L9); dates read to the minute and a Versions row carries one chip (M8);
+  Overview pages open at the Applet's address, a one-record page says it opens from its list, the public link is
+  the whole address (M6); Settings uses the controls' Tabs (M7); Run sits below the header and changes pages in
+  place (M9); a guest at a build link signs in and lands back on it (G6). Shared fixes: every module landing's
+  bottom CTA keeps its destination (G5), one sub-area card is centred (G3), guests get brand + Sign in in the top
+  bar at every width (G7), phone-card values wrap to two lines (L5). Records 0.94 / applets 0.17 make an archived
+  row restorable inside an Applet (R5). Guard: `__tests__/applets-live-audit-f5.test.tsx`.
+
 - 2026-10-09 — Lane F3 (live UI audit B8): an Applet has a fourth state, **In use** (`appletState` kind `in_use`:
   status published, not on the web) — "Use it" for My organization. `appletAudience` / `APPLET_AUDIENCE_LABELS` /
   `appletUseConsequence` (`lib/applet-state.ts`) and `appletAudiencePatch` (`lib/publication.ts`) are the one answer

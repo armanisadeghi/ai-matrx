@@ -176,7 +176,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <dt className="type-meta uppercase leading-5 tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="min-w-0 truncate type-secondary leading-5 text-foreground">
+      {/* Two lines, never one cut at ~25 characters on a phone (Applets audit L5): a value that is a sentence
+          (an About, a description) reads; a cell's own `truncate` is let wrap the same way the title's is. */}
+      <dd className="min-w-0 line-clamp-2 break-words type-secondary leading-5 text-foreground [&_.truncate]:!whitespace-normal">
         {children}
       </dd>
     </>

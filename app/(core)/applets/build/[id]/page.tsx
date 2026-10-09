@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+import { loginHref } from "@/utils/auth/auth-destination";
 import { createClient } from "@/utils/supabase/server";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { AppletBuilder } from "@/features/applets-host/builder/AppletBuilder";
@@ -22,7 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function AppletBuildPage({ params }: { params: Promise<{ id: string }> }) {
   const { isAuthenticated } = await getSessionVerdict();
   const { id } = await params;
-  if (!isAuthenticated) redirect("/applets");
+  // A signed-out person who followed a build link signs in and lands back on this build (audit9 G6).
+  if (!isAuthenticated) redirect(loginHref(`/applets/build/${encodeURIComponent(id)}`));
   // The header names the Applet when it can; the builder itself says plainly when it cannot be read.
   // The build's record (its requests, a run still open) is read HERE, so the first paint already shows
   // what she asked and that it is building — never the empty start screen while the page boots (audit9 B1).

@@ -16,6 +16,7 @@ export const appletListConfig: EntityListConfig<AppletListRow> = {
   entityLabel: { singular: "Applet", plural: "Applets" },
   sourceFeature: "agent-app",
   scopes: [...APPLET_LIST_SCOPES],
+  lanes: { team: false },
   service: createAppletListService(),
   columns: APPLET_COLUMNS,
   prefsVersion: 1,

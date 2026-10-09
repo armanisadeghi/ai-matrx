@@ -98,8 +98,19 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           {pages.length === 0 ? (
             <SettingRow label="One page" />
           ) : (
-            // A page is its title; the file behind it is the code's business.
-            pages.map((page) => <SettingRow key={page.path} label={page.title} />)
+            // A page is its title; the file behind it is the code's business. Every page opens (audit M6) — at
+            // the Applet's own address — except one that shows ONE record, which opens from its list.
+            pages.map((page) =>
+              page.path.includes(":") ? (
+                <SettingRow key={page.path} label={page.title} line="Opens from its list" />
+              ) : (
+                <SettingRow key={page.path} label={page.title}>
+                  <Button variant="quiet" asChild>
+                    <Link href={`/applets/${app.slug}${page.path === "/" || page.path === "" ? "" : `/${page.path.replace(/^\//, "")}`}`}>Open</Link>
+                  </Button>
+                </SettingRow>
+              ),
+            )
           )}
         </RowGroup>
 
@@ -165,7 +176,8 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
             <SettingRow label="Public link">
               <Button variant="quiet" asChild>
                 <a href={`${siteConfig.url}/applets/${app.slug}`} target="_blank" rel="noopener noreferrer">
-                  /applets/{app.slug}
+                  {/* The whole address she can share, never a relative path (audit M6). */}
+                  {`${siteConfig.url.replace(/^https?:\/\/(www\.)?/, "")}/applets/${app.slug}`}
                 </a>
               </Button>
             </SettingRow>

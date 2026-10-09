@@ -17,16 +17,23 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { usePathname, useRouter } from "next/navigation";
 import { buildAppletsWorkspaceScope } from "./AppletSurfaceRuntime";
 import { Button } from "@/components/ui/button";
-import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
+import {
+  Input,
+  SegmentedControl,
+  Tabs,
+} from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toastAppletArchived } from "@/features/applets/lib/archive-undo";
 import { archiveAppletFromPageSentence } from "@/features/applets/lib/applet-state";
 import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChangeByTalkingDisclosure";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
+import {
+  appletJobs,
+  appletPages,
+  appletSources,
+} from "@/features/applets/types";
 import {
   appletSettingsAgentPayload,
   appletSettingsHuman,
@@ -57,13 +64,16 @@ import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/Surface
 import { APPLETS_SURFACE_NAME } from "@/features/surfaces/manifests/applets.manifest";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import {
-  validateAppCategory,
-  validateAppTags,
-} from "./applet-entity-writes";
+import { validateAppCategory, validateAppTags } from "./applet-entity-writes";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
-import { APPLET_AUDIENCE_LABELS, APPLET_AUDIENCES, appletAudience, appletState, type AppletAudience } from "@/features/applets/lib/applet-state";
+import {
+  APPLET_AUDIENCE_LABELS,
+  APPLET_AUDIENCES,
+  appletAudience,
+  appletState,
+  type AppletAudience,
+} from "@/features/applets/lib/applet-state";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
@@ -98,9 +108,7 @@ function requireOpenApp(app: unknown, target: string): void {
   }
 }
 
-export function AppletSettingsContent({
-  appId,
-}: AppletSettingsContentProps) {
+export function AppletSettingsContent({ appId }: AppletSettingsContentProps) {
   const { copyText } = useClipboard({
     notify: copyNotify,
   });
@@ -119,7 +127,9 @@ export function AppletSettingsContent({
     appOrganizationId
       ? {
           organizationId: appOrganizationId,
-          name: myOrganizations.find((o) => o.id === appOrganizationId)?.name ?? null,
+          name:
+            myOrganizations.find((o) => o.id === appOrganizationId)?.name ??
+            null,
           shownByPage: false,
         }
       : null,
@@ -280,9 +290,17 @@ export function AppletSettingsContent({
     setSavingField("publication");
     try {
       await dispatch(setAppletAudience({ appId, audience })).unwrap();
-      toast.success(audience === "web" ? "Anyone with the link can open it." : "Only your organization can open it.");
+      toast.success(
+        audience === "web"
+          ? "Anyone with the link can open it."
+          : "Only your organization can open it.",
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? `Not changed: ${error.message}` : "Not changed.");
+      toast.error(
+        error instanceof Error
+          ? `Not changed: ${error.message}`
+          : "Not changed.",
+      );
     } finally {
       setSavingField(null);
     }
@@ -390,20 +408,24 @@ export function AppletSettingsContent({
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 pt-4">
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-4"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <TabsList>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="pages">Pages</TabsTrigger>
-              <TabsTrigger value="jobs">AI jobs</TabsTrigger>
-              <TabsTrigger value="sources">Data</TabsTrigger>
-              <TabsTrigger value="sharing">Sharing</TabsTrigger>
-              <TabsTrigger value="danger">Danger</TabsTrigger>
-            </TabsList>
+        <div className="space-y-4">
+          {/* THE controls' Tabs (one UI system): on a phone the row scrolls and the copy control takes its own
+              line, so "Danger" is never cut to "Dange" (audit M7). */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Tabs
+              className="min-w-0 max-w-full"
+              value={activeTab}
+              onValueChange={setActiveTab}
+              aria-label="Settings sections"
+              data={[
+                { value: "details", label: "Details" },
+                { value: "pages", label: "Pages" },
+                { value: "jobs", label: "AI jobs" },
+                { value: "sources", label: "Data" },
+                { value: "sharing", label: "Sharing" },
+                { value: "danger", label: "Danger" },
+              ]}
+            />
             <CopyButtons
               size="sm"
               label={`${app.name} settings`}
@@ -436,297 +458,316 @@ export function AppletSettingsContent({
           </div>
 
           {/* ── Details (never "Overview": that is the header's first mode) ── */}
-          <TabsContent value="details" className="space-y-5">
-            <FieldRow
-              label="Name"
-              busy={savingField === "name"}
-              dirty={name !== app.name}
-              onSave={() => saveField("name", name)}
-            >
-              <ProInput
-                aria-label="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </FieldRow>
-            <FieldRow
-              label="Link name"
-              busy={savingField === "slug"}
-              dirty={slug !== app.slug}
-              onSave={() => {
-                const next = slug.trim().toLowerCase();
-                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(next)) {
-                  toast.error("Use lowercase letters, digits and dashes.");
-                  return;
-                }
-                saveField("slug", next);
-              }}
-            >
-              {/* ui-exception: a slug is a raw URL value, not prose — no voice or AI rewrite */}
-              <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-            </FieldRow>
-            <FieldRow
-              label="Tagline"
-              busy={savingField === "tagline"}
-              dirty={(tagline ?? "") !== (app.tagline ?? "")}
-              onSave={() => saveField("tagline", tagline.trim() || null)}
-            >
-              <ProInput
-                aria-label="Tagline"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-              />
-            </FieldRow>
-            <FieldRow
-              label="Description"
-              busy={savingField === "description"}
-              dirty={(description ?? "") !== (app.description ?? "")}
-              onSave={() =>
-                saveField("description", description.trim() || null)
-              }
-            >
-              <ProTextarea
-                aria-label="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="text-[16px] min-h-24"
-                surfaceName={APPLETS_SURFACE_NAME}
-                getApplicationScope={() =>
-                  buildAppletsWorkspaceScope(store.getState(), pathname)
-                }
-              />
-            </FieldRow>
-            <Row label="Category">
-              <AppletCategoryPicker
-                value={app.category}
-                onChange={(next) => saveField("category", next)}
-                disabled={savingField === "category"}
-              />
-            </Row>
-            <Row label="Tags">
-              <AppletTagsInput
-                value={Array.isArray(app.tags) ? app.tags : []}
-                onChange={(next) => saveField("tags", next)}
-                disabled={savingField === "tags"}
-              />
-            </Row>
-            <Row label="Icon">
-              <AppletImageField
-                value={app.favicon_url}
-                onChange={(next) => saveField("favicon_url", next)}
-                aspect="aspect-square"
-                ariaLabel="Upload icon"
-                disabled={savingField === "favicon_url"}
-              />
-            </Row>
-            <Row label="Preview image">
-              <AppletImageField
-                value={app.preview_image_url}
-                onChange={(next) => saveField("preview_image_url", next)}
-                aspect="aspect-[1200/630]"
-                ariaLabel="Upload preview image"
-                disabled={savingField === "preview_image_url"}
-              />
-            </Row>
-            <Button variant="outline" icon={<MessageSquare />} asChild>
-              <Link href={`/applets/build?applet=${app.id}`}>Change it by talking</Link>
-            </Button>
-          </TabsContent>
-
-          <TabsContent value="pages">
-            <AppletPagesEditor app={app} />
-          </TabsContent>
-
-          <TabsContent value="jobs">
-            <AppletJobsEditor app={app} />
-          </TabsContent>
-
-          <TabsContent value="sources">
-            <AppletSourcesEditor app={app} />
-          </TabsContent>
-
-          {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
-          <TabsContent value="sharing" className="space-y-5">
-            {/* The current choice, and the change, in one control (audit M4 / B8): the same two choices
-                "Use it" offers; specific people through the platform's one share dialog. */}
-            <Row label="Who can open it">
-              <SegmentedControl
-                aria-label="Who can open it"
-                value={appletAudience(app)}
-                onValueChange={(next) => void handleAudienceChange(next)}
-                data={APPLET_AUDIENCES.map((value) => ({
-                  value,
-                  label: APPLET_AUDIENCE_LABELS[value],
-                  disabled: savingField === "publication",
-                }))}
-              />
-            </Row>
-            <Row label="People">
-              <ShareButton
-                resourceType="app"
-                resourceId={app.id}
-                resourceName={app.name}
-                organizationId={app.organization_id ?? undefined}
-                showStatus={false}
-                size="sm"
-              />
-            </Row>
-            <Row label="Web address">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-                {appletState(app).live ? (
-                  <>
-                    <a
-                      href={publicUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-mono text-foreground hover:underline truncate flex-1"
-                    >
-                      {publicUrl}
-                    </a>
-                    <button
-                      type="button"
-                      onClick={handleCopyUrl}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                      aria-label="Copy the web address"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    Publish to turn on the public link.
-                  </span>
-                )}
-              </div>
-            </Row>
-
-            <div className="border-t border-border/60 pt-4">
-              {/* An embed of an unpublished Applet opens a sign-in wall on the host page. */}
-              {appletState(app).live ? (
-                <EmbedSnippet slug={app.slug} />
-              ) : (
-                <Row label="Embed">
-                  <span className="text-sm text-muted-foreground">Publish to embed it on another site.</span>
-                </Row>
-              )}
-            </div>
-
-            <div className="border-t border-border/60 pt-4 space-y-1.5">
-              <div className="text-sm font-medium text-foreground">
-                Filed under
-              </div>
-              <EntityEngagementPicker
-                // Applets live in app.definition (registry token `app`).
-                entityType="app"
-                entityId={app.id}
-                organizationId={app.organization_id}
-                projectId={app.project_id}
-                taskId={app.task_id}
-                onOrganizationChange={(next) =>
-                  saveField("organization_id", next)
-                }
-                onProjectChange={(next) => saveField("project_id", next)}
-                onTaskChange={(next) => saveField("task_id", next)}
-                disabled={
-                  savingField === "organization_id" ||
-                  savingField === "project_id" ||
-                  savingField === "task_id"
-                }
-              />
-            </div>
-
-            <div className="border-t border-border/60 pt-4 space-y-3">
+          {activeTab === "details" && (
+            <div className="space-y-5">
               <FieldRow
-                label="Uses per visitor"
-                busy={savingField === "rate_limit_per_ip"}
-                dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
-                onSave={() => {
-                  const n = rateIp.trim() === "" ? null : Number(rateIp);
-                  if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Enter a whole number, 0 or more.");
-                    return;
-                  }
-                  saveField("rate_limit_per_ip", n);
-                }}
+                label="Name"
+                busy={savingField === "name"}
+                dirty={name !== app.name}
+                onSave={() => saveField("name", name)}
               >
-                {/* ui-exception: a numeric limit, not prose */}
-                <Input
-                  value={rateIp}
-                  onChange={(e) => setRateIp(e.target.value)}
-                  inputMode="numeric"
-                  className="w-32"
+                <ProInput
+                  aria-label="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </FieldRow>
               <FieldRow
-                label="Limit resets after (hours)"
-                busy={savingField === "rate_limit_window_hours"}
-                dirty={
-                  rateWindow.trim() !==
-                  String(app.rate_limit_window_hours ?? "")
-                }
+                label="Link name"
+                busy={savingField === "slug"}
+                dirty={slug !== app.slug}
                 onSave={() => {
-                  const n =
-                    rateWindow.trim() === "" ? null : Number(rateWindow);
-                  if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Enter a whole number, 0 or more.");
+                  const next = slug.trim().toLowerCase();
+                  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(next)) {
+                    toast.error("Use lowercase letters, digits and dashes.");
                     return;
                   }
-                  saveField("rate_limit_window_hours", n);
+                  saveField("slug", next);
                 }}
               >
-                {/* ui-exception: a numeric limit, not prose */}
-                <Input
-                  value={rateWindow}
-                  onChange={(e) => setRateWindow(e.target.value)}
-                  inputMode="numeric"
-                  className="w-32"
+                {/* ui-exception: a slug is a raw URL value, not prose — no voice or AI rewrite */}
+                <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+              </FieldRow>
+              <FieldRow
+                label="Tagline"
+                busy={savingField === "tagline"}
+                dirty={(tagline ?? "") !== (app.tagline ?? "")}
+                onSave={() => saveField("tagline", tagline.trim() || null)}
+              >
+                <ProInput
+                  aria-label="Tagline"
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
                 />
               </FieldRow>
               <FieldRow
-                label="Uses per signed-in person"
-                busy={savingField === "rate_limit_authenticated"}
-                dirty={
-                  rateAuth.trim() !== String(app.rate_limit_authenticated ?? "")
+                label="Description"
+                busy={savingField === "description"}
+                dirty={(description ?? "") !== (app.description ?? "")}
+                onSave={() =>
+                  saveField("description", description.trim() || null)
                 }
-                onSave={() => {
-                  const n = rateAuth.trim() === "" ? null : Number(rateAuth);
-                  if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Enter a whole number, 0 or more.");
-                    return;
-                  }
-                  saveField("rate_limit_authenticated", n);
-                }}
               >
-                {/* ui-exception: a numeric limit, not prose */}
-                <Input
-                  value={rateAuth}
-                  onChange={(e) => setRateAuth(e.target.value)}
-                  inputMode="numeric"
-                  className="w-32"
+                <ProTextarea
+                  aria-label="Description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-[16px] min-h-24"
+                  surfaceName={APPLETS_SURFACE_NAME}
+                  getApplicationScope={() =>
+                    buildAppletsWorkspaceScope(store.getState(), pathname)
+                  }
                 />
               </FieldRow>
-            </div>
-          </TabsContent>
-
-          {/* ── Danger zone ────────────────────────────────────────────── */}
-          <TabsContent value="danger">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
-              <span className="text-sm">Archive this Applet</span>
-              <Button
-                icon={isDeleting ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Archive />
-                )}
-                variant="danger"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                Archive
+              <Row label="Category">
+                <AppletCategoryPicker
+                  value={app.category}
+                  onChange={(next) => saveField("category", next)}
+                  disabled={savingField === "category"}
+                />
+              </Row>
+              <Row label="Tags">
+                <AppletTagsInput
+                  value={Array.isArray(app.tags) ? app.tags : []}
+                  onChange={(next) => saveField("tags", next)}
+                  disabled={savingField === "tags"}
+                />
+              </Row>
+              <Row label="Icon">
+                <AppletImageField
+                  value={app.favicon_url}
+                  onChange={(next) => saveField("favicon_url", next)}
+                  aspect="aspect-square"
+                  ariaLabel="Upload icon"
+                  disabled={savingField === "favicon_url"}
+                />
+              </Row>
+              <Row label="Preview image">
+                <AppletImageField
+                  value={app.preview_image_url}
+                  onChange={(next) => saveField("preview_image_url", next)}
+                  aspect="aspect-[1200/630]"
+                  ariaLabel="Upload preview image"
+                  disabled={savingField === "preview_image_url"}
+                />
+              </Row>
+              <Button variant="outline" icon={<MessageSquare />} asChild>
+                <Link href={`/applets/build?applet=${app.id}`}>
+                  Change it by talking
+                </Link>
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+
+          {activeTab === "pages" && (
+            <div>
+              <AppletPagesEditor app={app} />
+            </div>
+          )}
+
+          {activeTab === "jobs" && (
+            <div>
+              <AppletJobsEditor app={app} />
+            </div>
+          )}
+
+          {activeTab === "sources" && (
+            <div>
+              <AppletSourcesEditor app={app} />
+            </div>
+          )}
+
+          {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
+          {activeTab === "sharing" && (
+            <div className="space-y-5">
+              {/* The current choice, and the change, in one control (audit M4 / B8): the same two choices
+                "Use it" offers; specific people through the platform's one share dialog. */}
+              <Row label="Who can open it">
+                <SegmentedControl
+                  aria-label="Who can open it"
+                  value={appletAudience(app)}
+                  onValueChange={(next) => void handleAudienceChange(next)}
+                  data={APPLET_AUDIENCES.map((value) => ({
+                    value,
+                    label: APPLET_AUDIENCE_LABELS[value],
+                    disabled: savingField === "publication",
+                  }))}
+                />
+              </Row>
+              <Row label="People">
+                <ShareButton
+                  resourceType="app"
+                  resourceId={app.id}
+                  resourceName={app.name}
+                  organizationId={app.organization_id ?? undefined}
+                  showStatus={false}
+                  size="sm"
+                />
+              </Row>
+              <Row label="Web address">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
+                  {appletState(app).live ? (
+                    <>
+                      <a
+                        href={publicUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-mono text-foreground hover:underline truncate flex-1"
+                      >
+                        {publicUrl}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleCopyUrl}
+                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                        aria-label="Copy the web address"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Publish to turn on the public link.
+                    </span>
+                  )}
+                </div>
+              </Row>
+
+              <div className="border-t border-border/60 pt-4">
+                {/* An embed of an unpublished Applet opens a sign-in wall on the host page. */}
+                {appletState(app).live ? (
+                  <EmbedSnippet slug={app.slug} />
+                ) : (
+                  <Row label="Embed">
+                    <span className="text-sm text-muted-foreground">
+                      Publish to embed it on another site.
+                    </span>
+                  </Row>
+                )}
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-1.5">
+                <div className="text-sm font-medium text-foreground">
+                  Filed under
+                </div>
+                <EntityEngagementPicker
+                  // Applets live in app.definition (registry token `app`).
+                  entityType="app"
+                  entityId={app.id}
+                  organizationId={app.organization_id}
+                  projectId={app.project_id}
+                  taskId={app.task_id}
+                  onOrganizationChange={(next) =>
+                    saveField("organization_id", next)
+                  }
+                  onProjectChange={(next) => saveField("project_id", next)}
+                  onTaskChange={(next) => saveField("task_id", next)}
+                  disabled={
+                    savingField === "organization_id" ||
+                    savingField === "project_id" ||
+                    savingField === "task_id"
+                  }
+                />
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-3">
+                <FieldRow
+                  label="Uses per visitor"
+                  busy={savingField === "rate_limit_per_ip"}
+                  dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
+                  onSave={() => {
+                    const n = rateIp.trim() === "" ? null : Number(rateIp);
+                    if (n != null && (!Number.isFinite(n) || n < 0)) {
+                      toast.error("Enter a whole number, 0 or more.");
+                      return;
+                    }
+                    saveField("rate_limit_per_ip", n);
+                  }}
+                >
+                  {/* ui-exception: a numeric limit, not prose */}
+                  <Input
+                    value={rateIp}
+                    onChange={(e) => setRateIp(e.target.value)}
+                    inputMode="numeric"
+                    className="w-32"
+                  />
+                </FieldRow>
+                <FieldRow
+                  label="Limit resets after (hours)"
+                  busy={savingField === "rate_limit_window_hours"}
+                  dirty={
+                    rateWindow.trim() !==
+                    String(app.rate_limit_window_hours ?? "")
+                  }
+                  onSave={() => {
+                    const n =
+                      rateWindow.trim() === "" ? null : Number(rateWindow);
+                    if (n != null && (!Number.isFinite(n) || n < 0)) {
+                      toast.error("Enter a whole number, 0 or more.");
+                      return;
+                    }
+                    saveField("rate_limit_window_hours", n);
+                  }}
+                >
+                  {/* ui-exception: a numeric limit, not prose */}
+                  <Input
+                    value={rateWindow}
+                    onChange={(e) => setRateWindow(e.target.value)}
+                    inputMode="numeric"
+                    className="w-32"
+                  />
+                </FieldRow>
+                <FieldRow
+                  label="Uses per signed-in person"
+                  busy={savingField === "rate_limit_authenticated"}
+                  dirty={
+                    rateAuth.trim() !==
+                    String(app.rate_limit_authenticated ?? "")
+                  }
+                  onSave={() => {
+                    const n = rateAuth.trim() === "" ? null : Number(rateAuth);
+                    if (n != null && (!Number.isFinite(n) || n < 0)) {
+                      toast.error("Enter a whole number, 0 or more.");
+                      return;
+                    }
+                    saveField("rate_limit_authenticated", n);
+                  }}
+                >
+                  {/* ui-exception: a numeric limit, not prose */}
+                  <Input
+                    value={rateAuth}
+                    onChange={(e) => setRateAuth(e.target.value)}
+                    inputMode="numeric"
+                    className="w-32"
+                  />
+                </FieldRow>
+              </div>
+            </div>
+          )}
+
+          {/* ── Danger zone ────────────────────────────────────────────── */}
+          {activeTab === "danger" && (
+            <div>
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
+                <span className="text-sm">Archive this Applet</span>
+                <Button
+                  icon={
+                    isDeleting ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Archive />
+                    )
+                  }
+                  variant="danger"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  Archive
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -769,11 +810,7 @@ function FieldRow({ label, busy, dirty, onSave, children }: FieldRowProps) {
       <div className="pt-1">
         {dirty && (
           <Button
-            icon={busy ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Save />
-            )}
+            icon={busy ? <Loader2 className="animate-spin" /> : <Save />}
             type="button"
             variant="quiet"
             onClick={onSave}

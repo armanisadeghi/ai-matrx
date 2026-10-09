@@ -22,7 +22,7 @@ import {
   isKnownNumber,
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
-import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { formatAbsoluteDate, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
@@ -41,13 +41,10 @@ export function formatNumber(n: number | null | undefined): string {
 }
 
 /** Locale date+time string, tolerant of bad/missing ISO input. */
+/** "9 Oct 2026, 4:44 AM" — the day and the minute, never seconds (audit M8: "10/9/2026, 4:44:06 AM"). */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
+  return formatAbsoluteDate(iso, { dateStyle: "medium", timeStyle: "short" }, iso);
 }
 
 /**

@@ -42,6 +42,8 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
       // whole sentence rides in the cell's title; About leaves first when the list is too narrow.
       width: 320,
       maxWidth: 360,
+      // Nobody orders Applets by their description (audit L9: "About (A→Z)" was an engineer's sort).
+      sortable: false,
       cell: (row) => <TextCell value={row.tagline} muted />,
     },
     priority: 3,

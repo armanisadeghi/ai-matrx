@@ -27,12 +27,12 @@ const CAPABILITIES: ModuleCapability[] = [
   {
     icon: Database,
     title: "On your own data",
-    description: "Reads and writes your tables and records.",
+    description: "Works with the lists and records you already keep.",
   },
   {
     icon: Radio,
-    title: "AI jobs that stream",
-    description: "Run an AI job and watch the answer arrive live.",
+    title: "AI built in",
+    description: "Ask it to do a task and watch the answer arrive.",
   },
   {
     icon: Share2,
@@ -61,7 +61,7 @@ const STEPS: ModuleStep[] = [
 
 const SUB_AREAS: ModuleSubArea[] = [
   {
-    title: "Applet templates",
+    title: "Browse every template",
     status: "Live",
     href: "/templates/applets",
     items: ["Client portals", "Sales pipelines", "Time tracking"],
@@ -76,7 +76,7 @@ export default function AppletsLanding() {
       eyebrowIcon={LayoutTemplate}
       headline="Custom Applets,"
       headlineGradient="built by talking."
-      description="Multi-page Applets on your own tables and records, with AI jobs that stream live. Describe one and it is built."
+      description="Say what you need in plain words. You get an app with its own pages, working on your own data, with AI built in."
       primaryCtaHref="/sign-up?source=applets-landing"
       primaryCtaLabel="Build your first Applet"
       workspaceHref="/applets"

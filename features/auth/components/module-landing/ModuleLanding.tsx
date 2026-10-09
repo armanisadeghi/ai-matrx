@@ -276,7 +276,17 @@ export function ModuleLanding({
               </p>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* One card sits centred at a card's width — never one card left-aligned in a row of three (audit9 G3). */}
+          <div
+            className={cn(
+              "grid grid-cols-1 gap-4 sm:gap-6",
+              subAreas.length === 1
+                ? "mx-auto max-w-md"
+                : subAreas.length === 2
+                  ? "mx-auto max-w-3xl sm:grid-cols-2"
+                  : "sm:grid-cols-2 lg:grid-cols-3",
+            )}
+          >
             {subAreas.map((area) => {
               const card = (
                 <div
@@ -405,7 +415,8 @@ export function ModuleLanding({
             variant="primary"
             asChild
           >
-            <Link href={primaryCtaHref}>
+            {/* The same sign-up link as the hero, so the bottom CTA keeps the destination too (audit9 G5). */}
+            <Link href={primaryCtaUrl}>
               {primaryCtaLabel}
               <ArrowRight className="h-4 w-4" />
             </Link>
