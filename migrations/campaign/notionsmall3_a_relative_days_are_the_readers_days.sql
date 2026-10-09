@@ -1,0 +1,281 @@
+-- chair-step: replaces custom.rule_filter_node_sql(uuid, uuid, jsonb, jsonb, text[]) and ADDS custom.relative_window_for_reader(jsonb, uuid, boolean) (no table, column, index, policy or grant touched). A relative day filter (today, this week, next N days...) is now worked out in the READER's time zone (person's saved zone, else the organization's, else UTC) and the organization's first day of the week (knob custom/week_start, Monday by default), for date-only columns as calendar days and for timestamp columns as the reader's local midnights. Before, the window was cut at UTC midnight unless the author's browser had stamped its own zone into the shared view.
+-- lock: custom
+-- lane: NOTION-SMALL-3
+-- based-on: custom.rule_filter_node_sql(uuid, uuid, jsonb, jsonb, text[]) d730847fc648298ab475a7cae7d79dbda3b4cfefa1d109e8ce9967cc16772ccb
+--
+-- The inverse is `migrations/inverse/notionsmall3_a_relative_days_are_the_readers_days_down.sql`.
+--
+CREATE OR REPLACE FUNCTION custom.relative_window_for_reader(p_window jsonb, p_organization_id uuid, p_instants boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_kind text;
+  v_n    integer;
+  v_tz   text;
+  v_ws_name text;
+  v_idx  integer;
+  v_t    date;
+  v_ws   date;
+  v_ms   date;
+  v_from date;
+  v_to   date;
+  v_cal  jsonb;
+begin
+  -- Not a relative window (an absolute from / to): handed back as it came.
+  if p_window is null or jsonb_typeof(p_window) <> 'object' or not (p_window ? 'relative') then
+    return p_window;
+  end if;
+  v_kind := p_window ->> 'relative';
+  -- THE READER'S DAY, never the writer's: person's saved zone, else the organization's, else UTC
+  -- (custom.day_zone). A zone stored inside a shared view is its author's and is not consulted.
+  v_tz := custom.day_zone(p_organization_id);
+  v_cal := custom.agg_calendar(p_organization_id);
+  v_ws_name := coalesce(v_cal ->> 'week_start', 'monday');
+  v_idx := coalesce(array_position(array['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], v_ws_name), 1) - 1;
+  if jsonb_typeof(p_window -> 'n') = 'number' then
+    v_n := least(greatest((p_window ->> 'n')::numeric::integer, 0), 3660);
+  end if;
+  v_t  := (now() at time zone v_tz)::date;
+  v_ws := v_t - ((extract(isodow from v_t)::integer - 1 - v_idx + 7) % 7);
+  v_ms := date_trunc('month', v_t::timestamp)::date;
+  if v_kind = 'today' then v_from := v_t; v_to := v_t + 1;
+  elsif v_kind = 'tomorrow' then v_from := v_t + 1; v_to := v_t + 2;
+  elsif v_kind = 'yesterday' then v_from := v_t - 1; v_to := v_t;
+  elsif v_kind = 'this_week' then v_from := v_ws; v_to := v_ws + 7;
+  elsif v_kind = 'next_week' then v_from := v_ws + 7; v_to := v_ws + 14;
+  elsif v_kind = 'last_week' then v_from := v_ws - 7; v_to := v_ws;
+  elsif v_kind = 'this_month' then v_from := v_ms; v_to := (v_ms + interval '1 month')::date;
+  elsif v_kind = 'next_month' then v_from := (v_ms + interval '1 month')::date; v_to := (v_ms + interval '2 months')::date;
+  elsif v_kind = 'last_month' then v_from := (v_ms - interval '1 month')::date; v_to := v_ms;
+  elsif v_kind = 'before_today' then v_to := v_t;
+  elsif v_kind = 'next_days' and v_n is not null then v_from := v_t; v_to := v_t + v_n;
+  elsif v_kind = 'past_days' and v_n is not null then v_from := v_t - v_n; v_to := v_t;
+  else
+    raise exception 'custom.relative_window_for_reader: "%" is not a day range this filter knows', v_kind
+      using errcode = '22023',
+            hint = 'today, tomorrow, yesterday, this_week, next_week, last_week, this_month, next_month, last_month, before_today, or next_days / past_days with a number n.';
+  end if;
+  if p_instants then
+    -- A TIMESTAMP column: the window is the reader's local midnights, as instants (DST-safe).
+    return jsonb_strip_nulls(jsonb_build_object(
+      'from', case when v_from is null then null else to_char((v_from::timestamp at time zone v_tz) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') end,
+      'to',   case when v_to   is null then null else to_char((v_to::timestamp   at time zone v_tz) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') end));
+  end if;
+  -- A DATE-ONLY column holds a day with no zone; the window is the reader's calendar days.
+  return jsonb_strip_nulls(jsonb_build_object('from', to_char(v_from, 'YYYY-MM-DD'), 'to', to_char(v_to, 'YYYY-MM-DD')));
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION custom.rule_filter_node_sql(p_organization_id uuid, p_table_id uuid, p_node jsonb, p_map jsonb, p_visible text[])
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_op    text;
+  v_args  jsonb;
+  v_key   text;
+  v_parts text[] := '{}';
+  v_sql   text;
+  v_one   jsonb;
+  v_a     jsonb;
+  v_b     jsonb;
+  v_fkey  text;
+  v_const jsonb;
+  v_i     integer;
+  v_kind  text;
+begin
+  if p_node is null or jsonb_typeof(p_node) <> 'object' then
+    raise exception 'this rule''s test is not written in a shape the system can work out'
+      using errcode = '22023',
+            hint = 'REC-15: a Rule expression is an object — one of the nodes custom.rule_node_kinds() lists.';
+  end if;
+  if p_node ?| array['field_name', 'field_key', 'field_label'] then
+    raise exception 'this rule names a field instead of pointing at it'
+      using errcode = '22023',
+            hint = 'REC-17: a Rule references Fields by id, never by name — {"field": "<the field''s id>"}. A name changes and the rule would stop resolving; an id does not.';
+  end if;
+
+  v_op := p_node ->> 'op';
+  if left(coalesce(v_op, ''), 3) = 'fx.'
+     or v_op in ('previous', 'actor_at_least', 'stage_count', 'sibling_count', 'concat')
+     or p_node ?| array['parent_field', 'merge_field', 'grandparent_field', 'ancestor_field'] then
+    raise exception 'a filter cannot ask "%" of every record at once',
+                    coalesce(v_op, (select k from jsonb_object_keys(p_node) k
+                                     where k in ('parent_field', 'merge_field', 'grandparent_field', 'ancestor_field') limit 1))
+      using errcode = '0A000',
+            hint = 'A view''s filter compares a record''s own columns: is, is not, more / less than, at least / at most, matches, has been answered, how long, + − × ÷, and ALL / ANY / NOT groups of those, nested as deep as you like. What a write is doing (previous, who is moving it, how full a column is, a sibling like it), a parent''s or a merge field''s answer, a joined sentence and the formula functions are for Rules that judge one record, not for a list. Nothing was read.';
+  end if;
+
+  if p_node ? 'const' then
+    return format('%L::jsonb', (p_node -> 'const')::text);
+  end if;
+
+  if p_node ? 'field' then
+    if jsonb_typeof(p_node -> 'field') <> 'string'
+       or (p_node ->> 'field') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      raise exception 'this rule points at a field with % instead of with its id', p_node ->> 'field'
+        using errcode = '22023',
+              hint = 'REC-17: {"field": "<the field''s id>"}. What is written here is not an id at all.';
+    end if;
+    select f.data ->> 'key' into v_key
+      from custom.record f
+     where f.organization_id = p_organization_id
+       and f.id = (p_node ->> 'field')::uuid
+       and f.table_id = custom.field_kernel_id()
+       and f.deleted_at is null
+       and (f.data ->> 'entity_definition_id')::uuid = p_table_id;
+    if v_key is null then
+      raise exception 'this filter points at a field that is not one of this table''s fields'
+        using errcode = '23503',
+              hint = 'REC-17 / FLD-8: a filter reaches a Field by its id, and the Field has to be a live field OF the table being read. A field that was deleted, or one of another table, answers nothing rather than something wrong.';
+    end if;
+    perform custom.agg_assert_key(v_key);
+    if p_visible is not null and not (v_key = any (p_visible)) then
+      -- HIDDEN FROM THIS READER, SO UNKNOWN TO THIS READER. The read door masks this column in
+      -- every document it hands them; the filter answers about it the same way.
+      return '''null''::jsonb';
+    end if;
+    -- AP-3 (2026-10-06): only a column the store WORKS OUT is read through record_values_of
+    -- (which works out every read-time lookup, roll-up and formula of the row); a stored column is
+    -- its stored value, the W1-RULE computed block winning exactly as in record_values_of.
+    if exists (select 1 from custom.record f
+                where f.organization_id = p_organization_id
+                  and f.id = (p_node ->> 'field')::uuid
+                  and f.table_id = custom.field_kernel_id()
+                  and (custom.parity_type(f.data) in ('lookup', 'rollup', 'formula')
+                       or f.data ->> 'type' in ('lookup', 'rollup', 'formula'))) then
+      return format('(custom.record_values_of(r) -> %L)', v_key);
+    end if;
+    return format('coalesce(custom.computed_block(r.data -> ''_computed'') -> %1$L, r.data -> %1$L)', v_key);
+  end if;
+
+  v_args := coalesce(p_node -> 'args', '[]'::jsonb);
+  if v_op is null then
+    raise exception 'this rule''s test does not say what it does'
+      using errcode = '22023',
+            hint = 'REC-15: every expression node is a const, a field, a parent_field, or an op with its args. custom.rule_node_kinds() is the whole list.';
+  end if;
+  if not (v_op = any (select n.node from custom.rule_node_kinds() n)) then
+    raise exception 'this rule asks the system to %, and it does not know how', v_op
+      using errcode = '22023',
+            hint = 'REC-15: select * from custom.rule_node_kinds() is the closed list of what a Rule can do. A node outside it is refused rather than ignored.';
+  end if;
+  if jsonb_typeof(v_args) <> 'array' then
+    raise exception 'this rule''s % carries its arguments as a %, not as a list', v_op, jsonb_typeof(v_args)
+      using errcode = '22023', hint = 'REC-15: {"op": "…", "args": [ … ]}.';
+  end if;
+
+  if v_op = 'and' then
+    -- Innermost first: `case <truth of arg n> when false … when undecided … else true end`,
+    -- wrapped outward, so arg 1 is asked first and each is asked once.
+    v_sql := '''true''::jsonb';
+    for v_i in reverse (jsonb_array_length(v_args) - 1)..0 loop
+      v_sql := format(
+        'case coalesce(custom.rule_truth(%s)::text, ''undecided'') when ''false'' then ''false''::jsonb when ''undecided'' then ''null''::jsonb else %s end',
+        custom.rule_filter_node_sql(p_organization_id, p_table_id, v_args -> v_i, p_map, p_visible), v_sql);
+    end loop;
+    return '(' || v_sql || ')';
+  elsif v_op = 'or' then
+    for v_one in select e from jsonb_array_elements(v_args) e loop
+      v_parts := array_append(v_parts, format('when custom.rule_truth(%s) is true then ''true''::jsonb',
+                   custom.rule_filter_node_sql(p_organization_id, p_table_id, v_one, p_map, p_visible)));
+    end loop;
+    if cardinality(v_parts) = 0 then
+      return '''false''::jsonb';
+    end if;
+    return '(case ' || array_to_string(v_parts, ' ') || ' else ''false''::jsonb end)';
+  elsif v_op = 'not' then
+    -- S2-PRIME (chair ruling 2026-09-24): a list is always a FILTER question, so NOT of an
+    -- undecided answer is true here — exactly custom.rule_eval with purpose = 'filter'.
+    return format(
+      '(case coalesce(custom.rule_truth(%s)::text, ''undecided'') when ''undecided'' then ''true''::jsonb when ''true'' then ''false''::jsonb else ''true''::jsonb end)',
+      custom.rule_filter_node_sql(p_organization_id, p_table_id, v_args -> 0, p_map, p_visible));
+  elsif v_op in ('present', 'length') then
+    return format('custom.rule_sql_op(%L, %s)', v_op,
+                  custom.rule_filter_node_sql(p_organization_id, p_table_id, v_args -> 0, p_map, p_visible));
+  end if;
+
+  -- CHAIR-FILTER-DOORS: `within` — the Field's moment is in a half-open window. One leaf, so several
+  -- ticked days are an `or` of them and Exclude is a `not`; undecided where the record has no moment.
+  if v_op = 'within' then
+    v_a := v_args -> 0;
+    v_b := v_args -> 1;
+    if jsonb_array_length(v_args) <> 2 or jsonb_typeof(v_a) is distinct from 'object' or not (v_a ? 'field') or v_a ? 'op'
+       or jsonb_typeof(v_b) is distinct from 'object' or not (v_b ? 'const')
+       or jsonb_typeof(v_b -> 'const') is distinct from 'object' then
+      raise exception 'this filter''s "within" is not written as a column and a window'
+        using errcode = '22023',
+              hint = 'CHAIR-FILTER: {"op": "within", "args": [{"field": "<the field''s id>"}, {"const": {"from": "2026-09-01", "to": "2026-09-02"}}]} — from is included, to is not.';
+    end if;
+    select f.data ->> 'key', f.data -> 'config' ->> 'kind' into v_key, v_kind
+      from custom.record f
+     where f.organization_id = p_organization_id
+       and f.id = nullif(v_a ->> 'field', '')::uuid
+       and f.table_id = custom.field_kernel_id()
+       and f.deleted_at is null
+       and (f.data ->> 'entity_definition_id')::uuid = p_table_id;
+    if v_key is null then
+      raise exception 'this filter points at a field that is not one of this table''s fields'
+        using errcode = '23503',
+              hint = 'REC-17 / FLD-8: a filter reaches a Field by its id, and the Field has to be a live field OF the table being read. A field that was deleted, or one of another table, answers nothing rather than something wrong.';
+    end if;
+    perform custom.agg_assert_key(v_key);
+    if p_visible is not null and not (v_key = any (p_visible)) then
+      return '''null''::jsonb';
+    end if;
+    return format('(case when (%1$s) is null then ''null''::jsonb when %2$s then ''true''::jsonb else ''false''::jsonb end)',
+                  custom.dashboard_moment_sql(v_key),
+                  custom.dashboard_window_sql(v_key, custom.relative_window_for_reader(v_b -> 'const', p_organization_id,
+                                                                             v_key in ('created_at', 'updated_at') or v_kind = 'datetime')));
+  end if;
+
+  -- NOTION-SMALL-2: "ME", resolved for whoever is READING. `eq` / `ne` of a column against the const
+  -- {"me": true} asks the reader's own id at the moment the list is read, so one shared "My tasks" view
+  -- answers each person with their own rows. A person column holding one id or a list of ids both work.
+  if v_op in ('eq', 'ne') then
+    v_a := v_args -> 0;
+    v_b := v_args -> 1;
+    if jsonb_typeof(v_b) = 'object' and v_b ? 'const' and jsonb_typeof(v_b -> 'const') = 'object' and (v_b -> 'const') ? 'me' then
+      return format('custom.rule_is_me(%L, %s)', v_op,
+                    custom.rule_filter_node_sql(p_organization_id, p_table_id, v_a, p_map, p_visible));
+    elsif jsonb_typeof(v_a) = 'object' and v_a ? 'const' and jsonb_typeof(v_a -> 'const') = 'object' and (v_a -> 'const') ? 'me' then
+      return format('custom.rule_is_me(%L, %s)', v_op,
+                    custom.rule_filter_node_sql(p_organization_id, p_table_id, v_b, p_map, p_visible));
+    end if;
+  end if;
+
+  -- The two-sided nodes. A choice compared with the words a person typed is compared against
+  -- the stored key, exactly as the flat filter normalises it (CHOICE-VALUE).
+  v_a := v_args -> 0;
+  v_b := v_args -> 1;
+  if v_op in ('eq', 'ne') and p_map is not null and p_map <> '{}'::jsonb then
+    for v_i in 0..1 loop
+      v_one   := case when v_i = 0 then v_a else v_b end;
+      v_const := case when v_i = 0 then v_b else v_a end;
+      continue when v_one is null or jsonb_typeof(v_one) <> 'object' or not (v_one ? 'field') or v_one ? 'op'
+                 or v_const is null or jsonb_typeof(v_const) <> 'object' or not (v_const ? 'const')
+                 or jsonb_typeof(v_const -> 'const') <> 'string';
+      select f.data ->> 'key' into v_fkey
+        from custom.record f
+       where f.organization_id = p_organization_id
+         and f.id = nullif(v_one ->> 'field', '')::uuid
+         and f.table_id = custom.field_kernel_id()
+         and f.deleted_at is null;
+      if v_fkey is not null and p_map ? v_fkey
+         and custom.choice_key_of(p_map -> v_fkey, v_const ->> 'const') is not null then
+        v_const := jsonb_build_object('const', custom.choice_key_of(p_map -> v_fkey, v_const ->> 'const'));
+        if v_i = 0 then v_b := v_const; else v_a := v_const; end if;
+      end if;
+    end loop;
+  end if;
+  return format('custom.rule_sql_op(%L, %s, %s)', v_op,
+                custom.rule_filter_node_sql(p_organization_id, p_table_id, v_a, p_map, p_visible),
+                custom.rule_filter_node_sql(p_organization_id, p_table_id, v_b, p_map, p_visible));
+end;
+$function$;
