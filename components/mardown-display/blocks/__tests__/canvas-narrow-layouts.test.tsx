@@ -28,9 +28,13 @@ jest.mock("@ai-matrx/rich-content/display/blocks/canvas-fit", () => {
   const actual = jest.requireActual<typeof import("@ai-matrx/rich-content/display/blocks/canvas-fit")>(
     "@ai-matrx/rich-content/display/blocks/canvas-fit",
   );
+  const actualCanvas = jest.requireActual<typeof import("@ai-matrx/canvas/react")>("@ai-matrx/canvas/react");
   return {
     ...actual,
-    useCanvasFit: () => actual.canvasFitFor(mockPresentation),
+    useCanvasFit: () => {
+      const providerPresentation = actualCanvas.useCanvasPresentation();
+      return actual.canvasFitFor(mockPresentation ?? providerPresentation);
+    },
   };
 });
 
@@ -210,6 +214,12 @@ async function show(node: React.ReactElement, presentation: CanvasPresentation |
 }
 
 async function showPackageTable(width: number, height: number, isFullscreen = false) {
+  // CanvasProvider owns its controller for its first render. Unmount between
+  // scenarios so each one exercises the store and presentation passed here.
+  await act(async () => {
+    root.render(null);
+  });
+  mockPresentation = null;
   const store = createCanvasStore();
   store.dispatch(canvasActions.open({ kind: TABLE_KIND, key: "table" }));
   const getRect = HTMLElement.prototype.getBoundingClientRect;

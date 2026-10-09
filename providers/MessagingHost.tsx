@@ -57,7 +57,6 @@ import {
   toMessagingArchiveFilter,
   useConversations,
   useMessagingHost,
-  useMessagingSnapshot,
 } from "@ai-matrx/messaging/react";
 import type { MessagingArchiveFilter } from "@ai-matrx/messaging/react";
 import type { ActionHandler } from "@ai-matrx/messaging";
@@ -112,8 +111,8 @@ const messagingClient = withSharedRpcReads(supabase, {
 /**
  * Realtime postgres_changes carry no request headers, so on the admin seat
  * (/administration reading a thread the admin is not a member of) no live row
- * ever arrives. `MessagingAdminObserverRefresh` re-reads the active thread on
- * an interval and window focus, and only while the browser is in that lane.
+ * ever arrives. The package's incremental observer refresh backfills missed
+ * messages on an interval and window focus, only while the browser is in that lane.
  */
 export interface MessagingHostProps {
   children: ReactNode;
@@ -297,6 +296,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         // Seeds the engine at creation; `<MessagingArchiveKnob>` below owns
         // every later value of the same setting (see its comment).
         archiveFilter={archiveKnob}
+        observerRefresh={{ intervalMs: 5_000, active: browserAdminLaneOpen }}
         actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
         // App chrome around the package's own surfaces: the data attributes the
@@ -319,7 +319,6 @@ export function MessagingHost({ children }: MessagingHostProps) {
         }}
       >
         <MessagingArchiveKnob knob={archiveKnob} />
-        <MessagingAdminObserverRefresh />
         {children}
       </MessagingProvider>
     </MessagingAiDemandProvider>
@@ -327,43 +326,6 @@ export function MessagingHost({ children }: MessagingHostProps) {
 }
 
 export default MessagingHost;
-
-/**
- * Realtime postgres_changes do not carry the admin lane. Refresh the open
- * thread while an administrator is reviewing a conversation they cannot join.
- * This uses the package's public engine API because MessagingProvider does not
- * accept an observerRefresh option.
- */
-function MessagingAdminObserverRefresh() {
-  const host = useMessagingHost();
-  const snapshot = useMessagingSnapshot();
-  const conversationId = snapshot?.activeConversationId ?? null;
-
-  useEffect(() => {
-    if (host === null || conversationId === null) return;
-
-    let refreshing = false;
-    const refresh = () => {
-      if (!browserAdminLaneOpen() || refreshing) return;
-      refreshing = true;
-      void host.engine
-        .openConversation(conversationId)
-        .catch(() => undefined)
-        .finally(() => {
-          refreshing = false;
-        });
-    };
-
-    const interval = window.setInterval(refresh, 5_000);
-    window.addEventListener("focus", refresh);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refresh);
-    };
-  }, [host, conversationId]);
-
-  return null;
-}
 
 /**
  * THE LATE-KNOB PROBLEM, solved the way `AgentCatalogHost` solves it.
