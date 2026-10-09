@@ -93,6 +93,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { readBrandSocialCounts } from "@/features/marketing/social/service";
 import {
   marketingKeyProblem,
   nextPreviousSlugs,
@@ -2778,7 +2779,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, published_to_web, published_to_web_at, published_to_web_by, settings, integrations, profile, shown_to";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, published_to_web, published_to_web_at, published_to_web_by, settings, integrations, profile, shown_to, kind, person_party_id, person_user_id";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -2818,7 +2819,7 @@ export async function listBrands(
   const [
     sitesResponse,
     pendingResponse,
-    propertiesResponse,
+    socialCounts,
     assetsResponse,
     factsResponse,
   ] = await Promise.all([
@@ -2838,13 +2839,7 @@ export async function listBrands(
       .eq("status", "pending")
       .is("deleted_at", null)
       .abortSignal(abortSignal),
-    db
-      .from("property")
-      .select("brand_id, kind")
-      .in("brand_id", brandIds)
-      .neq("kind", "website")
-      .is("deleted_at", null)
-      .abortSignal(abortSignal),
+    readBrandSocialCounts(brandIds, abortSignal),
     db
       .from("brand_asset")
       .select("brand_id")
@@ -2881,9 +2876,6 @@ export async function listBrands(
     }
     return map;
   };
-  const socialsByBrand = countBy(
-    assertData(propertiesResponse.data, propertiesResponse.error),
-  );
   const assetsByBrand = countBy(
     assertData(assetsResponse.data, assetsResponse.error),
   );
@@ -2896,7 +2888,8 @@ export async function listBrands(
       ...brand,
       sites: sitesByBrand.get(brand.id) ?? [],
       pending_discovered: pendingByBrand.get(brand.id) ?? 0,
-      social_count: socialsByBrand.get(brand.id) ?? 0,
+      social_count: socialCounts.get(brand.id)?.accounts ?? 0,
+      social_tracked_count: socialCounts.get(brand.id)?.tracked ?? 0,
       asset_count: assetsByBrand.get(brand.id) ?? 0,
       fact_count: factsByBrand.get(brand.id) ?? 0,
     })),
@@ -3246,6 +3239,10 @@ export async function createBrand(
           ? publishedToWebPatch(true, null)
           : {}),
         ...(input.profile !== undefined ? { profile: input.profile } : {}),
+        // A person brand (creator/coach) names who the person is; a company omits all three.
+        ...(input.kind ? { kind: input.kind } : {}),
+        ...(input.personPartyId ? { person_party_id: input.personPartyId } : {}),
+        ...(input.personUserId ? { person_user_id: input.personUserId } : {}),
       })
       .select(BRAND_COLUMNS)
       .single(),
@@ -3761,6 +3758,8 @@ export async function createProperty(
       handle: input.handle,
       display_name: input.displayName,
       status: input.status,
+      ...(input.ownerKind ? { owner_kind: input.ownerKind } : {}),
+      ...(input.ownerPartyId ? { owner_party_id: input.ownerPartyId } : {}),
     })
     .select(PROPERTY_COLUMNS)
     .single();

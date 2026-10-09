@@ -6,7 +6,6 @@
  * (rendered "—", never 0).
  */
 
-import { handleFromInput } from "./link";
 import { median, profileBaseline } from "./outlier";
 import type {
   AccountRow,
@@ -203,14 +202,6 @@ export interface AccountPostStat {
   outlier_score: number | null;
 }
 
-export interface OwnPropertyInput {
-  id: string;
-  kind: string;
-  handle: string | null;
-  url: string | null;
-  display_name: string | null;
-}
-
 export function normalizeHandle(value: string | null | undefined): string {
   return (value ?? "").trim().replace(/^@/, "").toLowerCase();
 }
@@ -220,13 +211,11 @@ export function buildAccountRows(args: {
   profiles: readonly SocialProfileRow[];
   snapshots: readonly Pick<ProfileSnapshotRow, "profile_id" | "observed_at" | "follower_count">[];
   postStats: readonly AccountPostStat[];
-  properties: readonly OwnPropertyInput[];
   now?: number;
 }): AccountRow[] {
   const now = args.now ?? Date.now();
   const profileById = new Map(args.profiles.map((p) => [p.id, p]));
   const rows: AccountRow[] = [];
-  const trackedPlatformHandles = new Set<string>();
 
   for (const t of args.tracked) {
     const profile = profileById.get(t.profile_id);
@@ -252,7 +241,6 @@ export function buildAccountRows(args: {
       .filter((d): d is string => Boolean(d))
       .sort()
       .pop() ?? null;
-    trackedPlatformHandles.add(`${profile.platform}:${normalizeHandle(profile.handle)}`);
     rows.push({
       rowId: t.id,
       trackedAccountId: t.id,
@@ -278,37 +266,83 @@ export function buildAccountRows(args: {
     });
   }
 
-  // Own properties that are not tracked yet still list, so "Own" is complete.
-  // Most properties carry only a URL (no handle): the handle comes from it.
-  const trackedPropertyIds = new Set(args.tracked.map((t) => t.property_id).filter(Boolean));
-  for (const prop of args.properties) {
-    const shown = (prop.handle?.trim() || (prop.url ? handleFromInput(prop.url) : "")).replace(/^@/, "");
-    const handle = normalizeHandle(shown);
-    if (!handle || trackedPropertyIds.has(prop.id) || trackedPlatformHandles.has(`${prop.kind}:${handle}`)) continue;
-    rows.push({
-      rowId: `property:${prop.id}`,
-      trackedAccountId: null,
-      profileId: null,
-      platform: prop.kind,
-      handle: shown,
-      displayName: prop.display_name?.trim() || shown,
-      avatarUrl: null,
-      role: "own",
-      status: "not_tracked",
-      followers: null,
-      growth: null,
-      growthNote: "Not tracked yet",
-      postsTracked: 0,
-      medianViews: null,
-      bestScore: null,
-      bestPostId: null,
-      lastPostAt: null,
-      lastRefreshedAt: null,
-      profileUrl: prop.url,
-      propertyId: prop.id,
-    });
-  }
   return rows;
+}
+
+/** One row of `social.brand_social_accounts(p_brand_id)`; numerics may arrive as strings. */
+export interface BrandSocialAccountRpcRow {
+  row_key: string;
+  property_id: string | null;
+  platform: string;
+  handle: string | null;
+  url: string | null;
+  display_name: string | null;
+  property_status: string | null;
+  owner_kind: string | null;
+  owner_party_id: string | null;
+  owner_name: string | null;
+  trackable: boolean | null;
+  tracked_account_id: string | null;
+  tracked_role: string | null;
+  tracked_status: string | null;
+  tracked_label: string | null;
+  profile_id: string | null;
+  profile_handle: string | null;
+  profile_display_name: string | null;
+  profile_url: string | null;
+  avatar_url: string | null;
+  is_verified: boolean | null;
+  followers: number | string | null;
+  followers_observed_at: string | null;
+  followers_30d_ago: number | string | null;
+  posts_tracked: number | string | null;
+  last_post_at: string | null;
+  best_multiple_30d: number | string | null;
+  best_post_id_30d: string | null;
+  last_refreshed_at: string | null;
+}
+
+/**
+ * The ONE mapping from the brand's social-account read to the row both the Overview card and
+ * Socials -> Accounts render. Growth is `followers / followers_30d_ago - 1`; with no 30-day-old
+ * snapshot it is null and says so (never 0).
+ */
+export function brandSocialRowToAccountRow(r: BrandSocialAccountRpcRow): AccountRow {
+  const tracked = Boolean(r.tracked_account_id);
+  const handle = (r.profile_handle ?? r.handle ?? "").replace(/^@/, "");
+  const followers = num(r.followers);
+  const before = num(r.followers_30d_ago);
+  const growth = tracked && followers !== null && before !== null && before > 0 ? followers / before - 1 : null;
+  const display =
+    r.tracked_label?.trim() || r.profile_display_name?.trim() || r.display_name?.trim() || handle || r.platform;
+  return {
+    rowId: r.tracked_account_id ?? r.row_key,
+    trackedAccountId: r.tracked_account_id,
+    profileId: r.profile_id,
+    platform: r.platform,
+    handle,
+    displayName: display,
+    avatarUrl: r.avatar_url,
+    avatarHint: r.avatar_url,
+    role: r.tracked_role && isTrackedRole(r.tracked_role) ? r.tracked_role : "own",
+    status: tracked ? (r.tracked_status ?? "active") : "not_tracked",
+    followers,
+    growth,
+    growthNote: !tracked ? "Not tracked yet" : growth === null ? "Not enough history yet" : "Last 30 days",
+    postsTracked: num(r.posts_tracked) ?? 0,
+    medianViews: null,
+    bestScore: num(r.best_multiple_30d),
+    bestPostId: r.best_post_id_30d,
+    lastPostAt: r.last_post_at,
+    lastRefreshedAt: r.last_refreshed_at,
+    profileUrl: r.profile_url ?? r.url,
+    propertyId: r.property_id,
+    ownerKind: r.owner_kind === "person" ? "person" : "company",
+    ownerName: r.owner_name,
+    trackable: Boolean(r.trackable),
+    isVerified: Boolean(r.is_verified),
+    externalUrl: r.url ?? r.profile_url,
+  };
 }
 
 // ---------------------------------------------------------------------------

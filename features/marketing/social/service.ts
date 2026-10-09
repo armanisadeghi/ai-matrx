@@ -21,7 +21,6 @@ import { readListRpc } from "@/lib/entity-list/readListRpc";
 import type { LaneRow } from "@/lib/entity-list/laneRows";
 import type {
   AccountPostStat,
-  OwnPropertyInput,
 } from "./mappers";
 import {
   WATCHLIST_SURFACE,
@@ -30,7 +29,7 @@ import {
   type HitState,
   type OutlierFilter,
 } from "./outliers";
-import { buildAccountRows } from "./mappers";
+import { brandSocialRowToAccountRow, buildAccountRows, type BrandSocialAccountRpcRow } from "./mappers";
 import { parseAdvertiserDefinition, toAdCardModel } from "./ads";
 import { buildSwipeItems, toSwipeEdge, type RawEdge } from "./swipe";
 import type {
@@ -58,11 +57,6 @@ import type {
 } from "./types";
 import { isTrackedRole } from "./types";
 import { hookLineOf, num, toPostCardModel } from "./mappers";
-
-const SOCIAL_KINDS = [
-  "instagram", "facebook", "x", "tiktok", "youtube", "linkedin",
-  "pinterest", "threads", "reddit", "snapchat",
-];
 
 function fail(label: string, message: string): never {
   throw new Error(`${label}: ${message}`);
@@ -105,26 +99,6 @@ export async function readTrackedAccounts(args: {
     },
     { label: "social.tracked_account list" },
   );
-}
-
-/** The brand's own social properties (`web.property`). */
-export async function readOwnProperties(args: {
-  organizationId: string;
-  brandId: string;
-  signal?: AbortSignal;
-}): Promise<OwnPropertyInput[]> {
-  let q = supabase
-    .schema("web")
-    .from("property")
-    .select("id, kind, handle, url, display_name")
-    .eq("organization_id", args.organizationId)
-    .eq("brand_id", args.brandId)
-    .in("kind", SOCIAL_KINDS)
-    .is("deleted_at", null);
-  if (args.signal) q = q.abortSignal(args.signal);
-  const { data, error } = await q;
-  if (error) fail("web.property social list", error.message);
-  return (data ?? []) as OwnPropertyInput[];
 }
 
 export async function readProfiles(ids: readonly string[]): Promise<SocialProfileRow[]> {
@@ -211,24 +185,75 @@ export async function readAccountPostStats(
   return out;
 }
 
-/** Everything the Accounts table needs, assembled into rows. */
+/** The brand's ONE social-account list (`social.brand_social_accounts`, RLS applies). */
+export async function readBrandSocialAccounts(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<AccountRow[]> {
+  let q = supabase.schema("social").rpc("brand_social_accounts", { p_brand_id: brandId });
+  if (signal) q = q.abortSignal(signal);
+  const { data, error } = await q;
+  if (error) fail("social.brand_social_accounts", error.message);
+  return ((data ?? []) as BrandSocialAccountRpcRow[]).map(brandSocialRowToAccountRow);
+}
+
+/** Per-brand account / tracked counts (`social.brand_social_counts`); brands with none are absent. */
+export interface BrandSocialCount {
+  brand_id: string;
+  accounts: number;
+  tracked: number;
+  company_accounts: number;
+  person_accounts: number;
+}
+export async function readBrandSocialCounts(
+  brandIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<Map<string, BrandSocialCount>> {
+  if (brandIds.length === 0) return new Map();
+  let q = supabase.schema("social").rpc("brand_social_counts", { p_brand_ids: [...brandIds] });
+  if (signal) q = q.abortSignal(signal);
+  const { data, error } = await q;
+  if (error) fail("social.brand_social_counts", error.message);
+  return new Map(
+    ((data ?? []) as BrandSocialCount[]).map((r) => [
+      r.brand_id,
+      {
+        brand_id: r.brand_id,
+        accounts: Number(r.accounts),
+        tracked: Number(r.tracked),
+        company_accounts: Number(r.company_accounts),
+        person_accounts: Number(r.person_accounts),
+      },
+    ]),
+  );
+}
+
+/**
+ * Everything the Accounts table needs: the brand's social-account read (own / company / person
+ * accounts, tracked or not) plus the competitor / inspiration accounts the organization tracks.
+ * The own list is never re-merged here: it is the RPC's rows, identical to the Overview card.
+ */
 export async function readAccountRows(args: {
   organizationId: string;
   brandId: string;
   signal?: AbortSignal;
 }): Promise<AccountRow[]> {
-  const [tracked, properties] = await Promise.all([
+  const [brandRows, tracked] = await Promise.all([
+    readBrandSocialAccounts(args.brandId, args.signal),
     readTrackedAccounts(args),
-    readOwnProperties(args),
   ]);
-  const profileIds = [...new Set(tracked.map((t) => t.profile_id))];
+  const seen = new Set(brandRows.map((r) => r.trackedAccountId).filter(Boolean));
+  const others = tracked.filter((t) => !seen.has(t.id) && t.role !== "own" && t.role !== "client");
+  if (others.length === 0) return brandRows;
+  const profileIds = [...new Set(others.map((t) => t.profile_id))];
   const since = new Date(Date.now() - 100 * 86_400_000).toISOString();
   const [profiles, snapshots, postStats] = await Promise.all([
     readProfiles(profileIds),
     readProfileSnapshots(profileIds, since),
     readAccountPostStats(profileIds),
   ]);
-  return buildAccountRows({ tracked, profiles, snapshots, postStats, properties });
+  const competitors = buildAccountRows({ tracked: others, profiles, snapshots, postStats });
+  return [...brandRows, ...competitors];
 }
 
 /** Edit a tracked account's role / label / notes / status (Layer B, RLS). */
@@ -454,7 +479,7 @@ export async function readBrandSocialData(args: {
     views: p.views,
     outlier_score: p.outlierScore,
   }));
-  const accounts = buildAccountRows({ tracked, profiles, snapshots, postStats, properties: [] });
+  const accounts = buildAccountRows({ tracked, profiles, snapshots, postStats });
   return { accounts, posts, snapshots };
 }
 

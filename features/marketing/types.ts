@@ -101,7 +101,10 @@ export interface BrandListRow extends MarketingBrand {
     >
   >;
   pending_discovered: number;
+  /** Social accounts on the brand (`social.brand_social_counts.accounts`). */
   social_count: number;
+  /** How many of them are tracked. */
+  social_tracked_count: number;
   asset_count: number;
   fact_count: number;
 }
@@ -361,6 +364,12 @@ export function mergeBrandProfile(current: Json | null | undefined, edited: Bran
 export interface CreateBrandInput {
   organizationId: string;
   name: string;
+  /** company (default) | person — a person brand is someone who IS the brand. */
+  kind?: MarketingBrand["kind"];
+  /** Person brands: the crm.party (person) the brand is. */
+  personPartyId?: string | null;
+  /** Person brands: the signed-in user, only when the person said "this is me". */
+  personUserId?: string | null;
   industry: string | null;
   description: string | null;
   websiteUrl: string | null;
@@ -614,6 +623,9 @@ export interface CreatePropertyInput {
   handle: string | null;
   displayName: string | null;
   status: string;
+  /** Whose account it is (A2): the brand's (company, default) or a person's. */
+  ownerKind?: "company" | "person";
+  ownerPartyId?: string | null;
 }
 
 export interface UpdatePropertyInput {

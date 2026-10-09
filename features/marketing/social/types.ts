@@ -245,6 +245,16 @@ export interface AccountRow {
   lastRefreshedAt: string | null;
   profileUrl: string | null;
   propertyId: string | null;
+  /** Whose account (brand_social_accounts): the brand's own, or a named person's. Absent on competitor rows. */
+  ownerKind?: "company" | "person";
+  ownerName?: string | null;
+  /** The server can track this platform (false: say so, no Track button). Absent = judge by platform. */
+  trackable?: boolean;
+  isVerified?: boolean;
+  /** The account's public link (the property url), for the external-link icon. */
+  externalUrl?: string | null;
+  /** Provider avatar URL hint; the stored copy is drawn through `profileAvatarDoor(profileId)`. */
+  avatarHint?: string | null;
 }
 
 export interface PostCardModel {

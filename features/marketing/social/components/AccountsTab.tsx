@@ -126,7 +126,10 @@ export function AccountsTab() {
             <span className="flex min-w-0 items-center gap-2">
               <PlatformMark platform={r.platform} size={20} />
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                  {r.ownerKind === "person" ? <Badge>{r.ownerName ?? "Person"}</Badge> : null}
+                </span>
                 <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
               </span>
             </span>
@@ -208,15 +211,6 @@ export function AccountsTab() {
           ) : (
             <span className="tabular-nums">{r.postsTracked}</span>
           ),
-      },
-      {
-        id: "median_views",
-        label: "Median views",
-        header: "Median views",
-        accessorFn: (r) => r.medianViews,
-        align: "right",
-        filter: "number",
-        cell: (r) => <span className="tabular-nums">{formatCompact(r.medianViews)}</span>,
       },
       {
         id: "best",

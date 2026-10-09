@@ -18,12 +18,14 @@ import { TRACKABLE_PLATFORMS, isSocialPlatform, type AccountRow } from "../types
 
 /** Own property rows the server can track now (its platform is wired). */
 export function trackableOwn(row: AccountRow): boolean {
-  return !row.trackedAccountId && Boolean(row.propertyId) && TRACKABLE_PLATFORMS.has(row.platform);
+  return !row.trackedAccountId && Boolean(row.propertyId) && row.trackable !== false && TRACKABLE_PLATFORMS.has(row.platform);
 }
 
 export function useTrackOwn(organizationId: string, brandId: string) {
   const invalidate = useInvalidateSocial();
   const [busyRow, setBusyRow] = useState<string | null>(null);
+  /** The server's live step line for the row being tracked ("Fetching posts · 2 of 3"). */
+  const [progress, setProgress] = useState<string | null>(null);
   const { costText, confirmSpend } = useSocialSpend(organizationId);
 
   /** Track one own property as role Own; an empty account asks before tracking it anyway. */
@@ -40,7 +42,10 @@ export function useTrackOwn(organizationId: string, brandId: string) {
           pages: 1,
           allowEmpty,
         },
-        { organizationId },
+        {
+          organizationId,
+          onProgress: (p) => setProgress(p.step && p.total ? `${p.message} · ${p.step} of ${p.total}` : p.message),
+        },
       );
       return "ok";
     } catch (err) {
@@ -69,6 +74,7 @@ export function useTrackOwn(organizationId: string, brandId: string) {
       }
     } finally {
       setBusyRow(null);
+      setProgress(null);
     }
   }
 
@@ -88,9 +94,10 @@ export function useTrackOwn(organizationId: string, brandId: string) {
     } finally {
       await invalidate();
       setBusyRow(null);
+      setProgress(null);
     }
     toast.success(`Tracked ${done} of ${list.length}`);
   }
 
-  return { busyRow, setBusyRow, trackOwn, trackAllOwn, costText, confirmSpend };
+  return { busyRow, setBusyRow, progress, trackOwn, trackAllOwn, costText, confirmSpend };
 }
