@@ -48,7 +48,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useFactoryDoor } from "@/features/agents/factory/door";
 import { startAgentBuild } from "@/features/agents/factory/service";
 import { KEPT_OUTCOMES, type FactoryBuildState } from "@/features/agents/factory/types";
@@ -567,8 +566,8 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           ...(userInput.trim() ? { purpose: userInput.trim() } : {}),
         }
       : {
+          // No display_name: the factory names the agent from its own goal step's role.
           name,
-          display_name: humanizeIdentifier(name) || name,
           purpose,
           ...(examplesGiven.length > 0 ? { sample_inputs: JSON.stringify(examplesGiven) } : {}),
         };

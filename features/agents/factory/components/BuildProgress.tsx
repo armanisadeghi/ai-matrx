@@ -298,7 +298,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, onKept, forwardW
   }
 
   const state = detail.state ?? {};
-  const name = (state.request?.spec?.display_name as string | undefined) ?? (state.request?.spec?.name as string | undefined) ?? "New agent";
+  const name = (state.request?.spec?.display_name as string | undefined) ?? "New agent";
   const sendBacks = state.send_backs ?? 0;
 
   return (
