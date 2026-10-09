@@ -5,6 +5,8 @@
  * and the row value createTopic writes. Change one side, change the other.
  */
 
+import { normalizeHandle } from "@/features/marketing/social/link";
+
 export type SubjectType = "topic" | "company" | "brand" | "person" | "creator";
 
 export const SUBJECT_TYPES: { value: SubjectType; label: string }[] = [
@@ -24,6 +26,8 @@ export const SOCIAL_PLATFORMS: { value: string; label: string }[] = [
   { value: "x", label: "X" },
   { value: "facebook", label: "Facebook" },
   { value: "threads", label: "Threads" },
+  { value: "reddit", label: "Reddit" },
+  { value: "snapchat", label: "Snapchat" },
 ];
 
 export interface ResearchSubjectInput {
@@ -46,7 +50,8 @@ export function setSubjectParams(params: URLSearchParams, subject: ResearchSubje
   if (subject.domain?.trim()) params.set("domain", subject.domain.trim());
   if (subject.brandId) params.set("brand_id", subject.brandId);
   for (const [platform, handle] of Object.entries(subject.handles ?? {})) {
-    if (handle.trim()) params.set(`${HANDLE_PREFIX}${platform}`, handle.trim());
+    const clean = normalizeHandle(handle);
+    if (clean) params.set(`${HANDLE_PREFIX}${platform}`, clean);
   }
 }
 
@@ -55,8 +60,8 @@ export function subjectFromParams(params: URLSearchParams): ResearchSubjectInput
   const raw = params.get("subject_type");
   const handles: Record<string, string> = {};
   params.forEach((value, key) => {
-    if (key.startsWith(HANDLE_PREFIX) && value.trim()) {
-      handles[key.slice(HANDLE_PREFIX.length)] = value.trim();
+    if (key.startsWith(HANDLE_PREFIX) && normalizeHandle(value)) {
+      handles[key.slice(HANDLE_PREFIX.length)] = normalizeHandle(value);
     }
   });
   return {
@@ -74,7 +79,7 @@ export function subjectColumns(subject: ResearchSubjectInput): {
 } {
   const handles = Object.fromEntries(
     Object.entries(subject.handles ?? {})
-      .map(([p, h]) => [p, h.trim()] as const)
+      .map(([p, h]) => [p, normalizeHandle(h)] as const)
       .filter(([, h]) => h.length > 0),
   );
   const value: { domain?: string; handles?: Record<string, string>; brand_id?: string } = {};
@@ -100,7 +105,7 @@ export function subjectFromBrandProperties(
         domain = p.url;
       }
     } else if (platforms.has(p.kind) && !handles[p.kind]) {
-      const value = p.handle || p.url;
+      const value = normalizeHandle(p.handle || p.url);
       if (value) handles[p.kind] = value;
     }
   }

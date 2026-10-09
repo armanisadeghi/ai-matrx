@@ -1,5 +1,6 @@
 import { researchThisHref } from "./init-route";
 import {
+  SOCIAL_PLATFORMS,
   subjectColumns,
   subjectFromBrandProperties,
   subjectFromParams,
@@ -33,6 +34,26 @@ describe("typed research subject", () => {
       { kind: "instagram", url: null, handle: "@example" },
       { kind: "google_business_profile", url: "https://g.page/x", handle: null },
     ]);
-    expect(s).toEqual({ type: "brand", brandId: "b1", domain: "example.com", handles: { instagram: "@example" } });
+    expect(s).toEqual({ type: "brand", brandId: "b1", domain: "example.com", handles: { instagram: "example" } });
+  });
+
+  it("normalizes prefilled profile URLs to bare handles for every platform, Reddit and Snapchat included", () => {
+    const s = subjectFromBrandProperties("b1", [
+      { kind: "instagram", url: "https://www.instagram.com/allgreen_itad/?hl=en", handle: null },
+      { kind: "reddit", url: "https://www.reddit.com/user/allgreen/", handle: null },
+      { kind: "snapchat", url: "https://www.snapchat.com/add/allgreen", handle: null },
+      { kind: "x", url: null, handle: "@allgreen" },
+    ]);
+    expect(s.handles).toEqual({ instagram: "allgreen_itad", reddit: "allgreen", snapchat: "allgreen", x: "allgreen" });
+  });
+
+  it("offers a handle field for Reddit and Snapchat", () => {
+    const values = SOCIAL_PLATFORMS.map((p) => p.value);
+    expect(values).toEqual(expect.arrayContaining(["reddit", "snapchat"]));
+  });
+
+  it("stores normalized handles when a URL is pasted into the intake", () => {
+    const cols = subjectColumns({ type: "brand", handles: { instagram: "https://www.instagram.com/allgreen_itad/?hl=en" } });
+    expect(cols.subject.handles).toEqual({ instagram: "allgreen_itad" });
   });
 });

@@ -25,7 +25,10 @@ export function SpokespeoplePanel({
   brandId,
   brandName,
   organizationId,
+  onMeasureMine,
 }: {
+  /** Start measuring the signed-in person's own voice here, filed in this brand's organization. */
+  onMeasureMine?: () => void;
   brandId: string;
   brandName: string;
   /** The brand's organization: a voice can only be linked within the same organization. */
@@ -75,8 +78,7 @@ export function SpokespeoplePanel({
     <Card className="p-4" data-testid="voice-spokespeople">
       <h2 className="text-sm font-medium text-foreground">Spokespeople</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        A person&apos;s own measured voice, linked to this brand. Measure it on that person&apos;s Writing voice page,
-        then link it here.
+        A person&apos;s own measured voice, linked to this brand.
       </p>
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       {linked === null && !error ? (
@@ -102,8 +104,15 @@ export function SpokespeoplePanel({
       </ul>
       {mine.length - eligible.length > 0 ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          {mine.length - eligible.length} of your voices are filed in another organization and cannot be linked here.
+          {mine.length - eligible.length} of your voices are filed in another organization.
         </p>
+      ) : null}
+      {onMeasureMine && userId ? (
+        <div className="mt-3">
+          <Button variant="primary" icon={<Link2 />} onClick={onMeasureMine}>
+            Measure my voice for {brandName}
+          </Button>
+        </div>
       ) : null}
       {eligible.length ? (
         <div className="mt-3 border-t border-border pt-3">

@@ -7,6 +7,7 @@
  * (aidream research/subject.py). Shape + URL params: utils/subject.ts.
  */
 
+import { normalizeHandle } from "@/features/marketing/social/link";
 import { Field, Select } from "@ai-matrx/design-system/controls";
 import {
   SOCIAL_PLATFORMS,
@@ -56,6 +57,7 @@ export function SubjectFields({
               placeholder={`${p.label} handle`}
               value={value.handles?.[p.value] ?? ""}
               onChange={(e) => setHandle(p.value, e.target.value)}
+              onBlur={(e) => setHandle(p.value, normalizeHandle(e.target.value))}
             />
           ))}
         </div>

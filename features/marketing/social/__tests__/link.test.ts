@@ -1,5 +1,5 @@
 
-import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
+import { detectPlatform, handleFromInput, looksLikePostUrl, normalizeHandle } from "../link";
 
 describe("pasted links", () => {
   it("detects the platform from a URL", () => {
@@ -24,5 +24,24 @@ describe("pasted links", () => {
     expect(handleFromInput("https://www.tiktok.com/@mrbeast")).toBe("mrbeast");
     expect(handleFromInput("@MrBeast")).toBe("MrBeast");
     expect(handleFromInput("https://instagram.com/oakstreet/")).toBe("oakstreet");
+  });
+});
+
+describe("normalizeHandle (the one handle normalizer)", () => {
+  it.each([
+    ["https://www.instagram.com/allgreen_itad/?hl=en", "allgreen_itad"],
+    ["instagram.com/allgreen_itad/", "allgreen_itad"],
+    ["https://www.tiktok.com/@allgreen", "allgreen"],
+    ["https://www.reddit.com/user/allgreen/", "allgreen"],
+    ["https://www.snapchat.com/add/allgreen", "allgreen"],
+    ["https://www.linkedin.com/company/allgreen-recycling/", "allgreen-recycling"],
+    ["@allgreen", "allgreen"],
+    ["  allgreen  ", "allgreen"],
+    ["", ""],
+  ])("%s -> %s", (input, expected) => {
+    expect(normalizeHandle(input)).toBe(expected);
+  });
+  it("tolerates null", () => {
+    expect(normalizeHandle(null)).toBe("");
   });
 });
