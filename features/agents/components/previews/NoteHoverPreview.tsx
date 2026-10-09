@@ -20,7 +20,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import { Check, Copy, ExternalLink, Folder, StickyNote, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 
 const CONTENT_PREVIEW_CHARS = 600;
 

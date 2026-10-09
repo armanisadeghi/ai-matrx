@@ -31,7 +31,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
 
 const DESCRIPTION_PREVIEW_CHARS = 400;
 
