@@ -1019,7 +1019,7 @@ function ProjectsTable({
         header: "Project",
         accessorKey: "name",
         filter: "text",
-        width: 310,
+        width: 270,
         minWidth: 200,
         cell: (p) => (
           <div className="flex items-center gap-2.5 min-w-0">
@@ -1043,8 +1043,8 @@ function ProjectsTable({
         id: "org",
         header: "Organization",
         accessorFn: (p) => orgEntry(p)?.name ?? "—",
-        width: 190,
-        minWidth: 160,
+        width: 240,
+        minWidth: 200,
         cell: (p) =>
           p.organizationId ? (
             <EntityRef
