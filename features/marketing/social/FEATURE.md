@@ -54,7 +54,7 @@ Data layer
 - `@/features/marketing/social/link` — pasted-link helpers (`detectPlatform`, `looksLikePostUrl`, `handleFromInput`).
 
 Standards components (`@/features/marketing/social/components/…`)
-- `OutlierBadge` — `<OutlierBadge input={post.outlier} />` or `model=`. Handles tiers, `~` young posts, "—" no baseline.
+- `OutlierBadge` — `<OutlierBadge input={post.outlier} />` or `model=`. Handles tiers, `~` young posts, "11+ posts" no baseline.
 - `SocialPostCard` — `<SocialPostCard post={PostCardModel} onOpen onSave compact />`. Thumbnail aspect reserved; platform
   mark; outlier badge; hook line; `⋯` menu. Does NOT use `card-and-grid` `Card` (an icon-launcher card, nothing to reuse).
 - `PostDrawer` + `PostDetailBody` (in `PostDetail`) — `<PostDrawer post={card|null} onClose />` opens the right drawer from

@@ -5,8 +5,8 @@
  *
  *   4.2x  — one decimal under 10x, integer from 10x, `99x+` cap
  *   <2x   plain muted text, no fill   · 2–4x neutral · 4–10x accent · ≥10x strong
- *   no baseline → "—" + "Needs 10 other posts to compare" (never 0x / 1.0x)
- *   young post  → "~4.2x" + "Still gaining views"
+ *   no baseline → "11+ posts" + "Needs 10 other posts to compare" (never 0x / 1.0x)
+ *   young post  → "~4.2x" + "~ means provisional: still gaining views, so 4.2x will move."
  */
 
 import type { OutlierInput } from "./types";
@@ -26,6 +26,9 @@ export const OUTLIER_MIN_POSTS = 10;
 export const OUTLIER_BASELINE_POSTS = 30;
 /** A post younger than this is still gaining views (knob `velocity_window_hours`). */
 export const OUTLIER_YOUNG_HOURS = 24;
+
+/** The visible no-baseline state (UI-SPEC §1.1): a profile needs OUTLIER_MIN_POSTS + 1 posts. */
+export const NO_BASELINE_TEXT = `${OUTLIER_MIN_POSTS + 1}+ posts`;
 
 export type OutlierTier = "none" | "plain" | "neutral" | "accent" | "strong";
 
@@ -83,7 +86,7 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
     return {
       tier: "none",
       bars: 0,
-      text: "—",
+      text: NO_BASELINE_TEXT,
       tilde: false,
       tooltip: `Needs ${OUTLIER_MIN_POSTS} other posts to compare`,
     };
@@ -98,7 +101,7 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
         ? ` Percentile ${Math.round(percentile)}.`
         : "";
   const tooltip = young
-    ? "Still gaining views"
+    ? `~ means provisional: still gaining views, so ${formatMultiplier(score)} will move.`
     : `${formatMultiplier(score)} this creator's median${base}.${pct}`;
   return {
     tier,

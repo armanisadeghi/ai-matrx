@@ -4,35 +4,44 @@
  * THE outlier badge (UI-SPEC §1.1) — multiplier + tier + no-baseline state.
  * Every surface (post card, tables, drawer, board tiles) renders THIS; the
  * thresholds and text live in `../outlier.ts`. Tier is carried by the fill AND
- * by a leading bar glyph (one/two/three) so it is never color-only. Fixed
- * 18px height; the text-only states keep a min width so `—` -> `4.2x` shifts little, and a filled capsule hugs its label.
+ * by a leading bar glyph (one/two/three) so it is never color-only. Built on the
+ * design-system Badge (icon child + text), so the pill guard sees a hugging label. Fixed 18px height.
  */
 
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import { outlierBadgeModel, type OutlierBadgeModel, type OutlierTier } from "../outlier";
 import type { OutlierInput } from "../types";
 
+type BadgeVariant = "default" | "neutral" | "outline";
+
+/** Tier -> the design-system Badge variant (+ a colour-only override for the filled "strong" tier). */
+const TIER_VARIANT: Record<OutlierTier, BadgeVariant> = {
+  none: "outline",
+  plain: "outline",
+  neutral: "neutral",
+  accent: "default",
+  strong: "default",
+};
+
 const TIER_CLASS: Record<OutlierTier, string> = {
-  none: "text-muted-foreground",
-  plain: "text-muted-foreground",
-  neutral: "bg-muted text-foreground",
-  accent: "bg-primary/15 text-primary-ink",
+  none: "border-transparent text-muted-foreground",
+  plain: "border-transparent text-muted-foreground",
+  neutral: "text-foreground",
+  accent: "",
   strong: "bg-primary text-primary-foreground font-bold",
 };
 
-function Bars({ count }: { count: 0 | 1 | 2 | 3 }) {
-  if (count === 0) return null;
+/** The tier glyph: an icon child of the Badge (the sanctioned icon + text shape), so the guard counts it as ink. */
+function Bars({ count }: { count: 1 | 2 | 3 }) {
   return (
-    <span aria-hidden data-matrx-pill-ink className="mr-1 inline-flex items-end gap-px">
-      {[1, 2, 3].map((n) => (
-        <span
-          key={n}
-          className={cn("w-[2px] rounded-[1px] bg-current", n <= count ? "opacity-100" : "opacity-25")}
-          style={{ height: 3 + n * 2 }}
-        />
-      ))}
-    </span>
+    <svg aria-hidden width="8" height="11" viewBox="0 0 8 11" fill="currentColor" className="shrink-0">
+      {[1, 2, 3].map((n) => {
+        const h = 3 + n * 2;
+        return <rect key={n} x={(n - 1) * 3} y={11 - h} width="2" height={h} rx="0.5" opacity={n <= count ? 1 : 0.25} />;
+      })}
+    </svg>
   );
 }
 
@@ -47,21 +56,14 @@ export function OutlierBadge({ input, model, className }: OutlierBadgeProps) {
   const m = model ?? (input ? outlierBadgeModel(input) : null);
   if (!m) return null;
   return (
-    <span
+    <Badge
+      variant={TIER_VARIANT[m.tier]}
       title={m.tooltip}
       data-outlier-tier={m.tier}
-      className={cn(
-        "inline-flex h-[18px] shrink-0 items-center justify-center px-1.5 text-[11px] leading-none tabular-nums",
-        // Only a filled tier is a capsule, and a capsule hugs its label (the pill guard's "stretched":
-        // a min-width left empty capsule beside "5.2x"). "No baseline" and "plain" are text, so they
-        // keep the min width that stops "—" -> "4.2x" shifting the row, with no capsule to stretch.
-        m.tier === "none" || m.tier === "plain" ? "min-w-[2.25rem]" : "rounded-full",
-        TIER_CLASS[m.tier],
-        className,
-      )}
+      className={cn("h-[18px] shrink-0 px-1.5 py-0 leading-none tabular-nums", TIER_CLASS[m.tier], className)}
     >
-      <Bars count={m.bars} />
+      {m.bars > 0 ? <Bars count={m.bars} /> : null}
       {m.text}
-    </span>
+    </Badge>
   );
 }
