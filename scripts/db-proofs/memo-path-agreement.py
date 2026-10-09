@@ -16,6 +16,8 @@ custom.reaches_directly_many and custom.read_records_page on one snapshot. This 
                 person-aware ask and the person-independent ask in one message both say off, an unlisted person is
                 untouched, and the listed person's answers are identical to memo-off.
 
+HOT-DOORS-5 paths are covered too (iam.my_team_reach, custom._record_shown_to_ctx, custom.data_home_items): plants 4-5 break the memo-on
+arm of the first and the last in a rolled-back transaction and the check must name them.
 Known limit, measured 2026-10-08: a fault planted in the carrying-edges memo or the addressed-cap memo is NOT seen by the live
 sample (those memos' answers do not change any answer asked of this data inside a transaction that has written, where the
 batch path is off); the two plants above are the ones the sample proves it catches.
@@ -101,6 +103,28 @@ PLANTS = {
             || chr(1) || case when p_key like 'iam.member_default_level:%' then case p_value when '-' then 'admin' else '-' end else p_value end, true);
         end; $f$""",
 }
+
+# HOT-DOORS-5 paths (iam.my_team_reach, custom.data_home_items): the live body with its memo-on arm made to answer nothing.
+def patched_def(cur, regproc, old, new):
+    cur.execute("select pg_get_functiondef(%s::regprocedure)", (regproc,))
+    d = cur.fetchone()[0]
+    assert d.count(old) == 1, (regproc, d.count(old))
+    return d.replace(old, new)
+
+HD5 = {
+    "iam.my_team_reach: the memo-on arm answers nothing": ("iam.my_team_reach(uuid)",
+        "   where iam.kernel_batch_on(null)\n", "   where iam.kernel_batch_on(null) and false\n"),
+    "custom.data_home_items: the memo-on arm lists no stage Table": ("custom.data_home_items(uuid)",
+        "     where iam.kernel_batch_on(null)\n       and exists (select 1 from unnest(v_v_org, v_v_id)",
+        "     where iam.kernel_batch_on(null) and false\n       and exists (select 1 from unnest(v_v_org, v_v_id)"),
+}
+for label, (reg, old, new) in HD5.items():
+    def planted5(cur, reg=reg, old=old, new=new):
+        cur.execute(patched_def(cur, reg, old, new))
+        return run_compare(cur, after_write=True)
+    r = with_txn(planted5)
+    print(f'plant [{label}]:', summary(r))
+    check(f"PLANT {label}: the check FAILS", (not r['ok']) and any(d['fn'] == reg.split('(')[0] for d in r['diffs']), summary(r))
 
 for label, ddl in PLANTS.items():
     def planted(cur, ddl=ddl):

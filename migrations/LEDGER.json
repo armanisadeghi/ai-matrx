@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T00:37:36.630Z",
+  "generated_at": "2026-10-09T00:43:01.095Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4789,6 +4789,12 @@
       "filename": "memosweep_i_a_disagreement_row_has_no_count.sql",
       "checksum": "14d81844456ddc8aa69c196981e154be35a35c8619bd6a81e2ab1f2ba812c271",
       "applied_at": "2026-10-09 00:37:35.309186+00"
+    },
+    "migrations/campaign/memosweep_j_the_hotdoors5_paths_are_compared_too.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_j_the_hotdoors5_paths_are_compared_too.sql",
+      "checksum": "d81adf21c75be19e2e51f4c53985d9e5cb9c5766d8c76cc8d9d24d1ec0eb2a24",
+      "applied_at": "2026-10-09 00:42:59.366288+00"
     },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",

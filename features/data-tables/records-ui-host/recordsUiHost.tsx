@@ -55,6 +55,7 @@ import {
   type GridContextChannel,
 } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { toast } from "@/lib/toast";
+import { organizationArchiveState, restoreArchivedOrganizationById } from "@/features/organizations/service/organizationArchive";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
@@ -88,6 +89,17 @@ export interface RecordsUiHostArgs {
    */
   rights?: RecordsUiHost["rights"];
 }
+
+/** records-ui `archivedOrganization`: the restore door of an archived organization, by id. */
+const ARCHIVED_ORGANIZATION_PORT = {
+  state: async (organizationId: string) => {
+    const state = await organizationArchiveState(organizationId);
+    return state ? { mayRestore: state.mayRestore } : null;
+  },
+  restore: async (organizationId: string) => {
+    await restoreArchivedOrganizationById(organizationId);
+  },
+};
 
 /**
  * THE HOST, WRITTEN ONCE. Pure: the same inputs give the same port list on every surface.
@@ -143,6 +155,10 @@ export function recordsUiHostFor({ ports, merged, gridContext, rights }: Records
     openRecords: ports.openRecords,
     runAgentAction: ports.runAgentAction,
     share: recordStoreShare,
+    // "This organization is archived" on every refusal that names one: an owner (or super admin) gets
+    // "Restore organization" (the one iam.organization_restore door), everyone else is told who can.
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...{ archivedOrganization: ARCHIVED_ORGANIZATION_PORT },
     // Applets on a page built from tables (records-ui `applets`, v7 APPS-ON-DATA item 3): the person's
     // Applets, drawn by the one app renderer. Spread: a records-ui build before the port ignores it.
     ...APPLETS_PORT,

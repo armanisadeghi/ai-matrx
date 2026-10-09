@@ -149,3 +149,33 @@ export async function organizationArchiveState(
     sentence: typeof row.sentence === "string" ? row.sentence : null,
   };
 }
+
+/**
+ * Restore an archived organization by its id alone - for a refusal screen that knows only WHICH organization
+ * ("This organization is archived", records-ui `archivedOrganization`). The door wants the organization's name
+ * typed back, so the name is read the way the door's own sentence gives it: from the caller's own archived
+ * memberships (`public.list_user_organizations`), else from `organization_archive_state`'s sentence (a super
+ * admin who is not a member). The press of "Restore organization" is the confirmation; nothing else is decided here.
+ */
+export async function restoreArchivedOrganizationById(
+  organizationId: string,
+): Promise<OrganizationArchiveOutcome> {
+  let name: string | null = null;
+  const { data: auth } = await supabase.auth.getUser();
+  if (auth.user) {
+    const { data } = await supabase.rpc("list_user_organizations", {
+      p_user_id: auth.user.id,
+      p_archived: "archived",
+    });
+    name = (data ?? []).find((row) => row.id === organizationId)?.name ?? null;
+  }
+  if (!name) {
+    const state = await organizationArchiveState(organizationId);
+    const said = /^(.+?) was archived/.exec(state?.sentence ?? "");
+    name = said ? said[1]! : null;
+  }
+  if (!name) {
+    throw new Error("This organization's name could not be read, so it cannot be restored from here.");
+  }
+  return restoreOrganization(organizationId, name);
+}

@@ -181,6 +181,29 @@ const defaultChatMandate = {
 
 export const CHAT_REPLY = "Here is a 60-day notice raising the rent for Unit 4B from $1,850 to $1,925, effective December 1.";
 
+/** An `agx_get_list_full` / `agx_search` row (`toAgentSummary` reads it by column name). */
+const chatAgentListRow = {
+  id: CHAT_AGENT_ID,
+  name: "Rent notice helper",
+  description: null,
+  category: null,
+  tags: [],
+  agent_type: "user",
+  model_id: "claude-sonnet-4-6",
+  is_active: true,
+  is_archived: false,
+  created_by: PERSON.id,
+  organization_id: ORGANIZATION.id,
+  task_id: null,
+  source_agent_id: null,
+  created_at: "2026-08-02T10:00:00.000Z",
+  updated_at: "2026-09-20T10:00:00.000Z",
+  is_owner: true,
+  access_level: "owner",
+  shared_by_email: null,
+  orchestra: null,
+};
+
 export function seedChat(): void {
   const messages = [
     message(0, "user", "Draft a 60-day rent increase notice for Unit 4B: $1,850 to $1,925 from December 1."),
@@ -199,8 +222,21 @@ export function seedChat(): void {
     user_requests: [],
   });
   seedRpc("assoc_for_targets", []);
-  seed("mandate.definition", [defaultChatMandate]);
-  seedRpc("agx_get_list_full", []);
+  // The composer's agent pill resolves `chat.cx_default` (Custom Agent = Matrx Chat) on its first mount; a
+  // resolution that cannot be read is never kept, so an unseeded definition makes every wake ask again.
+  seed("mandate.definition", [
+    defaultChatMandate,
+    { ...defaultChatMandate, id: "f6a7b8c9-d0e1-4f2a-b3c4-d5e6f7a8b9c0", mandate_key: "chat.cx_default", label: "Matrx Chat" },
+  ]);
+  // The person's own catalog carries their chat agent: a catalog without it makes the pill search the
+  // server (`agx_search`) for it on every mount, and an empty answer is not a kept one.
+  seedRpc("agx_get_list_full", [chatAgentListRow]);
+  seedRpc("agx_search", [{ ...chatAgentListRow, rank: 1 }]);
+  // The working-document store's two type ids (`workingDocumentTypeIds`): read once per tab when it answers.
+  seed("platform.categories", [
+    { id: "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01", slug: "working_document", dimension: "document_type", deleted_at: null },
+    { id: "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02", slug: "scratch", dimension: "document_type", deleted_at: null },
+  ]);
   // The composer's unsent-chips restore (`remarkDurability.restore`): no chip is staged in this chat.
   // Unanswered it is a failed read, which is never kept as restored.
   seedRpc("block_state_list_staged", []);
