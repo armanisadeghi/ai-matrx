@@ -198,7 +198,10 @@ function brandSectionIdentity(
     candidates.find(
       (candidate) =>
         "subPath" in candidate && candidate.subPath && candidate.subPath === subPath,
-    ) ?? candidates.find((candidate) => !("subPath" in candidate && candidate.subPath));
+    ) ??
+    candidates.find((candidate) => !("subPath" in candidate && candidate.subPath)) ??
+    // A section whose only row is sub-routed (socials → accounts) still names its bare route.
+    (subPath === undefined && candidates.length === 1 ? candidates[0] : undefined);
   if (!match) return null;
   return {
     titlePrefix: match.titlePrefix,
