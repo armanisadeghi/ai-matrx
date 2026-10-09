@@ -24,7 +24,8 @@ const browsers = (process.env.MEET_BROWSERS ?? "chromium").split(",").map((s) =>
 export default defineConfig({
   // MEET_SCENARIOS_DIR points a run at a scratch copy (mutation proofs); default is the real scenarios.
   testDir: process.env.MEET_SCENARIOS_DIR ?? "./scenarios",
-  testMatch: /.*\.spec\.ts$/,
+  // MEET_SET=p1 -> only the P1 spec files (p1-*.spec.ts); p0 -> every other spec file; unset -> all.
+  testMatch: process.env.MEET_SET === "p1" ? /\/p1-[^/]*\.spec\.ts$/ : process.env.MEET_SET === "p0" ? /\/(?!p1-)[^/]*\.spec\.ts$/ : /.*\.spec\.ts$/,
   outputDir: path.join(RUN_DIR, "artifacts"),
   timeout: 12 * 60_000,
   expect: { timeout: 15_000 },

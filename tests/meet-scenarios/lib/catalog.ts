@@ -18,3 +18,10 @@ export function catalogStates(): CatalogState[] {
 
 export const P0_IDS = catalogStates().filter((s) => s.priority === "P0").map((s) => s.id);
 
+export const P1_IDS = catalogStates().filter((s) => s.priority === "P1").map((s) => s.id);
+
+/** The state ids a run is expected to cover: MEET_SET=p0 | p1 | (unset = both). */
+export function expectedIds(): string[] {
+  const set = (process.env.MEET_SET ?? "").toLowerCase();
+  return set === "p0" ? P0_IDS : set === "p1" ? P1_IDS : [...P0_IDS, ...P1_IDS];
+}

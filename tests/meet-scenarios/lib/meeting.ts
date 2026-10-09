@@ -346,7 +346,7 @@ export async function endForEveryone(host: Actor, page: Page = host.page): Promi
   host.note("ended for everyone (UI)");
 }
 
-async function rpc(name: string, body: unknown, token: string): Promise<unknown> {
+export async function rpc(name: string, body: unknown, token: string): Promise<unknown> {
   const { url, key } = supabasePublic();
   const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
     method: "POST",

@@ -79,7 +79,8 @@ type CommentSeamRpc = (
   fn: string,
   args: Record<string, unknown>,
 ) => PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
-const commentSeam = associationsDataSource.rpc as unknown as CommentSeamRpc;
+const commentSeam = ((fn: string, args: Record<string, unknown>) =>
+  associationsDataSource.rpc(fn as never, args as never)) as unknown as CommentSeamRpc;
 
 async function rpc<T>(fn: string, args: Record<string, unknown>, action: string): Promise<T> {
   const { data, error } = await commentSeam(fn, args);

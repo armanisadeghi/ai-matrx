@@ -4,7 +4,6 @@
     "app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx",
     "app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx",
     "app/(admin)/administration/preview/unified-management/batch/StudioGrid.tsx",
-    "app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx",
     "app/(core)/compare/old/page.tsx",
     "app/(core)/schedules/new/page.tsx",
     "app/(core)/scopes/fade-lab/HeaderFadeLab.tsx",

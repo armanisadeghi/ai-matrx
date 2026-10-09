@@ -17,6 +17,8 @@ import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { RedundancyGroupBadge } from "./RedundancyGroupBadge";
 import { ScrapeWorthinessFlag } from "./ScrapeWorthinessFlag";
+import { sourceRowMode } from "../../utils/socialSource";
+import { SocialOpenPost } from "../shared/SocialOpenPost";
 import {
   ScoreCell,
   sourceScoreValues,
@@ -246,10 +248,14 @@ export function SourceResultsTable({
       ),
       width: 118,
       cell: (source) => (
-        <div className="flex flex-col items-start gap-1">
-          <StatusBadge status={source.scrape_status} />
-          <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
-        </div>
+        sourceRowMode(source) === "captured" ? (
+          <SocialOpenPost url={source.url} />
+        ) : (
+          <div className="flex flex-col items-start gap-1">
+            <StatusBadge status={source.scrape_status} />
+            <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
+          </div>
+        )
       ),
     },
     scoreColumn(

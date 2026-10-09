@@ -20,7 +20,7 @@ import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult } fr
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { P0_IDS } from "./catalog";
+import { expectedIds } from "./catalog";
 import { SKINS } from "./skins";
 import { baseURL, meetServer, PROD_API_ORIGIN, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX, ENV_SETUP_PREFIX } from "./env";
 
@@ -90,10 +90,10 @@ export default class MeetReport implements Reporter {
   private rows: Row[] = [];
   private missing: string[] = [];
 
-  /** The catalog is the spec: every P0 state must have exactly one scenario. */
+  /** The catalog is the spec: every state in the run's set (MEET_SET) must have exactly one scenario. */
   onBegin(_config: FullConfig, suite: Suite): void {
     const titles = new Set(suite.allTests().map((t) => t.title));
-    this.missing = P0_IDS.filter((id) => !titles.has(id));
+    this.missing = expectedIds().filter((id) => !titles.has(id));
     console.log(`meet scenarios run ${runId()} -> ${runDir()}`);
   }
 
@@ -159,7 +159,7 @@ export default class MeetReport implements Reporter {
     const table = [
       `# Meet state scenarios — ${new Date().toISOString()} — ${count("PASS")} pass, ${count("FAIL")} fail, ${count("UNPROVEN")} unproven (no product verdict), ${count("ENV")} environment (${result.status})${this.rows.some((r) => r.cleanupFailures.length) ? ` — ${this.rows.reduce((n, r) => n + r.cleanupFailures.length, 0)} CLEANUP FAILURE(S)` : ""}`,
       "",
-      `P0 states in catalog: ${P0_IDS.length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}; skins run: ${[...new Set(this.rows.map((r) => r.skin))].join(", ") || "none"} (registered: ${Object.keys(SKINS).join(", ")})`,
+      `States expected (MEET_SET=${process.env.MEET_SET || "all"}): ${expectedIds().length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}; skins run: ${[...new Set(this.rows.map((r) => r.skin))].join(", ") || "none"} (registered: ${Object.keys(SKINS).join(", ")})`,
       "",
       ...oracle.map((l) => `- ${l}`),
       "",

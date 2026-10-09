@@ -8,7 +8,7 @@
  * from items_export. Opening a row marks it seen.
  *
  * IT USES THE PLATFORM'S ONE GRID VOCABULARY, not a private one (2026-08-25).
- * This was a hand-rolled `<table>` with no sorting and no filtering while every
+ * This was a hand-rolled HTML table with no sorting and no filtering while every
  * other grid on the platform already shared a model. It now reuses:
  *
  *   - `ColumnHeaderMenu` — per-column sort + the filter that offers the

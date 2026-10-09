@@ -18,7 +18,14 @@ import {
   FileText,
   Archive,
   Lightbulb,
+  MoreHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -239,7 +246,7 @@ export function AgentCard({
   return (
     <Card
       className={cn(
-        "flex flex-col h-full bg-card border border-border transition-all duration-200 overflow-hidden relative",
+        "@container flex flex-col h-full bg-card border border-border transition-all duration-200 overflow-hidden relative",
         isDisabled
           ? "opacity-60 cursor-not-allowed"
           : "hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 cursor-pointer hover:scale-[1.02] group",
@@ -300,7 +307,8 @@ export function AgentCard({
             cmd-click, middle-click, "open in new tab" and keyboard focus work.
             `nameClassName` keeps the tile's wrapped, centred title. */}
         <h3
-          className={`text-md font-medium text-foreground text-center transition-colors duration-200 ${
+          title={name}
+          className={`min-w-0 max-w-full text-md font-medium text-foreground text-center transition-colors duration-200 ${
             !isDisabled && "group-hover:text-primary"
           }`}
         >
@@ -310,7 +318,7 @@ export function AgentCard({
             name={name}
             href={`${basePath}/${id}`}
             showIcon={false}
-            nameClassName="whitespace-normal break-words line-clamp-3"
+            nameClassName="whitespace-normal [overflow-wrap:anywhere] line-clamp-3"
           />
         </h3>
       </div>
@@ -354,6 +362,7 @@ export function AgentCard({
                 disabled={isDisabled}
               />
             </Link>
+            <div className="hidden @[340px]:contents">
             <Link
               href={`${basePath}/${id}/run`}
               tabIndex={-1}
@@ -371,6 +380,8 @@ export function AgentCard({
                 disabled={isDisabled}
               />
             </Link>
+            </div>
+            <div className="hidden @[340px]:contents">
             <IconButton
               icon={Lightbulb}
               tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
@@ -384,22 +395,6 @@ export function AgentCard({
               disabled={isDisabled}
             />
             <IconButton
-              icon={isDuplicating ? Loader2 : Copy}
-              tooltip={
-                isDuplicating
-                  ? "Duplicating..."
-                  : isDisabled
-                    ? "Please wait..."
-                    : "Duplicate"
-              }
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={handleDuplicate}
-              disabled={isDuplicating || isDisabled}
-              spinning={isDuplicating}
-            />
-            <IconButton
               icon={Share2}
               tooltip="Share"
               variant="ghost"
@@ -409,43 +404,91 @@ export function AgentCard({
               disabled={isDisabled}
             />
             <AddToOrchestraMenu agentId={id} disabled={isDisabled} />
-            <IconButton
-              icon={FileText}
-              tooltip={isDisabled ? "Please wait..." : "Edit Details"}
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={handleEditDetails}
-              disabled={isDisabled}
-            />
-            <IconButton
-              icon={AppWindow}
-              tooltip={isDisabled ? "Please wait..." : "Create App"}
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={handleCreateApp}
-              disabled={isDisabled}
-            />
-            <IconButton
-              icon={isConvertingToTemplate ? Loader2 : LayoutPanelTop}
-              tooltip={
-                isConvertingToTemplate
-                  ? "Saving template..."
-                  : isDisabled
-                    ? "Please wait..."
-                    : "Save as Template"
-              }
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleConvertToTemplate();
-              }}
-              disabled={isConvertingToTemplate || isDisabled}
-              spinning={isConvertingToTemplate}
-            />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <IconButton
+                  icon={MoreHorizontal}
+                  tooltip={isDisabled ? "Please wait..." : "More actions"}
+                  variant="ghost"
+                  tooltipSide="top"
+                  tooltipAlign="center"
+                  disabled={isDisabled}
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  className="gap-2 @[340px]:hidden"
+                  onSelect={() => handleView()}
+                >
+                  <Eye className="h-4 w-4" />
+                  View
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2 @[340px]:hidden"
+                  onSelect={() => setIsSneakPeekOpen(true)}
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Sneak Peek
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2 @[340px]:hidden"
+                  onSelect={() => setIsShareModalOpen(true)}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  disabled={isDuplicating}
+                  onSelect={handleDuplicate}
+                >
+                  {isDuplicating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {isDuplicating ? "Duplicating..." : "Duplicate"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onSelect={() => handleEditDetails()}
+                >
+                  <FileText className="h-4 w-4" />
+                  Edit Details
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2" onSelect={handleCreateApp}>
+                  <AppWindow className="h-4 w-4" />
+                  Create App
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  disabled={isConvertingToTemplate}
+                  onSelect={() => handleConvertToTemplate()}
+                >
+                  {isConvertingToTemplate ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LayoutPanelTop className="h-4 w-4" />
+                  )}
+                  {isConvertingToTemplate ? "Saving template..." : "Save as Template"}
+                </DropdownMenuItem>
+                {handleDelete && (
+                  <DropdownMenuItem
+                    className="gap-2 text-destructive @[340px]:hidden"
+                    disabled={isDeleting}
+                    onSelect={handleDelete}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {record && rosterEntry && (
@@ -470,6 +513,7 @@ export function AgentCard({
             {/* Absent, never dead: a host that wires no `onDelete` gets no
                 Delete button at all rather than one that swallows the click. */}
             {handleDelete && (
+              <div className="hidden @[340px]:contents">
               <IconButton
                 icon={isDeleting ? Loader2 : Trash2}
                 tooltip={
@@ -486,6 +530,7 @@ export function AgentCard({
                 disabled={isDeleting || isDisabled}
                 spinning={isDeleting}
               />
+              </div>
             )}
           </div>
         </div>

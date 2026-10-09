@@ -67,3 +67,17 @@ describe("topic metadata readers", () => {
     expect(c.handles[0]).toMatchObject({ platform: "tiktok", status: "failed", error: "x" });
   });
 });
+
+import { sourceRowMode } from "./socialSource";
+
+describe("sourceRowMode", () => {
+  it("treats social_capture sources as captured", () => {
+    expect(sourceRowMode({ origin: "social_capture" })).toBe("captured");
+  });
+  it("keeps every other origin on the pipeline row", () => {
+    for (const origin of ["search", "file_upload", "link_extraction", "", null, undefined]) {
+      expect(sourceRowMode({ origin })).toBe("pipeline");
+    }
+    expect(sourceRowMode(null)).toBe("pipeline");
+  });
+});
