@@ -184,6 +184,11 @@ platform, handle:
 
 Row click → `/marketing/[brandId]/socials/[platform]/[tracked_account_id]` when tracked; external icon → `url`.
 
+**Built (2026-10-09):** `readBrandSocialAccounts` / `useBrandSocialAccounts` + `brandSocialRowToAccountRow` (mappers) are the one read. The Overview
+"Social profiles" card (`components/brands/BrandSocialProfilesCard.tsx`) renders them; Socials → Accounts (`readAccountRows`) is that same list plus
+the competitor / inspiration accounts; the brands list counts via `readBrandSocialCounts`. Confirming a discovered social profile writes the property
+with `handle` from `classifySocialLink` and invalidates `["marketing","social","brand-accounts"|"brand-counts"]`.
+
 **Read counts** — `supabase.schema("social").rpc("brand_social_counts", { p_brand_ids: string[] })` →
 `{ brand_id, accounts, tracked, company_accounts, person_accounts }[]` (brands with zero accounts are absent → 0). The
 brands list "Socials" column shows `tracked/accounts`; same source as the list.

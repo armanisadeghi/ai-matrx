@@ -771,6 +771,9 @@ function useDiscoveryMutation<TInput, TResult = void>(
       void queryClient.invalidateQueries({
         queryKey: [...marketingKeys.root, "brand"],
       });
+      // A confirmed social profile is a brand property: the brand's social-account list reads it.
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "social", "brand-accounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "social", "brand-counts"] });
     },
   });
 }
@@ -1095,6 +1098,8 @@ function useBrandScopedMutation<TInput, TResult>(
       void queryClient.invalidateQueries({
         queryKey: [...marketingKeys.root, "brands"],
       });
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "social", "brand-accounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "social", "brand-counts"] });
     },
   });
 }

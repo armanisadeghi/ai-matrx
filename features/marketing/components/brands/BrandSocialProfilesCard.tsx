@@ -184,18 +184,22 @@ function SocialRow({
   );
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
-      <span className="relative h-8 w-8 shrink-0">
-        <span className="relative block h-8 w-8 overflow-hidden rounded-full bg-muted">
-          <SocialImage
-            door={row.profileId ? profileAvatarDoor(row.profileId) : null}
-            url={row.avatarHint}
-            fallback={null}
-          />
+      {row.profileId && row.avatarHint ? (
+        <span className="relative h-8 w-8 shrink-0">
+          <span className="relative block h-8 w-8 overflow-hidden rounded-full bg-muted">
+            <SocialImage
+              door={profileAvatarDoor(row.profileId)}
+              url={row.avatarHint}
+              fallback={<PropertyKindMark kind={row.platform} size={32} />}
+            />
+          </span>
+          <span className="absolute -bottom-1 -right-1">
+            <PlatformMark platform={row.platform} size={16} />
+          </span>
         </span>
-        <span className="absolute -bottom-1 -right-1">
-          <PlatformMark platform={row.platform} size={16} />
-        </span>
-      </span>
+      ) : (
+        <PlatformMark platform={row.platform} size={32} />
+      )}
 
       <div className="flex min-w-[200px] flex-1 flex-col leading-tight">
         <span className="flex min-w-0 items-center gap-1.5">
