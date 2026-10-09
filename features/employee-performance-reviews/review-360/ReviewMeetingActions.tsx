@@ -18,6 +18,10 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 
+import { useRecordsClient } from "@ai-matrx/records/react";
+
+import { useConfidentialServerStep } from "./Review360Host";
+import { ensureMeetingNotes } from "./meeting-notes";
 import { readReview360Knobs, type Review360Knobs } from "./service";
 
 export const REVIEW_360_PANEL_KEY = "hr.review_360";
@@ -76,6 +80,8 @@ export function ReviewMeetingActions({
   ready: boolean;
 }) {
   const userId = useAppSelector(selectUserId);
+  const client = useRecordsClient();
+  const serverStep = useConfidentialServerStep();
   const [meeting, setMeeting] = useState<MeetingRecord | null | undefined>(undefined);
   const [when, setWhen] = useState("");
   const [knobs, setKnobs] = useState<Review360Knobs | null>(null);
@@ -152,6 +158,13 @@ export function ReviewMeetingActions({
       }
       setMeeting(made);
       toast.success("Review meeting scheduled");
+      // The notes row exists before anything can be filed under it: make it, then tie the meeting to it so a
+      // recording or transcript (only when the organization allows capture) lands under that row.
+      const review = await client.recordRead({ record_id: reviewId });
+      const notes = review.ok
+        ? await ensureMeetingNotes(client, organizationId, serverStep, { id: reviewId, doc: review.data.document as Record<string, unknown> })
+        : { ok: false as const, message: review.error.message };
+      if (!notes.ok) toast.error(`The meeting is scheduled, but its confidential notes could not be prepared: ${notes.message}`);
     } catch (thrown) {
       toast.error(thrown instanceof Error ? thrown.message : String(thrown));
     } finally {

@@ -15,6 +15,13 @@ import { supabase } from "@/utils/supabase/client";
 import { review360, review360MeetingNotes } from "../review-360.typed-table";
 import { provisionConfidentialTable, type ConfidentialServerStep, type R360 } from "./service";
 
+export interface CaptureFile {
+  id: string;
+  name: string;
+  kind: "recording" | "transcript" | "file";
+  createdAt: string | null;
+}
+
 const no = (message: string) => ({ ok: false as const, message });
 
 const unwrap = (v: unknown): unknown =>
@@ -82,7 +89,10 @@ export async function ensureMeetingNotes(
   review: { id: string; doc: Record<string, unknown> },
 ): Promise<R360<string>> {
   const existing = review.doc.meeting_notes;
-  if (typeof existing === "string" && existing) return { ok: true, data: existing };
+  if (typeof existing === "string" && existing) {
+    const linked = await linkMeetingCaptureToNotes(review.id, existing);
+    return linked.ok ? { ok: true, data: existing } : linked;
+  }
   // The review copy gains its `meeting_notes` field, the notes copy is made and made Confidential.
   for (const def of [review360, review360MeetingNotes]) {
     const ready = await provisionConfidentialTable(client, def, organizationId, serverStep);
@@ -105,7 +115,53 @@ export async function ensureMeetingNotes(
   );
   if (!made.ok) return no(made.error.message);
   const linked = await client.recordUpdate({ record_id: review.id, patch: { meeting_notes: made.data } });
-  return linked.ok ? { ok: true, data: made.data } : no(linked.error.message);
+  if (!linked.ok) return no(linked.error.message);
+  // The notes row exists now, so the meeting's recording and transcript can be filed under it.
+  const captured = await linkMeetingCaptureToNotes(review.id, made.data);
+  return captured.ok ? { ok: true, data: made.data } : captured;
+}
+
+/**
+ * The host of the review's meeting records the notes row as the parent of everything the meeting captures
+ * (communication.meet_link_capture_to_notes). Answers how many meetings were linked; 0 is normal when no
+ * meeting is scheduled yet or the caller does not host it. Capture itself stays off unless the organization's
+ * knob meet.confidential_capture allows it.
+ */
+export async function linkMeetingCaptureToNotes(reviewId: string, notesId: string): Promise<R360<number>> {
+  const { data, error } = await supabase
+    .schema("communication")
+    .rpc("meet_link_capture_to_notes", { p_review_id: reviewId, p_notes_id: notesId });
+  if (error) return no(`The meeting could not be tied to its notes: ${error.message}`);
+  return { ok: true, data: typeof data === "number" ? data : 0 };
+}
+
+/** The recording and transcript files under the notes row, as the signed-in person may see them (empty when none or not shared). */
+export async function listCaptureFiles(notesId: string): Promise<R360<CaptureFile[]>> {
+  const { data, error } = await supabase
+    .schema("files")
+    .from("files")
+    .select("id, file_name, mime_type, created_at")
+    .eq("parent_record_type", "record")
+    .eq("parent_record_id", notesId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) return no(error.message);
+  return {
+    ok: true,
+    data: (data ?? []).map((f) => ({
+      id: String(f.id),
+      name: String(f.file_name ?? "file"),
+      kind: /^(video|audio)\//.test(String(f.mime_type ?? "")) ? "recording" : /transcript/i.test(String(f.file_name)) ? "transcript" : "file",
+      createdAt: typeof f.created_at === "string" ? f.created_at : null,
+    })),
+  };
+}
+
+/** The audited open of one captured file: logged in iam.access_audit, granted or refused, like the notes. */
+export async function openCaptureFile(fileId: string): Promise<R360<true>> {
+  const door = await openConfidentialAudited("file", fileId, "360 review meeting recording or transcript");
+  if (!door.ok) return door;
+  return door.data.granted ? { ok: true, data: true } : no(door.data.reason ?? "Not shared yet");
 }
 
 /** HR writes the notes — refused until the organization's copy is Confidential (fail closed). */

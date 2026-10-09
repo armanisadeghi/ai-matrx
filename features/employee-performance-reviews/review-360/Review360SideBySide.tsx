@@ -16,6 +16,7 @@ import { useRecordsClient } from "@ai-matrx/records/react";
 
 import type { Review } from "@/features/employee-performance-reviews/schema";
 
+import { Review360MeetingFiles } from "./Review360MeetingFiles";
 import { Review360MeetingNotes } from "./Review360MeetingNotes";
 import { parseReview } from "./Review360Pages";
 import { readReview360, type TrackView } from "./service";
@@ -120,6 +121,7 @@ export function Review360SideBySide({
         <Column label="Manager" track={manager} section={section} />
       </div>
       <Review360MeetingNotes reviewId={reviewId} organizationId={organizationId} doc={doc} />
+      <Review360MeetingFiles notesId={typeof doc.meeting_notes === "string" && doc.meeting_notes ? doc.meeting_notes : null} />
     </div>
   );
 }
