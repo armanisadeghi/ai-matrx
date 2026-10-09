@@ -91,7 +91,6 @@
     "features/notes/components/diff/NoteVersionHistoryPanel.tsx",
     "features/organizations/components/OrgModuleSettings.tsx",
     "features/organizations/peek/kinds/TablePeek.tsx",
-    "features/page-extraction/components/ResultsTable.tsx",
     "features/page-extraction/data-review/ExtractionCatalogClient.tsx",
     "features/projects/components/ProjectTaskList.tsx",
     "features/projects/components/ProjectsHub.tsx",
