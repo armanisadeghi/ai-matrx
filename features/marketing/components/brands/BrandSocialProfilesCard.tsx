@@ -9,14 +9,16 @@
  */
 
 import Link from "next/link";
-import { ExternalLink, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
+import { ExternalLink, Globe, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { PropertyKindMark } from "@/features/marketing/components/shared/PropertyKindMark";
 import { PersonOwnerChip } from "@/features/marketing/components/brands/PersonOwnerChip";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
-import { useBrandSocialAccounts } from "@/features/marketing/social/hooks";
-import { formatGrowth, lastPostLabel } from "@/features/marketing/social/mappers";
+import { useBrandSocialAccounts, useInvalidateSocial } from "@/features/marketing/social/hooks";
+import { useRefusedRead } from "@/features/marketing/social/gated/RefusedReadOffer";
+import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guidedJob";
+import { accountLabels, formatGrowth, lastPostLabel } from "@/features/marketing/social/mappers";
 import { formatCompact, outlierBadgeModel } from "@/features/marketing/social/outlier";
 import { profileAvatarDoor } from "@/features/marketing/social/server";
 import type { AccountRow } from "@/features/marketing/social/types";
@@ -186,8 +188,14 @@ function SocialRow({
     accountPosts: row.postsTracked,
   };
 
+  const invalidate = useInvalidateSocial();
+  const { open: openCapture, node: captureNode } = useRefusedRead(organizationId, () => void invalidate());
+  // Never read (no profile, or tracked with nothing in it): the person's own browser can still get it.
+  const unreadable = GUIDED_CAPTURE_PLATFORMS.has(row.platform) && (!row.profileId || (tracked && row.postsTracked === 0));
+
+  const labels = accountLabels(row.displayName, row.handle);
   const name = (
-    <span className="truncate text-sm font-medium text-foreground">{row.displayName}</span>
+    <span className="truncate text-sm font-medium text-foreground">{labels.primary}</span>
   );
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
@@ -195,7 +203,7 @@ function SocialRow({
         <span className="relative h-8 w-8 shrink-0">
           <span className="relative block h-8 w-8 overflow-hidden rounded-full bg-muted">
             <SocialImage
-              door={profileAvatarDoor(row.profileId)}
+              door={row.avatarFileId ? profileAvatarDoor(row.profileId) : null}
               url={row.avatarHint}
               fallback={<PropertyKindMark kind={row.platform} size={32} />}
             />
@@ -223,7 +231,7 @@ function SocialRow({
           {tracked ? <Badge tone="success">Tracked</Badge> : <Badge tone="warning">Not tracked</Badge>}
         </span>
         <span className="truncate text-xs text-muted-foreground">
-          {progress ?? (handle || platformLabel(row.platform))}
+          {progress ?? [platformLabel(row.platform), labels.secondary ? handle : null].filter(Boolean).join(" · ")}
         </span>
       </div>
 
@@ -271,10 +279,31 @@ function SocialRow({
             {busy ? "Tracking…" : "Track"}
           </Button>
         ) : (
-          <span className="text-xs text-muted-foreground" title="Tracking is not available for this platform">
-            {row.trackable === false ? `${platformLabel(row.platform)} isn't tracked yet` : "Needs a handle"}
+          <span className="text-xs text-muted-foreground" title={row.trackable === false ? `${platformLabel(row.platform)} stays listed here with its link; it is not counted in Track all` : "Add the account handle to track it"}>
+            {row.trackable === false ? `${platformLabel(row.platform)} tracking is coming` : "Needs a handle"}
           </span>
         )}
+        {unreadable ? (
+          <button
+            type="button"
+            title="Capture with my browser"
+            aria-label={`Capture ${row.displayName} with my browser`}
+            className={ICON_BUTTON}
+            onClick={() =>
+              openCapture({
+                platform: row.platform,
+                handleOrUrl: row.profileUrl || row.externalUrl || row.handle,
+                ...(row.profileId ? { profileId: row.profileId } : {}),
+                ...(row.trackedAccountId ? { trackedAccountId: row.trackedAccountId } : {}),
+                ...(row.propertyId ? { propertyId: row.propertyId } : {}),
+                brandId,
+              })
+            }
+          >
+            <Globe className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+        {captureNode}
         {row.externalUrl ? (
           <a
             href={row.externalUrl}

@@ -181,6 +181,18 @@ export function openPostLabel(handle: string | null | undefined, hookLine: strin
   return `${who}: ${excerpt}`;
 }
 
+/** Display name and handle once each: when the name is just the handle, the handle stands alone. */
+export function accountLabels(
+  displayName: string,
+  handle: string,
+): { primary: string; secondary: string | null } {
+  const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
+  const name = displayName.trim();
+  const at = handle ? `@${handle.replace(/^@/, "")}` : "";
+  if (!name || norm(name) === norm(handle)) return { primary: at || name, secondary: null };
+  return { primary: name, secondary: at || null };
+}
+
 /** `3d`, `5h`, `2mo` — relative posted age; absolute date goes in the tooltip. */
 export function relativeAge(iso: string | null, now = Date.now()): string {
   if (!iso) return "—";
@@ -318,6 +330,8 @@ export interface BrandSocialAccountRpcRow {
   best_multiple_30d: number | string | null;
   best_post_id_30d: string | null;
   last_refreshed_at: string | null;
+  /** The stored avatar copy (files.id); null = none stored, so the avatar door is never asked. */
+  avatar_file_id?: string | null;
 }
 
 /**
@@ -334,13 +348,15 @@ export function brandSocialRowToAccountRow(r: BrandSocialAccountRpcRow): Account
   const display =
     r.tracked_label?.trim() || r.profile_display_name?.trim() || r.display_name?.trim() || handle || r.platform;
   return {
-    rowId: r.tracked_account_id ?? r.row_key,
+    // Stable across tracking: a property keeps ONE key before and after it is tracked (no remount, no re-sort).
+    rowId: r.property_id ? `property:${r.property_id}` : (r.tracked_account_id ?? r.row_key),
     trackedAccountId: r.tracked_account_id,
     profileId: r.profile_id,
     platform: r.platform,
     handle,
     displayName: display,
     avatarUrl: r.avatar_url,
+    avatarFileId: r.avatar_file_id ?? null,
     avatarHint: r.avatar_url,
     role: r.tracked_role && isTrackedRole(r.tracked_role) ? r.tracked_role : "own",
     status: tracked ? (r.tracked_status ?? "active") : "not_tracked",
