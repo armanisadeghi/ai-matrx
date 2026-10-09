@@ -48,7 +48,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { coppaService } from "./coppaService";
 import { useAiComplianceGate } from "./useAiComplianceGate";
@@ -75,11 +75,16 @@ function markAskedThisSession(): void {
 }
 
 export function FirstSignInAgeGateMount() {
-  const gate = useAiComplianceGate({ declarationVariant: "first_run" });
-  const { loading, gate: verdict, promptDeclarationIfNeeded, reload } = gate;
   const pathname = usePathname();
   // The departed-member portal — see the header block. Deferred, never waived.
   const onPortal = pathname === "/portal" || pathname?.startsWith("/portal/");
+  // Asked already this tab session (or on the portal): the `edu_coppa_gate` read is never made.
+  const [askedAtMount] = useState(alreadyAskedThisSession);
+  const gate = useAiComplianceGate({
+    declarationVariant: "first_run",
+    enabled: !onPortal && !askedAtMount,
+  });
+  const { loading, gate: verdict, promptDeclarationIfNeeded, reload } = gate;
   // The silent signup-metadata apply is tried at most once per mount.
   const triedMetaApply = useRef(false);
 
