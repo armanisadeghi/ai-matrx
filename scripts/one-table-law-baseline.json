@@ -23,6 +23,7 @@
     "features/agents/components/diff/VersionHistoryTimeline.tsx": "version timeline with diff/restore actions",
     "features/agents/components/scope-batch-import/ScopeBatchImportBody.tsx": "import mapping editor",
     "features/agents/decision-review/components/CalibrationView.tsx": "reliability bins beside the curve, small fixed report (the version table is MatrxDataTable)",
+    "features/code/terminal/PortsTab.tsx": "terminal dock strip, a few ports in a short panel; the table chrome would fill it",
     "features/ai-models/components/ModelTierStrip.tsx": "inline rating-history strip",
     "features/approvals/kinds/contact-import.tsx": "approval kind preview (field mapping)",
     "features/approvals/kinds/sheet-write.tsx": "approval kind preview (before/after cells)",
