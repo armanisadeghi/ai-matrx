@@ -75,3 +75,7 @@ export const MESSAGING_MANDATE_ROLES: readonly {
 /** The org/user-configurable transcript cap behind all four jobs. */
 export const MESSAGING_AI_KNOB_FEATURE = "messaging.conversation_ai";
 export const MESSAGING_AI_TRANSCRIPT_CAP_KEY = "transcript_message_cap";
+
+/** The org/person knob for which conversations the list opens on (people | agents | all). */
+export const MESSAGING_INBOX_KNOB_FEATURE = "messaging.inbox";
+export const MESSAGING_INBOX_DEFAULT_KIND_KEY = "default_kind";
