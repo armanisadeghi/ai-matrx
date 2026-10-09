@@ -136129,12 +136129,15 @@ export type Database = {
           id: string
           industry: string | null
           integrations: Json
+          kind: string
           logo_url: string | null
           metadata: Json
           name: string
           notes: string | null
           og_image_url: string | null
           organization_id: string
+          person_party_id: string | null
+          person_user_id: string | null
           previous_slugs: string[]
           profile: Json
           published_to_web: boolean
@@ -136160,12 +136163,15 @@ export type Database = {
           id?: string
           industry?: string | null
           integrations?: Json
+          kind?: string
           logo_url?: string | null
           metadata?: Json
           name: string
           notes?: string | null
           og_image_url?: string | null
           organization_id: string
+          person_party_id?: string | null
+          person_user_id?: string | null
           previous_slugs?: string[]
           profile?: Json
           published_to_web?: boolean
@@ -136191,12 +136197,15 @@ export type Database = {
           id?: string
           industry?: string | null
           integrations?: Json
+          kind?: string
           logo_url?: string | null
           metadata?: Json
           name?: string
           notes?: string | null
           og_image_url?: string | null
           organization_id?: string
+          person_party_id?: string | null
+          person_user_id?: string | null
           previous_slugs?: string[]
           profile?: Json
           published_to_web?: boolean
