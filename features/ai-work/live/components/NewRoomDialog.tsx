@@ -14,7 +14,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { LiveSession } from "../useLiveHub";
 import { addSessionToRoom, createRoom } from "../service";
-import { PresenceDot } from "./LiveBits";
+import { PresenceDot, sessionTag } from "./LiveBits";
 
 export function NewRoomDialog({
   open,
@@ -31,7 +31,10 @@ export function NewRoomDialog({
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const choices = sessions.filter((s) => s.presence !== "ended");
+  // Frozen when the dialog opens (it mounts on open): a presence tick must never
+  // re-sort the rows under the person's finger.
+  const [choices] = useState(() => sessions.filter((s) => s.presence !== "ended"));
+  const [openedAt] = useState(() => Date.now());
 
   const toggle = (address: string) =>
     setPicked((cur) => (cur.includes(address) ? cur.filter((a) => a !== address) : [...cur, address]));
@@ -81,8 +84,12 @@ export function NewRoomDialog({
                   onCheckedChange={() => toggle(s.address)}
                 />
                 <PresenceDot presence={s.presence} />
-                <span className="min-w-0 flex-1 truncate text-sm">{s.title}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{s.providerLabel}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">{s.title}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {sessionTag(s, openedAt)}
+                  </span>
+                </span>
               </label>
             ))
           )}

@@ -15,6 +15,7 @@ import { apiPost } from "@/lib/api/typed-client";
 import { getUserMessage } from "@/lib/api/errors";
 import {
   createMessagingRepository,
+  type ConversationCursor,
   type ConversationSummary,
   type JsonObject,
 } from "@ai-matrx/messaging";
@@ -28,26 +29,51 @@ function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Pages the hub reads before it says "N+" instead of a count. */
+const ROOM_PAGE = 100;
+const ROOM_PAGES_MAX = 10;
+
+export interface AgentRoomsRead {
+  rooms: ConversationSummary[];
+  /** False when more rooms exist past the pages read: the count is a floor. */
+  complete: boolean;
+}
+
 /** The person's agent rooms (direct, pair, named, review), newest first. */
-export async function fetchAgentRooms(): Promise<ConversationSummary[]> {
-  const page = await agentRooms.listConversations({ kind: "agents", limit: 100 });
-  const ids = page.items.map((item) => item.conversation.id);
-  if (ids.length === 0) return [];
+export async function fetchAgentRooms(): Promise<AgentRoomsRead> {
+  const items: ConversationSummary[] = [];
+  let cursor: ConversationCursor | null = null;
+  let complete = false;
+  for (let page = 0; page < ROOM_PAGES_MAX; page++) {
+    const read = await agentRooms.listConversations({ kind: "agents", limit: ROOM_PAGE, cursor });
+    items.push(...read.items);
+    if (!read.hasMore || !read.nextCursor) {
+      complete = true;
+      break;
+    }
+    cursor = read.nextCursor;
+  }
+  const ids = items.map((item) => item.conversation.id);
+  if (ids.length === 0) return { rooms: [], complete };
   // The inbox projection does not carry `metadata`; the hub needs its `kind`
   // (direct / pair / named / review), so read it beside the list, under RLS.
-  const { data, error } = await supabase
-    .schema("communication")
-    .from("dm_conversations")
-    .select("id, metadata")
-    .in("id", ids);
-  if (error) throw operationFailed("load room kinds", error);
-  const metaById = new Map(data.map((row) => [row.id, row.metadata]));
-  return page.items.map((item) => {
+  const metaById = new Map<string, unknown>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await supabase
+      .schema("communication")
+      .from("dm_conversations")
+      .select("id, metadata")
+      .in("id", ids.slice(i, i + 200));
+    if (error) throw operationFailed("load room kinds", error);
+    for (const row of data) metaById.set(row.id, row.metadata);
+  }
+  const rooms = items.map((item) => {
     const metadata = metaById.get(item.conversation.id);
     return isJsonObject(metadata)
       ? { ...item, conversation: { ...item.conversation, metadata } }
       : item;
   });
+  return { rooms, complete };
 }
 
 const MEMBER_COLUMNS =

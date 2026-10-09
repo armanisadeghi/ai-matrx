@@ -21,6 +21,7 @@ export function SessionDetail({
   session,
   members,
   directRoomId,
+  directMembers,
   nowMs,
   onBack,
   onDirectRoomCreated,
@@ -28,6 +29,7 @@ export function SessionDetail({
   session: LiveSession;
   members: readonly SessionMemberRow[];
   directRoomId: string | null;
+  directMembers: readonly SessionMemberRow[];
   nowMs: number;
   onBack: () => void;
   onDirectRoomCreated: (roomId: string) => void;
@@ -78,7 +80,7 @@ export function SessionDetail({
         </Button>
       </header>
 
-      <div role="tablist" className="flex border-b border-border @5xl/live:hidden">
+      <div role="tablist" className="flex border-b border-border @4xl/live:hidden">
         {(["messages", "transcript"] as const).map((t) => (
           <button
             key={t}
@@ -102,7 +104,7 @@ export function SessionDetail({
         <section
           aria-label="Transcript"
           className={cn(
-            "min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-thin @5xl/live:block",
+            "min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-thin @4xl/live:block",
             tab === "transcript" ? "block" : "hidden",
           )}
         >
@@ -111,7 +113,7 @@ export function SessionDetail({
         <section
           aria-label="Messages"
           className={cn(
-            "min-h-0 w-full flex-col @5xl/live:flex @5xl/live:w-[26rem] @5xl/live:shrink-0 @5xl/live:border-l @5xl/live:border-border",
+            "min-h-0 w-full flex-col @4xl/live:flex @4xl/live:w-[24rem] @6xl/live:w-[28rem] @4xl/live:shrink-0 @4xl/live:border-l @4xl/live:border-border",
             tab === "messages" ? "flex" : "hidden",
           )}
         >
@@ -119,6 +121,7 @@ export function SessionDetail({
             address={session.address}
             roomId={directRoomId}
             presence={session.presence}
+            member={directMembers[0] ?? null}
             onCreated={onDirectRoomCreated}
           />
         </section>

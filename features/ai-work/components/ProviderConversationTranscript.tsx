@@ -89,8 +89,16 @@ interface ToolActivityState {
 
 export function ProviderConversationTranscript({
   detail,
+  embedded = false,
 }: {
   detail: ProviderConversationDetail;
+  /**
+   * Inside the /work Live hub: the hub's header already carries presence and
+   * a door to this full page, and its direct line is the one composer — so
+   * the provenance header, the tab strip and the AI Matrx reply composer are
+   * left out and only the conversation itself renders.
+   */
+  embedded?: boolean;
 }) {
   const { conversation, visibleMessageCount } = detail;
   const title = conversationTitleText(conversation.title?.trim() || null) || "Untitled conversation";
@@ -378,7 +386,7 @@ export function ProviderConversationTranscript({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
-      <section className="border-b border-border pb-4">
+      <section className={embedded ? "hidden" : "border-b border-border pb-4"}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -443,8 +451,12 @@ export function ProviderConversationTranscript({
           </div>
         </div>
       </section>
-      <Tabs defaultValue="conversation" className="mt-3">
-        <TabsList variant="underline" overflow="scroll" className="w-full">
+      <Tabs defaultValue="conversation" className={embedded ? undefined : "mt-3"}>
+        <TabsList
+          variant="underline"
+          overflow="scroll"
+          className={embedded ? "hidden" : "w-full"}
+        >
           <TabsTrigger
             value="conversation"
           >
@@ -581,11 +593,13 @@ export function ProviderConversationTranscript({
             </ol>
           )}
 
-          <AiMatrxReplyComposer
-            conversationId={conversation.id}
-            conversationOrganizationId={conversation.organization_id}
-            onAnswered={live.refreshNow}
-          />
+          {embedded ? null : (
+            <AiMatrxReplyComposer
+              conversationId={conversation.id}
+              conversationOrganizationId={conversation.organization_id}
+              onAnswered={live.refreshNow}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="source" className="mt-4">

@@ -11,16 +11,22 @@ import {
   Users,
 } from "lucide-react";
 import type { ConversationSummary } from "@ai-matrx/messaging";
-import { formatConversationTime } from "@ai-matrx/messaging";
+import { formatConversationTime, summarizeText } from "@ai-matrx/messaging";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { providerMeta } from "@/features/agent-connections/coding-sessions/catalog";
-import { agentRoomKind, compactAge, deliveryLag, type AgentRoomKind } from "../presence";
+import {
+  agentRoomKind,
+  compactAge,
+  deliveryLag,
+  plainPreview,
+  type AgentRoomKind,
+} from "../presence";
 import type { LiveSession } from "../useLiveHub";
 import type { SessionMemberRow } from "../service";
-import { LagMarker, PresenceDot, worstLag } from "./LiveBits";
+import { LagMarker, PresenceDot, PresenceLegend, worstLag } from "./LiveBits";
 
 export type LiveSelection =
   | { kind: "session"; address: string }
@@ -43,7 +49,7 @@ function SectionHeader({
   action,
 }: {
   label: string;
-  count?: number;
+  count?: number | string;
   action?: React.ReactNode;
 }) {
   return (
@@ -93,7 +99,7 @@ function SessionRow({
           >
             {session.title}
           </span>
-          <LagMarker lag={lag} />
+          <LagMarker lag={lag} showLabel />
         </span>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Icon className="size-3 shrink-0" />
@@ -151,7 +157,9 @@ function RoomRow({
         </span>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <span className="truncate">
-            {room.lastMessageContent ?? `${memberCount} session${memberCount === 1 ? "" : "s"}`}
+            {room.lastMessageContent
+              ? plainPreview(summarizeText(room.lastMessageContent, 160))
+              : `${memberCount} session${memberCount === 1 ? "" : "s"}`}
           </span>
           <span className="flex-1" />
           {room.lastMessageAt && (
@@ -169,7 +177,8 @@ export function LiveSidebar({
   rooms,
   selection,
   nowMs,
-  loading,
+  loaded,
+  roomsComplete,
   error,
   onRetry,
   onSelect,
@@ -180,7 +189,8 @@ export function LiveSidebar({
   rooms: readonly ConversationSummary[];
   selection: LiveSelection;
   nowMs: number;
-  loading: boolean;
+  loaded: boolean;
+  roomsComplete: boolean;
   error: string | null;
   onRetry: () => void;
   onSelect: (selection: LiveSelection) => void;
@@ -209,9 +219,11 @@ export function LiveSidebar({
   const ended = visible.filter((s) => s.presence === "ended");
   const busy = active.filter((s) => s.presence === "busy").length;
   const matchedRooms = rooms.filter((r) => match(r.displayName));
-  const shownRooms = matchedRooms.filter(
-    (r) => agentRoomKind(r.conversation.metadata) !== "agent_review",
-  );
+  // A direct line nobody has written in yet is reached through its session, not listed.
+  const shownRooms = matchedRooms.filter((r) => {
+    const kind = agentRoomKind(r.conversation.metadata);
+    return kind !== "agent_review" && !(kind === "agent_direct" && !r.lastMessageAt);
+  });
   const reviewRooms = matchedRooms.filter(
     (r) => agentRoomKind(r.conversation.metadata) === "agent_review",
   );
@@ -241,9 +253,10 @@ export function LiveSidebar({
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-4 scrollbar-thin">
         <SectionHeader
           label="Sessions"
-          count={active.length}
+          count={loaded ? active.length : undefined}
           action={busy > 0 ? <span className="normal-case tracking-normal text-emerald-600 dark:text-emerald-400">{busy} busy</span> : null}
         />
+        <PresenceLegend />
         {error ? (
           <div className="px-3 py-2">
             <ErrorNotice message={error} size="inline" />
@@ -251,7 +264,7 @@ export function LiveSidebar({
               Retry
             </button>
           </div>
-        ) : loading && sessions.length === 0 ? (
+        ) : !loaded ? (
           <div className="space-y-1 px-2.5 py-1">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-9 animate-pulse rounded-md bg-muted/60" />
@@ -259,7 +272,7 @@ export function LiveSidebar({
           </div>
         ) : active.length === 0 ? (
           <p className="px-3 py-1.5 text-xs text-muted-foreground">
-            No session active in the last half hour.
+            {q ? `No active session matches "${query.trim()}"` : "No session active in the last half hour."}
           </p>
         ) : (
           active.map((s) => (
@@ -308,10 +321,15 @@ export function LiveSidebar({
           </>
         )}
 
-        <SectionHeader label="Rooms" count={shownRooms.length} />
-        {shownRooms.length === 0 ? (
+        <SectionHeader
+          label="Rooms"
+          count={loaded ? `${shownRooms.length}${roomsComplete ? "" : "+"}` : undefined}
+        />
+        {!loaded ? (
+          <div className="mx-2.5 my-1 h-9 animate-pulse rounded-md bg-muted/60" />
+        ) : shownRooms.length === 0 ? (
           <p className="px-3 py-1.5 text-xs text-muted-foreground">
-            Rooms appear when sessions message each other or you.
+            {q ? `No room matches "${query.trim()}"` : "Rooms appear when sessions message each other or you."}
           </p>
         ) : (
           shownRooms.slice(0, roomLimit).map((r) => (
@@ -342,7 +360,11 @@ export function LiveSidebar({
               className="flex h-8 w-full items-center gap-1 px-3 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
             >
               <ChevronRight className={cn("size-3 transition-transform", showReview && "rotate-90")} />
-              Review rooms <span className="tabular-nums">{reviewRooms.length}</span>
+              Review rooms{" "}
+              <span className="tabular-nums">
+                {reviewRooms.length}
+                {roomsComplete ? "" : "+"}
+              </span>
             </button>
             {showReview &&
               reviewRooms.map((r) => (

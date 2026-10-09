@@ -17,7 +17,7 @@ import { agentRoomKind, deliveryLag } from "../presence";
 import type { LiveSession } from "../useLiveHub";
 import type { SessionMemberRow } from "../service";
 import { addSessionToRoom, removeSessionFromRoom } from "../service";
-import { LagMarker, PresenceDot } from "./LiveBits";
+import { LagMarker, PresenceDot, sessionTag } from "./LiveBits";
 
 const KIND_LABEL = {
   agent_direct: "Direct line",
@@ -95,7 +95,12 @@ export function RoomDetail({
                       className="gap-2"
                     >
                       <PresenceDot presence={s.presence} />
-                      <span className="truncate">{s.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{s.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {sessionTag(s, nowMs)}
+                        </span>
+                      </span>
                     </DropdownMenuItem>
                   ))
                 )}
@@ -110,16 +115,24 @@ export function RoomDetail({
               return (
                 <li
                   key={m.id}
-                  className="flex max-w-[16rem] items-center gap-1.5 rounded-full border border-border py-0.5 pl-2 pr-1 text-xs"
+                  className="flex max-w-[20rem] items-center gap-1.5 rounded-full border border-border py-0.5 pl-2 pr-1 text-xs"
                 >
                   <PresenceDot presence={s?.presence ?? "ended"} className="size-2" />
                   <button
                     type="button"
-                    className="truncate hover:underline"
+                    className="min-w-0 truncate hover:underline"
                     disabled={!s}
+                    title={s ? `${s.title} — ${sessionTag(s, nowMs)}` : undefined}
                     onClick={() => s && onOpenSession(s.address)}
                   >
-                    {s?.title ?? "Session not in recent list"}
+                    {s ? (
+                      <>
+                        {s.title}
+                        <span className="text-muted-foreground"> · {s.workspace ?? s.providerLabel}</span>
+                      </>
+                    ) : (
+                      "Session not in recent list"
+                    )}
                   </button>
                   <LagMarker lag={deliveryLag(m, nowMs)} />
                   {canEdit && s && (

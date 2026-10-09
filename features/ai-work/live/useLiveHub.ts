@@ -25,7 +25,7 @@ import {
 import { providerMeta } from "@/features/agent-connections/coding-sessions/catalog";
 import { workspaceName } from "../lib/codingSessionPresentation";
 import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
-import { effectivePresence, type LivePresence } from "./presence";
+import { cleanTitle, effectivePresence, type LivePresence } from "./presence";
 import type { ConversationSummary } from "@ai-matrx/messaging";
 import { fetchAgentRooms, fetchSessionMembers, type SessionMemberRow } from "./service";
 
@@ -88,7 +88,7 @@ function toLive(
   return main.map((row) => {
     const meta = providerMeta(row.provider);
     const title =
-      conversationTitleText(row.conversation?.title?.trim() || null) ||
+      cleanTitle(conversationTitleText(row.conversation?.title?.trim() || null) ?? "") ||
       `${meta?.label ?? "Coding"} session`;
     return {
       id: row.id,
@@ -111,6 +111,10 @@ export interface LiveHubState {
   sessions: LiveSession[];
   members: SessionMemberRow[];
   rooms: ConversationSummary[];
+  /** False when the room list stopped at its page budget: show "N+", never N. */
+  roomsComplete: boolean;
+  /** False until the first read lands: no counts or empty states before it. */
+  loaded: boolean;
   loading: boolean;
   error: string | null;
   nowMs: number;
@@ -122,6 +126,8 @@ export function useLiveHub(): LiveHubState {
   const [rows, setRows] = useState<CodingSessionView[]>([]);
   const [members, setMembers] = useState<SessionMemberRow[]>([]);
   const [rooms, setRooms] = useState<ConversationSummary[]>([]);
+  const [roomsComplete, setRoomsComplete] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -168,7 +174,9 @@ export function useLiveHub(): LiveHubState {
         if (!current) return;
         setRows(page.sessions);
         setMembers(memberRows);
-        setRooms(roomRows);
+        setRooms(roomRows.rooms);
+        setRoomsComplete(roomRows.complete);
+        setLoaded(true);
         setError(null);
         setNowMs(Date.now());
       })
@@ -247,6 +255,8 @@ export function useLiveHub(): LiveHubState {
     sessions,
     members,
     rooms,
+    roomsComplete,
+    loaded,
     loading,
     error,
     nowMs,

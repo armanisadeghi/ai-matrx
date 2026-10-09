@@ -1,4 +1,4 @@
-import { agentRoomKind, deliveryLag, effectivePresence, type MemberCursor } from "../presence";
+import { agentRoomKind, BUSY_STALE_MS, cleanTitle, deliveryLag, effectivePresence, plainPreview, type MemberCursor } from "../presence";
 
 const NOW = Date.parse("2026-10-09T12:00:00Z");
 const ENDED = 30 * 60_000;
@@ -8,6 +8,9 @@ describe("effectivePresence (mirrors the server's effective_presence)", () => {
   it("busy and idle pass through while seen inside the window", () => {
     expect(effectivePresence("busy", at(5_000), NOW, ENDED)).toBe("busy");
     expect(effectivePresence("idle", at(5_000), NOW, ENDED)).toBe("idle");
+  });
+  it("a busy row silent past the stale window reads idle, never green", () => {
+    expect(effectivePresence("busy", at(BUSY_STALE_MS + 1_000), NOW, ENDED)).toBe("idle");
   });
   it("a legacy 'active' row reads as idle, never busy", () => {
     expect(effectivePresence("active", at(5_000), NOW, ENDED)).toBe("idle");
@@ -48,5 +51,16 @@ describe("agentRoomKind", () => {
     expect(agentRoomKind({ kind: "agent_review" })).toBe("agent_review");
     expect(agentRoomKind({ kind: "group" })).toBeNull();
     expect(agentRoomKind(null)).toBeNull();
+  });
+});
+
+describe("cleanTitle / plainPreview", () => {
+  it("strips raw markup from provider titles", () => {
+    expect(cleanTitle("<task-notification> <task-id>b1</task-id> done")).toBe("b1 done");
+  });
+  it("flattens markdown to one plain line", () => {
+    expect(plainPreview("## Independent review\n- **Engineering:** Passed. [link](http://x)")).toBe(
+      "Independent review Engineering: Passed. link",
+    );
   });
 });

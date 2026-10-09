@@ -34,7 +34,8 @@ export function LiveHub() {
   const pathname = usePathname();
   const params = useSearchParams();
   const selection = readSelection(new URLSearchParams(params.toString()));
-  const { sessions, members, rooms, loading, error, nowMs, refresh } = useLiveHub();
+  const { sessions, members, rooms, roomsComplete, loaded, loading, error, nowMs, refresh } =
+    useLiveHub();
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [createdDirect, setCreatedDirect] = useState<Record<string, string>>({});
 
@@ -91,7 +92,8 @@ export function LiveHub() {
           rooms={rooms}
           selection={selection}
           nowMs={nowMs}
-          loading={loading}
+          loaded={loaded}
+          roomsComplete={roomsComplete}
           error={error}
           onRetry={refresh}
           onSelect={select}
@@ -111,6 +113,9 @@ export function LiveHub() {
             session={session}
             members={members.filter((m) => session.bindingIds.includes(m.member_id))}
             directRoomId={directRoomId}
+            directMembers={members.filter(
+              (m) => m.conversation_id === directRoomId && session.bindingIds.includes(m.member_id),
+            )}
             nowMs={nowMs}
             onBack={() => select(null)}
             onDirectRoomCreated={(id) => {
@@ -130,7 +135,7 @@ export function LiveHub() {
           />
         ) : selection ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-            {loading ? "Loading" : selection.kind === "session" ? "This session is not in your recent sessions." : "This room is not in your inbox."}
+            {loading || !loaded ? "Loading" : selection.kind === "session" ? "This session is not in your recent sessions." : "This room is not in your inbox."}
             <button type="button" className="underline" onClick={() => select(null)}>
               Back to Live
             </button>
@@ -138,9 +143,14 @@ export function LiveHub() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
             <Radio className="size-8 text-muted-foreground" />
-            <p className="text-sm font-medium">
-              {busy} busy · {idle} idle · {rooms.length} room{rooms.length === 1 ? "" : "s"}
-            </p>
+            {loaded ? (
+              <p className="text-sm font-medium">
+                {busy} busy · {idle} idle · {rooms.length}
+                {roomsComplete ? "" : "+"} room{rooms.length === 1 ? "" : "s"}
+              </p>
+            ) : (
+              <div className="h-5 w-48 animate-pulse rounded bg-muted/60" />
+            )}
             <p className="max-w-xs text-xs text-muted-foreground">
               Open a session to read its transcript and message it.
             </p>
@@ -148,6 +158,7 @@ export function LiveHub() {
         )}
       </main>
 
+      {newRoomOpen && (
       <NewRoomDialog
         open={newRoomOpen}
         onOpenChange={setNewRoomOpen}
@@ -158,6 +169,7 @@ export function LiveHub() {
           select({ kind: "room", id });
         }}
       />
+      )}
     </div>
   );
 }

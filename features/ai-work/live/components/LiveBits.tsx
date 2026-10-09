@@ -10,6 +10,15 @@ const PRESENCE_LABEL: Record<LivePresence, string> = {
   ended: "Ended",
 };
 
+/** What tells two similar sessions apart: platform · workspace · last seen. */
+export function sessionTag(
+  s: { providerLabel: string; workspace: string | null; lastSeenAt: string | null },
+  nowMs: number,
+): string {
+  const seen = s.lastSeenAt ? compactAge(nowMs - Date.parse(s.lastSeenAt)) : null;
+  return [s.providerLabel, s.workspace, seen ? `${seen} ago` : null].filter(Boolean).join(" · ");
+}
+
 export function presenceLabel(presence: LivePresence): string {
   return PRESENCE_LABEL[presence];
 }
@@ -63,8 +72,29 @@ export function lagText(lag: DeliveryLag): string | null {
   }
 }
 
+const LAG_SHORT: Record<DeliveryLag["state"], string> = {
+  clear: "",
+  offered: "Unconfirmed",
+  failing: "Failing",
+  muted: "Muted",
+};
+
+/** The dot key, shown once under the Sessions header (dots are never color-only). */
+export function PresenceLegend() {
+  return (
+    <div className="flex items-center gap-3 px-3 pb-1 text-[11px] text-muted-foreground" aria-hidden>
+      {(["busy", "idle", "ended"] as const).map((p) => (
+        <span key={p} className="inline-flex items-center gap-1">
+          <PresenceDot presence={p} className="size-2" />
+          {PRESENCE_LABEL[p]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** The delivery-lag marker: absent when delivery is clear. */
-export function LagMarker({ lag }: { lag: DeliveryLag }) {
+export function LagMarker({ lag, showLabel = false }: { lag: DeliveryLag; showLabel?: boolean }) {
   const text = lagText(lag);
   if (!text) return null;
   const Icon = lag.state === "failing" ? AlertTriangle : lag.state === "muted" ? BellOff : Clock;
@@ -81,6 +111,7 @@ export function LagMarker({ lag }: { lag: DeliveryLag }) {
       )}
     >
       <Icon className="size-3.5" />
+      {showLabel && <span className="ml-0.5 text-[11px]">{LAG_SHORT[lag.state]}</span>}
     </span>
   );
 }
