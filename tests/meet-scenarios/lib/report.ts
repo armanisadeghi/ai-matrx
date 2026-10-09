@@ -39,7 +39,7 @@ interface Loaded { who: string; scripts: number; driverLike: string[]; dev: bool
 interface Evidence {
   skin?: string;
   loaded?: Loaded[];
-  envEvents: { at: number; what: string; who: string }[];
+  envEvents: { at: number; what: string; who: string; fatal?: boolean }[];
   levers: { who: string; seat: string; levers: string[] }[];
   sources: Record<string, number>;
   progressAt?: number;
@@ -108,7 +108,9 @@ export default class MeetReport implements Reporter {
     const end = result.startTime.getTime() + result.duration;
     // The environment explains a failure only if it struck AFTER the scenario's last progress
     // (it stopped the walk); a park the run recovered from and moved past proves nothing.
-    const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0));
+    const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0))
+      // A park that took a live call away makes the whole run environment, whenever it struck.
+      .concat(ev.envEvents.filter((e) => e.fatal && !(end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0))));
     const unprovenReason = firstEvidence(result).startsWith(UNPROVEN_PREFIX);
     const status =
       result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 ? "ENV" : unprovenReason ? "UNPROVEN" : "FAIL";

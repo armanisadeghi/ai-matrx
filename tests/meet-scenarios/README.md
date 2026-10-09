@@ -68,8 +68,12 @@ every scenario for both. Project names: `chromium` for `meet`, `chromium-<skin>`
 
 The shared dev server caps concurrent signed-in preview hosts (`utils/supabase/walkCap.ts`,
 Arman-approved; never change or bypass it). The harness puts every signed-in context on ONE
-preview host, pings the walk's explicit-activity endpoint to stay active, and on a parked page
-presses "Resume this preview" and continues (recorded as ENV evidence).
+preview host and, for the WHOLE test (every wait, with or without an open tab), sends the walk's
+explicit-activity request every 30 s through a signed-in person's browser context. A guest is signed
+out, so the middleware never parks it; it is parked only because the host's eviction is broadcast to
+every tab on that host (SSE), which is why keeping the host active protects the guest too. If a tab
+in a live meeting is parked anyway, Resume cannot bring the call back (it reloads pre-join): the
+harness resumes, records a fatal ENV event and fails the run as ENV, never PASS or FAIL.
 
 ## Cleanup (no meeting left open)
 

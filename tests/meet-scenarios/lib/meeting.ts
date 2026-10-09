@@ -33,9 +33,12 @@ export async function resumeIfParked(actor: Actor, page: Page = actor.page): Pro
   }
   const resume = page.getByRole("button", { name: "Resume this preview" });
   if (!(await resume.isVisible().catch(() => false))) return false;
-  actor.env("preview paused by the walk cap; resuming");
+  const lostCall = skin().meetingUrl.test(decodeURIComponent(new URL(page.url()).searchParams.get("returnTo") ?? ""));
+  actor.env("preview paused by the walk cap; resuming", lostCall);
   await resume.click();
   await page.waitForLoadState("domcontentloaded").catch(() => undefined);
+  // Resume reloads the meeting page at pre-join: a call that was live is gone. Report ENV, never judge the product on it.
+  if (lostCall) throw new Error(`ENV: walk cap parked ${actor.opts.label} mid-meeting (${page.url()}); Resume restored the slot but the call state is lost, so no verdict`);
   return true;
 }
 

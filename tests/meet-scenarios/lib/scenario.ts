@@ -103,13 +103,15 @@ const test = base.extend<{ cast: Cast }>({
     setActiveSkin(((testInfo.project.metadata as { skin?: string } | undefined)?.skin) ?? "meet");
     const launch = (testInfo.project.use as { launchOptions?: { args?: string[] } }).launchOptions;
     const cast = new Cast(browser, launch?.args ?? []);
-    // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts):
-    // the same explicit-activity ping the app sends on interaction, from a signed-in tab.
+    // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts) during EVERY wait,
+    // not just between steps: an explicit-activity request every 30 s (window is minutes) through a
+    // signed-in person's browser context. It needs no open tab (a closed host tab or about:blank is fine).
+    // A guest on the same host is parked by the SSE eviction notice of the HOST, so keeping the host active
+    // is what keeps the guest unparked too.
     const keepAlive = setInterval(() => {
-      const signedIn = cast.actors.find((a) => a.opts.seat !== "guest" && a.pages.some((p) => !p.isClosed()));
-      const page = signedIn?.pages.find((p) => !p.isClosed());
-      void page?.evaluate(() => fetch("/__dev-walk?activity=1", { method: "POST" }).then((r) => r.status)).catch(() => undefined);
-    }, 45_000);
+      const signedIn = cast.actors.find((a) => a.opts.seat !== "guest") ?? cast.actors[0];
+      void signedIn?.pingWalkActivity();
+    }, 30_000);
     try {
       await use(cast);
     } finally {
@@ -142,6 +144,10 @@ const test = base.extend<{ cast: Cast }>({
         }),
         contentType: "application/json",
       });
+      // A park that took a live call away is never a PASS (and never a product FAIL): fail the run with the
+      // park named; the report turns a fatal environment event into ENV.
+      const lost = cast.actors.flatMap((a) => a.envEvents.filter((e) => e.fatal).map((e) => `[${a.opts.label}] ${e.what}`));
+      if (lost.length && testInfo.status === "passed") throw new Error(`ENV: walk-cap park lost the scenario's state, no verdict: ${lost.join("; ")}`);
     }
   },
 });

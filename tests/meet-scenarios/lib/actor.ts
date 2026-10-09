@@ -8,6 +8,7 @@
  */
 import type { Browser, BrowserContext, CDPSession, Page } from "@playwright/test";
 import { baseURL, devLoginURL, type SignedInAs } from "./env";
+import { skin } from "./skins";
 import { NetGate, type Throttle } from "./net-gate";
 import { mediaFaultsInit, type MediaFaults } from "./media-faults";
 import { NO_GESTURE, observe, summarize, type Observation } from "./observe";
@@ -51,6 +52,8 @@ export interface TokenCall {
 export interface EnvEvent {
   at: number;
   what: string;
+  /** A park that took a live call away: the run is environment whenever it struck. */
+  fatal?: boolean;
 }
 
 export const THROTTLE_PROFILES: Record<string, Throttle & { downloadKbps: number; uploadKbps: number }> = {
@@ -145,7 +148,11 @@ export class Actor {
         return;
       }
       if (url.startsWith(origin) && (/\/__dev-walk\?parked=1/.test(url) || (res.status() === 409 && new URL(url).pathname === "/__dev-walk"))) {
-        this.env(`walk cap parked this tab (${new URL(url).pathname}${new URL(url).search.slice(0, 20)} HTTP ${res.status()})`);
+        // A park whose return target is a meeting page took a LIVE call away (the Resume reload lands on pre-join):
+        // the scenario's state is lost, so the run is environment evidence, never a product verdict.
+        const returnTo = new URL(url).searchParams.get("returnTo") ?? "";
+        const lostCall = skin().meetingUrl.test(returnTo);
+        this.env(`walk cap parked this tab (${new URL(url).pathname}${new URL(url).search.slice(0, 20)} HTTP ${res.status()})${lostCall ? `; it was in a meeting (${returnTo.slice(0, 40)}) so the call state is lost` : ""}`, lostCall);
         return;
       }
       if (res.status() >= 500 && url.startsWith(origin)) {
@@ -172,9 +179,29 @@ export class Actor {
     if (/\/_next\/static\/[^/]+\/_buildManifest\.js$/.test(name) && !name.includes("/development/")) this.loaded.prodSignals.add("prod");
   }
 
-  env(what: string): void {
-    this.envEvents.push({ at: Date.now(), what });
+  env(what: string, fatal = false): void {
+    this.envEvents.push({ at: Date.now(), what, ...(fatal ? { fatal: true } : {}) });
     this.note(`ENV: ${what}`);
+  }
+
+  /**
+   * One explicit-activity request for the run's preview host (the same POST the app's own monitor sends on
+   * interaction, utils/supabase/walkCap.ts), sent through THIS person's context: it needs no open tab, so it
+   * works while the person's tab is closed or sitting on about:blank, and a signed-in context's cookies ride
+   * along. Returns the HTTP status, or null when the request could not be made (network cut by the scenario).
+   */
+  async pingWalkActivity(): Promise<number | null> {
+    const origin = new URL(baseURL()).origin;
+    try {
+      const res = await this.context.request.post(`${origin}/__dev-walk?activity=1`, { headers: { Origin: origin }, timeout: 15_000, failOnStatusCode: false });
+      if (res.status() === 409) {
+        this.env(`walk cap refused the keepalive: this host was evicted (HTTP 409); reclaiming the slot through the Resume form`, true);
+        await this.context.request.post(`${origin}/__dev-walk`, { headers: { Origin: origin }, form: { returnTo: "/" }, maxRedirects: 0, timeout: 15_000, failOnStatusCode: false }).catch(() => undefined);
+      }
+      return res.status();
+    } catch {
+      return null;
+    }
   }
 
   /** Last time this person's scenario made progress (saw what it waited for) — ENV must postdate it. */
