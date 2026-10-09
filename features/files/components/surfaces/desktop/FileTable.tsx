@@ -12,6 +12,10 @@
  *   - Infinite scroll: `useInfiniteWindow` reveals 50 rows at a time and grows
  *     to reveal a programmatically focused row; the table's append mode asks it
  *     for more as the person scrolls.
+ *   - Grid view is THIS table with `view="grid"`: the rows draw as
+ *     `FileGridCell` cards, so search, filters, selection and copy are shared.
+ *   - Bulk actions sit in the table's selection bar; "Select all N" acts on
+ *     every row matching the current filters (`scope.allMatching`).
  *   - Drag, drop, right-click menu and surface attributes ride the row shell
  *     (`FileTableRowShell`, the table's `rowWrapper`).
  */
@@ -26,7 +30,9 @@ import type {
   ColumnFiltersState,
   ColumnFilterValue,
   MatrxColumnDef,
+  MatrxDataTableMobileCardControls,
   MatrxDataTableQueryState,
+  MatrxDataTableSelectionScope,
 } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -86,6 +92,8 @@ import {
   type FileTableRowCommands,
 } from "./FileTableRow";
 import { ActiveColumnFilters } from "./ActiveColumnFilters";
+import { BulkActionsBar } from "./BulkActionsBar";
+import { FileGridCell } from "./FileGridCell";
 import {
   COLUMN_ORDER,
   COLUMN_SPECS,
@@ -108,6 +116,9 @@ export interface FileTableProps {
   onActivateFile: (fileId: string) => void;
   emptyState?: React.ReactNode;
   className?: string;
+  /** `grid` draws the same table's rows as thumbnail cards — same toolbar,
+   * search, filters, selection, footer and copy. */
+  view?: "list" | "grid";
 }
 
 interface ShareDialogState {
@@ -233,6 +244,7 @@ export function FileTable({
   onActivateFile,
   emptyState,
   className,
+  view = "list",
 }: FileTableProps) {
   const dispatch = useAppDispatch();
   const selection = useAppSelector(selectSelection);
@@ -291,7 +303,7 @@ export function FileTable({
   // Surface client tools (`matrx-user/files`) are registered HERE because
   // `rows` is the exactly-rendered set — see useFilesSurfaceClientTools.
   // FileGrid registers the same tools; the two never mount together.
-  useFilesSurfaceClientTools({ rows, viewLabel: "list" });
+  useFilesSurfaceClientTools({ rows, viewLabel: view });
 
   // Owner choices: every owner in the unfiltered input, "You" first, with
   // counts that stay stable as other filters change (Google Drive does the same).
@@ -754,7 +766,38 @@ export function FileTable({
             selectedIds: selection.selectedIds,
             onSelectedIdsChange,
             noun: "item",
+            // Bulk actions ride the table's own selection bar. "Select all N"
+            // resolves through the list's current filters (every row is in
+            // memory from the whole-tree read), never through the loaded window.
+            // Trash has no bulk actions: its rows restore one at a time.
+            ...(section === "trash"
+              ? {}
+              : {
+                  actions: (_loaded: FileListRow[], ids: string[], scope: MatrxDataTableSelectionScope) => (
+                    <BulkActionsBar ids={scope.allMatching ? rows.map(rowIdOf) : ids} />
+                  ),
+                }),
           }}
+          {...(view === "grid"
+            ? {
+                mobileCards: (row: FileListRow, _index: number, controls: MatrxDataTableMobileCardControls) => (
+                  <FileGridCell
+                    kind={row.item.kind}
+                    {...(row.item.kind === "file" ? { file: row.item.file } : { folder: row.item.folder })}
+                    selected={controls.selected}
+                    isPreviewActive={row.item.kind === "file" && row.id === activeFileId}
+                    isFocused={focusedId === row.id}
+                    isShared={row.isShared}
+                    onToggleSelected={() => controls.onSelectedChange(!controls.selected)}
+                    onActivate={() => commands.activate(row.id)}
+                    onOpenShare={() => commands.openShare(row.id, row.item.kind)}
+                    parentPath={row.parentPath}
+                  />
+                ),
+                mobileCardsBreakpoint: "always" as const,
+                cardsLayout: "grid" as const,
+              }
+            : {})}
           query={{
             mode: "controlled-append",
             state: queryState,
