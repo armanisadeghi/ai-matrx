@@ -63,6 +63,7 @@ export async function listBrandCompetitors(
   siteIds: string[],
   signal?: AbortSignal,
 ): Promise<BrandCompetitor[]> {
+  const sig = signal ?? new AbortController().signal;
   // 1. Website competitors through the brand's sites.
   let seoRows: SeoCompetitorRow[] = [];
   if (siteIds.length > 0) {
@@ -71,7 +72,7 @@ export async function listBrandCompetitors(
       .from("competitor")
       .select("id,site_id,normalized_domain,display_domain,display_name,tracking_status")
       .in("site_id", siteIds)
-      .abortSignal(signal as AbortSignal);
+      .abortSignal(sig);
     if (error) throw error;
     seoRows = (data ?? []) as SeoCompetitorRow[];
   }
@@ -86,7 +87,7 @@ export async function listBrandCompetitors(
     .eq("brand_id", brandId)
     .eq("role", "competitor")
     .is("deleted_at", null)
-    .abortSignal(signal as AbortSignal);
+    .abortSignal(sig);
   if (trackedError) throw trackedError;
   const accountsRaw = tracked ?? [];
 
@@ -104,7 +105,7 @@ export async function listBrandCompetitors(
       .eq("target_type", "seo_competitor")
       .in("source_id", trackedIds)
       .is("deleted_at", null)
-      .abortSignal(signal as AbortSignal);
+      .abortSignal(sig);
     if (linkError) throw linkError;
     for (const l of links ?? []) linkByAccount.set(l.source_id, l.target_id);
   }
@@ -134,7 +135,7 @@ export async function listBrandCompetitors(
       .gte("posted_at", since)
       .is("deleted_at", null)
       .limit(2000)
-      .abortSignal(signal as AbortSignal);
+      .abortSignal(sig);
     if (recentError) throw recentError;
     for (const post of recent ?? []) {
       const stat = one(post.stat as { outlier_score: number | null; views: number | null } | { outlier_score: number | null; views: number | null }[] | null);
@@ -230,7 +231,7 @@ export async function listBrandCompetitors(
  * `features/marketing/competitors/FEATURE.md`. If the route is not deployed the call fails
  * with 404/405/network and the caller shows "intake service unavailable" — never a fake row.
  */
-export const SOCIAL_TRACK_PATH = "/social/tracked-accounts";
+export const SOCIAL_TRACK_PATH = "/social/tracked";
 
 export interface TrackSocialRequest {
   platform: string;

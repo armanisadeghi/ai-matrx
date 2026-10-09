@@ -208,3 +208,34 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
   shimmer — left mounted, that sat under a finished "Autopsy complete" forever. Added the missing
   `PageHeader` (the route showed no title in the shell header) and centered the hero's left column
   against the taller run form.
+
+## Brand-level competitors with social accounts (SI-11, 2026-10-09)
+
+`BrandCompetitorDirectory` (the `All` tab, route `…/intelligence/competitors/all`) is the brand-level
+list. It also IS the whole page for a brand with no website (`BrandScopedCompetitors` used to show an
+empty state there). One row per competitor from two sources, merged:
+
+- website competitors: `seo.competitor` through the brand's sites (`useBrandSites`);
+- social competitors: `social.tracked_account` where `role = 'competitor'` and `brand_id` = the
+  brand, joined to the shared `social.social_profile`.
+
+A competitor that is both a domain and handles is ONE row, tied by the platform association
+`social_tracked_account → seo_competitor`. Unlinked accounts group by `tracked_account.label` (Add
+competitor writes the competitor's name there); a label equal to a website competitor's name attaches
+to it. Per-platform follower columns (a link to `/marketing/<brand>/socials/<platform>/<trackedAccountId>`),
+posts tracked (`social.post` count), and the best `post_stat.outlier_score` among posts from the last
+30 days. All reads are direct Supabase under RLS (`brand-competitors.ts`).
+
+**Add competitor** = name + optional domain + handles per platform. The domain becomes a
+`seo.competitor` on the brand's first site (none → the domain is not tracked and the dialog says so).
+Each handle is `POST /social/tracked` (`{platform, handle_or_url, role:"competitor", brand_id, label}` →
+`{tracked_account_id, profile_id, created, notes}`; aidream `services/social/tracking.py`). The browser
+cannot create the tracked account itself: its `profile_id` must point at a platform-written shared
+profile. A route that is missing or unreachable shows "intake service unavailable" per handle; no row
+is faked. When the website competitor and the tracked account both exist, the client inserts the
+association row.
+
+**Find their socials** = user-triggered; scrapes the domain with the existing `/scraper/quick-scrape`
+(`get_links`, NDJSON stream) and `social-links.ts` keeps only profile/page/channel URLs of the six
+platforms (share buttons, posts and logins are rejected). Nothing is saved until Add.
+
