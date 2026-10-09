@@ -244,6 +244,7 @@ import {
 } from "./lib/ledger-snapshot.mjs";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { RevokeOrderRefusal, revokeOrderFindings } from "./migration-revoke-order";
+import { GrantStandsRefusal, grantStandsFindings } from "./migration-grant-stands";
 import {
   IDLE_IN_TRANSACTION_CEILING,
   LOCK_RETRY_ATTEMPTS,
@@ -1979,6 +1980,14 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
             sql,
           );
           if (revokeFindings.length) throw new RevokeOrderRefusal(filename, revokeFindings);
+          // A GRANT THAT DID NOT STAND (lane GRANT-GUARD): a bare grant on a definer function with no
+          // door row is stripped by the DDL guard in the same statement. See scripts/migration-grant-stands.ts.
+          const grantFindings = await grantStandsFindings(
+            async (text, params) =>
+              (await client.query(text, (params ?? []) as never[])).rows as Record<string, unknown>[],
+            sql,
+          );
+          if (grantFindings.length) throw new GrantStandsRefusal(filename, grantFindings);
           const attrNow = await attributionColumnsPresent(attrQ);
           attrMissing = attrNow.missing;
           ledgerUpsert = buildLedgerUpsert(attrNow.present ? attrParts : null);
