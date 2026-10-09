@@ -52,7 +52,8 @@ import {
   declareDescribeSpec,
   DesignRefused,
   describeVariables,
-  dropOrphanRows,
+  landReusedRows,
+  readReusedRows,
   readExistingTables,
   readDesign,
   readOrganizationFacts,
@@ -202,7 +203,9 @@ export function DescribeBox() {
             mark("check", "doing");
             const { answer, safe, checked } = design;
             // The request key names the template: a second declare for this press updates the same one, never a second.
-            const landed = dropOrphanRows(bindReuses(checked.spec, safe.reuses, tables));
+            const bound = bindReuses(checked.spec, safe.reuses, tables);
+            const boundIds = ((bound.tables ?? []) as unknown as Array<{ bindsTo?: { tableId: string } }>).flatMap((t) => (t.bindsTo ? [t.bindsTo.tableId] : []));
+            const landed = landReusedRows(bound, boundIds.length ? await readReusedRows(client, r.organizationId, boundIds) : {});
             const templateId = await declareDescribeSpec(client, r.organizationId, landed.spec, stampOf(r.key));
             commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes, ...landed.notes] });
             mark("check", "done");
