@@ -45,6 +45,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-09 — Board templates share this mechanism (SI-13). `state/templates.ts` helpers take a source type
+  (`listTemplateIds(source = "document")`, `setTemplate(id, on, source)`; `"board"` uses the `board -> category`
+  `labeled` association registered live the same day); `sidebar/TemplateGalleryShell.tsx` is the one gallery frame
+  (the page gallery passes its `spaces-*` classes, so its look is unchanged; the board gallery uses plain tokens
+  and lives in `features/board/templates`). Test: `state/__tests__/templates-source.test.ts`.
+
 - 2026-10-09 — Applet block (lane B1, the "one roof" first piece; Arman 2026-10-09: "we add the power of applets").
   Stored `applet {appletId uuid, height? whole px}` (lib/spaces-blocks; live `content.space_snapshot_schema()` regenerated).
   "/" → Embeds › Applet (aliases applet, app) opens `editor/applet-picker.tsx` FIRST (search; opens to "Yours", else "All";
