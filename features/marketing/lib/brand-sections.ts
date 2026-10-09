@@ -309,9 +309,8 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   // promise; the live Google Ads workspace is its first room at `ads`.
   { comingSoonId: "marketing.ads", subRoute: "ads" },
   // Socials: Accounts, Outliers, Swipe file, Ads, KPIs and the detail pages are live; the umbrella
-  // row and the Studio tab are still being built.
+  // row is still being built.
   { comingSoonId: "marketing.social", subRoute: "socials" },
-  { comingSoonId: "marketing.social.studio", subRoute: "socials/studio" },
 ];
 
 /** The unique filesystem segments under `/marketing/[brandId]` (drift test). */

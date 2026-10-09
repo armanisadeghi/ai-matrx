@@ -1,5 +1,5 @@
-import { SocialsTabPlaceholder } from "@/features/marketing/social/components/SocialsTabPlaceholder";
+import { StudioTab } from "@/features/marketing/social/components/StudioTab";
 
 export default function BrandSocialStudioPage() {
-  return <SocialsTabPlaceholder comingSoonId="marketing.social.studio" />;
+  return <StudioTab />;
 }
