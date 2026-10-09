@@ -1,7 +1,7 @@
 -- chair-step: undo hotdoors7_e - HOT-DOORS-7 loses its own off switch and custom.hub_changed_by_many's last arm answers false again. Run BEFORE the inverse of hotdoors7_f.
 -- lane: HOT-DOORS-7-GUARD
--- based-on: custom.hot_doors_7_on(uuid) X
--- based-on: custom.hub_changed_by_many(jsonb, text) X
+-- based-on: custom.hot_doors_7_on(uuid) 50a7cc18ee961d5d59b719a0824f105a826b96903aa37a63ded023100d2e2427
+-- based-on: custom.hub_changed_by_many(jsonb, text) fe7b95000d7b8277df2d3c3543751e8f927105aeaa6b8b0f6845e5ca2cebc54b
 
 set local statement_timeout = '60s';
 
