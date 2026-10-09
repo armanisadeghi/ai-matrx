@@ -15,8 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ReadFailure } from '@ai-matrx/design-system';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MatrxDataTable, type MatrxColumnDef } from '@ai-matrx/design-system/data-table';
 import { ExternalLink, Eye, Loader2, RefreshCw, FileText } from 'lucide-react';
 
 type AdminPage = ClientPageSummary & { client_id: string };
@@ -59,6 +58,48 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
         [pages],
     );
 
+    const columns = useMemo((): MatrxColumnDef<AdminPage>[] => [
+        { id: 'title', header: 'Title', accessorFn: (page) => page.title, width: 260,
+          cell: (page) => (
+            <span className="block truncate font-medium">
+                {page.title}
+                {page.is_home_page && <Badge variant="outline" className="ml-1.5 text-[9px] py-0">home</Badge>}
+            </span>
+          ) },
+        { id: 'category', header: 'Category', accessorFn: (page) => page.category ?? '', filter: 'select', width: 140,
+          cell: (page) => <span className="text-muted-foreground">{page.category ?? '—'}</span> },
+        { id: 'state', header: 'State', accessorFn: (page) => (page.is_published ? 'Published' : 'Unpublished') + (page.has_draft ? ' · Draft pending' : ''), filter: 'select', width: 220,
+          cell: (page) => (
+            <div className="flex items-center gap-1">
+                <Badge variant={page.is_published ? 'default' : 'secondary'} className="text-[10px]">
+                    {page.is_published ? 'Published' : 'Unpublished'}
+                </Badge>
+                {page.has_draft && (
+                    <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">Draft pending</Badge>
+                )}
+            </div>
+          ) },
+        { id: 'links', header: 'Links', sortable: false, filter: false, accessorFn: (page) => page.slug, width: 100,
+          cell: (page) => (
+            <div className="flex items-center gap-2">
+                {site && (
+                    <>
+                        <a href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: activeSiteDomain(site) })}
+                            target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary" title="Live">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                        {page.has_draft && (
+                            <a href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true, previewToken: sitePreviewToken(site) })}
+                                target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:opacity-80" title="Preview draft">
+                                <Eye className="h-3.5 w-3.5" />
+                            </a>
+                        )}
+                    </>
+                )}
+            </div>
+          ) },
+    ], [site]);
+
     return (
         <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: 'cms_agents', cms_sites: sites, ...(siteId ? { cms_selected_site_id: siteId } : {}), cms_site_pages: sorted })}>
         <div className="flex flex-col h-full">
@@ -91,95 +132,25 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                 </Button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-auto rounded-md border border-border">
-                <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10">
-                        <TableRow>
-                            <TableHead className="h-8 text-xs">Title</TableHead>
-                            <TableHead className="h-8 text-xs">Category</TableHead>
-                            <TableHead className="h-8 text-xs">State</TableHead>
-                            <TableHead className="h-8 text-xs">Links</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loadError != null && !isLoading && (
-                            <TableRow>
-                                <TableCell colSpan={4} className="p-0">
-                                    <ReadFailure
-                                        error={loadError}
-                                        what={`${site?.name ?? 'this site'}'s pages`}
-                                        onRetry={() => void fetchPages()}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {sorted.length === 0 && !isLoading && loadError == null && (
-                            <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-xs">
-                                    No pages on this site yet.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {sorted.map((page) => {
-                            return (
-                                <TableRow key={page.id} className="text-xs">
-                                    <TableCell className="py-1.5 font-medium max-w-[220px] truncate">
-                                        {page.title}
-                                        {page.is_home_page && (
-                                            <Badge variant="outline" className="ml-1.5 text-[9px] py-0">
-                                                home
-                                            </Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="py-1.5 text-muted-foreground">{page.category ?? '—'}</TableCell>
-                                    <TableCell className="py-1.5">
-                                        <div className="flex items-center gap-1">
-                                            <Badge
-                                                variant={page.is_published ? 'default' : 'secondary'}
-                                                className="text-[10px]"
-                                            >
-                                                {page.is_published ? 'Published' : 'Unpublished'}
-                                            </Badge>
-                                            {page.has_draft && (
-                                                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">
-                                                    Draft pending
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-1.5">
-                                        <div className="flex items-center gap-2">
-                                            {site && (
-                                                <>
-                                                    <a
-                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: activeSiteDomain(site) })}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
-                                                        title="Live"
-                                                    >
-                                                        <ExternalLink className="h-3.5 w-3.5" />
-                                                    </a>
-                                                    {page.has_draft && (
-                                                        <a
-                                                            href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true, previewToken: sitePreviewToken(site) })}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:opacity-80"
-                                                            title="Preview draft"
-                                                        >
-                                                            <Eye className="h-3.5 w-3.5" />
-                                                        </a>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
+            <div className="flex-1 min-h-0">
+                <MatrxDataTable<AdminPage>
+                    tableId="cms-admin-site-pages"
+                    data={sorted}
+                    columns={columns}
+                    getRowId={(page) => page.id}
+                    isLoading={isLoading && sorted.length === 0}
+                    read={{ status: loadError != null ? 'error' : isLoading ? 'loading' : 'ready', error: loadError ?? undefined, onRetry: () => void fetchPages(), what: `${site?.name ?? 'this site'}'s pages` }}
+                    emptyState={{ title: 'No pages on this site yet' }}
+                    detail={{ enabled: false }}
+                    copy={{
+                        label: 'CMS site pages',
+                        location: `CMS Admin Site Pages${site ? ` (${site.name})` : ''}`,
+                        rowKind: 'cms-site-page',
+                        listKind: 'cms-site-page-list',
+                        humanRow: (page) => `${page.title}${page.category ? ` [${page.category}]` : ''} - ${page.is_published ? 'published' : 'unpublished'}${page.has_draft ? ', draft pending' : ''}`,
+                        agentRow: (page) => page,
+                    }}
+                />
             </div>
 
             {sites.length === 0 && (
