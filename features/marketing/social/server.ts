@@ -17,6 +17,7 @@ import {
   downloadBlob,
   getJson,
   postJson,
+  putJson,
   requestRaw,
 } from "@/lib/python-client";
 import { BackendApiError, parseHttpError } from "@/lib/api/errors";
@@ -24,10 +25,14 @@ import { parseMatrxNdjsonResponse } from "@ai-matrx/agents/matrx";
 
 import { SocialStreamError, consumeSocialEvents } from "./stream";
 import type {
+  AdLibrary,
+  AdsSearchResult,
   AnalyzePostResult,
   IngestPostResult,
   IngestProfileResult,
   PostMediaRef,
+  SocialCapabilities,
+  SocialCredits,
   SocialErrorCode,
   SocialPlatform,
   SocialProgress,
@@ -268,12 +273,84 @@ export async function createCollection(
 
 export async function addToCollection(
   collectionId: string,
-  item: { itemType: "social_post" | "social_ad" | "social_profile"; itemId: string },
+  item: {
+    itemType: "social_post" | "social_ad" | "social_profile";
+    itemId: string;
+    /** Carried onto the membership edge; omit both to leave an existing edge's note/tags alone. */
+    note?: string;
+    tags?: string[];
+  },
   opts: CallOptions,
 ): Promise<void> {
   await postJson(
     `${BASE}/collections/${collectionId}/items`,
-    { item_type: item.itemType, item_id: item.itemId },
+    { item_type: item.itemType, item_id: item.itemId, note: item.note, tags: item.tags },
     { organizationId: org(opts.organizationId), signal: opts.signal },
   );
+}
+
+/** Replace the note and tags kept on one saved item in one collection. */
+export async function setItemNotes(
+  collectionId: string,
+  item: { itemType: "social_post" | "social_ad"; itemId: string; note: string; tags: string[] },
+  opts: CallOptions,
+): Promise<void> {
+  await putJson(
+    `${BASE}/collections/${collectionId}/items/${item.itemType}/${item.itemId}`,
+    { note: item.note, tags: item.tags },
+    { organizationId: org(opts.organizationId), signal: opts.signal },
+  );
+}
+
+export async function removeFromCollection(
+  collectionId: string,
+  item: { itemType: "social_post" | "social_ad"; itemId: string },
+  opts: CallOptions,
+): Promise<void> {
+  await del(`${BASE}/collections/${collectionId}/items/${item.itemType}/${item.itemId}`, {
+    organizationId: org(opts.organizationId),
+    signal: opts.signal,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Ads
+// ---------------------------------------------------------------------------
+
+/** One search of an ad library. Spends provider credits (about one) — callers confirm first. */
+export async function searchAds(
+  input: { library: AdLibrary; query?: string; advertiser?: string; cursor?: string },
+  opts: CallOptions,
+): Promise<AdsSearchResult> {
+  const { data } = await postJson<AdsSearchResult>(
+    `${BASE}/ads/search`,
+    {
+      library: input.library,
+      query: input.query?.trim() || undefined,
+      advertiser: input.advertiser?.trim() || undefined,
+      cursor: input.cursor,
+    },
+    { organizationId: org(opts.organizationId), signal: opts.signal },
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Provider status + credits (Operations)
+// ---------------------------------------------------------------------------
+
+export async function getCapabilities(opts: CallOptions): Promise<SocialCapabilities> {
+  const { data } = await getJson<SocialCapabilities>(`${BASE}/capabilities`, {
+    organizationId: org(opts.organizationId),
+    signal: opts.signal,
+  });
+  return data;
+}
+
+export async function getCredits(opts: CallOptions): Promise<SocialCredits> {
+  const { data } = await getJson<SocialCredits>(`${BASE}/credits`, {
+    organizationId: org(opts.organizationId),
+    signal: opts.signal,
+  });
+  return data;
 }

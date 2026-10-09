@@ -10,6 +10,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   readAccountRows,
+  readAdvertiserAds,
+  readAllSwipeCollections,
+  readSwipeItems,
+  readTrackedAdvertisers,
+  readAgencySocial,
+  readBrandSocialData,
+  readKpiGoals,
+  readWatchlistHits,
+  readWatchlists,
   readPostAnalysis,
   readPostDetail,
   readPostMetricSnapshots,
@@ -36,6 +45,16 @@ export const socialKeys = {
   transcript: (postId: string) => ["marketing", "social", "transcript", postId] as const,
   analysis: (orgId: string, postId: string) =>
     ["marketing", "social", "analysis", orgId, postId] as const,
+  brandData: (orgId: string, brandId: string) =>
+    ["marketing", "social", "brand-data", orgId, brandId] as const,
+  watchlists: (brandId: string) => ["marketing", "social", "watchlists", brandId] as const,
+  hits: (ids: readonly string[]) => ["marketing", "social", "hits", ...ids] as const,
+  goals: (orgId: string, brandId: string) => ["marketing", "social", "goals", orgId, brandId] as const,
+  agency: () => ["marketing", "social", "agency"] as const,
+  swipeCollections: ["marketing", "social", "swipe-collections"] as const,
+  swipeItems: (ids: string) => ["marketing", "social", "swipe-items", ids] as const,
+  advertisers: ["marketing", "social", "advertisers"] as const,
+  advertiserAds: (key: string) => ["marketing", "social", "advertiser-ads", key] as const,
   collections: (orgId: string) => ["marketing", "social", "collections", orgId] as const,
 };
 
@@ -122,6 +141,88 @@ export function useSwipeCollections(organizationId: string) {
     queryKey: socialKeys.collections(organizationId),
     queryFn: () => readSwipeCollections({ organizationId }),
     enabled: Boolean(organizationId),
+    staleTime: 30_000,
+  });
+}
+
+export function useBrandSocialData(organizationId: string, brandId: string) {
+  return useQuery({
+    queryKey: socialKeys.brandData(organizationId, brandId),
+    queryFn: ({ signal }) => readBrandSocialData({ organizationId, brandId, signal }),
+    enabled: Boolean(organizationId && brandId),
+    staleTime: 30_000,
+  });
+}
+
+export function useWatchlists(brandId: string) {
+  return useQuery({
+    queryKey: socialKeys.watchlists(brandId),
+    queryFn: () => readWatchlists({ brandId }),
+    enabled: Boolean(brandId),
+    staleTime: 30_000,
+  });
+}
+
+export function useWatchlistHits(savedViewIds: readonly string[]) {
+  return useQuery({
+    queryKey: socialKeys.hits(savedViewIds),
+    queryFn: () => readWatchlistHits(savedViewIds),
+    enabled: savedViewIds.length > 0,
+    staleTime: 10_000,
+  });
+}
+
+export function useKpiGoals(organizationId: string, brandId: string) {
+  return useQuery({
+    queryKey: socialKeys.goals(organizationId, brandId),
+    queryFn: () => readKpiGoals({ organizationId, brandId }),
+    enabled: Boolean(organizationId && brandId),
+    staleTime: 30_000,
+  });
+}
+
+export function useAgencySocial() {
+  return useQuery({
+    queryKey: socialKeys.agency(),
+    queryFn: () => readAgencySocial({ outlierWindowDays: 30, minScore: 3 }),
+    staleTime: 60_000,
+  });
+}
+
+/** Every collection the person can see, live and archived. */
+export function useAllSwipeCollections() {
+  return useQuery({
+    queryKey: socialKeys.swipeCollections,
+    queryFn: () => readAllSwipeCollections(),
+    staleTime: 30_000,
+  });
+}
+
+/** Saved items of the given collections. */
+export function useSwipeItems(collectionIds: readonly string[], enabled: boolean) {
+  const key = [...collectionIds].sort().join(",");
+  return useQuery({
+    queryKey: socialKeys.swipeItems(key),
+    queryFn: () => readSwipeItems(collectionIds),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useTrackedAdvertisers() {
+  return useQuery({
+    queryKey: socialKeys.advertisers,
+    queryFn: () => readTrackedAdvertisers(),
+    staleTime: 30_000,
+  });
+}
+
+export function useAdvertiserAds(args: { library: "meta" | "tiktok" | "google" | "linkedin"; advertiser: string; advertiserPlatformId: string | null } | null) {
+  const key = args ? `${args.library}|${args.advertiserPlatformId ?? args.advertiser}` : "";
+  return useQuery({
+    queryKey: socialKeys.advertiserAds(key),
+    queryFn: () => readAdvertiserAds(args!),
+    enabled: Boolean(args),
     staleTime: 30_000,
   });
 }

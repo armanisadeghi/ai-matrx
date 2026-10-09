@@ -16,13 +16,26 @@ import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
 
+import type { Json } from "@/types/database.types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 import type {
   AccountPostStat,
   OwnPropertyInput,
 } from "./mappers";
+import {
+  WATCHLIST_SURFACE,
+  parseWatchlistDefinition,
+  serializeWatchlistDefinition,
+  type HitState,
+  type OutlierFilter,
+} from "./outliers";
 import { buildAccountRows } from "./mappers";
 import type {
   AccountRow,
+  BrandPost,
+  KpiGoalRow,
+  WatchlistHitRow,
   PostAnalysisRow,
   PostCardModel,
   PostMetricSnapshotRow,
@@ -31,11 +44,15 @@ import type {
   ProfileSnapshotRow,
   SocialPostRow,
   SocialProfileRow,
+  SocialAdRow,
   SwipeCollectionRow,
+  SwipeItem,
   TrackedAccountRow,
+  TrackedAdvertiser,
   TrackedRole,
 } from "./types";
-import { toPostCardModel } from "./mappers";
+import { isTrackedRole } from "./types";
+import { hookLineOf, num, toPostCardModel } from "./mappers";
 
 const SOCIAL_KINDS = [
   "instagram", "facebook", "x", "tiktok", "youtube", "linkedin",
@@ -378,4 +395,599 @@ export async function readSwipeCollections(args: {
     .order("name", { ascending: true });
   if (error) fail("social.swipe_collection list", error.message);
   return (data ?? []) as SwipeCollectionRow[];
+}
+
+// ---------------------------------------------------------------------------
+// Brand roll-up (Outliers, KPIs, Analytics panel) — one read, many surfaces
+// ---------------------------------------------------------------------------
+
+/** How far back the brand roll-up reads posts and follower snapshots. */
+export const BRAND_SOCIAL_LOOKBACK_DAYS = 400;
+
+export interface BrandSocialData {
+  accounts: AccountRow[];
+  posts: BrandPost[];
+  snapshots: ProfileSnapshotRow[];
+}
+
+/**
+ * Everything the brand's tracked accounts have: account rows (the Accounts
+ * table's own builder), posts with their stats and the owning account's role,
+ * and the follower snapshots. Reads direct under RLS; no provider spend.
+ */
+export async function readBrandSocialData(args: {
+  organizationId: string;
+  brandId: string;
+  signal?: AbortSignal;
+}): Promise<BrandSocialData> {
+  const tracked = await readTrackedAccounts(args);
+  const profileIds = [...new Set(tracked.map((t) => t.profile_id))];
+  const sinceIso = new Date(Date.now() - BRAND_SOCIAL_LOOKBACK_DAYS * 86_400_000).toISOString();
+  const [profiles, snapshots, postRows] = await Promise.all([
+    readProfiles(profileIds),
+    readProfileSnapshots(profileIds, sinceIso),
+    readPostsWithStats(profileIds, sinceIso),
+  ]);
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const trackedByProfile = new Map(tracked.map((t) => [t.profile_id, t]));
+  const posts: BrandPost[] = [];
+  for (const row of postRows) {
+    const t = row.profile_id ? trackedByProfile.get(row.profile_id) : undefined;
+    if (!t) continue;
+    const role: TrackedRole = isTrackedRole(t.role) ? t.role : "inspiration";
+    const handle = row.profile_id ? (profileById.get(row.profile_id)?.handle ?? null) : null;
+    posts.push({
+      ...toPostCardModel({ post: row, stat: firstStat(row.stat), handle }),
+      role,
+      trackedAccountId: t.id,
+    });
+  }
+  const postStats: AccountPostStat[] = posts.map((p) => ({
+    post_id: p.postId,
+    profile_id: p.profileId,
+    posted_at: p.postedAt,
+    views: p.views,
+    outlier_score: p.outlierScore,
+  }));
+  const accounts = buildAccountRows({ tracked, profiles, snapshots, postStats, properties: [] });
+  return { accounts, posts, snapshots };
+}
+
+async function readPostsWithStats(
+  profileIds: readonly string[],
+  sinceIso: string,
+): Promise<PostWithStat[]> {
+  const out: PostWithStat[] = [];
+  for (const part of chunk(profileIds, 50)) {
+    const rows = await readAllRows<PostWithStat>(
+      ({ from, to }) =>
+        supabase
+          .schema("social")
+          .from("post")
+          .select("*, stat:post_stat(*)", { count: "exact" })
+          .in("profile_id", part)
+          .gte("posted_at", sinceIso)
+          .is("deleted_at", null)
+          .order("posted_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<PostWithStat[]>(),
+      { label: "social.post brand roll-up" },
+    );
+    out.push(...rows);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Watchlists (platform.saved_view, surface social.outliers) + hits
+// ---------------------------------------------------------------------------
+
+export interface WatchlistRow {
+  id: string;
+  name: string;
+  filter: OutlierFilter;
+  version: number;
+}
+
+/** The brand's watchlists. Writes go through the saved-view doors (`platform` is not client-writable). */
+export async function readWatchlists(args: { brandId: string }): Promise<WatchlistRow[]> {
+  const { data: lanes, error: laneError } = await readListRpc<LaneRow>(
+    "saved_view_list_lanes",
+    { p_surface_key: WATCHLIST_SURFACE, p_org_id: null },
+    { order: ["lane", "id"] },
+  );
+  if (laneError) fail("saved_view_list_lanes", laneError.message);
+  const ids = [...new Set((lanes ?? []).map((l) => l.id))];
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("saved_view")
+    .select("id, name, definition, version, subject_id")
+    .in("id", ids)
+    .eq("surface_key", WATCHLIST_SURFACE)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  if (error) fail("platform.saved_view watchlists", error.message);
+  const out: WatchlistRow[] = [];
+  for (const row of data ?? []) {
+    const def = parseWatchlistDefinition(row.definition);
+    if ((row.subject_id ?? def.brandId) !== args.brandId) continue;
+    out.push({ id: row.id, name: row.name, filter: def.filter, version: row.version });
+  }
+  return out;
+}
+
+export async function createWatchlist(args: {
+  organizationId: string;
+  brandId: string;
+  name: string;
+  filter: OutlierFilter;
+}): Promise<string> {
+  const name = args.name.trim();
+  if (!name) throw new Error("Name the watchlist");
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: WATCHLIST_SURFACE,
+    p_organization_id: args.organizationId,
+    p_subject_id: args.brandId,
+    p_name: name,
+    p_definition: serializeWatchlistDefinition(args.brandId, args.filter) as unknown as Json,
+    p_visibility: "internal",
+    p_touch: true,
+  });
+  if (error) {
+    if (error.code === "23505") throw new Error(`A watchlist called "${name}" already exists`);
+    fail("saved_view_save", error.message);
+  }
+  const row = data as { id?: string } | null;
+  if (!row?.id) fail("saved_view_save", "the door returned no watchlist");
+  return row.id;
+}
+
+export async function archiveWatchlist(id: string): Promise<void> {
+  const { error } = await supabase.rpc("saved_view_archive", {
+    p_surface_key: WATCHLIST_SURFACE,
+    p_id: id,
+  });
+  if (error) fail("saved_view_archive", error.message);
+}
+
+export async function readWatchlistHits(savedViewIds: readonly string[]): Promise<WatchlistHitRow[]> {
+  if (savedViewIds.length === 0) return [];
+  return readAllRows<WatchlistHitRow>(
+    ({ from, to }) =>
+      supabase
+        .schema("social")
+        .from("watchlist_hit")
+        .select("*", { count: "exact" })
+        .in("saved_view_id", [...savedViewIds])
+        .order("post_id", { ascending: true })
+        .range(from, to)
+        .returns<WatchlistHitRow[]>(),
+    { label: "social.watchlist_hit list" },
+  );
+}
+
+/** Mark posts seen / dismissed / saved: upsert one hit row per (watchlist, post). */
+export async function setHitStates(args: {
+  organizationId: string;
+  savedViewId: string;
+  items: ReadonlyArray<{ postId: string; score: number | null }>;
+  state: HitState;
+}): Promise<void> {
+  if (args.items.length === 0) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .schema("social")
+    .from("watchlist_hit")
+    .upsert(
+      args.items.map((i) => ({
+        organization_id: args.organizationId,
+        saved_view_id: args.savedViewId,
+        post_id: i.postId,
+        score: i.score,
+        state: args.state,
+        state_changed_at: now,
+      })),
+      { onConflict: "saved_view_id,post_id" },
+    );
+  if (error) fail("social.watchlist_hit write", error.message);
+}
+
+// ---------------------------------------------------------------------------
+// KPI goals
+// ---------------------------------------------------------------------------
+
+export async function readKpiGoals(args: {
+  organizationId: string;
+  brandId: string;
+}): Promise<KpiGoalRow[]> {
+  return readAllRows<KpiGoalRow>(
+    ({ from, to }) =>
+      supabase
+        .schema("social")
+        .from("kpi_goal")
+        .select("*", { count: "exact" })
+        .eq("organization_id", args.organizationId)
+        .eq("brand_id", args.brandId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<KpiGoalRow[]>(),
+    { label: "social.kpi_goal list" },
+  );
+}
+
+export interface KpiGoalInput {
+  organizationId: string;
+  brandId: string;
+  metric: string;
+  metricLabel: string | null;
+  targetValue: number;
+  baselineValue: number | null;
+  period: string;
+  startsOn: string;
+  endsOn: string | null;
+  platform: string | null;
+  trackedAccountId: string | null;
+}
+
+export async function createKpiGoal(input: KpiGoalInput): Promise<void> {
+  const { error } = await supabase
+    .schema("social")
+    .from("kpi_goal")
+    .insert({
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      metric: input.metric,
+      metric_label: input.metricLabel,
+      target_value: input.targetValue,
+      baseline_value: input.baselineValue,
+      period: input.period,
+      starts_on: input.startsOn,
+      ends_on: input.endsOn,
+      platform: input.platform,
+      tracked_account_id: input.trackedAccountId,
+    });
+  if (error) fail("social.kpi_goal create", error.message);
+}
+
+export async function updateKpiGoalStatus(id: string, status: "active" | "paused"): Promise<void> {
+  const { error } = await supabase.schema("social").from("kpi_goal").update({ status }).eq("id", id);
+  if (error) fail("social.kpi_goal update", error.message);
+}
+
+/** Soft delete: the goal leaves the list, the row stays. */
+export async function archiveKpiGoal(id: string): Promise<void> {
+  const { error } = await supabase
+    .schema("social")
+    .from("kpi_goal")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) fail("social.kpi_goal archive", error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Agency roll-up (/marketing/reports) — lists never filter by active org
+// ---------------------------------------------------------------------------
+
+export interface AgencyAccountRow {
+  trackedAccountId: string;
+  brandId: string | null;
+  brandName: string;
+  organizationId: string;
+  profileId: string;
+  platform: string;
+  handle: string;
+  displayName: string;
+  role: TrackedRole;
+  followers: number | null;
+  lastRefreshedAt: string | null;
+}
+
+export interface AgencyOutlierRow {
+  postId: string;
+  brandName: string;
+  platform: string;
+  handle: string;
+  url: string;
+  hookLine: string;
+  views: number | null;
+  score: number;
+  postedAt: string | null;
+}
+
+export interface AgencySocial {
+  accounts: AgencyAccountRow[];
+  outliers: AgencyOutlierRow[];
+}
+
+/** Every tracked account the person can read, across brands and organizations. */
+export async function readAgencySocial(args: { outlierWindowDays: number; minScore: number }): Promise<AgencySocial> {
+  const tracked = await readAllRows<TrackedAccountRow>(
+    ({ from, to }) =>
+      supabase
+        .schema("social")
+        .from("tracked_account")
+        .select("*", { count: "exact" })
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<TrackedAccountRow[]>(),
+    { label: "social.tracked_account agency list" },
+  );
+  if (tracked.length === 0) return { accounts: [], outliers: [] };
+  const profiles = await readProfiles([...new Set(tracked.map((t) => t.profile_id))]);
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const brandIds = [...new Set(tracked.map((t) => t.brand_id).filter((b): b is string => Boolean(b)))];
+  const brandName = new Map<string, string>();
+  for (const part of chunk(brandIds, 100)) {
+    const { data, error } = await supabase.schema("web").from("brand").select("id, name").in("id", part);
+    if (error) fail("web.brand names", error.message);
+    for (const b of data ?? []) brandName.set(b.id, b.name);
+  }
+  const labelOf = (t: TrackedAccountRow) =>
+    t.brand_id ? (brandName.get(t.brand_id) ?? "Brand") : "Organization-wide";
+  const accounts: AgencyAccountRow[] = [];
+  for (const t of tracked) {
+    const p = profileById.get(t.profile_id);
+    if (!p) continue;
+    accounts.push({
+      trackedAccountId: t.id,
+      brandId: t.brand_id,
+      brandName: labelOf(t),
+      organizationId: t.organization_id,
+      profileId: p.id,
+      platform: p.platform,
+      handle: p.handle,
+      displayName: t.label?.trim() || p.display_name?.trim() || p.handle,
+      role: isTrackedRole(t.role) ? t.role : "inspiration",
+      followers: num(p.follower_count),
+      lastRefreshedAt: p.last_refreshed_at,
+    });
+  }
+  const sinceIso = new Date(Date.now() - args.outlierWindowDays * 86_400_000).toISOString();
+  const postRows = await readPostsWithStats([...new Set(accounts.map((a) => a.profileId))], sinceIso);
+  const accountByProfile = new Map(accounts.map((a) => [a.profileId, a]));
+  const outliers: AgencyOutlierRow[] = [];
+  for (const row of postRows) {
+    const stat = firstStat(row.stat);
+    const score = num(stat?.outlier_score);
+    const owner = row.profile_id ? accountByProfile.get(row.profile_id) : undefined;
+    if (score === null || score < args.minScore || !owner) continue;
+    outliers.push({
+      postId: row.id,
+      brandName: owner.brandName,
+      platform: row.platform,
+      handle: owner.handle,
+      url: row.url,
+      hookLine: hookLineOf(row),
+      views: num(stat?.views),
+      score,
+      postedAt: row.posted_at,
+    });
+  }
+  outliers.sort((a, b) => b.score - a.score);
+  return { accounts, outliers };
+}
+
+// ---------------------------------------------------------------------------
+// Swipe file
+// ---------------------------------------------------------------------------
+
+/**
+ * Every collection the person can see — live and archived (an archive is
+ * `deleted_at`; the screen reveals archived ones on request, never deletes).
+ * Not narrowed to the active organization: RLS decides, a list is never an org filter.
+ */
+export async function readAllSwipeCollections(): Promise<SwipeCollectionRow[]> {
+  return readAllRows<SwipeCollectionRow>(
+    ({ from, to }) =>
+      supabase
+        .schema("social")
+        .from("swipe_collection")
+        .select("*", { count: "exact" })
+        .order("sort", { ascending: true })
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<SwipeCollectionRow[]>(),
+    { label: "social.swipe_collection list" },
+  );
+}
+
+export async function renameCollection(id: string, name: string): Promise<void> {
+  const clean = name.trim();
+  if (!clean) fail("social.swipe_collection rename", "A collection needs a name.");
+  const { data, error } = await supabase
+    .schema("social")
+    .from("swipe_collection")
+    .update({ name: clean })
+    .eq("id", id)
+    .select("id");
+  if (error) fail("social.swipe_collection rename", error.message);
+  if (!data?.length) fail("social.swipe_collection rename", "You cannot rename this collection.");
+}
+
+/** Archive (soft delete) or restore a collection. Its saved items stay put. */
+export async function setCollectionArchived(id: string, archived: boolean): Promise<void> {
+  const { data, error } = await supabase
+    .schema("social")
+    .from("swipe_collection")
+    .update({ deleted_at: archived ? new Date().toISOString() : null })
+    .eq("id", id)
+    .select("id");
+  if (error) fail("social.swipe_collection archive", error.message);
+  if (!data?.length) fail("social.swipe_collection archive", "You cannot change this collection.");
+}
+
+/** Membership edges of the given collections (swipe items before they meet their posts/ads). */
+export async function readSwipeEdges(collectionIds: readonly string[]) {
+  if (collectionIds.length === 0) return [];
+  const out = [];
+  for (const part of chunk(collectionIds, 50)) {
+    const rows = await readAllRows<RawEdge>(
+      ({ from, to }) =>
+        supabase
+          .schema("platform")
+          .from("associations")
+          .select("id, source_id, target_type, target_id, metadata, created_at", { count: "exact" })
+          .eq("source_type", "social_swipe_collection")
+          .in("source_id", part)
+          .in("target_type", ["social_post", "social_ad"])
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<RawEdge[]>(),
+      { label: "platform.associations (swipe membership)" },
+    );
+    for (const r of rows) {
+      const edge = toSwipeEdge(r);
+      if (edge) out.push(edge);
+    }
+  }
+  return out;
+}
+
+async function readPostCards(ids: readonly string[]): Promise<Map<string, PostCardModel>> {
+  const rows: PostWithStat[] = [];
+  for (const part of chunk(ids, 100)) {
+    const { data, error } = await supabase
+      .schema("social")
+      .from("post")
+      .select("*, stat:post_stat(*)")
+      .in("id", part);
+    if (error) fail("social.post read", error.message);
+    rows.push(...((data ?? []) as unknown as PostWithStat[]));
+  }
+  const profiles = await readProfiles([...new Set(rows.map((r) => r.profile_id).filter((v): v is string => !!v))]);
+  const handles = new Map(profiles.map((p) => [p.id, p.handle]));
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      toPostCardModel({ post: r, stat: firstStat(r.stat), handle: r.profile_id ? (handles.get(r.profile_id) ?? null) : null }),
+    ]),
+  );
+}
+
+export async function readAdRows(ids: readonly string[]): Promise<SocialAdRow[]> {
+  const out: SocialAdRow[] = [];
+  for (const part of chunk(ids, 100)) {
+    const { data, error } = await supabase.schema("social").from("ad").select("*").in("id", part);
+    if (error) fail("social.ad read", error.message);
+    out.push(...((data ?? []) as SocialAdRow[]));
+  }
+  return out;
+}
+
+/** Everything saved in the given collections, as merged items. */
+export async function readSwipeItems(collectionIds: readonly string[]): Promise<{ items: SwipeItem[]; missing: number }> {
+  const edges = await readSwipeEdges(collectionIds);
+  const postIds = [...new Set(edges.filter((e) => e.itemType === "social_post").map((e) => e.itemId))];
+  const adIds = [...new Set(edges.filter((e) => e.itemType === "social_ad").map((e) => e.itemId))];
+  const [posts, adRows] = await Promise.all([readPostCards(postIds), readAdRows(adIds)]);
+  const ads = new Map<string, AdCardModel>(adRows.map((r) => [r.id, toAdCardModel(r)]));
+  return buildSwipeItems({ edges, posts, ads });
+}
+
+// ---------------------------------------------------------------------------
+// Ads + tracked advertisers
+// ---------------------------------------------------------------------------
+
+/** Ads of one advertiser the shared cache holds (by library id when known, else by name). */
+export async function readAdvertiserAds(args: {
+  library: AdLibrary;
+  advertiser: string;
+  advertiserPlatformId: string | null;
+}): Promise<AdCardModel[]> {
+  const rows = await readAllRows<SocialAdRow>(
+    ({ from, to }) => {
+      let q = supabase
+        .schema("social")
+        .from("ad")
+        .select("*", { count: "exact" })
+        .eq("library", args.library)
+        .is("deleted_at", null);
+      q = args.advertiserPlatformId
+        ? q.eq("advertiser_platform_id", args.advertiserPlatformId)
+        : q.ilike("advertiser_name", args.advertiser.replace(/[%_]/g, (c) => `\\${c}`));
+      return q
+        .order("started_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<SocialAdRow[]>();
+    },
+    { label: "social.ad advertiser list" },
+  );
+  return rows.map(toAdCardModel);
+}
+
+export const ADVERTISER_SURFACE = "social.advertisers";
+
+interface SavedViewLite {
+  id: string;
+  name: string;
+  version: number;
+  definition: unknown;
+}
+
+function toTracked(row: SavedViewLite): TrackedAdvertiser | null {
+  const definition = parseAdvertiserDefinition(row.definition);
+  return definition ? { viewId: row.id, name: row.name, version: row.version, definition } : null;
+}
+
+/** The advertisers this person tracks (`platform.saved_view`, surface `social.advertisers`). */
+export async function readTrackedAdvertisers(): Promise<TrackedAdvertiser[]> {
+  const rows = await readAllRows<SavedViewLite>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("saved_view")
+        .select("id, name, version, definition", { count: "exact" })
+        .eq("surface_key", ADVERTISER_SURFACE)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<SavedViewLite[]>(),
+    { label: "platform.saved_view (tracked advertisers)" },
+  );
+  return rows.map(toTracked).filter((t): t is TrackedAdvertiser => t !== null);
+}
+
+export async function saveTrackedAdvertiser(args: {
+  organizationId: string;
+  name: string;
+  definition: AdvertiserDefinition;
+  /** Present = update that view (a new look); absent = create. */
+  viewId?: string;
+}): Promise<TrackedAdvertiser> {
+  const { data, error } = await supabase.rpc("saved_view_save", {
+    p_surface_key: ADVERTISER_SURFACE,
+    p_id: args.viewId,
+    p_organization_id: args.viewId ? undefined : args.organizationId,
+    p_name: args.name,
+    p_definition: args.definition as never,
+    p_visibility: args.viewId ? undefined : "personal",
+  });
+  if (error) {
+    if (error.code === "23505") fail("Track advertiser", `You already track "${args.name}".`);
+    fail("Track advertiser", error.message);
+  }
+  const tracked = toTracked(data as unknown as SavedViewLite);
+  if (!tracked) fail("Track advertiser", "The saved advertiser could not be read back.");
+  return tracked;
+}
+
+export async function archiveTrackedAdvertiser(viewId: string): Promise<void> {
+  const { data, error } = await supabase.rpc("saved_view_archive", {
+    p_surface_key: ADVERTISER_SURFACE,
+    p_id: viewId,
+  });
+  if (error) fail("Stop tracking", error.message);
+  if (data === null) fail("Stop tracking", "That advertiser is no longer tracked.");
 }
