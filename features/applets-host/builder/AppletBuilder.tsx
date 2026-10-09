@@ -39,6 +39,8 @@ import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableName
 import { APPLET_AUDIENCE_LABELS, appletAudience, appletState, appletVersionLabel, type AppletAudience } from "@/features/applets/lib/applet-state";
 import { continueAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/continue-agent-json";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { rereadAndFollow } from "@ai-matrx/chat/agents/runtime-reconnect/reread-and-follow";
+import { completeActionRequestAsSelf, fetchPendingActionRequests } from "@ai-matrx/chat/action-requests/self-service";
 import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
 import {
   BuildRefused,
@@ -152,6 +154,13 @@ export function AppletBuilder({
   // ONE clock per request: a new step changes the words, never the start time (audit9 B3 — it reset at each step).
   const [step, setStep] = useState<{ label: string; since: number } | null>(null);
   const stepTo = (label: string) => setStep((prev) => ({ label, since: prev?.since ?? Date.now() }));
+  // The run is parked on HER: the builder asked a question in the build conversation and waits for the
+  // answer there (the ask's own card) or typed in the builder box — never a failure (W4, 2026-10-09).
+  const waitingOn = useRef<string | null>(null);
+  const awaitingPerson = (info: { conversationId: string }) => {
+    waitingOn.current = info.conversationId;
+    stepTo("Waiting for your answer");
+  };
   // The live window of the run in flight (a live one or a rejoined one). When its answer is saved the result
   // is on the card and in the preview, so the window closes and its kept instance is let go (audit9 B13).
   const runWindow = useRef<{ handle: LiveRunWindowHandle; conversationId: string | null } | null>(null);
@@ -399,6 +408,7 @@ export function AppletBuilder({
             catalogue: attachedJobKeys(refs).length ? JSON.stringify(catalogue) : null,
           },
           resources: referenceResources(refs),
+          onAwaitingPerson: awaitingPerson,
         });
         if (!result.success) throw new Error(result.error ?? "The builder finished without an answer.");
         answer = check(result.data);
@@ -423,6 +433,7 @@ export function AppletBuilder({
           onConversationCreated: onConversation,
           // Her files, notes and pages: THE attach path, never pasted into her request.
           resources: referenceResources(refs),
+          onAwaitingPerson: awaitingPerson,
           coerce: check,
         });
       }
@@ -440,6 +451,7 @@ export function AppletBuilder({
         return;
       }
     } finally {
+      waitingOn.current = null;
       // Still this run's open window (not closed on save, not replaced by a fix round's): stop waiting.
       if (live.handle && runWindow.current?.handle === live.handle) live.handle.update({ pending: false });
       setStep(null);
@@ -453,10 +465,43 @@ export function AppletBuilder({
     }
   };
 
+  /**
+   * What she typed while the builder waits on its question answers it — the same door as the question's
+   * card (her own session, the ask's own organization). A choice she names by its label or value picks it;
+   * other words go as her own answer. A kind a sentence cannot answer stays on its card, and her words wait
+   * as the next round (as any reply sent mid-run does).
+   */
+  const answerTyped = async (conversationId: string, text: string) => {
+    try {
+      const ask = (await fetchPendingActionRequests()).find((row) => row.conversation_id === conversationId);
+      if (!ask) return void queueNext(text);
+      // A kind a sentence cannot answer (a sign-in, a form) stays on its card; her words go next.
+      if (ask.render.form !== "choose_one") return void queueNext(text);
+      const said = text.trim().toLowerCase();
+      const choice = ask.render.choices.find((c) => c.label.trim().toLowerCase() === said || c.value.trim().toLowerCase() === said);
+      const reply = await completeActionRequestAsSelf(ask.request_id, ask.organization_id, {
+        result: choice ? { value: choice.value } : { value: text.trim(), note: text.trim() },
+      });
+      if (reply.status >= 400) {
+        console.error("[applet-build] the typed answer was refused", reply.status, reply.body?.message);
+        return void queueNext(text);
+      }
+      setSentence("");
+      await rereadAndFollow(dispatch, conversationId, "applet builder: typed answer");
+    } catch (err) {
+      console.error("[applet-build] could not answer the builder's question", err);
+      queueNext(text);
+    }
+  };
+
   /** Send what she typed: now when nothing runs, else as the next round (it never waits on a disabled button). */
   const send = (text: string) => {
     if (!text) return;
     if (!busy) return void run(text, null);
+    if (waitingOn.current) return void answerTyped(waitingOn.current, text);
+    queueNext(text);
+  };
+  const queueNext = (text: string) => {
     queuedRef.current = text;
     setQueued(text);
     setSentence("");
@@ -485,6 +530,8 @@ export function AppletBuilder({
   const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining || buildingStep(session.record?.requests) !== null;
   // Until the page is interactive the button says so, instead of sitting silently disabled.
   const hydrated = useHydrated();
+  // Her last request that is not an automatic fix round — what "Try again" sends again.
+  const lastAsked = session.record?.requests.filter((r) => !r.fix).at(-1)?.text ?? null;
   const boundNames = useSourceTableNames(saved?.bound ?? []);
   // The build's one conversation, read into this tab once so the left panel shows it after a refresh.
   const conversationId = buildConversationId(session.record?.requests ?? []);
@@ -560,7 +607,17 @@ export function AppletBuilder({
             </Button>
           ) : null}
         </div>
-        {phase.kind === "failed" ? <p className="text-sm text-destructive">{phase.why}</p> : null}
+        {phase.kind === "failed" ? (
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-destructive">{phase.why}</p>
+            {/* A run that ended without an answer is never a dead end: the same request, once more. */}
+            {lastAsked && !lastError ? (
+              <Button variant="outline" disabled={busy} onClick={() => void run(lastAsked, null)} data-applet-try-again="">
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         {queued ? (
           <p className="truncate text-xs text-muted-foreground" title={queued} data-applet-queued="">
             Next: {queued}
