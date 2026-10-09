@@ -21,10 +21,12 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 | # | Test | Status | Result |
 |---|---|---|---|
 | 1 | Local A/B: main as-is vs the icons fix dropped into node_modules (`lab:run`, chunks + output + RSS) | **done 2026-10-08** | efa490a55: compile 12.3 → 7.2 min, peak RSS 46.0 → 26.3 GB, wall 14.7 → 9.6 min, server chunks 10,195 → 8,425. Icons 0.3.37 published + adopted (lock). |
-| 2 | Icons fix published → adopted → next Vercel build: chunks ≈ 7.9k, output ≈ 1.35 GB | waiting on publish | |
+| 2 | Icons fix published → adopted → next Vercel build: chunks ≈ 7.9k, output ≈ 1.35 GB | **done 2026-10-08** | icons 0.3.37 live from v0.4.3052: main compile 2.8–5.0 min (was 9–14), chunks 7,245, output 1.39 GB (was 2.6), node_modules 3.5 GB (was 11.7), cache upload 0.88 GB (was 1.55). manage 1.6–2.7 min, demos 3.5 min. |
 | 3 | Attribute the Sep 25 step: A/B the package bumps alone on the pre-step tree | todo | |
 | 4 | Cache bloat: prune orphans at install → Vercel node_modules ≈ 4 GB, cache upload < 1 min | shipped, verify on Vercel | `.npmrc` `modules-cache-max-age=0`; local node_modules 32 → 8.7 GB. |
-| 3b | print inlined MathJax (2.4 MB) into BOTH /document and /markdown-html (`splitting:false` flattens lazy imports) → own `/mathjax` entry | fixed in source (aidream f133b5a2b4), publish pending; local C run (icons+print) running | /document 3.4 MB → 766 KB, /markdown-html 3.3 MB → 694 KB |
+| 3b | print inlined MathJax (2.4 MB) into BOTH /document and /markdown-html (`splitting:false` flattens lazy imports) → own `/mathjax` entry | **done**: print 0.12.14 published + adopted; local C run compile 7.2 → 4.3 min (single run, RSS flat 26.4 GB) | /document 3.4 MB → 766 KB, /markdown-html 3.3 MB → 694 KB |
+| 3c | Probe: stub the 3 context-menu lazy edges added Sep 26–Oct 5 (upper bound of their cost) | **done — leave them** | RSS −2.2 GB at most, compile within noise (7.3 min) |
+| 6 | Static page generation 6 s (Sep 22) → 37–41 s now, same page count ±9% | todo | find the slow prerenders |
 | 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
