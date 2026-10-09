@@ -23,7 +23,7 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,14 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { NewTabLink } from "@/components/official/entity-ref/NewTabLink";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -48,10 +45,11 @@ import { conversationHref } from "@/features/hindsight/subject-doors";
 import { runHref } from "@/features/workflow-runtime/run-doors";
 import {
   RUN_STATUSES,
-  fetchMandateRuns,
+  fetchRuns,
   type MandateRun,
   type MandateRunPage,
   type RunHistoryView,
+  type RunSort,
   type RunStatus,
 } from "./service";
 import {
@@ -75,6 +73,8 @@ export const RUN_URL_KEYS = {
   status: "runs_status",
   org: "runs_org",
   person: "runs_person",
+  sort: "runs_sort",
+  dir: "runs_dir",
 } as const;
 
 const PAGE_SIZE = 25;
@@ -95,11 +95,22 @@ export interface MandateRunHistoryProps {
   className?: string;
 }
 
+/** The columns the server orders by — the table's column id and the read's sort key. */
+const SORT_COLUMNS: Record<string, RunSort> = {
+  when: "started_at",
+  status: "status",
+  level: "level",
+  cost: "cost",
+  duration: "duration",
+};
+
 interface UrlState {
   page: number;
   status: RunStatus | null;
   org: string | null;
   person: string | null;
+  sort: string | null;
+  descending: boolean;
 }
 
 function isRunStatus(value: string | null): value is RunStatus {
@@ -114,6 +125,8 @@ function readUrlState(params: URLSearchParams): UrlState {
     status: isRunStatus(status) ? status : null,
     org: params.get(RUN_URL_KEYS.org),
     person: params.get(RUN_URL_KEYS.person),
+    sort: Object.keys(SORT_COLUMNS).includes(params.get(RUN_URL_KEYS.sort) ?? "") ? params.get(RUN_URL_KEYS.sort) : null,
+    descending: params.get(RUN_URL_KEYS.dir) !== "asc",
   };
 }
 
@@ -130,7 +143,7 @@ export function MandateRunHistory({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const url = compact
-    ? { page: 1, status: null, org: null, person: null }
+    ? { page: 1, status: null, org: null, person: null, sort: null, descending: true }
     : readUrlState(new URLSearchParams(searchParams.toString()));
   const limit = compact ? COMPACT_SIZE : PAGE_SIZE;
   const offset = (url.page - 1) * limit;
@@ -138,7 +151,7 @@ export function MandateRunHistory({
   const orgFilter = view === "org" ? organizationId : view === "platform" ? url.org : organizationId;
   const personFilter = view === "mine" ? null : url.person;
 
-  const queryKey = [mandateKey, view, orgFilter, personFilter, url.status, limit, offset].join("|");
+  const queryKey = [mandateKey, view, orgFilter, personFilter, url.status, url.sort, url.descending, limit, offset].join("|");
   const [state, setState] = useState<{
     key: string;
     page: MandateRunPage | null;
@@ -148,12 +161,14 @@ export function MandateRunHistory({
 
   useEffect(() => {
     let cancelled = false;
-    fetchMandateRuns({
-      mandateKey,
+    fetchRuns({
+      scope: { mandateKey },
       view,
       organizationId: orgFilter,
       userId: personFilter,
       status: url.status,
+      sort: url.sort ? SORT_COLUMNS[url.sort] : "started_at",
+      descending: url.descending,
       limit,
       offset,
     })
@@ -173,7 +188,7 @@ export function MandateRunHistory({
     return () => {
       cancelled = true;
     };
-  }, [mandateKey, view, orgFilter, personFilter, url.status, limit, offset, queryKey, reload]);
+  }, [mandateKey, view, orgFilter, personFilter, url.status, url.sort, url.descending, limit, offset, queryKey, reload]);
 
   const loading = state.key !== queryKey;
   const page = loading ? null : state.page;
@@ -193,6 +208,24 @@ export function MandateRunHistory({
   const filter = (patch: Partial<Record<"status" | "org" | "person", string | null>>) =>
     setUrl({ ...patch, page: null });
 
+  // The table reports page and sort moves; the URL owns them (filters live in the toolbar row).
+  const tableState: MatrxDataTableQueryState = {
+    page: url.page,
+    pageSize: limit,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: url.sort ? { id: url.sort, direction: url.descending ? "desc" : "asc" } : null,
+  };
+  const onTableState = (next: MatrxDataTableQueryState) => {
+    const nextSort = next.sort?.id ?? null;
+    if (nextSort !== url.sort || (nextSort && (next.sort?.direction === "desc") !== url.descending)) {
+      setUrl({ sort: nextSort, dir: nextSort && next.sort?.direction === "asc" ? "asc" : null, page: null });
+    } else if (next.page !== url.page) {
+      setUrl({ page: String(next.page) });
+    }
+  };
+
   const total = page?.total ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
   const showOrg = view === "platform";
@@ -200,53 +233,58 @@ export function MandateRunHistory({
   // member's own list is ignored by the read, so it must not say "filtered".
   const filtering = Boolean(url.status || (view === "platform" && url.org) || (view !== "mine" && url.person));
 
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
+  const columns = runColumns({
+    view,
+    audience,
+    showOrg,
+    costUnit,
+    costRate,
+    onPerson: (id) => (view !== "mine" && !compact ? () => filter({ person: id }) : null),
+    onOrg: (id) => (showOrg && !compact ? () => filter({ org: id }) : null),
+  });
+
+  const filters = compact ? null : (
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      {view === "platform" ? (
+        <FacetSelect
+          label="Organization"
+          allLabel="All organizations"
+          value={url.org}
+          options={page?.facets?.organizations ?? []}
+          onChange={(value) => filter({ org: value })}
+        />
+      ) : null}
+      {view !== "mine" ? (
+        <FacetSelect
+          label="Person"
+          allLabel="Everyone"
+          value={url.person}
+          options={page?.facets?.people ?? []}
+          onChange={(value) => filter({ person: value })}
+        />
+      ) : null}
+      <Select
+        value={url.status ?? ALL}
+        onValueChange={(value) => filter({ status: value === ALL ? null : value })}
+      >
+        <SelectTrigger className="w-[9.5rem]" aria-label="Status">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All statuses</SelectItem>
+          {RUN_STATUSES.map((status) => (
+            <SelectItem key={status} value={status}>
+              {STATUS_WORDS[status]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
     <div className={cn("min-w-0 space-y-2", className)} data-mandate-runs={mandateKey}>
-      {compact ? null : (
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 className="shrink-0 type-title text-foreground">Runs</h3>
-          <span className="shrink-0 type-secondary text-muted-foreground" aria-live="polite">
-            {!error && page ? `${formatCount(total)} ${total === 1 ? "run" : "runs"}` : " "}
-          </span>
-          <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
-            {view === "platform" ? (
-              <FacetSelect
-                label="Organization"
-                allLabel="All organizations"
-                value={url.org}
-                options={page?.facets?.organizations ?? []}
-                onChange={(value) => filter({ org: value })}
-              />
-            ) : null}
-            {view !== "mine" ? (
-              <FacetSelect
-                label="Person"
-                allLabel="Everyone"
-                value={url.person}
-                options={page?.facets?.people ?? []}
-                onChange={(value) => filter({ person: value })}
-              />
-            ) : null}
-            <Select
-              value={url.status ?? ALL}
-              onValueChange={(value) => filter({ status: value === ALL ? null : value })}
-            >
-              <SelectTrigger className="w-[9.5rem]" aria-label="Status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All statuses</SelectItem>
-                {RUN_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {STATUS_WORDS[status]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
       {error ? (
         <div role="alert" className="flex min-w-0 items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 type-body text-destructive">
           <span className="min-w-0 truncate" title={error.message}>
@@ -258,97 +296,51 @@ export function MandateRunHistory({
           <ErrorAlchemyMenu error={error.message} />
         </div>
       ) : (
-        <div className="min-w-0 overflow-x-auto rounded-md border border-border">
-          <Table wrap={false} className="min-w-[30rem] type-secondary sm:min-w-[36rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[6.5rem]">When</TableHead>
-                <TableHead className="hidden sm:table-cell">Ran by</TableHead>
-                {showOrg ? <TableHead className="hidden lg:table-cell">Organization</TableHead> : null}
-                <TableHead className="hidden sm:table-cell">Level</TableHead>
-                <TableHead>Agent or workflow</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Duration</TableHead>
-                <TableHead className="w-8" aria-label="Output warning" />
-                <TableHead className="w-[5.5rem] text-right">Output</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: compact ? 3 : 6 }, (_, index) => (
-                  <TableRow key={`loading-${index}`} aria-hidden>
-                    <TableCell colSpan={10}>
-                      <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : page && page.rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} className="py-6 text-center text-muted-foreground">
-                    {filtering
-                      ? "No runs match these filters."
-                      : view === "mine"
-                        ? "You have not run this job yet."
-                        : "This job has not run yet."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                page?.rows.map((run) => (
-                  <RunRow
-                    key={`${run.runKind}:${run.runId}`}
-                    run={run}
-                    view={view}
-                    audience={audience}
-                    showOrg={showOrg}
-                    onPerson={
-                      view !== "mine" && run.ranById && !compact
-                        ? () => filter({ person: run.ranById })
-                        : null
-                    }
-                    onOrg={
-                      showOrg && run.organizationId && !compact
-                        ? () => filter({ org: run.organizationId })
-                        : null
-                    }
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <MatrxDataTable<MandateRun>
+          tableId="mandates/run-history"
+          data={page?.rows ?? []}
+          columns={columns}
+          getRowId={(run) => `${run.runKind}:${run.runId}`}
+          isLoading={loading}
+          loadingRows={compact ? 3 : 6}
+          viewTabs={false}
+          pageSize={compact ? 0 : PAGE_SIZE}
+          pageSizeOptions={[PAGE_SIZE]}
+          {...(compact
+            ? { toolbar: { search: false } }
+            : {
+                toolbar: {
+                  title: "Runs",
+                  search: false,
+                  ...(page ? { titleCount: { value: total, label: total === 1 ? "run" : "runs" } } : {}),
+                  ...(filters ? { leading: filters } : {}),
+                },
+                query: {
+                  mode: "controlled" as const,
+                  state: tableState,
+                  onStateChange: onTableState,
+                  totalItems: total,
+                  sourceProcessing: { search: "source" as const, sort: "source" as const, columnFilters: "source" as const },
+                },
+              })}
+          emptyState={{
+            title: filtering
+              ? "No runs match these filters."
+              : view === "mine"
+                ? "You have not run this job yet."
+                : "This job has not run yet.",
+          }}
+        />
       )}
 
-      {compact ? (
-        !error && page && total > 0 && seeAllHref ? (
-          <div className="flex min-w-0 items-center justify-between gap-2 type-secondary">
-            <span className="text-muted-foreground">
-              {total > page.rows.length ? `Last ${page.rows.length} of ${formatCount(total)}` : `${total} ${total === 1 ? "run" : "runs"}`}
-            </span>
-            <Link href={seeAllHref} className="shrink-0 font-medium text-primary hover:underline">
-              All runs
-            </Link>
-          </div>
-        ) : null
-      ) : !error && page && total > limit ? (
-        <div className="flex min-w-0 items-center justify-end gap-2 type-secondary text-muted-foreground">
-          <span>
-            {offset + 1}–{Math.min(offset + limit, total)} of {formatCount(total)}
+      {compact && !error && page && total > 0 && seeAllHref ? (
+        <div className="flex min-w-0 items-center justify-between gap-2 type-secondary">
+          <span className="text-muted-foreground">
+            {total > page.rows.length ? `Last ${page.rows.length} of ${formatCount(total)}` : `${total} ${total === 1 ? "run" : "runs"}`}
           </span>
-          <Button
-            icon={<ChevronLeft />}
-            variant="outline"
-            disabled={url.page <= 1}
-            aria-label="Newer runs"
-            onClick={() => setUrl({ page: String(url.page - 1) })}
-          />
-          <Button
-            icon={<ChevronRight />}
-            variant="outline"
-            disabled={url.page >= lastPage}
-            aria-label="Older runs"
-            onClick={() => setUrl({ page: String(url.page + 1) })}
-          />
+          <Link href={seeAllHref} className="shrink-0 font-medium text-primary hover:underline">
+            All runs
+          </Link>
         </div>
       ) : null}
     </div>
@@ -416,58 +408,117 @@ function FilterName({
   );
 }
 
-function RunRow({
-  run,
+function runColumns({
   view,
   audience,
   showOrg,
+  costUnit,
+  costRate,
   onPerson,
   onOrg,
 }: {
-  run: MandateRun;
   view: RunHistoryView;
   audience: "admin" | "product";
   showOrg: boolean;
-  onPerson: (() => void) | null;
-  onOrg: (() => void) | null;
-}) {
-  const { unit: costUnit, rate: costRate } = useCostDisplay();
-  const ranBy = ranByWords(run, view);
-  const warning = outputWarningTitle(run);
-  const outputHref =
-    run.runKind === "workflow"
-      ? runHref(run.runId)
-      : run.conversationId && run.hasTranscript
-        ? conversationHref(run.conversationId, audience)
-        : null;
-  const outputLabel =
-    run.runKind === "workflow" ? "workflow run" : run.runKind === "agent_run" ? "agent run" : "conversation";
-  return (
-    <TableRow data-run-id={run.runId}>
-      <TableCell title={absoluteWhen(run.startedAt)} className="text-muted-foreground">
-        {relativeWhen(run.startedAt)}
-      </TableCell>
-      <TableCell className="hidden sm:table-cell">
-        <FilterName
-          text={ranBy}
-          onClick={onPerson}
-          title={onPerson ? `${ranBy} — show only this person's runs` : ranBy}
-        />
-      </TableCell>
-      {showOrg ? (
-        <TableCell className="hidden lg:table-cell">
+  costUnit: ReturnType<typeof useCostDisplay>["unit"];
+  costRate: ReturnType<typeof useCostDisplay>["rate"];
+  onPerson: (id: string | null) => (() => void) | null;
+  onOrg: (id: string | null) => (() => void) | null;
+}): MatrxColumnDef<MandateRun>[] {
+  const outputOf = (run: MandateRun) => {
+    const href =
+      run.runKind === "workflow"
+        ? runHref(run.runId)
+        : run.conversationId && run.hasTranscript
+          ? conversationHref(run.conversationId, audience)
+          : null;
+    const label =
+      run.runKind === "workflow" ? "workflow run" : run.runKind === "agent_run" ? "agent run" : "conversation";
+    return { href, label };
+  };
+  return [
+    {
+      id: "when",
+      header: "When",
+      accessorFn: (run) => run.startedAt,
+      filter: false,
+      width: 110,
+      defaultSortDirection: "desc",
+      cell: (run) => (
+        <span title={absoluteWhen(run.startedAt)} className="text-muted-foreground">
+          {relativeWhen(run.startedAt)}
+        </span>
+      ),
+    },
+    {
+      id: "ran-by",
+      header: "Ran by",
+      accessorFn: (run) => ranByWords(run, view),
+      filter: false,
+      sortable: false,
+      width: 160,
+      mobileHidden: true,
+      cell: (run) => {
+        const ranBy = ranByWords(run, view);
+        const onClick = onPerson(run.ranById);
+        return (
           <FilterName
-            text={run.organizationName ?? "—"}
-            onClick={onOrg}
-            title={onOrg ? `${run.organizationName ?? ""} — show only this organization's runs` : run.organizationName ?? ""}
+            text={ranBy}
+            onClick={run.ranById ? onClick : null}
+            title={onClick && run.ranById ? `${ranBy} — show only this person's runs` : ranBy}
           />
-        </TableCell>
-      ) : null}
-      <TableCell className="hidden sm:table-cell" title={rungTitle(run.rung)}>
-        <span className={cn(run.rung ? "text-foreground" : "text-muted-foreground")}>{rungWords(run.rung)}</span>
-      </TableCell>
-      <TableCell className="max-w-[11rem] sm:max-w-[16rem]">
-        {run.holderId ? (
+        );
+      },
+    },
+    ...(showOrg
+      ? [
+          {
+            id: "organization",
+            header: "Organization",
+            accessorFn: (run) => run.organizationName ?? "",
+            filter: false,
+            sortable: false,
+            width: 160,
+            mobileHidden: true,
+            cell: (run) => {
+              const onClick = onOrg(run.organizationId);
+              return (
+                <FilterName
+                  text={run.organizationName ?? "—"}
+                  onClick={run.organizationId ? onClick : null}
+                  title={
+                    onClick && run.organizationId
+                      ? `${run.organizationName ?? ""} — show only this organization's runs`
+                      : (run.organizationName ?? "")
+                  }
+                />
+              );
+            },
+          } satisfies MatrxColumnDef<MandateRun>,
+        ]
+      : []),
+    {
+      id: "level",
+      header: "Level",
+      accessorFn: (run) => rungWords(run.rung),
+      filter: false,
+      width: 110,
+      mobileHidden: true,
+      cell: (run) => (
+        <span title={rungTitle(run.rung)} className={cn(run.rung ? "text-foreground" : "text-muted-foreground")}>
+          {rungWords(run.rung)}
+        </span>
+      ),
+    },
+    {
+      id: "holder",
+      header: "Agent or workflow",
+      accessorFn: (run) => run.holderName ?? "",
+      filter: false,
+      sortable: false,
+      width: 220,
+      cell: (run) =>
+        run.holderId ? (
           <EntityRef
             token={run.holderType}
             id={run.holderId}
@@ -478,36 +529,82 @@ function RunRow({
           <span className="text-muted-foreground" title="No agent or workflow was recorded for this run.">
             Not recorded
           </span>
-        )}
-      </TableCell>
-      <TableCell title={run.error ?? run.rawStatus ?? undefined}>
-        <span className="inline-flex items-center gap-1.5">
+        ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (run) => STATUS_WORDS[run.status],
+      filter: false,
+      width: 130,
+      cell: (run) => (
+        <span className="inline-flex items-center gap-1.5" title={run.error ?? run.rawStatus ?? undefined}>
           <span className={cn("h-2 w-2 shrink-0 rounded-full", STATUS_DOT[run.status])} aria-hidden />
           {STATUS_WORDS[run.status]}
           {run.error ? <ErrorAlchemyMenu error={run.error} size="xs" /> : null}
         </span>
-      </TableCell>
-      <TableCell className="text-right tabular-nums">{costWords(run.cost, costRate, costUnit)}</TableCell>
-      <TableCell className="hidden text-right tabular-nums md:table-cell">{durationWords(run.durationMs)}</TableCell>
-      <TableCell className="px-1">
-        {warning ? (
+      ),
+    },
+    {
+      id: "cost",
+      header: "Cost",
+      accessorFn: (run) => run.cost,
+      copyValue: (run) => costWords(run.cost, costRate, costUnit),
+      filter: false,
+      width: 90,
+      align: "right",
+      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costRate, costUnit)}</span>,
+    },
+    {
+      id: "duration",
+      header: "Duration",
+      accessorFn: (run) => run.durationMs,
+      copyValue: (run) => durationWords(run.durationMs),
+      filter: false,
+      width: 100,
+      align: "right",
+      mobileHidden: true,
+      cell: (run) => <span className="tabular-nums">{durationWords(run.durationMs)}</span>,
+    },
+    {
+      id: "output-warning",
+      header: "Output check",
+      accessorFn: (run) => outputWarningTitle(run) ?? "",
+      filter: false,
+      sortable: false,
+      width: 60,
+      align: "center",
+      cell: (run) => {
+        const warning = outputWarningTitle(run);
+        return warning ? (
           <span className="inline-flex" title={warning} role="img" aria-label={warning}>
             <TriangleAlert className="h-3.5 w-3.5 text-warning" aria-hidden />
           </span>
-        ) : null}
-      </TableCell>
-      <TableCell className="text-right">
-        {outputHref ? (
+        ) : null;
+      },
+    },
+    {
+      id: "output",
+      header: "Output",
+      accessorFn: (run) => outputOf(run).href ?? "",
+      filter: false,
+      sortable: false,
+      width: 110,
+      align: "right",
+      cell: (run) => {
+        const { href, label } = outputOf(run);
+        return href ? (
           <span className="inline-flex items-center justify-end gap-0.5">
             <Link
-              href={outputHref}
+              href={href}
+              onClick={(event) => event.stopPropagation()}
               className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline"
-              title={`Open this run's ${outputLabel}`}
+              title={`Open this run's ${label}`}
             >
               Open
               <ArrowUpRight className="h-3 w-3" />
             </Link>
-            <NewTabLink href={outputHref} label={`this run's ${outputLabel}`} />
+            <NewTabLink href={href} label={`this run's ${label}`} />
           </span>
         ) : (
           <span
@@ -520,8 +617,8 @@ function RunRow({
           >
             —
           </span>
-        )}
-      </TableCell>
-    </TableRow>
-  );
+        );
+      },
+    },
+  ];
 }
