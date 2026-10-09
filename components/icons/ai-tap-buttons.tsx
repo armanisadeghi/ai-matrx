@@ -1,5 +1,5 @@
 /**
- * Moved to `@ai-matrx/icons/tap-buttons` (P16). This path re-exports the package so existing
+ * Moved to `@ai-matrx/design-system/tap-target/ai-buttons` (P16). This path re-exports the package so existing
  * app imports keep resolving to the ONE implementation.
  */
 export {
@@ -48,7 +48,7 @@ export {
   XTweetTapButton,
   XaiTapButton,
   ZaiTapButton,
-} from "@ai-matrx/icons/tap-buttons";
+} from "@ai-matrx/design-system/tap-target/ai-buttons";
 export type {
   AITapButtonProps,
-} from "@ai-matrx/icons/tap-buttons";
+} from "@ai-matrx/design-system/tap-target/ai-buttons";

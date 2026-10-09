@@ -3,7 +3,7 @@
 /**
  * useQrAutoScan — watches the live camera preview for QR codes while the
  * user keeps shooting (capture Mode 2). Decodes through the ONE platform
- * decoder (`@ai-matrx/kit/qr` — native BarcodeDetector, jsqr fallback) on a
+ * decoder (`@ai-matrx/capture/qr` — native BarcodeDetector, jsqr fallback) on a
  * timer tick, same cadence as `components/qr/QrCodeInput.tsx`.
  *
  * Dedupe rules — a QR code sits in frame for many ticks, so:
@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { decodeQrFromElement } from "@ai-matrx/kit/qr";
+import { decodeQrFromElement } from "@ai-matrx/capture/qr";
 
 const SCAN_INTERVAL_MS = 250;
 const QR_REPEAT_COOLDOWN_MS = 4000;

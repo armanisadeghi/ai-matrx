@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 
-import { decodeQrFromImageData } from "@ai-matrx/kit/qr";
+import { decodeQrFromImageData } from "@ai-matrx/capture/qr";
 
 function qrFrame(text: string): ImageData {
   const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
