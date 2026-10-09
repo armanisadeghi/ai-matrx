@@ -17,7 +17,6 @@ import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPr
 import { AgentEditAccessBadge } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { DataRefPreviewContent } from "@/features/agents/components/previews/DataRefHoverPreview";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
-import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
 import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
@@ -73,7 +72,6 @@ registerChatUi({
   AgentEditAccessBadge,
   DataRefPreviewContent,
   BlockHoverPreview,
-  ConversationHoverPreview,
   NoteEditorCore,
   ToolResultCanvasOpener,
   CloudBrowserHandoffCanvasOpener,
@@ -135,26 +133,6 @@ registerChatUi({
 });
 
 
-import { ReadFailure as Host_ReadFailure } from "@ai-matrx/design-system";
-registerChatUi({
-  ReadFailure: Host_ReadFailure,
-});
-
-import { ItemRow as Host_ItemRow } from "@ai-matrx/design-system/item";
-registerChatUi({
-  ItemRow: Host_ItemRow,
-});
-
-import { UntrustedCount as Host_UntrustedCount } from "@ai-matrx/design-system";
-registerChatUi({
-  UntrustedCount: Host_UntrustedCount,
-});
-
-import { StaleDataNotice as Host_StaleDataNotice } from "@ai-matrx/design-system";
-registerChatUi({
-  StaleDataNotice: Host_StaleDataNotice,
-});
-
 import { WorkspaceGate as Host_WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 registerChatUi({
   WorkspaceGate: Host_WorkspaceGate,
@@ -168,11 +146,6 @@ registerChatUi({
 import { JsonInspector as Host_JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 registerChatUi({
   JsonInspector: Host_JsonInspector,
-});
-
-import { ConfirmDialog as Host_ConfirmDialog } from "@/components/ui/confirm-dialog";
-registerChatUi({
-  ConfirmDialog: Host_ConfirmDialog,
 });
 
 import { TextWithDoors as Host_TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
@@ -205,34 +178,9 @@ registerChatUi({
   ServerNotes: Host_ServerNotes,
 });
 
-import { OptionCombobox as Host_OptionCombobox } from "@ai-matrx/design-system/controls";
-registerChatUi({
-  OptionCombobox: Host_OptionCombobox,
-});
-
-import { NumberStepper as Host_NumberStepper } from "@/components/official-candidate/NumberStepper";
-registerChatUi({
-  NumberStepper: Host_NumberStepper,
-});
-
 import { MatrxFloatingFrame as Host_MatrxFloatingFrame } from "@/components/matrx/resizable/MatrxFloatingFrame";
 registerChatUi({
   MatrxFloatingFrame: Host_MatrxFloatingFrame,
-});
-
-import { ItemMenu as Host_ItemMenu } from "@ai-matrx/design-system/item";
-registerChatUi({
-  ItemMenu: Host_ItemMenu,
-});
-
-import { ClampedNumberInput as Host_ClampedNumberInput } from "@/components/official/ClampedNumberInput";
-registerChatUi({
-  ClampedNumberInput: Host_ClampedNumberInput,
-});
-
-import { AspectRatioSelect as Host_AspectRatioSelect } from "@ai-matrx/design-system/controls";
-registerChatUi({
-  AspectRatioSelect: Host_AspectRatioSelect,
 });
 
 import { AnswerTextPreview as Host_AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
@@ -243,11 +191,6 @@ registerChatUi({
 import { AccessGate as Host_AccessGate } from "@/features/access-gate/components/AccessGate";
 registerChatUi({
   AccessGate: Host_AccessGate,
-});
-
-import { ReferenceCopyMenuItem as Host_ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
-registerChatUi({
-  ReferenceCopyMenuItem: Host_ReferenceCopyMenuItem,
 });
 
 import { ReferenceCopyButton as Host_ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
@@ -285,24 +228,9 @@ registerChatUi({
   VoiceTextarea: Host_VoiceTextarea,
 });
 
-import { FloatingSheet as Host_FloatingSheet } from "@ai-matrx/design-system";
-registerChatUi({
-  FloatingSheet: Host_FloatingSheet,
-});
-
 import Host_AppLink from "@/components/navigation/AppLink";
 registerChatUi({
   AppLink: Host_AppLink,
-});
-
-import { IconButton as Host_IconButton } from "@ai-matrx/design-system";
-registerChatUi({
-  IconButton: Host_IconButton,
-});
-
-import Host_LightSwitchToggle from "@/components/matrx/LightSwitchToggle";
-registerChatUi({
-  LightSwitchToggle: Host_LightSwitchToggle,
 });
 
 import Host_CitationChip from "@/components/official/citation-chip/CitationChip";
@@ -318,15 +246,6 @@ registerChatUi({
 import { ErrorBoundaryWithCapture as Host_ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 registerChatUi({
   ErrorBoundaryWithCapture: Host_ErrorBoundaryWithCapture,
-});
-
-import { ConfigurationTable as Host_ConfigurationTable } from "@ai-matrx/design-system/controls";
-import { ConfigurationTableRow as Host_ConfigurationTableRow } from "@ai-matrx/design-system/controls";
-import { FieldHelp as Host_FieldHelp } from "@ai-matrx/design-system/controls";
-registerChatUi({
-  ConfigurationTable: Host_ConfigurationTable,
-  ConfigurationTableRow: Host_ConfigurationTableRow,
-  FieldHelp: Host_FieldHelp,
 });
 
 
@@ -352,21 +271,9 @@ registerChatUi({
   replaceAppHref: Host_replaceAppHref,
 });
 
-import { announceComingSoon as Host_announceComingSoon } from "@/lib/coming-soon/announce";
-registerChatUi({
-  announceComingSoon: Host_announceComingSoon,
-});
-
 import { peekSystemOrgId as Host_peekSystemOrgId } from "@/lib/organizations/systemOrg";
 registerChatUi({
   peekSystemOrgId: Host_peekSystemOrgId,
-});
-
-import { toGlobalOwnershipRecord as Host_toGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
-import { fromGlobalOwnershipRecord as Host_fromGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
-registerChatUi({
-  toGlobalOwnershipRecord: Host_toGlobalOwnershipRecord,
-  fromGlobalOwnershipRecord: Host_fromGlobalOwnershipRecord,
 });
 
 
@@ -438,11 +345,6 @@ registerChatUi({
 
 
 
-import { publishedToWebPatch as Host_publishedToWebPatch } from "@/lib/row-access";
-registerChatUi({
-  publishedToWebPatch: Host_publishedToWebPatch,
-});
-
 import { isUuidValue as Host_isUuidValue } from "@/components/official/entity-ref/doors";
 registerChatUi({
   isUuidValue: Host_isUuidValue,
@@ -480,11 +382,6 @@ registerChatUi({
   CustomDataBindingPreview: Host_CustomDataBindingPreview,
 });
 
-
-import { TextInputDialog as Host_TextInputDialog } from "@ai-matrx/design-system";
-registerChatUi({
-  TextInputDialog: Host_TextInputDialog,
-});
 
 import { ProInput as Host_ProInput } from "@/components/official/ProInput";
 registerChatUi({
