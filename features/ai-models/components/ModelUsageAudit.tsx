@@ -21,8 +21,7 @@ import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { usageSettingsList } from "./unionUsageSettings";
-import { cn } from "@/lib/utils";
-import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ModelUsageAuditProps {
@@ -367,6 +366,63 @@ function UsageSection({
   emptyMessage: string;
   linkBase?: string;
 }) {
+  const columns: MatrxColumnDef<{ id: string; name: string }>[] = [
+    {
+      id: "name",
+      header: "Name",
+      accessorFn: (item) => item.name,
+      width: 280,
+      cell: (item) =>
+        linkBase ? (
+          <Link
+            href={`${linkBase}/${item.id}`}
+            className="font-medium hover:text-primary hover:underline transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.name}
+          </Link>
+        ) : (
+          <span className="font-medium">{item.name}</span>
+        ),
+    },
+    {
+      id: "id",
+      header: "ID",
+      accessorFn: (item) => item.id,
+      width: 120,
+      cell: (item) => (
+        <span className="font-mono text-muted-foreground" title={item.id}>
+          {item.id.slice(0, 8)}…
+        </span>
+      ),
+    },
+    ...(linkBase
+      ? [
+          {
+            id: "open",
+            header: "Open",
+            sortable: false,
+            filter: false,
+            accessorFn: (item: { id: string }) => item.id,
+            width: 64,
+            align: "right",
+            cell: (item: { id: string }) => (
+              <Link
+                href={`${linkBase}/${item.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-muted-foreground hover:text-primary"
+                title="Open in editor"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            ),
+          } satisfies MatrxColumnDef<{ id: string; name: string }>,
+        ]
+      : []),
+  ];
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -378,62 +434,22 @@ function UsageSection({
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground pl-1">{emptyMessage}</p>
       ) : (
-        <div className="border rounded-md overflow-hidden">
-          <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-            <thead>
-              <tr className="bg-muted/50 border-b">
-                <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">
-                  Name
-                </th>
-                <th className="text-left px-3 py-1.5 font-medium text-muted-foreground w-28">
-                  ID
-                </th>
-                {linkBase && (
-                  <th className="text-left px-3 py-1.5 font-medium text-muted-foreground w-12" />
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => (
-                <tr
-                  key={item.id}
-                  className={`group ${i % 2 === 1 ? "bg-muted/20" : ""} ${linkBase ? "hover:bg-muted/40" : ""}`}
-                >
-                  <td className="px-3 py-1.5 font-medium">
-                    {linkBase ? (
-                      <Link
-                        href={`${linkBase}/${item.id}`}
-                        className="hover:text-primary hover:underline transition-colors"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.name}
-                      </Link>
-                    ) : (
-                      item.name
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5 font-mono text-muted-foreground">
-                    <span title={item.id}>{item.id.slice(0, 8)}…</span>
-                  </td>
-                  {linkBase && (
-                    <td className="px-3 py-1.5 text-right">
-                      <Link
-                        href={`${linkBase}/${item.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
-                        title="Open in editor"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable<{ id: string; name: string }>
+          tableId={`ai-model-usage-${title.toLowerCase().replace(/\s+/g, "-")}`}
+          data={items}
+          columns={columns}
+          getRowId={(item) => item.id}
+          emptyState={{ title: emptyMessage }}
+          detail={{ enabled: false }}
+          copy={{
+            label: `Model usage: ${title}`,
+            location: "AI Model Usage Audit",
+            rowKind: "ai-model-usage-reference",
+            listKind: "ai-model-usage-references",
+            humanRow: (item) => `${title.replace(/s$/, "")} ${item.name} (${item.id})`,
+            agentRow: (item) => ({ kind: title, ...item }),
+          }}
+        />
       )}
     </div>
   );
