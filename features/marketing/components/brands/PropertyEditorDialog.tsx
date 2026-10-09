@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
+import { SocialAccountInput, useSocialAccountInput } from "@/features/marketing/social/components/SocialAccountInput";
+import { isSocialPlatform } from "@/features/marketing/social/types";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -30,8 +32,8 @@ import {
   PROPERTY_KIND_LABELS,
   type BrandProperty,
   type PropertyKind,
+  isPropertyKind,
 } from "@/features/marketing/types";
-import { propertyPlaceholders } from "@/features/marketing/components/shared/PropertyKindMark";
 import { extractErrorMessage } from "@/utils/errors";
 
 const STATUS_OPTIONS = [
@@ -91,21 +93,38 @@ function PropertyEditorDialogBody({
   const [kind, setKind] = useState<PropertyKind>(() =>
     property ? (property.kind as PropertyKind) : "instagram",
   );
+  // A link for the kinds that are not a social account (a website, a listing, anything else).
   const [url, setUrl] = useState(property?.url ?? "");
-  const [handle, setHandle] = useState(property?.handle ?? "");
   const [displayName, setDisplayName] = useState(property?.display_name ?? "");
   const [status, setStatus] = useState(property?.status ?? "active");
+  const [moreOpen, setMoreOpen] = useState((property?.status ?? "active") !== "active");
+  const social = isSocialPlatform(kind);
+  const input = useSocialAccountInput({
+    initialText: property?.handle || property?.url || "",
+    contextPlatform: social ? kind : null,
+    organizationId,
+  });
   const busy = createMutation.isPending || updateMutation.isPending;
-  const placeholders = propertyPlaceholders(kind);
+  // A pasted link names its own platform: the Type follows it.
+  const { parsed } = input;
+  useEffect(() => {
+    if (parsed.status === "ok" && parsed.detected && parsed.platform !== kind && !isWebsite && isPropertyKind(parsed.platform)) {
+      setKind(parsed.platform);
+    }
+  }, [parsed, kind, isWebsite]);
   const kindOptions = property
     ? PROPERTY_KINDS
     : PROPERTY_KINDS.filter((value) => value !== "website");
 
+  const account = social ? input.account : null;
+  const canSave = social ? account !== null : isWebsite || url.trim().length > 0;
+
   const save = async () => {
-    const trimmedUrl = url.trim();
-    const trimmedHandle = handle.trim();
+    const trimmedUrl = social ? (account?.url ?? "") : url.trim();
+    const trimmedHandle = social ? (account?.handle ?? "") : (property?.handle ?? "");
+    const name = social ? (account?.displayName ?? property?.display_name ?? "") : displayName.trim();
     if (!isWebsite && !trimmedUrl && !trimmedHandle) {
-      toast.error("A property needs at least a URL or a handle.");
+      toast.error("Enter a handle or link first.");
       return;
     }
     try {
@@ -117,7 +136,7 @@ function PropertyEditorDialogBody({
             ...(isWebsite ? {} : { kind }),
             url: trimmedUrl || null,
             handle: trimmedHandle || null,
-            display_name: displayName.trim() || null,
+            display_name: name || null,
             status,
           },
         });
@@ -129,7 +148,7 @@ function PropertyEditorDialogBody({
           kind,
           url: trimmedUrl || null,
           handle: trimmedHandle || null,
-          displayName: displayName.trim() || null,
+          displayName: name || null,
           status,
         });
         toast.success("Property added");
@@ -158,27 +177,52 @@ function PropertyEditorDialogBody({
         </DialogHeader>
 
         <div className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Type</Label>
+            <Select
+              value={kind}
+              onValueChange={(value) => setKind(value as PropertyKind)}
+              disabled={isWebsite}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {kindOptions.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {PROPERTY_KIND_LABELS[value]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {social ? (
             <div className="space-y-1">
-              <Label className="text-xs">Type</Label>
-              <Select
-                value={kind}
-                onValueChange={(value) => setKind(value as PropertyKind)}
-                disabled={isWebsite}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {kindOptions.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {PROPERTY_KIND_LABELS[value]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="property-account" className="text-xs">
+                Handle or link
+              </Label>
+              <SocialAccountInput input={input} id="property-account" autoFocus />
             </div>
-            <div className="space-y-1">
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="property-url" className="text-xs">
+                  Link
+                </Label>
+                <Input id="property-url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://yourbrand.com" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="property-display-name" className="text-xs">
+                  Name
+                </Label>
+                <Input id="property-display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your Brand" />
+              </div>
+            </div>
+          )}
+
+          {moreOpen ? (
+            <div className="space-y-1 sm:w-1/2">
               <Label className="text-xs">Status</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger>
@@ -193,44 +237,16 @@ function PropertyEditorDialogBody({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="property-url" className="text-xs">
-              Profile URL
-            </Label>
-            <Input
-              id="property-url"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder={placeholders.url}
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="property-handle" className="text-xs">
-                Handle
-              </Label>
-              <Input
-                id="property-handle"
-                value={handle}
-                onChange={(event) => setHandle(event.target.value)}
-                placeholder={placeholders.handle}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="property-display-name" className="text-xs">
-                Display name
-              </Label>
-              <Input
-                id="property-display-name"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Your Brand"
-              />
-            </div>
-          </div>
+          ) : (
+            <button
+              type="button"
+              className="w-fit text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setMoreOpen(true)}
+              aria-label="More options"
+            >
+              …
+            </button>
+          )}
         </div>
 
         <DialogFooter>
@@ -241,7 +257,7 @@ function PropertyEditorDialogBody({
           >
             Cancel
           </Button>
-          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={busy} onClick={() => void save()}>
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={busy || !canSave} onClick={() => void save()}>
             {property ? "Save property" : "Add property"}
           </Button>
         </DialogFooter>

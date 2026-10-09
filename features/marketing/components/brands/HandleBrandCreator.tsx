@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, ExternalLink, Loader2, Search, UserRound } from "lucide-react";
-import { Button, Field, Select, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Button, Field } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
@@ -43,19 +43,15 @@ import {
 } from "@/features/marketing/lib/person-brand-io";
 import { profileAvatarDoor, socialErrorMessage, trackAccount } from "@/features/marketing/social/server";
 import { useSocialSpend } from "@/features/marketing/social/cost";
+import { SocialAccountInput, useSocialAccountInput } from "@/features/marketing/social/components/SocialAccountInput";
 import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
 import { SocialImage } from "@/features/marketing/social/components/SocialImage";
 import {
-  SOCIAL_PLATFORM_LABELS,
   TRACKABLE_PLATFORMS,
   type SocialPlatform,
 } from "@/features/marketing/social/types";
 
 type Step = "start" | "looking" | "confirm" | "creating" | "track" | "tracking";
-
-const HANDLE_PLATFORMS: SelectOption<SocialPlatform>[] = (
-  ["instagram", "tiktok", "youtube", "x", "threads", "linkedin", "facebook"] as const
-).map((p) => ({ value: p, label: SOCIAL_PLATFORM_LABELS[p] }));
 
 type TrackState = { state: "idle" | "running" | "ok" | "failed"; message: string | null };
 
@@ -79,8 +75,9 @@ export function HandleBrandCreator({
   const copy = BRAND_KIND_COPY[kind];
 
   const [step, setStep] = useState<Step>("start");
-  const [handle, setHandle] = useState("");
-  const [platform, setPlatform] = useState<SocialPlatform>("instagram");
+  // No organization here: Look up below is the one paid fetch; the field only checks our store.
+  const account = useSocialAccountInput({});
+  const { parsed } = account;
   const [name, setName] = useState("");
   const [websiteTyped, setWebsiteTyped] = useState("");
   const [progress, setProgress] = useState<string[]>([]);
@@ -101,25 +98,27 @@ export function HandleBrandCreator({
     if (opening && created && pathname?.startsWith(marketingRoutes.brand(marketingSeg(created.brand)))) onClose();
   }, [opening, created, pathname, onClose]);
 
-  const startKind = classifyStartInput(handle);
+  const startKind = classifyStartInput(account.text);
   const keyOf = (a: { platform: string; handle: string }) => `${a.platform}:${a.handle.toLowerCase()}`;
   const say = (line: string) => setProgress((p) => (p[p.length - 1] === line ? p : [...p, line]));
 
   const lookUp = async () => {
     setFailure(null);
     if (!organizationId) return setFailure("Choose an owning organization first.");
-    if (startKind === "empty") return setFailure("Paste a social handle or profile link.");
+    if (parsed.status === "empty") return setFailure("Paste a social handle or profile link.");
     if (startKind === "website") {
       return setFailure("That is a website. Paste a social profile, or use the website form.");
     }
+    if (parsed.status === "needs_platform") return setFailure("Pick the platform for that handle.");
+    if (parsed.status !== "ok") return setFailure("That is not a social account address.");
     setStep("looking");
     onLocked?.(true);
     setProgress([]);
     try {
       say("Fetching the profile");
       const profile = await lookUpSeedProfile({
-        handleOrUrl: handle,
-        platform: startKind === "handle" ? platform : undefined,
+        handleOrUrl: parsed.url,
+        platform: parsed.platform,
         organizationId,
         onProgress: (p) => say(p.message),
       });
@@ -226,36 +225,17 @@ export function HandleBrandCreator({
     const busy = step === "looking";
     return (
       <div className="grid gap-3" data-testid="handle-brand-start">
-        <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
-          <div className="space-y-1">
-            <Label htmlFor="handle-brand-handle" className="text-xs">
-              Social handle or profile link
-            </Label>
-            <Field
-              id="handle-brand-handle"
-              value={handle}
-              disabled={busy}
-              onChange={(event) => setHandle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void lookUp();
-              }}
-              placeholder="instagram.com/name or @name"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Platform</Label>
-            {startKind === "social" ? (
-              <p className="flex h-7 items-center text-sm text-muted-foreground">From the link</p>
-            ) : (
-              <Select
-                aria-label="Platform"
-                value={platform}
-                onValueChange={setPlatform}
-                options={HANDLE_PLATFORMS}
-                disabled={busy}
-              />
-            )}
-          </div>
+        <div className="space-y-1">
+          <Label htmlFor="handle-brand-handle" className="text-xs">
+            Handle or link
+          </Label>
+          <SocialAccountInput
+            input={account}
+            id="handle-brand-handle"
+            disabled={busy}
+            autoFocus
+            onEnter={() => void lookUp()}
+          />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
@@ -309,7 +289,7 @@ export function HandleBrandCreator({
           </Button>
           <Button
             variant="primary"
-            disabled={busy || startKind === "empty"}
+            disabled={busy || parsed.status === "empty"}
             icon={busy ? <Loader2 className="animate-spin" /> : <Search />}
             onClick={() => void lookUp()}
           >

@@ -53,6 +53,9 @@ import {
   type CompetitorAccount,
 } from "./brand-competitors";
 import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
+import { SocialAccountField } from "@/features/marketing/social/components/SocialAccountInput";
+import { parseSocialAccount } from "@/features/marketing/social/link";
+import type { SocialPlatform } from "@/features/marketing/social/types";
 import { CompetitorDetail } from "./CompetitorDetail";
 import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competitor-detail";
 import { useCompetitorSocialActions, useFoundSocials } from "./useCompetitorSocials";
@@ -513,7 +516,9 @@ function AddCompetitorDialog({
   onSubmit: (input: { name: string; domain: string | null; handles: [string, string][] }) => void;
 }) {
   const dispatch = useAppDispatch();
-  const rivals = brandKindCopy(useMarketingBrand()).rivals;
+  const marketingBrand = useMarketingBrand();
+  const rivals = brandKindCopy(marketingBrand).rivals;
+  const organizationId = marketingBrand.organizationId;
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [handles, setHandles] = useState<Record<string, string>>({});
@@ -550,7 +555,14 @@ function AddCompetitorDialog({
   function save() {
     const label = name.trim();
     if (!label) return;
-    onSubmit({ name: label, domain: cleanDomain, handles: entered.map(([p, v]) => [p, v.trim()]) });
+    onSubmit({
+      name: label,
+      domain: cleanDomain,
+      handles: entered.map(([p, v]) => {
+        const parsed = parseSocialAccount(v, p as SocialPlatform);
+        return [p, parsed.status === "ok" ? parsed.url : v.trim()];
+      }),
+    });
     onOpenChange(false);
   }
 
@@ -586,15 +598,17 @@ function AddCompetitorDialog({
             ) : null}
             {findNote ? <p className="text-[11px] text-muted-foreground">{findNote}</p> : null}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {COMPETITOR_SOCIAL_PLATFORMS.map((p) => (
-              <div key={p.id} className="space-y-1">
+              <div key={p.id} className="min-w-0 space-y-1">
                 <Label htmlFor={`comp-${p.id}`}>{p.label}</Label>
-                <Input
+                <SocialAccountField
+                  label={`${p.label} handle or link`}
                   id={`comp-${p.id}`}
                   value={handles[p.id] ?? ""}
-                  onChange={(e) => setHandles((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                  placeholder="@handle or link"
+                  onChange={(text) => setHandles((prev) => ({ ...prev, [p.id]: text }))}
+                  contextPlatform={p.id}
+                  organizationId={organizationId}
                 />
               </div>
             ))}

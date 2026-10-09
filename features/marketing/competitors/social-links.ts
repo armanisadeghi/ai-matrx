@@ -7,6 +7,8 @@
  * rejected: only a profile / page / channel URL counts.
  */
 
+import { parseSocialAccount } from "../social/link";
+
 export const COMPETITOR_SOCIAL_PLATFORMS = [
   { id: "instagram", label: "Instagram" },
   { id: "tiktok", label: "TikTok" },
@@ -38,53 +40,25 @@ function firstSegments(pathname: string): string[] {
   return pathname.split("/").filter(Boolean).map((s) => decodeURIComponent(s));
 }
 
-/** One URL → a profile link, or null when it is not a profile of a tracked platform. */
-export function socialProfileFromUrl(raw: string): FoundSocialLink | null {
-  let url: URL;
-  try {
-    url = new URL(raw.trim());
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-  const host = url.hostname.toLowerCase().replace(/^(www|m|mobile|web)\./, "");
-  const seg = firstSegments(url.pathname);
-  if (seg.length === 0) return null;
-  const first = seg[0];
+const COMPETITOR_PLATFORM_IDS: ReadonlySet<string> = new Set(COMPETITOR_SOCIAL_PLATFORMS.map((p) => p.id));
 
-  if (host === "instagram.com") {
-    if (RESERVED.instagram.has(first.toLowerCase())) return null;
-    return { platform: "instagram", url: `https://www.instagram.com/${first}` };
-  }
-  if (host === "tiktok.com") {
-    if (!first.startsWith("@") || first.length < 2) return null;
-    return { platform: "tiktok", url: `https://www.tiktok.com/${first}` };
-  }
-  if (host === "youtube.com") {
-    if (first.startsWith("@") && first.length > 1) {
-      return { platform: "youtube", url: `https://www.youtube.com/${first}` };
-    }
-    if ((first === "channel" || first === "c" || first === "user") && seg[1]) {
-      return { platform: "youtube", url: `https://www.youtube.com/${first}/${seg[1]}` };
-    }
-    return null;
-  }
-  if (host === "linkedin.com") {
-    if ((first === "company" || first === "school") && seg[1]) {
-      return { platform: "linkedin", url: `https://www.linkedin.com/${first}/${seg[1]}` };
-    }
-    return null;
-  }
-  if (host === "facebook.com" || host === "fb.com") {
-    if (RESERVED.facebook.has(first.toLowerCase())) return null;
-    return { platform: "facebook", url: `https://www.facebook.com/${first}` };
-  }
-  if (host === "x.com" || host === "twitter.com") {
-    const handle = first.replace(/^@/, "");
-    if (RESERVED.x.has(handle.toLowerCase()) || !/^\w{1,15}$/.test(handle)) return null;
-    return { platform: "x", url: `https://x.com/${handle}` };
-  }
-  return null;
+/**
+ * One URL -> a profile link, or null when it is not a profile of a tracked platform. The address is
+ * read by the ONE parser (`parseSocialAccount`); what is added here is the strictness a scraped
+ * link needs (share buttons and login walls are not accounts, a person's LinkedIn page is not a company's).
+ */
+export function socialProfileFromUrl(raw: string): FoundSocialLink | null {
+  const text = raw.trim();
+  if (!/^https?:\/\//i.test(text)) return null;
+  const parsed = parseSocialAccount(text, null);
+  if (parsed.status !== "ok" || !COMPETITOR_PLATFORM_IDS.has(parsed.platform)) return null;
+  const platform = parsed.platform as CompetitorSocialPlatform;
+  const first = firstSegments(new URL(text).pathname)[0] ?? "";
+  if (platform === "tiktok" && !(first.startsWith("@") && first.length > 1)) return null;
+  if (platform === "linkedin" && first !== "company" && first !== "school") return null;
+  if (platform === "x" && !/^\w{1,15}$/.test(parsed.handle)) return null;
+  if (RESERVED[platform].has(first.replace(/^@/, "").toLowerCase())) return null;
+  return { platform, url: parsed.url };
 }
 
 function collectStrings(value: unknown, out: string[], depth = 0): void {

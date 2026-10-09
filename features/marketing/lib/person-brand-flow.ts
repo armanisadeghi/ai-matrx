@@ -17,6 +17,7 @@ import type { BrandKind } from "./brand-kind";
 import { normalizeWebsiteUrl } from "./website-url";
 import type { SocialPlatform, SocialProfileRow } from "../social/types";
 import { SOCIAL_PLATFORMS } from "../social/types";
+import { profileUrlFor } from "../social/link";
 import {
   extractPresenceLinks,
   isLinkInBioUrl,
@@ -68,30 +69,7 @@ export function seedFromProfileRow(row: SocialProfileRow): SeedProfile {
   };
 }
 
-export function profileUrlFor(platform: SocialPlatform, handle: string): string {
-  switch (platform) {
-    case "instagram":
-      return `https://www.instagram.com/${handle}`;
-    case "tiktok":
-      return `https://www.tiktok.com/@${handle}`;
-    case "youtube":
-      return `https://www.youtube.com/@${handle}`;
-    case "x":
-      return `https://x.com/${handle}`;
-    case "threads":
-      return `https://www.threads.com/@${handle}`;
-    case "facebook":
-      return `https://www.facebook.com/${handle}`;
-    case "linkedin":
-      return `https://www.linkedin.com/in/${handle}`;
-    case "pinterest":
-      return `https://www.pinterest.com/${handle}`;
-    case "reddit":
-      return `https://www.reddit.com/user/${handle}`;
-    case "snapchat":
-      return `https://www.snapchat.com/add/${handle}`;
-  }
-}
+export { profileUrlFor } from "../social/link";
 
 export interface Discovery {
   /** Accounts found in the bio and on the bio link, the seed excluded. */

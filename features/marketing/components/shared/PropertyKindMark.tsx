@@ -13,7 +13,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { BrandProperty, PropertyKind } from "@/features/marketing/types";
 import { isPropertyKind } from "@/features/marketing/types";
-import { classifyRedditHandle } from "@/features/marketing/lib/reddit-links";
+import { profileUrlFor } from "@/features/marketing/social/link";
+import { isSocialPlatform } from "@/features/marketing/social/types";
 
 const KIND_ICONS: Record<PropertyKind, LucideIcon> = {
   website: Globe2,
@@ -53,39 +54,6 @@ const KIND_TILE_CLASSES: Record<PropertyKind, string> = {
   other: "bg-muted text-muted-foreground",
 };
 
-/** Canonical public profile URL from a bare handle, per platform. */
-const HANDLE_URL_BUILDERS: Partial<Record<PropertyKind, (h: string) => string>> =
-  {
-    instagram: (h) => `https://instagram.com/${h}`,
-    facebook: (h) => `https://facebook.com/${h}`,
-    x: (h) => `https://x.com/${h}`,
-    tiktok: (h) => `https://tiktok.com/@${h}`,
-    youtube: (h) => `https://youtube.com/@${h}`,
-    pinterest: (h) => `https://pinterest.com/${h}`,
-    threads: (h) => `https://www.threads.com/@${h}`,
-    reddit: (h) => classifyRedditHandle(h)?.url ?? `https://www.reddit.com/user/${h}`,
-    snapchat: (h) => `https://snapchat.com/add/${h}`,
-  };
-
-/** Example profile URL + handle for the Add property fields: they follow the chosen Type. */
-const PROPERTY_PLACEHOLDERS: Partial<Record<PropertyKind, { url: string; handle: string }>> = {
-  website: { url: "https://yourbrand.com", handle: "" },
-  instagram: { url: "https://instagram.com/yourbrand", handle: "@yourbrand" },
-  facebook: { url: "https://facebook.com/yourbrand", handle: "yourbrand" },
-  x: { url: "https://x.com/yourbrand", handle: "@yourbrand" },
-  tiktok: { url: "https://tiktok.com/@yourbrand", handle: "@yourbrand" },
-  youtube: { url: "https://youtube.com/@yourbrand", handle: "@yourbrand" },
-  linkedin: { url: "https://linkedin.com/company/yourbrand", handle: "yourbrand" },
-  pinterest: { url: "https://pinterest.com/yourbrand", handle: "yourbrand" },
-  threads: { url: "https://www.threads.com/@yourbrand", handle: "@yourbrand" },
-  reddit: { url: "https://reddit.com/r/yourbrand", handle: "r/yourbrand or u/yourbrand" },
-  snapchat: { url: "https://snapchat.com/add/yourbrand", handle: "yourbrand" },
-};
-
-export function propertyPlaceholders(kind: PropertyKind): { url: string; handle: string } {
-  return PROPERTY_PLACEHOLDERS[kind] ?? { url: "https://", handle: "@yourbrand" };
-}
-
 export function toPropertyKind(value: string): PropertyKind {
   return isPropertyKind(value) ? value : "other";
 }
@@ -100,8 +68,7 @@ export function propertyPublicUrl(
   if (property.url) return property.url;
   const handle = property.handle?.trim().replace(/^@/, "");
   if (!handle) return null;
-  const build = HANDLE_URL_BUILDERS[toPropertyKind(property.kind)];
-  return build ? build(handle) : null;
+  return isSocialPlatform(property.kind) ? profileUrlFor(property.kind, handle) : null;
 }
 
 /**

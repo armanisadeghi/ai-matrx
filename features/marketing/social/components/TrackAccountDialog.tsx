@@ -8,10 +8,10 @@
  * instead and opens that post.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button, Field, Select, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Button, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
 import { RefusedReadOffer } from "../gated/RefusedReadOffer";
-import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
+import { SocialAccountInput, useSocialAccountInput } from "./SocialAccountInput";
 import { useSocialSpend } from "../cost";
 import {
   ingestPost,
@@ -33,19 +33,13 @@ import {
   trackAccount,
 } from "../server";
 import {
-  SOCIAL_PLATFORMS,
   SOCIAL_PLATFORM_LABELS,
   TRACKED_ROLES,
   TRACKED_ROLE_LABELS,
-  isSocialPlatform,
   type SocialPlatform,
   type TrackedRole,
 } from "../types";
 
-const PLATFORM_OPTIONS: SelectOption[] = [
-  { value: "auto", label: "Detect from link" },
-  ...SOCIAL_PLATFORMS.map((p) => ({ value: p, label: SOCIAL_PLATFORM_LABELS[p] })),
-];
 const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
   value: r,
   label: TRACKED_ROLE_LABELS[r],
@@ -72,8 +66,8 @@ export function TrackAccountDialog({
   const router = useRouter();
   const invalidate = useInvalidateSocial();
   const { costText } = useSocialSpend(organizationId);
-  const [text, setText] = useState(initialText ?? "");
-  const [platform, setPlatform] = useState<string>("auto");
+  const input = useSocialAccountInput({ initialText, organizationId });
+  const text = input.text;
   const [role, setRole] = useState<TrackedRole>(defaultRole);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -85,15 +79,16 @@ export function TrackAccountDialog({
   // The provider could not read it (private, restricted, blocked): the person's own browser still can.
   const failCode = socialErrorCode(failure);
 
-  const isPost = looksLikePostUrl(text);
-  function isPostLink(value: string) {
-    return looksLikePostUrl(value);
-  }
-  const detected = detectPlatform(text);
+  const { parsed } = input;
+  // A new address starts clean: the last refusal belonged to the old one.
+  useEffect(() => {
+    setError("");
+    setFailure(null);
+  }, [input.text]);
+  const isPost = parsed.status === "post";
   const effectivePlatform: SocialPlatform | null =
-    platform !== "auto" && isSocialPlatform(platform) ? platform : detected;
-  const handle = handleFromInput(text);
-  const canSubmit = text.trim().length > 2 && (isPost || effectivePlatform !== null) && !busy;
+    parsed.status === "ok" || parsed.status === "post" ? parsed.platform : null;
+  const canSubmit = (isPost || parsed.status === "ok") && !busy;
 
   async function submit(allowEmpty = false) {
     setBusy(true);
@@ -112,7 +107,7 @@ export function TrackAccountDialog({
       } else {
         const result = await trackAccount(
           {
-            handleOrUrl: text.trim(),
+            handleOrUrl: parsed.status === "ok" ? parsed.url : text.trim(),
             platform: effectivePlatform ?? undefined,
             role,
             brandId,
@@ -125,7 +120,7 @@ export function TrackAccountDialog({
         toast.success(result.created ? "Account tracked" : "Already tracked");
         onOpenChange(false);
       }
-      setText("");
+      input.reset();
     } catch (err) {
       setFailure(err);
       setError(socialErrorMessage(err, "Couldn't track that account"));
@@ -142,34 +137,18 @@ export function TrackAccountDialog({
           <DialogTitle>Track account</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-3">
-          <Field
-            aria-label="Handle or link"
-            placeholder="Handle or profile link"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              setError("");
-              setFailure(null);
-            }}
+          <SocialAccountInput
+            input={input}
             autoFocus
+            disabled={busy}
           />
-          <div className="flex gap-2">
-            <Select
-              aria-label="Platform"
-              value={platform}
-              options={PLATFORM_OPTIONS}
-              onValueChange={setPlatform}
-              className="flex-1"
-            />
-            <Select
-              aria-label="Role"
-              value={role}
-              options={ROLE_OPTIONS}
-              onValueChange={(v) => setRole(v)}
-              disabled={isPost}
-              className="flex-1"
-            />
-          </div>
+          <Select
+            aria-label="Role"
+            value={role}
+            options={ROLE_OPTIONS}
+            onValueChange={(v) => setRole(v)}
+            disabled={isPost}
+          />
           <p className="h-8 overflow-hidden text-xs text-muted-foreground" aria-live="polite">
             {error ? (
               <span className="text-destructive">
@@ -180,10 +159,8 @@ export function TrackAccountDialog({
               status
             ) : isPost ? (
               "Post link — it will be saved"
-            ) : text.trim() && !effectivePlatform ? (
-              "Pick a platform"
-            ) : handle ? (
-              [`@${handle}${effectivePlatform ? ` on ${SOCIAL_PLATFORM_LABELS[effectivePlatform]}` : ""}`, costText("track")].filter(Boolean).join(" · ")
+            ) : parsed.status === "ok" ? (
+              (costText("track") ?? "")
             ) : (
               ""
             )}

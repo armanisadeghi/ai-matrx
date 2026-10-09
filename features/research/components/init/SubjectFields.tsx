@@ -7,7 +7,8 @@
  * (aidream research/subject.py). Shape + URL params: utils/subject.ts.
  */
 
-import { normalizeHandle } from "@/features/marketing/social/link";
+import { SocialAccountField } from "@/features/marketing/social/components/SocialAccountInput";
+import { isSocialPlatform } from "@/features/marketing/social/types";
 import { Field, Select } from "@ai-matrx/design-system/controls";
 import {
   SOCIAL_PLATFORMS,
@@ -50,15 +51,14 @@ export function SubjectFields({
             onChange={(e) => onChange({ ...value, domain: e.target.value })}
           />
           {SOCIAL_PLATFORMS.map((p) => (
-            // ui-exception: a social handle is a raw value, not prose
-            <Field
-              key={p.value}
-              aria-label={`${p.label} handle`}
-              placeholder={`${p.label} handle`}
-              value={value.handles?.[p.value] ?? ""}
-              onChange={(e) => setHandle(p.value, e.target.value)}
-              onBlur={(e) => setHandle(p.value, normalizeHandle(e.target.value))}
-            />
+            <div key={p.value} className="min-w-0">
+              <SocialAccountField
+                label={`${p.label} handle or link`}
+                value={value.handles?.[p.value] ?? ""}
+                onChange={(text) => setHandle(p.value, text)}
+                contextPlatform={isSocialPlatform(p.value) ? p.value : null}
+              />
+            </div>
           ))}
         </div>
       )}
