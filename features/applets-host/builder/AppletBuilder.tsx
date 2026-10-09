@@ -160,9 +160,8 @@ export function AppletBuilder({
   const awaitingPerson = (info: { conversationId: string }) => {
     waitingOn.current = info.conversationId;
     stepTo("Waiting for your answer");
-    // ONE place for the question: the build conversation beside the preview shows its card, so the
-    // floating run window (which drew the same card again, titled "Done") closes (W5, 2026-10-09).
-    closeRunWindow();
+    // The run window stays open here: closing it lets the build conversation's instance go, and the
+    // conversation beside the preview went blank — no question anywhere (live v0.4.3084, lane F16).
   };
   // The live window of the run in flight (a live one or a rejoined one). When its answer is saved the result
   // is on the card and in the preview, so the window closes and its kept instance is let go (audit9 B13).
