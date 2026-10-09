@@ -47,6 +47,18 @@ describe("typed research subject", () => {
     expect(s.handles).toEqual({ instagram: "allgreen_itad", reddit: "allgreen", snapchat: "allgreen", x: "allgreen" });
   });
 
+  it("a brand with a subreddit and a u/ account is identified by the u/ account, in either order", () => {
+    const sub = { kind: "reddit", url: "https://www.reddit.com/r/sandiegokayaking", handle: null };
+    const user = { kind: "reddit", url: null, handle: "u/harborlightkayak" };
+    expect(subjectFromBrandProperties("b1", [sub, user]).handles.reddit).toBe("harborlightkayak");
+    expect(subjectFromBrandProperties("b1", [user, sub]).handles.reddit).toBe("harborlightkayak");
+  });
+
+  it("a brand with only a subreddit carries it as a community, not a person", () => {
+    const s = subjectFromBrandProperties("b1", [{ kind: "reddit", url: null, handle: "r/sandiegokayaking" }]);
+    expect(s.handles.reddit).toBe("r/sandiegokayaking");
+  });
+
   it("offers a handle field for Reddit and Snapchat", () => {
     const values = SOCIAL_PLATFORMS.map((p) => p.value);
     expect(values).toEqual(expect.arrayContaining(["reddit", "snapchat"]));

@@ -18,6 +18,12 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import { extractSocialLinks, type FoundSocialLink } from "./social-links";
+import { trackAccount, socialErrorMessage } from "../social/server";
+import { SocialStreamError } from "../social/stream";
+import type { SocialPlatform } from "../social/types";
+import { BackendApiError } from "@/lib/api/errors";
+import { formatSocialHandle } from "../lib/social-handle";
+import { findSavedAccount, resolveTrackOutcome, type SavedAccountRow } from "./track-outcome";
 
 const OUTLIER_WINDOW_DAYS = 30;
 
@@ -202,7 +208,7 @@ export async function listBrandCompetitors(
     const linkedSeo = linkByAccount.get(t.id);
     let target = linkedSeo ? bySeoId.get(linkedSeo) : undefined;
     if (!target) {
-      const name = t.label?.trim() || profile.display_name?.trim() || `@${profile.handle}`;
+      const name = t.label?.trim() || profile.display_name?.trim() || formatSocialHandle({ platform: profile.platform, handle: profile.handle, url: profile.profile_url });
       const key = `label:${name.toLowerCase()}`;
       target = byKey.get(key);
       if (!target) {
@@ -230,10 +236,8 @@ export async function listBrandCompetitors(
 
 /**
  * The social intake contract this UI calls (aidream, lane SI-04/SI-08). Documented in
- * `features/marketing/competitors/FEATURE.md`. If the route is not deployed the call fails
- * with 404/405/network and the caller shows "intake service unavailable" — never a fake row.
+ * `features/marketing/competitors/FEATURE.md`. It is an NDJSON stream door; see `trackSocialAccount`.
  */
-export const SOCIAL_TRACK_PATH = "/social/tracked";
 
 export interface TrackSocialRequest {
   platform: string;
@@ -253,38 +257,53 @@ export interface TrackSocialResult {
   message: string | null;
 }
 
-export async function trackSocialAccount(
-  req: TrackSocialRequest,
-  dispatch: AppDispatch,
-): Promise<TrackSocialResult> {
-  const base = { platform: req.platform, handleOrUrl: req.handle_or_url };
-  try {
-    // The route is not in the generated OpenAPI types until the server ships it.
-    const result = await dispatch(
-      callApi({
-        path: SOCIAL_TRACK_PATH,
-        method: "POST",
-        body: req,
-        expectedErrorStatuses: [404, 405, 422, 501, 502, 503],
-      } as never),
-    );
-    const err = (result as { error?: { status?: number | null; message?: string } }).error;
-    if (err) {
-      const status = err.status ?? null;
-      const unavailable = status === null || status === 404 || status === 405 || status === 501 || status === 503;
-      return { ...base, ok: false, unavailable, trackedAccountId: null, message: err.message ?? null };
-    }
-    const data = (result as { data?: { tracked_account_id?: string; id?: string } | null }).data;
-    return {
-      ...base,
-      ok: true,
-      unavailable: false,
-      trackedAccountId: data?.tracked_account_id ?? data?.id ?? null,
-      message: null,
-    };
-  } catch (e) {
-    return { ...base, ok: false, unavailable: true, trackedAccountId: null, message: e instanceof Error ? e.message : null };
+/** Saved competitor accounts of a brand, straight from the database (the truth after a drop). */
+async function listSavedCompetitorAccounts(brandId: string): Promise<SavedAccountRow[]> {
+  const { data, error } = await supabase
+    .schema("social")
+    .from("tracked_account")
+    .select("id,profile:profile_id(platform,handle)")
+    .eq("brand_id", brandId)
+    .eq("role", "competitor")
+    .is("deleted_at", null);
+  if (error) throw error;
+  const rows: SavedAccountRow[] = [];
+  for (const t of data ?? []) {
+    const p = one(t.profile as { platform: string; handle: string } | { platform: string; handle: string }[] | null);
+    if (p) rows.push({ trackedAccountId: t.id, platform: p.platform, handle: p.handle });
   }
+  return rows;
+}
+
+/**
+ * Track one handle through the stream-aware social door. A server refusal is reported as the
+ * server's sentence; a dropped stream is NOT a verdict: the saved state is re-read and the
+ * truth reported ("not reachable" only when nothing was saved either).
+ */
+export async function trackSocialAccount(req: TrackSocialRequest, organizationId: string): Promise<TrackSocialResult> {
+  const base = { platform: req.platform, handleOrUrl: req.handle_or_url };
+  const outcome = await resolveTrackOutcome({
+    call: async () => {
+      const answer = await trackAccount(
+        {
+          handleOrUrl: req.handle_or_url,
+          platform: req.platform as SocialPlatform,
+          role: req.role,
+          brandId: req.brand_id,
+          label: req.label,
+        },
+        { organizationId },
+      );
+      return { trackedAccountId: answer.tracked_account_id ?? null };
+    },
+    isRefusal: (e) => e instanceof SocialStreamError || (e instanceof BackendApiError && e.status !== null),
+    refusalMessage: (e) => socialErrorMessage(e, "rejected"),
+    verify: async () =>
+      findSavedAccount(await listSavedCompetitorAccounts(req.brand_id), req.platform, req.handle_or_url)?.trackedAccountId ??
+      null,
+    transportMessage: (e) => (e instanceof Error ? e.message : null),
+  });
+  return { ...base, ...outcome };
 }
 
 /** Link a tracked account to a website competitor (platform association). */

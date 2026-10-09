@@ -72,6 +72,7 @@ import type { PostAnalysisRow, PostCardModel, PostMediaRef } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 export type DetailTab = "overview" | "transcript" | "metrics" | "breakdown";
 const DETAIL_TABS = [
@@ -563,7 +564,7 @@ export function PostDetailBody({ postId, organizationId, brandSeg, initialTab = 
             <LabelRow label="Creator">
               {profile ? (
                 <Link className="inline-flex items-center gap-1.5 underline-offset-2 hover:underline" href={`/marketing/${brandSeg}/socials/${profile.platform}/${profile.id}`}>
-                  <PlatformMark platform={profile.platform} size={16} />@{profile.handle}
+                  <PlatformMark platform={profile.platform} size={16} />{formatSocialHandle({ platform: profile.platform, handle: profile.handle, url: profile.profile_url })}
                 </Link>
               ) : (
                 "—"

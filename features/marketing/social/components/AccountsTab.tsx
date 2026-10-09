@@ -45,6 +45,7 @@ import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
 import { TRACK_CREDITS, trackableOwn, useTrackOwn } from "./useTrackOwn";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
   value: r,
@@ -120,8 +121,8 @@ export function AccountsTab() {
         id: "account",
         label: "Account",
         header: "Account",
-        accessorFn: (r) => `${r.displayName} @${r.handle}`,
-        copyValue: (r) => `${r.displayName} (@${r.handle})`,
+        accessorFn: (r) => `${r.displayName} ${formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}`,
+        copyValue: (r) => `${r.displayName} (${formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })})`,
         filter: "text",
         minWidth: 220,
         cell: (r) => {
@@ -131,7 +132,7 @@ export function AccountsTab() {
               <PlatformMark platform={r.platform} size={20} />
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
-                <span className="truncate text-xs text-muted-foreground">@{r.handle}</span>
+                <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
               </span>
             </span>
           );

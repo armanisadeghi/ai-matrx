@@ -5,6 +5,7 @@
  * and the row value createTopic writes. Change one side, change the other.
  */
 
+import { classifyRedditHandle, classifyRedditUrl, type RedditTarget } from "@/features/marketing/lib/reddit-links";
 import { normalizeHandle } from "@/features/marketing/social/link";
 
 export type SubjectType = "topic" | "company" | "brand" | "person" | "creator";
@@ -97,6 +98,7 @@ export function subjectFromBrandProperties(
   const platforms = new Set(SOCIAL_PLATFORMS.map((p) => p.value));
   const handles: Record<string, string> = {};
   let domain: string | null = null;
+  const redditTargets: RedditTarget[] = [];
   for (const p of properties) {
     if (p.kind === "website" && !domain && p.url) {
       try {
@@ -104,10 +106,32 @@ export function subjectFromBrandProperties(
       } catch {
         domain = p.url;
       }
+    } else if (p.kind === "reddit") {
+      const target = redditTargetOf(p);
+      if (target) redditTargets.push(target);
     } else if (platforms.has(p.kind) && !handles[p.kind]) {
       const value = normalizeHandle(p.handle || p.url);
       if (value) handles[p.kind] = value;
     }
   }
+  const reddit = redditIdentity(redditTargets);
+  if (reddit) handles.reddit = reddit;
   return { type: "brand", brandId, domain, handles };
+}
+
+function redditTargetOf(p: { url: string | null; handle: string | null }): RedditTarget | null {
+  return (p.url ? classifyRedditUrl(p.url) : null) ?? (p.handle ? classifyRedditHandle(p.handle) : null);
+}
+
+/**
+ * The research form holds ONE handle per platform, so a brand with several Reddit properties
+ * needs a rule: the brand's own u/ account is its identity; a subreddit (a community the brand
+ * posts in or watches, not who it is) is carried only when there is no u/ account, and keeps
+ * its "r/" prefix so it is never mistaken for a person ("allgreen" is a user, "r/ewaste" a community).
+ */
+export function redditIdentity(targets: RedditTarget[]): string | null {
+  const user = targets.find((t) => t.type === "user");
+  if (user) return user.name;
+  const community = targets.find((t) => t.type === "subreddit");
+  return community ? community.label : null;
 }

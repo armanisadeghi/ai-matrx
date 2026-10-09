@@ -11,17 +11,13 @@
 // fell back to the first site on the PLATFORM, so every brand's competitors
 // page rendered a stranger's competitors and verdict.
 
-import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedCompetitors } from "@/features/marketing/competitors/BrandScopedCompetitors";
 
-export const metadata: Metadata = {
-  title: "Competitors",
-  description:
-    "Find the competitors that truly overlap, read the pages earning their rankings, and turn them into ranked opportunities.",
-};
+// No page-level `metadata`: a page title would override the marketing layout's, which names this
+// route "Competitors | Marketing — AI Matrx" from the shared route-metadata helper.
 
 export default function BrandCompetitorsPage() {
   return (

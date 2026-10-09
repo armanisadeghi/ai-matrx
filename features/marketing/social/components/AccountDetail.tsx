@@ -58,6 +58,7 @@ import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { PostDrawer } from "./PostDetail";
 import { SocialPostCard } from "./SocialPostCard";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 type InnerTab = "posts" | "outliers" | "growth";
 const INNER_TABS = [
@@ -343,7 +344,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         ) : null}
         <div className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-sm font-semibold text-foreground">{p.display_name || p.handle}</span>
-          <span className="truncate text-xs text-muted-foreground">@{p.handle}</span>
+          <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: p.platform, handle: p.handle, url: p.profile_url })}</span>
         </div>
         <span title={platformLabel(platform)}>
           <PlatformMark platform={p.platform} size={20} />

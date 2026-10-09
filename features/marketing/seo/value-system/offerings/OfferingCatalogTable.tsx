@@ -62,6 +62,9 @@ import type { OfferingPrice } from "./data";
 
 export const CATALOG_TABLE_ID = "offering-catalog";
 
+/** The columns that belong to the brand itself, with or without a website. */
+const BRAND_COLUMN_IDS: ReadonlySet<string> = new Set(["name", "kind", "price"]);
+
 export interface CatalogRowActions {
   onToggleOffered: (node: CatalogNode, offered: boolean) => void;
   onSetWorth: (node: CatalogNode) => void;
@@ -88,6 +91,7 @@ export function OfferingCatalogTable({
   onAdd,
   onSaveEdits,
   wrapTable,
+  brandOnly = false,
 }: {
   tree: CatalogTree;
   /** Published prices, keyed by offering id. */
@@ -104,11 +108,16 @@ export function OfferingCatalogTable({
   onAdd: () => void;
   onSaveEdits: (edits: CellEditsMap, rows: CatalogRow[]) => Promise<void>;
   wrapTable?: (table: ReactNode) => ReactNode;
+  /**
+   * A brand with no website: the same table, reduced to the columns that belong to the brand
+   * (offering, kind, price) with edit / add-beneath / remove. Site columns appear with a site.
+   */
+  brandOnly?: boolean;
 }) {
   const rows = catalogRows(tree);
   const nodeOf = (id: string) => tree.byId.get(id);
 
-  const columns: MatrxColumnDef<CatalogRow>[] = [
+  const allColumns: MatrxColumnDef<CatalogRow>[] = [
     {
       accessorKey: "name",
       header: "Offering",
@@ -356,12 +365,16 @@ export function OfferingCatalogTable({
     })),
   ];
 
+  const columns = brandOnly
+    ? allColumns.filter((column) => BRAND_COLUMN_IDS.has(String(column.accessorKey ?? column.id)))
+    : allColumns;
+
   const table = (
     <MatrxDataTable
       data={rows}
       columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
         const node = nodeOf(row.id);
-        return node ? <RowActions node={node} actions={actions} busy={busy} /> : null;
+        return node ? <RowActions node={node} actions={actions} busy={busy} brandOnly={brandOnly} /> : null;
       } }]}
       getRowId={(row) => row.id}
       searchText={(row) => row.description}
@@ -370,7 +383,7 @@ export function OfferingCatalogTable({
       toolbar={{
         searchPlaceholder: "Search this brand's offerings…",
         searchMatch: {},
-        leading: (
+        leading: brandOnly ? undefined : (
           <span className="hidden text-xs text-muted-foreground xl:inline">
             Drag onto a row&apos;s edge to reorder · middle to nest it inside.
           </span>
@@ -381,7 +394,7 @@ export function OfferingCatalogTable({
           </Button>
         ),
       }}
-      selection={{
+      selection={brandOnly ? undefined : {
         selectedIds,
         onSelectedIdsChange,
         noun: "offering",
@@ -404,7 +417,7 @@ export function OfferingCatalogTable({
           </div>
         ),
       }}
-      edit={{ enabled: true, autoSave: true, onSave: onSaveEdits }}
+      edit={{ enabled: !brandOnly, autoSave: true, onSave: onSaveEdits }}
       hierarchy={{
         getParentId: (row) => row.parentId,
         onMove: (row, move) => {
@@ -412,7 +425,7 @@ export function OfferingCatalogTable({
           if (node) actions.onMove(node, move.parentId, destinationSiblingOrder(rows, row.id, move));
         },
         manualOrder: true,
-        canReparent: () => !busy,
+        canReparent: () => !busy && !brandOnly,
         itemLabel: (row) => row.name,
         rootDropLabel: "Place first at the top level",
       }}
@@ -457,10 +470,12 @@ function RowActions({
   node,
   actions,
   busy,
+  brandOnly,
 }: {
   node: CatalogNode;
   actions: CatalogRowActions;
   busy: boolean;
+  brandOnly: boolean;
 }) {
   const o = node.offering;
   const removable = o.available && o.otherSiteCount === 0;
@@ -475,6 +490,27 @@ function RowActions({
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
+        {brandOnly ? (
+          <>
+            <DropdownMenuItem onSelect={() => actions.onEdit(node)}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit details and price…
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => actions.onAddChild(node)}>
+              <GitBranchPlus className="h-3.5 w-3.5" />
+              Add an offering beneath this…
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={() => actions.onRemove(node)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove from this brand
+            </DropdownMenuItem>
+          </>
+        ) : (
+          <>
         <DropdownMenuItem onSelect={() => actions.onToggleOffered(node, !o.available)}>
           {o.available ? "Stop offering on this site…" : "Offer on this site"}
         </DropdownMenuItem>
@@ -507,6 +543,8 @@ function RowActions({
             </DropdownMenuItem>
           </>
         ) : null}
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

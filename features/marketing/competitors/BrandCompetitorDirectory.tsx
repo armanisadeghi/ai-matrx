@@ -51,6 +51,7 @@ import {
   type CompetitorAccount,
 } from "./brand-competitors";
 import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 const PLATFORM_LABEL: Record<string, string> = {
   instagram: "Instagram",
@@ -95,7 +96,6 @@ export function BrandCompetitorDirectory() {
   const sites = useBrandSites(brand.id);
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
-  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [jobs, setJobs] = useState<BrandCompetitor[]>([]);
   const patchJob = useCallback((key: string, fn: (job: BrandCompetitor) => BrandCompetitor) => {
@@ -148,7 +148,7 @@ export function BrandCompetitorDirectory() {
           input.handles.map(async ([platform, value]) => {
             const result = await trackSocialAccount(
               { platform, handle_or_url: value.trim(), role: "competitor", brand_id: brand.id, label: input.name },
-              dispatch,
+              brand.organizationId,
             );
             let message: string | null = result.ok
               ? null
@@ -183,7 +183,7 @@ export function BrandCompetitorDirectory() {
         });
       })();
     },
-    [brand.id, brand.organizationId, siteIds, dispatch, queryClient, patchJob],
+    [brand.id, brand.organizationId, siteIds, queryClient, patchJob],
   );
 
   const dismissJob = (key: string) => setJobs((current) => current.filter((j) => j.key !== key));
@@ -230,10 +230,10 @@ export function BrandCompetitorDirectory() {
                   key={a.trackedAccountId}
                   href={`/marketing/${brand.seg}/socials/${a.platform}/${a.trackedAccountId}`}
                   className="whitespace-nowrap hover:underline"
-                  title={`@${a.handle}`}
+                  title={formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}
                 >
                   {compact(a.followers)}
-                  <span className="ml-1 text-[11px] text-muted-foreground">@{a.handle}</span>
+                  <span className="ml-1 text-[11px] text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>
                 </Link>
               ))}
             </span>
@@ -352,7 +352,7 @@ export function BrandCompetitorDirectory() {
                   ...row.accounts.map(
                     (a): [string, string] => [
                       PLATFORM_LABEL[a.platform] ?? a.platform,
-                      `@${a.handle} · ${compact(a.followers)} followers`,
+                      `${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} · ${compact(a.followers)} followers`,
                     ],
                   ),
                 ]),
