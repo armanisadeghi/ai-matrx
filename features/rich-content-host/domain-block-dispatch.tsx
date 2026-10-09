@@ -278,7 +278,10 @@ const PROTOCOL_BLOCK_DISPATCH = {
           version?: number;
         }
       | undefined;
-    if (isMaterializedArtifactId(artifactMeta?.artifactId)) {
+    // A body still streaming is not persisted yet: it renders inline from its live envelope
+    // (the by-id fallback forces `isComplete` and would draw a half body as an empty set).
+    const bodyStreaming = isStreamActive && block.isStreamingBlock === true;
+    if (isMaterializedArtifactId(artifactMeta?.artifactId) && !bodyStreaming) {
       return (
         <BlockComponents.ArtifactRefBlock
           key={index}
