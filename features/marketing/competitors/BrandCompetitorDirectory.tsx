@@ -36,6 +36,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -93,6 +94,7 @@ function bestOutlier(row: BrandCompetitor) {
 
 export function BrandCompetitorDirectory() {
   const brand = useMarketingBrand();
+  const rivals = brandKindCopy(brand).rivals;
   const sites = useBrandSites(brand.id);
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
@@ -320,10 +322,10 @@ export function BrandCompetitorDirectory() {
   return (
     <div className="space-y-3 p-3">
       <SectionCard
-        title="Competitors"
+        title={rivals.title}
         headerExtra={
           <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-            Add competitor
+            {rivals.add}
           </Button>
         }
       >
@@ -359,11 +361,11 @@ export function BrandCompetitorDirectory() {
             }}
             emptyState={{
               icon: <Swords className="h-8 w-8 text-muted-foreground" />,
-              title: "No competitors yet",
-              description: `Add the rivals ${brand.name} competes with, by website, social handle, or both.`,
+              title: rivals.emptyTitle,
+              description: rivals.emptyLine(brand.name),
               action: (
                 <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-                  Add competitor
+                  {rivals.add}
                 </Button>
               ),
             }}
@@ -394,6 +396,7 @@ function AddCompetitorDialog({
   onSubmit: (input: { name: string; domain: string | null; handles: [string, string][] }) => void;
 }) {
   const dispatch = useAppDispatch();
+  const rivals = brandKindCopy(useMarketingBrand()).rivals;
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [handles, setHandles] = useState<Record<string, string>>({});
@@ -438,13 +441,13 @@ function AddCompetitorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add competitor</DialogTitle>
+          <DialogTitle>{rivals.add}</DialogTitle>
           <DialogDescription>Name, plus a website and social handles if you have them.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="comp-name">Name</Label>
-            <Input id="comp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Company name" />
+            <Input id="comp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={rivals.namePlaceholder} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="comp-domain">Website</Label>

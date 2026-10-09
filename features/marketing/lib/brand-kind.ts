@@ -59,8 +59,20 @@ export interface BrandKindCopy {
   createDescription: string;
   /** Possessive for copy: "its" / "their". */
   possessive: string;
+  /** Placeholder for the brand's one-line "what it does" field. */
+  aboutPlaceholder: string;
   /** Voice page header line. */
   voiceLine: string;
+  /** The rivals screen: its title, its add action, its name field, and its empty state. */
+  rivals: {
+    title: string;
+    add: string;
+    namePlaceholder: string;
+    emptyTitle: string;
+    emptyLine: (brandName: string) => string;
+  };
+  /** The Offerings page line under its title. */
+  offeringsLine: (brandName: string) => string;
   rooms: Record<BrandRoom, { name: string; description: string }>;
 }
 
@@ -70,7 +82,17 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
     hint: "A business, product or organization",
     createDescription: "Start from a website or a social handle.",
     possessive: "its",
+    aboutPlaceholder: "What this company does",
     voiceLine: "How this brand actually writes",
+    rivals: {
+      title: "Competitors",
+      add: "Add competitor",
+      namePlaceholder: "Company name",
+      emptyTitle: "No competitors yet",
+      emptyLine: (brandName) =>
+        `Add the rivals ${brandName} competes with, by website, social handle, or both.`,
+    },
+    offeringsLine: (brandName) => `What ${brandName} sells and what it charges.`,
     rooms: {
       media: {
         name: "Media",
@@ -123,7 +145,17 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
     hint: "A creator, coach or founder who is the brand",
     createDescription: "Start from one of their social handles.",
     possessive: "their",
+    aboutPlaceholder: "What they do",
     voiceLine: "How this person actually writes and speaks",
+    rivals: {
+      title: "Peers",
+      add: "Add peer",
+      namePlaceholder: "Name",
+      emptyTitle: "No peers yet",
+      emptyLine: (brandName) =>
+        `Add the peers ${brandName} is measured against, by website or social handle.`,
+    },
+    offeringsLine: (brandName) => `What ${brandName} offers: programs and services.`,
     rooms: {
       media: { name: "Media", description: "Their photos, videos, captures and generated imagery." },
       strategy: { name: "Strategy", description: "What they do, who they serve, where they compete." },

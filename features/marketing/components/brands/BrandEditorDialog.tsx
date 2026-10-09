@@ -430,7 +430,7 @@ function BrandEditorDialogBody({
               onChange={(event) => set("description")(event.target.value)}
               minHeight={64}
               maxHeight={140}
-              placeholder="What this company does"
+              placeholder={BRAND_KIND_COPY[kind].aboutPlaceholder}
             />
           </div>
 

@@ -18,6 +18,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -143,7 +144,7 @@ export function BrandOfferingsEditor() {
             Offerings
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            What {brand.name} sells and what it charges.{" "}
+            {brandKindCopy(brand).offeringsLine(brand.name)}{" "}
             <Link
               href={marketingRoutes.newSite(brand.id)}
               className="underline underline-offset-2"
