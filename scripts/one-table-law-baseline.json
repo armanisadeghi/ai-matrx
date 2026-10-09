@@ -58,20 +58,16 @@
     "features/settings/universal/ConfigurationExport.tsx": "settings side-by-side diff"
   },
   "toConvert": {
-    "components/image/cloud/CloudFilesBrowserTable.tsx": "cloud files list with selection",
     "components/official/processor-extractor/path-management/BookmarkManager.tsx": "bookmarks list (name/type/path/actions)",
     "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx": "bookmarks list (name/type/path/actions)",
     "features/admin/limits/components/KnobOverridesAdmin.tsx": "overrides list (level/for/org/value/set by/when) with per-row actions",
     "features/admin/performance-watch/PerformanceWatchConsole.tsx": "collector list; partly MatrxDataTable already, remaining hand table",
     "features/files/components/surfaces/desktop/FileTable.tsx": "desktop file list (sort/select/filters)",
     "features/mandates/admin/MandateReferenceBoardView.tsx": "mandate board rows; partly MatrxDataTable already",
-    "features/projects/components/ProjectTaskList.tsx": "project task list rows",
-    "features/projects/components/ProjectsHub.tsx": "projects table view",
     "features/research/components/curation/CurationTable.tsx": "research sources curation list",
     "features/research/components/sources/SourceList.tsx": "research sources list",
     "features/scope-system/components/ScopesList.tsx": "scopes list by name",
     "features/scopes/components/management/OrgScopeTypeSection.tsx": "org scope list; partly MatrxDataTable already",
-    "features/tasks/components/TasksTableView.tsx": "tasks table view with sortable headers",
     "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "test sample rows; partly MatrxDataTable already"
   },
   "files": [
@@ -128,7 +124,6 @@
     "features/notes/components/diff/NoteVersionHistoryPanel.tsx",
     "features/organizations/components/OrgModuleSettings.tsx",
     "features/organizations/peek/kinds/TablePeek.tsx",
-    "features/projects/components/ProjectTaskList.tsx",
     "features/rag/components/library/TableRowsViewer.tsx",
     "features/rag/components/search/RagPageReferences.tsx",
     "features/research/components/curation/CurationTable.tsx",

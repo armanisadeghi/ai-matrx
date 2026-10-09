@@ -58,7 +58,11 @@ import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiBu
 import { isDateOnlyOverdue } from "@ai-matrx/kit/dates";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ReadFailure } from "@ai-matrx/design-system";
-import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  dispatchThunk,
+  useAppDispatch,
+  useAppSelector,
+} from "@/lib/redux/hooks";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import {
   clearWizardDraft,
@@ -84,7 +88,10 @@ export function ProjectTaskList({
   // The project's tasks live in Redux by project (`useStoreRead`): read once,
   // rendered from the store on every wake and remount; every inline edit and
   // quick-add writes the store's copy, so nothing a remount shows is stale.
-  const tasksRead = useStoreRead<DatabaseTask[]>(`projects.tasks:${projectId}`, () => getProjectTasks(projectId));
+  const tasksRead = useStoreRead<DatabaseTask[]>(
+    `projects.tasks:${projectId}`,
+    () => getProjectTasks(projectId),
+  );
   const tasks = tasksRead.data ?? EMPTY_TASKS;
   const setTasks = (update: (cur: DatabaseTask[]) => DatabaseTask[]) =>
     tasksRead.setData((cur) => update(cur ?? EMPTY_TASKS));
@@ -216,7 +223,7 @@ export function ProjectTaskList({
     }
   }
 
-  const columns = useProjectTaskColumns({
+  const columns = projectTaskColumns({
     busyId,
     onToggle: toggle,
     onRename: renameTask,
@@ -250,7 +257,13 @@ export function ProjectTaskList({
   }
 
   if (loadError && tasks.length === 0) {
-    return <ReadFailure error={loadError} what="this project's tasks" onRetry={reload} />;
+    return (
+      <ReadFailure
+        error={loadError}
+        what="this project's tasks"
+        onRetry={reload}
+      />
+    );
   }
 
   const subtaskRow = (parentId: string) => (
@@ -331,7 +344,9 @@ export function ProjectTaskList({
         data={openRows}
         read={{ status: "ready" }}
         emptyState={{
-          title: normalizedSearch ? "No matching open tasks." : "No open tasks.",
+          title: normalizedSearch
+            ? "No matching open tasks."
+            : "No open tasks.",
         }}
         entryRow={quickAdd}
       />
@@ -433,7 +448,7 @@ const PROJECT_TASK_QUERY_COLUMNS: MatrxColumnDef<DatabaseTask>[] = [
 
 /* ─── Columns ───────────────────────────────────────────────────────────── */
 
-function useProjectTaskColumns({
+function projectTaskColumns({
   busyId,
   onToggle,
   onRename,
@@ -450,129 +465,132 @@ function useProjectTaskColumns({
   onOpen: (id: string) => void;
   onAddSubtask: (parentId: string) => void;
 }): MatrxColumnDef<DatabaseTask>[] {
-  const latest = React.useRef({ busyId, onToggle, onRename, onPriority, onDueDate, onOpen, onAddSubtask });
-  latest.current = { busyId, onToggle, onRename, onPriority, onDueDate, onOpen, onAddSubtask };
-  return React.useMemo<MatrxColumnDef<DatabaseTask>[]>(
-    () => [
-      {
-        ...PROJECT_TASK_QUERY_COLUMNS[0],
-        filter: "text",
-        width: 420,
-        cell: (task) => {
-          const h = latest.current;
-          const isSub = Boolean(task.parent_task_id);
-          const done = task.status === "completed";
-          return (
-            <div
-              className={cn(
-                "group/task flex min-w-0 items-center gap-2 overflow-hidden",
-                isSub && "pl-7",
-              )}
-            >
-              {isSub && (
-                <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-              )}
-              <button
-                onClick={() => h.onToggle(task)}
-                disabled={h.busyId === task.id}
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-                title={done ? "Mark incomplete" : "Mark complete"}
-              >
-                {h.busyId === task.id ? (
-                  <Loader2
-                    className={cn(
-                      isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
-                      "animate-spin",
-                    )}
-                  />
-                ) : done ? (
-                  <CircleCheck
-                    className={cn(
-                      isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
-                      "text-emerald-500",
-                    )}
-                  />
-                ) : (
-                  <Circle className={isSub ? "h-4 w-4" : "h-[18px] w-[18px]"} />
-                )}
-              </button>
-              <InlineTitle
-                value={task.title}
-                done={done}
-                isSub={isSub}
-                onCommit={(next) => latest.current.onRename(task, next)}
-                onOpen={isSub ? () => latest.current.onOpen(task.id) : undefined}
-                onOpenEditor={() => latest.current.onOpen(task.id)}
-              />
-              {!isSub && (
-                <button
-                  onClick={() => latest.current.onAddSubtask(task.id)}
-                  className="hidden shrink-0 h-6 w-6 rounded-md items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all sm:flex"
-                  title="Add subtask"
-                >
-                  <CornerDownRight className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        ...PROJECT_TASK_QUERY_COLUMNS[1],
-        filterOptions: [
-          { value: "high", label: "High" },
-          { value: "medium", label: "Medium" },
-          { value: "low", label: "Low" },
-          { value: "none", label: "None" },
-        ],
-        width: 130,
-        cell: (task) => (
-          <TaskPriorityPicker
-            value={task.priority}
-            onChange={(p) => latest.current.onPriority(task, p)}
-          />
-        ),
-      },
-      {
-        ...PROJECT_TASK_QUERY_COLUMNS[2],
-        filter: "date",
-        width: 120,
-        cell: (task) => (
-          <TaskDueDatePicker
-            value={task.due_date}
-            overdue={isOverdue(task)}
-            onChange={(due) => latest.current.onDueDate(task, due)}
-          />
-        ),
-      },
-      {
-        id: "task-actions",
-        header: "",
-        label: "Open",
-        sortable: false,
-        filter: false,
-        customActions: (task) => (
-          <div className="flex items-center justify-end gap-0.5">
-            <TaskCopyForAiButton
-              taskId={task.id}
-              taskTitle={task.title}
-              location="Projects — project task list"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover/matrx-row:opacity-100 focus-visible:opacity-100"
-            />
+  const h = {
+    busyId,
+    onToggle,
+    onRename,
+    onPriority,
+    onDueDate,
+    onOpen,
+    onAddSubtask,
+  };
+  return [
+    {
+      ...PROJECT_TASK_QUERY_COLUMNS[0],
+      filter: "text",
+      width: 420,
+      cell: (task) => {
+        const isSub = Boolean(task.parent_task_id);
+        const done = task.status === "completed";
+        return (
+          <div
+            className={cn(
+              "group/task flex min-w-0 items-center gap-2 overflow-hidden",
+              isSub && "pl-7",
+            )}
+          >
+            {isSub && (
+              <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+            )}
             <button
-              onClick={() => latest.current.onOpen(task.id)}
-              className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
-              title="Open task"
+              onClick={() => h.onToggle(task)}
+              disabled={h.busyId === task.id}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title={done ? "Mark incomplete" : "Mark complete"}
             >
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              {h.busyId === task.id ? (
+                <Loader2
+                  className={cn(
+                    isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
+                    "animate-spin",
+                  )}
+                />
+              ) : done ? (
+                <CircleCheck
+                  className={cn(
+                    isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
+                    "text-emerald-500",
+                  )}
+                />
+              ) : (
+                <Circle className={isSub ? "h-4 w-4" : "h-[18px] w-[18px]"} />
+              )}
             </button>
+            <InlineTitle
+              value={task.title}
+              done={done}
+              isSub={isSub}
+              onCommit={(next) => h.onRename(task, next)}
+              onOpen={isSub ? () => h.onOpen(task.id) : undefined}
+              onOpenEditor={() => h.onOpen(task.id)}
+            />
+            {!isSub && (
+              <button
+                onClick={() => h.onAddSubtask(task.id)}
+                className="hidden shrink-0 h-6 w-6 rounded-md items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all sm:flex"
+                title="Add subtask"
+              >
+                <CornerDownRight className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-        ),
+        );
       },
-    ],
-    [],
-  );
+    },
+    {
+      ...PROJECT_TASK_QUERY_COLUMNS[1],
+      filterOptions: [
+        { value: "high", label: "High" },
+        { value: "medium", label: "Medium" },
+        { value: "low", label: "Low" },
+        { value: "none", label: "None" },
+      ],
+      width: 130,
+      cell: (task) => (
+        <TaskPriorityPicker
+          value={task.priority}
+          onChange={(p) => h.onPriority(task, p)}
+        />
+      ),
+    },
+    {
+      ...PROJECT_TASK_QUERY_COLUMNS[2],
+      filter: "date",
+      width: 120,
+      cell: (task) => (
+        <TaskDueDatePicker
+          value={task.due_date}
+          overdue={isOverdue(task)}
+          onChange={(due) => h.onDueDate(task, due)}
+        />
+      ),
+    },
+    {
+      id: "task-actions",
+      header: "",
+      label: "Open",
+      sortable: false,
+      filter: false,
+      customActions: (task) => (
+        <div className="flex items-center justify-end gap-0.5">
+          <TaskCopyForAiButton
+            taskId={task.id}
+            taskTitle={task.title}
+            location="Projects — project task list"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover/matrx-row:opacity-100 focus-visible:opacity-100"
+          />
+          <button
+            onClick={() => h.onOpen(task.id)}
+            className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
+            title="Open task"
+          >
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 }
 
 /* ─── Inline title (click to edit) ──────────────────────────────────────── */
@@ -679,7 +697,8 @@ function useQuickAddEntry({
   // or a wake from sleep puts back exactly what was typed.
   const dispatch = useAppDispatch();
   const draftId = `project-quick-add:${projectId}`;
-  const draft = useAppSelector(selectWizardDraft(draftId))?.data as QuickAddDraft | undefined;
+  const draft = useAppSelector(selectWizardDraft(draftId))?.data as
+    QuickAddDraft | undefined;
   const title = draft?.title ?? "";
   const priority = draft?.priority ?? null;
   const due = draft?.due ?? null;
@@ -689,13 +708,24 @@ function useQuickAddEntry({
     dispatch(patchWizardDraft({ wizardId: draftId, patch }));
   const setTitle = (next: string | ((cur: string) => string)) =>
     dispatchThunk(dispatch, (d, getState) => {
-      const cur = (selectWizardDraft(draftId)(getState())?.data as QuickAddDraft | undefined)?.title ?? "";
-      d(patchWizardDraft({ wizardId: draftId, patch: { title: typeof next === "function" ? next(cur) : next } }));
+      const cur =
+        (
+          selectWizardDraft(draftId)(getState())?.data as
+            QuickAddDraft | undefined
+        )?.title ?? "";
+      d(
+        patchWizardDraft({
+          wizardId: draftId,
+          patch: { title: typeof next === "function" ? next(cur) : next },
+        }),
+      );
     });
   const setPriority = (next: TaskPriority) => patchDraft({ priority: next });
   const setDue = (next: string | null) => patchDraft({ due: next });
   const setAdvanced = (next: boolean | ((cur: boolean) => boolean)) =>
-    patchDraft({ advanced: typeof next === "function" ? next(advanced) : next });
+    patchDraft({
+      advanced: typeof next === "function" ? next(advanced) : next,
+    });
   const setDescription = (next: string) => patchDraft({ description: next });
   const [inFlight, setInFlight] = React.useState(0);
   const titleRef = React.useRef<HTMLInputElement>(null);
