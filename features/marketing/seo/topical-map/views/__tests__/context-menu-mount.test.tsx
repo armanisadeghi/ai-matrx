@@ -57,7 +57,7 @@ const ROWS = [
   },
 ];
 
-describe("the mechanism — a function-component child hears no right-click", () => {
+describe("the mechanism — a function-component child still hears the right-click", () => {
   let host: HTMLDivElement;
   let root: Root;
   const resolveContextOnOpen = jest.fn((..._args: unknown[]) => null);
@@ -84,7 +84,13 @@ describe("the mechanism — a function-component child hears no right-click", ()
     });
   }
 
-  it("drops the menu's handlers when the child is the bare TopicTree", () => {
+  // The menu itself now closes this class: it slots onto an intrinsic DOM
+  // element only and gives a COMPONENT child its own `display: contents`
+  // wrapper (ContextMenuV3 `canSlotChildren`; guard
+  // features/context-menu-v3/__tests__/attach-point.test.tsx). This test used
+  // to reproduce the shipped defect (a bare TopicTree never heard the click);
+  // it now pins the repair against the real TopicTree.
+  it("still hears it when the child is the bare TopicTree", () => {
     act(() => {
       root.render(
         <NonEditableContextMenu
@@ -96,9 +102,7 @@ describe("the mechanism — a function-component child hears no right-click", ()
       );
     });
     rightClickARow();
-    // This is the shipped defect, reproduced: the menu is mounted and the
-    // right-click never reaches it.
-    expect(resolveContextOnOpen).not.toHaveBeenCalled();
+    expect(resolveContextOnOpen).toHaveBeenCalled();
   });
 
   it("hears it once a DOM element sits between the menu and the tree", () => {
