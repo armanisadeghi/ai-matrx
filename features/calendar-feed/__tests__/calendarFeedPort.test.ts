@@ -1,11 +1,10 @@
 // The calendar-link port speaks to the four users.calendar_feed_* doors with their own argument names,
 // shows a refusal's sentence as written, and the Google address carries the webcal address as ONE
 // encoded value. Use case: a manager at Cedar Ridge Veterinary Clinic subscribes to "Visits this month".
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { googleCalendarUrl } from "@ai-matrx/records-ui";
 
-const rpc = vi.fn();
-vi.mock("@/utils/supabase/client", () => ({ createClient: () => ({ schema: (s: string) => ({ rpc: (fn: string, a?: unknown) => rpc(s, fn, a) }) }) }));
+const rpc = jest.fn();
+jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({ schema: (s: string) => ({ rpc: (fn: string, a?: unknown) => rpc(s, fn, a) }) }) }));
 
 import { CALENDAR_FEED_PORT, calendarFeedUrl } from "../calendarFeedPort";
 import { settingsRegistry } from "@/features/settings/registry";

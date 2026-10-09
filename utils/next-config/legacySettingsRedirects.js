@@ -53,7 +53,7 @@ const LEGACY_TABS_TO_INDEX = ["prompts"];
 /** Every id in `settingsRegistry` (drift-checked by the test). */
 const REGISTRY_TAB_IDS = [
   "general", "general.notifications", "general.personalConfig", "general.language",
-  "general.privacy", "general.conversationFilters", "general.lists", "general.system",
+  "general.privacy", "general.conversationFilters", "general.lists", "general.calendarLinks", "general.system",
   "appearance", "appearance.theme", "appearance.density", "appearance.windows",
   "appearance.siteWorkbench", "ai", "ai.models", "ai.assistants", "ai.memory",
   "ai.textGeneration", "ai.imageGeneration", "ai.photoEditing", "editor", "editor.coding",
