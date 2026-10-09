@@ -598,3 +598,119 @@ export function archiveCalledDelete(file: BuilderFile): string[] {
   });
   return [...out];
 }
+
+/** The keys an object literal names (`{ city: "", what }` → city, what); null for anything else. */
+function objectKeys(node: t.Node | null | undefined): string[] | null {
+  if (!node) return null;
+  if (node.type === "ParenthesizedExpression") return objectKeys(node.expression);
+  if (node.type !== "ObjectExpression") return null;
+  const out: string[] = [];
+  for (const p of node.properties) {
+    if (p.type === "ObjectProperty" || p.type === "ObjectMethod") {
+      const name = propertyName(p.key, p.computed);
+      if (name) out.push(name);
+    }
+  }
+  return out;
+}
+
+/**
+ * THE NAMES A FILE SENDS TO EACH JOB (lane F1, 2026-10-09): `const job = useJob("main")` then
+ * `job.run(values)` — `values` read through one hop each way: an object literal, a `useState({ … })` state,
+ * a `useState(initialValues)` over a stock `FIELDS` list, or the parameter of a helper
+ * (`onExecute = (variables) => job.run(variables)`) followed to the helper's calls. A value it cannot
+ * follow is not reported — never a guess.
+ */
+export function jobRunNames(file: BuilderFile): { alias: string; names: string[] }[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const jobOf = new Map<string, string>();
+  const stateInit = new Map<string, t.Node>();
+  const fieldNames: string[] = [];
+  const helperParam = new Map<string, { index: number; alias: string }>();
+  walk(ast, (node) => {
+    if (node.type !== "VariableDeclarator" || !node.init) return;
+    const init = node.init.type === "AwaitExpression" ? node.init.argument : node.init;
+    if (init.type === "CallExpression" && init.callee.type === "Identifier") {
+      const first = init.arguments[0];
+      if (init.callee.name === "useJob" && node.id.type === "Identifier" && first?.type === "StringLiteral") jobOf.set(node.id.name, first.value);
+      if (init.callee.name === "useState" && node.id.type === "ArrayPattern" && node.id.elements[0]?.type === "Identifier" && first) {
+        stateInit.set(node.id.elements[0].name, first);
+      }
+    }
+    if (node.id.type === "Identifier" && node.id.name === "FIELDS" && init.type === "ArrayExpression") {
+      for (const el of init.elements) {
+        if (el?.type !== "ObjectExpression") continue;
+        for (const p of el.properties) {
+          if (p.type === "ObjectProperty" && propertyName(p.key, p.computed) === "name" && p.value.type === "StringLiteral") fieldNames.push(p.value.value);
+        }
+      }
+    }
+  });
+  const namesOf = (arg: t.Node | undefined): string[] | null => {
+    if (!arg) return null;
+    const literal = objectKeys(arg);
+    if (literal) return literal;
+    if (arg.type !== "Identifier") return null;
+    const init = stateInit.get(arg.name);
+    if (!init) return null;
+    const fromState = objectKeys(init.type === "ArrowFunctionExpression" ? (init.body as t.Node) : init);
+    if (fromState) return fromState;
+    return init.type === "Identifier" && fieldNames.length ? fieldNames : null;
+  };
+  const out: { alias: string; names: string[] }[] = [];
+  // job.run(arg) — and a helper whose parameter is what it hands to job.run.
+  walk(ast, (node, ancestors) => {
+    if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression") return;
+    const obj = node.callee.object;
+    if (obj.type !== "Identifier" || memberName(node.callee) !== "run") return;
+    const alias = jobOf.get(obj.name);
+    if (!alias) return;
+    const arg = node.arguments[0];
+    const direct = namesOf(arg);
+    if (direct) {
+      out.push({ alias, names: direct });
+      return;
+    }
+    if (arg?.type !== "Identifier") return;
+    for (let i = ancestors.length - 1; i >= 0; i--) {
+      const fn = ancestors[i]!;
+      if (fn.type !== "ArrowFunctionExpression" && fn.type !== "FunctionExpression") continue;
+      const index = fn.params.findIndex((p) => p.type === "Identifier" && p.name === arg.name);
+      const holder = ancestors[i - 1];
+      if (index >= 0 && holder?.type === "VariableDeclarator" && holder.id.type === "Identifier") helperParam.set(holder.id.name, { index, alias });
+      break;
+    }
+  });
+  if (helperParam.size) {
+    walk(ast, (node) => {
+      if (node.type !== "CallExpression" || node.callee.type !== "Identifier") return;
+      const helper = helperParam.get(node.callee.name);
+      if (!helper) return;
+      const names = namesOf(node.arguments[helper.index]);
+      if (names) out.push({ alias: helper.alias, names });
+    });
+  }
+  return out;
+}
+
+/**
+ * A FORM FILLS ITS OWN JOB. Every name the code sends to a job must be one the job takes — the server drops
+ * any other name, and a city guide carrying a legal form ("matter", "practiceArea") answered its job's
+ * default instead of her words (2026-10-09). `inputs` maps each job ALIAS to the names that job takes;
+ * an alias it does not know is not checked.
+ */
+export function jobValuesNotTaken(file: BuilderFile, inputs: ReadonlyMap<string, readonly string[]>): { alias: string; sent: string[]; takes: readonly string[] }[] {
+  const out: { alias: string; sent: string[]; takes: readonly string[] }[] = [];
+  const seen = new Set<string>();
+  for (const { alias, names } of jobRunNames(file)) {
+    const takes = inputs.get(alias);
+    if (!takes) continue;
+    const sent = [...new Set(names.filter((n) => !takes.includes(n)))];
+    const key = `${alias}\u0000${sent.join(",")}`;
+    if (sent.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ alias, sent, takes });
+  }
+  return out;
+}
