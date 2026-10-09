@@ -11,6 +11,7 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { add: jest.fn(async () => ({ ok: true })) },
+  associationsHelpers: { linkEdges: jest.fn(async () => ({ ok: true, data: { ids: [] } })) },
 }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({
   // Stands in for the SELECTED organization when the caller passes none.
@@ -18,7 +19,7 @@ jest.mock("@/lib/organizations/ensureOrgId", () => ({
 }));
 
 import { supabase } from "@/utils/supabase/client";
-import { associationsService } from "@/features/scopes/service/associationsService";
+import { associationsHelpers } from "@/features/scopes/service/associationsService";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { fcService } from "../fcService";
 
@@ -62,7 +63,9 @@ describe("fcService.addCards files cards in the set's organization", () => {
     expect(res.error).toBeNull();
     expect(inserted.map((r) => r.organization_id)).toEqual([SET_ORG]);
     expect(
-      (associationsService.add as jest.Mock).mock.calls.map((c) => c[0].orgId),
+      (associationsHelpers.linkEdges as jest.Mock).mock.calls[0][0].map(
+        (e: { orgId: string }) => e.orgId,
+      ),
     ).toEqual([SET_ORG]);
   });
 });

@@ -24,3 +24,12 @@ export type {
 
 export const associationsService =
   getAssociationsStore().services.associations;
+
+/**
+ * THE BULK DOOR (2026-10-09). Any caller writing MORE THAN ONE edge uses these helpers
+ * (`linkEdges` / `linkManyToOne` / `linkOneToMany` / `linkCreated`), never a loop or
+ * `Promise.all` of `associationsService.add`: they write through `platform.assoc_add_many` in
+ * chunked transactions and answer `err` naming every edge not written. A 140-card deck save
+ * lost 69 member edges to 140 concurrent single adds (2026-09-26).
+ */
+export const associationsHelpers = getAssociationsStore().helpers;

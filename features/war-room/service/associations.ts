@@ -28,7 +28,7 @@ import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { associationsService } from "@/features/scopes/service/associationsService";
+import { associationsHelpers, associationsService } from "@/features/scopes/service/associationsService";
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -289,19 +289,16 @@ export async function createAssignment(
     const demote = sameType.filter(
       (a) => a.is_active && a.entity_id !== entityId,
     );
-    await Promise.all(
-      demote.map((a) =>
-        associationsService.add({
-          sourceType: entityToSource(a.entity_type),
-          sourceId: a.entity_id,
-          targetType,
-          targetId: ref.id,
-          orgId,
-          label: a.label ?? undefined,
-          metadata: mergeMeta(a.metadata, { is_active: false }),
-        }),
-      ),
+    const demoted = await associationsHelpers.linkEdges(
+      demote.map((a) => ({
+        source: { type: entityToSource(a.entity_type) as never, id: a.entity_id },
+        target: { type: targetType, id: ref.id },
+        orgId,
+        label: a.label ?? undefined,
+        metadata: mergeMeta(a.metadata, { is_active: false }),
+      })),
     );
+    if (isScopesRpcErr(demoted)) throw new WarRoomAssocError(demoted.error);
   }
 
   const metadataPatch = isPlainObject(input.metadata) ? input.metadata : {};
@@ -356,24 +353,18 @@ export async function setActiveAssignment(
   );
   if (changed.length === 0) return;
   const orgId = await resolveContainerOrgId(ref);
-  const results = await Promise.all(
-    changed.map((a) =>
-      associationsService.add({
-        sourceType: entityToSource(a.entity_type),
-        sourceId: a.entity_id,
-        targetType,
-        targetId: ref.id,
-        orgId,
-        label: a.label ?? undefined,
-        metadata: mergeMeta(a.metadata, {
-          is_active: a.entity_id === entityId,
-        }),
+  const results = await associationsHelpers.linkEdges(
+    changed.map((a) => ({
+      source: { type: entityToSource(a.entity_type) as never, id: a.entity_id },
+      target: { type: targetType, id: ref.id },
+      orgId,
+      label: a.label ?? undefined,
+      metadata: mergeMeta(a.metadata, {
+        is_active: a.entity_id === entityId,
       }),
-    ),
+    })),
   );
-  for (const r of results) {
-    if (isScopesRpcErr(r)) throw new WarRoomAssocError(r.error);
-  }
+  if (isScopesRpcErr(results)) throw new WarRoomAssocError(results.error);
 }
 
 /** Remove a resource from a container by its (type, entity) tuple. */
@@ -404,25 +395,22 @@ export async function copyContainerAssignments(
   if (source.length === 0) return [];
   const orgId = await resolveContainerOrgId(to);
   const targetType = containerTargetType(to.type);
-  const copied: WarRoomAssignment[] = [];
-  for (const a of source) {
-    const res = await associationsService.add({
-      sourceType: entityToSource(a.entity_type),
-      sourceId: a.entity_id,
-      targetType,
-      targetId: to.id,
+  const linked = await associationsHelpers.linkEdges(
+    source.map((a) => ({
+      source: { type: entityToSource(a.entity_type) as never, id: a.entity_id },
+      target: { type: targetType, id: to.id },
       orgId,
       label: a.label ?? undefined,
       metadata: a.metadata ?? {},
-    });
-    if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
-    copied.push({
-      ...a,
-      id: res.data.id,
-      container_type: to.type,
-      container_id: to.id,
-    });
-  }
+    })),
+  );
+  if (isScopesRpcErr(linked)) throw new WarRoomAssocError(linked.error);
+  const copied: WarRoomAssignment[] = source.map((a, i) => ({
+    ...a,
+    id: linked.data.ids[i],
+    container_type: to.type,
+    container_id: to.id,
+  }));
   return copied;
 }
 

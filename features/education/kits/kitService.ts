@@ -20,7 +20,7 @@
 "use client";
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { associationsService } from "@/features/scopes/service/associationsService";
+import { associationsHelpers, associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withTransientRetry } from "@/lib/db/transientRetry";
 import {
@@ -791,21 +791,16 @@ export async function createManualKit(input: {
     if (!targetKind) throw new Error(`"${artifact.title}" is not a study aid that can join a kit.`);
     return { artifact, targetKind };
   });
-  // Every aid joins at once (each edge is independent and idempotent) — one by
-  // one, each slow `assoc_add` added to the wait before the kit opened.
-  const results = await Promise.all(planned.map(({ artifact, targetKind }) =>
-    associationsService.add({
-      sourceType: artifact.kind,
-      sourceId: artifact.id,
-      targetType: sourceType,
-      targetId: input.sourceId,
-      // Manual grouping is membership, never generated-from provenance.
-      metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), kitTitle: sourceTitle },
-      role: "member",
-    }).catch(() => ({ ok: false as const })),
-  ));
-  const completed = results.filter((result) => result.ok).length;
-  if (completed < results.length) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
+  // Every aid joins through the bulk door (chunked, one transaction per chunk) — never one
+  // concurrent single add per aid, which silently dropped edges at scale.
+  const joined = await associationsHelpers.linkEdges(planned.map(({ artifact, targetKind }) => ({
+    source: { type: artifact.kind as never, id: artifact.id },
+    target: { type: sourceType as never, id: input.sourceId },
+    // Manual grouping is membership, never generated-from provenance.
+    metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), kitTitle: sourceTitle },
+    role: "member",
+  })));
+  if (!joined.ok) throw new Error(`None of the ${planned.length} study aids in this group were added (${joined.error.message}). Try again from the kit page.`);
 }
 
 /**

@@ -45,7 +45,7 @@ import {
   type KeywordRank,
   type SourceImportance,
 } from "./ranking";
-import { associationsService } from "@/features/scopes/service/associationsService";
+import { associationsHelpers, associationsService } from "@/features/scopes/service/associationsService";
 import type { CostLedgerInput, CostLedgerRow, SynthesisCostRow } from "./costs";
 
 import type { ScopesRpcResult } from "@/features/scopes/types";
@@ -1190,27 +1190,24 @@ export async function assignTagsToSource(
   sourceId: string,
   body: SourceTagRequest,
 ): Promise<SourceTag[]> {
-  const results: SourceTag[] = [];
-  for (const tagId of body.tag_ids) {
-    const { id } = assocData(
-      await associationsService.add({
-        sourceType: RESEARCH_SOURCE,
-        sourceId,
-        targetType: RESEARCH_TAG,
-        targetId: tagId,
+  const { ids } = assocData(
+    await associationsHelpers.linkEdges(
+      body.tag_ids.map((tagId) => ({
+        source: { type: RESEARCH_SOURCE, id: sourceId },
+        target: { type: RESEARCH_TAG, id: tagId },
         metadata: { assigned_by: "manual" },
-      }),
-    );
-    results.push({
-      id,
-      source_id: sourceId,
-      tag_id: tagId,
-      is_primary_source: null,
-      confidence: null,
-      assigned_by: "manual",
-      created_at: null,
-    });
-  }
+      })),
+    ),
+  );
+  const results: SourceTag[] = body.tag_ids.map((tagId, i) => ({
+    id: ids[i],
+    source_id: sourceId,
+    tag_id: tagId,
+    is_primary_source: null,
+    confidence: null,
+    assigned_by: "manual",
+    created_at: null,
+  }));
   return results;
 }
 
@@ -1247,17 +1244,15 @@ export async function addTagToSources(
   sourceIds: string[],
 ): Promise<void> {
   if (sourceIds.length === 0) return;
-  for (const sourceId of sourceIds) {
-    assocData(
-      await associationsService.add({
-        sourceType: RESEARCH_SOURCE,
-        sourceId,
-        targetType: RESEARCH_TAG,
-        targetId: tagId,
+  assocData(
+    await associationsHelpers.linkEdges(
+      sourceIds.map((sourceId) => ({
+        source: { type: RESEARCH_SOURCE, id: sourceId },
+        target: { type: RESEARCH_TAG, id: tagId },
         metadata: { assigned_by: "manual" },
-      }),
-    );
-  }
+      })),
+    ),
+  );
 }
 
 /**

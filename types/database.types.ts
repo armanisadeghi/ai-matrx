@@ -7864,6 +7864,12 @@ export type Database = {
         }
         Returns: Json
       }
+      hard_cost_unbanked_executions: {
+        Args: never
+        Returns: {
+          id: string
+        }[]
+      }
       org_capability_status: { Args: { p_org: string }; Returns: Json }
       org_custom_limit_remove: {
         Args: {
@@ -46783,15 +46789,18 @@ export type Database = {
       }
       study_structured_section: {
         Row: {
+          archived_at: string | null
           body: string
           claims: Json
           created_at: string
           created_by: string | null
           custom_fields: Json
           id: string
+          kit_scope_id: string | null
           metadata: Json
           organization_id: string
           owner_id: string
+          position: number | null
           project_id: string | null
           summary: string | null
           title: string
@@ -46801,15 +46810,18 @@ export type Database = {
           version: number
         }
         Insert: {
+          archived_at?: string | null
           body: string
           claims?: Json
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           id?: string
+          kit_scope_id?: string | null
           metadata?: Json
           organization_id: string
           owner_id: string
+          position?: number | null
           project_id?: string | null
           summary?: string | null
           title: string
@@ -46819,15 +46831,18 @@ export type Database = {
           version?: number
         }
         Update: {
+          archived_at?: string | null
           body?: string
           claims?: Json
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           id?: string
+          kit_scope_id?: string | null
           metadata?: Json
           organization_id?: string
           owner_id?: string
+          position?: number | null
           project_id?: string | null
           summary?: string | null
           title?: string
@@ -95027,6 +95042,7 @@ export type Database = {
         Args: { p_source_key: string }
         Returns: boolean
       }
+      assoc_add_many: { Args: { p_edges: Json }; Returns: string[] }
       assoc_unset: {
         Args: {
           p_role?: string
@@ -130045,6 +130061,7 @@ export type Database = {
       brand_social_accounts: {
         Args: { p_brand_id: string }
         Returns: {
+          avatar_file_id: string
           avatar_url: string
           best_multiple_30d: number
           best_post_id_30d: string
@@ -140187,6 +140204,10 @@ export type Database = {
           slug: string
           sort: number
         }[]
+      }
+      property_identity: {
+        Args: { p_handle: string; p_kind: string; p_url: string }
+        Returns: string
       }
       remove_site_offering: {
         Args: {

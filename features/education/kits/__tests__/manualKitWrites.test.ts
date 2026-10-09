@@ -12,6 +12,19 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
     listForEntity: (...args: unknown[]) => mockListForEntity(...args),
     listForSources: jest.fn(),
   },
+  // The bulk door (linkEdges) is exercised through the same recorder as the single add, so
+  // every assertion about what was written still reads one record per edge.
+  associationsHelpers: {
+    linkEdges: async (edges: Array<{ source: { type: string; id: string }; target: { type: string; id: string } } & Record<string, unknown>>) => {
+      const ids: string[] = [];
+      for (const { source, target, ...rest } of edges) {
+        const r = await mockAdd({ sourceType: source.type, sourceId: source.id, targetType: target.type, targetId: target.id, ...rest });
+        if (!r?.ok) return r;
+        ids.push(r.data?.id);
+      }
+      return { ok: true, data: { ids } };
+    },
+  },
 }));
 
 jest.mock("@/features/education/convert/lineage", () => ({

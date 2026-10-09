@@ -18,12 +18,16 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { guardedUpdate, mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
-import { associationsService } from "@/features/scopes/service/associationsService";
+import {
+  associationsHelpers,
+  associationsService,
+} from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { failureLine, metadataKeyRefusal } from "@/lib/failure/transport";
+import type { EdgeSpec } from "@ai-matrx/associations/core";
 import { EDGE_ROLE } from "./types";
 import {
   currentUserIdOrNull,
@@ -126,6 +130,28 @@ async function softDeleteOne(
     { action: "remove", noun },
   );
   return error ? fail(context, error) : { data: null, error: null };
+}
+
+/**
+ * Take back cards a failed save just inserted, so no orphan is left behind (a card whose
+ * membership edge was not written is invisible in its deck and in every list). Uses the
+ * soft-delete path every card removal uses; `deleted_at is null` keeps it idempotent.
+ */
+async function archiveInsertedCards(
+  cardIds: string[],
+): Promise<string | null> {
+  if (cardIds.length === 0) return null;
+  const { error } = await EDU()
+    .from("fc_card")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", cardIds)
+    .is("deleted_at", null)
+    .select("id");
+  if (error) {
+    console.error("[fcService] could not take back the unsaved cards:", error);
+    return describeError(error);
+  }
+  return null;
 }
 
 export const fcService = {
@@ -469,68 +495,61 @@ export const fcService = {
       const created = (data ?? []) as FcCardRow[];
 
       const base = opts.startPosition ?? 0;
-      // Membership + optional lineage edges. Edges are not transactional with the
-      // insert; a failed edge is logged but does not lose the card (loud, not fatal).
-      await Promise.all(
-        created.map(async (card, i) => {
-          const member = await associationsService.add({
-            sourceType: "fc_card",
-            sourceId: card.id,
-            targetType: "fc_set",
-            targetId: setId,
-            role: EDGE_ROLE.member,
-            position: base + i,
-            orgId,
+      // Membership + media + lineage edges, ALL through the bulk door (chunked
+      // transactions), never one concurrent single add per edge. A card with no
+      // membership edge is an orphan nobody can see, so any edge that is not written
+      // FAILS the whole save and takes the just-inserted cards back — never success
+      // with missing edges (2026-09-26: 69 of 140 cards saved with no edge).
+      const edges: EdgeSpec[] = [];
+      created.forEach((card, i) => {
+        const cardRef = { type: "fc_card", id: card.id } as const;
+        edges.push({
+          source: cardRef,
+          target: { type: "fc_set", id: setId },
+          role: EDGE_ROLE.member,
+          position: base + i,
+          orgId,
+        });
+        // Media edges (imported Anki media, captures): fc_card → file per ref.
+        for (const m of cards[i].media ?? []) {
+          edges.push({
+            source: cardRef,
+            target: { type: "file", id: m.file_id },
+            role: m.role === "photo" ? EDGE_ROLE.photo : EDGE_ROLE.illustration,
+            orgId: opts.orgId,
+            metadata: {
+              face: m.face ?? null,
+              kind: m.kind ?? null,
+              source_name: m.source_name ?? null,
+            },
           });
-          if (!member.ok)
-            console.error("[fcService.addCards] member edge failed:", member);
-
-          // Media edges (imported Anki media, captures): fc_card → file per ref.
-          for (const m of cards[i].media ?? []) {
-            const mediaEdge = await associationsService.add({
-              sourceType: "fc_card",
-              sourceId: card.id,
-              targetType: "file",
-              targetId: m.file_id,
-              role:
-                m.role === "photo" ? EDGE_ROLE.photo : EDGE_ROLE.illustration,
-              orgId: opts.orgId,
-              metadata: {
-                face: m.face ?? null,
-                kind: m.kind ?? null,
-                source_name: m.source_name ?? null,
-              } as never,
-            });
-            if (!mediaEdge.ok)
-              console.error(
-                "[fcService.addCards] media edge failed:",
-                mediaEdge,
-              );
-          }
-
-          const src = cards[i].source;
-          if (src?.file_id) {
-            const lineage = await associationsService.add({
-              sourceType: "fc_card",
-              sourceId: card.id,
-              targetType: "file",
-              targetId: src.file_id,
-              role: EDGE_ROLE.source,
-              orgId: opts.orgId,
-              metadata: {
-                processed_document_id: src.processed_document_id ?? null,
-                chunk_id: src.chunk_id ?? null,
-                page: src.page ?? null,
-              } as never,
-            });
-            if (!lineage.ok)
-              console.error(
-                "[fcService.addCards] lineage edge failed:",
-                lineage,
-              );
-          }
-        }),
-      );
+        }
+        const src = cards[i].source;
+        if (src?.file_id) {
+          edges.push({
+            source: cardRef,
+            target: { type: "file", id: src.file_id },
+            role: EDGE_ROLE.source,
+            orgId: opts.orgId,
+            metadata: {
+              processed_document_id: src.processed_document_id ?? null,
+              chunk_id: src.chunk_id ?? null,
+              page: src.page ?? null,
+            },
+          });
+        }
+      });
+      const linked = await associationsHelpers.linkEdges(edges);
+      if (!linked.ok) {
+        const undoError = await archiveInsertedCards(created.map((c) => c.id));
+        const base = fail<FcCardRow[]>("addCards", linked.error);
+        return undoError
+          ? {
+              data: null,
+              error: `${base.error} — and the ${created.length} unsaved cards could not be taken back: ${undoError}`,
+            }
+          : base;
+      }
       return { data: created, error: null };
     } catch (e) {
       return fail("addCards", e);
@@ -769,7 +788,8 @@ export const fcService = {
    * Each sub-card is inserted as a normal set member (so it's studyable in the
    * deck) AND linked to its parent by an `expands_into` hierarchy edge
    * (parent → sub-card). Sub-cards append after the existing cards. Returns the
-   * created rows. Edge failures are logged, not fatal (the card still lands).
+   * created rows. If the expands_into edges cannot be written the call FAILS and the
+ * sub-cards are taken back — never success with missing edges.
    */
   async addSubCards(
     setId: string,
@@ -779,23 +799,24 @@ export const fcService = {
   ): Promise<FcResult<FcCardRow[]>> {
     const res = await this.addCards(setId, subCards, opts);
     if (res.error || !res.data) return res;
-    await Promise.all(
-      res.data.map(async (child) => {
-        const edge = await associationsService.add({
-          sourceType: "fc_card",
-          sourceId: parentCardId,
-          targetType: "fc_card",
-          targetId: child.id,
-          role: EDGE_ROLE.expandsInto,
-          orgId: opts.orgId,
-        });
-        if (!edge.ok)
-          console.error(
-            "[fcService.addSubCards] expands_into edge failed:",
-            edge,
-          );
-      }),
+    const linked = await associationsHelpers.linkEdges(
+      res.data.map((child) => ({
+        source: { type: "fc_card" as const, id: parentCardId },
+        target: { type: "fc_card" as never, id: child.id },
+        role: EDGE_ROLE.expandsInto,
+        orgId: opts.orgId,
+      })),
     );
+    if (!linked.ok) {
+      const undoError = await archiveInsertedCards(res.data.map((c) => c.id));
+      const failed = fail<FcCardRow[]>("addSubCards", linked.error);
+      return undoError
+        ? {
+            data: null,
+            error: `${failed.error} — and the unsaved sub-cards could not be taken back: ${undoError}`,
+          }
+        : failed;
+    }
     return res;
   },
 
@@ -1156,20 +1177,15 @@ export const fcService = {
     orderedCardIds: string[],
   ): Promise<FcResult<null>> {
     try {
-      const results = await Promise.all(
-        orderedCardIds.map((cardId, position) =>
-          associationsService.add({
-            sourceType: "fc_card",
-            sourceId: cardId,
-            targetType: "fc_set",
-            targetId: setId,
-            role: EDGE_ROLE.member,
-            position,
-          }),
-        ),
+      const linked = await associationsHelpers.linkEdges(
+        orderedCardIds.map((cardId, position) => ({
+          source: { type: "fc_card" as const, id: cardId },
+          target: { type: "fc_set" as const, id: setId },
+          role: EDGE_ROLE.member,
+          position,
+        })),
       );
-      const failed = results.find((r) => !r.ok);
-      if (failed) return fail("reorderCards", failed.error);
+      if (!linked.ok) return fail("reorderCards", linked.error);
       return { data: null, error: null };
     } catch (e) {
       return fail("reorderCards", e);

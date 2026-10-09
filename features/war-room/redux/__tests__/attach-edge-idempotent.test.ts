@@ -44,6 +44,12 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
       return { ok: true, data: { id: "edge-1" } };
     }),
   },
+  associationsHelpers: {
+    linkEdges: jest.fn(async (edges: unknown[]) => {
+      calls.add += edges.length;
+      return { ok: true, data: { ids: edges.map(() => "edge-1") } };
+    }),
+  },
 }));
 jest.mock("@/features/scopes/service/associationEdges", () => ({
   isContentSourceEdge: () => true,
