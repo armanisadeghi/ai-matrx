@@ -18,6 +18,46 @@ export default function SqlFunctionsList({ functions, loading, read, selectedFun
     { id: 'returns', header: 'Returns', accessorKey: 'returns', width: 220, cell: (row) => <code className="block truncate text-xs" title={row.returns}>{row.returns}</code> },
   ], [onDeleteFunction, onEditFunction, onViewDetails]);
   // destroy-label-ok: database admin DDL on a function, not a record
-  // table-copy-optout: the page owns its search/filter bar above; row Alchemy stays on every row
-  return <MatrxDataTable urlState={{ id: 'sql-functions', defaultSort: { id: 'name', direction: 'asc' } }} data={functions} columns={columns} getRowId={getSqlFunctionKey} isLoading={loading} read={read} pageSize={25} hideToolbar emptyState={{ title: 'No SQL functions found' }} rowClassName={(row) => selectedFunctionKey === getSqlFunctionKey(row) ? 'bg-primary/10' : undefined} onRowOpen={(row) => onViewDetails(row)} rowActions={(row) => [...[{ id: "edit", icon: Edit, label: `Edit ${row.name}`, onClick: () => onEditFunction(row), variant: "ghost" as const }], ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: `Delete ${row.name}`, onClick: async () => { if (await confirm({ title: 'Delete SQL function?', description: `Delete ${row.schema}.${row.name}. This cannot be undone.`, confirmLabel: 'Delete', variant: 'destructive' })) await onDeleteFunction(row.schema, row.name, row.arguments); }, variant: "ghost" as const }]]} detail={{ enabled: false }} />;
+  return (
+    <MatrxDataTable
+      urlState={{ id: 'sql-functions', defaultSort: { id: 'name', direction: 'asc' } }}
+      data={functions}
+      columns={columns}
+      getRowId={getSqlFunctionKey}
+      isLoading={loading}
+      read={read}
+      pageSize={25}
+      toolbar={{ search: false }}
+      viewTabs={false}
+      emptyState={{ title: 'No SQL functions found' }}
+      rowClassName={(row) => selectedFunctionKey === getSqlFunctionKey(row) ? 'bg-primary/10' : undefined}
+      onRowOpen={(row) => onViewDetails(row)}
+      rowActions={(row) => [
+        {
+          id: 'edit',
+          icon: Edit,
+          label: `Edit ${row.name}`,
+          onClick: () => onEditFunction(row),
+          variant: 'ghost' as const,
+        },
+        {
+          id: 'delete',
+          icon: Trash2,
+          tone: 'destructive' as const,
+          label: `Delete ${row.name}`,
+          onClick: async () => {
+            const confirmed = await confirm({
+              title: 'Delete SQL function?',
+              description: `Delete ${row.schema}.${row.name}. This cannot be undone.`,
+              confirmLabel: 'Delete',
+              variant: 'destructive',
+            });
+            if (confirmed) await onDeleteFunction(row.schema, row.name, row.arguments);
+          },
+          variant: 'ghost' as const,
+        },
+      ]}
+      detail={{ enabled: false }}
+    />
+  );
 }

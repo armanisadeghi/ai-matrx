@@ -507,8 +507,8 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
           columns={columns}
           getRowId={(row) => String(row.id)}
           isLoading={entity.loading && !entity.rows.length}
-          // table-copy-optout: embedded records grid whose space owns the header; row Alchemy stays
-          hideToolbar
+          toolbar={{ search: false }}
+          viewTabs={false}
           hidePagination
           pageSize={Math.max(entity.rows.length, 1)}
           selection={false}
