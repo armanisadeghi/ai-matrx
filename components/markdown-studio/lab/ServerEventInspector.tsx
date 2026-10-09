@@ -10,7 +10,7 @@
 // uncontrolled, with its own sample, on the demo page.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useCallback, useRef } from "react";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -119,8 +119,7 @@ interface ServerEventInspectorProps {
 
 export default function ServerEventInspector({ content: controlled }: ServerEventInspectorProps = {}) {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
 

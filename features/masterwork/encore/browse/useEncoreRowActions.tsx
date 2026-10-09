@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Link2, Play, Rocket, Undo2 } from "lucide-react";
@@ -29,8 +30,7 @@ export function useEncoreRowActions(
   list: EntityListController<EncoreListRow>,
 ): EntityRowActionsResult<EncoreListRow> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const doorHref = (row: EncoreListRow) => masterworkHref(row.id);

@@ -2,7 +2,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -92,8 +92,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
   ...props
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [originalValue, setOriginalValue] = useState<object | string | null | undefined>(data);
   const [parsedData, setParsedData] = useState<JsonObject>({});

@@ -1,6 +1,6 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
@@ -34,8 +34,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
   messageId,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [isCopied, setIsCopied] = useState(false);
   const [aiCopied, setAiCopied] = useState(false);

@@ -20,6 +20,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { AlertOctagon, Copy, Download, RefreshCw, RotateCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -54,8 +55,7 @@ interface NoteSaveFailureBannerProps {
 
 export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const failureCount = useAppSelector(selectNoteSaveFailureCount(noteId));

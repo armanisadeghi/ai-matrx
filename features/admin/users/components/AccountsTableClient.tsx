@@ -9,6 +9,7 @@
 // ?user=<id>. An admin surface hides nothing.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -171,8 +172,7 @@ const ORG_CELL_VISIBLE = 3;
 
 function AccountsRoster() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const pathname = usePathname();

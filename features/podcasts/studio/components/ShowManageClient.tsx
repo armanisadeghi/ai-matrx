@@ -16,6 +16,7 @@
 //   3. Episodes    — list + an "Upload an episode" entry point (UploadEpisodeDialog).
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -85,8 +86,7 @@ const SITE_URL = (
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {

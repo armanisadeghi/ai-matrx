@@ -7,10 +7,10 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
-import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -22,8 +22,7 @@ import { readDirectiveShapeData } from "./directiveShapeKind";
 
 export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [exampleKind, setExampleKind] = useState<SchemaExampleKind>("minimum");
   const [copied, setCopied] = useState<"example" | "schema" | null>(null);

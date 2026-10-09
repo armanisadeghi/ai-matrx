@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -60,8 +60,7 @@ const TranscriptViewer = ({
   maxHeight = '500px'
 }: TranscriptViewerProps) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [showTimecodes, setShowTimecodes] = useState(true);

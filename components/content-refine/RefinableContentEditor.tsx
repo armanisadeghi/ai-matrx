@@ -10,7 +10,7 @@
 // Reference consumers: QuickNoteSaveCore (notes), TaskQuickCreateCore (tasks).
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState } from "react";
 import { FileText, Eye, Columns2, Copy, RotateCcw, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -75,8 +75,7 @@ export function RefinableContentEditor({
   imagePolicy,
 }: RefinableContentEditorProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
 

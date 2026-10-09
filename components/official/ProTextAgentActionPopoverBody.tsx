@@ -6,6 +6,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import {
   Check,
@@ -16,7 +17,6 @@ import {
 } from "lucide-react";
 import { CheckTapButton, CopyTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { toast } from "@/lib/toast";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -56,8 +56,7 @@ export function ProTextAgentActionPopoverBody({
   onCancel: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [resultCopied, setResultCopied] = useState(false);
   const isError = phase === "error" || phase === "timeout";

@@ -9,6 +9,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,8 +51,7 @@ import { TuningPanel } from "./TuningPanel";
 
 export function LinkValuationWorkspace() {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [configs, setConfigs] = useState<LinkValuationConfig[]>([
     ...BUILT_IN_CONFIGS,

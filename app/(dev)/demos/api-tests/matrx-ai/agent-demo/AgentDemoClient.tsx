@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState, useEffect, useRef } from "react";
@@ -107,8 +108,7 @@ function statusBadge(status: ExecStatus) {
 
 function CopyButton({ text }: { text: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   return (

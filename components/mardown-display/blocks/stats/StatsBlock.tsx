@@ -10,9 +10,9 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Copy, TriangleAlert } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -82,8 +82,7 @@ const TREND = {
 
 export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamActive = false, className }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const parsed = useMemo(() => (isStreamActive ? null : parseStats(content)), [content, isStreamActive]);
   const spec = parsed && !("error" in parsed) ? parsed : null;

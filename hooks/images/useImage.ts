@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useClipboard } from '@ai-matrx/kit/clipboard';
-import { toast } from '@/lib/toast';
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import useDownloadImage from '@/hooks/images/useDownloadImage';
 
 export interface ImageDimensions {
@@ -38,8 +38,7 @@ export const useImage = (src: string, alt: string, sizeKey: keyof typeof DEFAULT
     const [isFullscreen, setIsFullscreen] = useState(false);
     const imageRef = useRef<HTMLImageElement>(null);
     const { copyImage, copyLink } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
     const downloadImage = useDownloadImage(src, alt);
     const [zoom, setZoom] = useState(1);

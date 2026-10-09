@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRouter } from "next/navigation";
 import {
   ClipboardCopy,
@@ -9,7 +10,6 @@ import {
   FlaskConical,
   Link2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import type {
@@ -27,8 +27,7 @@ export function useShapeRowActions(
   list: EntityListController<ShapeBrowseRow>,
 ): EntityRowActionsResult<ShapeBrowseRow> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
 

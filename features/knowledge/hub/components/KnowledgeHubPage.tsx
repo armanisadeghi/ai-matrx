@@ -19,6 +19,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -361,8 +362,7 @@ export function KnowledgeHubPage({
   cookieName: string;
 }) {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const isMobile = useIsMobile();

@@ -37,7 +37,6 @@ import {
   PinOff,
 } from "lucide-react";
 
-import { toast } from "@/lib/toast";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -52,6 +51,7 @@ import {
   openOrphanThreadInNewRoom,
   toggleThreadPin,
 } from "@/features/war-room/redux/thunks";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 /** The one thing every thread surface can say about a right-clicked row. */
 export interface WarRoomThreadMenuRow {
@@ -156,7 +156,7 @@ export function useWarRoomThreadMenuSection(
     const url = `${window.location.origin}${href}`;
     await copyContent(url, {
       formatJson: false,
-      onSuccess: () => toast.success("Thread link copied"),
+      onSuccess: () => copyNotify("Thread link copied", "success"),
       // A blocked clipboard is not a failed copy — the ONE fallback puts the
       // link in front of the user to copy by hand.
       onError: () =>

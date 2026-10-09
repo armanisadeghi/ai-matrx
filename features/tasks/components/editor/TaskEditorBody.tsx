@@ -17,6 +17,7 @@
 // change for the ~9 existing consumers).
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useRef, useState } from "react";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
@@ -106,8 +107,7 @@ export function TaskEditorBody({
   onOpenLinkedTask?: (taskId: string) => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const {
     taskId,

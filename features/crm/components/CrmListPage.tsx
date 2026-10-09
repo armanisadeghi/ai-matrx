@@ -13,6 +13,7 @@
 //   * ONE "…" menu per row carrying every record action
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useRef, useState } from "react";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import Link from "next/link";
@@ -514,8 +515,7 @@ export function CrmListPage({
   surfaceName = CRM_SURFACE_NAME,
 }: CrmListPageProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   // `/crm?view=<id>` opens that smart view — how an outreach list (or a

@@ -35,7 +35,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import {
@@ -85,8 +85,7 @@ export function PdfRegionContextMenu({
   children,
 }: PdfRegionContextMenuProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
   // The region under the last right-click, resolved at menu-open time.
   // State (not a ref) — extraSections are derived from it during render.

@@ -25,7 +25,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Check, Copy, FileDiff, GitBranch, Terminal } from "lucide-react";
 
@@ -45,8 +45,7 @@ function CopyButton({
   variant?: "outline" | "default";
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   if (!value) return null;

@@ -1,6 +1,6 @@
 // components/AIHelpButton.tsx
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast as copyToast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import {useState} from 'react';
 import {Button} from "@ai-matrx/design-system";
 import {HelpCircle} from 'lucide-react';
@@ -36,8 +36,7 @@ export function AIHelpButton(
         onHelpGenerated
     }: AIHelpButtonProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+    notify: copyNotify,
   });
     const [isOpen, setIsOpen] = useState(false);
     const {toast} = useToast();

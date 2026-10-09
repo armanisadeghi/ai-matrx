@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -116,8 +116,7 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const formatCostDisplay = useAdminCost();
   const router = useRouter();

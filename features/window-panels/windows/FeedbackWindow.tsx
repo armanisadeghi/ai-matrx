@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -392,8 +393,7 @@ function useFeedbackForm({
   subject?: FeedbackSubject;
 }) {
   const { copyText, pasteImage } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const pathname = usePathname();
   const draftKey = subject
@@ -578,6 +578,9 @@ function useFeedbackForm({
   const { captureTab, captureScreen, isCapturing } = useScreenCapture({
     hideSelectors: [FEEDBACK_CAPTURE_HIDE],
   });
+  // Which capture is running — its button spins and a pending tile holds the
+  // shot's place, so a slow page capture never looks like nothing happened.
+  const [captureKind, setCaptureKind] = useState<"tab" | "screen" | null>(null);
 
   const addFiles = useCallback((files: FileList | File[] | null) => {
     const list = Array.from(files ?? []);
@@ -590,6 +593,7 @@ function useFeedbackForm({
   }, []);
 
   const handleTabCapture = useCallback(async () => {
+    setCaptureKind("tab");
     try {
       const { file } = await captureTab({
         ignoreSelector: FEEDBACK_CAPTURE_HIDE,
@@ -599,10 +603,13 @@ function useFeedbackForm({
       const name = err instanceof Error ? err.name : "";
       if (name !== "NotAllowedError" && name !== "AbortError")
         toast.error("Couldn't capture this tab — try Screen instead.");
+    } finally {
+      setCaptureKind(null);
     }
   }, [captureTab, addFiles]);
 
   const handleScreenCapture = useCallback(async () => {
+    setCaptureKind("screen");
     try {
       const { file } = await captureScreen();
       addFiles([file]);
@@ -610,6 +617,8 @@ function useFeedbackForm({
       const name = err instanceof Error ? err.name : "";
       if (name !== "NotAllowedError" && name !== "AbortError")
         toast.error("Screen capture failed");
+    } finally {
+      setCaptureKind(null);
     }
   }, [captureScreen, addFiles]);
 
@@ -1081,6 +1090,7 @@ function useFeedbackForm({
     acknowledgeRestore,
     canCaptureScreen,
     isCapturing,
+    captureKind,
     // surface seam
     getScope,
     getApplicationScope,
@@ -1140,6 +1150,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     acknowledgeRestore,
     canCaptureScreen,
     isCapturing,
+    captureKind,
     getApplicationScope,
     handlePasteButton,
     handleTabCapture,
@@ -1408,7 +1419,14 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               ref={attachTextarea}
               surfaceName={FEEDBACK_SURFACE_NAME}
               getApplicationScope={getApplicationScope}
-              className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
+              // Grows with the report (4 lines up to ~12) so the mic/menu row
+              // always sits in its reserved strip under the text — a fixed
+              // 112px box left two lines and the row looked like it sat on
+              // the text (feedback 63174fde).
+              autoGrow
+              minHeight={144}
+              maxHeight={360}
+              className="w-full px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
               placeholder={FEEDBACK_TYPE_CHIPS[feedbackType].placeholder}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -1592,7 +1610,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               Paste
             </Button>
             <Button
-              icon={<Camera />}
+              icon={captureKind === "tab" ? <Loader2 className="animate-spin" /> : <Camera />}
               type="button"
               variant="outline"
               onClick={handleTabCapture}
@@ -1603,7 +1621,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             </Button>
             {canCaptureScreen ? (
               <Button
-                icon={<Monitor />}
+                icon={captureKind === "screen" ? <Loader2 className="animate-spin" /> : <Monitor />}
                 type="button"
                 variant="outline"
                 onClick={handleScreenCapture}
@@ -1622,7 +1640,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               to draw, circle, or write on it.
             </p>
           )}
-          {attachments.length > 0 && (
+          {(attachments.length > 0 || captureKind === "tab") && (
             <div
               ref={tilesRef}
               className="flex flex-wrap gap-2 pt-1 scroll-mb-3"
@@ -1644,6 +1662,15 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
                   onRemove={() => removeAttachment(slot.id)}
                 />
               ))}
+              {captureKind === "tab" ? (
+                <div
+                  role="status"
+                  aria-label="Capturing this tab"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-muted"
+                >
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : null}
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
 // TODO: Fix loading inefficiency.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
@@ -100,8 +101,7 @@ function HtmlPreviewModalBody({
   hasReduxProvider: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const [copiedNoBullets, setCopiedNoBullets] = useState(false);

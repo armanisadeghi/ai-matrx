@@ -8,6 +8,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import {
   HoverCard,
@@ -41,8 +42,7 @@ export function WebpagePreviewContent({
   snippet,
 }: WebpagePreviewContentProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const domain = parseDomain(url);

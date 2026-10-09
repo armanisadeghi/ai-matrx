@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { readOf } from "@ai-matrx/design-system";
@@ -298,8 +298,7 @@ function CapNode({
 
 function InlineCopyButton({ text }: { text: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = React.useState(false);
   return (

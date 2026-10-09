@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
@@ -684,8 +684,7 @@ function ResultCard({
   isLoading: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);

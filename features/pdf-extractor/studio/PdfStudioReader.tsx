@@ -29,6 +29,7 @@
 import { CopySplitButton } from "@ai-matrx/rich-content/copy/CopySplitButton";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { preferAggregateClean } from "../service/cleanOutcome";
 import { useRouter } from "next/navigation";
 import {
@@ -2067,8 +2068,7 @@ function CopyIconButton({
   hoverReveal?: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const handleClick = useCallback(

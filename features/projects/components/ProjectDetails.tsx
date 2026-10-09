@@ -13,6 +13,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React from "react";
 import { format } from "date-fns";
 import { Check, Copy, Fingerprint, CalendarDays } from "lucide-react";
@@ -28,8 +29,7 @@ function CopyValue({
   label: string;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = React.useState(false);
 

@@ -21,6 +21,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -55,7 +56,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
@@ -399,8 +399,7 @@ function JsonInspector({
   collapsed?: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [open, setOpen] = useState(!collapsed);
   const pretty = useMemo(() => {
@@ -1871,8 +1870,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
 
 function AgentSimulationTab({ scope }: { scope: Scope }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [query, setQuery] = useState("");
   const [running, setRunning] = useState(false);

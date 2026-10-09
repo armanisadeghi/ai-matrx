@@ -1,5 +1,5 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { cleanJson } from '@ai-matrx/kit/json-format';
@@ -19,8 +19,7 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({
   maxHeight,
 }) => {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   

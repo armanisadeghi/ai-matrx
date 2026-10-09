@@ -95856,6 +95856,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      protected_account_ids: { Args: never; Returns: string[] }
+      protected_account_runs: {
+        Args: { p_hours?: number }
+        Returns: {
+          cost: number
+          driver: string
+          email: string
+          last_at: string
+          origin: string
+          runs: number
+          subject: string
+        }[]
+      }
       provision: {
         Args: {
           p_applied_via?: string

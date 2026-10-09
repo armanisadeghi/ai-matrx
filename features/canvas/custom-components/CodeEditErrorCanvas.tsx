@@ -1,7 +1,7 @@
 'use client';
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Copy, Check, X } from 'lucide-react';
@@ -27,8 +27,7 @@ export function CodeEditErrorCanvas({
   onClose,
 }: CodeEditErrorCanvasProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [isCopied, setIsCopied] = useState(false);
 

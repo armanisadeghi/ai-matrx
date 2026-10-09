@@ -1,7 +1,7 @@
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Copy, Check, FileText, Eye, EyeOff } from "lucide-react";
 import { 
   getSectionTypeIcon, 
@@ -32,8 +32,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
   const [showRawContent, setShowRawContent] = useState<boolean>(false);
   const [bookmarkCopied, setBookmarkCopied] = useState<boolean>(false);
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = async (text: string): Promise<boolean> => {

@@ -19,15 +19,25 @@ AS $function$
   select
     c.id, c.title, c.description, c.status, c.message_count,
     c.last_model_id, c.initial_agent_version_id,
-    av.version_number,
+    vn.version_number,
     c.source_app, c.source_feature,
     c.created_at, c.updated_at,
-    c.is_favorite
+    platform.my_favorite('conversation', c.id)
   from chat.conversation c
   left join agent.definition_version av on av.id = c.initial_agent_version_id
+  -- A run on the LIVE agent carries no pinned version id; it ran on the version
+  -- that was current when the conversation started (feedback c135f55f: such runs
+  -- grouped as "Version 0" at the bottom of the run history).
+  cross join lateral (
+    select coalesce(
+      av.version_number,
+      (select max(dv.version_number) from agent.definition_version dv
+        where dv.agent_id = c.initial_agent_id and dv.created_at <= c.created_at)
+    ) as version_number
+  ) vn
   where c.initial_agent_id = p_agent_id
     and c.deleted_at is null
-    and (p_version_number is null or av.version_number = p_version_number)
+    and (p_version_number is null or vn.version_number = p_version_number)
   -- `c.id` is the unique tiebreaker that makes this a TOTAL order. Do not remove it.
   order by c.updated_at desc, c.id desc
   limit p_limit offset p_offset;

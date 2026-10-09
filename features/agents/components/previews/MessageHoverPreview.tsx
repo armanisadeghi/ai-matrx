@@ -8,6 +8,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { useState } from "react";
 import Link from "next/link";
@@ -89,8 +90,7 @@ export function MessagePreviewContent({
   onOpen,
 }: MessagePreviewContentProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const message = useAppSelector(
     selectMessageById(conversationId, messageId),

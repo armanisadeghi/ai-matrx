@@ -134,7 +134,7 @@ function treeSummary(r: TreeRow): SpaceSummary {
   };
 }
 
-function parseIcon(raw: string | null | undefined): SpaceMedia | null {
+export function parseIcon(raw: string | null | undefined): SpaceMedia | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);

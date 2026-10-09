@@ -22,6 +22,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useMemo, useState } from "react";
@@ -258,8 +259,7 @@ interface PayloadTabProps {
 
 export function PayloadTab({ conversationId }: PayloadTabProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const assembledRequestSelector = useMemo(
     () => makeSelectAssembledRequest(conversationId),

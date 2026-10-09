@@ -9,7 +9,7 @@
 
 import { copyText } from "@ai-matrx/kit/clipboard";
 import { downloadFile } from "@ai-matrx/kit/download";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { resolveHtmlCanvasPage } from "@/features/html-pages/services/canvasVersionPage";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 
@@ -21,7 +21,7 @@ export function htmlPageFileName(title: string): string {
 export async function copyHtmlSource(html: string): Promise<boolean> {
   return copyText(html, {
     successMessage: "Copied HTML",
-    notify: (message, kind) => (kind === "error" ? toast.error(message) : toast.success(message)),
+    notify: copyNotify,
   });
 }
 

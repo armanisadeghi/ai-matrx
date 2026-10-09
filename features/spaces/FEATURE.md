@@ -45,6 +45,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — Sites (lane spaces-published-list): a "Sites" row in the sidebar foot (beside Templates and Trash,
+  `sidebar/SitesPopover.tsx`) lists every live page the person can open that is published to the web: title, public
+  link (open in a new tab, copy), indexed or not, publish date, "Open in Spaces". One read, `content.space_published(p_org)`
+  (`iam.discoverable_ids` viewer; `p_org` only narrows, the active organization is never passed; door row + grant live),
+  via `readPublishedPages` in `publish/publish-doors.ts`. Walk `sites.walk.mjs` (publish, listed, public link signed out,
+  Open in Spaces, unpublish, gone) all pass.
 - 2026-10-08 — new-row refresh: "New" on an inline database wrote the row but the grid kept "No records yet" until a
   reload — the records page's own-write listener re-read only the rows it held (none on an empty table). Fixed in
   `@ai-matrx/records` (the written id joins the subset read; test `a-row-added-on-this-page-appears-without-a-reload`).

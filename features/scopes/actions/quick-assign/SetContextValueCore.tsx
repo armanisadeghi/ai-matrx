@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -90,8 +90,7 @@ export function SetContextValueCore({
   className,
 }: SetContextValueCoreProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const safeInitialContent =
     typeof initialContent === "string" ? initialContent : "";

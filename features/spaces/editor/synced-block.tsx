@@ -18,6 +18,7 @@ import { onSyncedCount, syncedPageCount } from "../state/synced-sources";
 import { toEngine } from "./convert";
 import { DATABASE_HOST_CLASS } from "./database-host";
 import { storedSpec } from "./stored-blocks";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 const SyncedBody = dynamic(() => import("./SyncedBody"), { ssr: false, loading: () => <div className="spaces-synced-loading" /> });
 
@@ -69,7 +70,7 @@ function SyncedView({ sourceId, ctx }: { sourceId: string; ctx: Ctx }) {
             className="spaces-synced-action"
             onClick={() =>
               void copyText(syncedClip(sourceId)).then((ok) =>
-                ok ? toast.success("Copied. Paste it in any page to sync it there.") : toast.error("We couldn't copy the synced block."),
+                ok ? copyNotify("Copied. Paste it in any page to sync it there.", "success") : toast.error("We couldn't copy the synced block."),
               )
             }
           >

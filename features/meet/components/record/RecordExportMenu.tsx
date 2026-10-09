@@ -8,6 +8,7 @@
 // exporter (`@ai-matrx/print/document`), never a second converter.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Copy, Database, Download, Loader2, Mail } from "lucide-react";
 import {
@@ -66,8 +67,7 @@ export function RecordExportMenu({
   onSendRecap?: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [busy, setBusy] = useState<string | null>(null);
   const openSaveToTable = useOpenSaveToTable();

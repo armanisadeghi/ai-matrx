@@ -20,11 +20,12 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 
 | # | Test | Status | Result |
 |---|---|---|---|
-| 1 | Local A/B: main as-is vs the icons fix dropped into node_modules (`lab:run`, chunks + output + RSS) | running | |
+| 1 | Local A/B: main as-is vs the icons fix dropped into node_modules (`lab:run`, chunks + output + RSS) | **done 2026-10-08** | efa490a55: compile 12.3 → 7.2 min, peak RSS 46.0 → 26.3 GB, wall 14.7 → 9.6 min, server chunks 10,195 → 8,425. Icons 0.3.37 published + adopted (lock). |
 | 2 | Icons fix published → adopted → next Vercel build: chunks ≈ 7.9k, output ≈ 1.35 GB | waiting on publish | |
 | 3 | Attribute the Sep 25 step: A/B the package bumps alone on the pre-step tree | todo | |
-| 4 | Cache bloat: prune orphans at install → Vercel node_modules ≈ 4 GB, cache upload < 1 min | todo | |
-| 5 | Keep going: rank the remaining shared-graph growth with `pnpm lab:graph` and the per-package `import()` census | todo | |
+| 4 | Cache bloat: prune orphans at install → Vercel node_modules ≈ 4 GB, cache upload < 1 min | shipped, verify on Vercel | `.npmrc` `modules-cache-max-age=0`; local node_modules 32 → 8.7 GB. |
+| 3b | print inlined MathJax (2.4 MB) into BOTH /document and /markdown-html (`splitting:false` flattens lazy imports) → own `/mathjax` entry | fixed in source (aidream f133b5a2b4), publish pending; local C run (icons+print) running | /document 3.4 MB → 766 KB, /markdown-html 3.3 MB → 694 KB |
+| 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
 

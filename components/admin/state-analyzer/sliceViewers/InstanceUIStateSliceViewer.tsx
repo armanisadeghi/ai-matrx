@@ -1,7 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import React, { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,7 @@ import { formatJson } from "@ai-matrx/kit/json-format";
 
 function useCopyText(text: string) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const copy = useCallback(() => {

@@ -2,6 +2,7 @@
 
 import { isBundleListerName } from "@ai-matrx/agents/tools";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -140,7 +141,6 @@ import { ReadFailure } from "@ai-matrx/design-system";
 import { readOf } from "@ai-matrx/design-system";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
-import { toast } from "@/lib/toast";
 import { loadAvailableTools, selectAllTools, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
@@ -625,8 +625,7 @@ function ServerToolsTab({
   onRetryRead?: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const dispatch = useAppDispatch();
   const selectedTools = useAppSelector((state) =>
@@ -4158,8 +4157,7 @@ function ToolCard({
 
 function ToolDetailPanel({ toolId }: { toolId: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<any>(null);

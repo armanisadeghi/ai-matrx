@@ -33,6 +33,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { toast } from "@/lib/toast";
 import { useCallback, useState } from "react";
 import { Check, Copy, Loader2, Type } from "lucide-react";
@@ -92,8 +93,7 @@ function readData(serverData: unknown): EpisodeTitleOptionsData | null {
 
 function CopyTitleButton({ title }: { title: string }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {

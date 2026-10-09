@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React from "react";
 import {
   Music,
@@ -14,7 +15,6 @@ import {
   Check,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "@/lib/toast";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -34,8 +34,7 @@ interface PodcastShowPageProps {
 
 export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const publishedEpisodes = episodes.filter((e) => e.is_published);
   const coverImage = show.image_url ?? null;

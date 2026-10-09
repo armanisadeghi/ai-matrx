@@ -21,6 +21,7 @@
 // own action lists when their kinds are added to the registry.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArchiveRestore, ExternalLink, Link2, Star, StarOff } from "lucide-react";
@@ -222,8 +223,7 @@ export function useDataHomeRowMenus({
   onUnhide: (rowId: string) => void;
 }): DataHomeRowMenus {
   const { copyText: copyTextKit } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const client = useRecordsClient();

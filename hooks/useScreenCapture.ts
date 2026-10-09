@@ -233,7 +233,12 @@ export function useScreenCapture(opts: UseScreenCaptureOptions = {}) {
     ) => {
       setIsCapturing(true);
       try {
-        const result = await withHidden(() => captureTabViaCanvas(captureOpts));
+        // An `ignoreSelector` drops those nodes from the CLONE, so the live
+        // ones stay on screen: hiding them too made the asking window vanish
+        // for the whole (multi-second) capture — it looked like nothing ran.
+        const result = captureOpts.ignoreSelector
+          ? await captureTabViaCanvas(captureOpts)
+          : await withHidden(() => captureTabViaCanvas(captureOpts));
         setLastResult(result);
         opts.onCaptured?.(result, "tab");
         return result;

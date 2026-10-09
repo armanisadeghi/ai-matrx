@@ -14,6 +14,7 @@
  * one writer and this owns only the words, the choices and the honest pending/error state.
  */
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Copy, Globe2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,8 +72,7 @@ export function RowAccessControl({
   staged?: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [saving, setSaving] = useState(false);
 

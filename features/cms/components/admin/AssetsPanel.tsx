@@ -14,6 +14,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SurfaceRuntimeProvider } from '@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext';
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
@@ -81,8 +82,7 @@ interface DeleteState {
 
 export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [assets, setAssets] = useState<ClientAsset[]>([]);

@@ -15,7 +15,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -160,8 +160,7 @@ export function PlanTreePreview({
   applied: boolean;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [expandAll, setExpandAll] = useState(false);
   const [showJson, setShowJson] = useState(false);

@@ -1,8 +1,8 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { Bookmark } from "lucide-react";
-import { toast } from "@/lib/toast";
 import {
   DropdownMenuItem,
   DropdownMenuSub,
@@ -22,8 +22,7 @@ export function FilePageReferenceMenuSub({
   fileName?: string;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const copyPage = async (pageNumber: number) => {
     if (!(await copyText(

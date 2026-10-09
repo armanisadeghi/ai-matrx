@@ -6,6 +6,7 @@
 // and the right-click menu all read this builder.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, ArrowRight, ExternalLink, Link2, Settings } from "lucide-react";
@@ -24,8 +25,7 @@ export function useTopicRowActions(
   list: EntityListController<ResearchTopicListRow>,
 ): EntityRowActionsResult<ResearchTopicListRow> {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const router = useRouter();
   const [, startTransition] = useTransition();

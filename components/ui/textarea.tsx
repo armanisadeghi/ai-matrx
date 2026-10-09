@@ -19,7 +19,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -51,8 +51,7 @@ function useCopy(
   props: PackageTextareaProps,
 ) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [hasCopied, setHasCopied] = React.useState(false);
 

@@ -11,10 +11,10 @@
 // messages get in /chat. Never a hand-rolled markdown/stream parser here.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { AudioLines, Check, Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 // Canonical media renderer — re-mints from file_id (media-durability
 // doctrine); never a raw <audio src> of a signed URL.
@@ -88,8 +88,7 @@ function displayContent(turn: InterviewTurnRow): string {
 
 export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const isHuman = turn.speaker === "human";
   const isScribe = turn.speaker === "scribe";

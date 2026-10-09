@@ -37,6 +37,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { Coins, Info, Loader2, Save, Sprout } from "lucide-react";
 
@@ -255,8 +256,7 @@ function EarningCodesSection({
   onSaved: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   /** Right-clicked row — STATE (not a ref) so the menu reads the row that
    *  was actually clicked. */
@@ -653,8 +653,7 @@ function DeductionCodesSection({
   onSaved: () => void;
 }) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   /** Right-clicked row — STATE (not a ref) so the menu reads the row that
    *  was actually clicked. */

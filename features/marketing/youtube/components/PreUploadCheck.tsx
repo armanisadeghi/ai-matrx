@@ -21,6 +21,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState } from "react";
 import { ClipboardCopy, Eye } from "lucide-react";
 
@@ -29,7 +30,6 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
-import { toast } from "@/lib/toast";
 import {
   ScoredChecklist,
   type ScoredChecklistRow,
@@ -68,8 +68,7 @@ export interface PreUploadCheckProps {
 
 export function PreUploadCheck({ className }: PreUploadCheckProps) {
   const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
+    notify: copyNotify,
   });
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [clipboardFallback, setClipboardFallback] = useState<string | null>(null);
