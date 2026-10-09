@@ -245,6 +245,36 @@
       "piece": "agent-variables",
       "file": "features/agents/components/widgets/WidgetVariableInputs.tsx",
       "reason": "moved file, same known duplicate"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/run-controls/AgentExecutionTestModal.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/applets/route/AppletRecordEditors.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "chat-input",
+      "file": "features/content-ir/studio/components/NewShapeClient.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
+    },
+    {
+      "piece": "enter-to-send",
+      "file": "features/pdf-extractor/studio/PdfStudioInspector.tsx",
+      "reason": "hand-rolled message box found when the detector widened to the launcher / shortcut / intelligence doors (2026-10-08); migration to SmartAgentInput is in the composer cleanup plan"
     }
   ]
 }

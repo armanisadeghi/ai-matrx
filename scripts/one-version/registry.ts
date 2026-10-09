@@ -62,11 +62,11 @@ function first(text: string, re: RegExp): number | null {
 // typed into a ProTextarea and sent through useHeadlessAgentJson, so it could
 // not attach anything, and this guard saw neither half).
 const SENDS_TO_AGENT =
-  /\b(?:smartExecute|executeInstance|launchAgentExecution|startConversation|startHostedRun|composerKeyIntent|enterSendsHere|useHeadlessAgentJson|runHeadlessAgentJson|useLiveAgentRun|launchMandate|continueAgentConversation)\b/;
+  /\b(?:smartExecute|executeInstance|launchAgentExecution|startConversation|startHostedRun|composerKeyIntent|enterSendsHere|useHeadlessAgentJson|runHeadlessAgentJson|adoptHeadlessAgentJson|useLiveAgentRun|launchMandate|launchAgent|useShortcutTrigger|continueAgentConversation|createIntelligencePort)\b/;
 // A box a person writes in: a raw field, or the shared writing boxes
 // (ProTextarea / ProInput / VoiceTextarea) used as a message box.
 const OWN_TEXTAREA =
-  /<\s*(?:textarea|Textarea|AutosizeTextarea|TextareaAutosize|ProTextarea|ProInput|VoiceTextarea)\b|contentEditable\b/;
+  /<\s*(?:textarea|Textarea|AutosizeTextarea|TextareaAutosize|ProTextarea|ProInput|VoiceTextarea|WritingBox|ConversationComposer)\b|contentEditable\b/;
 const ENTER_KEY = /\bkey\s*===?\s*["']Enter["']|\bkeyCode\s*===?\s*13\b|\bcode\s*===?\s*["']Enter["']/;
 
 const notTest = (f: string) =>
