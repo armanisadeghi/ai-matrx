@@ -1,5 +1,6 @@
 -- lock: custom,platform
 -- lane: AUTOMATION-TIME
+-- chair-step: replaces two live function bodies (custom.automation_declare, custom._automation_value), revokes client EXECUTE on the two new internal functions, and schedules one pg_cron job (custom-automation-time-tick, every five minutes). Nothing is dropped; every existing trigger keeps its meaning.
 --
 -- LANE AUTOMATION-TIME — A TABLE ACTS WHEN A DATE ARRIVES, AND ON A SCHEDULE.
 --
@@ -41,7 +42,6 @@
 -- based-on: custom.automation_declare(uuid, uuid, jsonb, uuid) 202fca59cb1af9778209f817cd0132a76b01197adf7ff5a1c04aa29308a72d23
 -- based-on: custom._automation_value(jsonb, jsonb, uuid) 12ae4f1633612453832b49165e5d80f4113ee83bf4b4e6db0cfebcc785813c07
 
-set local lock_timeout = '10s';
 set local statement_timeout = '120s';
 
 -- ── THE KNOB ────────────────────────────────────────────────────────────────────────────────────

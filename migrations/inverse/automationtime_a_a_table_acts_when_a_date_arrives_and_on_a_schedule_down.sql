@@ -5,7 +5,6 @@
 -- based-on: custom.automation_declare(uuid, uuid, jsonb, uuid) 6a1b0d0e4f3c8d9e7f2a5b6c1d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e
 -- based-on: custom._automation_value(jsonb, jsonb, uuid) 6a1b0d0e4f3c8d9e7f2a5b6c1d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e
 
-set local lock_timeout = '10s';
 set local statement_timeout = '120s';
 
 select cron.unschedule(j.jobid) from cron.job j where j.jobname = 'custom-automation-time-tick';
