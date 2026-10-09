@@ -10,20 +10,60 @@
 //
 // A run this tab did not adopt (it was refused before a request existed, or it was read back after a
 // reload) has no request row; then the run's own settled answer is all there is: its kind, or its error.
+//
+// A FAILED RUN IS SAID IN THE VISITOR'S WORDS (Applet audit 2026-10-09): `run.error` already carries the
+// plain sentence (`@ai-matrx/applets` forVisitor) and the server's own words went to the error inspector. The
+// stream's own error line (engineering words) is never drawn here; a job only its owner can fix offers the
+// owner the way to it.
 
 import type { JobRunView } from "@ai-matrx/applets";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { selectRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { KindInstanceRenderProps } from "@ai-matrx/content-ir-react";
 
+import Link from "next/link";
+import { TriangleAlert, Wrench } from "lucide-react";
+
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
-export function AppletRunOutput({ run }: { run: JobRunView }) {
+/** Failures only the Applet's owner can fix (the job was deleted, or is set up wrong). */
+const OWNER_FIXES = new Set(["job_unavailable", "job_misconfigured"]);
+
+export function AppletRunOutput({
+  run,
+  appletId,
+  ownerOrganizationId,
+}: {
+  run: JobRunView;
+  appletId?: string;
+  /** The Applet's organization: its members get the way to the job when only they can fix it. */
+  ownerOrganizationId?: string | null;
+}) {
   const requestId = run.ref?.requestId ?? null;
   const adopted = useAppSelector((state) => requestId !== null && selectRequest(requestId)(state) !== undefined);
+  const memberOrgs = useAppSelector(selectOrganizationIds);
   const label = run.label ?? "Working";
 
+  if (run.status === "error" && run.error) {
+    const canFix =
+      OWNER_FIXES.has(run.error.code) && !!appletId && !!ownerOrganizationId && memberOrgs.includes(ownerOrganizationId);
+    return (
+      <div role="alert" className="flex items-start gap-2 py-1 text-sm text-destructive">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <span className="min-w-0">
+          {run.error.message}
+          {canFix ? (
+            <Link href={`/applets/manage/${appletId}`} className="ml-2 inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline">
+              <Wrench className="h-3.5 w-3.5" />
+              Fix this job
+            </Link>
+          ) : null}
+        </span>
+      </div>
+    );
+  }
   if (adopted) return <LiveRunDisplay requestId={requestId} label={label} />;
   if (run.status === "resolving" || (run.status === "running" && !run.result)) return <LiveRunDisplay pending label={label} />;
   if (run.result) {
@@ -36,6 +76,5 @@ export function AppletRunOutput({ run }: { run: JobRunView }) {
       />
     );
   }
-  if (run.error) return <p className="text-xs text-destructive">{run.error.message}</p>;
   return null;
 }

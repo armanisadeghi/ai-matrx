@@ -28,6 +28,7 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { KIND_CREATOR_MANDATE_KEY } from "../../studio/constants";
@@ -76,6 +77,7 @@ function sentenceFor(d: KindRenderGapDiagnosis): string | null {
     case "kind_inactive":
       return `${d.kindLabel ?? d.kind} is not activated yet — it renders, but it can't be picked or bound until someone activates it.`;
     case "generic_is_truth":
+    case "unreadable":
       return null;
   }
 }
@@ -102,6 +104,16 @@ const KindFixItBarInner: React.FC<KindFixItBarProps> = ({ kind, value }) => {
   useEffect(() => {
     let alive = true;
     void diagnoseKindRenderGap(kind).then((result) => {
+      // A visitor never reads why a shape fell back (they cannot fix it); we do, in the error inspector.
+      if (result?.state === "unreadable") {
+        captureError({
+          source: "react-render",
+          code: "kind_unreadable_to_viewer",
+          message: `"${kind}" rendered through the generic viewer for a signed-out visitor: its definition is not readable to them.`,
+          callSite: "KindFixItBar",
+          raw: { kind },
+        });
+      }
       if (alive) setDiagnosis(result);
     });
     return () => {

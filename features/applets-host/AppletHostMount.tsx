@@ -33,6 +33,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import type { AppStore } from "@/lib/redux/store";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
+import { AppletDataRefusedNotice } from "@/features/applets-host/AppletDataRefusedNotice";
 import { AppletWritingBox } from "@/features/applets-host/AppletWritingBox";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
@@ -40,7 +41,7 @@ import {
   createMatrxTransport,
 } from "@/lib/api/matrx-transport";
 import { waitForAuthReady } from "@/lib/api/call-api";
-import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
+import { selectAccessToken, selectIsAnonymous } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
@@ -91,9 +92,6 @@ function locationOf(
   };
 }
 
-function renderRun(run: JobRunView) {
-  return <AppletRunOutput run={run} />;
-}
 
 /**
  * Every job an Applet starts is a mandate run whose NDJSON body the agents port reads for the frame's
@@ -195,6 +193,8 @@ export function AppletHostMount({
   // Bumped by "Try again": a fresh host, a fresh read, a fresh compile.
   const [attempt, setAttempt] = useState(0);
   const [slow, setSlow] = useState(false);
+  // A data read the store refused: who is looking decides what the notice offers.
+  const [readRefused, setReadRefused] = useState<"guest" | "member" | null>(null);
 
   // One host per Applet, kept for the page's life: switching organization must not remount the Applet
   // (a running job would die with it). Jobs read the organization at the moment they start (below).
@@ -326,7 +326,9 @@ export function AppletHostMount({
             renderKind: (kind: string, value: unknown) => (
               <AppletKind host={host} kind={kind} value={value} />
             ),
-            renderRun,
+            renderRun: (run: JobRunView) => (
+              <AppletRunOutput run={run} appletId={record.id} ownerOrganizationId={record.organizationId} />
+            ),
             // Every box a person writes in (`<WritingBox>`, `<ConversationComposer>`): the platform's ProTextarea —
             // dictation and read-aloud — on the Applet's own surface.
             renderWritingBox: (props) => (
@@ -334,7 +336,14 @@ export function AppletHostMount({
             ),
             // A save the store refused is said where she sees it, in the store's sentence — never silent,
             // whether or not the Applet shows its own writeError (empty date, social planner 2026-10-08).
-            announceRefusal: (error) => {
+            // A refused READ is never a toast and never an empty list: a standing notice above the Applet
+            // says why — sign-in for a visitor (reading list, guest, UI audit 2026-10-09).
+            announceRefusal: (error, where) => {
+              if (where.startsWith("read(")) {
+                const state = store.getState();
+                if (!cancelled) setReadRefused(selectAccessToken(state) && !selectIsAnonymous(state) ? "member" : "guest");
+                return;
+              }
               toast.error(error.message);
             },
             // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
@@ -446,5 +455,10 @@ export function AppletHostMount({
     );
   }
   const { Component } = mounted;
-  return <Component />;
+  return (
+    <>
+      {readRefused ? <AppletDataRefusedNotice viewer={readRefused} /> : null}
+      <Component />
+    </>
+  );
 }

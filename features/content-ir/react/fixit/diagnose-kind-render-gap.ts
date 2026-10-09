@@ -19,6 +19,12 @@ import { createClient } from "@/utils/supabase/client";
 export type KindRenderGapState =
   /** No kind_definition row exists for this slug at all. */
   | "unregistered"
+  /**
+   * A signed-out viewer read no row: the kind may exist but not be readable to them (an `internal` kind,
+   * e.g. `product_research_report`, live Applet audit 2026-10-09). Never claimed as "unregistered" — the
+   * visitor sees the quiet floor and the gap is captured for us.
+   */
+  | "unreadable"
   /** Kind exists but no output component row of any sort. */
   | "no_component"
   /** The only real component row(s) are switched off (the kill switch). */
@@ -101,7 +107,7 @@ async function compute(kind: string): Promise<KindRenderGapDiagnosis | null> {
 
   if (!def) {
     return {
-      state: "unregistered",
+      state: session ? "unregistered" : "unreadable",
       kind,
       kindDefinitionId: null,
       kindLabel: null,
