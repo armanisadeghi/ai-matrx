@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 591 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 592 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "03798fe1a0b6";
+export const KIND_REGISTRY_FINGERPRINT = "ba965669d13c";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -953,7 +953,7 @@ export interface AppletRecord {
 }
 
 /**
- * A data source the code reads by alias: one of her tables, or a platform entity type.
+ * A data source the code reads by alias: one of her tables, a platform entity type, or a new table.
  *  *
  *  * From kind `applet_build_result`.
  */
@@ -965,6 +965,7 @@ export interface AppletSource {
   __kind?: string;
   entity?: string | null;
   table_id?: string | null;
+  new_table?: NewTableDeclaration | null;
   organization_id?: string | null;
 }
 
@@ -4498,6 +4499,57 @@ export interface NeedsHuman {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+}
+
+/**
+ * A table she does not have yet — made in her organization when she presses Use it.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface NewTableDeclaration {
+  name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  fields: NewTableField[];
+  title_field?: string | null;
+  label_singular?: string | null;
+}
+
+/**
+ * One column of a table the app needs, in a person's words (type from the catalogue's new_tables.field_types).
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface NewTableField {
+  key: string;
+  type: string;
+  unit?: string | null;
+  label: string;
+  multi?: boolean | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  options?: string[] | null;
+  links_to?: NewTableLink | null;
+  required?: boolean | null;
+}
+
+/**
+ * What a link column points at: another source by alias, one of her tables by id, or platform records.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface NewTableLink {
+  alias?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  entities?: string[] | null;
+  table_id?: string | null;
 }
 
 /**
@@ -9090,7 +9142,7 @@ export interface AnswerGrade {
 }
 
 /**
- * Kind `applet_build_result` (registry v2).
+ * Kind `applet_build_result` (registry v3).
  */
 export interface AppletBuildResult {
   note: string;
@@ -17836,6 +17888,43 @@ export interface RenderedText {
 }
 
 /**
+ * One rental listing reduced to the essentials a renter compares: price, size,
+ * place, pet policy, and the one thing that stands out.
+ *  *
+ *  * Kind `rental_listing_summary` (registry v2).
+ */
+export interface RentalListingSummary {
+  /**
+   * The pet policy as stated, including restrictions and fees (e.g. 'Cats allowed, no dogs'); 'Not stated in listing' when absent.
+   */
+  pets: string;
+  /**
+   * Rent as stated in the listing, including the period and what is included (e.g. '$1,850/month, heat included'); 'Not stated' when the listing gives no price.
+   */
+  price: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "rental_listing_summary";
+  /**
+   * Number of bedrooms; 0 for a studio. Omitted when the listing does not state it.
+   */
+  bedrooms?: number | null;
+  /**
+   * Neighborhood, city, and any location detail the listing gives (address, nearby transit); 'Not stated' when absent.
+   */
+  location: string;
+  /**
+   * One line on what most distinguishes this listing for a renter, good or bad.
+   */
+  standout: string;
+  /**
+   * Number of bathrooms, with 0.5 for a half bath. Omitted when the listing does not state it.
+   */
+  bathrooms?: number | null;
+}
+
+/**
  * Kind `resale_intelligence_report` (registry v4).
  */
 export interface ResaleIntelligenceReport {
@@ -26543,6 +26632,7 @@ export type GeneratedKindSlug =
   | "regex_replace_result"
   | "relation"
   | "rendered_text"
+  | "rental_listing_summary"
   | "resale_intelligence_report"
   | "research_coverage_audit"
   | "research_cross_cutting_tags"
@@ -27137,6 +27227,7 @@ export interface KindPayloadBySlug {
   "regex_replace_result": RegexReplaceResult;
   "relation": Relation;
   "rendered_text": RenderedText;
+  "rental_listing_summary": RentalListingSummary;
   "resale_intelligence_report": ResaleIntelligenceReport;
   "research_coverage_audit": ResearchCoverageAudit;
   "research_cross_cutting_tags": ResearchCrossCuttingTags;
@@ -27735,6 +27826,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "regex_replace_result",
   "relation",
   "rendered_text",
+  "rental_listing_summary",
   "resale_intelligence_report",
   "research_coverage_audit",
   "research_cross_cutting_tags",
