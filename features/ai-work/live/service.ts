@@ -15,6 +15,7 @@ import { apiPost } from "@/lib/api/typed-client";
 import { getUserMessage } from "@/lib/api/errors";
 import {
   createMessagingRepository,
+  type ConversationCursor,
   type ConversationSummary,
   type JsonObject,
 } from "@ai-matrx/messaging";
@@ -28,26 +29,51 @@ function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Pages the hub reads before it says "N+" instead of a count. */
+const ROOM_PAGE = 100;
+const ROOM_PAGES_MAX = 10;
+
+export interface AgentRoomsRead {
+  rooms: ConversationSummary[];
+  /** False when more rooms exist past the pages read: the count is a floor. */
+  complete: boolean;
+}
+
 /** The person's agent rooms (direct, pair, named, review), newest first. */
-export async function fetchAgentRooms(): Promise<ConversationSummary[]> {
-  const page = await agentRooms.listConversations({ kind: "agents", limit: 100 });
-  const ids = page.items.map((item) => item.conversation.id);
-  if (ids.length === 0) return [];
+export async function fetchAgentRooms(): Promise<AgentRoomsRead> {
+  const items: ConversationSummary[] = [];
+  let cursor: ConversationCursor | null = null;
+  let complete = false;
+  for (let page = 0; page < ROOM_PAGES_MAX; page++) {
+    const read = await agentRooms.listConversations({ kind: "agents", limit: ROOM_PAGE, cursor });
+    items.push(...read.items);
+    if (!read.hasMore || !read.nextCursor) {
+      complete = true;
+      break;
+    }
+    cursor = read.nextCursor;
+  }
+  const ids = items.map((item) => item.conversation.id);
+  if (ids.length === 0) return { rooms: [], complete };
   // The inbox projection does not carry `metadata`; the hub needs its `kind`
   // (direct / pair / named / review), so read it beside the list, under RLS.
-  const { data, error } = await supabase
-    .schema("communication")
-    .from("dm_conversations")
-    .select("id, metadata")
-    .in("id", ids);
-  if (error) throw operationFailed("load room kinds", error);
-  const metaById = new Map(data.map((row) => [row.id, row.metadata]));
-  return page.items.map((item) => {
+  const metaById = new Map<string, unknown>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await supabase
+      .schema("communication")
+      .from("dm_conversations")
+      .select("id, metadata")
+      .in("id", ids.slice(i, i + 200));
+    if (error) throw operationFailed("load room kinds", error);
+    for (const row of data) metaById.set(row.id, row.metadata);
+  }
+  const rooms = items.map((item) => {
     const metadata = metaById.get(item.conversation.id);
     return isJsonObject(metadata)
       ? { ...item, conversation: { ...item.conversation, metadata } }
       : item;
   });
+  return { rooms, complete };
 }
 
 const MEMBER_COLUMNS =
@@ -79,10 +105,12 @@ export async function fetchSessionMembers(ownerId: string): Promise<SessionMembe
 }
 
 async function roomsCall(body: {
-  room_op: "direct" | "create" | "add" | "remove";
-  to: string;
+  room_op: "direct" | "create" | "add" | "remove" | "add_agent";
+  to?: string;
   room?: string;
   name?: string;
+  agent_id?: string;
+  goal?: string;
 }): Promise<{ roomId: string; name: string | null }> {
   try {
     const { data } = await apiPost("/agent-messages", { action: "rooms", ...body });
@@ -110,4 +138,79 @@ export function addSessionToRoom(roomId: string, sessionAddress: string) {
 
 export function removeSessionFromRoom(roomId: string, sessionAddress: string) {
   return roomsCall({ room_op: "remove", room: roomId, to: sessionAddress });
+}
+
+/** An agent the person may add to a room as its manager (it carries the agent_messages tool). */
+export interface ManagerCandidate {
+  agentId: string;
+  name: string;
+  description: string | null;
+}
+
+/** The person's own agents and published agents that can message a room. */
+export async function listManagerAgents(): Promise<ManagerCandidate[]> {
+  try {
+    const { data } = await apiPost("/agent-messages", { action: "rooms", room_op: "agents" });
+    const list = Array.isArray(data.agents) ? data.agents : [];
+    return list.flatMap((item) => {
+      if (!isJsonObject(item) || typeof item.agent_id !== "string") return [];
+      return [
+        {
+          agentId: item.agent_id,
+          name: typeof item.name === "string" && item.name ? item.name : "Unnamed agent",
+          description: typeof item.description === "string" ? item.description : null,
+        },
+      ];
+    });
+  } catch (cause) {
+    throw new Error(getUserMessage(cause));
+  }
+}
+
+/** Put a manager agent in the room; its first turn (the briefing with `goal`) starts at once. */
+export function addAgentToRoom(roomId: string, agentId: string, goal: string) {
+  return roomsCall({ room_op: "add_agent", room: roomId, agent_id: agentId, goal: goal.trim() || undefined });
+}
+
+/** What the hub shows for one manager-agent member: its agent and its own conversation. */
+export interface AgentMemberInfo {
+  conversationId: string;
+  agentId: string | null;
+  agentName: string | null;
+  /** The conversation's last run status (e.g. running, completed, failed), when it has run. */
+  lastRunStatus: string | null;
+  updatedAt: string;
+}
+
+/** Names and run status for manager-agent members (member_id is the agent's conversation). */
+export async function fetchAgentMemberInfo(conversationIds: readonly string[]): Promise<Record<string, AgentMemberInfo>> {
+  if (conversationIds.length === 0) return {};
+  const { data: convs, error } = await supabase
+    .schema("chat")
+    .from("conversation")
+    .select("id, initial_agent_id, last_request_status, updated_at")
+    .in("id", [...conversationIds]);
+  if (error) throw operationFailed("load manager agents", error);
+  const agentIds = [...new Set(convs.map((c) => c.initial_agent_id).filter((id): id is string => !!id))];
+  const names = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: defs, error: defError } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, name")
+      .in("id", agentIds);
+    if (defError) throw operationFailed("load manager agent names", defError);
+    for (const d of defs) names.set(d.id, d.name);
+  }
+  const out: Record<string, AgentMemberInfo> = {};
+  for (const c of convs) {
+    out[c.id] = {
+      conversationId: c.id,
+      agentId: c.initial_agent_id,
+      agentName: c.initial_agent_id ? (names.get(c.initial_agent_id) ?? null) : null,
+      lastRunStatus: c.last_request_status,
+      updatedAt: c.updated_at,
+    };
+  }
+  return out;
 }

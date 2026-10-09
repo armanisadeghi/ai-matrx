@@ -34,7 +34,12 @@ export function MessagingMessageChrome({
     <div data-message-id={message.id} className="contents">
       {children}
       {/* What this message is linked to (W1.4's "Link a record…"), drawn only when it has a link. */}
-      <MessageLinks messageId={message.id} title={messageSenderName(message)} />
+      {/* A sending or failed row is the composer's optimistic twin: its id is a client key, not a
+          saved message, so it cannot have links and must never be asked (the associations door
+          refuses a non-UUID id and screamed on every send). */}
+      {message.deliveryState === "sending" || message.deliveryState === "failed" ? null : (
+        <MessageLinks messageId={message.id} title={messageSenderName(message)} />
+      )}
     </div>
   );
 }

@@ -17,8 +17,13 @@ describe("PageWorkspace responsive contract", () => {
       join(__dirname, "cards/PageSearchConsoleCard.tsx"),
       "utf8",
     );
+    // The `.matrx-touch-targets` floor moved out of app/globals.css into the
+    // design system (web-theme.css); the page still opts in with the class.
     const globals = readFileSync(
-      join(__dirname, "../../../../app/globals.css"),
+      join(
+        process.cwd(),
+        "node_modules/@ai-matrx/design-system/dist/web-theme.css",
+      ),
       "utf8",
     );
 

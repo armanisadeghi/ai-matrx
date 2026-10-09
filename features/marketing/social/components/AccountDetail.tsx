@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowLeft, ExternalLink, Plus, RefreshCw } from "lucide-react";
 
 import {
   Badge,
@@ -51,14 +51,22 @@ import {
   type PostSort,
 } from "../mappers";
 import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseline } from "../outlier";
-import { refreshProfile, socialErrorMessage } from "../server";
-import { TRACKED_ROLE_LABELS, isTrackedRole, type PostCardModel } from "../types";
+import { useSocialSpend } from "../cost";
+import { refreshProfile, socialErrorCode, socialErrorMessage, trackAccount } from "../server";
+import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
+import { CapturedFromBrowser } from "../gated/CapturedFromBrowser";
+import { useQueryClient } from "@tanstack/react-query";
+import { GuidedCaptureButton } from "../gated/GuidedCaptureButton";
+import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
+import { TRACKED_ROLE_LABELS, isSocialPlatform, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark, platformLabel } from "./PlatformMark";
-import { PostDrawer } from "./PostDetail";
+import { useOpenPost } from "../useOpenPost";
 import { SocialPostCard } from "./SocialPostCard";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
+import { profileAvatarDoor } from "../server";
+import { SocialImage } from "./SocialImage";
 
 type InnerTab = "posts" | "outliers" | "growth";
 const INNER_TABS = [
@@ -110,7 +118,7 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     accessorFn: (r) => r.outlierScore,
     align: "right",
     filter: "number",
-    cell: (r) => <OutlierBadge input={r.outlier} />,
+    cell: (r) => <OutlierBadge inTable input={r.outlier} />,
   },
   {
     id: "percentile",
@@ -268,28 +276,31 @@ function GrowthPanel({ profileId }: { profileId: string }) {
   );
 }
 
+/** The shared posts' platform ids, read off their urls (the last path segment: shortcode, video id, urn). */
+function knownPostKeys(list: PostCardModel[]): ReadonlySet<string> {
+  return new Set(list.map((x) => x.url.replace(/\/+$/, "").split("/").pop() ?? "").filter(Boolean));
+}
+
 export function AccountDetail({ platform, profileId }: { platform: string; profileId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
   const invalidate = useInvalidateSocial();
   const profile = useProfile(profileId);
   const tracked = useTrackedForProfile(brand.organizationId, profileId);
+  const { costText, confirmSpend } = useSocialSpend(brand.organizationId);
   const handle = profile.data?.handle ?? null;
   const posts = useProfilePosts(profileId, handle);
   const snapshots = useProfileSnapshots(profileId);
   const [tab, setTab] = useState<InnerTab>("posts");
-  const [open, setOpen] = useState<PostCardModel | null>(null);
+  const openInPanel = useOpenPost();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   // The refresh's inline home: its live stage while running, then what it did
   // (or why it failed), beside the button that started it.
   const [refreshLine, setRefreshLine] = useState<{ text: string; failed: boolean; error?: unknown } | null>(null);
 
   async function refresh() {
-    const ok = await confirm({
-      title: `Refresh @${handle ?? ""}?`,
-      description: "Fetches the latest posts and numbers. Costs about 1 credit per page, billed to this organization.",
-      confirmLabel: "Refresh",
-    });
+    const ok = await confirmSpend("profile_page", 1, { title: `Refresh @${handle ?? ""}?`, confirmLabel: "Refresh" });
     if (!ok) return;
     setBusy(true);
     setRefreshLine({ text: "Starting…", failed: false });
@@ -303,6 +314,28 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       setRefreshLine({ text: refreshSummary(result), failed: false });
     } catch (err) {
       setRefreshLine({ text: socialErrorMessage(err, "Refresh failed"), failed: true, error: err });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function trackThis() {
+    const p0 = profile.data;
+    if (!p0) return;
+    const ok = await confirmSpend("track", 1, { title: `Track @${p0.handle}?`, confirmLabel: "Track" });
+    if (!ok) return;
+    setBusy(true);
+    setRefreshLine({ text: "Starting…", failed: false });
+    try {
+      await trackAccount(
+        { profileId: p0.id, handleOrUrl: p0.profile_url || p0.handle, platform: isSocialPlatform(p0.platform) ? p0.platform : undefined, role: "competitor", brandId: brand.id, pages: 1 },
+        { organizationId: brand.organizationId, onProgress: (pr) => setRefreshLine({ text: pr.step && pr.total ? `${pr.message} · ${pr.step} of ${pr.total}` : pr.message, failed: false }) },
+      );
+      await invalidate();
+      setRefreshLine(null);
+      toast.success(`Tracking @${p0.handle}`);
+    } catch (err) {
+      setRefreshLine({ text: socialErrorMessage(err, "Couldn't track this account"), failed: true, error: err });
     } finally {
       setBusy(false);
     }
@@ -334,13 +367,23 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     null,
   );
   const perWeek = postsPerWeek(list);
+  const captureTargets = [
+    { type: "social_profile" as const, id: p.id },
+    { type: "social_tracked_account" as const, id: tracked.data?.id ?? null },
+  ];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex min-h-9 flex-wrap items-center gap-2">
         <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
-        {p.avatar_url ? (
-          <img src={p.avatar_url} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover" />
+        {p.avatar_url || p.avatar_file_id ? (
+          <span className="relative block h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted">
+            <SocialImage
+              door={p.avatar_file_id ? profileAvatarDoor(p.id) : null}
+              url={p.avatar_url}
+              fallback={null}
+            />
+          </span>
         ) : null}
         <div className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-sm font-semibold text-foreground">{p.display_name || p.handle}</span>
@@ -349,7 +392,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         <span title={platformLabel(platform)}>
           <PlatformMark platform={p.platform} size={20} />
         </span>
-        {role ? <Badge>{TRACKED_ROLE_LABELS[role]}</Badge> : <Badge tone="warning">Not tracked</Badge>}
+        {role ? <Badge>{`Tracked · ${TRACKED_ROLE_LABELS[role]}`}</Badge> : <Badge tone="warning">Not tracked</Badge>}
         <span className="ml-auto flex min-w-0 items-center gap-1">
           {refreshLine ? (
             <span
@@ -363,9 +406,26 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             </span>
           ) : null}
           {tracked.data ? (
-            <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title="Refresh · about 1 credit per page">
+            <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}
             </Button>
+          ) : tracked.isLoading ? null : (
+            <Button variant="outline" icon={<Plus />} onClick={() => void trackThis()} disabled={busy}>
+              {busy ? "Tracking…" : "Track"}
+            </Button>
+          )}
+          {GUIDED_CAPTURE_PLATFORMS.has(p.platform) ? (
+            <GuidedCaptureButton
+              organizationId={brand.organizationId}
+              platformLabel={platformLabel(platform)}
+              target={{
+                platform: p.platform,
+                handleOrUrl: p.profile_url || p.handle,
+                profileId: p.id,
+                brandId: brand.id,
+              }}
+              onCaptured={() => void invalidate()}
+            />
           ) : null}
           {p.profile_url ? (
             <Button variant="quiet" icon={<ExternalLink />} asChild>
@@ -384,11 +444,33 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         <KpiTile label="Median views" value={baseline.medianViews === null ? null : formatCompact(baseline.medianViews)} title="Median views of this creator's latest 30 posts." />
         <KpiTile
           label="Best multiple"
-          value={best ? <OutlierBadge input={best.outlier} /> : null}
+          value={best ? <OutlierBadge inTable input={best.outlier} /> : null}
           title="Highest outlier multiple among this creator's posts."
         />
         <KpiTile label="Posts tracked" value={posts.isLoading ? null : String(list.length)} loading={posts.isLoading} />
       </div>
+
+      {refreshLine?.failed &&
+      (socialErrorCode(refreshLine.error) === "social_not_found" ||
+        socialErrorCode(refreshLine.error) === "social_provider_failed") ? (
+        <GatedCaptureOffer
+          organizationId={brand.organizationId}
+          platformLabel={platformLabel(platform)}
+          target={{
+            platform: p.platform,
+            handleOrUrl: p.profile_url || p.handle,
+            target: p.platform === "linkedin" ? "activity" : "profile",
+            profileId: p.id,
+            trackedAccountId: tracked.data?.id ?? null,
+            brandId: brand.brandId,
+          }}
+          onCaptured={() => void queryClient.invalidateQueries({ queryKey: ["social", "browser-captures"] })}
+        />
+      ) : null}
+      <CapturedFromBrowser
+        targets={captureTargets}
+        knownPlatformPostIds={knownPostKeys(list)}
+      />
 
       <Tabs aria-label="Account sections" value={tab} onValueChange={setTab} data={INNER_TABS} />
       {posts.isLoading ? (
@@ -404,9 +486,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       ) : tab === "growth" ? (
         <GrowthPanel profileId={profileId} />
       ) : (
-        <PostsPanel key={tab} posts={list} mode={tab} onOpen={setOpen} />
+        <PostsPanel key={tab} posts={list} mode={tab} onOpen={openInPanel} />
       )}
-      <PostDrawer post={open} onClose={() => setOpen(null)} />
     </div>
   );
 }

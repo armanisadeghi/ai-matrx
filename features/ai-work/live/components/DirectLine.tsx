@@ -1,104 +1,131 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { ErrorNotice } from "@ai-matrx/design-system";
-import { useState } from "react";
-import { SendHorizontal } from "lucide-react";
-import { asConversationId } from "@ai-matrx/messaging";
-import { useMessagingHost } from "@ai-matrx/messaging/react";
-import { Button } from "@/components/ui/button";
+import { asConversationId, formatMessageTime } from "@ai-matrx/messaging";
+import { useConversation } from "@ai-matrx/messaging/react";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import type { LivePresence } from "../presence";
+import type { SessionMemberRow } from "../service";
 import { openDirectLine } from "../service";
 
 const READS_IT: Record<LivePresence, string> = {
-  busy: "Busy: reads this at its next tool call",
-  idle: "Idle: reads this when its next turn starts",
-  ended: "Ended: reads this if it resumes",
+  busy: "reads it at its next tool call",
+  idle: "reads it when its next turn starts",
+  ended: "reads it if it resumes",
 };
 
 /**
- * The person's direct line to one session. An existing line renders the
- * messaging package's thread; the first message creates the line through the
- * agent-messages service (so the session is a member and delivery runs), then
- * posts through the messaging engine like any other message.
+ * Where the person's newest message stands with the session: delivered (the
+ * session's hook confirmed it) or sent and waiting, with when it will be read.
+ */
+function DeliveryLine({
+  roomId,
+  member,
+  presence,
+}: {
+  roomId: string;
+  member: SessionMemberRow | null;
+  presence: LivePresence;
+}) {
+  const { messages } = useConversation(asConversationId(roomId));
+  const mine = [...messages]
+    .reverse()
+    .find((m) => m.metadata.actor_kind !== "agent" && m.deliveryState !== "failed");
+  const deliveredAt = member?.delivered_at ? Date.parse(member.delivered_at) : NaN;
+  let text: string;
+  if (!mine) {
+    text = `${presence === "busy" ? "Busy" : presence === "idle" ? "Idle" : "Ended"}: ${READS_IT[presence]}`;
+  } else if (!Number.isNaN(deliveredAt) && Date.parse(mine.createdAt) <= deliveredAt) {
+    text = `Delivered to the session ${formatMessageTime(member?.delivered_at ?? mine.createdAt)}`;
+  } else {
+    text = `Sent, not yet read: it ${READS_IT[presence]}`;
+  }
+  return (
+    <div className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground" aria-live="polite">
+      {text}
+    </div>
+  );
+}
+
+/**
+ * The person's direct line to one session — ONE composer, from the first
+ * message on. The line is opened (created on first use) through the
+ * agent-messages service when the session is opened, so the session is a
+ * member and delivery runs; posting is the messaging package's own send.
  */
 export function DirectLine({
   address,
   roomId,
   presence,
+  member,
   onCreated,
 }: {
   address: string;
   roomId: string | null;
   presence: LivePresence;
+  member: SessionMemberRow | null;
   onCreated: (roomId: string) => void;
 }) {
-  const host = useMessagingHost();
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<{ address: string; message: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const error = failed?.address === address ? failed.message : null;
+  const onCreatedRef = useRef(onCreated);
+  useEffect(() => {
+    onCreatedRef.current = onCreated;
+  }, [onCreated]);
 
-  const startLine = async () => {
-    const text = draft.trim();
-    if (!text || !host) return;
-    setSending(true);
-    setError(null);
-    try {
-      const { roomId: created } = await openDirectLine(address);
-      host.engine.send({ conversationId: asConversationId(created), content: text });
-      setDraft("");
-      onCreated(created);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The message was not sent.");
-    } finally {
-      setSending(false);
-    }
-  };
+  useEffect(() => {
+    if (roomId) return;
+    let current = true;
+    void openDirectLine(address)
+      .then(({ roomId: opened }) => {
+        if (current) onCreatedRef.current(opened);
+      })
+      .catch((cause: unknown) => {
+        if (current) {
+          setFailed({
+            address,
+            message: cause instanceof Error ? cause.message : "The direct line did not open.",
+          });
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [address, roomId, attempt]);
+
+  if (!roomId) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
+          Opening the direct line
+        </div>
+        <div className="flex-1" />
+        {error ? (
+          <div className="p-3">
+            <ErrorNotice message={error} size="inline" />
+            <button type="button" className="text-xs underline" onClick={() => setAttempt((n) => n + 1)}>
+              Try again
+            </button>
+          </div>
+        ) : (
+          <div className="m-3 h-11 animate-pulse rounded-lg bg-muted/60" />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-        {READS_IT[presence]}
-      </div>
-      {roomId ? (
-        <ConversationPane
-          key={roomId}
-          conversationId={roomId}
-          showHeader={false}
-          showAi={false}
-          className="min-h-0 flex-1"
-        />
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 p-3">
-          <p className="text-center text-xs text-muted-foreground">
-            No messages with this session yet.
-          </p>
-          {error && <ErrorNotice message={error} size="inline" />}
-          <div className="flex items-end gap-2 rounded-lg border border-input p-1.5 focus-within:ring-1 focus-within:ring-ring">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void startLine();
-                }
-              }}
-              rows={2}
-              placeholder="Message this session"
-              aria-label="Message this session"
-              className="min-h-[2.5rem] flex-1 resize-none bg-transparent px-1.5 py-1 text-sm outline-none"
-            />
-            <Button
-              icon={<SendHorizontal />}
-              aria-label="Send"
-              className="shrink-0"
-              disabled={!draft.trim() || sending || !host}
-              onClick={() => void startLine()}
-            />
-          </div>
-        </div>
-      )}
+      <DeliveryLine roomId={roomId} member={member} presence={presence} />
+      <ConversationPane
+        key={roomId}
+        conversationId={roomId}
+        showHeader={false}
+        showAi={false}
+        className="min-h-0 flex-1"
+      />
     </div>
   );
 }

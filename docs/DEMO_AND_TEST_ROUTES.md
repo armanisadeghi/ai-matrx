@@ -135,8 +135,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demos/upgrade` — `app/(dev)/demos/upgrade/page.tsx`
 - `/demos/upgrade/industry/[id]` — `app/(dev)/demos/upgrade/industry/[id]/page.tsx`
 - `/demos/upgrade/landing` — `app/(dev)/demos/upgrade/landing/page.tsx`
-- `/demos/whatsapp-demo` — `app/(dev)/demos/whatsapp-demo/page.tsx`
-- `/demos/whatsapp-window-demo` — `app/(dev)/demos/whatsapp-window-demo/page.tsx`
 - `/demos/window-demo` — `app/(dev)/demos/window-demo/page.tsx`
 
 ### Authenticated — `/demo`
@@ -738,8 +736,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demos/upgrade`
 - `/demos/upgrade/industry/[id]`
 - `/demos/upgrade/landing`
-- `/demos/whatsapp-demo`
-- `/demos/whatsapp-window-demo`
 - `/demos/window-demo`
 - `/tests`
 - `/tests/_maps`

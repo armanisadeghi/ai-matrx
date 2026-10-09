@@ -6458,6 +6458,126 @@ export type Database = {
           },
         ]
       }
+      hard_cost_reconciliation: {
+        Row: {
+          charged_points: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          details: Json
+          expected_points: number
+          findings: string[]
+          id: string
+          metadata: Json
+          organization_id: string
+          points_drift: number
+          provider: string
+          provider_actual_units: number | null
+          provider_actual_usd: number | null
+          provider_drift_pct: number | null
+          provider_drift_usd: number | null
+          provider_interval_end: string | null
+          provider_interval_start: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          recorded_rows: number
+          recorded_units: number | null
+          recorded_usd: number
+          recorded_usd_in_provider_interval: number | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          uncharged_rows: number
+          uncharged_usd: number
+          unpriced_rows: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          window_end: string
+          window_kind: string
+          window_start: string
+        }
+        Insert: {
+          charged_points?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          details?: Json
+          expected_points?: number
+          findings?: string[]
+          id?: string
+          metadata?: Json
+          organization_id: string
+          points_drift?: number
+          provider: string
+          provider_actual_units?: number | null
+          provider_actual_usd?: number | null
+          provider_drift_pct?: number | null
+          provider_drift_usd?: number | null
+          provider_interval_end?: string | null
+          provider_interval_start?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          recorded_rows?: number
+          recorded_units?: number | null
+          recorded_usd?: number
+          recorded_usd_in_provider_interval?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          uncharged_rows?: number
+          uncharged_usd?: number
+          unpriced_rows?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          window_end: string
+          window_kind: string
+          window_start: string
+        }
+        Update: {
+          charged_points?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          details?: Json
+          expected_points?: number
+          findings?: string[]
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          points_drift?: number
+          provider?: string
+          provider_actual_units?: number | null
+          provider_actual_usd?: number | null
+          provider_drift_pct?: number | null
+          provider_drift_usd?: number | null
+          provider_interval_end?: string | null
+          provider_interval_start?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          recorded_rows?: number
+          recorded_units?: number | null
+          recorded_usd?: number
+          recorded_usd_in_provider_interval?: number | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          uncharged_rows?: number
+          uncharged_usd?: number
+          unpriced_rows?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          window_end?: string
+          window_kind?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       org_plan: {
         Row: {
           created_at: string
@@ -6838,6 +6958,75 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provider_balance_snapshot: {
+        Row: {
+          balance_units: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          provider: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          taken_at: string
+          unit: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          balance_units: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          provider: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          taken_at?: string
+          unit: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          balance_units?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          provider?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          taken_at?: string
+          unit?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -7764,6 +7953,26 @@ export type Database = {
       plan_set: { Args: { p_fields: Json; p_plan_key: string }; Returns: Json }
       plan_status: { Args: { p_org: string }; Returns: Json }
       public_plans: { Args: never; Returns: Json }
+      reconcile_hard_cost: {
+        Args: {
+          p_end: string
+          p_provider: string
+          p_start: string
+          p_unit_usd?: number
+          p_window_kind: string
+        }
+        Returns: Json
+      }
+      record_provider_balance: {
+        Args: {
+          p_note?: string
+          p_provider: string
+          p_source?: string
+          p_unit: string
+          p_units: number
+        }
+        Returns: string
+      }
       release_checkout: {
         Args: { p_customer: string; p_livemode: boolean; p_token: string }
         Returns: undefined
@@ -22008,6 +22217,8 @@ export type Database = {
           outcome: string
         }[]
       }
+      dm_is_agent_actor: { Args: { p_metadata: Json }; Returns: boolean }
+      dm_is_agent_conversation: { Args: { p_metadata: Json }; Returns: boolean }
       enqueue_my_sms_assistant_test: {
         Args: {
           p_body: string
@@ -22170,6 +22381,36 @@ export type Database = {
           canonical_file_id: string
           disposition: string
           interaction_id: string
+        }[]
+      }
+      get_dm_conversations_with_details: {
+        Args: {
+          p_archived?: string
+          p_before_conversation_id?: string
+          p_before_sort_at?: string
+          p_kind?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          conversation_created_at: string
+          conversation_id: string
+          conversation_type: string
+          conversation_updated_at: string
+          group_image_url: string
+          group_name: string
+          last_message_at: string
+          last_message_content: string
+          last_message_sender_id: string
+          participants: Json
+          unread_count: number
+        }[]
+      }
+      get_dm_unread_summary: {
+        Args: { p_user_id: string }
+        Returns: {
+          agent_conversations: number
+          people_conversations: number
         }[]
       }
       get_my_sms_assistant_program: {
@@ -97387,6 +97628,10 @@ export type Database = {
           triage_state: string
         }[]
       }
+      ues_merge_metadata: {
+        Args: { p_entity_id: string; p_entity_type: string; p_patch: Json }
+        Returns: Json
+      }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {
@@ -128815,6 +129060,7 @@ export type Database = {
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
           status_changed_at: string | null
+          thumbnail_file_id: string | null
           thumbnail_url: string | null
           title: string | null
           updated_at: string
@@ -128854,6 +129100,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           status_changed_at?: string | null
+          thumbnail_file_id?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
@@ -128893,6 +129140,7 @@ export type Database = {
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
           status_changed_at?: string | null
+          thumbnail_file_id?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
@@ -129466,6 +129714,7 @@ export type Database = {
       }
       social_profile: {
         Row: {
+          avatar_file_id: string | null
           avatar_url: string | null
           bio: string | null
           category: string | null
@@ -129502,6 +129751,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          avatar_file_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           category?: string | null
@@ -129538,6 +129788,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          avatar_file_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           category?: string | null
@@ -129791,7 +130042,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      brand_social_accounts: {
+        Args: { p_brand_id: string }
+        Returns: {
+          avatar_url: string
+          best_multiple_30d: number
+          best_post_id_30d: string
+          display_name: string
+          followers: number
+          followers_30d_ago: number
+          followers_observed_at: string
+          handle: string
+          is_verified: boolean
+          last_post_at: string
+          last_refreshed_at: string
+          owner_kind: string
+          owner_name: string
+          owner_party_id: string
+          platform: string
+          posts_tracked: number
+          profile_display_name: string
+          profile_handle: string
+          profile_id: string
+          profile_url: string
+          property_id: string
+          property_status: string
+          row_key: string
+          trackable: boolean
+          tracked_account_id: string
+          tracked_label: string
+          tracked_role: string
+          tracked_status: string
+          url: string
+        }[]
+      }
+      brand_social_counts: {
+        Args: { p_brand_ids: string[] }
+        Returns: {
+          accounts: number
+          brand_id: string
+          company_accounts: number
+          person_accounts: number
+          tracked: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -135835,12 +136129,15 @@ export type Database = {
           id: string
           industry: string | null
           integrations: Json
+          kind: string
           logo_url: string | null
           metadata: Json
           name: string
           notes: string | null
           og_image_url: string | null
           organization_id: string
+          person_party_id: string | null
+          person_user_id: string | null
           previous_slugs: string[]
           profile: Json
           published_to_web: boolean
@@ -135866,12 +136163,15 @@ export type Database = {
           id?: string
           industry?: string | null
           integrations?: Json
+          kind?: string
           logo_url?: string | null
           metadata?: Json
           name: string
           notes?: string | null
           og_image_url?: string | null
           organization_id: string
+          person_party_id?: string | null
+          person_user_id?: string | null
           previous_slugs?: string[]
           profile?: Json
           published_to_web?: boolean
@@ -135897,12 +136197,15 @@ export type Database = {
           id?: string
           industry?: string | null
           integrations?: Json
+          kind?: string
           logo_url?: string | null
           metadata?: Json
           name?: string
           notes?: string | null
           og_image_url?: string | null
           organization_id?: string
+          person_party_id?: string | null
+          person_user_id?: string | null
           previous_slugs?: string[]
           profile?: Json
           published_to_web?: boolean
@@ -138292,6 +138595,8 @@ export type Database = {
           kind: string
           metadata: Json
           organization_id: string
+          owner_kind: string
+          owner_party_id: string | null
           settings: Json
           site_id: string | null
           status: string
@@ -138313,6 +138618,8 @@ export type Database = {
           kind: string
           metadata?: Json
           organization_id: string
+          owner_kind?: string
+          owner_party_id?: string | null
           settings?: Json
           site_id?: string | null
           status?: string
@@ -138334,6 +138641,8 @@ export type Database = {
           kind?: string
           metadata?: Json
           organization_id?: string
+          owner_kind?: string
+          owner_party_id?: string | null
           settings?: Json
           site_id?: string | null
           status?: string

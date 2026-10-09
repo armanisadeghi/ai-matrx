@@ -204,6 +204,27 @@ export function visibleCollections(rows: readonly SwipeCollectionRow[], showArch
   return rows.filter((r) => (r.deleted_at === null) !== showArchived);
 }
 
+export type SwipeBrandScope = "brand" | "all";
+
+/**
+ * Which collections the Swipe tab lists. Collections belong to the organization
+ * and optionally serve one brand (`brand_id`): "brand" shows only the ones linked
+ * to this brand, "all" shows every collection (including unlinked ones). A brand
+ * with no linked collection is told how many others exist, never shown theirs.
+ */
+export function collectionsForBrandScope(
+  rows: readonly SwipeCollectionRow[],
+  brandId: string,
+  scope: SwipeBrandScope,
+): SwipeCollectionRow[] {
+  return scope === "all" ? [...rows] : rows.filter((r) => r.brand_id === brandId);
+}
+
+/** Collections that are live but not linked to this brand (unlinked or another brand's). */
+export function otherCollectionCount(rows: readonly SwipeCollectionRow[], brandId: string): number {
+  return rows.filter((r) => r.deleted_at === null && r.brand_id !== brandId).length;
+}
+
 /** Build the ad map the swipe builder wants out of raw rows. */
 export function adMapOf(rows: readonly Parameters<typeof toAdCardModel>[0][]): Map<string, AdCardModel> {
   return new Map(rows.map((r) => [r.id, toAdCardModel(r)]));

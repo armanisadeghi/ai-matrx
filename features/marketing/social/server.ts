@@ -15,6 +15,7 @@
 import {
   del,
   downloadBlob,
+  downloadBlobWithProgress,
   getJson,
   postJson,
   putJson,
@@ -32,6 +33,7 @@ import type {
   IngestProfileResult,
   PostMediaRef,
   SocialCapabilities,
+  SocialCosts,
   SocialCredits,
   SocialErrorCode,
   SocialPlatform,
@@ -286,15 +288,22 @@ export async function listPostMedia(postId: string, opts: CallOptions): Promise<
  */
 export async function fetchPlaybackUrl(
   door: string,
-  opts: CallOptions,
+  opts: CallOptions & { onBytes?: (loaded: number, total: number | null) => void },
 ): Promise<string> {
   const path = door.startsWith("/") ? door : `/${door}`;
-  const { blob } = await downloadBlob(path.startsWith(BASE) ? path : `${BASE}${path}`, {
-    organizationId: org(opts.organizationId),
-    signal: opts.signal,
-  });
+  const target = path.startsWith(BASE) ? path : `${BASE}${path}`;
+  const requestOptions = { organizationId: org(opts.organizationId), signal: opts.signal };
+  const { blob } = opts.onBytes
+    ? await downloadBlobWithProgress(target, (e) => opts.onBytes?.(e.loaded, e.total), requestOptions)
+    : await downloadBlob(target, requestOptions);
   return URL.createObjectURL(blob);
 }
+
+/** The stored thumbnail door of a post (small JPEG; 404 when none was stored). */
+export const postThumbnailDoor = (postId: string): string => `${BASE}/posts/${postId}/thumbnail`;
+
+/** The stored avatar door of an account (small JPEG; 404 when none was stored). */
+export const profileAvatarDoor = (profileId: string): string => `${BASE}/profiles/${profileId}/avatar`;
 
 // ---------------------------------------------------------------------------
 // Swipe file
@@ -358,7 +367,7 @@ export async function removeFromCollection(
 // Ads
 // ---------------------------------------------------------------------------
 
-/** One search of an ad library. Spends provider credits (about one) — callers confirm first. */
+/** One search of an ad library. A hard cost charged in points (`useSocialSpend`). */
 export async function searchAds(
   input: { library: AdLibrary; query?: string; advertiser?: string; cursor?: string },
   opts: CallOptions,
@@ -382,6 +391,15 @@ export async function searchAds(
 
 export async function getCapabilities(opts: CallOptions): Promise<SocialCapabilities> {
   const { data } = await getJson<SocialCapabilities>(`${BASE}/capabilities`, {
+    organizationId: org(opts.organizationId),
+    signal: opts.signal,
+  });
+  return data;
+}
+
+/** What each social action costs (USD, from the ledger's price knob). Render it with `useSocialSpend`. */
+export async function getCosts(opts: CallOptions): Promise<SocialCosts> {
+  const { data } = await getJson<SocialCosts>(`${BASE}/costs`, {
     organizationId: org(opts.organizationId),
     signal: opts.signal,
   });

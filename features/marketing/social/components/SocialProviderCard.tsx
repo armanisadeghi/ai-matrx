@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Operations > Connections: the social data provider (ScrapeCreators and its
- * fallbacks). Status and platform coverage come from `GET /social/capabilities`,
- * credits remaining from `GET /social/credits` (the vendor's free balance call).
- * Every number is the server's; a failed call says so, never a zero.
+ * Operations > Connections: the social data provider. Status and platform
+ * coverage come from `GET /social/capabilities`. Spend this month comes from
+ * `GET /social/credits` (cost ledger: the organization's, plus the platform total
+ * for admins) and reads in points through the one cost formatter.
  *
- * Spend this month: the same call returns month-to-date spend and call counts
- * from the cost ledger (the organization's, plus the platform total for admins).
+ * Vendor names and the vendor's own credit balance are our business, not the
+ * member's (Arman, 2026-10-09): only a system admin seat sees them.
+ * Every number is the server's; a failed call says so, never a zero.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +17,8 @@ import { Coins, Database, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+
+import { useCostDisplay, useSeesDollars } from "@/components/cost/useCostDisplay";
 
 import { getCapabilities, getCredits } from "../server";
 import { SOCIAL_PLATFORMS, type SocialSpend, type SocialSpendFigure } from "../types";
@@ -46,9 +49,13 @@ function formatCredits(n: number | null | undefined): string {
   return typeof n === "number" ? Math.round(n).toLocaleString() : "Not reported";
 }
 
-export function formatSpend(spend: SocialSpend | null | undefined, error?: string | null): string {
+export function formatSpend(
+  spend: SocialSpend | null | undefined,
+  error: string | null | undefined,
+  formatCost: (usd: number) => string,
+): string {
   if (!spend) return error ? "Spend unavailable" : "Not reported";
-  const one = (f: SocialSpendFigure) => `$${f.usd.toFixed(2)} · ${f.calls.toLocaleString()} calls`;
+  const one = (f: SocialSpendFigure) => `${formatCost(f.usd)} · ${f.calls.toLocaleString()} calls`;
   return spend.platform
     ? `${one(spend.organization)} (organization) · ${one(spend.platform)} (platform)`
     : one(spend.organization);
@@ -57,6 +64,8 @@ export function formatSpend(spend: SocialSpend | null | undefined, error?: strin
 export function SocialProviderCard() {
   const organizationId = useAppSelector(selectOrganizationId) ?? "";
   const enabled = Boolean(organizationId);
+  const seesVendor = useSeesDollars();
+  const { format } = useCostDisplay();
   const caps = useQuery({
     queryKey: ["marketing", "social", "capabilities", organizationId],
     queryFn: ({ signal }) => getCapabilities({ organizationId, signal }),
@@ -101,25 +110,29 @@ export function SocialProviderCard() {
       </div>
       <div className="mt-4 divide-y divide-border rounded-lg border border-border">
         {providers.length === 0 ? (
-          <Row icon={Database} label="Providers" detail={caps.isError ? "Provider status unavailable" : "Loading…"} />
-        ) : (
+          <Row icon={Database} label="Status" detail={caps.isError ? "Status unavailable" : "Loading…"} />
+        ) : seesVendor ? (
           providers.map(([name, status]) => (
             <Row key={name} icon={Database} label={providerName(name)} detail={status === "ready" ? "Ready" : status} />
           ))
+        ) : (
+          <Row icon={Database} label="Status" detail={ready.length ? "Ready" : "Not configured"} />
         )}
-        <Row
-          icon={Coins}
-          label="Credits remaining"
-          detail={
-            credits.isPending
-              ? "Loading…"
-              : credits.isError
-                ? "Balance unavailable"
-                : balances.length === 0
-                  ? "No provider reports a balance"
-                  : balances.map(([name, n]) => `${providerName(name)} ${formatCredits(n)}`).join(" · ")
-          }
-        />
+        {seesVendor ? (
+          <Row
+            icon={Coins}
+            label="Credits remaining"
+            detail={
+              credits.isPending
+                ? "Loading…"
+                : credits.isError
+                  ? "Balance unavailable"
+                  : balances.length === 0
+                    ? "No provider reports a balance"
+                    : balances.map(([name, n]) => `${providerName(name)} ${formatCredits(n)}`).join(" · ")
+            }
+          />
+        ) : null}
         <Row
           icon={Receipt}
           label="Spend this month"
@@ -128,7 +141,7 @@ export function SocialProviderCard() {
               ? "Loading…"
               : credits.isError
                 ? "Spend unavailable"
-                : formatSpend(credits.data?.spend, credits.data?.spend_error)
+                : formatSpend(credits.data?.spend, credits.data?.spend_error, (usd) => format(usd))
           }
         />
       </div>

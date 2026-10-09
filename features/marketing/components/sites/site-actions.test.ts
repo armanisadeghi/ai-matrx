@@ -9,6 +9,11 @@ jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn() },
 }));
 
+// The shared copy door (kit copyText -> copyNotify) settles over several
+// microtasks and a macrotask, not one; a menu item has no pressed control, so
+// the success toast is the fallback confirmation this test reads.
+const flushCopy = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 const site: SiteListRow = {
   brand_id: "brand-1",
   created_at: "2026-08-01T00:00:00.000Z",
@@ -173,7 +178,7 @@ describe("buildSiteMenu", () => {
     });
 
     select(entry(config, "copy-summary"));
-    await Promise.resolve();
+    await flushCopy();
     expect(writeText).toHaveBeenLastCalledWith(
       [
         "Site: Example",
@@ -194,7 +199,7 @@ describe("buildSiteMenu", () => {
     );
 
     select(entry(config, "copy-ai"));
-    await Promise.resolve();
+    await flushCopy();
     const copiedForAi = writeText.mock.calls.at(-1)?.[0];
     expect(copiedForAi).toContain("web-site");
     expect(copiedForAi).toContain("site-1");
@@ -275,13 +280,13 @@ describe("buildSiteMenu", () => {
     expect(openCms).toHaveBeenCalledTimes(1);
 
     select(entry(config, "copy-summary"));
-    await Promise.resolve();
+    await flushCopy();
     expect(writeText).toHaveBeenLastCalledWith(
       ["Site: Example", "Pages planned: 12"].join("\n"),
     );
 
     select(entry(config, "copy-ai"));
-    await Promise.resolve();
+    await flushCopy();
     const copiedForAi = writeText.mock.calls.at(-1)?.[0];
     expect(copiedForAi).toContain("web-content-plan-site");
     expect(copiedForAi).toContain("Content plan — example.com");

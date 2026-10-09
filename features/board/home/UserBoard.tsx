@@ -9,7 +9,8 @@
  *
  * Ways in (one path each, all ending in `place()`):
  *   the Add menu and the Start panel  → start new / bring in any item type;
- *   the Note / Text tools             → a note or a label where you click;
+ *   the Sticky note / Text tools      → a sticky or plain text where you click
+ *                                       (a double-click on empty board too);
  *   drop                              → files upload; links and text land;
  *   paste                             → links become pages, text a Note;
  *   agents                            → the board_* tools (BoardSurface).
@@ -18,7 +19,7 @@
  * reported through `onChange` as a `BoardDocument` (the saved form).
  */
 
-import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
@@ -45,9 +46,16 @@ import { BoardSurface } from "../components/BoardSurface";
 import { BoardViewport } from "../components/BoardViewport";
 import { BoardTile } from "../components/BoardTile";
 import { BoardFrameView } from "../components/BoardFrameView";
-import { BoardEdgeLine } from "../components/BoardEdgeLine";
 import { ShapesLayer } from "../components/ShapesLayer";
+import { SelectionToolbar } from "../components/SelectionToolbar";
+import { selectionActionsSection, shapeStyleSection } from "../components/ShapeToolbarSections";
+import { hitShape, isBoxed } from "../engine/shapes";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
+import { stickyStyleSection, textStyleSection } from "../components/CanvasTextToolbarSections";
+import { createStickyOnBoard, createTextOnBoard } from "./canvas-text-create";
+import { startStickyNoteSync } from "../board/sticky-notes";
+import { stickyNoteStore } from "../persistence/sticky-note-store";
+import { useBoardOrganizationId } from "../items/board-organization";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
 import { LayersPanel } from "../components/LayersPanel";
@@ -150,11 +158,22 @@ export function UserBoard({
     parked: doc.nodes.filter((n) => n.parked).map((n) => n.id),
     frames: doc.groups,
     shapes: doc.shapes,
-    connections: doc.edges,
   }));
   const layout = useBoardLayout(board);
   // "On N boards": one read of every saved board's tiles (not for a meeting guest or an unsaved board).
   const reuseIndex = useReuseIndex(boardId, !guest);
+  // Sticky notes' words are Notes in the person's "Sticky notes" folder, filed in this board's
+  // organization (board/sticky-notes.ts). A meeting guest or an unsaved board keeps them on the board.
+  const boardOrganizationId = useBoardOrganizationId();
+  useEffect(() => {
+    if (!boardId || guest) return;
+    return startStickyNoteSync(board, stickyNoteStore(boardOrganizationId), {
+      onError: (e, what) =>
+        toast.error(what === "read" ? "Sticky notes: couldn't load their latest words" : "Sticky note not saved to Notes yet", {
+          description: e instanceof Error ? e.message : undefined,
+        }),
+    });
+  }, [board, boardId, guest, boardOrganizationId]);
   const reuseValue = useMemo(() => (reuseIndex ? { index: reuseIndex, boardId } : null), [reuseIndex, boardId]);
   const [store, setStore] = useState<BoardCameraStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
@@ -188,7 +207,7 @@ export function UserBoard({
         ...(t.basics ? { basics: t.basics } : {}),
       })),
       groups: now.frames,
-      edges: now.connections,
+      edges: [],
       shapes: board.shapes,
     };
   };
@@ -283,6 +302,13 @@ export function UserBoard({
     if (!store) return { x: 0, y: 0 };
     const { w, h } = store.getSize();
     return screenToWorld(store.getCamera(), w / 2, h / 2);
+  };
+
+  /** The Add menu's Sticky note / Text rows: the same creator as the toolbar tools, at the view centre. */
+  const addCanvasText = (kind: "sticky" | "text") => {
+    if (!store) return;
+    if (kind === "sticky") createStickyOnBoard(board, store);
+    else createTextOnBoard(board, store);
   };
 
   // Successive adds fill the view in reading order while the view stays where
@@ -385,26 +411,26 @@ export function UserBoard({
     board
       .read()
       .tiles.find((t) => p.x >= t.rect.x && p.x <= t.rect.x + t.rect.w && p.y >= t.rect.y && p.y <= t.rect.y + t.rect.h);
+  /** A rectangle / oval under a world point (topmost), if any — an arrow end binds to it. */
+  const boxShapeAtPoint = (p: { x: number; y: number }) => {
+    const shapes = board.getShapes();
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (isBoxed(shapes[i].kind) && hitShape(shapes[i], p, 0, board.targetOf)) return shapes[i];
+    }
+    return undefined;
+  };
 
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
     switch (c.tool) {
-      case "note":
-        board.addTile({
-          id,
-          title: "Note",
-          source: { kind: "entity", entity: "note", id: null },
-          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
-        });
-        break;
+      // Words on the canvas (a sticky note, plain text): made, selected and typing at once.
+      // A full Note stays in the Add menu ("Note"); the sticky tool never makes a Note tile.
+      case "sticky":
+        if (store) createStickyOnBoard(board, store, c.at);
+        return;
       case "text":
-        board.addTile({
-          id,
-          title: "Label",
-          source: { kind: "label", text: "" },
-          rect: { x: c.at.x - 20, y: c.at.y - 20, w: 520, h: 120 },
-        });
-        break;
+        if (store) createTextOnBoard(board, store, c.at);
+        return;
       case "frame":
         board.addFrame({ id, rect: c.rect, title: "Frame" });
         break;
@@ -414,21 +440,34 @@ export function UserBoard({
         break;
       case "arrow":
       case "line": {
-        // An arrow drawn from one tile onto another is a LINE between them (a connection): the
-        // second tile becomes context for a chat tile, in either direction. Anywhere else it is a mark.
-        const from = tileAtPoint(c.from);
-        const to = tileAtPoint(c.to);
+        // An arrow drawn from one tile onto another is a connection (a chat tile reads the other tile as
+        // context, in either direction) — and it is a bound arrow shape like every other connector
+        // (`board/connections.ts`). Drawings sit above tiles, so a box shape under an end is the nearer target.
+        const fromShape = boxShapeAtPoint(c.from);
+        const toShape = boxShapeAtPoint(c.to);
+        const from = fromShape ? undefined : tileAtPoint(c.from);
+        const to = toShape ? undefined : tileAtPoint(c.to);
         if (c.tool === "arrow" && from && to && from.id !== to.id) {
-          board.connect({ id: `link:${crypto.randomUUID().slice(0, 8)}`, from: from.id, to: to.id });
+          if (board.connections.some((x) => x.from === from.id && x.to === to.id)) {
+            toast(`"${from.title}" is already connected to "${to.title}"`);
+            return;
+          }
           toast(`Connected "${from.title}" to "${to.title}"`);
-          return;
         }
-        board.addShape({ id, kind: c.tool, points: [c.from, c.to] });
+        // An end dropped on a tile or a rectangle / oval BINDS to it and follows it (tldraw).
+        const start = fromShape?.id ?? from?.id;
+        const end = toShape?.id ?? to?.id;
+        const bind = start !== end && (start || end) ? { ...(start ? { start } : {}), ...(end ? { end } : {}) } : undefined;
+        board.addShape({ id, kind: c.tool, points: [c.from, c.to], ...(bind ? { bind } : {}) });
         break;
       }
       case "pen":
         board.addShape({ id, kind: "pen", points: c.points });
         break;
+      case "eraser":
+        board.removeMany(c.ids);
+        if (store && c.ids.some((x) => store.isSelected(x))) store.select(null);
+        return;
     }
     requestAnimationFrame(() => store?.select(id));
   };
@@ -564,18 +603,23 @@ export function UserBoard({
     if (ids.length === 0) return;
     if (ids.length === 1) {
       const id = ids[0];
-      if (board.shapes.some((sh) => sh.id === id)) board.removeShape(id);
+      if (board.getShape(id)) {
+        board.removeShape(id);
+        store?.select(null);
+      }
       else if (board.frames.some((f) => f.id === id)) deleteFrame(id);
       else if (tileOf(id)) takeOff(id);
       return;
     }
     const tiles = ids.filter((id) => tileOf(id));
     const frames = ids.filter((id) => board.frames.some((f) => f.id === id));
+    const marks = ids.filter((id) => board.getShape(id));
     board.removeMany(ids);
     store?.select(null);
     const parts = [
       tiles.length ? `${tiles.length} ${tiles.length === 1 ? "tile" : "tiles"}` : "",
       frames.length ? `${frames.length} ${frames.length === 1 ? "frame" : "frames"}` : "",
+      marks.length ? `${marks.length} ${marks.length === 1 ? "drawing" : "drawings"}` : "",
     ].filter(Boolean);
     toast(`Took ${parts.join(" and ")} off the board`, { action: { label: "Undo", onClick: board.undo } });
   };
@@ -595,13 +639,31 @@ export function UserBoard({
   // Group gestures (a multi-selection drag, a frame carrying its tiles, arrow nudges) move
   // through the board model as one undo step.
   useEffect(() => store?.registerMover({ dragMany: board.dragMany }), [store, board]);
+  // ⌘D: copies of the selected drawings, selected (tiles are live records — not duplicated here).
+  const duplicateSelected = (): boolean => {
+    const ids = (store?.getSelection() ?? []).filter((id) => board.getShape(id));
+    if (ids.length === 0) return false;
+    const copies = board.duplicateShapes(ids);
+    requestAnimationFrame(() => store?.setSelection(copies));
+    return true;
+  };
+  const reorderSelected = (dir: "forward" | "backward" | "front" | "back") =>
+    board.reorderShapes((store?.getSelection() ?? []).filter((id) => board.getShape(id)), dir);
   useBoardKeys({
     undo: board.undo,
     redo: board.redo,
     deleteSelected,
     enabled: () => !store?.getEditing(),
     arrange: arrangeBoard,
+    duplicate: duplicateSelected,
+    reorder: reorderSelected,
   });
+  const toolbarSections = [
+    stickyStyleSection(board),
+    textStyleSection(board),
+    shapeStyleSection(board),
+    selectionActionsSection({ board, duplicate: duplicateSelected, remove: deleteSelected }),
+  ];
 
   // ── agents: the board_* tools act through the same paths ─────────────────
   const agentHost: BoardToolHost<UserBoardTile> = {
@@ -645,7 +707,6 @@ export function UserBoard({
     }),
   );
 
-  const onBoard = new Set(layout.tileIds);
   // A page a tile opens lands on THIS board as a page tile (engine/tile-navigation.tsx);
   // a record already here is shown instead (place → recordKeyOf).
   const boardNavigation = {
@@ -656,7 +717,13 @@ export function UserBoard({
       return true;
     },
   };
-  const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0;
+  // The Start panel steps aside once ANYTHING is on the board — a tile, a frame or a drawing.
+  const hasShapes = useSyncExternalStore(
+    board.subscribeShapes,
+    () => board.getShapes().length > 0,
+    () => board.getShapes().length > 0,
+  );
+  const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0 && layout.frames.length === 0 && !hasShapes;
   const parkedTiles = layout.parked;
 
   return (
@@ -686,14 +753,18 @@ export function UserBoard({
           <BoardNavigationContext.Provider value={boardNavigation}>
           <BoardViewport
             initialCamera={viewerCamera ?? doc.camera}
-            fitOnMount={viewerCamera === null && doc.nodes.length > 0}
+            fitOnMount={viewerCamera === null && (doc.nodes.length > 0 || doc.shapes.length > 0 || doc.groups.length > 0)}
             insets={{ top: 72, bottom: 56 }}
             wheelMode={wheelMode}
             onStore={setStore}
+            onEmptyDoubleClick={(at) => {
+              if (store && !guest) createTextOnBoard(board, store, at);
+            }}
             overlay={
               <>
                 <CreationLayer onCreate={onCreate} />
-                <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />} />
+                <SelectionToolbar sections={toolbarSections} />
+                <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} onCanvasText={addCanvasText} />} />
                 <div
                   data-board-chrome
                   className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
@@ -748,14 +819,14 @@ export function UserBoard({
             }
           >
             {layout.frames.map((f) => (
-              <BoardFrameView key={f.id} {...f} onRemove={deleteFrame} onResize={board.resizeTile} />
+              <BoardFrameView
+                key={f.id}
+                {...f}
+                onRemove={deleteFrame}
+                onResize={board.resizeTile}
+                onRename={(id, next) => board.updateFrame(id, { title: next })}
+              />
             ))}
-            <ShapesLayer shapes={layout.shapes} />
-            {layout.connections.map((c) =>
-              onBoard.has(c.from) && onBoard.has(c.to) ? (
-                <BoardEdge key={c.id} board={board} from={c.from} to={c.to} />
-              ) : null,
-            )}
             {layout.tileIds.map((id) => (
               <BoardItemTile
                 key={id}
@@ -766,6 +837,8 @@ export function UserBoard({
                 onThrow={onThrow}
               />
             ))}
+            {/* Drawings render ABOVE tiles (frames < tiles < drawings), so a stroke over a tile stays visible. */}
+            <ShapesLayer board={board} />
           </BoardViewport>
           </BoardNavigationContext.Provider>
           </ReuseContext.Provider>
@@ -855,16 +928,6 @@ function ItemStatusLeaf({
 function newLabel(type: BoardItemType, entry: StartNewEntry): string {
   if (/^(new|start|run|chat with)\b/i.test(entry.label)) return entry.label;
   return entry.label === type.label ? `New ${type.label.toLowerCase()}` : entry.label;
-}
-
-/** The edge between two tiles; follows both as they move, without waking the board. */
-function BoardEdge({ board, from, to }: { board: BoardStore<UserBoardTile>; from: string; to: string }) {
-  const a = useBoardTile(board, from);
-  const b = useBoardTile(board, to);
-  if (!a || !b) return null;
-  // A line that touches a chat tile hands that chat the other tile's content: drawn a little firmer.
-  const feedsChat = itemTypeFor(a.source)?.key === "chat" || itemTypeFor(b.source)?.key === "chat";
-  return <BoardEdgeLine from={a.rect} to={b.rect} feedsChat={feedsChat} />;
 }
 
 /** The layers list reads every tile, so it alone re-renders on every change — only while open. */
@@ -1072,7 +1135,8 @@ function agentTile(
       if (!input.text) return { ok: false, error: "A markdown tile needs `text`." };
       return { id, rect, title: input.title ?? "Write-up", source: { kind: "text", markdown: input.text } };
     case "text":
-      return { id, rect, title: input.title ?? "Label", source: { kind: "label", text: input.text ?? input.title ?? "" } };
+      // Plain text is a canvas object, not a tile: board_add_tile makes it through the board's shapes.
+      return { ok: false, error: "Plain text is placed on the canvas itself; this board cannot hold it." };
     case "html":
       if (input.html) return { id, rect, title: input.title ?? "Page", source: { kind: "html", html: input.html } };
       if (input.url) return { id, rect, title: input.title ?? "Page", source: { kind: "html", url: input.url } };

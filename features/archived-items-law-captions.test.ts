@@ -47,22 +47,6 @@ describe("HR custom fields — the table's empty state", () => {
   });
 });
 
-describe("WhatsApp conversation list — the empty pane", () => {
-  const FILE =
-    "features/whatsapp-clone/conversation-list/ConversationListPane.tsx";
-
-  it('does not say "No conversations yet." with archived chats one click away', () => {
-    const text = source(FILE);
-    // `conversations` is the ACTIVE half (a server round-trip, not a client
-    // sieve), so the never-had-one sentence must consult the archived count.
-    expect(text).toMatch(
-      /\(archivedCount\?\.count \?\? 0\) > 0[\s\S]{0,200}?Every chat is archived/,
-    );
-    // …and it must still be able to say it when there is genuinely nothing.
-    expect(text).toContain('"No conversations yet."');
-  });
-});
-
 describe("the surfaces whose empty states were ALREADY honest stay that way", () => {
   // Rule 3 of the six laws: census the siblings. These five took the same
   // split and already guard both halves. Each assertion goes red if somebody

@@ -1178,6 +1178,10 @@ const ToolCallWindowPanel = lazyOverlay(
     import("@ai-matrx/chat/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
+const SocialPostWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/marketing/SocialPostWindow"),
+  { ssr: false },
+);
 const TopicalMapTopicPanel = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/TopicalMapTopicPanel"),
@@ -1212,31 +1216,10 @@ const TranscriptionCleanup = lazyOverlay(
     import("@/components/official-candidate/transcription-cleanup/components/TranscriptionCleanup"),
   { ssr: false },
 );
-const WhatsAppMediaWindow = lazyOverlay(
-  () =>
-    import("@/features/whatsapp-clone/windows/WhatsAppMediaWindow").then(
-      (m) => ({ default: m.WhatsAppMediaWindow }),
-    ),
-  { ssr: false },
-);
 const DictionarySelectorWindow = lazyOverlay(
   () =>
     import("@/features/dictionary/components/DictionarySelectorWindow").then(
       (m) => ({ default: m.DictionarySelectorWindow }),
-    ),
-  { ssr: false },
-);
-const WhatsAppSettingsWindow = lazyOverlay(
-  () =>
-    import("@/features/whatsapp-clone/windows/WhatsAppSettingsWindow").then(
-      (m) => ({ default: m.WhatsAppSettingsWindow }),
-    ),
-  { ssr: false },
-);
-const WhatsAppShellWindow = lazyOverlay(
-  () =>
-    import("@/features/whatsapp-clone/windows/WhatsAppShellWindow").then(
-      (m) => ({ default: m.WhatsAppShellWindow }),
     ),
   { ssr: false },
 );
@@ -1677,15 +1660,6 @@ export default function OverlayController() {
     ),
     userPreferencesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "userPreferencesWindow"),
-    ),
-    whatsappMedia: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "whatsappMedia"),
-    ),
-    whatsappSettings: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "whatsappSettings"),
-    ),
-    whatsappShellWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "whatsappShellWindow"),
     ),
     dictionarySelectorWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "dictionarySelectorWindow"),
@@ -2300,6 +2274,9 @@ export default function OverlayController() {
     ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
+    ),
+    socialPostWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "socialPostWindow"),
     ),
     topicalMapTopicPanel: useAppSelector((s) =>
       selectOpenInstances(s, "topicalMapTopicPanel"),
@@ -7853,6 +7830,35 @@ export default function OverlayController() {
         );
       })}
 
+      {/* socialPostWindow — multi-instance; instance id = post id */}
+      {instancesById.socialPostWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        // No post or no organization = nothing to show; a stale persisted
+        // session can carry that, the opener never produces it.
+        if (typeof data?.postId !== "string" || !data.postId) return null;
+        if (typeof data.organizationId !== "string" || !data.organizationId) return null;
+        return (
+          <SocialPostWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={typeof data.stackIndex === "number" ? data.stackIndex : 0}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "socialPostWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            postId={data.postId}
+            organizationId={data.organizationId}
+            brandSeg={typeof data.brandSeg === "string" ? data.brandSeg : ""}
+            initialTab={typeof data.tab === "string" ? data.tab : "overview"}
+            landscape={data.landscape === true}
+          />
+        );
+      })}
+
       {/* topicalMapTopicPanel */}
       {instancesById.topicalMapTopicPanel.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
@@ -7974,25 +7980,6 @@ export default function OverlayController() {
         );
       })}
 
-      {/* TODO: review prop wiring for whatsappMedia */}
-      {/* whatsappMedia */}
-      {(() => {
-        const isOpen = isOpenById.whatsappMedia;
-        const data = dataById.whatsappMedia as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <WhatsAppMediaWindow
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "whatsappMedia" }))
-            }
-            initialTabId={
-              data?.initialTabId as never
-            } /* TODO: review — MediaTabId is a non-exported local type */
-          />
-        );
-      })()}
 
       {/* dictionarySelectorWindow — singleton */}
       {(() => {
@@ -8012,58 +7999,7 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* whatsappSettings */}
-      {(() => {
-        const isOpen = isOpenById.whatsappSettings;
-        const data = dataById.whatsappSettings as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <WhatsAppSettingsWindow
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "whatsappSettings" }))
-            }
-            userName={
-              typeof data?.userName === "string" ? data.userName : undefined
-            }
-            userAvatarUrl={
-              typeof data?.userAvatarUrl === "string"
-                ? data.userAvatarUrl
-                : null
-            }
-            initialNavId={
-              typeof data?.initialNavId === "string"
-                ? data.initialNavId
-                : undefined
-            }
-          />
-        );
-      })()}
 
-      {/* whatsappShellWindow */}
-      {(() => {
-        const isOpen = isOpenById.whatsappShellWindow;
-        const data = dataById.whatsappShellWindow as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <WhatsAppShellWindow
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "whatsappShellWindow" }))
-            }
-            userName={
-              typeof data?.userName === "string" ? data.userName : undefined
-            }
-            userAvatarUrl={
-              typeof data?.userAvatarUrl === "string"
-                ? data.userAvatarUrl
-                : null
-            }
-          />
-        );
-      })()}
     </>
   );
 }

@@ -15,14 +15,17 @@
  */
 
 import type { Camera, Rect } from "../engine/camera";
-import type { BoardShape, ShapeKind } from "./useBoard";
+import type { BoardShape } from "./useBoard";
+import { boundsOfPoints, isBoxed, parseShape, serializeShape } from "../engine/shapes";
+import { connectionToArrow, connectionsOf } from "./connections";
+import { labelToText } from "../engine/canvas-text";
 
 export type NodeSource =
   /** A live or finished agent run, by request id. */
   | { kind: "stream"; requestId: string; conversationId?: string }
   /** Text or markdown kept on the board itself (a note, a saved stream's text). */
   | { kind: "text"; markdown: string }
-  /** A large on-board label (the Text tool) — board-only, no record. */
+  /** RETIRED (2026-10-09): a large on-board label. Read only to migrate it to plain canvas text on load. */
   | { kind: "label"; text: string }
   | { kind: "html"; url?: string; html?: string }
   | { kind: "image"; fileId?: string; url?: string }
@@ -102,11 +105,10 @@ export interface BoardDocument {
   nodes: BoardNode[];
   groups: BoardGroup[];
   edges: BoardEdge[];
-  /** Drawn marks (rect, oval, arrow, line, pen). */
+  /** Drawn marks (rect, oval, arrow, line, pen) and words on the canvas (sticky notes, plain text). */
   shapes: BoardShape[];
 }
 
-const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen"];
 
 /** Validate a stored document at the read boundary. Anything malformed is
  * REPORTED (with the node that failed), never silently dropped. */
@@ -123,10 +125,11 @@ export function parseBoardDocument(raw: {
   const shapes: BoardShape[] = [];
   for (const [i, n] of (Array.isArray(raw.nodes) ? raw.nodes : []).entries()) {
     if (isObject(n) && n.shape === true) {
-      const kind = SHAPE_KINDS.find((k) => k === n.kind);
-      const points = Array.isArray(n.points) ? n.points.filter(isPoint) : [];
-      if (typeof n.id === "string" && kind && points.length >= 2) shapes.push({ id: n.id, kind, points });
-      else problems.push(`shape ${i} is missing id, kind or points`);
+      const { shape: _flag, ...stored } = n;
+      void _flag;
+      const parsed = parseShape(stored, `shape ${i}`);
+      if (parsed.shape) shapes.push(parsed.shape);
+      problems.push(...parsed.problems);
       continue;
     }
     if (!isObject(n) || typeof n.id !== "string" || !isRect(n.rect) || typeof n.title !== "string") {
@@ -139,6 +142,12 @@ export function parseBoardDocument(raw: {
     }
     if (!isSource(n.source)) {
       problems.push(`node "${n.title}" has an unknown source`);
+      continue;
+    }
+    // The retired label tile (the old Text tool) is plain canvas text now: same id, words and
+    // place, migrated here once — the next save writes the text object, never a label node.
+    if (n.source.kind === "label") {
+      shapes.push(labelToText({ id: n.id, rect: n.rect, text: n.source.text }));
       continue;
     }
     const basics = isBasics(n.basics) ? n.basics : undefined;
@@ -159,21 +168,50 @@ export function parseBoardDocument(raw: {
       edges.push({ id: e.id, from: e.from, to: e.to });
     } else problems.push("an edge is missing id, from or to");
   }
-  return { doc: { camera, nodes, groups, edges, shapes }, problems };
+  // ONE connector model: a stored edge is a bound arrow (same id, same ends) — migrated here, once;
+  // the next save writes the arrow and an empty `edges`. An edge to something that is gone is reported.
+  const rectOf = rectLookup(nodes, shapes);
+  for (const e of edges) {
+    const arrow = shapes.some((x) => x.id === e.id) ? null : connectionToArrow(e, rectOf);
+    if (arrow) shapes.push(arrow);
+    else if (!shapes.some((x) => x.id === e.id)) problems.push(`edge "${e.id}" joins a tile that is not on the board; dropped it`);
+  }
+  return { doc: { camera, nodes, groups, edges: [], shapes }, problems };
+}
+
+/** Rects of what an edge can name: tiles, and boxed shapes (a label tile that became text keeps its id). */
+function rectLookup(nodes: readonly BoardNode[], shapes: readonly BoardShape[]) {
+  const byId = new Map<string, Rect>(nodes.map((n) => [n.id, n.rect]));
+  for (const sh of shapes) if (isBoxed(sh.kind)) byId.set(sh.id, boundsOfPoints(sh.points));
+  return (id: string) => byId.get(id);
 }
 
 /** The column values to store. Groups and shapes ride in `nodes`, flagged
  * `group: true` / `shape: true`. */
-export function serializeBoardDocument(doc: BoardDocument) {
+export function serializeBoardDocument(rawDoc: BoardDocument) {
+  // A document built in code (a built-in template) may still carry `edges`: they are stored as bound arrows.
+  const doc = withEdgesAsArrows(rawDoc);
   return {
     camera: doc.camera,
     nodes: [
       ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, group: true })),
-      ...doc.shapes.map((sh) => ({ id: sh.id, kind: sh.kind, points: sh.points, shape: true })),
+      ...doc.shapes.map((sh) => ({ ...serializeShape(sh), shape: true })),
       ...doc.nodes,
     ],
-    edges: doc.edges,
+    edges: [] as BoardEdge[],
   };
+}
+
+/** `doc` with any `edges` turned into bound arrows (a no-op for a parsed document, whose edges are always empty). */
+export function withEdgesAsArrows(doc: BoardDocument): BoardDocument {
+  if (doc.edges.length === 0) return doc;
+  const rectOf = rectLookup(doc.nodes, doc.shapes);
+  const shapes = [...doc.shapes];
+  for (const e of doc.edges) {
+    const arrow = shapes.some((x) => x.id === e.id) ? null : connectionToArrow(e, rectOf);
+    if (arrow) shapes.push(arrow);
+  }
+  return { ...doc, edges: [], shapes };
 }
 
 // ── JSON Canvas 1.0 export ───────────────────────────────────────────────────
@@ -218,7 +256,19 @@ export function toJsonCanvas(doc: BoardDocument, origin: string) {
       }
     }),
   ];
-  const edges = doc.edges.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
+  // Sticky notes and plain text are JSON Canvas text nodes.
+  for (const sh of doc.shapes) {
+    if (sh.kind !== "sticky" && sh.kind !== "text") continue;
+    const r = boundsOfPoints(sh.points);
+    nodes.push({ id: sh.id, type: "text", ...box(r), text: sh.text ?? "" });
+  }
+  // Tile-to-tile connectors are JSON Canvas edges (any edges still on the document count too).
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const lines = [
+    ...doc.edges,
+    ...connectionsOf(doc.shapes, (id) => nodeIds.has(id)),
+  ];
+  const edges = lines.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
   return { nodes, edges };
 }
 
@@ -232,9 +282,6 @@ function isFiniteNumber(v: unknown): v is number {
 }
 function isCamera(v: unknown): v is Camera {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.z) && v.z > 0;
-}
-function isPoint(v: unknown): v is { x: number; y: number } {
-  return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y);
 }
 function isRect(v: unknown): v is Rect {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.w) && isFiniteNumber(v.h);

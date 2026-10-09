@@ -25,9 +25,11 @@ describe("Keyword Research responsive contract", () => {
       "utf8",
     );
 
-    expect(windowSource).toContain(
-      'SelectTrigger className="h-11 w-56 text-base sm:h-8 sm:text-xs"',
-    );
+    // The site picker's touch geometry is owned by the design system's control
+    // (matrx-tap-lock holds it with !important), so the window sets width only;
+    // a hand-sized height/text class here would fight the lock.
+    expect(windowSource).toContain('<SelectTrigger className="w-56">');
+    expect(windowSource).not.toMatch(/<SelectTrigger className="[^"]*\bh-\d/);
     expect(windowSource).toContain("flex min-h-11 shrink-0 items-center gap-2");
     expect(mobileHeaderSource).toContain(
       "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center",

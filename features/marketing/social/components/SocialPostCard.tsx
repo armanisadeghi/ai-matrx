@@ -9,8 +9,9 @@
  *                                              bottom-left duration / format
  *   hook line (1 line) · @handle · age · views first, likes second
  *
- * Missing/expired thumbnail -> the platform mark on a neutral tile (never a
- * broken image). Null metrics render "—", never 0. The card's `⋯` holds
+ * Stored thumbnail (small JPEG behind the signed-in door) -> else a provider URL a browser can
+ * draw -> else the platform mark on a neutral tile (never a broken image); a skeleton fills the
+ * reserved box while it loads. Null metrics render "—", never 0. The card's `⋯` holds
  * Open original / Copy link / Save to swipe file.
  *
  * Built from semantic tokens directly: `components/official/card-and-grid`'s
@@ -18,7 +19,6 @@
  * card, so there is nothing in it to reuse for a thumbnail card.
  */
 
-import { useState } from "react";
 import { Bookmark, Copy, ExternalLink, MoreHorizontal } from "lucide-react";
 
 import {
@@ -30,11 +30,22 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { formatDuration, relativeAge } from "../mappers";
-import { formatCompact, outlierBadgeModel } from "../outlier";
+import { formatDuration, openPostLabel, relativeAge } from "../mappers";
+import { NO_VIEWS_TEXT, countLabel, outlierBadgeModel } from "../outlier";
 import type { PostCardModel } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
+import { postThumbnailDoor } from "../server";
 import { PlatformMark } from "./PlatformMark";
+import { SocialImage } from "./SocialImage";
+
+/**
+ * ONE thumbnail box per platform, whatever the post's format, so every card in a grid is the same
+ * height (a carousel next to a reel never makes a ragged row). `object-cover` crops the picture.
+ */
+export function thumbBox(platform: string): string {
+  if (platform === "youtube" || platform === "linkedin" || platform === "facebook" || platform === "x") return "aspect-video";
+  return "aspect-[4/5]";
+}
 
 /** Reserved thumbnail shape per platform/format, so nothing shifts on load. */
 export function thumbAspect(platform: string, format: string): string {
@@ -59,10 +70,11 @@ export interface SocialPostCardProps {
 }
 
 export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, className }: SocialPostCardProps) {
-  const [thumbFailed, setThumbFailed] = useState(false);
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
-  const showThumb = Boolean(post.thumbnailUrl) && !thumbFailed;
+  // A post that reports no views (a carousel on some platforms) has no multiple to explain: no badge, no views stat.
+  const hideBadge = badge.text === NO_VIEWS_TEXT;
+  const stats = [countLabel(post.views, "view"), compact ? null : countLabel(post.likes, "like")].filter(Boolean).join(" · ");
   const absolute = post.postedAt ? new Date(post.postedAt).toLocaleString() : "";
 
   return (
@@ -77,23 +89,18 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
         type="button"
         onClick={() => onOpen?.(post)}
         disabled={!onOpen}
-        aria-label={`Open post ${post.hookLine || post.handle || ""}`.trim()}
-        className={cn("relative block w-full bg-muted", thumbAspect(post.platform, post.format))}
+        aria-label={openPostLabel(post.handle, post.hookLine)}
+        className={cn("relative block w-full bg-muted", thumbBox(post.platform))}
       >
-        {showThumb ? (
-          <img
-            src={post.thumbnailUrl ?? undefined}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setThumbFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <PlatformMark platform={post.platform} size={36} />
-          </span>
-        )}
+        <SocialImage
+          door={post.thumbnailFileId ? postThumbnailDoor(post.postId) : null}
+          url={post.thumbnailUrl}
+          fallback={
+            <span className="absolute inset-0 flex items-center justify-center">
+              <PlatformMark platform={post.platform} size={36} />
+            </span>
+          }
+        />
         <span className="absolute left-1.5 top-1.5">
           <PlatformMark platform={post.platform} size={20} />
         </span>
@@ -106,7 +113,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
           />
         ) : null}
         <span className="absolute right-1.5 top-1.5 inline-flex rounded-md bg-card/90">
-          <OutlierBadge model={badge} />
+          {hideBadge ? null : <OutlierBadge model={badge} />}
         </span>
         {duration || post.format === "carousel" ? (
           <span className="absolute bottom-1.5 left-1.5 rounded bg-black/65 px-1 text-[11px] tabular-nums text-white">
@@ -178,11 +185,10 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
           </DropdownMenu>
         </div>
         <p
-          className="truncate text-[11px] tabular-nums text-foreground"
-          title={`${formatCompact(post.comments)} comments · ${formatCompact(post.shares)} shares`}
+          className="h-4 truncate text-[11px] tabular-nums text-foreground"
+          title={[countLabel(post.comments, "comment"), countLabel(post.shares, "share")].filter(Boolean).join(" · ") || undefined}
         >
-          {formatCompact(post.views)} views
-          {compact ? "" : ` · ${formatCompact(post.likes)} likes`}
+          {stats}
         </p>
       </div>
     </div>

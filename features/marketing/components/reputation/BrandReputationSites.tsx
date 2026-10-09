@@ -13,6 +13,7 @@
  * route param — the param is an address and is usually a key.
  */
 
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 import { ShieldCheck } from "lucide-react";
 
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -56,10 +57,15 @@ export function BrandReputationSites() {
           doors={doors}
         />
       ) : sites.isError ? null : (
-        <p className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-          Reputation reads a website&apos;s published pages. Add a site to this
-          brand and the brief turns on with the first crawl.
-        </p>
+        <NoWebsiteState
+          brandId={brand.id}
+          brandName={brand.name}
+          needs="the published-page reputation brief"
+          alternatives={[
+            { label: "Monitoring", href: marketingRoutes.brandMonitoring(brand.seg) },
+            { label: "Open Socials", href: marketingRoutes.brandSocials(brand.id) },
+          ]}
+        />
       )}
     </MarketingFrontDoorPage>
   );

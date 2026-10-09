@@ -134,6 +134,7 @@ export function BrandsPortfolio({
       ["Status", row.status],
       ["Websites", row.sites.map((site) => site.domain).join(", ") || "none"],
       ["Social profiles", row.social_count],
+      ["Social profiles tracked", row.social_tracked_count],
       ["Brand assets", row.asset_count],
       ["Business facts", row.fact_count],
       ["Pending review", row.pending_discovered],
@@ -289,7 +290,7 @@ export function BrandsPortfolio({
       cell: (row) => (
         <div className="flex flex-wrap items-center gap-1">
           {row.sites.length === 0 ? (
-            <span className="text-xs text-muted-foreground/60">None</span>
+            <span className="text-xs text-muted-foreground/60">No website</span>
           ) : (
             // Every site named here has an id AND a canonical route — the
             // chips were inert text listing records the user could not reach.
@@ -322,7 +323,7 @@ export function BrandsPortfolio({
         <CountPill
           icon={Share2}
           count={row.social_count}
-          label="social profiles"
+          label={`social profiles · ${row.social_tracked_count} tracked`}
         />
       ),
     },

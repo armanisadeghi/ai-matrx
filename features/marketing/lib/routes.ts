@@ -160,6 +160,8 @@ export const marketingRoutes = {
   reports: () => "/marketing/reports",
   /** Cross-client cost roll-up (was /marketing/cost). */
   cost: () => "/marketing/reports/cost",
+  /** The agency-plane social roll-up (every client's tracked accounts and outliers). */
+  social: () => "/marketing/social",
   /** Cross-client rank roll-up (was /marketing/ranks). */
   ranksRollup: () => "/marketing/reports/ranks",
   /** Cross-client Search Console landing (site picker inside). */
@@ -462,7 +464,6 @@ export const marketingRoutes = {
   local: () => "/marketing/local",
   ranks: () => "/marketing/ranks",
   contentStudio: () => "/marketing/content-studio",
-  social: () => "/marketing/social",
   email: () => "/marketing/email",
   ads: () => "/marketing/ads",
   outreach: () => "/marketing/outreach",

@@ -2,6 +2,7 @@ import React from "react";
 import MarketingBrandLayout from "@/app/(core)/marketing/[brandId]/layout";
 import MarketingWebsiteLayout from "@/app/(core)/marketing/[brandId]/websites/[siteId]/layout";
 
+jest.mock("server-only", () => ({}));
 jest.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("false-not-found");
@@ -79,6 +80,8 @@ it("keeps site resolution scoped to a readable brand", async () => {
       slug: null,
       name: "Readable",
       organization_id: "66666666-6666-4666-8666-666666666666",
+      kind: "company",
+      person_user_id: null,
     });
   const result = await MarketingWebsiteLayout({
     children: React.createElement("div"),

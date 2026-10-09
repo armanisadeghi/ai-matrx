@@ -13,7 +13,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search, Swords } from "lucide-react";
+import { Loader2, Plus, Search, Swords, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -51,26 +52,12 @@ import {
   type CompetitorAccount,
 } from "./brand-competitors";
 import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
+import { CompetitorDetail } from "./CompetitorDetail";
+import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competitor-detail";
+import { useCompetitorSocialActions, useFoundSocials } from "./useCompetitorSocials";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
-const PLATFORM_LABEL: Record<string, string> = {
-  instagram: "Instagram",
-  tiktok: "TikTok",
-  youtube: "YouTube",
-  linkedin: "LinkedIn",
-  facebook: "Facebook",
-  x: "X",
-  threads: "Threads",
-  pinterest: "Pinterest",
-  reddit: "Reddit",
-  snapchat: "Snapchat",
-};
 const CORE_PLATFORMS = ["instagram", "tiktok", "youtube"];
-
-function compact(n: number | null | undefined): string {
-  if (n == null) return "—";
-  return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n);
-}
 
 function accountsOn(row: BrandCompetitor, platform: string): CompetitorAccount[] {
   return row.accounts.filter((a) => a.platform === platform);
@@ -91,12 +78,56 @@ function bestOutlier(row: BrandCompetitor) {
   return best;
 }
 
+function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: string; organizationId: string } }) {
+  const found = useFoundSocials(brand.id, row.key);
+  const { find, track } = useCompetitorSocialActions(brand);
+  if (row.progress) return null;
+  const busy = found?.status === "finding" || found?.status === "tracking";
+  return (
+    <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      {row.domain ? (
+        <Button
+          variant="outline"
+          disabled={busy}
+          icon={found?.status === "finding" ? <Loader2 className="animate-spin" /> : <Search />}
+          onClick={() => void find(row)}
+        >
+          {found?.status === "finding" ? "Reading…" : "Find socials"}
+        </Button>
+      ) : null}
+      {found?.links.length ? (
+        <Button
+          variant="primary"
+          disabled={busy}
+          icon={<UserPlus />}
+          onClick={async () => {
+            const out = await track(row, found.links);
+            if (out.tracked) toast.success(`Tracking ${out.tracked} ${out.tracked === 1 ? "account" : "accounts"}`);
+          }}
+        >
+          {found.status === "tracking" ? "Tracking…" : `Track ${found.links.length}`}
+        </Button>
+      ) : found?.message ? (
+        <span className="max-w-48 truncate text-[11px] text-muted-foreground" title={found.message}>
+          {found.message}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function BrandCompetitorDirectory() {
   const brand = useMarketingBrand();
+  const rivals = brandKindCopy(brand).rivals;
   const sites = useBrandSites(brand.id);
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const [searched, setSearched] = useState<ReadonlySet<string>>(new Set());
   const queryClient = useQueryClient();
+  const brandRef = useMemo(() => ({ id: brand.id, organizationId: brand.organizationId }), [brand.id, brand.organizationId]);
+  const socialActions = useCompetitorSocialActions(brandRef);
   const [jobs, setJobs] = useState<BrandCompetitor[]>([]);
   const patchJob = useCallback((key: string, fn: (job: BrandCompetitor) => BrandCompetitor) => {
     setJobs((current) => current.map((job) => (job.key === key ? fn(job) : job)));
@@ -186,6 +217,36 @@ export function BrandCompetitorDirectory() {
     [brand.id, brand.organizationId, siteIds, queryClient, patchJob],
   );
 
+  const toSearch = useMemo(() => rowsToSearch(rows, searched), [rows, searched]);
+
+  /** Read each website in turn (three at a time); results land in the same per-row state. */
+  async function findAll() {
+    const targets = toSearch;
+    setBulkOpen(false);
+    setBulk({ done: 0, total: targets.length });
+    setSearched((prev) => new Set([...prev, ...targets.map((t) => t.key)]));
+    let found = 0;
+    let next = 0;
+    let done = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(3, targets.length) }, async () => {
+        while (next < targets.length) {
+          const row = targets[next++];
+          const result = await socialActions.find(row);
+          if (result.links.length) found += 1;
+          done += 1;
+          setBulk({ done, total: targets.length });
+        }
+      }),
+    );
+    setBulk(null);
+    toast.success(
+      found
+        ? `Found socials for ${found} of ${targets.length}. Use Track on each row to keep them.`
+        : `No social links found on ${targets.length === 1 ? "that website" : "those websites"}.`,
+    );
+  }
+
   const dismissJob = (key: string) => setJobs((current) => current.filter((j) => j.key !== key));
   const realRows = list.data ?? [];
   const rows = useMemo(() => {
@@ -202,7 +263,7 @@ export function BrandCompetitorDirectory() {
     const cols: MatrxColumnDef<BrandCompetitor>[] = [
       {
         id: "name",
-        header: "Competitor",
+        header: rivals.one,
         accessorFn: (row) => row.name,
         cell: (row) => <span className="truncate font-medium">{row.name}</span>,
         width: 200,
@@ -310,27 +371,47 @@ export function BrandCompetitorDirectory() {
           ),
         width: 220,
       },
+      {
+        id: "socials-actions",
+        header: "Actions",
+        sortable: false,
+        filter: false,
+        customActions: (row) => <RowSocialActions row={row} brand={{ id: brand.id, organizationId: brand.organizationId }} />,
+        width: 240,
+      },
     );
     return cols;
-  }, [platforms, brand.seg]);
+  }, [platforms, brand.seg, brand.id, brand.organizationId, rivals.one]);
 
-  if (sites.isPending) return <LoadingSurface label="Loading competitors…" />;
+  if (sites.isPending) return <LoadingSurface label={`Loading ${rivals.manyLower}…`} />;
   if (sites.isError) return <QueryError error={sites.error} />;
 
   return (
     <div className="space-y-3 p-3">
       <SectionCard
-        title="Competitors"
+        title={rivals.title}
         headerExtra={
-          <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-            Add competitor
-          </Button>
+          <div className="flex items-center gap-2">
+            {toSearch.length > 0 || bulk ? (
+              <Button
+                variant="outline"
+                disabled={Boolean(bulk)}
+                icon={bulk ? <Loader2 className="animate-spin" /> : <Search />}
+                onClick={() => setBulkOpen(true)}
+              >
+                {bulk ? `Reading websites ${bulk.done} of ${bulk.total}` : `Find socials for all (${toSearch.length})`}
+              </Button>
+            ) : null}
+            <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
+              {rivals.add}
+            </Button>
+          </div>
         }
       >
         {list.isError && jobs.length === 0 ? (
           <QueryError error={list.error} onRetry={() => void list.refetch()} />
         ) : list.isPending && jobs.length === 0 ? (
-          <LoadingSurface label="Loading competitors…" />
+          <LoadingSurface label={`Loading ${rivals.manyLower}…`} />
         ) : (
           <MatrxDataTable
             data={rows}
@@ -338,16 +419,24 @@ export function BrandCompetitorDirectory() {
             getRowId={(row) => row.key}
             isFetching={list.isFetching}
             pageSize={25}
-            toolbar={{ searchPlaceholder: "Search competitors, sites, handles…" }}
+            detail={{ enabled: false }}
+            window={{
+              title: (row) => row.name,
+              renderView: (row) => <CompetitorDetail row={row} brand={brandRef} brandSeg={brand.seg} siteIds={siteIds} />,
+              enabled: true,
+              openOnRowClick: true,
+              onOpen: () => {},
+            }}
+            toolbar={{ searchPlaceholder: `Search ${rivals.manyLower}, sites, handles…` }}
             copy={{
-              label: "Competitor",
-              listLabel: "Brand competitors",
-              location: webLocation(`${brand.name} — Competitors`),
+              label: rivals.one,
+              listLabel: `Brand ${rivals.manyLower}`,
+              location: webLocation(`${brand.name} — ${rivals.title}`),
               rowKind: "brand-competitor",
               listKind: "brand-competitors",
               humanRow: (row) =>
                 humanLines([
-                  ["Competitor", row.name],
+                  [rivals.one, row.name],
                   ["Website", row.domain],
                   ...row.accounts.map(
                     (a): [string, string] => [
@@ -359,17 +448,43 @@ export function BrandCompetitorDirectory() {
             }}
             emptyState={{
               icon: <Swords className="h-8 w-8 text-muted-foreground" />,
-              title: "No competitors yet",
-              description: `Add the rivals ${brand.name} competes with, by website, social handle, or both.`,
+              title: rivals.emptyTitle,
+              description: rivals.emptyLine(brand.name),
               action: (
                 <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-                  Add competitor
+                  {rivals.add}
                 </Button>
               ),
             }}
           />
         )}
       </SectionCard>
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Find socials for {toSearch.length} {toSearch.length === 1 ? rivals.oneLower : rivals.manyLower}?</DialogTitle>
+            <DialogDescription>
+              We read each website for its Instagram, TikTok, YouTube and other profile links. Nothing is saved or tracked until you press Track.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-48 space-y-0.5 overflow-auto rounded-md border border-border p-2 text-xs">
+            {toSearch.map((r) => (
+              <li key={r.key} className="flex justify-between gap-3">
+                <span className="truncate font-medium">{r.name}</span>
+                <span className="truncate text-muted-foreground">{r.domain}</span>
+              </li>
+            ))}
+          </ul>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" icon={<Search />} onClick={() => void findAll()}>
+              Find socials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {addOpen ? (
         <AddCompetitorDialog
           open
@@ -394,6 +509,7 @@ function AddCompetitorDialog({
   onSubmit: (input: { name: string; domain: string | null; handles: [string, string][] }) => void;
 }) {
   const dispatch = useAppDispatch();
+  const rivals = brandKindCopy(useMarketingBrand()).rivals;
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [handles, setHandles] = useState<Record<string, string>>({});
@@ -438,13 +554,13 @@ function AddCompetitorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add competitor</DialogTitle>
+          <DialogTitle>{rivals.add}</DialogTitle>
           <DialogDescription>Name, plus a website and social handles if you have them.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="comp-name">Name</Label>
-            <Input id="comp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Company name" />
+            <Input id="comp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={rivals.namePlaceholder} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="comp-domain">Website</Label>
@@ -461,7 +577,7 @@ function AddCompetitorDialog({
             </div>
             {!firstSiteId && cleanDomain ? (
               <p className="text-[11px] text-muted-foreground">
-                This brand has no website, so the domain is not tracked as a website competitor. Socials still are.
+                This brand has no website, so the domain is not tracked as a website {rivals.oneLower}. Socials still are.
               </p>
             ) : null}
             {findNote ? <p className="text-[11px] text-muted-foreground">{findNote}</p> : null}

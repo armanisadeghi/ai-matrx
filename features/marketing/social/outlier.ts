@@ -123,6 +123,31 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
   };
 }
 
+/** `2.4× usual views` — the sentence form of a multiple, for the post panel (the badge keeps `2.4x`). */
+export function formatMultiplierLong(score: number): string {
+  return `${formatMultiplier(score).replace(/x(\+?)$/, "×$1")} usual views`;
+}
+
+/** The percentile and median in words, for the tooltip next to a multiple. */
+export function explainOutlier(input: Pick<OutlierInput, "score" | "baselineViews" | "percentile" | "baselineWindow">): string {
+  const parts: string[] = [];
+  if (input.percentile !== null && Number.isFinite(input.percentile)) {
+    const pct = Math.round(input.percentile);
+    const of = input.baselineWindow ? `this creator's last ${input.baselineWindow} posts` : "this creator's other posts";
+    parts.push(`Gets more views than ${pct}% of ${of}.`);
+  }
+  if (input.baselineViews !== null && Number.isFinite(input.baselineViews)) {
+    parts.push(`A usual post from them gets about ${formatCompact(input.baselineViews)} views.`);
+  }
+  return parts.join(" ");
+}
+
+/** `1 like` / `2.4K likes`; null when there is no count (the stat is then hidden, never a dash). */
+export function countLabel(value: number | null | undefined, singular: string, plural = `${singular}s`): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  return `${formatCompact(value)} ${Math.round(value) === 1 ? singular : plural}`;
+}
+
 /** `P97`, or an em dash. */
 export function formatPercentile(percentile: number | null): string {
   return percentile === null || !Number.isFinite(percentile)

@@ -56,6 +56,7 @@ export const KIND_OUTPUT_DECISIONS: Readonly<Record<string, KindOutputDecision>>
   "user-journey": dom("A person's timeline; plain DOM in one scroll area."),
   "directive-shape": dom("A directive's shape: tabs and code blocks; plain DOM."),
   "topical-map-topic": dom("One map topic's details; plain DOM."),
+  "social-post": dom("One social post: player, stats, tabs; plain DOM (the video is a native element)."),
   "kg-suggestions": dom("The suggestion inbox rows; plain DOM, scroll area opened to full height."),
   "document-history": dom("A document's snapshot list; plain DOM — no Univer surface in this body."),
   "workbook-history": dom("A workbook's snapshot list; plain DOM — no Univer surface in this body."),

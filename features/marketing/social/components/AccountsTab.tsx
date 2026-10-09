@@ -6,7 +6,7 @@
  * per sortable/filterable value; Role filters as a column, so "group by role"
  * is the table's own filter + drill-down, not a hand-built grouping.
  *
- * Row actions: Refresh (confirm names the credit spend) and Remove (confirm
+ * Row actions: Refresh (names its points only when worth a warning) and Remove (confirm
  * names what is archived). Role is editable inline (Layer B edit under RLS).
  */
 
@@ -26,7 +26,6 @@ import { formatCompact, formatPercentile, outlierBadgeModel } from "../outlier";
 import {
   refreshProfile,
   socialErrorCode,
-  socialErrorCredits,
   socialErrorMessage,
   trackAccount,
   untrackAccount,
@@ -41,10 +40,11 @@ import {
   type AccountRow,
   type TrackedRole,
 } from "../types";
+import { PersonOwnerChip } from "../../components/brands/PersonOwnerChip";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
-import { TRACK_CREDITS, trackableOwn, useTrackOwn } from "./useTrackOwn";
+import { trackableOwn, useTrackOwn } from "./useTrackOwn";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
@@ -62,15 +62,11 @@ export function AccountsTab() {
   const { brandId, brandSeg, organizationId, openTrack } = useSocials();
   const accounts = useAccountRows(organizationId, brandId);
   const invalidate = useInvalidateSocial();
-  const { busyRow, setBusyRow, trackOwn, trackAllOwn } = useTrackOwn(organizationId, brandId);
+  const { busyRow, setBusyRow, trackOwn, trackAllOwn, costText, confirmSpend } = useTrackOwn(organizationId, brandId);
 
   async function refresh(row: AccountRow) {
     if (!row.profileId) return;
-    const ok = await confirm({
-      title: `Refresh @${row.handle}?`,
-      description: "Fetches the latest posts and numbers. Costs about 1 credit per page, billed to this organization.",
-      confirmLabel: "Refresh",
-    });
+    const ok = await confirmSpend("profile_page", 1, { title: `Refresh @${row.handle}?`, confirmLabel: "Refresh" });
     if (!ok) return;
     setBusyRow(row.rowId);
     try {
@@ -131,7 +127,10 @@ export function AccountsTab() {
             <span className="flex min-w-0 items-center gap-2">
               <PlatformMark platform={r.platform} size={20} />
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                  {r.ownerKind === "person" ? <PersonOwnerChip propertyId={r.propertyId ?? null} ownerName={r.ownerName ?? null} organizationId={organizationId} brandId={brandId} /> : null}
+                </span>
                 <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
               </span>
             </span>
@@ -215,15 +214,6 @@ export function AccountsTab() {
           ),
       },
       {
-        id: "median_views",
-        label: "Median views",
-        header: "Median views",
-        accessorFn: (r) => r.medianViews,
-        align: "right",
-        filter: "number",
-        cell: (r) => <span className="tabular-nums">{formatCompact(r.medianViews)}</span>,
-      },
-      {
         id: "best",
         label: "Best multiple",
         header: "Best multiple",
@@ -233,6 +223,7 @@ export function AccountsTab() {
         filter: "number",
         cell: (r) => (
           <OutlierBadge
+            inTable
             input={{ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null, accountPosts: r.postsTracked }}
           />
         ),
@@ -269,7 +260,7 @@ export function AccountsTab() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandSeg, organizationId],
+    [brandSeg, organizationId, brandId],
   );
 
   const rows = accounts.data ?? [];
@@ -297,7 +288,7 @@ export function AccountsTab() {
               variant="outline"
               icon={<UserPlus />}
               disabled={busyRow !== null}
-              title={`Track every own account not tracked yet · about ${untrackedOwn.length * TRACK_CREDITS} credits`}
+              title={["Track every own account not tracked yet", costText("track", untrackedOwn.length)].filter(Boolean).join(" · ")}
               onClick={() => void trackAllOwn(untrackedOwn)}
             >
               {busyRow === "bulk" ? "Tracking…" : `Track all own (${untrackedOwn.length})`}
@@ -311,7 +302,7 @@ export function AccountsTab() {
               id: "refresh",
               icon: RefreshCw,
               label: "Refresh",
-              tooltip: "Refresh · about 1 credit per page",
+              tooltip: ["Refresh", costText("profile_page")].filter(Boolean).join(" · "),
               loading: busyRow === row.rowId,
               disabled: busyRow !== null,
               onClick: () => void refresh(row),
@@ -321,7 +312,7 @@ export function AccountsTab() {
                 id: "track",
                 icon: UserPlus,
                 label: "Track",
-                tooltip: `Track as Own · about ${TRACK_CREDITS} credits`,
+                tooltip: ["Track as Own", costText("track")].filter(Boolean).join(" · "),
                 loading: busyRow === row.rowId,
                 disabled: busyRow !== null,
                 onClick: () => void trackOwn(row),

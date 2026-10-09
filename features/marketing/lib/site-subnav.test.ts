@@ -156,6 +156,7 @@ describe("what the site header renders", () => {
       "Decision signals",
       "History",
       "Panels",
+      "Brand lookup",
     ]);
     expect(overview.activeHref).toBe(`${S}/ai-visibility`);
     expect(seoNavFor(`${S}/ai-visibility/signals`).activeHref).toBe(

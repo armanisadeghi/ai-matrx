@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Bookmark, ExternalLink, FileText, Images, Megaphone, PanelRightOpen, Sparkle, TrendingUp, UserRound, Wand2 } from "lucide-react";
+import { Bookmark, FileText, Images, Megaphone, PanelRightOpen, Sparkle, TrendingUp, UserRound, Wand2 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 import { readOf } from "@ai-matrx/design-system";
 import {
@@ -25,17 +25,10 @@ import {
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useQuery } from "@tanstack/react-query";
 
-import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  AdCreativeBlock,
-  OutlierRowBlock,
-  SocialPostBlock,
-  SocialProfileBlock,
-  SwipeCollectionBlock,
-} from "@/components/mardown-display/blocks/social-kinds/social-kind-blocks";
-import { PostDetailBody } from "@/features/marketing/social/components/PostDetail";
+import { PostTranscriptBlock } from "@/components/mardown-display/blocks/social-kinds/social-kind-blocks";
+import { useOpenSocialPost } from "@/features/overlays/openers/socialPostWindow";
 import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
 import {
   useInvalidateSocial,
@@ -43,33 +36,50 @@ import {
   usePostTranscript,
   useProfile,
   useProfilePosts,
+  useProfileSnapshots,
   useSwipeCollections,
+  useSwipeItems,
+  useTrackedForProfile,
 } from "@/features/marketing/social/hooks";
 import {
   adCreativeKind,
   outlierRowKindFromCard,
+  postCardModelFromOutlierRow,
   postTranscriptKind,
   socialPostKind,
   socialProfileKind,
   swipeCollectionKind,
   type OutlierRowKind,
 } from "@/features/marketing/social/kind-models";
+import { toAdCardModel } from "@/features/marketing/social/ads";
+import { PostMedia } from "@/features/marketing/social/components/PostMedia";
+import { postAddress, toPostCardModel } from "@/features/marketing/social/mappers";
 import {
   addToCollection,
   analyzePost,
   createCollection,
+  fetchPlaybackUrl,
   getTranscript,
   ingestPost,
   ingestProfile,
+  listPostMedia,
   socialErrorCode,
   socialErrorMessage,
+  trackAccount,
 } from "@/features/marketing/social/server";
 import { classifySocialLink, type SocialLink } from "@/features/marketing/social/link";
-import { SOCIAL_PLATFORM_LABELS, isSocialPlatform } from "@/features/marketing/social/types";
+import {
+  SOCIAL_PLATFORM_LABELS,
+  TRACKABLE_PLATFORMS,
+  isSocialPlatform,
+  isTrackedRole,
+  type PostCardModel,
+} from "@/features/marketing/social/types";
 import {
   OUTLIER_FEED_LIMIT,
   readAd,
   readBrandOutliers,
+  readBrandTopPosts,
   readRecentAds,
   readSwipeCollection,
 } from "@/features/marketing/social/tile-data";
@@ -98,6 +108,13 @@ import {
   profileScopeValues,
   swipeScopeValues,
 } from "./social-tile-values";
+import {
+  AdTileView,
+  OutlierFeedView,
+  PostTileView,
+  ProfileTileView,
+  SwipeTileView,
+} from "./social-tile-views";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 
 export const SOCIAL_POST_KEY = "social-post";
@@ -259,7 +276,7 @@ function usePostActions(args: { postId: string; organizationId: string; hasTrans
     if (args.hasTranscript) return "This post already has a transcript.";
     const ok = await confirm({
       title: "Get the transcript?",
-      description: "Buys the transcript once, or transcribes the stored video. Costs about 1 credit.",
+      description: "Gets the transcript once, or transcribes the stored video. Uses part of your plan.",
       confirmLabel: "Get transcript",
     });
     if (!ok) return "The person declined; nothing was spent.";
@@ -361,27 +378,47 @@ function PostSurface({
   return null;
 }
 
-function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBodyProps & { id: string; organizationId: string }) {
+/** Opens the floating post panel (the Socials section's own post body) for a post a tile names, then reports itself done. */
+function OpenPostPanel({ postId, organizationId, onClose }: { postId: string | null; organizationId: string; onClose: () => void }) {
   const brand = useMarketingBrandOptional();
+  const openPanel = useOpenSocialPost();
+  useEffect(() => {
+    if (!postId) return;
+    openPanel({ postId, organizationId, brandSeg: brand?.seg ?? "" });
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
+  return null;
+}
+
+function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBodyProps & { id: string; organizationId: string }) {
   const detail = usePostDetail(id);
   const transcript = usePostTranscript(id);
-  const [open, setOpen] = useState(false);
+  const brand = useMarketingBrandOptional();
+  const openPanel = useOpenSocialPost();
   const post = detail.data?.post ?? null;
+  const stat = detail.data?.stat ?? null;
   const handle = detail.data?.profile?.handle ?? null;
   const kind = post
     ? socialPostKind({
         post,
-        stat: detail.data?.stat ?? null,
+        stat,
         handle,
         transcript: postTranscriptKind(id, transcript.data ?? null),
       })
     : null;
   const hasTranscript = Boolean(transcript.data?.text);
-  const actions = usePostActions({ postId: id, organizationId, hasTranscript, openDetail: () => setOpen(true) });
+  const actions = usePostActions({ postId: id, organizationId, hasTranscript, openDetail: () => openPanel({ postId: id, organizationId, brandSeg: brand?.seg ?? "" }) });
   const wanted = post ? (handle ? `@${handle}` : `${SOCIAL_PLATFORM_LABELS[isSocialPlatform(post.platform) ? post.platform : "tiktok"]} post`) : null;
+  // The tile's address and name come from the stored post and its real author, never from the pasted
+  // link (its handle can be wrong while the post id is right): a stale pasted address is corrected here.
+  const address = post ? postAddress(post, handle) : null;
+  const pastedAddress = metaOf(source).url ?? null;
   useEffect(() => {
-    if (wanted && wanted !== title) onSource(source, wanted);
-  }, [wanted, title, source, onSource]);
+    if (!post || !wanted) return;
+    const nextSource = address && address !== pastedAddress ? entity(SOCIAL_POST_KEY, id, { url: address, platform: post.platform }) : source;
+    if (wanted !== title || nextSource !== source) onSource(nextSource, wanted !== title ? wanted : undefined);
+  }, [post, wanted, title, source, onSource, address, pastedAddress, id]);
 
   const values = createSocialPostScope(
     kind
@@ -392,7 +429,7 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
   );
 
   if (detail.isLoading) return <Busy label="Opening the post" />;
-  if (!kind) {
+  if (!kind || !post) {
     return (
       <Centered>
         <p className="text-foreground">{detail.isError ? "Could not read this post." : "This post is not stored yet."}</p>
@@ -402,22 +439,36 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
       </Centered>
     );
   }
+  const card = { ...toPostCardModel({ post, stat, handle }), platformPostId: post.platform_post_id };
   return (
-    <div className={FRAME}>
+    <>
       <PostSurface values={values} actions={actions} />
-      <SocialPostBlock serverData={kind} className="my-0" />
-      <PostActionBar actions={actions} hasTranscript={hasTranscript} />
-      <Drawer open={open} onOpenChange={setOpen} direction="right">
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="truncate text-sm">{wanted ?? "Post"}</DrawerTitle>
-          </DrawerHeader>
-          <DrawerBody className="px-3 pb-4">
-            {open ? <PostDetailBody postId={id} organizationId={organizationId} brandSeg={brand?.seg ?? ""} /> : null}
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
-    </div>
+      <PostTileView
+        post={card}
+        caption={post.caption?.trim() || post.title?.trim() || null}
+        hashtags={post.hashtags ?? []}
+        engagementRate={stat?.engagement_rate ?? null}
+        platform={post.platform}
+        format={post.format}
+        player={
+          <PostMedia
+            fill
+            postId={card.postId}
+            organizationId={organizationId}
+            thumbnailUrl={card.thumbnailUrl}
+            thumbnailFileId={card.thumbnailFileId}
+            postUrl={card.url}
+            platform={card.platform}
+            platformPostId={card.platformPostId}
+            format={card.format}
+            durationSeconds={card.durationSeconds}
+          />
+        }
+        hasTranscript={hasTranscript}
+        transcriptNode={kind.transcript ? <PostTranscriptBlock serverData={kind.transcript} className="my-1" /> : null}
+        actions={<PostActionBar actions={actions} hasTranscript={hasTranscript} />}
+      />
+    </>
   );
 }
 
@@ -516,10 +567,21 @@ function ProfileSurface({
   return null;
 }
 
-function ProfileRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: string }) {
+function ProfileRecordBody({
+  id,
+  source,
+  title,
+  onSource,
+  organizationId,
+}: ItemBodyProps & { id: string; organizationId: string }) {
   const brand = useMarketingBrandOptional();
   const profile = useProfile(id);
   const posts = useProfilePosts(id, profile.data?.handle ?? null);
+  const snapshots = useProfileSnapshots(id);
+  const tracked = useTrackedForProfile(organizationId, id);
+  const invalidate = useInvalidateSocial();
+  const [tracking, setTracking] = useState(false);
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
   const row = profile.data ?? null;
   const outliers: OutlierRowKind[] = (posts.data ?? [])
     .filter((c) => c.outlierScore !== null)
@@ -544,6 +606,28 @@ function ProfileRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
     window.open(accountHref, "_blank", "noopener,noreferrer");
     return "Opened the account page.";
   };
+  async function track() {
+    if (!row) return;
+    const ok = await confirm({
+      title: `Track @${row.handle}?`,
+      description: "Fetches the account and keeps its posts fresh. Uses part of your plan.",
+      confirmLabel: "Track",
+    });
+    if (!ok) return;
+    setTracking(true);
+    try {
+      await trackAccount(
+        { profileId: row.id, role: "competitor", brandId: brand?.id, pages: 1 },
+        { organizationId },
+      );
+      await invalidate();
+      toast.success(`Now tracking @${row.handle}.`);
+    } catch (e) {
+      toast.error(socialErrorMessage(e, "Could not track that account."));
+    } finally {
+      setTracking(false);
+    }
+  }
   const values = createSocialProfileScope(
     row
       ? profileScopeValues(socialProfileKind(row), outliers)
@@ -563,27 +647,21 @@ function ProfileRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
     );
   }
   return (
-    <div className={FRAME}>
+    <>
       <ProfileSurface values={values} openAccount={openAccount} />
-      <SocialProfileBlock serverData={socialProfileKind(row)} className="my-0" />
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-foreground">Top outliers</p>
-        {accountHref ? (
-          <Button variant="quiet" icon={<ExternalLink />} onClick={() => openAccount()}>
-            Open account page
-          </Button>
-        ) : null}
-      </div>
-      <div className="mt-1.5 flex flex-col gap-1.5">
-        {posts.isLoading ? (
-          <Busy label="Reading posts" />
-        ) : outliers.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No outlier posts yet.</p>
-        ) : (
-          outliers.map((o) => <OutlierRowBlock key={o.post_id} serverData={o} />)
-        )}
-      </div>
-    </div>
+      <ProfileTileView
+        profile={row}
+        posts={posts.data ?? null}
+        snapshots={snapshots.data ?? []}
+        trackedRole={tracked.isLoading ? undefined : tracked.data ? (isTrackedRole(tracked.data.role) ? tracked.data.role : null) : null}
+        canTrack={TRACKABLE_PLATFORMS.has(row.platform)}
+        tracking={tracking}
+        onTrack={() => void track()}
+        onOpenAccount={accountHref ? () => void openAccount() : null}
+        onOpenPost={(p) => setOpenPostId(p.postId)}
+      />
+      <OpenPostPanel postId={openPostId} organizationId={organizationId} onClose={() => setOpenPostId(null)} />
+    </>
   );
 }
 
@@ -592,7 +670,7 @@ function SocialProfileBody(props: ItemBodyProps) {
   const id = idOf(props.source, SOCIAL_PROFILE_KEY);
   const meta = metaOf(props.source);
   if (!organizationId) return <NeedsOrganization />;
-  if (id) return <ProfileRecordBody key={id} id={id} {...props} />;
+  if (id) return <ProfileRecordBody key={id} id={id} organizationId={organizationId} {...props} />;
   const handleOrUrl = meta.url ?? meta.handle;
   if (handleOrUrl) {
     return (
@@ -625,6 +703,7 @@ function OutlierFeedBody({ source }: ItemBodyProps) {
   const organizationId = useBoardOrganizationId();
   const brand = useMarketingBrandOptional();
   const brandId = metaOf(source).brandId ?? brand?.id ?? null;
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
   const feed = useQuery({
     queryKey: ["board", "social-outlier-feed", organizationId, brandId],
     queryFn: () => readBrandOutliers({ organizationId: organizationId!, brandId: brandId! }),
@@ -632,6 +711,12 @@ function OutlierFeedBody({ source }: ItemBodyProps) {
     refetchInterval: 60_000,
   });
   const rows = feed.data ?? [];
+  // No account has a multiple yet (it needs 10+ posts): show the stored posts by views instead of nothing.
+  const top = useQuery({
+    queryKey: ["board", "social-top-posts", organizationId, brandId],
+    queryFn: () => readBrandTopPosts({ organizationId: organizationId!, brandId: brandId! }),
+    enabled: Boolean(organizationId && brandId && feed.data && feed.data.length === 0),
+  });
   const values = createSocialOutlierFeedScope(
     feed.data
       ? outlierFeedScopeValues(rows)
@@ -653,19 +738,22 @@ function OutlierFeedBody({ source }: ItemBodyProps) {
     );
   }
   return (
-    <div className={FRAME}>
+    <>
       <FeedSurface values={values} />
-      {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No outliers yet. Track accounts to fill the feed.</p>
+      {rows.length > 0 ? (
+        <OutlierFeedView ranking="multiple" posts={rows.map((r) => postCardModelFromOutlierRow(r))} onOpenPost={(p) => setOpenPostId(p.postId)} />
+      ) : top.isLoading ? (
+        <Busy label="Reading posts" />
+      ) : top.data && top.data.length > 0 ? (
+        <OutlierFeedView ranking="views" posts={top.data} onOpenPost={(p) => setOpenPostId(p.postId)} />
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {rows.map((o) => (
-            <OutlierRowBlock key={o.post_id} serverData={o} />
-          ))}
-        </div>
+        <Centered>
+          <p className="text-foreground">No posts yet.</p>
+          <p>Track accounts to fill the feed.</p>
+        </Centered>
       )}
-      <p className="mt-2 text-[11px] text-muted-foreground">Top {OUTLIER_FEED_LIMIT} by multiple of each account's median.</p>
-    </div>
+      <OpenPostPanel postId={openPostId} organizationId={organizationId} onClose={() => setOpenPostId(null)} />
+    </>
   );
 }
 
@@ -689,10 +777,10 @@ function AdRecordBody({ id }: ItemBodyProps & { id: string }) {
   if (ad.isLoading) return <Busy label="Opening the ad" />;
   if (!kind) return <Centered>{ad.isError ? "Could not read this ad." : "This ad is no longer stored."}</Centered>;
   return (
-    <div className={FRAME}>
+    <>
       <AdSurface values={values} />
-      <AdCreativeBlock serverData={kind} className="my-0" />
-    </div>
+      {ad.data ? <AdTileView ad={toAdCardModel(ad.data)} /> : null}
+    </>
   );
 }
 
@@ -732,7 +820,10 @@ function SwipeSurface({ values }: { values: ReturnType<typeof createSocialSwipeS
 }
 
 function SwipeRecordBody({ id }: ItemBodyProps & { id: string }) {
+  const organizationId = useBoardOrganizationId();
   const collection = useQuery({ queryKey: ["board", "social-swipe", id], queryFn: () => readSwipeCollection(id) });
+  const items = useSwipeItems([id], true);
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
   const kind = collection.data ? swipeCollectionKind(collection.data) : null;
   const values = createSocialSwipeScope(
     kind
@@ -744,10 +835,17 @@ function SwipeRecordBody({ id }: ItemBodyProps & { id: string }) {
   if (collection.isLoading) return <Busy label="Opening the collection" />;
   if (!kind) return <Centered>{collection.isError ? "Could not read this collection." : "This collection no longer exists."}</Centered>;
   return (
-    <div className={FRAME}>
+    <>
       <SwipeSurface values={values} />
-      <SwipeCollectionBlock serverData={kind} className="my-0" />
-    </div>
+      <SwipeTileView
+        name={kind.name ?? "Collection"}
+        description={kind.description ?? null}
+        items={items.data?.items ?? null}
+        loading={items.isLoading}
+        onOpenPost={(p) => setOpenPostId(p.postId)}
+      />
+      {organizationId ? <OpenPostPanel postId={openPostId} organizationId={organizationId} onClose={() => setOpenPostId(null)} /> : null}
+    </>
   );
 }
 
@@ -793,6 +891,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     kindLabel: "social post",
     icon: Sparkle,
     group: "media",
+    section: "social",
     accent: "rose",
     status: none("A stored post has no running state; its numbers refresh from the Socials section."),
     defaultSize: { w: 620, h: 560 },
@@ -810,6 +909,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     kindLabel: "social profile",
     icon: UserRound,
     group: "media",
+    section: "social",
     accent: "rose",
     status: none("A stored account has no running state."),
     defaultSize: { w: 620, h: 700 },
@@ -827,6 +927,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     kindLabel: "outlier feed",
     icon: TrendingUp,
     group: "media",
+    section: "social",
     accent: "orange",
     status: none("The feed re-reads every minute; it has no state of its own."),
     defaultSize: { w: 560, h: 640 },
@@ -842,6 +943,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     kindLabel: "ad",
     icon: Megaphone,
     group: "media",
+    section: "social",
     accent: "amber",
     status: none("A stored ad has no running state."),
     defaultSize: { w: 520, h: 420 },
@@ -858,6 +960,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     kindLabel: "swipe collection",
     icon: Images,
     group: "media",
+    section: "social",
     accent: "violet",
     status: none("A collection has no running state."),
     defaultSize: { w: 480, h: 280 },

@@ -65,6 +65,14 @@ export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
+/** True when `cam` shows at least a sliver of one of `rects` through a viewport of `size`
+ * (a restored or linked camera that shows none is "lost in space"; the board fits instead). */
+export function cameraShowsContent(cam: Camera, size: Size, rects: readonly Rect[]): boolean {
+  if (rects.length === 0) return true;
+  const view = visibleWorldRect(cam, size);
+  return rects.some((r) => rectsIntersect(view, r));
+}
+
 export function inflateRect(r: Rect, by: number): Rect {
   return { x: r.x - by, y: r.y - by, w: r.w + by * 2, h: r.h + by * 2 };
 }

@@ -59,6 +59,7 @@ import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
 import { useBoard } from "../board/useBoard";
 import { BoardMenu } from "../components/BoardMenu";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
+import { makeSticky, makeText } from "../engine/canvas-text";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
@@ -512,25 +513,12 @@ export function BoardDemo({
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
     switch (c.tool) {
-      case "note":
-        tiles.addTile({
-          id,
-          title: "Note",
-          subtitle: "Quick note",
-          icon: StickyNote,
-          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
-          content: { type: "note", source: { kind: "entity", entity: "note", id: null } },
-        });
+      // Words on the canvas: a sticky note (its words stay on this demo board) or plain text.
+      case "sticky":
+        tiles.addShape(makeSticky(c.at, { id }));
         break;
       case "text":
-        tiles.addTile({
-          id,
-          title: "Text",
-          subtitle: "Label",
-          icon: Type,
-          rect: { x: c.at.x - 20, y: c.at.y - 20, w: 420, h: 120 },
-          content: { type: "text", text: "" },
-        });
+        tiles.addShape(makeText(c.at, { id }));
         break;
       case "frame":
         tiles.addFrame({ id, rect: c.rect, title: "Frame", note: "" });
@@ -690,7 +678,7 @@ export function BoardDemo({
           {tiles.frames.map((f) => (
             <BoardFrameView key={f.id} {...f} />
           ))}
-          <ShapesLayer shapes={tiles.shapes} />
+          <ShapesLayer board={tiles.store} />
           {stress && <BoardFrameView key={stress.frame.id} {...stress.frame} />}
           {board.pipeline.map(([a, b]) => {
             const from = byId.get(a);

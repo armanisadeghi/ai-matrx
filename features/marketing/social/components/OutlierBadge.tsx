@@ -11,7 +11,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import { outlierBadgeModel, type OutlierBadgeModel, type OutlierTier } from "../outlier";
+import { explainOutlier, formatMultiplierLong, outlierBadgeModel, type OutlierBadgeModel, type OutlierTier } from "../outlier";
 import type { OutlierInput } from "../types";
 
 type BadgeVariant = "default" | "neutral" | "outline";
@@ -50,11 +50,31 @@ export interface OutlierBadgeProps {
   input?: OutlierInput;
   model?: OutlierBadgeModel;
   className?: string;
+  /** Post panel: `2.4× usual views`, tooltip gives the percentile and median in words. */
+  verbose?: boolean;
+  /** Tables: a state with no multiple reads `—` (its reason in the tooltip) instead of a badge. Cards keep the badge. */
+  inTable?: boolean;
 }
 
-export function OutlierBadge({ input, model, className }: OutlierBadgeProps) {
-  const m = model ?? (input ? outlierBadgeModel(input) : null);
-  if (!m) return null;
+export function OutlierBadge({ input, model, className, verbose, inTable }: OutlierBadgeProps) {
+  const base = model ?? (input ? outlierBadgeModel(input) : null);
+  if (!base) return null;
+  if (inTable && (base.tier === "none")) {
+    return (
+      <span className="text-muted-foreground" title={base.tooltip}>
+        —
+      </span>
+    );
+  }
+  let m = base;
+  if (verbose && input && input.score !== null && Number.isFinite(input.score)) {
+    const words = explainOutlier(input);
+    m = {
+      ...base,
+      text: `${base.tilde ? "~" : ""}${formatMultiplierLong(input.score)}`,
+      tooltip: [base.tilde ? base.tooltip : "", words].filter(Boolean).join(" ") || base.tooltip,
+    };
+  }
   return (
     <Badge
       variant={TIER_VARIANT[m.tier]}

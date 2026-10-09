@@ -12,12 +12,16 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
+import type { BrandKind } from "./brand-kind";
+
 export interface MarketingBrandContextValue {
   id: string;
   /** Canonical URL key (null only for rows created before keys were wired). */
   slug: string | null;
   name: string;
   organizationId: string;
+  /** company | person — the one switch for brand-kind wording (`lib/brand-kind.ts`). */
+  kind: BrandKind;
   /** The path segment builders should use for this brand. */
   seg: string;
 }

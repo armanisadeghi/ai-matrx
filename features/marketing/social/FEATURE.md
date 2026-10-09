@@ -153,3 +153,57 @@ series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test
 - Outliers: the last watchlist is kept in the URL (`?watchlist=`) and per brand in this browser; posts have "Save to swipe file" (card menu and table row action).
 - KPIs: goals are editable (`GoalDialog`, `updateKpiGoal`); with no tracked own accounts the empty state offers "Track own accounts" (`useTrackOwn`, shared with the Accounts tab).
 - Swipe: both save dialogs carry the note + tags editor (`NoteTagsFields`, shared with the item sheet).
+
+## Brand social accounts — ONE list (contract for the UI, 2026-10-09)
+
+A brand's social account = ONE `web.property` row (non-website kind). Tracking hangs off it via
+`social.tracked_account.property_id`. Every surface that shows "the brand's socials" — Overview presence card,
+Brand Home, Socials → Accounts (own), brands-list count, Research subject — reads the RPCs below. Never re-merge
+`web.property` + `tracked_account` in the client (the old `mappers.ts` own-property merge is superseded by this read).
+
+**Read the list** — `supabase.schema("social").rpc("brand_social_accounts", { p_brand_id })` (SECURITY INVOKER: the
+caller's RLS on every source table applies). One row per account, ordered company before person, tracked first, then
+platform, handle:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `row_key` | text | Stable React key: the property id, or `tracked:<id>` for an own/client tracked account with no property yet |
+| `property_id` | uuid \| null | The `web.property` (null only on a `tracked:` row) |
+| `platform` | text | Property kind (instagram, tiktok, youtube, linkedin, facebook, x, threads, pinterest, reddit, snapchat, other) |
+| `handle`, `url`, `display_name`, `property_status` | text | From the property (`handle` filled by the shared rule) |
+| `owner_kind` | `company` \| `person` | Whose account: the brand's, or a named person's (founder/spokesperson). Group by it; KPIs and Research default to `company` |
+| `owner_party_id`, `owner_name` | uuid, text \| null | The person (`crm.party`) when named |
+| `trackable` | boolean | Server can track this platform (false: pinterest, reddit, snapchat, other — say why, no button) |
+| `tracked_account_id`, `tracked_role`, `tracked_status`, `tracked_label` | | Null = not tracked. Role is `own`/`client`; status `active`/`paused` |
+| `profile_id`, `profile_handle`, `profile_display_name`, `profile_url`, `avatar_url`, `is_verified` | | The shared `social.social_profile` when tracked. Avatar via the existing avatar door (provider URL is a hint) |
+| `followers`, `followers_observed_at` | bigint, timestamptz | Latest snapshot (falls back to the profile count) |
+| `followers_30d_ago` | bigint \| null | Latest snapshot at or before 30 days ago; growth = `followers / followers_30d_ago - 1`; null = not enough history (say so) |
+| `posts_tracked`, `last_post_at` | bigint, timestamptz | Posts in the cache for the profile |
+| `best_multiple_30d`, `best_post_id_30d` | numeric, uuid \| null | Highest outlier multiple among posts of the last 30 days |
+| `last_refreshed_at` | timestamptz | Profile's last refresh |
+
+Row click → `/marketing/[brandId]/socials/[platform]/[tracked_account_id]` when tracked; external icon → `url`.
+
+**Built (2026-10-09):** `readBrandSocialAccounts` / `useBrandSocialAccounts` + `brandSocialRowToAccountRow` (mappers) are the one read. The Overview
+"Social profiles" card (`components/brands/BrandSocialProfilesCard.tsx`) renders them; Socials → Accounts (`readAccountRows`) is that same list plus
+the competitor / inspiration accounts; the brands list counts via `readBrandSocialCounts`. Confirming a discovered social profile writes the property
+with `handle` from `classifySocialLink` and invalidates `["marketing","social","brand-accounts"|"brand-counts"]`.
+
+**One identity per account (A3):** `propertyIdentity` (link.ts) = `web.property_identity` in the DB; unique index `property_social_identity_unique` forbids a second live row per (brand, kind, owner_kind, identity). Create paths (`createProperty`, `confirmDiscoveredProperty`, server `link_brand_property`) find-or-create. The person chip (`PersonOwnerChip`) shows the linked person or offers "Link person".
+
+**Read counts** — `supabase.schema("social").rpc("brand_social_counts", { p_brand_ids: string[] })` →
+`{ brand_id, accounts, tracked, company_accounts, person_accounts }[]` (brands with zero accounts are absent → 0). The
+brands list "Socials" column shows `tracked/accounts`; same source as the list.
+
+**Write paths**
+- Track (own/client) — `POST /social/tracked` with `brand_id` (and `property_id` when the row has one). The server
+  finds-or-creates and links the property and returns `property_id`, `property_created`. A Track dialog with role
+  Own and only a handle now lands on the brand's list. Competitor/inspiration never create a property.
+- Untrack — `DELETE /social/tracked/{id}`: the property stays on the list as "Not tracked".
+- Add/edit property in the UI: write `handle` from `classifySocialLink(url)?.handle` (`link.ts`) — the same rule the
+  server uses (`profile_handle_cases.json` case table, identical in both repos, both test suites run it). Owner:
+  update `owner_kind` (`company`|`person`) and `owner_party_id` (person only; DB CHECK refuses a party on a company row).
+
+**Swipe tab is brand-scoped (SOC-FIX-E, 2026-10-09).** Collections carry an optional `brand_id`. The Swipe tab
+defaults to "This brand" (collections linked to the brand); "All collections" shows every one, including unlinked.
+Each collection's menu has Link to / Unlink from this brand (`setCollectionBrand`). Rules: `collectionsForBrandScope`.

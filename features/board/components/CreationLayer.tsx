@@ -2,11 +2,12 @@
 
 /**
  * CreationLayer — while a creation tool is active, the board's left press
- * belongs to it. Click places (note, text); drag draws (frame, rectangle,
+ * belongs to it. Click places (sticky note, text); drag draws (frame, rectangle,
  * oval, arrow, line); the pen records a stroke. The layer shows a live
  * preview in screen space, converts the result to WORLD coordinates and hands
- * it to the host, then returns to Select (Figma) — except the pen, which stays
- * until you choose another tool (FigJam).
+ * it to the host, then returns to Select (Figma) — except the pen and the
+ * eraser, which stay until you choose another tool (FigJam). The eraser fades
+ * every drawing its path touches and removes them on release (one undo step).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -16,10 +17,15 @@ import { isCreationTool, type BoardTool } from "../engine/tools";
 import { startPointerGesture } from "../engine/pointer-gesture";
 
 export type Creation =
-  | { tool: "note" | "text"; at: { x: number; y: number } }
+  | { tool: "sticky" | "text"; at: { x: number; y: number } }
   | { tool: "frame" | "rect" | "oval"; rect: { x: number; y: number; w: number; h: number } }
   | { tool: "arrow" | "line"; from: { x: number; y: number }; to: { x: number; y: number } }
-  | { tool: "pen"; points: { x: number; y: number }[] };
+  | { tool: "pen"; points: { x: number; y: number }[] }
+  /** The eraser swept over these drawings: remove them as one step. */
+  | { tool: "eraser"; ids: string[] };
+
+/** Screen px the eraser reaches around its path. */
+const ERASER_REACH_PX = 8;
 
 /** Below this many screen px a drag is a click: the item gets its default size. */
 const CLICK_SLOP = 6;
@@ -46,6 +52,43 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
   };
   const world = (p: { x: number; y: number }) => screenToWorld(store.getCamera(), p.x, p.y);
 
+  // The eraser: every drawing within reach of the path (sampled every few screen px, so a fast
+  // swipe misses nothing) fades now and goes on release; Escape or a lost press keeps them all.
+  const erase = (down: PointerEvent, layer: HTMLElement) => {
+    const hit = new Set<string>();
+    const mark = (id: string, on: boolean) => {
+      const el = document.querySelector(`[data-board-shape="${CSS.escape(id)}"]`);
+      if (on) el?.setAttribute("data-erasing", "");
+      else el?.removeAttribute("data-erasing");
+    };
+    const sweep = (p: { x: number; y: number }) => {
+      const host = store.getShapeHost();
+      if (!host) return;
+      const tolerance = ERASER_REACH_PX / store.getCamera().z;
+      for (let i = 0; i < 20; i++) {
+        const id = host.hit(world(p), tolerance, { background: false, except: hit });
+        if (!id) return;
+        hit.add(id);
+        mark(id, true);
+      }
+    };
+    let last = localTo(layer, down);
+    sweep(last);
+    return startPointerGesture(down, layer, {
+      onMove: (m) => {
+        const p = localTo(layer, m);
+        const steps = Math.max(1, Math.ceil(Math.hypot(p.x - last.x, p.y - last.y) / 4));
+        for (let i = 1; i <= steps; i++) sweep({ x: last.x + ((p.x - last.x) * i) / steps, y: last.y + ((p.y - last.y) * i) / steps });
+        last = p;
+      },
+      onEnd: (how) => {
+        gesture.current = null;
+        for (const id of hit) mark(id, false);
+        if (how === "up" && hit.size > 0) onCreate({ tool: "eraser", ids: [...hit] });
+      },
+    });
+  };
+
   const finish = (points: { x: number; y: number }[]) => {
     const a = points[0];
     const b = points[points.length - 1];
@@ -53,7 +96,7 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
     const wa = world(a);
     const wb = world(b);
     switch (tool) {
-      case "note":
+      case "sticky":
       case "text":
         onCreate({ tool, at: wa });
         break;
@@ -82,10 +125,15 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
     <div
       data-board-creation
       className="absolute inset-0 z-20"
-      style={{ cursor: tool === "text" ? "text" : "crosshair" }}
+      style={{ cursor: tool === "text" ? "text" : tool === "eraser" ? "cell" : "crosshair" }}
       onPointerDown={(e) => {
         if (e.button !== 0 || e.ctrlKey) return; // ctrl+click is the macOS right-click
         const layer = e.currentTarget;
+        if (tool === "eraser") {
+          gesture.current?.();
+          gesture.current = erase(e.nativeEvent, layer);
+          return;
+        }
         let points = [localTo(layer, e)];
         setDrag({ points });
         gesture.current?.();

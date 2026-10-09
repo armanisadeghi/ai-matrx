@@ -93,6 +93,8 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { classifySocialLink, propertyIdentity } from "@/features/marketing/social/link";
+import { readBrandSocialCounts } from "@/features/marketing/social/service";
 import {
   marketingKeyProblem,
   nextPreviousSlugs,
@@ -2603,20 +2605,18 @@ export async function confirmDiscoveredProperty(
     throw new Error("A social property discovery needs a URL.");
   }
   const db = await authenticatedWebDb(supabase);
-  const property = await db
-    .from("property")
-    .insert({
-      organization_id: input.item.organization_id,
-      brand_id: input.item.brand_id,
-      kind: input.propertyKind,
-      url: input.item.url,
-      display_name: input.displayName,
-      status: "active",
-      metadata: { source_discovery_id: input.item.id },
-    })
-    .select("id")
-    .single();
-  const created = assertData(property.data, property.error);
+  // The same handle rule the server uses, so the brand's social list shows a handle at once.
+  const handle = classifySocialLink(input.item.url)?.handle ?? null;
+  const created = await findOrCreateProperty(db, {
+    organization_id: input.item.organization_id,
+    brand_id: input.item.brand_id,
+    kind: input.propertyKind,
+    url: input.item.url,
+    handle,
+    display_name: input.displayName,
+    status: "active",
+    metadata: { source_discovery_id: input.item.id },
+  });
   await writeOne(
     db
       .from("discovered_item")
@@ -2778,7 +2778,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, published_to_web, published_to_web_at, published_to_web_by, settings, integrations, profile, shown_to";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, published_to_web, published_to_web_at, published_to_web_by, settings, integrations, profile, shown_to, kind, person_party_id, person_user_id";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -2818,7 +2818,7 @@ export async function listBrands(
   const [
     sitesResponse,
     pendingResponse,
-    propertiesResponse,
+    socialCounts,
     assetsResponse,
     factsResponse,
   ] = await Promise.all([
@@ -2838,13 +2838,7 @@ export async function listBrands(
       .eq("status", "pending")
       .is("deleted_at", null)
       .abortSignal(abortSignal),
-    db
-      .from("property")
-      .select("brand_id, kind")
-      .in("brand_id", brandIds)
-      .neq("kind", "website")
-      .is("deleted_at", null)
-      .abortSignal(abortSignal),
+    readBrandSocialCounts(brandIds, abortSignal),
     db
       .from("brand_asset")
       .select("brand_id")
@@ -2881,9 +2875,6 @@ export async function listBrands(
     }
     return map;
   };
-  const socialsByBrand = countBy(
-    assertData(propertiesResponse.data, propertiesResponse.error),
-  );
   const assetsByBrand = countBy(
     assertData(assetsResponse.data, assetsResponse.error),
   );
@@ -2896,7 +2887,8 @@ export async function listBrands(
       ...brand,
       sites: sitesByBrand.get(brand.id) ?? [],
       pending_discovered: pendingByBrand.get(brand.id) ?? 0,
-      social_count: socialsByBrand.get(brand.id) ?? 0,
+      social_count: socialCounts.get(brand.id)?.accounts ?? 0,
+      social_tracked_count: socialCounts.get(brand.id)?.tracked ?? 0,
       asset_count: assetsByBrand.get(brand.id) ?? 0,
       fact_count: factsByBrand.get(brand.id) ?? 0,
     })),
@@ -2950,7 +2942,7 @@ export async function listBrandSites(
 }
 
 const PROPERTY_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, url, handle, display_name, status, site_id, connection, settings";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, brand_id, kind, url, handle, display_name, status, site_id, connection, settings, owner_kind, owner_party_id";
 
 export async function listBrandProperties(
   brandId: string,
@@ -3246,6 +3238,10 @@ export async function createBrand(
           ? publishedToWebPatch(true, null)
           : {}),
         ...(input.profile !== undefined ? { profile: input.profile } : {}),
+        // A person brand (creator/coach) names who the person is; a company omits all three.
+        ...(input.kind ? { kind: input.kind } : {}),
+        ...(input.personPartyId ? { person_party_id: input.personPartyId } : {}),
+        ...(input.personUserId ? { person_user_id: input.personUserId } : {}),
       })
       .select(BRAND_COLUMNS)
       .single(),
@@ -3749,22 +3745,74 @@ export async function undismissDiscoveredItem(itemId: string): Promise<void> {
 export async function createProperty(
   input: CreatePropertyInput,
 ): Promise<BrandProperty> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+  const db = await authenticatedWebDb(supabase);
+  const row = await findOrCreateProperty(db, {
+    organization_id: input.organizationId,
+    brand_id: input.brandId,
+    kind: input.kind,
+    url: input.url,
+    handle: input.handle,
+    display_name: input.displayName,
+    status: input.status,
+    ...(input.ownerKind ? { owner_kind: input.ownerKind } : {}),
+    ...(input.ownerPartyId ? { owner_party_id: input.ownerPartyId } : {}),
+  });
+  const full = await db
     .from("property")
-    .insert({
-      organization_id: input.organizationId,
-      brand_id: input.brandId,
-      kind: input.kind,
-      url: input.url,
-      handle: input.handle,
-      display_name: input.displayName,
-      status: input.status,
-    })
     .select(PROPERTY_COLUMNS)
+    .eq("id", row.id)
     .single();
-  return assertData(response.data, response.error);
+  return assertData(full.data, full.error);
+}
+
+/**
+ * Find-or-create a brand's social property by its canonical identity (`propertyIdentity`): a second
+ * add of the same account returns the live row instead of a twin. The database's partial unique index
+ * is the backstop - a racing insert that loses (23505) re-reads the winner.
+ */
+async function findOrCreateProperty(
+  db: Awaited<ReturnType<typeof authenticatedWebDb>>,
+  values: {
+    organization_id: string;
+    brand_id: string;
+    kind: string;
+    url: string | null;
+    handle: string | null;
+    display_name: string | null;
+    status: string;
+    metadata?: Record<string, string>;
+    owner_kind?: "company" | "person";
+    owner_party_id?: string | null;
+  },
+): Promise<{ id: string }> {
+  const identity = propertyIdentity(values.kind, values.handle, values.url);
+  const owner = values.owner_kind ?? "company";
+  const findExisting = async (): Promise<{ id: string } | null> => {
+    if (!identity) return null;
+    const live = await db
+      .from("property")
+      .select("id, kind, handle, url, owner_kind")
+      .eq("brand_id", values.brand_id)
+      .eq("kind", values.kind)
+      .eq("owner_kind", owner)
+      .is("deleted_at", null);
+    const rows = assertData(live.data, live.error);
+    return (
+      rows.find((r) => propertyIdentity(r.kind, r.handle, r.url) === identity) ?? null
+    );
+  };
+  const existing = await findExisting();
+  if (existing) return existing;
+  const inserted = await db
+    .from("property")
+    .insert(values)
+    .select("id")
+    .single();
+  if (inserted.error?.code === "23505") {
+    const winner = await findExisting();
+    if (winner) return winner;
+  }
+  return assertData(inserted.data, inserted.error);
 }
 
 export async function updateProperty(
@@ -3877,7 +3925,9 @@ export async function deleteBrandAsset(assetId: string): Promise<void> {
 // Business facts — full CRUD (manual create; promotion lives above)
 // ============================================================================
 
-function factValuePayload(value: string): { [key: string]: string } {
+/** A typed string becomes `{ text }` or `{ url }`; a structured value is stored as given. */
+function factValuePayload(value: string | Json): Json {
+  if (typeof value !== "string") return value;
   return /^https?:\/\//i.test(value.trim())
     ? { url: value.trim() }
     : { text: value.trim() };
@@ -4644,4 +4694,20 @@ export async function getSiteRootStructuredData(
     capturedAt: snapshotResponse.data.captured_at,
     structuredData: snapshotResponse.data.structured_data,
   };
+}
+
+/** Link (or clear) the person who owns a person-owned account. Direct write under RLS; the DB checks the party is in the same organization. */
+export async function setPropertyOwnerParty(
+  propertyId: string,
+  partyId: string | null,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .update({ owner_party_id: partyId })
+    .eq("id", propertyId)
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "link this person");
 }

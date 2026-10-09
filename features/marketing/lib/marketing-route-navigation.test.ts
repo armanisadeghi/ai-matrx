@@ -8,6 +8,9 @@ const MARKETING_APP_ROOT = join(process.cwd(), "app/(core)/marketing");
 const INTENTIONALLY_INTERNAL_TOP_LEVEL_ROUTES = new Set([
   // Privileged maintenance destination, reached through administration.
   "/marketing/admin",
+  // The agency plane's news monitors list: a real page (it renders
+  // NewsTrackersList), not a redirect shim any more, and not yet a nav entry.
+  "/marketing/monitoring",
 ]);
 
 /**
@@ -35,13 +38,12 @@ const LEGACY_SHIM_TOP_LEVEL = new Set([
   "keyword-intelligence",
   "keyword-research",
   "local",
-  "monitoring",
   "outreach",
   "pr",
   "ranks",
   "search-console",
   "sites",
-  "social",
+  // "social" is NOT a shim any more: it is the agency social roll-up (a pillar entry).
 ]);
 
 function topLevelRouteDirs(): string[] {

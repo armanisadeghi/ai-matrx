@@ -130,12 +130,6 @@ export function parseAdvertiserDefinition(raw: unknown): AdvertiserDefinition | 
   };
 }
 
-/** Credits in the search button's tooltip: `~1 credit`; unknown stays honest. */
-export function creditsLabel(credits: number | null | undefined): string {
-  const n = num(credits);
-  if (n === null) return "Cost not reported";
-  return `${n} ${n === 1 ? "credit" : "credits"}`;
-}
 
 export interface MixCount {
   format: string;

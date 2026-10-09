@@ -22,6 +22,12 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import {
+  MESSENGER_AGENTS_HREF,
+  MESSENGER_AGENTS_LABEL,
+  MESSENGER_HREF,
+  MESSENGER_LABEL,
+} from "@/features/messaging/messenger/messenger-route";
+import {
   EDU_TOOL_NAV,
   eduToolHref,
 } from "@/features/education/lib/education-nav";
@@ -851,7 +857,8 @@ export const primaryNavItems: ShellNavItem[] = [
         // first), one opens at `/board/<id>`. Every item a board supports is one click away:
         // `/board?add=<item key>` starts it on the board the person opened last (or a new one).
         // Keys = BOARD_ITEM_TYPES; features/board/__tests__/board-menu-items.test.ts holds them.
-        // A sub-area because the add rows alone are twenty.
+        // A sub-area because the add rows alone are twenty: grouped under the Add menu's section names
+        // (`BOARD_SECTIONS`, features/board/items/types.ts), in the same order.
         label: "Board",
         href: "/board",
         iconName: "LayoutGrid",
@@ -870,33 +877,32 @@ export const primaryNavItems: ShellNavItem[] = [
             dashboard: true,
             guestHidden: true,
           },
-          { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Agent form", href: "/board?add=agent-form", iconName: "Webhook", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "File", href: "/board?add=file", iconName: "File", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Table", href: "/board?add=data-table", iconName: "Database", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Record", href: "/board?add=record", iconName: "Rows3", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Pick list", href: "/board?add=list", iconName: "ListChecks", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Task", href: "/board?add=task", iconName: "ListTodo", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "War Room", href: "/board?add=war-room", iconName: "UsersRound", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Meeting", href: "/board?add=meeting", iconName: "Video", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Meeting notes", href: "/board?add=meeting_part", iconName: "NotebookPen", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Workflow run", href: "/board?add=workflow-run", iconName: "Workflow", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Research", href: "/board?add=research", iconName: "FlaskConical", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Project", href: "/board?add=project", iconName: "FolderKanban", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Flashcard deck", href: "/board?add=fc_set", iconName: "Layers", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Study kit", href: "/board?add=study-kit", iconName: "NotebookTabs", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Scope", href: "/board?add=scope", iconName: "Tag", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Web page", href: "/board?add=web-page", iconName: "Globe", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Image", href: "/board?add=image", iconName: "Image", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Label", href: "/board?add=label", iconName: "Type", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Social post", href: "/board?add=social-post", iconName: "Share2", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Social profile", href: "/board?add=social-profile", iconName: "Share2", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Outlier feed", href: "/board?add=social-outlier-feed", iconName: "TrendingUp", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Ad", href: "/board?add=social-ad", iconName: "Megaphone", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Swipe collection", href: "/board?add=social-swipe-collection", iconName: "Images", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Page", href: "/board?add=page", iconName: "AppWindow", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Notes & docs", actionItem: true, guestHidden: true },
+          { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Notes & docs", actionItem: true, guestHidden: true },
+          { label: "File", href: "/board?add=file", iconName: "File", group: "Files & media", actionItem: true, guestHidden: true },
+          { label: "Web page", href: "/board?add=web-page", iconName: "Globe", group: "Files & media", actionItem: true, guestHidden: true },
+          { label: "Image", href: "/board?add=image", iconName: "Image", group: "Files & media", actionItem: true, guestHidden: true },
+          { label: "Page", href: "/board?add=page", iconName: "AppWindow", group: "Files & media", actionItem: true, guestHidden: true },
+          { label: "Table", href: "/board?add=data-table", iconName: "Database", group: "Data", actionItem: true, guestHidden: true },
+          { label: "Record", href: "/board?add=record", iconName: "Rows3", group: "Data", actionItem: true, guestHidden: true },
+          { label: "Pick list", href: "/board?add=list", iconName: "ListChecks", group: "Data", actionItem: true, guestHidden: true },
+          { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "AI", actionItem: true, guestHidden: true },
+          { label: "Agent form", href: "/board?add=agent-form", iconName: "Webhook", group: "AI", actionItem: true, guestHidden: true },
+          { label: "Task", href: "/board?add=task", iconName: "ListTodo", group: "Work", actionItem: true, guestHidden: true },
+          { label: "Project", href: "/board?add=project", iconName: "FolderKanban", group: "Work", actionItem: true, guestHidden: true },
+          { label: "Scope", href: "/board?add=scope", iconName: "Tag", group: "Work", actionItem: true, guestHidden: true },
+          { label: "War Room", href: "/board?add=war-room", iconName: "UsersRound", group: "Meetings", actionItem: true, guestHidden: true },
+          { label: "Meeting", href: "/board?add=meeting", iconName: "Video", group: "Meetings", actionItem: true, guestHidden: true },
+          { label: "Meeting notes", href: "/board?add=meeting_part", iconName: "NotebookPen", group: "Meetings", actionItem: true, guestHidden: true },
+          { label: "Workflow run", href: "/board?add=workflow-run", iconName: "Workflow", group: "Research & learning", actionItem: true, guestHidden: true },
+          { label: "Research", href: "/board?add=research", iconName: "FlaskConical", group: "Research & learning", actionItem: true, guestHidden: true },
+          { label: "Flashcard deck", href: "/board?add=fc_set", iconName: "Layers", group: "Research & learning", actionItem: true, guestHidden: true },
+          { label: "Study kit", href: "/board?add=study-kit", iconName: "NotebookTabs", group: "Research & learning", actionItem: true, guestHidden: true },
+          { label: "Social post", href: "/board?add=social-post", iconName: "Share2", group: "Web & social", actionItem: true, guestHidden: true },
+          { label: "Social profile", href: "/board?add=social-profile", iconName: "Share2", group: "Web & social", actionItem: true, guestHidden: true },
+          { label: "Outlier feed", href: "/board?add=social-outlier-feed", iconName: "TrendingUp", group: "Web & social", actionItem: true, guestHidden: true },
+          { label: "Ad", href: "/board?add=social-ad", iconName: "Megaphone", group: "Web & social", actionItem: true, guestHidden: true },
+          { label: "Swipe collection", href: "/board?add=social-swipe-collection", iconName: "Images", group: "Web & social", actionItem: true, guestHidden: true },
         ],
       },
       ...WAR_ROOM_NAV_CHILDREN,
@@ -1003,6 +1009,7 @@ export const primaryNavItems: ShellNavItem[] = [
       { label: "Chat", href: "/chat/new", iconName: "MessageCircle", exact: true, profileMenu: true, group: "Chat" },
       { label: "Voice", href: "/chat/voice", iconName: "Mic", group: "Chat" },
       { label: "Talk", href: "/chat/talk", iconName: "Speech", group: "Chat" },
+      { label: MESSENGER_AGENTS_LABEL, href: MESSENGER_AGENTS_HREF, iconName: "MessagesSquare", group: "Chat", guestHidden: true },
       ...AI_WORK_NAV_GROUP.children
         .filter((child) => child.href.startsWith("/work"))
         .map((child): ShellNavChild => ({
@@ -1672,6 +1679,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "pink",
         profileMenu: true,
         dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: MESSENGER_LABEL,
+        href: MESSENGER_HREF,
+        iconName: "MessagesSquare",
+        description: "Your conversations in a desktop messenger",
+        color: "pink",
         guestHidden: true,
       },
       {

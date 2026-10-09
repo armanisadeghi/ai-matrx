@@ -6,7 +6,8 @@
  * `platform.saved_view` that remembers the last look, so the ads newly seen
  * since then are marked. Refresh is on demand only: no schedules.
  *
- * A search spends provider credits (about one); the button says so. The
+ * A search is a hard cost charged in points; like every AI action the cost is
+ * named only when worth a warning (`useSocialSpend`, cost.ts). The
  * country the provider applied is shown with the results, never silent.
  */
 
@@ -28,7 +29,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
-import { creditsLabel, filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
+import { useSocialSpend } from "../cost";
+import { filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
 import { socialKeys, useAdvertiserAds, useInvalidateSocial, useTrackedAdvertisers } from "../hooks";
 import { searchAds, socialErrorCode, socialErrorMessage } from "../server";
 import { archiveTrackedAdvertiser, readAdRows, saveTrackedAdvertiser } from "../service";
@@ -114,6 +116,7 @@ function AdFilters({
 
 function AdsSearch({ onTracked }: { onTracked: () => void }) {
   const { organizationId, brandId } = useSocials();
+  const { costText, confirmSpend } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const [library, setLibrary] = useState<AdLibrary>("meta");
   const [kind, setKind] = useState<"query" | "advertiser">("query");
@@ -202,7 +205,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           onChange={(e) => setText(e.target.value)}
           className="min-w-48 flex-1"
         />
-        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={`About ${creditsLabel(1)}`} aria-busy={busy}>
+        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={costText("ads_search") ?? undefined} aria-busy={busy}>
           Search
         </Button>
       </form>
@@ -213,7 +216,6 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           {asked ? <span>{libraryLabel(asked.library)}</span> : null}
           {typeof country === "string" ? <span title="The country the provider searched">Country {country}</span> : null}
           {typeof region === "string" ? <span>Region {region}</span> : null}
-          <span>{creditsLabel(meta.cost_credits)}</span>
           {meta.provider ? <ProviderFallbackNotice trace={{ provider: meta.provider, fallback_reason: meta.fallback_reason }} /> : null}
         </div>
       ) : null}
@@ -252,7 +254,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           )}
           {meta?.has_more && meta.cursor && asked ? (
             <div>
-              <Button variant="outline" disabled={busy} title={`About ${creditsLabel(1)}`} onClick={() => void run(asked, meta.cursor ?? undefined)}>
+              <Button variant="outline" disabled={busy} title={costText("ads_search") ?? undefined} onClick={() => void run(asked, meta.cursor ?? undefined)}>
                 {busy ? "Loading…" : "Load more"}
               </Button>
             </div>
@@ -356,6 +358,7 @@ function AdvertiserCard({ advertiser, onOpen }: { advertiser: TrackedAdvertiser;
 
 function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser; onBack: () => void }) {
   const { organizationId, brandId } = useSocials();
+  const { costText, confirmSpend } = useSocialSpend(organizationId);
   const client = useQueryClient();
   const invalidate = useInvalidateSocial();
   const adsQuery = useAdvertiserArgs(advertiser);
@@ -374,9 +377,9 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
   useEffect(() => setError(null), [advertiser.viewId]);
 
   async function lookAgain() {
-    const ok = await confirm({
+    const ok = await confirmSpend("ads_search", 1, {
       title: `Look again at ${def.advertiser}?`,
-      description: `Searches the ${AD_LIBRARY_LABELS[def.library]} library. About ${creditsLabel(1)}, billed to this organization.`,
+      description: `Searches the ${AD_LIBRARY_LABELS[def.library]} library.`,
       confirmLabel: "Look again",
     });
     if (!ok) return;
@@ -438,7 +441,7 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
             Mark {fresh.size} seen
           </Button>
         ) : null}
-        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={`About ${creditsLabel(1)}`} aria-busy={busy} onClick={() => void lookAgain()}>
+        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={costText("ads_search") ?? undefined} aria-busy={busy} onClick={() => void lookAgain()}>
           Look again
         </Button>
         <Button variant="quiet" onClick={() => void stop()}>

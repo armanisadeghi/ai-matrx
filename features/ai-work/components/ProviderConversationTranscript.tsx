@@ -40,10 +40,7 @@ import { FullDownloadButton } from "@/features/ai-work/components/FullDownloadBu
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { workspaceName } from "../lib/codingSessionPresentation";
-import {
-  codingToolFromSource,
-  resolveCodingTool,
-} from "../lib/providerSource";
+import { codingToolFromSource, resolveCodingTool } from "../lib/providerSource";
 import type { ProviderConversationDetail } from "../service/providerConversation";
 import {
   fetchEarlierProviderMessages,
@@ -89,11 +86,21 @@ interface ToolActivityState {
 
 export function ProviderConversationTranscript({
   detail,
+  embedded = false,
 }: {
   detail: ProviderConversationDetail;
+  /**
+   * Inside the /work Live hub: the hub's header already carries presence and
+   * a door to this full page, and its direct line is the one composer — so
+   * the provenance header, the tab strip and the AI Matrx reply composer are
+   * left out and only the conversation itself renders.
+   */
+  embedded?: boolean;
 }) {
   const { conversation, visibleMessageCount } = detail;
-  const title = conversationTitleText(conversation.title?.trim() || null) || "Untitled conversation";
+  const title =
+    conversationTitleText(conversation.title?.trim() || null) ||
+    "Untitled conversation";
   /**
    * Storage providers of this conversation's coding-session bindings. A reply
    * typed in AI Matrx carries `source_feature = coding_session_reply`, so the
@@ -104,8 +111,10 @@ export function ProviderConversationTranscript({
   );
   const familyLabel = appLabel(conversation.source_app);
   const toolNamedByFeature =
-    codingToolFromSource(conversation.source_app, conversation.source_feature) !==
-    null;
+    codingToolFromSource(
+      conversation.source_app,
+      conversation.source_feature,
+    ) !== null;
   // Until a reply row's binding read lands, the family label stands in — an
   // honest "Code Plugin", never a guessed tool.
   const provider =
@@ -378,7 +387,7 @@ export function ProviderConversationTranscript({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
-      <section className="border-b border-border pb-4">
+      <section className={embedded ? "hidden" : "border-b border-border pb-4"}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -443,42 +452,47 @@ export function ProviderConversationTranscript({
           </div>
         </div>
       </section>
-      <Tabs defaultValue="conversation" className="mt-3">
-        <TabsList variant="underline" overflow="scroll" className="w-full">
-          <TabsTrigger
-            value="conversation"
-          >
-            <MessageSquareText className="h-3.5 w-3.5" />
-            Conversation
-          </TabsTrigger>
-          <TabsTrigger
-            value="source"
-          >
-            <Info className="h-3.5 w-3.5" />
-            Source
-          </TabsTrigger>
-          <TabsTrigger
-            value="files"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Files
-          </TabsTrigger>
-          <TabsTrigger
-            value="analyze"
-          >
-            <AGENT_ICON className="h-3.5 w-3.5" />
-            Analyze
-          </TabsTrigger>
-          <TabsTrigger
-            value="organize"
-          >
-            <Network className="h-3.5 w-3.5" />
-            Organize
-          </TabsTrigger>
-        </TabsList>
+      <Tabs
+        defaultValue="conversation"
+        className={embedded ? undefined : "mt-3"}
+      >
+        {/* A wrapper, not a class on the list: the control layer keeps its own display. */}
+        <div className={embedded ? "hidden" : undefined}>
+          <TabsList variant="underline" overflow="scroll" className="w-full">
+            <TabsTrigger value="conversation">
+              <MessageSquareText className="h-3.5 w-3.5" />
+              Conversation
+            </TabsTrigger>
+            <TabsTrigger value="source">
+              <Info className="h-3.5 w-3.5" />
+              Source
+            </TabsTrigger>
+            <TabsTrigger value="files">
+              <FileText className="h-3.5 w-3.5" />
+              Files
+            </TabsTrigger>
+            <TabsTrigger value="analyze">
+              <AGENT_ICON className="h-3.5 w-3.5" />
+              Analyze
+            </TabsTrigger>
+            <TabsTrigger value="organize">
+              <Network className="h-3.5 w-3.5" />
+              Organize
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="conversation" className="mt-4 space-y-4">
-          <section className="flex flex-col items-stretch gap-3 border-l-2 border-sky-500 bg-sky-500/5 px-3 py-2.5 sm:flex-row sm:items-center">
+        <TabsContent
+          value="conversation"
+          className={embedded ? "space-y-4" : "mt-4 space-y-4"}
+        >
+          <section
+            className={
+              embedded
+                ? "hidden"
+                : "flex flex-col items-stretch gap-3 border-l-2 border-sky-500 bg-sky-500/5 px-3 py-2.5 sm:flex-row sm:items-center"
+            }
+          >
             <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
               <CircleDot className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 sm:mt-0 dark:text-sky-400" />
               <p className="min-w-0 text-sm text-foreground">
@@ -487,11 +501,7 @@ export function ProviderConversationTranscript({
                 agent.
               </p>
             </div>
-            <Button
-              asChild
-              variant="outline"
-              className="sm:shrink-0"
-            >
+            <Button asChild variant="outline" className="sm:shrink-0">
               <Link href="/chat/new">
                 New AI Matrx chat
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -502,11 +512,13 @@ export function ProviderConversationTranscript({
           {hasEarlierAnything ? (
             <div className="flex flex-wrap items-center gap-3 border-b border-border pb-3">
               <Button
-                icon={loadingEarlier ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <ChevronUp />
-                )}
+                icon={
+                  loadingEarlier ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ChevronUp />
+                  )
+                }
                 type="button"
                 variant="outline"
                 onClick={loadEarlier}
@@ -581,11 +593,13 @@ export function ProviderConversationTranscript({
             </ol>
           )}
 
-          <AiMatrxReplyComposer
-            conversationId={conversation.id}
-            conversationOrganizationId={conversation.organization_id}
-            onAnswered={live.refreshNow}
-          />
+          {embedded ? null : (
+            <AiMatrxReplyComposer
+              conversationId={conversation.id}
+              conversationOrganizationId={conversation.organization_id}
+              onAnswered={live.refreshNow}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="source" className="mt-4">
@@ -871,7 +885,9 @@ function ProviderTranscriptMessage({
               attachmentParts={[]}
             />
           ) : (
-            <RichContent level="full" imagePolicy="ai"
+            <RichContent
+              level="full"
+              imagePolicy="ai"
               source={message.display.text}
               className="text-sm text-foreground"
               hideCopyButton={false}
@@ -919,9 +935,7 @@ function ToolsCalledAfter({ names }: { names: string[] }) {
       className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
       aria-label={`Tools called after this turn: ${names.join(", ")}`}
     >
-      <span>
-        {names.length === 1 ? "1 tool:" : `${names.length} tools:`}
-      </span>
+      <span>{names.length === 1 ? "1 tool:" : `${names.length} tools:`}</span>
       {shown.map((name, index) => (
         <span
           key={`${index}-${name}`}

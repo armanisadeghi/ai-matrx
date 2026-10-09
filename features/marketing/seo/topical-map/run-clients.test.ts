@@ -343,7 +343,7 @@ describe("the generated contract carries these three paths", () => {
   // the server's routes, quoted exactly as openapi-typescript writes them.
   const apiTypesPath = join(
     __dirname,
-    "../../../../node_modules/@ai-matrx/agents/generated/api-types.ts",
+    "../../../../node_modules/@ai-matrx/agents/dist/generated/api-types.d.ts",
   );
 
   it.each([MAP_PAGES_PATH, MAP_REGIONS_PATH, PROPOSE_INTENTS_PATH])(

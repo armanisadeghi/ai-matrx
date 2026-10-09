@@ -9,7 +9,7 @@ const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 jest.mock("@/lib/redux/store-singleton", () => ({
   // The gate (lib/organization/organization-gate.ts) reads this exact shape.
   getStoreSingleton: () => ({
-    getState: () => ({ appContext: { organization_id: ORGANIZATION_ID } }),
+    getState: () => ({ appContext: { organization_id: ORGANIZATION_ID, orgBootstrapResolved: true } }),
   }),
 }));
 

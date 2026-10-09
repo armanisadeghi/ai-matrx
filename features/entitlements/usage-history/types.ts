@@ -40,6 +40,9 @@ export interface UsageHistoryPage {
 
 type UsageMetadata = {
   execution_type?: unknown;
+  /** User-safe category written by the server for hard-cost rows ("SMS", "Web search"); never a vendor. */
+  activity?: unknown;
+  link_kind?: unknown;
   status?: unknown;
 };
 
@@ -52,6 +55,10 @@ function metadataRecord(value: Json): UsageMetadata {
 function displayMetadataValue(value: unknown): string | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   return humanizeIdentifier(value.trim()) || null;
+}
+
+function plainLabel(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
 /**
@@ -67,7 +74,10 @@ export function toUsageHistoryEntry(row: Pick<UsageLedgerRow, "id" | "created_at
     quantity: typeof row.quantity === "number" && Number.isFinite(row.quantity)
       ? row.quantity
       : null,
-    activity: displayMetadataValue(metadata.execution_type),
+    activity:
+      plainLabel(metadata.activity) ??
+      (metadata.link_kind === "external_api" ? "Connected service" : null) ??
+      displayMetadataValue(metadata.execution_type),
     outcome: displayMetadataValue(metadata.status),
   };
 }

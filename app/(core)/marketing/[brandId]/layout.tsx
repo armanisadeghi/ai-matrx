@@ -19,6 +19,7 @@ import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { CanonicalBrandSegment } from "@/features/marketing/components/brand/CanonicalSegment";
 import { MarketingBrandCrumb } from "@/features/marketing/components/brand/MarketingBrandCrumb";
 import { MarketingBrandProvider } from "@/features/marketing/lib/brand-context";
+import { brandKindOf } from "@/features/marketing/lib/brand-kind";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -67,6 +68,7 @@ export default async function MarketingBrandLayout({
           slug: brand.slug,
           name: brand.name,
           organizationId: brand.organization_id,
+          kind: brandKindOf(brand),
           seg,
         }}
       >

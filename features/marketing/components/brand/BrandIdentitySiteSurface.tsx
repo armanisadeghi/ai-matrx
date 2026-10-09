@@ -22,6 +22,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Globe2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 import {
   CreatablePicker,
   type CreatableOption,
@@ -118,19 +119,19 @@ export function BrandIdentitySiteSurface({
   if (!site) {
     return (
       <div className="flex h-full items-center justify-center p-6 pt-[var(--shell-header-h)]">
-        <div className="w-full max-w-lg text-center">
-          <h1 className="text-base font-semibold text-foreground">
-            {brand.name} has no website yet
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This room reads a website cold to propose what the business is, what
-            it sells, and how it must be written about. Add the client&apos;s
-            website and it fills in.
-          </p>
-          <Button variant="primary" asChild className="mt-4">
-            <Link href={marketingRoutes.newSite(brand.id)}>Add a website</Link>
-          </Button>
-        </div>
+        <NoWebsiteState
+          brandId={brand.id}
+          brandName={brand.name}
+          needs={
+            pathname.endsWith("/guidelines")
+              ? "the writing and style rules it reads from the site's own pages"
+              : "reading the business cold: what it is, what it sells and how it must be written about"
+          }
+          alternatives={[
+            { label: "Brand voice from socials", href: `${marketingRoutes.brandIdentity(brand.id)}/voice` },
+            { label: "Open Socials", href: marketingRoutes.brandSocials(brand.id) },
+          ]}
+        />
       </div>
     );
   }

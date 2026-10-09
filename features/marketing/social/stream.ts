@@ -25,6 +25,23 @@ export class SocialStreamError extends Error {
  * total}` (`current`/`total` 0 when a stage has no count), then ONE
  * `{type: "social_result", result}`, then `end`.
  */
+/**
+ * The server's stage labels are engineer-shaped ("Fetching posts, page 1 of up to 1").
+ * Friendly copy: drop the page counter (a count only shows when there is more than one),
+ * and say "Getting" rather than "Fetching".
+ */
+export function friendlyStage(label: string): { text: string; pages: number | null } {
+  let pages: number | null = null;
+  const text = label
+    .replace(/[,·\-–]?\s*page\s+\d+\s+of\s+(?:up to\s+)?(\d+)/i, (_m, total: string) => {
+      pages = Number(total);
+      return "";
+    })
+    .replace(/^fetching\b/i, "Getting")
+    .trim();
+  return { text, pages };
+}
+
 export function progressOf(evt: unknown): SocialProgress | null {
   if (!evt || typeof evt !== "object") return null;
   const e = evt as { event?: string; data?: Record<string, unknown> };
@@ -34,7 +51,10 @@ export function progressOf(evt: unknown): SocialProgress | null {
   if (!label) return null;
   const current = typeof d.current === "number" && d.current > 0 ? d.current : undefined;
   const total = typeof d.total === "number" && d.total > 0 ? d.total : undefined;
-  return { message: label, step: current, total };
+  const { text, pages } = friendlyStage(label);
+  // A single step carries no information ("1 of 1"): show the count only when there is more than one.
+  const many = (total ?? pages ?? 0) > 1;
+  return { message: text, step: many ? current : undefined, total: many ? (total ?? pages ?? undefined) : undefined };
 }
 
 /**

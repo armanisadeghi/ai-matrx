@@ -2,7 +2,8 @@
 
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { useState } from "react";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, CalendarClock, Plus, X } from "lucide-react";
 import type { ConversationSummary } from "@ai-matrx/messaging";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +16,18 @@ import {
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { agentRoomKind, deliveryLag } from "../presence";
 import type { LiveSession } from "../useLiveHub";
-import type { SessionMemberRow } from "../service";
+import type { AgentMemberInfo, SessionMemberRow } from "../service";
 import { addSessionToRoom, removeSessionFromRoom } from "../service";
-import { LagMarker, PresenceDot } from "./LiveBits";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { LagMarker, PresenceDot, sessionTag } from "./LiveBits";
+import { AddManagerDialog } from "./AddManagerDialog";
+
+/** A manager agent's own conversation, scheduled: every run appends to it, so it keeps its room. */
+export function scheduleHref(info: AgentMemberInfo | undefined, conversationId: string): string {
+  const q = new URLSearchParams({ conversationId });
+  if (info?.agentId) q.set("agentId", info.agentId);
+  return `/schedules/new?${q.toString()}`;
+}
 
 const KIND_LABEL = {
   agent_direct: "Direct line",
@@ -29,23 +39,31 @@ const KIND_LABEL = {
 export function RoomDetail({
   room,
   members,
+  agentInfo,
   sessions,
   nowMs,
   onBack,
   onOpenSession,
+  onChanged,
 }: {
   room: ConversationSummary;
   members: readonly SessionMemberRow[];
+  agentInfo: Readonly<Record<string, AgentMemberInfo>>;
   sessions: readonly LiveSession[];
   nowMs: number;
   onBack: () => void;
   onOpenSession: (address: string) => void;
+  onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [addingManager, setAddingManager] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const kind = agentRoomKind(room.conversation.metadata) ?? "agent_room";
   const roomId = room.conversation.id;
   const inRoom = members.filter((m) => m.conversation_id === roomId && m.member_kind === "coding_session");
+  const agentsInRoom = members.filter(
+    (m) => m.conversation_id === roomId && m.member_kind === "agent_conversation",
+  );
   const sessionOf = (m: SessionMemberRow) => sessions.find((s) => s.bindingIds.includes(m.member_id)) ?? null;
   const memberAddresses = new Set(inRoom.map((m) => sessionOf(m)?.address).filter(Boolean));
   const addable = sessions.filter((s) => s.presence !== "ended" && !memberAddresses.has(s.address));
@@ -74,6 +92,8 @@ export function RoomDetail({
             <h2 className="truncate text-sm font-semibold">{room.displayName}</h2>
             <p className="text-xs text-muted-foreground">
               {KIND_LABEL[kind]} · {inRoom.length} session{inRoom.length === 1 ? "" : "s"}
+              {agentsInRoom.length > 0 &&
+                ` · ${agentsInRoom.length} manager agent${agentsInRoom.length === 1 ? "" : "s"}`}
             </p>
           </div>
           {canEdit && (
@@ -95,12 +115,22 @@ export function RoomDetail({
                       className="gap-2"
                     >
                       <PresenceDot presence={s.presence} />
-                      <span className="truncate">{s.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{s.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {sessionTag(s, nowMs)}
+                        </span>
+                      </span>
                     </DropdownMenuItem>
                   ))
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {canEdit && (
+            <Button variant="outline" icon={<Plus />} disabled={busy} onClick={() => setAddingManager(true)}>
+              Manager agent
+            </Button>
           )}
         </div>
         {inRoom.length > 0 && (
@@ -110,16 +140,24 @@ export function RoomDetail({
               return (
                 <li
                   key={m.id}
-                  className="flex max-w-[16rem] items-center gap-1.5 rounded-full border border-border py-0.5 pl-2 pr-1 text-xs"
+                  className="flex max-w-[20rem] items-center gap-1.5 rounded-full border border-border py-0.5 pl-2 pr-1 text-xs"
                 >
                   <PresenceDot presence={s?.presence ?? "ended"} className="size-2" />
                   <button
                     type="button"
-                    className="truncate hover:underline"
+                    className="min-w-0 truncate hover:underline"
                     disabled={!s}
+                    title={s ? `${s.title} — ${sessionTag(s, nowMs)}` : undefined}
                     onClick={() => s && onOpenSession(s.address)}
                   >
-                    {s?.title ?? "Session not in recent list"}
+                    {s ? (
+                      <>
+                        {s.title}
+                        <span className="text-muted-foreground"> · {s.workspace ?? s.providerLabel}</span>
+                      </>
+                    ) : (
+                      "Session not in recent list"
+                    )}
                   </button>
                   <LagMarker lag={deliveryLag(m, nowMs)} />
                   {canEdit && s && (
@@ -138,8 +176,49 @@ export function RoomDetail({
             })}
           </ul>
         )}
+        {agentsInRoom.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Manager agents in this room">
+            {agentsInRoom.map((m) => {
+              const info = agentInfo[m.member_id];
+              return (
+                <li
+                  key={m.id}
+                  className="flex max-w-[24rem] items-center gap-1.5 rounded-full border border-border py-0.5 pl-2 pr-1 text-xs"
+                >
+                  <AGENT_ICON className="size-3 shrink-0 text-muted-foreground" />
+                  <Link href={`/work/conversations/${m.member_id}`} className="min-w-0 truncate hover:underline">
+                    {info?.agentName ?? "AI Matrx agent"}
+                    {info?.lastRunStatus && (
+                      <span className="text-muted-foreground"> · {info.lastRunStatus}</span>
+                    )}
+                  </Link>
+                  <LagMarker lag={deliveryLag(m, nowMs)} />
+                  <Link
+                    href={scheduleHref(info, m.member_id)}
+                    className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    <CalendarClock className="size-3" />
+                    Run on a schedule
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {error && <ErrorNotice message={error} size="inline" />}
       </header>
+      {addingManager && (
+        <AddManagerDialog
+          open={addingManager}
+          onOpenChange={setAddingManager}
+          roomId={roomId}
+          roomName={room.displayName}
+          onAdded={() => {
+            setAddingManager(false);
+            onChanged();
+          }}
+        />
+      )}
       <ConversationPane
         key={roomId}
         conversationId={roomId}

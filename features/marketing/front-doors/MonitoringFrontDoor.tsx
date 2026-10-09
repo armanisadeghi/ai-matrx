@@ -25,6 +25,7 @@
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Link2Off, MessagesSquare, Newspaper, Radar, ShieldAlert } from "lucide-react";
 
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
 import { BrandNewsMonitors } from "@/features/marketing/news-monitor/BrandNewsMonitors";
@@ -111,15 +112,31 @@ export function MonitoringFrontDoor({
       title="Monitoring"
       lede="What the web is saying, citing, and linking — watched per website. Pick a site and open the view that answers your question."
       toolbar={
-        <FrontDoorSiteSelect
-          state={siteState}
-          basePath={basePath ?? "/marketing/monitoring"}
-          label="Website to monitor"
-        />
+        brandId && !siteState.isPending && !siteState.site ? null : (
+          <FrontDoorSiteSelect
+            state={siteState}
+            basePath={basePath ?? "/marketing/monitoring"}
+            label="Website to monitor"
+          />
+        )
       }
     >
       {siteState.isError ? (
         <QueryError error={siteState.error} />
+      ) : null}
+
+      {brandId && brandCtx && !siteState.isPending && !siteState.isError && !siteState.site ? (
+        <NoWebsiteState
+          compact
+          brandId={brandCtx.id}
+          brandName={brandCtx.name}
+          needs="coverage, link changes, AI visibility and reputation"
+          alternatives={[{ label: "Open Socials", href: marketingRoutes.brandSocials(brandCtx.id) }]}
+        >
+          <p className="mt-1 text-xs text-muted-foreground">
+            The news monitor below works without a website.
+          </p>
+        </NoWebsiteState>
       ) : null}
 
       {doors.length > 0 ? (

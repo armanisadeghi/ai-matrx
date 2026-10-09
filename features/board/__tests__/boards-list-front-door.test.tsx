@@ -28,7 +28,17 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/components/loaders/ShimmerText", () => ({ ShimmerText: ({ text }: { text: string }) => <span>{text}</span> }));
 jest.mock("@ai-matrx/design-system", () => ({ ErrorNotice: ({ message }: { message: string }) => <div>{message}</div> }));
 jest.mock("@/components/ui/button", () => ({ Button: (p: { children: unknown }) => <button>{p.children as string}</button> }));
-jest.mock("@ai-matrx/design-system/controls", () => ({ Button: (p: { children: unknown }) => <button>{p.children as string}</button> }));
+jest.mock("@ai-matrx/design-system/controls", () => ({
+  Button: (p: { children: unknown }) => <button>{p.children as string}</button>,
+  // The template gallery frame (TemplateGalleryShell) draws these while templates load.
+  RegionSkeleton: () => <div aria-busy="true" />,
+}));
+// The template gallery's Dialog re-exports from the (mocked) design system; a plain stand-in keeps its frame mountable.
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ open, children }: { open: boolean; children: unknown }) => (open ? <div>{children as never}</div> : null),
+  DialogContent: ({ children }: { children: unknown }) => <div>{children as never}</div>,
+  DialogTitle: ({ children }: { children: unknown }) => <h2>{children as never}</h2>,
+}));
 jest.mock("@/features/shell/components/header/PageHeader", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/lib/entity-list/components/EntityListPage", () => ({ EntityListPage: () => <div>THE BOARDS LIST</div> }));
 jest.mock("../boards/listConfig", () => ({ boardListConfig: {} }));

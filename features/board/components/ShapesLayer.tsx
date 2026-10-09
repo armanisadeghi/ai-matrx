@@ -1,63 +1,399 @@
 "use client";
 
 /**
- * ShapesLayer — the marks people draw on the board (rectangles, ovals, arrows,
- * lines, pen strokes), in WORLD space so they pan and zoom with everything
- * else. Strokes keep a constant on-screen weight via `vector-effect`. A shape
- * is selectable (click) so Delete and the menu can act on it.
+ * ShapesLayer — the drawings on the board (rectangles, ovals, lines, arrows,
+ * pen strokes) as first-class objects, in WORLD space, drawn ABOVE the tiles
+ * (z-order: frames < tiles < drawings), so a stroke over a tile stays visible.
+ *
+ * The layer itself takes no pointer input: the viewport hit-tests presses in
+ * JS through `store.setShapeHost` (`engine/shapes.ts` `topShapeAt`), so a
+ * click INSIDE a hollow rectangle or NEAR a 2px stroke selects it, and the
+ * selection, marquee, ⌘A, group move, nudge, Delete and undo are the tiles'
+ * own (each shape registers in the camera store as a mark).
+ *
+ * Reads its own channel (`board.subscribeShapes`): dragging a drawing
+ * re-renders this layer and nothing else on the board.
+ *
+ * A lone selected shape shows its handles: eight for a rectangle, oval or pen
+ * stroke (a stroke scales with its box), two end handles for a line or arrow —
+ * drop an end on a tile or a box shape and it binds and follows it. Double-
+ * click (or Enter on) a rectangle or oval types centred text.
  */
 
-import { cn } from "@/lib/utils";
-import type { BoardShape } from "../board/useBoard";
-import { useSelectedTile, useBoardCameraStore } from "../engine/react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { BoardStore, BoardTileBase } from "../board/board-store";
+import { useBoardTile } from "../board/useBoard";
+import { screenToWorld, type Rect } from "../engine/camera";
+import { useBoardCameraStore, useEditingTile, useIsEditing, useSelectedTile } from "../engine/react";
+import {
+  type BindTarget,
+  type BoardShape,
+  type Point,
+  FILL_ALPHA,
+  TEXT_SIZES,
+  boundsOfPoints,
+  dashArray,
+  drawnPoints,
+  hitShape,
+  isBoxKind,
+  isBoxed,
+  isCanvasText,
+  isConnector,
+  shapeColorCss,
+  strokeWidthOf,
+  styleOf,
+  textCapable,
+  topShapeAt,
+} from "../engine/shapes";
+import { startPointerGesture } from "../engine/pointer-gesture";
+import { isFrameKey } from "../engine/selection";
+import { ResizeHandles } from "./BoardTile";
+import { PlainText, PlainTextEditor, StickyCard, StickyEditor } from "./CanvasTextViews";
 
-export function ShapesLayer({ shapes }: { shapes: readonly BoardShape[] }) {
+/** Screen px a press may miss a thin stroke by and still hit it. */
+export const SHAPE_HIT_SLOP_PX = 6;
+const SHAPE_MIN_SIZE = { w: 8, h: 8 };
+
+type AnyBoard = BoardStore<BoardTileBase>;
+
+export function ShapesLayer<T extends BoardTileBase>({ board }: { board: BoardStore<T> }) {
   const store = useBoardCameraStore();
-  const selected = useSelectedTile();
-  if (shapes.length === 0) return null;
+  const b = board as unknown as AnyBoard;
+  const shapes = useSyncExternalStore(b.subscribeShapes, b.getShapes, b.getShapes);
+  useEffect(
+    () =>
+      store.setShapeHost({
+        hit: (p, tolerance, opts) => topShapeAt(b.getShapes(), p, tolerance, b.targetOf, opts),
+        editable: (id) => {
+          const s = b.getShape(id);
+          return !!s && textCapable(s.kind);
+        },
+        clickEdits: (id) => {
+          const s = b.getShape(id);
+          return !!s && isCanvasText(s.kind);
+        },
+      }),
+    [store, b],
+  );
   return (
-    <svg className="pointer-events-none absolute left-0 top-0 h-px w-px max-w-none overflow-visible text-foreground/80">
-      <defs>
-        <marker id="board-arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
-        </marker>
-      </defs>
-      {shapes.map((s) => {
-        const on = selected === s.id;
-        const common = {
-          className: cn("pointer-events-auto cursor-pointer", on && "text-primary"),
-          stroke: "currentColor",
-          strokeWidth: on ? 3 : 2,
-          vectorEffect: "non-scaling-stroke" as const,
-          fill: "none",
-          onPointerDown: (e: React.PointerEvent) => {
+    <div data-board-shapes className="pointer-events-none absolute left-0 top-0 z-[6] h-px w-px max-w-none overflow-visible">
+      {shapes.map((s) => (
+        <ShapeView key={s.id} shape={s} board={b} shapes={shapes} />
+      ))}
+      <ShapeChrome board={b} shapes={shapes} />
+    </div>
+  );
+}
+
+/**
+ * A shape's drawn points, re-read when what it is bound to moves. The bound
+ * tiles' records and the shapes list are INPUTS of the lookup on purpose: the
+ * React Compiler memoises on inputs, so a lookup that only read the live store
+ * kept an arrow pointing where its tile used to be.
+ */
+function useDrawnPoints(shape: BoardShape, board: AnyBoard, shapes: readonly BoardShape[]): Point[] {
+  // Subscribing to the bound tiles' records wakes this shape (only) when one moves.
+  const startTile = useBoardTile(board, shape.bind?.start ?? "");
+  const endTile = useBoardTile(board, shape.bind?.end ?? "");
+  if (!shape.bind) return shape.points;
+  const lookup = (id: string): BindTarget | undefined => {
+    const tile = id === startTile?.id ? startTile : id === endTile?.id ? endTile : undefined;
+    if (tile) return { rect: tile.rect, outline: "rect" };
+    const target = shapes.find((s) => s.id === id);
+    if (target && isBoxed(target.kind)) {
+      return { rect: boundsOfPoints(target.points), outline: target.kind === "oval" ? "oval" : "rect" };
+    }
+    return undefined;
+  };
+  return drawnPoints(shape, lookup);
+}
+
+function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoard; shapes: readonly BoardShape[] }) {
+  const store = useBoardCameraStore();
+  const pts = useDrawnPoints(shape, board, shapes);
+  const box = boundsOfPoints(pts);
+  const editing = useIsEditing(shape.id);
+  const boxRef = useRef(box);
+  useEffect(() => {
+    boxRef.current = box;
+  });
+  // Registered once as a MARK (selectable, fitted, on the minimap; never a tile's life or focus);
+  // a move UPDATES, so a drag never drops the selection.
+  useEffect(() => store.registerItem(shape.id, boxRef.current, { mark: true }), [store, shape.id]);
+  const boxKey = `${box.x},${box.y},${box.w},${box.h}`;
+  useEffect(() => store.updateItem(shape.id, boxRef.current), [store, shape.id, boxKey]);
+
+  if (shape.kind === "sticky") return <StickyCard shape={shape} box={box} editing={editing} />;
+  if (shape.kind === "text") return <PlainText shape={shape} box={box} board={board} editing={editing} />;
+  const st = styleOf(shape);
+  const width = strokeWidthOf(shape);
+  const stroke = shapeColorCss(st.stroke);
+  const fill = st.fill === "none" ? "none" : shapeColorCss(st.fill, FILL_ALPHA);
+  const common = {
+    stroke,
+    strokeWidth: width,
+    strokeDasharray: dashArray(st.dash, width),
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  const [a, b] = [pts[0], pts[pts.length - 1]];
+  let body: React.ReactNode;
+  switch (shape.kind) {
+    case "rect":
+      body = <rect {...common} fill={fill} x={box.x} y={box.y} width={box.w} height={box.h} rx={Math.min(12, box.w / 4, box.h / 4)} />;
+      break;
+    case "oval":
+      body = <ellipse {...common} fill={fill} cx={box.x + box.w / 2} cy={box.y + box.h / 2} rx={box.w / 2} ry={box.h / 2} />;
+      break;
+    case "line":
+      body = <line {...common} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
+      break;
+    case "arrow":
+      body = (
+        <>
+          <line {...common} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+          <path {...common} strokeDasharray={undefined} fill="none" d={arrowHead(a, b, width)} />
+        </>
+      );
+      break;
+    case "pen":
+      body = <polyline {...common} fill="none" points={pts.map((p) => `${p.x},${p.y}`).join(" ")} />;
+      break;
+    default:
+      body = null;
+  }
+  const text = textCapable(shape.kind) && shape.text && !editing ? shape.text : null;
+  return (
+    <>
+      <svg
+        data-board-shape={shape.id}
+        aria-hidden
+        className="absolute left-0 top-0 h-px w-px max-w-none overflow-visible transition-opacity data-[erasing]:opacity-25"
+        style={{ opacity: st.opacity }}
+      >
+        {body}
+      </svg>
+      {text && <ShapeText box={box} shape={shape}>{text}</ShapeText>}
+    </>
+  );
+}
+
+/** An open arrowhead at `b`, pointing away from `a` (tldraw). */
+function arrowHead(a: Point, b: Point, width: number): string {
+  const len = Math.max(14, width * 4);
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const wing = (d: number) => ({ x: b.x - len * Math.cos(ang + d), y: b.y - len * Math.sin(ang + d) });
+  const l = wing(Math.PI / 7);
+  const r = wing(-Math.PI / 7);
+  return `M ${l.x} ${l.y} L ${b.x} ${b.y} L ${r.x} ${r.y}`;
+}
+
+function ShapeText({ box, shape, children }: { box: Rect; shape: BoardShape; children: React.ReactNode }) {
+  const st = styleOf(shape);
+  return (
+    <div
+      className="absolute flex max-w-none items-center overflow-hidden whitespace-pre-wrap break-words p-2 font-medium leading-snug"
+      style={{
+        left: box.x,
+        top: box.y,
+        width: box.w,
+        height: box.h,
+        fontSize: TEXT_SIZES[st.textSize],
+        textAlign: st.textAlign === "start" ? "left" : st.textAlign === "end" ? "right" : "center",
+        justifyContent: st.textAlign === "start" ? "flex-start" : st.textAlign === "end" ? "flex-end" : "center",
+        color: shapeColorCss(st.stroke),
+        opacity: st.opacity,
+      }}
+    >
+      <span className="block w-full">{children}</span>
+    </div>
+  );
+}
+
+/** The lone selected shape's handles, and the text editor while one is being typed in. */
+function ShapeChrome({ board, shapes }: { board: AnyBoard; shapes: readonly BoardShape[] }) {
+  const selected = useSelectedTile();
+  const editing = useEditingTile();
+  const shape = selected ? shapes.find((s) => s.id === selected) : undefined;
+  if (!shape) return null;
+  if (editing === shape.id && shape.kind === "sticky") return <StickyEditor key={shape.id} shape={shape} board={board} />;
+  if (editing === shape.id && shape.kind === "text") return <PlainTextEditor key={shape.id} shape={shape} board={board} />;
+  if (editing === shape.id && textCapable(shape.kind)) return <ShapeTextEditor key={shape.id} shape={shape} board={board} />;
+  return isConnector(shape.kind) ? <EndHandles shape={shape} board={board} shapes={shapes} /> : <BoxHandles shape={shape} board={board} />;
+}
+
+function BoxHandles({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
+  const box = boundsOfPoints(shape.points);
+  return (
+    <div className="absolute max-w-none" style={{ left: box.x, top: box.y, width: box.w, height: box.h }}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute max-w-none rounded-[2px] border-primary"
+        style={{ inset: "calc(-4px / var(--board-z, 1))", borderWidth: "calc(1.5px / var(--board-z, 1))", borderStyle: "solid" }}
+      />
+      <div className="pointer-events-auto">
+        <ResizeHandles id={shape.id} rect={box} selected onResize={board.resizeShape} min={SHAPE_MIN_SIZE} />
+      </div>
+    </div>
+  );
+}
+
+/** A tile or a rectangle / oval under a world point (not `self`) — what a dropped end binds to. */
+function bindTargetAt(board: AnyBoard, items: ReadonlyMap<string, Rect>, isMark: (id: string) => boolean, p: Point, self: string): string | null {
+  const shapes = board.getShapes();
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const s = shapes[i];
+    if (s.id === self || !isBoxed(s.kind)) continue;
+    if (hitShape(s, p, 0, board.targetOf)) return s.id;
+  }
+  let hit: string | null = null;
+  for (const [id, r] of items) {
+    if (id === self || isFrameKey(id) || isMark(id)) continue;
+    if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) hit = id;
+  }
+  return hit;
+}
+
+function EndHandles({ shape, board, shapes }: { shape: BoardShape; board: AnyBoard; shapes: readonly BoardShape[] }) {
+  const store = useBoardCameraStore();
+  const pts = useDrawnPoints(shape, board, shapes);
+  const [target, setTarget] = useState<string | null>(null);
+  const gesture = useRef<(() => void) | null>(null);
+  useEffect(() => () => gesture.current?.(), []);
+  const ends: ["start" | "end", Point][] = [
+    ["start", pts[0]],
+    ["end", pts[pts.length - 1]],
+  ];
+
+  const begin = (end: "start" | "end") => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || e.ctrlKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const root = e.currentTarget.closest<HTMLElement>("[data-board-root]");
+    if (!root) return;
+    gesture.current?.();
+    const startPoints = shape.points;
+    const startBind = shape.bind;
+    gesture.current = startPointerGesture(e.nativeEvent, e.currentTarget, {
+      onMove: (m) => {
+        const box = root.getBoundingClientRect();
+        const p = screenToWorld(store.getCamera(), m.clientX - box.left, m.clientY - box.top);
+        const bindTo = m.altKey ? null : bindTargetAt(board, store.getItems(), store.isMark, p, shape.id);
+        setTarget(bindTo);
+        board.setShapeEnd(shape.id, end, p, bindTo);
+      },
+      onEnd: (how) => {
+        gesture.current = null;
+        setTarget(null);
+        if (how === "escape") board.updateShape(shape.id, { points: startPoints, bind: startBind ?? {} });
+      },
+    });
+  };
+
+  const size = "calc(12px / var(--board-z, 1))";
+  const targetRect = target ? store.getItems().get(target) : undefined;
+  return (
+    <>
+      {targetRect && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute max-w-none rounded-md border-primary bg-primary/5"
+          style={{
+            left: targetRect.x,
+            top: targetRect.y,
+            width: targetRect.w,
+            height: targetRect.h,
+            borderWidth: "calc(2px / var(--board-z, 1))",
+            borderStyle: "solid",
+          }}
+        />
+      )}
+      {ends.map(([end, p]) => (
+        <div
+          key={end}
+          data-board-resize={`end-${end}`}
+          aria-hidden
+          onPointerDown={begin(end)}
+          className="pointer-events-auto absolute max-w-none touch-none rounded-full border-primary bg-card"
+          style={{
+            left: p.x,
+            top: p.y,
+            width: size,
+            height: size,
+            transform: "translate(-50%, -50%)",
+            borderWidth: "calc(2px / var(--board-z, 1))",
+            borderStyle: "solid",
+            cursor: "crosshair",
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * Typing in a rectangle or oval (double-click it, or Enter). Esc, ⌘Enter or
+ * clicking away keeps the text; it is ONE undo step.
+ */
+function ShapeTextEditor({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
+  const store = useBoardCameraStore();
+  const [value, setValue] = useState(shape.text ?? "");
+  const box = boundsOfPoints(shape.points);
+  const st = styleOf(shape);
+  const done = useRef(false);
+  const latest = useRef({ value, shape });
+  useEffect(() => {
+    latest.current = { value, shape };
+  });
+  const commit = () => {
+    if (done.current) return;
+    done.current = true;
+    const { value: text, shape: now } = latest.current;
+    if (text !== (now.text ?? "")) board.updateShape(now.id, { text });
+    if (store.getEditing() === now.id) store.setEditing(null);
+  };
+  // A press on empty board (or any deselect) unmounts the editor without a blur: keep the text.
+  const commitRef = useRef(commit);
+  useEffect(() => {
+    commitRef.current = commit;
+  });
+  useEffect(() => () => commitRef.current(), []);
+  return (
+    <div
+      className="absolute flex max-w-none items-center p-2"
+      style={{
+        left: box.x,
+        top: box.y,
+        width: box.w,
+        height: box.h,
+        justifyContent: st.textAlign === "start" ? "flex-start" : st.textAlign === "end" ? "flex-end" : "center",
+      }}
+    >
+      {/* ui-exception: on-canvas shape label typed in place (tldraw / FigJam); a ProTextarea's chrome would sit over the drawing */}
+      <textarea
+        data-board-shape-editor
+        aria-label="Shape text"
+        autoFocus
+        value={value}
+        rows={1}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) {
+            e.preventDefault();
             e.stopPropagation();
-            store.select(s.id);
-          },
-          "data-board-shape": s.id,
-        };
-        const [a, b] = s.points;
-        switch (s.kind) {
-          case "rect":
-            return <rect key={s.id} {...common} x={Math.min(a.x, b.x)} y={Math.min(a.y, b.y)} width={Math.abs(b.x - a.x)} height={Math.abs(b.y - a.y)} rx={6} />;
-          case "oval":
-            return <ellipse key={s.id} {...common} cx={(a.x + b.x) / 2} cy={(a.y + b.y) / 2} rx={Math.abs(b.x - a.x) / 2} ry={Math.abs(b.y - a.y) / 2} />;
-          case "line":
-            return <line key={s.id} {...common} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
-          case "arrow":
-            return <line key={s.id} {...common} x1={a.x} y1={a.y} x2={b.x} y2={b.y} markerEnd="url(#board-arrowhead)" />;
-          case "pen":
-            return (
-              <polyline
-                key={s.id}
-                {...common}
-                points={s.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            );
-        }
-      })}
-    </svg>
+            commit();
+          }
+        }}
+        className="pointer-events-auto max-h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-medium leading-snug outline-none"
+        style={{
+          fontSize: TEXT_SIZES[st.textSize],
+          textAlign: st.textAlign === "start" ? "left" : st.textAlign === "end" ? "right" : "center",
+          color: shapeColorCss(st.stroke),
+          fieldSizing: "content",
+        } as React.CSSProperties}
+      />
+    </div>
   );
 }

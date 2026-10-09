@@ -11,7 +11,7 @@
 
 import type { KindPayload, PartialKind } from "@/features/content-ir/kinds/kind-payload";
 
-import { hookLineOf, num, outlierInputFrom } from "./mappers";
+import { hookLineOf, num, outlierInputFrom, postAddress } from "./mappers";
 import type {
   PostCardModel,
   PostStatRow,
@@ -85,7 +85,7 @@ export function socialPostKind(args: {
     trace: { ...STORED_TRACE },
     profile_id: post.profile_id,
     handle: args.handle,
-    url: post.url,
+    url: postAddress(post, args.handle),
     format: post.format,
     title: post.title,
     caption: post.caption,
@@ -95,6 +95,7 @@ export function socialPostKind(args: {
     posted_at: post.posted_at,
     duration_seconds: num(post.duration_seconds),
     thumbnail_url: post.thumbnail_url,
+    thumbnail_file_id: post.thumbnail_file_id ?? null,
     is_ad: post.is_ad,
     media: [],
     media_notes: [],
@@ -160,11 +161,12 @@ export function outlierRowKind(args: {
     outlier_score: score,
     handle: args.handle,
     role: args.role ?? null,
-    url: args.post.url,
+    url: postAddress(args.post, args.handle),
     format: args.post.format,
     caption: args.post.caption,
     posted_at: args.post.posted_at,
     thumbnail_url: args.post.thumbnail_url,
+    thumbnail_file_id: args.post.thumbnail_file_id ?? null,
     views: num(args.stat.views),
     baseline_views: num(args.stat.baseline_views),
     percentile: num(args.stat.percentile),
@@ -229,6 +231,7 @@ export function postCardModelFromKind(
     format: value.format ?? "video",
     url: value.url ?? "",
     thumbnailUrl: value.thumbnail_url ?? null,
+    thumbnailFileId: value.thumbnail_file_id ?? null,
     hookLine: hookLineOf({ caption: value.caption ?? null, title: value.title ?? null }),
     postedAt: value.posted_at ?? null,
     durationSeconds: num(value.duration_seconds),
@@ -268,6 +271,7 @@ export function postCardModelFromOutlierRow(
     format: value.format ?? "video",
     url: value.url ?? "",
     thumbnailUrl: value.thumbnail_url ?? null,
+    thumbnailFileId: value.thumbnail_file_id ?? null,
     hookLine: hookLineOf({ caption: value.caption ?? null, title: null }),
     postedAt: value.posted_at ?? null,
     durationSeconds: null,
@@ -307,6 +311,7 @@ export function outlierRowKindFromCard(card: PostCardModel, role?: string | null
     caption: card.hookLine,
     posted_at: card.postedAt,
     thumbnail_url: card.thumbnailUrl,
+    thumbnail_file_id: card.thumbnailFileId,
     views: card.views,
     baseline_views: card.outlier.baselineViews,
     percentile: card.percentile,

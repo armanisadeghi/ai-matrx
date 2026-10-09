@@ -8,7 +8,11 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/utils/supabase/client", () => ({ __esModule: true, supabase: {} }));
+jest.mock("@/utils/supabase/client", () => ({
+  __esModule: true,
+  // @ai-matrx/associations (loaded by the rich-content host setup) requires a client with `.rpc`.
+  supabase: { rpc: jest.fn() },
+}));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 
 import { TagsCell } from "./TagsCell";

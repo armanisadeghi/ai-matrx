@@ -23,11 +23,12 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
+import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
 import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
+import { useSocialSpend } from "../cost";
 import {
   ingestPost,
   socialErrorCode,
-  socialErrorCredits,
   socialErrorMessage,
   trackAccount,
 } from "../server";
@@ -70,6 +71,7 @@ export function TrackAccountDialog({
 }) {
   const router = useRouter();
   const invalidate = useInvalidateSocial();
+  const { costText } = useSocialSpend(organizationId);
   const [text, setText] = useState(initialText ?? "");
   const [platform, setPlatform] = useState<string>("auto");
   const [role, setRole] = useState<TrackedRole>(defaultRole);
@@ -80,8 +82,14 @@ export function TrackAccountDialog({
   // The server refused an account with no posts (almost always the wrong
   // handle); the person may still track it on purpose (a brand-new own account).
   const emptyRefused = socialErrorCode(failure) === "social_profile_empty";
+  // The provider could not read it (private, restricted, blocked): the person's own browser still can.
+  const failCode = socialErrorCode(failure);
+  const gated = !isPostLink(text) && (failCode === "social_not_found" || failCode === "social_provider_failed");
 
   const isPost = looksLikePostUrl(text);
+  function isPostLink(value: string) {
+    return looksLikePostUrl(value);
+  }
   const detected = detectPlatform(text);
   const effectivePlatform: SocialPlatform | null =
     platform !== "auto" && isSocialPlatform(platform) ? platform : detected;
@@ -121,9 +129,7 @@ export function TrackAccountDialog({
       setText("");
     } catch (err) {
       setFailure(err);
-      const credits = socialErrorCredits(err);
-      const cost = credits ? ` · ${credits} credit${credits === 1 ? "" : "s"} charged` : "";
-      setError(`${socialErrorMessage(err, "Couldn't track that account")}${cost}`);
+      setError(socialErrorMessage(err, "Couldn't track that account"));
     } finally {
       setBusy(false);
       setStatus("");
@@ -178,11 +184,19 @@ export function TrackAccountDialog({
             ) : text.trim() && !effectivePlatform ? (
               "Pick a platform"
             ) : handle ? (
-              `@${handle}${effectivePlatform ? ` on ${SOCIAL_PLATFORM_LABELS[effectivePlatform]}` : ""} · ~4 credits`
+              [`@${handle}${effectivePlatform ? ` on ${SOCIAL_PLATFORM_LABELS[effectivePlatform]}` : ""}`, costText("track")].filter(Boolean).join(" · ")
             ) : (
               ""
             )}
           </p>
+          {gated && !busy && effectivePlatform ? (
+            <GatedCaptureOffer
+              organizationId={organizationId}
+              target={{ platform: effectivePlatform, handleOrUrl: text.trim(), brandId }}
+              platformLabel={SOCIAL_PLATFORM_LABELS[effectivePlatform]}
+              onCaptured={() => void invalidate()}
+            />
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>

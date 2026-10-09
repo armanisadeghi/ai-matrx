@@ -71,7 +71,15 @@ function GroupHeading({
   label: string;
   expanded: boolean;
 }) {
-  if (!expanded) return <div className="mx-2 my-1 border-t border-border/70" />;
+  if (!expanded)
+    return (
+      <div
+        role="separator"
+        title={label}
+        aria-label={label}
+        className="mx-2 my-1 border-t border-border/70"
+      />
+    );
   return (
     <div className="px-1.5 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
       {label}

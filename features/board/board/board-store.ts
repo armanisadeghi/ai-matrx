@@ -13,8 +13,9 @@
  * table) — and a board of dozens of live tiles locked up on the first resize.
  * Here a change notifies only who reads what changed:
  *   - `subscribeTile(id)` — that tile's record changed (its rect, title, source);
- *   - `subscribeLayout`   — which tiles exist, the shelf, frames, shapes,
+ *   - `subscribeLayout`   — which tiles exist, the shelf, frames,
  *                           connections, or whether undo/redo is possible;
+ *   - `subscribeShapes`   — the shapes list (a drawing moved, restyled, added);
  *   - `subscribe`         — anything (persistence, a layers list).
  * A move of one tile wakes one tile. Records are immutable, so "changed" is a
  * reference check.
@@ -31,7 +32,24 @@
  */
 
 import type { Rect } from "../engine/camera";
+import { connectionToArrow, connectionsOf, sameConnections } from "./connections";
 import { findFreeSpot, placeInFlow, type PlacementFlow } from "../engine/placement";
+import {
+  type BindTarget,
+  type BoardShape,
+  type ShapeStyle,
+  bakeBindings,
+  boundsOfPoints,
+  isBoxKind,
+  isBoxed,
+  isConnector,
+  resizeShapeTo,
+  shapeBounds,
+  translateShape,
+  withStyle,
+} from "../engine/shapes";
+
+export type { BoardShape, ShapeKind, ShapeStyle } from "../engine/shapes";
 
 export interface BoardTileBase {
   id: string;
@@ -43,15 +61,6 @@ export interface BoardFrame {
   rect: Rect;
   title: string;
   note?: string;
-}
-
-export type ShapeKind = "rect" | "oval" | "arrow" | "line" | "pen";
-
-export interface BoardShape {
-  id: string;
-  kind: ShapeKind;
-  /** World-space points: two for rect/oval/arrow/line (corners or ends), many for pen. */
-  points: { x: number; y: number }[];
 }
 
 /** A connection drawn between two tiles (a pipeline hand-off, a "see also"). */
@@ -80,8 +89,10 @@ export interface BoardView<T extends BoardTileBase> {
 
 /**
  * What a host renders the board's STRUCTURE from. It changes only when tiles
- * come or go, park, or frames/shapes/connections/undo-ability change — never
- * when a tile moves, resizes or its content changes (those wake that tile).
+ * come or go, park, or frames/connections/undo-ability change — never when a
+ * tile moves, resizes or its content changes (those wake that tile), and never
+ * when a SHAPE changes: shapes have their own channel (`subscribeShapes`), so
+ * dragging a drawing re-renders the shapes layer and nothing else.
  */
 export interface BoardLayout<T extends BoardTileBase = BoardTileBase> {
   /** Tiles on the board (not parked), in order. */
@@ -90,7 +101,6 @@ export interface BoardLayout<T extends BoardTileBase = BoardTileBase> {
   /** The parked tiles' records (a shelf shows their titles; they never move). */
   parked: readonly T[];
   frames: readonly BoardFrame[];
-  shapes: readonly BoardShape[];
   connections: readonly BoardConnection[];
   canUndo: boolean;
   canRedo: boolean;
@@ -102,7 +112,6 @@ interface Snapshot<T> {
   parked: string[];
   frames: BoardFrame[];
   shapes: BoardShape[];
-  connections: BoardConnection[];
 }
 
 interface History<T> {
@@ -145,14 +154,18 @@ function seedHistory<T extends BoardTileBase>(start: T[] | BoardSeed<T>): Histor
     connections = [],
   }: BoardSeed<T> = Array.isArray(start) ? { tiles: start } : start;
   const ids = new Set(tiles.map((t) => t.id));
+  // A seeded connection is a bound arrow (one connector model; `board/connections.ts`).
+  const rects = new Map(tiles.map((t) => [t.id, t.rect]));
+  const seeded = connections
+    .filter((c) => ids.has(c.from) && ids.has(c.to) && !shapes.some((sh) => sh.id === c.id))
+    .flatMap((c) => connectionToArrow(c, (id) => rects.get(id)) ?? []);
   return {
     now: {
       order: tiles.map((t) => t.id),
       byId: Object.fromEntries(tiles.map((t) => [t.id, t])),
       parked: parked.filter((id) => ids.has(id)),
       frames,
-      shapes,
-      connections: connections.filter((c) => ids.has(c.from) && ids.has(c.to)),
+      shapes: seeded.length ? [...shapes, ...seeded] : shapes,
     },
     past: [],
     future: [],
@@ -170,7 +183,9 @@ export class BoardStore<T extends BoardTileBase> {
   private listeners = new Set<Listener>();
   private layoutListeners = new Set<Listener>();
   private tileListeners = new Map<string, Set<Listener>>();
+  private shapeListeners = new Set<Listener>();
   private viewCache: { now: Snapshot<T>; view: BoardView<T> } | null = null;
+  private connCache: { shapes: BoardShape[]; byId: Record<string, T>; list: BoardConnection[] } | null = null;
   private layoutCache: BoardLayout<T> | null = null;
   private actor: BoardActor = "person";
   private agentSteps: ActorStep<T>[] = [];
@@ -193,7 +208,7 @@ export class BoardStore<T extends BoardTileBase> {
       tiles: now.order.filter((id) => !parkedSet.has(id) && now.byId[id]).map((id) => now.byId[id]),
       parked: now.parked.filter((id) => now.byId[id]).map((id) => now.byId[id]),
       frames: now.frames,
-      connections: now.connections,
+      connections: this.connectionsIn(now),
     };
     this.viewCache = { now, view };
     return view;
@@ -210,8 +225,7 @@ export class BoardStore<T extends BoardTileBase> {
     if (
       c &&
       c.frames === now.frames &&
-      c.shapes === now.shapes &&
-      c.connections === now.connections &&
+      c.connections === this.connectionsIn(now) &&
       c.canUndo === canUndo &&
       c.canRedo === canRedo &&
       sameIds(c, now)
@@ -225,8 +239,7 @@ export class BoardStore<T extends BoardTileBase> {
       parkedIds,
       parked: parkedIds.map((id) => now.byId[id]),
       frames: now.frames,
-      shapes: now.shapes,
-      connections: now.connections,
+      connections: this.connectionsIn(now),
       canUndo,
       canRedo,
     };
@@ -236,11 +249,39 @@ export class BoardStore<T extends BoardTileBase> {
   get shapes(): BoardShape[] {
     return this.h.now.shapes;
   }
+  /** The shapes list, bottom to top (stable between changes; for `useSyncExternalStore`). */
+  getShapes = (): readonly BoardShape[] => this.h.now.shapes;
+  getShape = (id: string): BoardShape | undefined => this.h.now.shapes.find((s) => s.id === id);
+
+  /**
+   * What a line / arrow end can bind to, by id: a tile (its rect) or a
+   * rectangle / oval shape (its box and outline). Stable — reads the live board.
+   */
+  targetOf = (id: string): BindTarget | undefined => {
+    const now = this.h.now;
+    const tile = now.byId[id];
+    if (tile) return { rect: tile.rect, outline: "rect" };
+    const shape = now.shapes.find((s) => s.id === id);
+    if (shape && isBoxed(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
+    return undefined;
+  };
   get frames(): BoardFrame[] {
     return this.h.now.frames;
   }
   get connections(): BoardConnection[] {
-    return this.h.now.connections;
+    return this.connectionsIn(this.h.now);
+  }
+  /**
+   * The lines between two tiles: the arrow shapes bound to a tile at both ends (`board/connections.ts`).
+   * A stable array while the set is unchanged, so a drag of anything never wakes layout subscribers.
+   */
+  private connectionsIn(now: Snapshot<T>): BoardConnection[] {
+    const c = this.connCache;
+    if (c && c.shapes === now.shapes && c.byId === now.byId) return c.list;
+    const next = connectionsOf(now.shapes, (id) => !!now.byId[id]);
+    const list = c && sameConnections(c.list, next) ? c.list : next;
+    this.connCache = { shapes: now.shapes, byId: now.byId, list };
+    return list;
   }
   get canUndo(): boolean {
     return this.h.past.length > 0;
@@ -261,6 +302,12 @@ export class BoardStore<T extends BoardTileBase> {
   subscribeLayout = (l: Listener): (() => void) => {
     this.layoutListeners.add(l);
     return () => this.layoutListeners.delete(l);
+  };
+
+  /** The shapes list. */
+  subscribeShapes = (l: Listener): (() => void) => {
+    this.shapeListeners.add(l);
+    return () => this.shapeListeners.delete(l);
   };
 
   /** One tile's record. */
@@ -295,6 +342,7 @@ export class BoardStore<T extends BoardTileBase> {
         if (a.byId[id] !== b.byId[id]) for (const l of [...set]) l();
       }
     }
+    if (a.shapes !== b.shapes) for (const l of [...this.shapeListeners]) l();
     const layout = this.layoutCache;
     if (!layout || this.getLayout() !== layout) for (const l of [...this.layoutListeners]) l();
     for (const l of [...this.listeners]) l();
@@ -353,8 +401,60 @@ export class BoardStore<T extends BoardTileBase> {
         const m = at.get(f.id);
         return m ? { ...f, rect: { ...f.rect, x: m.x, y: m.y } } : f;
       });
-      return { ...s, byId, frames: opts.addFrames?.length ? [...frames, ...opts.addFrames] : frames };
+      const shapes = this.movedShapes(s, at) ?? s.shapes;
+      return { ...s, byId, shapes, frames: opts.addFrames?.length ? [...frames, ...opts.addFrames] : frames };
     });
+
+  /**
+   * The shapes list with every shape named in `at` moved so its box's corner
+   * lands at the given point, or null when none moved. A line / arrow end
+   * bound to something that is NOT moving with it lets go where it is drawn
+   * (tldraw: dragging an arrow alone detaches it); ends whose target moves too
+   * stay bound.
+   */
+  private movedShapes(s: Snapshot<T>, at: ReadonlyMap<string, { x: number; y: number }>): BoardShape[] | null {
+    let changed = false;
+    const lookup = this.lookupIn(s);
+    const shapes = s.shapes.map((sh) => {
+      const m = at.get(sh.id);
+      if (!m) return sh;
+      const box = shapeBounds(sh, lookup);
+      const dx = m.x - box.x;
+      const dy = m.y - box.y;
+      if (dx === 0 && dy === 0) return sh;
+      changed = true;
+      let next = sh;
+      if (sh.bind && isConnector(sh.kind)) {
+        const loose = new Set([sh.bind.start, sh.bind.end].filter((id): id is string => !!id && !at.has(id)));
+        if (loose.size) next = bakeBindings(sh, lookup, loose);
+      }
+      return translateShape(next, dx, dy);
+    });
+    return changed ? shapes : null;
+  }
+
+  /** `targetOf` over a given snapshot (the one a change is being computed from). */
+  private lookupIn(s: Snapshot<T>) {
+    return (id: string): BindTarget | undefined => {
+      const tile = s.byId[id];
+      if (tile) return { rect: tile.rect, outline: "rect" };
+      const shape = s.shapes.find((x) => x.id === id);
+      if (shape && isBoxed(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
+      return undefined;
+    };
+  }
+
+  /** Shapes whose bound ends point at `gone` let go where they are drawn now. */
+  private releaseBindings(s: Snapshot<T>, gone: ReadonlySet<string>, shapes: BoardShape[]): BoardShape[] {
+    const lookup = this.lookupIn(s);
+    let changed = false;
+    const out = shapes.map((sh) => {
+      if (!sh.bind || (!gone.has(sh.bind.start ?? "") && !gone.has(sh.bind.end ?? ""))) return sh;
+      changed = true;
+      return bakeBindings(sh, lookup, gone);
+    });
+    return changed ? out : shapes;
+  }
 
   /**
    * One step of a GROUP gesture — a multi-selection drag, a frame carrying its
@@ -378,25 +478,35 @@ export class BoardStore<T extends BoardTileBase> {
       framesChanged = true;
       return { ...f, rect: { ...f.rect, x: m.x, y: m.y } };
     });
-    if (byId === st.now.byId && !framesChanged) return;
+    const shapes = this.movedShapes(st.now, at);
+    if (byId === st.now.byId && !framesChanged && !shapes) return;
     const key = `group:${[...at.keys()].sort().join("|")}`;
     const t = performance.now();
     const coalesce = st.moving?.id === key && t - st.moving.at < MOVE_COALESCE_MS;
     this.commit({
-      now: { ...st.now, byId, frames: framesChanged ? frames : st.now.frames },
+      now: { ...st.now, byId, frames: framesChanged ? frames : st.now.frames, shapes: shapes ?? st.now.shapes },
       past: coalesce ? st.past : [...st.past, st.now].slice(-HISTORY_LIMIT),
       future: coalesce ? st.future : [],
       moving: { id: key, at: t },
     });
   };
 
+  /** Join two tiles with a bound arrow (one undo step; a pair already joined, or a missing tile, is a no-op). */
   connect = (c: BoardConnection): void =>
-    this.change((s) =>
-      s.connections.some((x) => x.from === c.from && x.to === c.to) ? s : { ...s, connections: [...s.connections, c] },
-    );
+    this.change((s) => {
+      if (this.connectionsIn(s).some((x) => x.from === c.from && x.to === c.to)) return s;
+      const arrow = connectionToArrow(c, (id) => s.byId[id]?.rect);
+      return arrow ? { ...s, shapes: [...s.shapes, arrow] } : s;
+    });
 
+  /** Take a connection away: it is a shape, so this is deleting that arrow. */
   disconnect = (id: string): void =>
-    this.change((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== id) }));
+    this.change((s) => (this.connectionsIn(s).some((c) => c.id === id) ? { ...s, shapes: s.shapes.filter((x) => x.id !== id) } : s));
+
+  /** The ids of connections that touch any of these tiles (they go with the tile). */
+  private connectionIdsTouching(s: Snapshot<T>, tileIds: ReadonlySet<string>): Set<string> {
+    return new Set(this.connectionsIn(s).filter((c) => tileIds.has(c.from) || tileIds.has(c.to)).map((c) => c.id));
+  }
 
   /** Add a tile. With `near`, it lands in the nearest free space to that world
    * point, clear of tiles AND frames (a group is not free space) — except the
@@ -473,7 +583,8 @@ export class BoardStore<T extends BoardTileBase> {
     const removed = cur.byId[id];
     const index = cur.order.indexOf(id);
     const wasParked = cur.parked.includes(id);
-    const itsConnections = cur.connections.filter((c) => c.from === id || c.to === id);
+    const goneConnections = this.connectionIdsTouching(cur, new Set([id]));
+    const itsConnections = cur.shapes.filter((sh) => goneConnections.has(sh.id));
     this.change((s) => {
       if (!s.byId[id]) return s;
       const byId = { ...s.byId };
@@ -483,7 +594,7 @@ export class BoardStore<T extends BoardTileBase> {
         order: s.order.filter((x) => x !== id),
         byId,
         parked: s.parked.filter((x) => x !== id),
-        connections: s.connections.filter((c) => c.from !== id && c.to !== id),
+        shapes: this.releaseBindings(s, new Set([id]), s.shapes.filter((sh) => !goneConnections.has(sh.id))),
       };
     });
     return () =>
@@ -495,7 +606,7 @@ export class BoardStore<T extends BoardTileBase> {
               order: insertAt(s.order, id, index),
               byId: { ...s.byId, [id]: removed },
               parked: wasParked ? [...s.parked, id] : s.parked,
-              connections: [...s.connections, ...itsConnections],
+              shapes: [...s.shapes, ...itsConnections.filter((c) => !s.shapes.some((x) => x.id === c.id))],
             },
       );
   };
@@ -510,8 +621,11 @@ export class BoardStore<T extends BoardTileBase> {
       const drop = new Set(ids);
       const tiles = ids.filter((id) => s.byId[id]);
       const frames = s.frames.filter((f) => !drop.has(f.id));
-      const shapes = s.shapes.filter((x) => !drop.has(x.id));
-      if (tiles.length === 0 && frames.length === s.frames.length && shapes.length === s.shapes.length) return s;
+      // A line between tiles goes with either tile.
+      const lines = this.connectionIdsTouching(s, drop);
+      const kept = s.shapes.filter((x) => !drop.has(x.id) && !lines.has(x.id));
+      if (tiles.length === 0 && frames.length === s.frames.length && kept.length === s.shapes.length) return s;
+      const shapes = this.releaseBindings(s, drop, kept);
       const byId = { ...s.byId };
       for (const id of tiles) delete byId[id];
       return {
@@ -521,7 +635,6 @@ export class BoardStore<T extends BoardTileBase> {
         parked: s.parked.filter((id) => !drop.has(id)),
         frames,
         shapes,
-        connections: s.connections.filter((c) => !drop.has(c.from) && !drop.has(c.to)),
       };
     });
 
@@ -542,7 +655,155 @@ export class BoardStore<T extends BoardTileBase> {
 
   addShape = (shape: BoardShape): void => this.change((s) => ({ ...s, shapes: [...s.shapes, shape] }));
 
-  removeShape = (id: string): void => this.change((s) => ({ ...s, shapes: s.shapes.filter((x) => x.id !== id) }));
+  /** Several shapes as ONE step (an agent's diagram). */
+  addShapes = (batch: BoardShape[]): void =>
+    batch.length ? this.change((s) => ({ ...s, shapes: [...s.shapes, ...batch] })) : undefined;
+
+  removeShape = (id: string): void => this.removeMany([id]);
+
+  /** Change one shape's own fields (text, points, binding) as one undoable step. */
+  updateShape = (id: string, patch: Partial<Omit<BoardShape, "id">>): void =>
+    this.change((s) => {
+      const at = s.shapes.findIndex((x) => x.id === id);
+      if (at < 0) return s;
+      const shapes = [...s.shapes];
+      const next: BoardShape = { ...shapes[at], ...patch };
+      if (patch.text === "") delete next.text;
+      if (patch.bind && !patch.bind.start && !patch.bind.end) delete next.bind;
+      shapes[at] = next;
+      return { ...s, shapes };
+    });
+
+  /**
+   * Record a fact about a shape WITHOUT an undo step: a sticky's Note id once
+   * the Note exists, plain text's measured box, a sticky's words refreshed from
+   * its Note. `everywhere` also writes it into every undo / redo snapshot that
+   * holds the shape, so ⌘Z never forgets which Note a sticky is (a forgotten id
+   * would file a second Note on the next keystroke).
+   */
+  stampShape = (id: string, patch: Partial<Omit<BoardShape, "id">>, opts: { everywhere?: boolean } = {}): void => {
+    const st = this.h;
+    const stamp = (s: Snapshot<T>): Snapshot<T> => {
+      const at = s.shapes.findIndex((x) => x.id === id);
+      if (at < 0) return s;
+      const cur = s.shapes[at];
+      if ((Object.keys(patch) as (keyof typeof patch)[]).every((k) => cur[k] === patch[k])) return s;
+      const shapes = [...s.shapes];
+      shapes[at] = { ...cur, ...patch };
+      return { ...s, shapes };
+    };
+    const now = stamp(st.now);
+    if (now === st.now) return;
+    this.commit({
+      now,
+      past: opts.everywhere ? st.past.map(stamp) : st.past,
+      future: opts.everywhere ? st.future.map(stamp) : st.future,
+      moving: st.moving,
+    });
+  };
+
+  /** Restyle several shapes as ONE undoable step (the floating toolbar). */
+  restyleShapes = (ids: readonly string[], patch: Partial<ShapeStyle>): void =>
+    this.change((s) => {
+      const set = new Set(ids);
+      let changed = false;
+      const shapes = s.shapes.map((sh) => {
+        if (!set.has(sh.id)) return sh;
+        changed = true;
+        return withStyle(sh, patch);
+      });
+      return changed ? { ...s, shapes } : s;
+    });
+
+  /** One gesture step on one shape (a resize handle, an end handle). Coalesces like a move: one gesture, one step. */
+  private gestureShape(id: string, fn: (sh: BoardShape) => BoardShape): void {
+    const st = this.h;
+    const at = st.now.shapes.findIndex((x) => x.id === id);
+    if (at < 0) return;
+    const next = fn(st.now.shapes[at]);
+    if (next === st.now.shapes[at]) return;
+    const shapes = [...st.now.shapes];
+    shapes[at] = next;
+    const t = performance.now();
+    const coalesce = st.moving?.id === id && t - st.moving.at < MOVE_COALESCE_MS;
+    this.commit({
+      now: { ...st.now, shapes },
+      past: coalesce ? st.past : [...st.past, st.now].slice(-HISTORY_LIMIT),
+      future: coalesce ? st.future : [],
+      moving: { id, at: t },
+    });
+  }
+
+  /** Fit a shape to a box (its eight handles): a pen stroke scales, a line keeps its direction. */
+  resizeShape = (id: string, rect: Rect): void => this.gestureShape(id, (sh) => resizeShapeTo(sh, rect));
+
+  /** Move one end of a line / arrow, binding it to `bindTo` (a tile or box shape) or letting it go. */
+  setShapeEnd = (id: string, end: "start" | "end", point: { x: number; y: number }, bindTo?: string | null): void =>
+    this.gestureShape(id, (sh) => {
+      if (!isConnector(sh.kind)) return sh;
+      const points = [...sh.points];
+      points[end === "start" ? 0 : points.length - 1] = point;
+      const bind = { ...sh.bind, [end]: bindTo ?? undefined };
+      const next: BoardShape = { ...sh, points };
+      if (bind.start || bind.end) next.bind = { ...(bind.start ? { start: bind.start } : {}), ...(bind.end ? { end: bind.end } : {}) };
+      else delete next.bind;
+      return next;
+    });
+
+  /** Bring shapes forward / to the front, or send them backward / to the back (one step). */
+  reorderShapes = (ids: readonly string[], dir: "forward" | "backward" | "front" | "back"): void =>
+    this.change((s) => {
+      const set = new Set(ids);
+      const picked = s.shapes.filter((x) => set.has(x.id));
+      if (picked.length === 0) return s;
+      let shapes: BoardShape[];
+      if (dir === "front") shapes = [...s.shapes.filter((x) => !set.has(x.id)), ...picked];
+      else if (dir === "back") shapes = [...picked, ...s.shapes.filter((x) => !set.has(x.id))];
+      else {
+        shapes = [...s.shapes];
+        const step = dir === "forward" ? 1 : -1;
+        const order = dir === "forward" ? [...shapes.keys()].reverse() : [...shapes.keys()];
+        for (const i of order) {
+          const j = i + step;
+          if (!set.has(shapes[i].id) || j < 0 || j >= shapes.length || set.has(shapes[j].id)) continue;
+          [shapes[i], shapes[j]] = [shapes[j], shapes[i]];
+        }
+      }
+      return shapes.every((x, i) => x === s.shapes[i]) ? s : { ...s, shapes };
+    });
+
+  /**
+   * Copies of these shapes, offset down-right, as ONE step (⌘D). A binding
+   * to another copied shape follows to its copy; other bindings let go.
+   * Returns the new ids in the same order.
+   */
+  duplicateShapes = (ids: readonly string[], offset = 24): string[] => {
+    const now = this.h.now;
+    const set = new Set(ids);
+    const source = now.shapes.filter((x) => set.has(x.id));
+    if (source.length === 0) return [];
+    const newId = new Map(source.map((sh) => [sh.id, `${sh.kind}:${Math.random().toString(36).slice(2, 10)}`]));
+    const lookup = this.lookupIn(now);
+    const copies = source.map((sh) => {
+      let base = sh;
+      if (sh.bind) {
+        const outside = new Set([sh.bind.start, sh.bind.end].filter((id): id is string => !!id && !set.has(id)));
+        if (outside.size) base = bakeBindings(sh, lookup, outside);
+      }
+      const copy = translateShape({ ...base, id: newId.get(sh.id)! }, offset, offset);
+      // A copied sticky is its own note: the copy's first save files a NEW Note (never two stickies on one).
+      delete copy.note;
+      if (copy.bind) {
+        copy.bind = {
+          ...(copy.bind.start ? { start: newId.get(copy.bind.start) ?? copy.bind.start } : {}),
+          ...(copy.bind.end ? { end: newId.get(copy.bind.end) ?? copy.bind.end } : {}),
+        };
+      }
+      return copy;
+    });
+    this.change((s) => ({ ...s, shapes: [...s.shapes, ...copies] }));
+    return copies.map((c) => c.id);
+  };
 
   undo = (): void => {
     const st = this.h;
@@ -594,6 +855,7 @@ export class BoardStore<T extends BoardTileBase> {
       const end = this.h;
       if (end.now !== start.now) {
         this.h = { ...end, past: [...start.past, start.now].slice(-HISTORY_LIMIT), future: [], moving: null };
+        if (end.now.shapes !== start.now.shapes) for (const l of [...this.shapeListeners]) l();
         if (this.agentSteps.length - agentBefore > 1) {
           const mine = this.agentSteps.slice(agentBefore);
           this.agentSteps = [
@@ -683,11 +945,10 @@ function revertStep<T extends BoardTileBase>(step: ActorStep<T>, now: Snapshot<T
   }
   next = revertList(next, "frames", before.frames, after.frames, kept);
   next = revertList(next, "shapes", before.shapes, after.shapes, kept);
-  next = revertList(next, "connections", before.connections, after.connections, kept);
   return next;
 }
 
-function revertList<T, K extends "frames" | "shapes" | "connections">(
+function revertList<T, K extends "frames" | "shapes">(
   now: Snapshot<T>,
   key: K,
   before: Snapshot<T>[K],

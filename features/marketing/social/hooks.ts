@@ -10,6 +10,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   readAccountRows,
+  readBrandSocialAccounts,
+  readBrandSocialCounts,
   readAdvertiserAds,
   readAllSwipeCollections,
   readSwipeItems,
@@ -34,6 +36,8 @@ export const socialKeys = {
   all: ["marketing", "social"] as const,
   accounts: (orgId: string, brandId: string) =>
     ["marketing", "social", "accounts", orgId, brandId] as const,
+  brandAccounts: (brandId: string) => ["marketing", "social", "brand-accounts", brandId] as const,
+  brandCounts: (key: string) => ["marketing", "social", "brand-counts", key] as const,
   profile: (profileId: string) => ["marketing", "social", "profile", profileId] as const,
   tracked: (orgId: string, profileId: string) =>
     ["marketing", "social", "tracked", orgId, profileId] as const,
@@ -63,6 +67,25 @@ export function useAccountRows(organizationId: string, brandId: string) {
     queryKey: socialKeys.accounts(organizationId, brandId),
     queryFn: ({ signal }) => readAccountRows({ organizationId, brandId, signal }),
     enabled: Boolean(organizationId && brandId),
+    staleTime: 30_000,
+  });
+}
+
+/** The brand's ONE social-account list; the Overview card reads this, the Accounts table adds competitors. */
+export function useBrandSocialAccounts(brandId: string) {
+  return useQuery({
+    queryKey: socialKeys.brandAccounts(brandId),
+    queryFn: ({ signal }) => readBrandSocialAccounts(brandId, signal),
+    enabled: Boolean(brandId),
+    staleTime: 30_000,
+  });
+}
+
+export function useBrandSocialCounts(brandIds: readonly string[]) {
+  return useQuery({
+    queryKey: socialKeys.brandCounts(brandIds.join(",")),
+    queryFn: ({ signal }) => readBrandSocialCounts(brandIds, signal),
+    enabled: brandIds.length > 0,
     staleTime: 30_000,
   });
 }

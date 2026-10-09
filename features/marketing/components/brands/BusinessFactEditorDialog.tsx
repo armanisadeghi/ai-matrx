@@ -28,21 +28,18 @@ import {
 import {
   BUSINESS_FACT_KIND_LABELS,
   BUSINESS_FACT_KINDS,
-  isJsonRecord,
   type BusinessFact,
   type BusinessFactKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
-
-function factValueString(fact: BusinessFact | null): string {
-  if (!fact) return "";
-  if (isJsonRecord(fact.value)) {
-    const candidate = fact.value.url ?? fact.value.text ?? fact.value.value;
-    if (typeof candidate === "string") return candidate;
-    return JSON.stringify(fact.value);
-  }
-  return String(fact.value ?? "");
-}
+import {
+  applyPostalAddressFields,
+  businessFactValueText,
+  postalAddressFields,
+  withFactText,
+  type PostalAddressFields,
+} from "@/features/marketing/lib/business-fact-value";
+import type { Json } from "@/types/database.types";
 
 /**
  * The ONE business-fact editor — create and edit expose EVERY user-editable
@@ -94,12 +91,19 @@ function BusinessFactEditorDialogBody({
     fact ? (fact.kind as BusinessFactKind) : "phone",
   );
   const [label, setLabel] = useState(fact?.label ?? "");
-  const [value, setValue] = useState(() => factValueString(fact));
+  const [value, setValue] = useState(() => businessFactValueText(fact?.value ?? null));
+  const [address, setAddress] = useState<PostalAddressFields>(() =>
+    postalAddressFields(fact?.value ?? null),
+  );
   const busy = createMutation.isPending || updateMutation.isPending;
 
   const save = async () => {
+    const isAddress = kind === "address";
     const trimmedValue = value.trim();
-    if (!trimmedValue) {
+    const hasValue = isAddress
+      ? Object.values(address).some((part) => part.trim() !== "")
+      : trimmedValue !== "";
+    if (!hasValue) {
       toast.error("A fact needs a value.");
       return;
     }
@@ -107,6 +111,14 @@ function BusinessFactEditorDialogBody({
       toast.error("Other facts need a custom label.");
       return;
     }
+    // A structured value keeps its shape: an address writes its fields back
+    // into the PostalAddress jsonb; any other structure is left untouched
+    // unless its readable line was edited, and then only that line changes.
+    const nextValue: string | Json = isAddress
+      ? applyPostalAddressFields(fact?.value ?? null, address)
+      : fact && trimmedValue === businessFactValueText(fact.value)
+        ? fact.value
+        : withFactText(fact?.value ?? null, trimmedValue);
     try {
       if (fact) {
         await updateMutation.mutateAsync({
@@ -114,7 +126,7 @@ function BusinessFactEditorDialogBody({
           expectedVersion: fact.version,
           kind,
           label: label.trim() || null,
-          value: trimmedValue,
+          value: nextValue,
         });
         toast.success("Fact saved");
       } else {
@@ -123,7 +135,7 @@ function BusinessFactEditorDialogBody({
           brandId,
           kind,
           label: label.trim() || null,
-          value: trimmedValue,
+          value: nextValue,
         });
         toast.success("Fact added");
       }
@@ -179,17 +191,87 @@ function BusinessFactEditorDialogBody({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="fact-value" className="text-xs">
-              Value
-            </Label>
-            <Input
-              id="fact-value"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder="(555) 010-0000 or https://…"
-            />
-          </div>
+          {kind === "address" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="fact-street" className="text-xs">
+                  Street
+                </Label>
+                <Input
+                  id="fact-street"
+                  value={address.street}
+                  onChange={(event) =>
+                    setAddress({ ...address, street: event.target.value })
+                  }
+                  placeholder="1 Main St"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="fact-city" className="text-xs">
+                  City
+                </Label>
+                <Input
+                  id="fact-city"
+                  value={address.city}
+                  onChange={(event) =>
+                    setAddress({ ...address, city: event.target.value })
+                  }
+                  placeholder="Springfield"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="fact-region" className="text-xs">
+                  State or region
+                </Label>
+                <Input
+                  id="fact-region"
+                  value={address.region}
+                  onChange={(event) =>
+                    setAddress({ ...address, region: event.target.value })
+                  }
+                  placeholder="IL"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="fact-postal" className="text-xs">
+                  Postal code
+                </Label>
+                <Input
+                  id="fact-postal"
+                  value={address.postalCode}
+                  onChange={(event) =>
+                    setAddress({ ...address, postalCode: event.target.value })
+                  }
+                  placeholder="62701"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="fact-country" className="text-xs">
+                  Country
+                </Label>
+                <Input
+                  id="fact-country"
+                  value={address.country}
+                  onChange={(event) =>
+                    setAddress({ ...address, country: event.target.value })
+                  }
+                  placeholder="US"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label htmlFor="fact-value" className="text-xs">
+                Value
+              </Label>
+              <Input
+                id="fact-value"
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                placeholder="(555) 010-0000 or https://…"
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>

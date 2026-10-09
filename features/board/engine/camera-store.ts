@@ -37,6 +37,26 @@ export interface BoardMover {
   dragMany: (moves: { id: string; x: number; y: number }[]) => void;
 }
 
+/**
+ * What a press at a world point selects among the board's drawn shapes.
+ * `tolerance` is world px (a few SCREEN px at the current zoom);
+ * `background`: the press is on empty board, so hollow interiors count.
+ */
+export type ShapeHitTester = (
+  p: { x: number; y: number },
+  tolerance: number,
+  opts: { background: boolean; except?: ReadonlySet<string> },
+) => string | null;
+
+/** What the viewport asks the host's shapes layer. */
+export interface ShapeHost {
+  hit: ShapeHitTester;
+  /** The shape takes text (double-click / Enter edits it). */
+  editable: (id: string) => boolean;
+  /** A click on this shape while it is already the one selected starts typing (a sticky, plain text — FigJam). */
+  clickEdits?: (id: string) => boolean;
+}
+
 export interface Insets {
   top: number;
   right: number;
@@ -78,6 +98,10 @@ export class BoardCameraStore {
   private size: Size = { w: 1, h: 1 };
   private insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
   private items = new Map<string, Rect>();
+  /** Items that are drawn marks (shapes): selectable and fitted, but never a tile — no life, no reading order, no focus. */
+  private marks = new Set<string>();
+  /** The host's shapes (`setShapeHost`): hit testing and which ones take text. */
+  private shapeHost: ShapeHost | null = null;
 
   private frameListeners = new Set<Listener>();
   private tierListeners = new Set<Listener>();
@@ -232,9 +256,10 @@ export class BoardCameraStore {
     return () => this.itemListeners.delete(l);
   };
 
-  registerItem(id: string, rect: Rect): () => void {
+  registerItem(id: string, rect: Rect, opts: { mark?: boolean } = {}): () => void {
     this.items.set(id, rect);
-    if (!this.life.has(id)) {
+    if (opts.mark) this.marks.add(id);
+    else if (!this.life.has(id)) {
       this.life.set(id, "live");
       this.lastNeededAt.set(id, performance.now());
     }
@@ -242,6 +267,7 @@ export class BoardCameraStore {
     for (const l of this.itemListeners) l();
     return () => {
       this.items.delete(id);
+      this.marks.delete(id);
       for (const l of this.itemListeners) l();
       this.visible.delete(id);
       this.life.delete(id);
@@ -258,6 +284,19 @@ export class BoardCameraStore {
   }
 
   getItems = (): ReadonlyMap<string, Rect> => this.items;
+
+  /** A drawn mark (a shape), not a tile or frame. */
+  isMark = (id: string): boolean => this.marks.has(id);
+
+  /** Register the host's shapes layer (hit test + editability); the returned function clears it. */
+  setShapeHost(host: ShapeHost | null): () => void {
+    this.shapeHost = host;
+    return () => {
+      if (this.shapeHost === host) this.shapeHost = null;
+    };
+  }
+
+  getShapeHost = (): ShapeHost | null => this.shapeHost;
 
   // ── coarse channels ───────────────────────────────────────────────────────
 
@@ -445,6 +484,7 @@ export class BoardCameraStore {
     const next = new Map<string, TileLife>();
     const resting: string[] = [];
     for (const id of this.items.keys()) {
+      if (this.marks.has(id)) continue;
       if (this.needed(id)) {
         this.lastNeededAt.set(id, now);
         this.wasNeeded.add(id);
@@ -538,7 +578,7 @@ export class BoardCameraStore {
   getFocused = (): string | null => this.focused;
 
   focus(id: string): void {
-    if (!this.items.has(id) || id.startsWith("frame:")) return;
+    if (!this.items.has(id) || id.startsWith("frame:") || this.marks.has(id)) return;
     if (this.focused === null) this.focusReturn = this.camera;
     this.focused = id;
     this.select(id);
@@ -571,7 +611,7 @@ export class BoardCameraStore {
 
   /** Tile ids (frames excluded) in reading order: rows by top edge, then x. */
   readingOrder(): string[] {
-    const tiles = [...this.items.entries()].filter(([id]) => !id.startsWith("frame:"));
+    const tiles = [...this.items.entries()].filter(([id]) => !id.startsWith("frame:") && !this.marks.has(id));
     const ROW_SLOP = 80;
     tiles.sort(([, a], [, b]) => (Math.abs(a.y - b.y) <= ROW_SLOP ? a.x - b.x : a.y - b.y));
     return tiles.map(([id]) => id);

@@ -61,6 +61,8 @@ export interface ConversationPaneProps {
   surfaceName?: string;
   showHeader?: boolean;
   showAi?: boolean;
+  /** messaging's named look; "messenger" inside the /messenger shell. */
+  appearance?: "default" | "messenger";
 }
 
 export function ConversationPane({
@@ -72,6 +74,7 @@ export function ConversationPane({
   surfaceName = MESSAGES_SURFACE_NAME,
   showHeader = true,
   showAi = true,
+  appearance,
 }: ConversationPaneProps) {
   const router = useRouter();
   // Declare that this surface renders the conversation AI bar, so the four
@@ -154,6 +157,7 @@ export function ConversationPane({
           className="min-h-0 flex-1"
           showHeader={false}
           showAi={showAi}
+          {...(appearance ? { appearance } : {})}
           renderComposerInput={(input) => (
             <MessagesComposerInput
               input={input}

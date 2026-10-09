@@ -37,6 +37,7 @@ import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { businessFactValueText } from "@/features/marketing/lib/business-fact-value";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { BrandTopicalMapCard } from "@/features/marketing/seo/topical-map/components/BrandTopicalMapCard";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,9 @@ import {
   propertyPublicUrl,
   toPropertyKind,
 } from "@/features/marketing/components/shared/PropertyKindMark";
+import { BrandSocialProfilesCard } from "@/features/marketing/components/brands/BrandSocialProfilesCard";
+import { PersonBrandAvatar, PersonFollowerTotal } from "@/features/marketing/components/brands/PersonBrandAvatar";
+import { BRAND_KIND_COPY, isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import {
@@ -144,12 +148,7 @@ function RowActionButton({
 }
 
 function factValueText(fact: BusinessFact): string {
-  if (isJsonRecord(fact.value)) {
-    const candidate = fact.value.url ?? fact.value.text ?? fact.value.value;
-    if (typeof candidate === "string" && candidate) return candidate;
-    return JSON.stringify(fact.value);
-  }
-  return String(fact.value ?? "");
+  return businessFactValueText(fact.value);
 }
 
 function assetPreviewUrl(asset: BrandAsset): string | null {
@@ -605,13 +604,22 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           "Value settings" door is the sidebar's Settings row. */}
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
-          <section className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4">
-            <SiteIdentityMark
-              site={heroIdentity}
-              size={72}
-              prefer="logo"
-              className="bg-background p-1.5"
-            />
+          {/* A person brand leads with the person: their face and their accounts come first. */}
+          <section className={`flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4${isPersonBrand(current) ? " order-first" : ""}`}>
+            {isPersonBrand(current) ? (
+              <PersonBrandAvatar
+                brandId={current.id}
+                size={72}
+                fallback={<SiteIdentityMark site={heroIdentity} size={72} prefer="logo" className="bg-background p-1.5" />}
+              />
+            ) : (
+              <SiteIdentityMark
+                site={heroIdentity}
+                size={72}
+                prefer="logo"
+                className="bg-background p-1.5"
+              />
+            )}
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 {current.name}
@@ -629,6 +637,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               ) : null}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge value={current.status} />
+                {isPersonBrand(current) ? (
+                  <>
+                    <Badge variant="outline">{BRAND_KIND_COPY.person.label}</Badge>
+                    <PersonFollowerTotal brandId={current.id} />
+                  </>
+                ) : null}
                 {current.industry ? (
                   <Badge variant="outline">{current.industry}</Badge>
                 ) : null}
@@ -834,118 +848,21 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             )}
           </SectionCard>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            <SectionCard
-              title="Social profiles & other properties"
+          <div className={`grid gap-3 lg:grid-cols-2${isPersonBrand(current) ? " -order-1" : ""}`}>
+            <BrandSocialProfilesCard
+              brandId={current.id}
+              brandSeg={marketingSeg(current)}
+              organizationId={current.organization_id}
+              properties={socialProperties}
               copy={socialsCopy}
-              action={{
-                label: "Add property",
-                onClick: () =>
-                  setPropertyEditor({ open: true, property: null }),
-              }}
-            >
-              {socialProperties.length === 0 ? (
-                <div className="flex flex-col items-start gap-2 p-4">
-                  <p className="text-xs text-muted-foreground">
-                    No social properties yet. Add one directly, or initialize a
-                    site — discovered profile links register here once
-                    confirmed.
-                  </p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {socialProperties.map((property) => {
-                    const href = propertyPublicUrl(property);
-                    const handle = property.handle
-                      ? formatSocialHandle({ platform: property.kind, handle: property.handle, url: property.url })
-                      : null;
-                    return (
-                      <li
-                        key={property.id}
-                        className={
-                          href
-                            ? "flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
-                            : "flex items-center gap-3 px-3 py-2"
-                        }
-                        onClick={() => {
-                          if (href) window.open(href, "_blank", "noreferrer");
-                        }}
-                      >
-                        <PropertyKindMark kind={property.kind} size={32} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-foreground">
-                            {property.display_name ||
-                              PROPERTY_KIND_LABELS[
-                                toPropertyKind(property.kind)
-                              ]}
-                            {property.display_name && handle ? (
-                              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                                {handle}
-                              </span>
-                            ) : null}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {(!property.display_name && handle) ||
-                              (href
-                                ? href.replace(/^https?:\/\/(www\.)?/, "")
-                                : "—")}
-                          </p>
-                        </div>
-                        {href ? (
-                          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-                        ) : null}
-                        <div className="flex shrink-0 items-center gap-0.5">
-                          <CopyButtons
-                            size="icon"
-                            {...webCopy({
-                              kind: "web-brand-property",
-                              label:
-                                property.display_name ||
-                                (humanizeIdentifier(property.kind) || property.kind),
-                              description:
-                                "One non-website brand property (social profile or other presence).",
-                              surface: `Social profiles — ${current.name}`,
-                              data: property,
-                              lines: [
-                                ["Kind", (humanizeIdentifier(property.kind) || property.kind)],
-                                ["Name", property.display_name],
-                                ["Handle", handle],
-                                ["URL", href],
-                                ["Status", property.status],
-                              ],
-                              attributes: {
-                                brand_id: current.id,
-                                property_id: property.id,
-                                kind: property.kind,
-                              },
-                            })}
-                            json={() => property}
-                          />
-                          <RowActionButton
-                            title="Edit property"
-                            onClick={() =>
-                              setPropertyEditor({ open: true, property })
-                            }
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </RowActionButton>
-                          <RowActionButton
-                            title="Delete property"
-                            destructive
-                            onClick={() => setDeletingProperty(property)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </RowActionButton>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </SectionCard>
+              onAdd={() => setPropertyEditor({ open: true, property: null })}
+              onEdit={(property) => setPropertyEditor({ open: true, property })}
+              onDelete={(property) => setDeletingProperty(property)}
+            />
 
             <SectionCard
               title="Business facts"
+              className="lg:col-span-2"
               copy={factsCopy}
               action={{
                 label: "Add fact",

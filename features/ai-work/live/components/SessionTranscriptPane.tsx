@@ -49,5 +49,5 @@ export function SessionTranscriptPane({ address }: { address: string }) {
       </div>
     );
   }
-  return <ProviderConversationTranscript key={address} detail={read.detail} />;
+  return <ProviderConversationTranscript key={address} detail={read.detail} embedded />;
 }

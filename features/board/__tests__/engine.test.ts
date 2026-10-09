@@ -270,9 +270,11 @@ describe("saved board document", () => {
     expect(back.doc.groups).toEqual(doc.groups);
     expect(back.doc.nodes[1]).toMatchObject({ id: "n2", parked: true });
     expect(back.doc.edges).toEqual(doc.edges);
-    expect(back.doc.shapes).toEqual(doc.shapes);
+    // A label tile (the retired Text tool tile) loads as plain canvas text (sticky-notes-and-text.test.tsx).
+    expect(back.doc.shapes[0]).toEqual(doc.shapes[0]);
+    expect(back.doc.shapes[1]).toMatchObject({ id: "n4", kind: "text", text: "Q3" });
+    expect(back.doc.nodes).toHaveLength(3);
     expect(back.doc.nodes[2].source).toEqual({ kind: "entity", entity: "note", id: null, meta: { seed: "hi" } });
-    expect(back.doc.nodes[3].source).toEqual({ kind: "label", text: "Q3" });
 
     const bad = parseBoardDocument({ camera: "x", nodes: [{ id: "a" }, { id: "b", rect: { x: 0, y: 0, w: 1, h: 1 }, title: "B", source: { kind: "nope" } }], edges: [{}] });
     expect(bad.doc.nodes).toEqual([]);

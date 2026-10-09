@@ -65,11 +65,13 @@ import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleCo
 import {
   channelBindingDraft,
   readBrandChannelBinding,
+  readChannelBindingsElsewhere,
   writeBrandChannelBinding,
 } from "../binding";
 import {
   candidateIdentity,
   channelBindCandidates,
+  orderBindRows,
   type ChannelBindCandidate,
 } from "../candidates";
 import {
@@ -234,9 +236,21 @@ function ChannelBindControl({
     queryKey: ["marketing", "google", "inventory", "youtube"] as const,
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
   });
-  const candidates = channelBindCandidates(inventory.data);
+  // Which OTHER brands already hold each channel — so a row says "Bound to …"
+  // and an unbound channel is never mistaken for one nobody uses.
+  const elsewhere = useQuery({
+    queryKey: ["marketing", "youtube", "bindings-elsewhere", brandId] as const,
+    queryFn: ({ signal }) => readChannelBindingsElsewhere(brandId, signal),
+  });
+  const rows = orderBindRows(
+    channelBindCandidates(inventory.data),
+    elsewhere.data ?? [],
+  );
 
-  async function bind(candidate: ChannelBindCandidate): Promise<void> {
+  async function bind(
+    candidate: ChannelBindCandidate,
+    boundTo: readonly string[],
+  ): Promise<void> {
     // 🚨 THE CONSEQUENCE FIRST, NOT A GENERIC "ARE YOU SURE?" — this press is
     // what makes every later refresh read and overwrite under THIS client, on
     // THIS account's quota, and a wrong pick is silent afterwards.
@@ -252,6 +266,9 @@ function ChannelBindControl({
         (candidate.alsoDiscoveredThrough.length > 0
           ? ` This channel was also discovered through ${candidate.alsoDiscoveredThrough.join(", ")}; ` +
             `binding uses ${candidate.account}, the account that discovered it first.`
+          : "") +
+        (boundTo.length > 0
+          ? ` It is already bound to ${boundTo.join(", ")}; binding it here too means both clients read the same channel.`
           : ""),
       confirmLabel: `Bind ${candidate.title}`,
     });
@@ -287,7 +304,7 @@ function ChannelBindControl({
         No YouTube channel is bound to this client yet, so there is nothing to
         show and nothing to refresh.
       </p>
-      {inventory.isLoading ? (
+      {inventory.isLoading || elsewhere.isLoading ? (
         <div className="h-6 w-40 animate-pulse rounded bg-muted/40" />
       ) : inventory.isError ? (
         <InlineQueryError
@@ -295,7 +312,13 @@ function ChannelBindControl({
           error={inventory.error}
           onRetry={() => void inventory.refetch()}
         />
-      ) : candidates.length === 0 ? (
+      ) : elsewhere.isError ? (
+        <InlineQueryError
+          what="the other clients' channel bindings"
+          error={elsewhere.error}
+          onRetry={() => void elsewhere.refetch()}
+        />
+      ) : rows.length === 0 ? (
         <>
           <p className="text-xs leading-5 text-muted-foreground">
             None of your connected Google accounts owns a YouTube channel we can
@@ -317,7 +340,7 @@ function ChannelBindControl({
         </>
       ) : (
         <ul className="flex flex-col gap-1.5">
-          {candidates.map((candidate) => (
+          {rows.map(({ candidate, boundTo }) => (
             <li
               key={candidate.channelId}
               className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1.5"
@@ -330,6 +353,13 @@ function ChannelBindControl({
                   {candidateIdentity(candidate)} · discovered through{" "}
                   {candidate.account}
                 </p>
+                {boundTo.length > 0 ? (
+                  // Held by another client: say so on the row, so the press
+                  // is never read as adding this channel to this brand.
+                  <p className="text-[11px] leading-4 text-foreground">
+                    {`Bound to ${boundTo.join(", ")}`}
+                  </p>
+                ) : null}
                 {candidate.alsoDiscoveredThrough.length > 0 ? (
                   // The same channel id seen through more than one connected
                   // account is ONE channel, and the row says which account the
@@ -343,8 +373,8 @@ function ChannelBindControl({
                 variant="outline"
                 className="shrink-0"
                 disabled={saving !== null}
-                aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)}) through ${candidate.account}`}
-                onClick={() => void bind(candidate)}
+                aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)}) through ${candidate.account}${boundTo.length > 0 ? `, already bound to ${boundTo.join(", ")}` : ""}`}
+                onClick={() => void bind(candidate, boundTo)}
               >
                 {saving === candidate.resourceId ? "Binding…" : "Bind"}
               </Button>

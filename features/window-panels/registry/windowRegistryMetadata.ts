@@ -2821,47 +2821,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
-  // ── WhatsApp Demo ─────────────────────────────────────────────────────────
-  {
-    slug: "whatsapp-shell-window",
-    overlayId: "whatsappShellWindow",
-    kind: "window",
-    label: "WhatsApp",
-    defaultData: {
-      userName: null as string | null,
-      userAvatarUrl: null as string | null,
-    },
-    ephemeral: true,
-    mobilePresentation: "fullscreen",
-    instanceMode: "singleton",
-  },
-  {
-    slug: "whatsapp-settings-window",
-    overlayId: "whatsappSettings",
-    kind: "window",
-    label: "WhatsApp Settings",
-    defaultData: {
-      userName: null as string | null,
-      userAvatarUrl: null as string | null,
-      initialNavId: "account",
-    },
-    ephemeral: true,
-    mobilePresentation: "drawer",
-    mobileSidebarAs: "drawer",
-    instanceMode: "singleton",
-  },
-  {
-    slug: "whatsapp-media-window",
-    overlayId: "whatsappMedia",
-    kind: "window",
-    label: "WhatsApp Media",
-    defaultData: {
-      initialTabId: "media",
-    },
-    ephemeral: true,
-    mobilePresentation: "drawer",
-    instanceMode: "singleton",
-  },
 
   // ── Structured System Instruction ─────────────────────────────────────────
   {
@@ -2951,6 +2910,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // float side by side, which is why it is multi-instance. `detail_panel`
   // (a `seo.topical_map` knob) lets an organization choose the drawer instead;
   // the component reads it, this metadata describes the window either way.
+  // ── Social post: one post as a floating panel ─────────────────────────────
+  // Wraps `PostDetailBody`, the same body `/socials/post/[postId]` renders and
+  // the `social-post` canvas tab shows. Instance id = post id.
+  {
+    slug: "social-post-window",
+    overlayId: "socialPostWindow",
+    kind: "window",
+    label: "Post",
+    defaultData: { postId: "", organizationId: "", brandSeg: "", tab: "overview" },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    urlSync: { key: "social_post" },
+    preservation: {
+      dataKeys: ["postId", "organizationId", "brandSeg", "tab"],
+      requiredDataKeys: ["postId", "organizationId"],
+    },
+  },
   {
     slug: "topical-map-topic-panel",
     overlayId: "topicalMapTopicPanel",

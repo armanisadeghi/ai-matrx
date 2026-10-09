@@ -105,3 +105,28 @@
     -webkit-line-clamp: 1;
   }
 }
+
+/*
+ * Sticky notes (FigJam / Miro): a pastel card with dark ink in light mode; a
+ * deeper, quieter card with light ink in dark mode (never a glowing pastel on
+ * a dark board). HSL channels, like the accents.
+ */
+:root {
+  --board-sticky-ink: 222 30% 14%;
+  --board-sticky-yellow: 48 100% 78%;
+  --board-sticky-orange: 28 100% 80%;
+  --board-sticky-pink: 340 95% 86%;
+  --board-sticky-violet: 262 85% 87%;
+  --board-sticky-blue: 205 95% 84%;
+  --board-sticky-green: 130 55% 80%;
+}
+
+.dark {
+  --board-sticky-ink: 40 30% 94%;
+  --board-sticky-yellow: 45 55% 30%;
+  --board-sticky-orange: 24 55% 31%;
+  --board-sticky-pink: 335 42% 33%;
+  --board-sticky-violet: 262 34% 35%;
+  --board-sticky-blue: 208 48% 31%;
+  --board-sticky-green: 140 32% 27%;
+}

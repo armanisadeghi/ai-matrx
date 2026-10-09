@@ -68,7 +68,7 @@ import {
 import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
-import { TRACK_CREDITS, trackableOwn, useTrackOwn } from "./useTrackOwn";
+import { trackableOwn, useTrackOwn } from "./useTrackOwn";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 type KpiView = "trend" | "benchmark" | "own";
@@ -112,7 +112,7 @@ export function KpisTab() {
   const [editing, setEditing] = useState<KpiGoalRow | null>(null);
   const [now] = useState(() => Date.now());
   const accountRows = useAccountRows(organizationId, brandId);
-  const { busyRow, trackAllOwn } = useTrackOwn(organizationId, brandId);
+  const { busyRow, trackAllOwn, costText } = useTrackOwn(organizationId, brandId);
 
   if (data.isLoading || goals.isLoading) return <RegionSkeleton shape="cards" count={4} />;
   if (data.isError || goals.isError) {
@@ -223,7 +223,7 @@ export function KpisTab() {
                   variant="primary"
                   icon={<UserPlus />}
                   disabled={busyRow !== null}
-                  title={`Track every own account not tracked yet · about ${untrackedOwn.length * TRACK_CREDITS} credits`}
+                  title={["Track every own account not tracked yet", costText("track", untrackedOwn.length)].filter(Boolean).join(" · ")}
                   onClick={() => void trackAllOwn(untrackedOwn)}
                 >
                   {busyRow === "bulk" ? "Tracking…" : `Track own accounts (${untrackedOwn.length})`}

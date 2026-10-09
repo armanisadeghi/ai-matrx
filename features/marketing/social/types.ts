@@ -88,7 +88,7 @@ export const SOCIALS_TABS = [
   { id: "studio", label: "Studio" },
   { id: "outliers", label: "Outliers" },
   { id: "swipe", label: "Swipe file" },
-  { id: "ads", label: "Ads" },
+  { id: "ads", label: "Ad library" },
   { id: "kpis", label: "KPIs" },
 ] as const;
 export type SocialsTabId = (typeof SOCIALS_TABS)[number]["id"];
@@ -229,6 +229,8 @@ export interface AccountRow {
   handle: string;
   displayName: string;
   avatarUrl: string | null;
+  /** Stored avatar (small JPEG); drawn through `profileAvatarDoor(profileId)`. */
+  avatarFileId?: string | null;
   role: TrackedRole;
   status: string;
   followers: number | null;
@@ -243,6 +245,16 @@ export interface AccountRow {
   lastRefreshedAt: string | null;
   profileUrl: string | null;
   propertyId: string | null;
+  /** Whose account (brand_social_accounts): the brand's own, or a named person's. Absent on competitor rows. */
+  ownerKind?: "company" | "person";
+  ownerName?: string | null;
+  /** The server can track this platform (false: say so, no Track button). Absent = judge by platform. */
+  trackable?: boolean;
+  isVerified?: boolean;
+  /** The account's public link (the property url), for the external-link icon. */
+  externalUrl?: string | null;
+  /** Provider avatar URL hint; the stored copy is drawn through `profileAvatarDoor(profileId)`. */
+  avatarHint?: string | null;
 }
 
 export interface PostCardModel {
@@ -252,7 +264,10 @@ export interface PostCardModel {
   handle: string | null;
   format: string;
   url: string;
+  /** Provider hint URL; expires, and TikTok's is HEIC. Drawn only when there is no stored copy. */
   thumbnailUrl: string | null;
+  /** The stored small JPEG (files.id) — the stable thumbnail, drawn through `postThumbnailDoor(postId)`. */
+  thumbnailFileId?: string | null;
   hookLine: string;
   postedAt: string | null;
   durationSeconds: number | null;
@@ -329,6 +344,22 @@ export interface SocialSpend {
   month_start: string;
   organization: SocialSpendFigure;
   platform: SocialSpendFigure | null;
+}
+
+/** `GET /social/costs`: what each action costs us in USD (the ledger's own price). Shown only as
+ * points, through `useSocialSpend` (`cost.ts`) — never dollars to a member, never vendor credits. */
+export type SocialSpendAction =
+  | "post"
+  | "transcript"
+  | "comments"
+  | "profile_page"
+  | "track"
+  | "save_link"
+  | "ads_search";
+
+export interface SocialCosts {
+  call_usd: number | null;
+  operations: Partial<Record<SocialSpendAction, number | null>>;
 }
 
 export interface SocialCredits {

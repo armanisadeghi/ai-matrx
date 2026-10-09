@@ -239,3 +239,9 @@ association row.
 (`get_links`, NDJSON stream) and `social-links.ts` keeps only profile/page/channel URLs of the six
 platforms (share buttons, posts and logins are rejected). Nothing is saved until Add.
 
+
+**Competitor detail + find/track (SOC-FIX-E, 2026-10-09).** A directory row opens `CompetitorDetail` in the
+canonical window (name, website door, accounts with followers/posts/best outlier, top outliers, found handles;
+pure mapping in `competitor-detail.ts`). Each row has **Find socials** (the same `findSocialsOnWebsite`, never
+saved as a Source) then **Track N**; the header has **Find socials for all (N)** behind a designed confirmation
+(three sites at a time, nothing tracked until Track). State lives in the query cache (`useCompetitorSocials.ts`).

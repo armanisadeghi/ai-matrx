@@ -6,8 +6,8 @@
  * (rendered "—", never 0).
  */
 
-import { handleFromInput } from "./link";
 import { median, profileBaseline } from "./outlier";
+import { canonicalPostUrl } from "./link";
 import type {
   AccountRow,
   IngestProfileResult,
@@ -36,6 +36,9 @@ const DAY_MS = 86_400_000;
 /** Fewest days between two snapshots before a growth percentage is honest. */
 export const GROWTH_MIN_SPAN_DAYS = 7;
 
+/** The designed new-account state: not an error, just not enough history yet. */
+export const GROWTH_PENDING_NOTE = "Growth appears after a few days";
+
 export interface GrowthJudgement {
   /** Fraction (0.031 = +3.1%); null when the comparison is refused. */
   fraction: number | null;
@@ -59,7 +62,7 @@ export function judgeFollowerGrowth(
     .filter((p): p is { t: number; v: number } => Number.isFinite(p.t) && p.v !== null)
     .sort((a, b) => a.t - b.t);
   if (points.length < 2) {
-    return { fraction: null, note: "Tracking since first snapshot" };
+    return { fraction: null, note: GROWTH_PENDING_NOTE };
   }
   const latest = points[points.length - 1]!;
   const cutoff = latest.t - windowDays * DAY_MS;
@@ -67,7 +70,7 @@ export function judgeFollowerGrowth(
     [...points].reverse().find((p) => p.t <= cutoff) ?? points[0]!;
   const spanDays = Math.round((latest.t - base.t) / DAY_MS);
   if (spanDays < GROWTH_MIN_SPAN_DAYS) {
-    return { fraction: null, note: `Only ${spanDays} days of snapshots` };
+    return { fraction: null, note: GROWTH_PENDING_NOTE };
   }
   if (base.v === 0) return { fraction: null, note: "No baseline followers" };
   return {
@@ -131,6 +134,11 @@ export function hookLineOf(
   return first.trim();
 }
 
+/** The stored post's address from the stored post and its author (see `canonicalPostUrl`). */
+export function postAddress(post: Pick<SocialPostRow, "platform" | "platform_post_id" | "url">, handle: string | null): string {
+  return canonicalPostUrl({ platform: post.platform, platformPostId: post.platform_post_id, handle, url: post.url }) ?? post.url;
+}
+
 export function toPostCardModel(args: {
   post: SocialPostRow;
   stat: PostStatRow | null;
@@ -146,8 +154,9 @@ export function toPostCardModel(args: {
     profileId: post.profile_id,
     handle,
     format: post.format,
-    url: post.url,
+    url: postAddress(post, handle),
     thumbnailUrl: post.thumbnail_url,
+    thumbnailFileId: post.thumbnail_file_id ?? null,
     hookLine: hookLineOf(post, analysisHook),
     postedAt: post.posted_at,
     durationSeconds: num(post.duration_seconds),
@@ -161,6 +170,15 @@ export function toPostCardModel(args: {
     outlierScore: outlier.score,
     percentile: outlier.percentile,
   };
+}
+
+/** Accessible name of a post's open control: who posted it plus a short caption excerpt (never the whole caption). */
+export function openPostLabel(handle: string | null | undefined, hookLine: string | null | undefined, max = 60): string {
+  const who = handle ? `Open post by @${handle.replace(/^@/, "")}` : "Open post";
+  const text = (hookLine ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return who;
+  const excerpt = text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  return `${who}: ${excerpt}`;
 }
 
 /** `3d`, `5h`, `2mo` — relative posted age; absolute date goes in the tooltip. */
@@ -202,14 +220,6 @@ export interface AccountPostStat {
   outlier_score: number | null;
 }
 
-export interface OwnPropertyInput {
-  id: string;
-  kind: string;
-  handle: string | null;
-  url: string | null;
-  display_name: string | null;
-}
-
 export function normalizeHandle(value: string | null | undefined): string {
   return (value ?? "").trim().replace(/^@/, "").toLowerCase();
 }
@@ -219,13 +229,11 @@ export function buildAccountRows(args: {
   profiles: readonly SocialProfileRow[];
   snapshots: readonly Pick<ProfileSnapshotRow, "profile_id" | "observed_at" | "follower_count">[];
   postStats: readonly AccountPostStat[];
-  properties: readonly OwnPropertyInput[];
   now?: number;
 }): AccountRow[] {
   const now = args.now ?? Date.now();
   const profileById = new Map(args.profiles.map((p) => [p.id, p]));
   const rows: AccountRow[] = [];
-  const trackedPlatformHandles = new Set<string>();
 
   for (const t of args.tracked) {
     const profile = profileById.get(t.profile_id);
@@ -251,7 +259,6 @@ export function buildAccountRows(args: {
       .filter((d): d is string => Boolean(d))
       .sort()
       .pop() ?? null;
-    trackedPlatformHandles.add(`${profile.platform}:${normalizeHandle(profile.handle)}`);
     rows.push({
       rowId: t.id,
       trackedAccountId: t.id,
@@ -260,6 +267,7 @@ export function buildAccountRows(args: {
       handle: profile.handle,
       displayName: t.label?.trim() || profile.display_name?.trim() || profile.handle,
       avatarUrl: profile.avatar_url,
+      avatarFileId: profile.avatar_file_id ?? null,
       role,
       status: t.status,
       followers: currentFollowers(profile.follower_count, profileSnaps),
@@ -276,37 +284,83 @@ export function buildAccountRows(args: {
     });
   }
 
-  // Own properties that are not tracked yet still list, so "Own" is complete.
-  // Most properties carry only a URL (no handle): the handle comes from it.
-  const trackedPropertyIds = new Set(args.tracked.map((t) => t.property_id).filter(Boolean));
-  for (const prop of args.properties) {
-    const shown = (prop.handle?.trim() || (prop.url ? handleFromInput(prop.url) : "")).replace(/^@/, "");
-    const handle = normalizeHandle(shown);
-    if (!handle || trackedPropertyIds.has(prop.id) || trackedPlatformHandles.has(`${prop.kind}:${handle}`)) continue;
-    rows.push({
-      rowId: `property:${prop.id}`,
-      trackedAccountId: null,
-      profileId: null,
-      platform: prop.kind,
-      handle: shown,
-      displayName: prop.display_name?.trim() || shown,
-      avatarUrl: null,
-      role: "own",
-      status: "not_tracked",
-      followers: null,
-      growth: null,
-      growthNote: "Not tracked yet",
-      postsTracked: 0,
-      medianViews: null,
-      bestScore: null,
-      bestPostId: null,
-      lastPostAt: null,
-      lastRefreshedAt: null,
-      profileUrl: prop.url,
-      propertyId: prop.id,
-    });
-  }
   return rows;
+}
+
+/** One row of `social.brand_social_accounts(p_brand_id)`; numerics may arrive as strings. */
+export interface BrandSocialAccountRpcRow {
+  row_key: string;
+  property_id: string | null;
+  platform: string;
+  handle: string | null;
+  url: string | null;
+  display_name: string | null;
+  property_status: string | null;
+  owner_kind: string | null;
+  owner_party_id: string | null;
+  owner_name: string | null;
+  trackable: boolean | null;
+  tracked_account_id: string | null;
+  tracked_role: string | null;
+  tracked_status: string | null;
+  tracked_label: string | null;
+  profile_id: string | null;
+  profile_handle: string | null;
+  profile_display_name: string | null;
+  profile_url: string | null;
+  avatar_url: string | null;
+  is_verified: boolean | null;
+  followers: number | string | null;
+  followers_observed_at: string | null;
+  followers_30d_ago: number | string | null;
+  posts_tracked: number | string | null;
+  last_post_at: string | null;
+  best_multiple_30d: number | string | null;
+  best_post_id_30d: string | null;
+  last_refreshed_at: string | null;
+}
+
+/**
+ * The ONE mapping from the brand's social-account read to the row both the Overview card and
+ * Socials -> Accounts render. Growth is `followers / followers_30d_ago - 1`; with no 30-day-old
+ * snapshot it is null and says so (never 0).
+ */
+export function brandSocialRowToAccountRow(r: BrandSocialAccountRpcRow): AccountRow {
+  const tracked = Boolean(r.tracked_account_id);
+  const handle = (r.profile_handle ?? r.handle ?? "").replace(/^@/, "");
+  const followers = num(r.followers);
+  const before = num(r.followers_30d_ago);
+  const growth = tracked && followers !== null && before !== null && before > 0 ? followers / before - 1 : null;
+  const display =
+    r.tracked_label?.trim() || r.profile_display_name?.trim() || r.display_name?.trim() || handle || r.platform;
+  return {
+    rowId: r.tracked_account_id ?? r.row_key,
+    trackedAccountId: r.tracked_account_id,
+    profileId: r.profile_id,
+    platform: r.platform,
+    handle,
+    displayName: display,
+    avatarUrl: r.avatar_url,
+    avatarHint: r.avatar_url,
+    role: r.tracked_role && isTrackedRole(r.tracked_role) ? r.tracked_role : "own",
+    status: tracked ? (r.tracked_status ?? "active") : "not_tracked",
+    followers,
+    growth,
+    growthNote: !tracked ? "Not tracked yet" : growth === null ? "Not enough history yet" : "Last 30 days",
+    postsTracked: num(r.posts_tracked) ?? 0,
+    medianViews: null,
+    bestScore: num(r.best_multiple_30d),
+    bestPostId: r.best_post_id_30d,
+    lastPostAt: r.last_post_at,
+    lastRefreshedAt: r.last_refreshed_at,
+    profileUrl: r.profile_url ?? r.url,
+    propertyId: r.property_id,
+    ownerKind: r.owner_kind === "person" ? "person" : "company",
+    ownerName: r.owner_name,
+    trackable: Boolean(r.trackable),
+    isVerified: Boolean(r.is_verified),
+    externalUrl: r.url ?? r.profile_url,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -418,20 +472,19 @@ function plural(n: number, word: string): string {
 }
 
 /**
- * What a profile refresh did, in one line: "3 new posts, 27 updated · 2 credits",
- * the reuse-window answer, or "no posts returned". Never a silent zero.
+ * What a profile refresh did, in one line: "3 new posts, 27 updated", the
+ * reuse-window answer, or "no posts returned". Never a silent zero. The cost is
+ * not named: a provider charge is a hard cost charged in points, shown only when
+ * worth a warning (cost.ts).
  */
 export function refreshSummary(r: IngestProfileResult): string {
   if (r.trace?.reused) {
     return r.notes?.[0] ?? "Refreshed recently; served from the shared cache, no new fetch";
   }
-  const credits =
-    (r.trace?.cost_credits ?? 0) + (r.list_trace ?? []).reduce((sum, t) => sum + (t.cost_credits ?? 0), 0);
-  const cost = credits > 0 ? ` · ${plural(credits, "credit")}` : "";
-  if (r.pages_walked > 0 && r.posts_upserted === 0) return `No posts returned${cost}`;
+  if (r.pages_walked > 0 && r.posts_upserted === 0) return "No posts returned";
   if (typeof r.posts_new === "number") {
     const updated = r.posts_updated ?? Math.max(0, r.posts_upserted - r.posts_new);
-    return `${plural(r.posts_new, "new post")}, ${updated} updated${cost}`;
+    return `${plural(r.posts_new, "new post")}, ${updated} updated`;
   }
-  return `${plural(r.posts_upserted, "post")} updated${cost}`;
+  return `${plural(r.posts_upserted, "post")} updated`;
 }

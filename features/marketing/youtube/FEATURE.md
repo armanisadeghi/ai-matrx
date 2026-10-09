@@ -125,3 +125,9 @@ binding's three answers, and the panel in every state.
   `features/window-panels/url-sync/initUrlHydration.ts` reopening it from
   `?panels=brand_channel:<brandId>`. The `everyWindowHasAnAddress` (R35) guard
   was red on `brandChannelWindow` before this and is green after.
+- 2026-10-09 — Bind list (commit `6a90cb191b`, SOC-CLEANUP): each owned channel
+  already held by another brand in the workspace reads "Bound to <brand>";
+  unbound channels sort first (title order within each group); the bind
+  confirmation names the other clients the channel is bound to. Reads only the
+  brands RLS already allows (`readChannelBindingsElsewhere` in `binding.ts`);
+  candidate pairing in `candidates.ts`; no permission change.

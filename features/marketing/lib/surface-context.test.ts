@@ -49,6 +49,9 @@ function makeBrand(overrides: Partial<MarketingBrand> = {}): MarketingBrand {
     profile: {},
     settings: {},
     integrations: {},
+    kind: "company",
+    person_party_id: null,
+    person_user_id: null,
     ...overrides,
   };
 }
@@ -164,6 +167,8 @@ function makeProperty(overrides: Partial<BrandProperty> = {}): BrandProperty {
     handle: "@acme",
     display_name: null,
     status: "active",
+    owner_kind: "company",
+    owner_party_id: null,
     ...overrides,
   };
 }

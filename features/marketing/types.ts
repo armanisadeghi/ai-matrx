@@ -101,7 +101,10 @@ export interface BrandListRow extends MarketingBrand {
     >
   >;
   pending_discovered: number;
+  /** Social accounts on the brand (`social.brand_social_counts.accounts`). */
   social_count: number;
+  /** How many of them are tracked. */
+  social_tracked_count: number;
   asset_count: number;
   fact_count: number;
 }
@@ -361,6 +364,12 @@ export function mergeBrandProfile(current: Json | null | undefined, edited: Bran
 export interface CreateBrandInput {
   organizationId: string;
   name: string;
+  /** company (default) | person — a person brand is someone who IS the brand. */
+  kind?: MarketingBrand["kind"];
+  /** Person brands: the crm.party (person) the brand is. */
+  personPartyId?: string | null;
+  /** Person brands: the signed-in user, only when the person said "this is me". */
+  personUserId?: string | null;
   industry: string | null;
   description: string | null;
   websiteUrl: string | null;
@@ -400,6 +409,9 @@ export interface UpdateBrandInput {
       | "published_to_web_at"
       | "published_to_web_by"
       | "profile"
+      | "kind"
+      | "person_party_id"
+      | "person_user_id"
     >
   >;
 }
@@ -614,6 +626,9 @@ export interface CreatePropertyInput {
   handle: string | null;
   displayName: string | null;
   status: string;
+  /** Whose account it is (A2): the brand's (company, default) or a person's. */
+  ownerKind?: "company" | "person";
+  ownerPartyId?: string | null;
 }
 
 export interface UpdatePropertyInput {
@@ -750,8 +765,12 @@ export interface CreateBusinessFactInput {
   brandId: string;
   kind: BusinessFactKind;
   label: string | null;
-  /** Stored as `{ text }` (or `{ url }` when the value is a URL). */
-  value: string;
+  /**
+   * A string is stored as `{ text }` (or `{ url }` when it is a URL). A
+   * structured value is stored exactly as given — an address keeps its
+   * schema.org PostalAddress shape.
+   */
+  value: string | Json;
 }
 
 export interface UpdateBusinessFactInput {
@@ -759,7 +778,8 @@ export interface UpdateBusinessFactInput {
   expectedVersion: number;
   kind: BusinessFactKind;
   label: string | null;
-  value: string;
+  /** Same rule as CreateBusinessFactInput.value. */
+  value: string | Json;
 }
 
 export type DiscoveredItemStatus = "pending" | "confirmed" | "dismissed";

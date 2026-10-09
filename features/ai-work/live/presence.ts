@@ -23,6 +23,14 @@ export function agentRoomKind(metadata: unknown): AgentRoomKind | null {
   return AGENT_ROOM_KINDS.find((k) => k === kind) ?? null;
 }
 
+/**
+ * A `busy` row with no event for this long reads as idle: a turn that died
+ * without its Stop hook (killed process, closed laptop) must not stay green.
+ * Same window the transcript's live indicator uses (LIVE_SESSION_WINDOW_MS).
+ */
+export const BUSY_STALE_MS = 5 * 60 * 1000;
+
+/** The ONE presence the hub shows, everywhere it shows one. */
 export function effectivePresence(
   status: string | null,
   lastSeenAt: string | null,
@@ -32,7 +40,30 @@ export function effectivePresence(
   if (status === "ended" || status === "archived" || !lastSeenAt) return "ended";
   const seen = Date.parse(lastSeenAt);
   if (Number.isNaN(seen) || nowMs - seen > endedAfterMs) return "ended";
-  return status === "busy" ? "busy" : "idle";
+  return status === "busy" && nowMs - seen <= BUSY_STALE_MS ? "busy" : "idle";
+}
+
+/**
+ * A session title as a person reads it: provider titles are often a first
+ * prompt carrying raw markup (`<task-notification>…`) — tags go, whitespace
+ * collapses.
+ */
+export function cleanTitle(raw: string): string {
+  return raw
+    .replace(/<\/?[A-Za-z][\w:-]*(?:\s[^<>]*)?>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** A one-line preview: markdown markers, links and headings flattened to text. */
+export function plainPreview(raw: string): string {
+  return raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}(?:#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
+    .replace(/(\*\*|__|\*|_|~~|`)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export interface MemberCursor {

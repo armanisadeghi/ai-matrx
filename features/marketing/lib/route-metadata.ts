@@ -61,6 +61,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Scheduled, branded, client-ready reports assembled from live marketing data.",
     letter: "Rp",
   },
+  "/marketing/social": {
+    titlePrefix: "Social",
+    description:
+      "Every tracked social account and recent outlier across all your clients.",
+    letter: "Sy",
+  },
   "/marketing/reports/cost": {
     titlePrefix: "Cost",
     description:
@@ -200,7 +206,8 @@ function brandSectionIdentity(
         "subPath" in candidate && candidate.subPath && candidate.subPath === subPath,
     ) ??
     candidates.find((candidate) => !("subPath" in candidate && candidate.subPath)) ??
-    // A section whose only row is sub-routed (socials → accounts) still names its bare route.
+    // The row that owns the bare route and unclaimed children (socials → accounts + details).
+    candidates.find((candidate) => "bareRoute" in candidate && candidate.bareRoute) ??
     (subPath === undefined && candidates.length === 1 ? candidates[0] : undefined);
   if (!match) return null;
   return {
@@ -531,7 +538,9 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
 
   const brandIdentity = brandSectionIdentity(
     section,
-    section === "intelligence" || section === "pr" ? segments[3] : undefined,
+    section === "intelligence" || section === "pr" || section === "socials"
+      ? segments[3]
+      : undefined,
   );
   if (brandIdentity) {
     return createMarketingMetadata(normalizedPath, brandIdentity);

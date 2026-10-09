@@ -16,7 +16,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Archive, Bookmark, FolderPlus, Link2, MoreHorizontal, RotateCcw } from "lucide-react";
+import { Archive, Bookmark, FolderPlus, Link2, MoreHorizontal, RotateCcw, Tag } from "lucide-react";
 
 import { Button, EmptyState, SearchField, SegmentedControl, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -31,24 +31,28 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { useAllSwipeCollections, useInvalidateSocial, useSwipeItems } from "../hooks";
+import { useSocialSpend } from "../cost";
 import { createCollection, getTranscript, socialErrorMessage } from "../server";
-import { readTranscribedPostIds, renameCollection, setCollectionArchived } from "../service";
+import { readTranscribedPostIds, renameCollection, setCollectionArchived, setCollectionBrand } from "../service";
 import {
   ALL_SAVED,
   DEFAULT_SWIPE_FILTERS,
   collectionCounts,
+  collectionsForBrandScope,
   filterSwipeItems,
   itemNote,
   itemTags,
+  otherCollectionCount,
   swipeFacets,
   visibleCollections,
+  type SwipeBrandScope,
   type SwipeDateRange,
   type SwipeFilters,
   type SwipeTypeFilter,
 } from "../swipe";
 import { isAdLibrary, isSocialPlatform, type PostCardModel, type SwipeItem } from "../types";
 import { AdCard, libraryLabel } from "./AdCard";
-import { PostDrawer } from "./PostDetail";
+import { useOpenPost } from "../useOpenPost";
 import { platformLabel } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
 import { SocialPostCard } from "./SocialPostCard";
@@ -82,20 +86,24 @@ function chip(active: boolean) {
 
 export function SwipeFileTab() {
   const { brandId, organizationId } = useSocials();
+  const { costText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const collections = useAllSwipeCollections();
   const [showArchived, setShowArchived] = useState(false);
   const [filters, setFilters] = useState<SwipeFilters>(DEFAULT_SWIPE_FILTERS);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [sheetKey, setSheetKey] = useState<string | null>(null);
-  const [drawerPost, setDrawerPost] = useState<PostCardModel | null>(null);
+  const openInPanel = useOpenPost();
   const [nameDialog, setNameDialog] = useState<{ mode: "create" } | { mode: "rename"; id: string; name: string } | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [bulkSaveOpen, setBulkSaveOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState<{ message: string; failure: unknown } | null>(null);
 
-  const all = collections.data ?? [];
+  const [brandScope, setBrandScope] = useState<SwipeBrandScope>("brand");
+  const everything = collections.data ?? [];
+  const all = useMemo(() => collectionsForBrandScope(everything, brandId, brandScope), [everything, brandId, brandScope]);
+  const otherCount = useMemo(() => otherCollectionCount(everything, brandId), [everything, brandId]);
   const live = useMemo(() => visibleCollections(all, false), [all]);
   const archived = useMemo(() => visibleCollections(all, true), [all]);
   const liveIds = useMemo(() => live.map((c) => c.id), [live]);
@@ -151,6 +159,16 @@ export function SwipeFileTab() {
     }
   }
 
+  async function linkBrand(id: string, next: string | null) {
+    try {
+      await setCollectionBrand(id, next);
+      await invalidate();
+      toast.success(next ? "Linked to this brand" : "Unlinked from this brand");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update the collection");
+    }
+  }
+
   async function restore(id: string) {
     try {
       await setCollectionArchived(id, false);
@@ -178,7 +196,7 @@ export function SwipeFileTab() {
       }
       const ok = await confirm({
         title: `Transcribe ${todo.length} ${todo.length === 1 ? "post" : "posts"}?`,
-        description: `About ${todo.length} ${todo.length === 1 ? "credit" : "credits"}, billed to this organization.${done.size ? ` ${done.size} already transcribed ${done.size === 1 ? "is" : "are"} skipped.` : ""}`,
+        description: [costText("transcript", todo.length), done.size ? `${done.size} already transcribed ${done.size === 1 ? "is" : "are"} skipped.` : null].filter(Boolean).join(" · ") || undefined,
         confirmLabel: "Transcribe",
         variant: "destructive",
       });
@@ -229,6 +247,12 @@ export function SwipeFileTab() {
     <div className="grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
       {/* Rail */}
       <aside className="flex min-w-0 flex-col gap-0.5" aria-label="Collections">
+        <SegmentedControl
+          aria-label="Collections shown"
+          value={brandScope}
+          data={[{ value: "brand", label: "This brand" }, { value: "all", label: "All collections" }]}
+          onValueChange={(v) => setBrandScope(v as SwipeBrandScope)}
+        />
         <button type="button" className={chip(scope === ALL_SAVED)} onClick={() => set({ scope: ALL_SAVED })}>
           <span className="truncate">All saved</span>
           <span className="tabular-nums">{counts.get(ALL_SAVED) ?? 0}</span>
@@ -249,6 +273,10 @@ export function SwipeFileTab() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => setNameDialog({ mode: "rename", id: c.id, name: c.name })}>Rename</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void linkBrand(c.id, c.brand_id === brandId ? null : brandId)}>
+                  <Tag className="mr-2 h-4 w-4" />
+                  {c.brand_id === brandId ? "Unlink from this brand" : "Link to this brand"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => void archive(c.id, c.name)}>
                   <Archive className="mr-2 h-4 w-4" />
                   Archive
@@ -347,6 +375,11 @@ export function SwipeFileTab() {
               line={live.length === 0 ? "Create a collection, or save a link" : "Save a link, or use the extension"}
               action={
                 <div className="flex flex-wrap justify-center gap-2">
+                  {brandScope === "brand" && otherCount > 0 ? (
+                    <Button variant="outline" onClick={() => setBrandScope("all")}>
+                      Show all collections ({otherCount})
+                    </Button>
+                  ) : null}
                   <Button variant="primary" icon={<Link2 />} onClick={() => setLinkOpen(true)}>
                     Save link
                   </Button>
@@ -401,10 +434,9 @@ export function SwipeFileTab() {
         onOpenPost={(i) => {
           if (!i.post) return;
           setSheetKey(null);
-          setDrawerPost(i.post);
+          openInPanel(i.post);
         }}
       />
-      <PostDrawer post={drawerPost} onClose={() => setDrawerPost(null)} />
 
       <CollectionNameDialog
         open={nameDialog !== null}

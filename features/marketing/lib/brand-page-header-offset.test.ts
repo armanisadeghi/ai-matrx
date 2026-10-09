@@ -16,7 +16,7 @@
 // actually carry the offset, one layer down in their workspace component.
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
 
 const BRAND_ROUTE_DIR = resolve(
@@ -35,12 +35,21 @@ function isRedirectOnlyPage(source: string): boolean {
   return /\b(permanentRedirect|redirect)\(/.test(source) && !/return\s*[(<]/.test(source);
 }
 
-function importedMarketingModulePaths(source: string): string[] {
+function importedMarketingModulePaths(source: string, fromFile?: string): string[] {
   const paths: string[] = [];
   const importRe = /import\s+[^;]*?\s+from\s+["']([^"']+)["']/gs;
   let match: RegExpExecArray | null;
   while ((match = importRe.exec(source)) !== null) {
-    const target = aliasTarget(match[1]);
+    const spec = match[1];
+    // Relative imports (`./EmailFrontDoor`) resolve against the importing file:
+    // a workspace split into sibling modules still carries its offset somewhere.
+    if (fromFile && spec.startsWith(".")) {
+      const abs = resolve(dirname(fromFile), spec);
+      const rel = abs.slice(process.cwd().length + 1);
+      if (rel.startsWith("features/marketing/")) paths.push(rel);
+      continue;
+    }
+    const target = aliasTarget(spec);
     if (target?.startsWith("features/marketing/")) {
       paths.push(target);
     }
@@ -77,11 +86,19 @@ function pageClearsHeader(segment: string): boolean {
   if (isRedirectOnlyPage(pageSource)) return true;
   if (hasHeaderOffset(pageSource)) return true;
 
-  return importedMarketingModulePaths(pageSource).some((modulePath) => {
-    const file = resolveModuleFile(modulePath);
-    if (!file) return false;
-    return hasHeaderOffset(readFileSync(file, "utf8"));
-  });
+  // Walk the page's marketing imports up to three layers deep: page ->
+  // brand-scoped wrapper -> front-door page that owns the scroll body.
+  const seen = new Set<string>();
+  const walk = (source: string, fromFile: string | undefined, depth: number): boolean =>
+    importedMarketingModulePaths(source, fromFile).some((modulePath) => {
+      const file = resolveModuleFile(modulePath);
+      if (!file || seen.has(file)) return false;
+      seen.add(file);
+      const text = readFileSync(file, "utf8");
+      if (hasHeaderOffset(text)) return true;
+      return depth < 3 && walk(text, file, depth + 1);
+    });
+  return walk(pageSource, undefined, 1);
 }
 
 describe("marketing [brandId] pages clear the shell header band", () => {

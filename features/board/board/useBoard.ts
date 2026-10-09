@@ -104,6 +104,8 @@ export interface Board<T extends BoardTileBase> {
   /** Take back only `actor`'s own latest change (never the person's). */
   undoActor: (actor: BoardActor) => ActorUndoResult;
   canUndoActor: (actor: BoardActor) => boolean;
+  /** The model itself, for leaves that subscribe on their own channel (the shapes layer). */
+  store: BoardStore<T>;
 }
 
 /** The board, created once from `initial`. Stable for the component's life. */
@@ -174,5 +176,6 @@ export function useBoard<T extends BoardTileBase>(
     batch: store.batch,
     undoActor: store.undoActor,
     canUndoActor: store.canUndoActor,
+    store,
   };
 }
