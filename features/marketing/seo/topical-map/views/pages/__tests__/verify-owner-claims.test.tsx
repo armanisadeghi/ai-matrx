@@ -59,6 +59,22 @@ const dryRunMutate = jest.fn();
 const writeMutate = jest.fn();
 const confirmMock = jest.fn();
 
+// ProTextarea mounts the page-agent hook, which reads the Redux store; these
+// suites exercise the surrounding flow, so the field is a plain textarea that
+// keeps the DOM-facing props (same stand-in the other host suites use).
+jest.mock("@/components/official/ProTextarea", () => {
+  const React = jest.requireActual("react");
+  const DOM_PROPS = ["id", "name", "value", "defaultValue", "onChange", "onBlur", "onFocus", "onKeyDown", "placeholder", "rows", "disabled", "readOnly", "className", "aria-label", "aria-describedby", "data-testid", "autoFocus"];
+  return {
+    ProTextarea: React.forwardRef((props: Record<string, unknown>, ref: unknown) =>
+      React.createElement("textarea", {
+        ...Object.fromEntries(DOM_PROPS.filter((k) => k in props).map((k) => [k, props[k]])),
+        ref,
+      }),
+    ),
+  };
+});
+
 jest.mock("../../../hooks", () => ({
   useMapDryRun: () => ({ mutateAsync: dryRunMutate }),
   useSetPageIntents: () => ({ mutateAsync: writeMutate }),
