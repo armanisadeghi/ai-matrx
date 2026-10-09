@@ -57,15 +57,18 @@ export function LiveHub() {
     selection?.kind === "room"
       ? (rooms.find((r) => r.conversation.id === selection.id) ?? null)
       : null;
+  // The direct line is the agent_direct room this session is a member of
+  // (member rows are the truth; the inbox projection may not carry metadata.session_id).
   const directRoomId = session
-    ? (rooms.find((r) => {
-        const meta = r.conversation.metadata;
-        return (
-          agentRoomKind(meta) === "agent_direct" &&
-          typeof meta.session_id === "string" &&
-          session.bindingIds.includes(meta.session_id)
-        );
-      })?.conversation.id ??
+    ? (rooms.find(
+        (r) =>
+          agentRoomKind(r.conversation.metadata) === "agent_direct" &&
+          members.some(
+            (m) =>
+              m.conversation_id === r.conversation.id &&
+              session.bindingIds.includes(m.member_id),
+          ),
+      )?.conversation.id ??
       createdDirect[session.address] ??
       null)
     : null;

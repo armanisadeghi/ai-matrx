@@ -22,7 +22,7 @@ describe("effectivePresence (mirrors the server's effective_presence)", () => {
 
 const member = (over: Partial<MemberCursor>): MemberCursor => ({
   offered_through: null, offered_at: null, delivered_through: null, delivered_at: null,
-  lookup_failures: 0, expired_count: 0, last_failure_reason: null, muted: false, ...over,
+  lookup_failures: 0, expired_count: 0, last_failure_reason: null, last_failure_at: null, muted: false, ...over,
 });
 
 describe("deliveryLag", () => {
@@ -33,9 +33,12 @@ describe("deliveryLag", () => {
   it("a confirmed offer is clear", () => {
     expect(deliveryLag(member({ offered_through: "m2", delivered_through: "m2", offered_at: at(999_000) }), NOW).state).toBe("clear");
   });
-  it("failures and expiries always show, before an offer lag", () => {
-    expect(deliveryLag(member({ lookup_failures: 2, offered_through: "m2", offered_at: at(999_000) }), NOW).state).toBe("failing");
-    expect(deliveryLag(member({ expired_count: 1 }), NOW).state).toBe("failing");
+  it("an unrecovered failure shows, before an offer lag", () => {
+    expect(deliveryLag(member({ lookup_failures: 2, last_failure_at: at(5_000), offered_through: "m2", offered_at: at(999_000) }), NOW).state).toBe("failing");
+    expect(deliveryLag(member({ expired_count: 1, last_failure_at: at(5_000) }), NOW).state).toBe("failing");
+  });
+  it("a delivery after the last failure clears the marker (counters are lifetime)", () => {
+    expect(deliveryLag(member({ lookup_failures: 13, last_failure_at: at(60_000), delivered_at: at(5_000) }), NOW).state).toBe("clear");
   });
 });
 

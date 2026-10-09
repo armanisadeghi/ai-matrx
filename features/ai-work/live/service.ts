@@ -16,6 +16,7 @@ import { getUserMessage } from "@/lib/api/errors";
 import {
   createMessagingRepository,
   type ConversationSummary,
+  type JsonObject,
 } from "@ai-matrx/messaging";
 import type { MemberCursor } from "./presence";
 
@@ -23,10 +24,30 @@ import type { MemberCursor } from "./presence";
 // carries the /messages People|Agents filter, which the hub must not move.
 const agentRooms = createMessagingRepository({ client: supabase });
 
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** The person's agent rooms (direct, pair, named, review), newest first. */
 export async function fetchAgentRooms(): Promise<ConversationSummary[]> {
   const page = await agentRooms.listConversations({ kind: "agents", limit: 100 });
-  return [...page.items];
+  const ids = page.items.map((item) => item.conversation.id);
+  if (ids.length === 0) return [];
+  // The inbox projection does not carry `metadata`; the hub needs its `kind`
+  // (direct / pair / named / review), so read it beside the list, under RLS.
+  const { data, error } = await supabase
+    .schema("communication")
+    .from("dm_conversations")
+    .select("id, metadata")
+    .in("id", ids);
+  if (error) throw operationFailed("load room kinds", error);
+  const metaById = new Map(data.map((row) => [row.id, row.metadata]));
+  return page.items.map((item) => {
+    const metadata = metaById.get(item.conversation.id);
+    return isJsonObject(metadata)
+      ? { ...item, conversation: { ...item.conversation, metadata } }
+      : item;
+  });
 }
 
 const MEMBER_COLUMNS =

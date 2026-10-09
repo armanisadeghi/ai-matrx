@@ -43,6 +43,7 @@ export interface MemberCursor {
   lookup_failures: number;
   expired_count: number;
   last_failure_reason: string | null;
+  last_failure_at: string | null;
   muted: boolean;
 }
 
@@ -54,7 +55,9 @@ export type DeliveryLag =
 
 /**
  * Offered-but-unconfirmed is normal for a moment (the next hook confirms it);
- * it becomes a marker after `graceMs`. Failures and expiries always show.
+ * it becomes a marker after `graceMs`. Failures and expiries are lifetime
+ * counters, so they mark the member only while the latest failure is newer
+ * than the latest confirmed delivery.
  */
 export function deliveryLag(
   member: MemberCursor,
@@ -62,7 +65,11 @@ export function deliveryLag(
   graceMs = 60_000,
 ): DeliveryLag {
   if (member.muted) return { state: "muted" };
-  if (member.lookup_failures > 0 || member.expired_count > 0) {
+  const failedAt = member.last_failure_at ? Date.parse(member.last_failure_at) : NaN;
+  const deliveredAt = member.delivered_at ? Date.parse(member.delivered_at) : NaN;
+  const unrecovered =
+    !Number.isNaN(failedAt) && (Number.isNaN(deliveredAt) || failedAt > deliveredAt);
+  if (unrecovered && (member.lookup_failures > 0 || member.expired_count > 0)) {
     return {
       state: "failing",
       failures: member.lookup_failures,
