@@ -56,7 +56,7 @@ const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)
 
 test("label formats the threshold", () => {
   expect(underThresholdLabel(1)).toBe("Under $1");
-  expect(underThresholdLabel(0.5)).toBe("Under $0.5");
+  expect(underThresholdLabel(0.5)).toBe("Under $0.50");
   expect(underThresholdLabel(2.25)).toBe("Under $2.25");
 });
 
@@ -65,7 +65,7 @@ test("an org that lowered its threshold sees its own number, not $1", async () =
     root.render(<RunApprovalCell orgId={null} thresholdOrgId={ORG_LOW} subjects={[["agent", "a1"]]} maxRunCost={0.4} seat="admin" />);
   });
   await settle();
-  expect(host.textContent).toBe("Under $0.5");
+  expect(host.textContent).toBe("Under $0.50");
 });
 
 test("default-threshold org sees Under $1; a run above the org's threshold shows no label", async () => {

@@ -8,7 +8,12 @@ import { formatCost, formatUsd, usdToPoints } from "@ai-matrx/kit/format";
 // `useCostDisplay().rate`), and only code that runs outside render (copy text, a toast) passes
 // `currentPointsRate()` — by name, where a reader can see it.
 
-export function formatAdminUsd(usd: number | null | undefined): string {
+/**
+ * `digits: "whole"` is the THRESHOLD voice — a limit an admin set ("Under $1", "Avg run > $0.50"),
+ * where the per-call precision would print "$1.00" / "$0.5000".
+ */
+export function formatAdminUsd(usd: number | null | undefined, options: { digits?: "whole" } = {}): string {
+  if (options.digits === "whole") return formatUsd(usd, { digits: "whole" });
   return formatCost(usd, { unit: "usd", rate: null });
 }
 

@@ -19,7 +19,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
-import { formatUsd } from "@ai-matrx/kit/format";
 import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 export type AutomationKind =
@@ -273,7 +272,7 @@ export function automationFlags(row: AutomationCostRow): AutomationFlag[] {
   if ((row.avg_run_cost ?? 0) > L.runCostUsd) {
     flags.push({
       id: "avg_run_over_limit",
-      label: `Avg run > ${formatUsd(L.runCostUsd, { digits: "whole" })}`,
+      label: `Avg run > ${formatAdminUsd(L.runCostUsd, { digits: "whole" })}`,
       detail: `Average run costs ${formatAdminUsd(row.avg_run_cost ?? 0)}`,
       severity: "critical",
     });
@@ -281,7 +280,7 @@ export function automationFlags(row: AutomationCostRow): AutomationFlag[] {
   if ((row.max_run_cost ?? 0) > L.runCostUsd) {
     flags.push({
       id: "run_over_limit",
-      label: `A run > ${formatUsd(L.runCostUsd, { digits: "whole" })}`,
+      label: `A run > ${formatAdminUsd(L.runCostUsd, { digits: "whole" })}`,
       detail: `Most expensive run cost ${formatAdminUsd(row.max_run_cost ?? 0)}`,
       severity: "warning",
     });

@@ -18,7 +18,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 import {
   agentHref,
   automationCostDetailHref,
@@ -282,7 +282,7 @@ export function useApprovalThreshold(orgId: string | null): number | null {
 
 /** "Under $1" / "Under $0.50" for the threshold in force. */
 export function underThresholdLabel(thresholdUsd: number): string {
-  return `Under ${formatUsd(thresholdUsd, { digits: "whole" })}`;
+  return `Under ${formatAdminUsd(thresholdUsd, { digits: "whole" })}`;
 }
 
 // ── Status per subject, shared by every spend board (one fetch per seat) ─────
