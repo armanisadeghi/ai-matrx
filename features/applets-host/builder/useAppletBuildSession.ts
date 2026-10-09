@@ -33,10 +33,12 @@ import {
   patchBuildEntry,
   readBuildRecord,
   releaseStaleClaim,
+  saveBuildReferences,
   startBuildRecord,
   type BuildEntry,
   type BuildRecord,
 } from "./build-session";
+import type { BuildReference } from "./build-references";
 
 /** A request that never got a run this long after it started is over, not "about to start". */
 const STALE_START_MS = 60_000;
@@ -161,12 +163,12 @@ export function useAppletBuildSession(opts: {
    * Write the request before anything runs. A new app is born here; its id becomes the address.
    * Returns the record the run belongs to and the request's entry.
    */
-  const begin = async (input: { appletId: string | null; organizationId: string; text: string; fix: BuildEntry["fix"] }) => {
+  const begin = async (input: { appletId: string | null; organizationId: string; text: string; fix: BuildEntry["fix"]; references?: BuildReference[] }) => {
     const client = createClient();
     const entry = newBuildEntry(input.text, input.fix);
     const next = input.appletId
       ? await appendBuildEntry(client, input.appletId, entry)
-      : await startBuildRecord(client, { organizationId: input.organizationId, entry });
+      : await startBuildRecord(client, { organizationId: input.organizationId, entry, ...(input.references?.length ? { references: input.references } : {}) });
     reopened.current = entry.id;
     setRecord(next);
     if (!input.appletId && opts.routed && typeof window !== "undefined") {
@@ -194,5 +196,9 @@ export function useAppletBuildSession(opts: {
   /** THE CLAIM — true for the one caller that saves this request's answer. */
   const claim = (appletId: string, entryId: string) => claimBuildEntry(createClient(), appletId, entryId);
 
-  return { record, readError, rejoining, begin, beginFix, follow, running, claim, settle, refresh };
+  /** Write what she attached (an existing build); the record shows it at once. */
+  const saveReferences = async (appletId: string, references: BuildReference[]) => {
+    setRecord(await saveBuildReferences(createClient(), appletId, references));
+  };
+  return { record, readError, rejoining, begin, beginFix, follow, running, claim, settle, refresh, saveReferences };
 }

@@ -63,7 +63,16 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   viewer; the Applet organization's tables only) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
   in the floating `LiveRunWindow` → the record saved as a draft (a change = UPDATE = new version) → preview
   through `AppletHostMount preview` (live reads, writes held by `holdWrites`, errors → Fix it) → "Use it"
-  publishes. `builder/check-build-answer.ts` (`checkBuildAnswer`) + `builder/applet-code-checks.ts` are the
+  publishes. **What she attaches** (lane A1): the box's "+" (`builder/BuildAttachments.tsx`) is /chat's attach
+  sources (`ResourcePickerMenu`: files, notes, documents, pages, tables…) plus **Agent** (the ONE agent picker) and
+  **Workflow** (`WorkflowListDropdown`). The list lives on the record (`metadata.build.references`,
+  `builder/build-references.ts`, `saveBuildReferences` through the same guarded merge), so a reload keeps it and every
+  round sends it: the material through THE attach path (`resources` on `runHeadlessAgentJson` / `continueAgentJson`,
+  @ai-matrx/chat — a file by its file id, never her message), its names as the `attachments` context entry. An agent or
+  workflow becomes a job of the Applet's organization (`builder/applet-job.ts`: `POST /mandates/soft` level
+  organization + `PUT /mandates/<key>/default-holder`, key `applets.run_<name>_<id6>`, reused when attached again; the
+  server's refusal is shown when she may not make one there or the organization cannot run it), and
+  `readAppletCatalogue({ attachedJobs, describe })` lists it first with its real inputs. `builder/check-build-answer.ts` (`checkBuildAnswer`) + `builder/applet-code-checks.ts` are the
   refusal checks, loaded on demand with the frame: the code checks read the `@babel/parser` syntax tree, never
   regexes over the source.
 
@@ -120,6 +129,8 @@ the same account; log in claims the workspace (`lib/guest/session-handover.ts`, 
 The layout settles a pending claim on a signed-in load (`settlePendingGuestClaim`).
 
 ## Change Log
+
+- 2026-10-09 (lane A1): the builder's "+" — files, notes, documents and pages reach the builder agent through THE attach path every round and persist on the build; her agents and workflows become the Applet's jobs (`applets.run_*`), listed in the catalogue with their real inputs. Tests: `builder/build-references.test.ts`; chat `a-turn-carries-what-the-person-attached.test.ts`; applets `src/catalogue/attached-jobs.test.ts`.
 
 - 2026-10-09 (lane F12): a returning guest's account line shows on open (`@ai-matrx/applets` 0.18.2 fires `onGuestSaved` once on open); at the ceiling the line is the package's one sentence, kept in view (sticky).
 - 2026-10-09 (lane F11): the saved card's new-table line wraps (the example count drops to its own line when narrow) and the Applet link shows in full (`break-all`; Copy was already the full link). A reload no longer breaks the build conversation panel: `@ai-matrx/rich-content` bare kind floor supplies its own content-IR provider (or text) and the host gate calls `use()` every render; guard `builder/build-conversation-reload.test.tsx`. `platform.knob_defaults` stays signed-in only (it returns the whole register); the cold read no longer leaves an unhandled rejection. New-table naming field is required by default and `rowLabel` is the one "Untitled" (`@ai-matrx/applets`).

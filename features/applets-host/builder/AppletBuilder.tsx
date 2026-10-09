@@ -22,7 +22,8 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { Badge, Button, EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
-import { AppWindow, Copy, ExternalLink, Loader2, Table2, Wrench } from "lucide-react";
+import { AppWindow, Copy, ExternalLink, Table2, Wrench } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { copyText } from "@ai-matrx/kit/clipboard";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
@@ -60,6 +61,10 @@ import { UseAppletDialog } from "./UseAppletDialog";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
+import { createMatrxTransport } from "@/lib/api/matrx-transport";
+import { BuildAttachments } from "./BuildAttachments";
+import { attachedJobKeys, attachmentsContext, referenceResources, withReference, withoutReference, type BuildReference } from "./build-references";
 
 // The preview (the Applet host, its frame and compiler) is needed only once a saved version exists, so it
 // loads then — never with the first screen. One edge, ssr:false (it mounts browser-only code), gated on
@@ -128,6 +133,8 @@ export function AppletBuilder({
   // A reply sent while a round runs steers the NEXT round: it waits here, and goes the moment this one ends.
   const [queued, setQueued] = useState<string | null>(null);
   const queuedRef = useRef<string | null>(null);
+  // An attached job's real inputs come from the server's input surface (a workflow's live only in its graph).
+  const describeJob = (key: string) => createIntelligencePort({ transport: createMatrxTransport(store.getState) }).describe(key);
 
   const [sentence, setSentence] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -179,10 +186,10 @@ export function AppletBuilder({
         const record = await readBuildRecord(client, id);
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
-        const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
+        const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text, attachedJobs: attachedJobKeys(record.references), describe: describeJob });
         const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
         // What each job really takes (F1): a form that fills a job with names it does not declare is refused.
-        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value));
+        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value), { describe: describeJob });
         const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
@@ -198,6 +205,20 @@ export function AppletBuilder({
       }
     },
   });
+
+  // What she attached (lane A1): on the build's record once it exists, held here until Build is pressed.
+  const [pendingRefs, setPendingRefs] = useState<BuildReference[]>([]);
+  const references = session.record?.references ?? pendingRefs;
+  const changeReferences = async (next: BuildReference[]) => {
+    const id = session.record?.id ?? null;
+    if (!id) return setPendingRefs(next);
+    try {
+      await session.saveReferences(id, next);
+    } catch (err) {
+      console.error("[applet-build] could not save what was attached", err);
+      setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
+    }
+  };
 
   // The rejoined run has ended (saved, refused or failed): the live window stops waiting.
   const rejoining = session.rejoining;
@@ -330,23 +351,26 @@ export function AppletBuilder({
         }
         begun = { record: fixRound.record, entry: fixRound.entry };
       } else {
-        begun = await session.begin({ appletId: retry ? appletIdRef.current : appletId, organizationId: org ?? "", text: request, fix });
+        begun = await session.begin({ appletId: retry ? appletIdRef.current : appletId, organizationId: org ?? "", text: request, fix, references: pendingRefs });
       }
       const { record, entry } = begun;
       started = { id: record.id, entry };
       setAppletId(record.id);
       setSentence("");
+      setPendingRefs([]);
       appletIdRef.current = record.id;
       stepTo("Reading your tables");
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
-      const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
+      // What she attached: its material rides THE attach path every round, its jobs the catalogue.
+      const refs = record.references;
+      const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request, attachedJobs: attachedJobKeys(refs), describe: describeJob });
       // The frame (already the preview's) answers which names each module really exports; the checks read
       // the code's syntax tree, so both load here, on demand — never with the builder's first screen.
       const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
       stepTo("Starting the builder");
       let attached: Promise<void> = Promise.resolve();
-      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null));
+      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null), { describe: describeJob });
       const check = (v: unknown) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
       const onConversation = (cid: string) => {
         entry.conversation_id = cid;
@@ -366,11 +390,15 @@ export function AppletBuilder({
           surfaceKey: SURFACE_KEY,
           ...(fix ? { hostTurn: fixHostTurn(fix.message) } : { userInput: request }),
           // Structured parts ride context, never her message: the record as it stands (the refused answer
-          // in a fix round) and the check that refused it (removed on her own turns).
+          // in a fix round) and the check that refused it (removed on her own turns); what she attached, by
+          // name, and the catalogue again when she attached jobs (a job attached after the first round).
           context: {
             applet: fixedApplet ? JSON.stringify(fixedApplet) : current ? JSON.stringify(current.applet) : null,
             last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : null,
+            attachments: attachmentsContext(refs),
+            catalogue: attachedJobKeys(refs).length ? JSON.stringify(catalogue) : null,
           },
+          resources: referenceResources(refs),
         });
         if (!result.success) throw new Error(result.error ?? "The builder finished without an answer.");
         answer = check(result.data);
@@ -393,6 +421,8 @@ export function AppletBuilder({
             last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
           },
           onConversationCreated: onConversation,
+          // Her files, notes and pages: THE attach path, never pasted into her request.
+          resources: referenceResources(refs),
           coerce: check,
         });
       }
@@ -501,6 +531,13 @@ export function AppletBuilder({
             })
           }
         />
+        <BuildAttachments
+          references={references}
+          organizationId={session.record?.organizationId ?? organizationId}
+          disabled={phase.kind === "publishing"}
+          onAdd={(r) => changeReferences(withReference(references, r))}
+          onRemove={(id) => changeReferences(withoutReference(references, id))}
+        />
         <div className="flex flex-wrap items-center gap-2">
           {hydrated ? (
             <Button
@@ -513,7 +550,7 @@ export function AppletBuilder({
               {busy ? "Send next" : appletId ? "Change it" : "Build"}
             </Button>
           ) : (
-            <Button variant="primary" disabled aria-busy icon={<Loader2 className="animate-spin" />} data-applet-build-pending="">
+            <Button variant="primary" disabled aria-busy icon={<Spinner />} data-applet-build-pending="">
               Getting ready
             </Button>
           )}
