@@ -13,7 +13,7 @@
  */
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw, Archive } from "lucide-react";
+import { Loader2, Pause, Play, RefreshCw, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TRIGGER_FLAG_SET, SpendFlagStrip, spendFlagColumn, type SpendFlagHit } from "@/components/cost/SpendFlagStrip";
 import { Button } from "@/components/ui/button";
@@ -327,6 +327,7 @@ export function TriggersManager({
       accessorFn: (t) => t.cost.runs,
       filter: "number",
       align: "right",
+      compact: true,
       width: 85,
       cell: (t) => <span className="text-xs tabular-nums">{t.cost.runs}</span>,
     },
@@ -383,14 +384,6 @@ export function TriggersManager({
       ),
     },
     ...pick(["cost_7d", "cost_7d_points", "cost_last_run", "cost_last_run_points"]),
-    {
-      id: "custom-actions",
-      header: "Actions",
-      sortable: false,
-      filter: false,
-      width: 120,
-      customActions: (t) => <TriggerActions t={t} onAct={(tr, a) => setPending({ t: tr, action: a })} />,
-    },
   ];
   // Money right after who does the work (owner, 2026-10-08); description after it.
   const ORDER = [
@@ -427,6 +420,12 @@ export function TriggersManager({
           data={shown}
           columns={columns}
           getRowId={(t) => t.overview.trigger_id}
+          rowActions={(t) => [
+            t.overview.is_active
+              ? { id: "pause", icon: Pause, label: "Pause", tooltip: "Pause", onClick: () => setPending({ t, action: "pause" }) }
+              : { id: "resume", icon: Play, label: "Resume", tooltip: "Resume", onClick: () => setPending({ t, action: "resume" }) },
+            { id: "archive", icon: Archive, label: "Archive", tooltip: "Archive", onClick: () => setPending({ t, action: "archive" }) },
+          ]}
           isLoading={loading}
           defaultSort={{ id: "cost_total", direction: "desc" }}
           emptyState={{ title: "No workflow triggers" }}

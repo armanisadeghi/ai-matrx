@@ -203,6 +203,7 @@ export function automationCostColumns<T>(
       accessorFn: (row) => get(row)?.runs ?? null,
       filter: "number",
       align: "right",
+      compact: true,
       width: 90,
       cell: (row) => <Num v={get(row)?.runs} />,
     },

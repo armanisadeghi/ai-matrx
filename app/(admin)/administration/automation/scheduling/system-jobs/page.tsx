@@ -541,43 +541,6 @@ export default function SystemJobsPage() {
     },
   ];
 
-  // Rendered in the table's own trailing Actions column (`rowActions`) — a
-  // second hand-made actions column would duplicate the header the table
-  // already owns.
-  const renderRowActions = (r: SystemTaskResponse) => {
-    const isBusy = busy.has(r.id);
-    return (
-      <>
-        <TapTargetButtonTransparent
-          ariaLabel={
-            isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"
-          }
-          disabled={isBusy}
-          onClick={() => void toggleEnabled(r)}
-        >
-          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
-        </TapTargetButtonTransparent>
-        <PencilTapButton
-          variant="transparent"
-          ariaLabel="Edit job"
-          disabled={isBusy}
-          onClick={() => setEditing(r)}
-        />
-        <PlayTapButton
-          variant="transparent"
-          ariaLabel="Run job now"
-          disabled={isBusy || r.handler_registered === false}
-          tooltip={
-            r.handler_registered === false
-              ? "No handler registered — nothing would run."
-              : "Run job now"
-          }
-          onClick={() => void runNow(r)}
-        />
-      </>
-    );
-  };
-
   // Right-click menu for the system-jobs pane — page-local identity (a
   // scheduling.system-jobs job is not shown anywhere else), so the section is
   // inline rather than a registered SECTIONS.md builder. Every item delegates
@@ -981,9 +944,31 @@ export default function SystemJobsPage() {
               ...jobCostColumns.slice(0, AUTOMATION_LEAD_COLUMNS),
               ...columns.slice(1),
               ...jobCostColumns.slice(AUTOMATION_LEAD_COLUMNS),
-              { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) },
             ]}
             getRowId={(r) => r.id}
+            rowActions={(r) => {
+              const isBusy = busy.has(r.id);
+              return [
+                {
+                  id: "toggle",
+                  icon: Power,
+                  label: r.enabled ? "Disable job" : "Enable job",
+                  tooltip: r.enabled ? "Disable job" : "Enable job",
+                  loading: isBusy,
+                  disabled: isBusy,
+                  onClick: () => void toggleEnabled(r),
+                },
+                { id: "edit", icon: Pencil, label: "Edit job", tooltip: "Edit job", disabled: isBusy, onClick: () => setEditing(r) },
+                {
+                  id: "run",
+                  icon: Play,
+                  label: "Run job now",
+                  tooltip: r.handler_registered === false ? "No handler registered — nothing would run." : "Run job now",
+                  disabled: isBusy || r.handler_registered === false,
+                  onClick: () => void runNow(r),
+                },
+              ];
+            }}
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}

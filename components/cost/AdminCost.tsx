@@ -18,9 +18,11 @@ export function AdminCost({ usd, unknown }: { usd: number | null | undefined; un
 }
 
 /** "408 points". */
-export function AdminPoints({ usd }: { usd: number | null | undefined }) {
+export function AdminPoints({ usd, bare }: { usd: number | null | undefined; bare?: boolean }) {
   const rate = usePointsRate();
-  return <>{formatAdminPoints(usd, rate)}</>;
+  const text = formatAdminPoints(usd, rate);
+  // `bare` drops the unit word for a table column whose header already says points.
+  return <>{bare ? text.replace(/\s*points?$/i, "") : text}</>;
 }
 
 /** "$0.0204" — the USD half of an admin cost, for a labelled figure or tile. */
