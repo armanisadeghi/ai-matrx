@@ -1139,6 +1139,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Hard-cost reconciliation",
+        description:
+          "Vendor charges against what we recorded and the points we charged, per window and provider, with drift.",
+        iconName: "Scale",
+        link: "/administration/usage/reconciliation",
+        isNew: true,
+      },
+      {
         title: "Email Users",
         description:
           "Send emails to users directly from the admin portal using custom or template-based messages.",
