@@ -144,7 +144,8 @@ export default function TasksTableView() {
         header: "Task",
         accessorKey: "title",
         filter: "text",
-        width: 360,
+        width: 420,
+        minWidth: 240,
         cell: (task) => {
           const labels = (task.settings?.labels ?? []) as string[];
           return (
@@ -152,18 +153,19 @@ export default function TasksTableView() {
               {/* THE DOOR LAW. The row already selects the task into the
                   detail pane; the name keeps cmd/middle-click to /tasks/{id}
                   and the hover peek. */}
-              <span className="min-w-0 truncate" {...{ [TASK_TITLE_DOM_ATTR]: task.id }}>
+              <span className="min-w-0" {...{ [TASK_TITLE_DOM_ATTR]: task.id }}>
                 <EntityRef
                   token="task"
                   id={task.id}
                   name={task.title}
                   showIcon={false}
+                  wrap
                   onOpen={() => dispatch(setSelectedTaskId(task.id))}
                   className="text-[13px]"
                   labelClassName={
                     task.completed
-                      ? "line-through text-muted-foreground"
-                      : "font-medium text-foreground"
+                      ? "line-through text-muted-foreground break-words"
+                      : "font-medium text-foreground break-words"
                   }
                 />
               </span>
@@ -200,7 +202,8 @@ export default function TasksTableView() {
           task.projectId === UNASSIGNED_PROJECT_ID || !task.projectId
             ? "Unassigned"
             : task.projectName,
-        width: 180,
+        width: 150,
+        minWidth: 110,
         cell: (task) =>
           task.projectId === UNASSIGNED_PROJECT_ID || !task.projectId ? (
             <span className="inline-flex min-w-0 max-w-[160px] items-center gap-1 text-sm text-muted-foreground">
@@ -231,7 +234,8 @@ export default function TasksTableView() {
           { value: "Low", label: "Low" },
           { value: "—", label: "None" },
         ],
-        width: 110,
+        width: 124,
+        minWidth: 124,
         cell: (task) => (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
             {task.priority && (
@@ -256,7 +260,8 @@ export default function TasksTableView() {
         filterValue: (task) => dueBucket(task, todayStr, weekStr),
         filter: "select",
         filterOptions: DUE_BUCKET_OPTIONS,
-        width: 120,
+        width: 110,
+        minWidth: 110,
         cell: (task) => {
           const isPastDue =
             !!task.dueDate && task.dueDate < todayStr && !task.completed;
@@ -283,7 +288,8 @@ export default function TasksTableView() {
         sortValue: (task) => toEpochMs(task.updatedAt),
         defaultSortDirection: "desc",
         filter: "date",
-        width: 140,
+        width: 130,
+        minWidth: 120,
         cell: (task) => (
           <span
             className="whitespace-nowrap text-xs text-muted-foreground"
@@ -308,6 +314,7 @@ export default function TasksTableView() {
         searchText={(task) => `${task.title} ${task.projectName ?? ""}`}
         zebra
         pageSize={0}
+        fitToWidth="grow"
         frameHeight="fill"
         selectedId={selectedTaskId}
         detail={{ enabled: false }}
