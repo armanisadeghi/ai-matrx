@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectArtifactByEitherId } from "@/lib/redux/selectors/artifactSelectors";
@@ -292,6 +294,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
   const artifact = useAppSelector((state) =>
     selectArtifactByEitherId(state, artifactId),
   );
+  const previewSandbox = usePageSandbox(artifact?.externalUrl ?? null, "allow-scripts allow-same-origin");
   const store = useAppStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -585,7 +588,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
                   src={artifact.externalUrl}
                   className="w-full h-[400px]"
                   title="Page preview"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox={previewSandbox}
                 />
               </div>
             </CardContent>

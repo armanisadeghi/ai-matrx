@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 // TODO: Fix loading inefficiency.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
@@ -123,6 +125,7 @@ function HtmlPreviewModalBody({
     user?.id,
   );
   const [savedPage, setSavedPage] = useState<any>(null);
+  const previewSandbox = usePageSandbox(savedPage?.url ?? null, "allow-scripts allow-same-origin");
   const [pageTitle, setPageTitle] = useState<string>("");
   const [pageDescription, setPageDescription] = useState<string>("");
   const [metaTitle, setMetaTitle] = useState<string>("");
@@ -1191,7 +1194,7 @@ ${wordPressCSS}
                           src={savedPage.url}
                           className="w-full h-full min-h-[600px]"
                           title={savedPage.title}
-                          sandbox="allow-scripts allow-same-origin"
+                          sandbox={previewSandbox}
                           style={{ colorScheme: "light" }}
                         />
                       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { usePageSandbox } from "@/features/html-pages/utils/use-page-sandbox";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Code2,
@@ -83,14 +85,10 @@ import {
 
 type Phase = "idle" | "converting" | "preview" | "unpublished" | "error";
 
-/**
- * THE sandbox for a published html page. The page is served from the html
- * site (`NEXT_PUBLIC_HTML_SITE_URL`, mymatrx.com) — a different site from the
- * app — so `allow-same-origin` hands the page ITS OWN origin, never ours, and
- * its scripts cannot read aimatrx.com cookies or storage. The pair
- * allow-scripts + allow-same-origin is only safe while that holds, so
- * `pageSandbox` drops `allow-same-origin` if the page URL ever resolves to the
- * app's own origin (a misconfigured env), leaving an opaque origin.
+/** Published pages keep their existing capabilities only once the app origin
+ * is known and their absolute HTTP(S) URL is separate. Drafts stay opaque.
+ * usePageSandbox starts hydration with the same opaque flags as the server,
+ * then restores a separate publisher's flags. Redirect custody is separate.
  */
 const PAGE_SANDBOX =
   "allow-scripts allow-same-origin allow-popups allow-forms allow-presentation";
@@ -107,26 +105,7 @@ const PAGE_MAX_HEIGHT = "min(85dvh, 1200px)";
 const PAGE_ALLOW =
   "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
 
-export function pageSandbox(
-  url: string | null,
-  base: string,
-  appOrigin: string | null = typeof window === "undefined"
-    ? null
-    : window.location.origin,
-): string {
-  if (!url || !appOrigin) return base;
-  let origin: string;
-  try {
-    origin = new URL(url, appOrigin).origin;
-  } catch {
-    return base;
-  }
-  if (origin !== appOrigin) return base;
-  return base
-    .split(" ")
-    .filter((flag) => flag !== "allow-same-origin")
-    .join(" ");
-}
+export { pageSandbox } from "@/features/html-pages/utils/page-sandbox";
 
 interface HtmlInlinePreviewProps {
   code: string;
@@ -183,6 +162,8 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState<string | null>(null);
+  const appSandbox = usePageSandbox(url, APP_SANDBOX);
+  const publishedSandbox = usePageSandbox(url, PAGE_SANDBOX);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -470,7 +451,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           src={url ?? undefined}
           title={title}
           className={className}
-          sandbox={pageSandbox(url, APP_SANDBOX)}
+          sandbox={appSandbox}
           allow={PAGE_ALLOW}
         />
       );
@@ -609,7 +590,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           title={title}
           className="w-full rounded-lg bg-black"
           style={{ aspectRatio: String(aspectRatio) }}
-          sandbox={pageSandbox(url, PAGE_SANDBOX)}
+          sandbox={publishedSandbox}
           allow={PAGE_ALLOW}
           allowFullScreen
           loading="lazy"
@@ -661,7 +642,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
             height: pageHeight ?? PAGE_INITIAL_HEIGHT,
             maxHeight: PAGE_MAX_HEIGHT,
           }}
-          sandbox={pageSandbox(url, PAGE_SANDBOX)}
+          sandbox={publishedSandbox}
           allow={PAGE_ALLOW}
           allowFullScreen
           loading="lazy"

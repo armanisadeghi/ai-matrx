@@ -15,14 +15,18 @@ async function main(): Promise<void> {
   const browser = await chromium.launch({ channel: "chromium", args: CHROMIUM_ARGS_BASE });
   const cast = new Cast(browser, CHROMIUM_ARGS_BASE);
   try {
+    // tsx compiles with keepNames; the pages' evaluate() bodies need the helper it references.
+    const shim = async (a: { context: { addInitScript: (s: string) => Promise<void> } }) => a.context.addInitScript("window.__name = (f) => f;");
     const host = await cast.add({ label: "host", seat: "admin" });
+    await shim(host as never);
     const s = await host.session();
     if (!s) throw new Error("no admin session");
     const { url, key } = supabasePublic();
     const org = process.env.SERIES_ORG ?? "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
     const startsAt = new Date(Date.now() + 4 * 60_000);
     startsAt.setSeconds(0, 0);
-    const res = await fetch(`${url}/rest/v1/rpc/meet_schedule_meeting`, {
+    const existing = process.env.SERIES_SLUG;
+    const res = existing ? null : await fetch(`${url}/rest/v1/rpc/meet_schedule_meeting`, {
       method: "POST",
       headers: { apikey: key, Authorization: `Bearer ${s.token}`, "Content-Type": "application/json", "Content-Profile": "communication", "Accept-Profile": "communication" },
       body: JSON.stringify({
@@ -37,17 +41,21 @@ async function main(): Promise<void> {
         p_settings: {},
       }),
     });
-    const body = await res.text();
-    console.log("meet_schedule_meeting", res.status, body.slice(0, 600));
-    if (!res.ok) throw new Error("schedule failed");
-    const out = JSON.parse(body) as { slug?: string } | { slug?: string }[];
-    const slug = (Array.isArray(out) ? out[0] : out)?.slug;
+    let slug = existing;
+    if (res) {
+      const body = await res.text();
+      console.log("meet_schedule_meeting", res.status, body.slice(0, 600));
+      if (!res.ok) throw new Error("schedule failed");
+      const out = JSON.parse(body) as { slug?: string } | { slug?: string }[];
+      slug = (Array.isArray(out) ? out[0] : out)?.slug;
+    }
     if (!slug) throw new Error("no slug in answer");
     const meeting: Meeting = { slug, path: `/meet/${slug}`, host };
     cast.meeting = meeting;
     console.log("SERIES", slug, "first occurrence", startsAt.toISOString());
     await walkIn(host, meeting, { until: ["in-call"] });
     const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
+    await shim(guest as never);
     await walkIn(guest, meeting, { until: ["knocking", "in-call"], gesture: true });
     if ((await guest.page.locator("[data-meet-root]").getAttribute("data-meet-phase").catch(() => "")) !== "in-call") await admitWaiting(host, guest, GUEST);
     // A chat line from the host, so the run is not silent.
