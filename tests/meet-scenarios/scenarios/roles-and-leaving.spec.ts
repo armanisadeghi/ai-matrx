@@ -69,8 +69,16 @@ scenario("host-drops-returns", async ({ cast }) => {
   );
 });
 
+// host-leave-assign FOLLOWS THE MEETING'S BEHAVIOR PROFILE (CORE-DESIGN §4.2 `host_leave_prompt`):
+// only the Zoom profile (`must_assign_or_end`) offers "Assign a new host" on Leave; Meet offers
+// Leave / End for everyone, Teams Leave / End meeting. So the meeting is created with Zoom's.
 scenario("host-leave-assign", async ({ cast }) => {
-  const { host, guest } = await callWithGuest(cast);
+  const host = await cast.add({ label: "host", seat: "admin" });
+  cast.meeting = await createMeetingWithProfile(host, "zoom");
+  const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
+  await walkIn(host, cast.meeting!, { until: ["in-call"] });
+  await walkIn(guest, cast.meeting!, { until: ["knocking", "in-call"], gesture: true });
+  await admitWaiting(host, guest, GUEST);
   await host.page.getByRole("button", { name: /^Leave( call| meeting)?$/ }).first().click();
   // Leaving offers to hand the meeting to someone first, then to pick who.
   const assign = await seeControl(host, "an assign-a-new-host choice on Leave", host.page.getByRole("button", { name: /assign|make .* host|hand (over|off)|new host/i }), 5000);
@@ -120,8 +128,10 @@ scenario(
 scenario("leave-or-end-choice", async ({ cast }) => {
   const { host, guest } = await callWithGuest(cast);
   await host.page.getByRole("button", { name: /^Leave( call| meeting)?$/ }).first().click();
-  await seeControl(host, 'a plain "Leave meeting" choice on Leave', host.page.getByRole("button", { name: /^Leave (the )?meeting$|^Just leave$/i }), 5000);
-  const endAll = await seeControl(host, 'an "End for all" choice on Leave', host.page.getByRole("button", { name: /end (meeting )?for (all|everyone)/i }), 5000);
+  // Default (Meet) profile words: "Leave call" / "End call for everyone" (CORE-DESIGN §4.2);
+  // Zoom's "Leave meeting" / "End meeting for all" are accepted too.
+  await seeControl(host, 'a plain "Leave" choice on Leave', host.page.getByRole("button", { name: /^Leave (the )?(meeting|call)$|^Just leave$/i }), 5000);
+  const endAll = await seeControl(host, 'an "End for all" choice on Leave', host.page.getByRole("button", { name: /end (meeting |call )?for (all|everyone)/i }), 5000);
   await endAll.click();
   await seePhase(guest, ["ended"], TIMEOUTS.noticeMs);
 });
