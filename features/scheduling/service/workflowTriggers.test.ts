@@ -95,11 +95,11 @@ describe("seats", () => {
     await expect(fetchManagedTriggers("o2")).rejects.toThrow(/Forbidden/);
     await expect(setWorkflowTriggerState("t1", "pause")).rejects.toThrow(/Forbidden/);
   });
-  it("org admins never get the owner-only workflow or workflow-run pages", () => {
+  it("org admins get the org-scoped run page, never the owner-only workflow-run page; the workflow is always a link", () => {
     const run = { run_id: "r1", workflow_run_id: "w1" };
     expect(triggerRunHref("org", "green", "t1", run)).toBe("/organizations/green/admin/triggers/t1/runs/r1");
     expect(triggerRunHref("admin", undefined, "t1", run)).toBe("/workflows/runs/w1");
-    expect(triggerWorkflowHref("org", "d1")).toBeNull();
+    expect(triggerWorkflowHref("org", "d1")).toBe("/workflows/d1/triggers");
     expect(triggerWorkflowHref("admin", "d1")).toBe("/workflows/d1/triggers");
   });
 });

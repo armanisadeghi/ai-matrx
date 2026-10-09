@@ -27,6 +27,34 @@ const EXISTING: BrandProfile = {
 };
 const EXISTING_JSON = brandProfileToJson(EXISTING) as Record<string, Json>;
 
+describe("mergeBrandProfileWrite brand fundamentals", () => {
+  it("writes the new string, list and structured keys and keeps the rest", () => {
+    const merged = mergeBrandProfileWrite(EXISTING_JSON, {
+      mission: "Keep pipes flowing",
+      values: ["Honesty"],
+      approved_claims: ["Licensed"],
+      messaging_pillars: [{ title: "Trust", proof_points: ["20 years"] }],
+      elevator_pitches: { ten_second: "We fix pipes." },
+      content_pillars: [{ name: "How-to" }],
+      hashtags: [{ tag: "#pipes", use: "branded" }],
+    });
+    expect(merged.mission).toBe("Keep pipes flowing");
+    expect(merged.values).toEqual(["Honesty"]);
+    expect(merged.messaging_pillars).toEqual([{ title: "Trust", proof_points: ["20 years"] }]);
+    expect(merged.hashtags).toEqual([{ tag: "pipes", use: "branded" }]);
+    expect(merged.audience).toBe(EXISTING.audience);
+  });
+
+  it("clears a structured field with an empty value and rejects malformed shapes", () => {
+    const withPillars = mergeBrandProfileWrite(EXISTING_JSON, {
+      content_pillars: [{ name: "How-to" }],
+    });
+    expect(mergeBrandProfileWrite(withPillars, { content_pillars: [] }).content_pillars).toBeUndefined();
+    expect(() => mergeBrandProfileWrite(EXISTING_JSON, { hashtags: ["x"] })).toThrow(/shape/);
+    expect(() => mergeBrandProfileWrite(EXISTING_JSON, { messaging_pillars: "x" })).toThrow(/shape/);
+  });
+});
+
 describe("mergeBrandProfileWrite", () => {
   it("preserves every unmentioned field when one field is written", () => {
     const merged = mergeBrandProfileWrite(EXISTING_JSON, {

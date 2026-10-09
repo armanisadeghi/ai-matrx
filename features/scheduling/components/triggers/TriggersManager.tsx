@@ -30,7 +30,6 @@ import { AdminPoints, AdminUsd, CostFigures, UsdOnly } from "@/components/cost/A
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import { automationAiState } from "@/features/scheduling/service/automationCosts";
 import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TriggerRunsTable } from "./TriggerRunsTable";
 import {
   automationCostColumns,
@@ -257,23 +256,15 @@ export function TriggersManager({
       width: 200,
       cell: (t) => {
         if (!t.overview.definition_id) return <span className="text-xs text-muted-foreground">—</span>;
-        const wfHref = triggerWorkflowHref(seat, t.overview.definition_id);
-        return wfHref ? (
+        return (
           <Link
-            href={wfHref}
+            href={triggerWorkflowHref(seat, t.overview.definition_id)}
             onClick={(e) => e.stopPropagation()}
             className="block truncate text-xs text-primary hover:underline"
             title={t.overview.workflow_name ?? undefined}
           >
             {t.overview.workflow_name ?? "Workflow"}
           </Link>
-        ) : (
-          <EntityRef
-            token="workflow"
-            id={t.overview.definition_id}
-            name={t.overview.workflow_name ?? "Workflow"}
-            showIcon={false}
-          />
         );
       },
     },

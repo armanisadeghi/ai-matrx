@@ -17,24 +17,23 @@
  * the canonical `updateBrand` under the version guard.
  */
 
-import { isJsonRecord } from "@/features/marketing/types";
+import {
+  BRAND_PROFILE_LIST_FIELDS,
+  BRAND_PROFILE_STRING_FIELDS,
+  BRAND_PROFILE_STRUCTURED_FIELDS,
+  isJsonRecord,
+  parseBrandProfile,
+} from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
 
-export const BRAND_PROFILE_WRITE_STRING_KEYS = [
-  "audience",
-  "voice_tone",
-  "positioning",
-  "service_area",
-  "content_guidelines",
-  "notes",
-] as const;
-
-export const BRAND_PROFILE_WRITE_LIST_KEYS = [
-  "value_props",
-  "offerings",
-  "competitors",
-  "target_keywords",
-] as const;
+/**
+ * Every key the parser owns is writable: the write allowlist IS the parser's
+ * field lists (no second schema), so a field added to `BrandProfile` is
+ * agent-writable the moment the parser knows it.
+ */
+export const BRAND_PROFILE_WRITE_STRING_KEYS = BRAND_PROFILE_STRING_FIELDS;
+export const BRAND_PROFILE_WRITE_LIST_KEYS = BRAND_PROFILE_LIST_FIELDS;
+export const BRAND_PROFILE_WRITE_STRUCTURED_KEYS = BRAND_PROFILE_STRUCTURED_FIELDS;
 
 function asRecord(value: unknown, target: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -56,6 +55,7 @@ export function mergeBrandProfileWrite(
   const allowed = new Set<string>([
     ...BRAND_PROFILE_WRITE_STRING_KEYS,
     ...BRAND_PROFILE_WRITE_LIST_KEYS,
+    ...BRAND_PROFILE_WRITE_STRUCTURED_KEYS,
   ]);
   const unknown = Object.keys(obj).filter((key) => !allowed.has(key));
   if (unknown.length > 0) {
@@ -90,6 +90,26 @@ export function mergeBrandProfileWrite(
     const items = raw.map((entry) => entry.trim()).filter(Boolean);
     if (items.length) merged[key] = items;
     else delete merged[key];
+  }
+  for (const key of BRAND_PROFILE_WRITE_STRUCTURED_KEYS) {
+    const raw = obj[key];
+    if (raw === undefined || raw === null) continue;
+    const isEmpty = Array.isArray(raw)
+      ? raw.length === 0
+      : isJsonRecord(raw as Json) && Object.keys(raw as object).length === 0;
+    if (isEmpty) {
+      delete merged[key];
+      continue;
+    }
+    // The parser is the only schema: whatever it keeps is what is stored.
+    // Entries it would drop mean the agent sent a malformed shape - say so.
+    const parsed = parseBrandProfile({ [key]: raw as Json })[key];
+    const expected = Array.isArray(raw) ? raw.length : 1;
+    const kept = Array.isArray(parsed) ? parsed.length : parsed ? 1 : 0;
+    if (kept === 0 || kept < expected) {
+      throw new Error(`brand_profile: ${key} has entries that do not match its shape.`);
+    }
+    merged[key] = parsed as unknown as Json;
   }
   return merged;
 }

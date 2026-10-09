@@ -235,7 +235,7 @@ function parseElevatorPitches(value: unknown): ElevatorPitches | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
-const BRAND_PROFILE_STRING_FIELDS = [
+export const BRAND_PROFILE_STRING_FIELDS = [
   "audience",
   "voice_tone",
   "positioning",
@@ -250,7 +250,7 @@ const BRAND_PROFILE_STRING_FIELDS = [
   "story",
 ] as const;
 
-const BRAND_PROFILE_LIST_FIELDS = [
+export const BRAND_PROFILE_LIST_FIELDS = [
   "value_props",
   "offerings",
   "competitors",
@@ -266,7 +266,7 @@ const BRAND_PROFILE_LIST_FIELDS = [
 ] as const;
 
 /** Structured (non-flat) profile keys: owned by the parser, serialized separately. */
-const BRAND_PROFILE_STRUCTURED_FIELDS = [
+export const BRAND_PROFILE_STRUCTURED_FIELDS = [
   "messaging_pillars",
   "elevator_pitches",
   "content_pillars",

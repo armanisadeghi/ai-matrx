@@ -12,13 +12,16 @@ import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks"
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
-import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAdminFeature,
   selectUserEmail,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import {
   googleDirectoryReviewService,
   type DirectoryPreview,
@@ -66,6 +69,82 @@ function sourceLabel(source: "DOMAIN_CONTACT" | "DOMAIN_PROFILE"): string {
     ? "Workspace profile"
     : "Workspace contact";
 }
+
+type DirectoryPerson = DirectoryPreview["people"][number];
+
+const PEOPLE_COLUMNS: MatrxColumnDef<DirectoryPerson>[] = [
+  {
+    id: "name",
+    header: "Name",
+    accessorFn: (person) => person.display_name ?? "",
+    cell: (person) => (
+      <span className="font-medium">{literal(person.display_name)}</span>
+    ),
+    copyValue: (person) => literal(person.display_name),
+    filter: "text",
+    width: 200,
+  },
+  {
+    id: "email",
+    header: "Email",
+    accessorFn: (person) => person.emails?.join(", ") ?? "",
+    cell: (person) => (person.emails?.length ? person.emails.join(", ") : "—"),
+    copyValue: (person) =>
+      person.emails?.length ? person.emails.join(", ") : "—",
+    filter: "text",
+    width: 240,
+  },
+  {
+    id: "title",
+    header: "Title",
+    accessorFn: (person) => person.organization_title ?? "",
+    cell: (person) => literal(person.organization_title),
+    copyValue: (person) => literal(person.organization_title),
+    filter: "text",
+    width: 160,
+  },
+  {
+    id: "department",
+    header: "Department",
+    accessorFn: (person) => person.organization_department ?? "",
+    cell: (person) => literal(person.organization_department),
+    copyValue: (person) => literal(person.organization_department),
+    filter: "text",
+    width: 160,
+  },
+  {
+    id: "manager",
+    header: "Manager",
+    accessorFn: (person) => person.manager ?? "",
+    cell: (person) => literal(person.manager),
+    copyValue: (person) => literal(person.manager),
+    filter: "text",
+    width: 160,
+  },
+  {
+    id: "source",
+    header: "Source",
+    accessorFn: (person) => person.source_types.map(sourceLabel).join(", "),
+    cell: (person) =>
+      person.source_types.length
+        ? person.source_types.map(sourceLabel).join(", ")
+        : "—",
+    copyValue: (person) =>
+      person.source_types.length
+        ? person.source_types.map(sourceLabel).join(", ")
+        : "—",
+    filter: "text",
+    width: 160,
+  },
+  {
+    id: "account",
+    header: "Account",
+    accessorFn: (person) => person.account_label,
+    cell: (person) => person.account_label,
+    filter: "text",
+    width: 200,
+  },
+];
 
 export function DirectoryReviewBody({
   context,
@@ -118,8 +197,6 @@ function DirectoryReviewBodyInner({
   const [loading, setLoading] = useState(false);
   const generation = useRef(0);
   const mounted = useRef(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  useClippedContentGuard(scrollRef, { label: "Directory people" });
 
   useEffect(() => {
     mounted.current = true;
@@ -264,9 +341,6 @@ function DirectoryReviewBodyInner({
       ) : preview ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
           <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 type-secondary text-muted-foreground">
-            <span className="font-medium text-foreground">
-              {people.length} {people.length === 1 ? "person" : "people"}
-            </span>
             <span>Account: {preview.account_label}</span>
             <Badge variant="outline">First 50</Badge>
             {moreAvailable ? (
@@ -278,49 +352,19 @@ function DirectoryReviewBodyInner({
               No Directory people were returned.
             </div>
           ) : (
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full min-w-[960px] text-left type-body">
-                <thead className="sticky top-0 z-10 bg-muted/95 type-secondary text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Name</th>
-                    <th className="px-3 py-2 font-medium">Email</th>
-                    <th className="px-3 py-2 font-medium">Title</th>
-                    <th className="px-3 py-2 font-medium">Department</th>
-                    <th className="px-3 py-2 font-medium">Manager</th>
-                    <th className="px-3 py-2 font-medium">Source</th>
-                    <th className="px-3 py-2 font-medium">Account</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {people.map((person) => (
-                    <tr key={person.resource_name} className="align-top">
-                      <td className="px-3 py-2 font-medium">
-                        {literal(person.display_name)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {person.emails?.length
-                          ? person.emails.join(", ")
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2">
-                        {literal(person.organization_title)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {literal(person.organization_department)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {literal(person.manager)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {person.source_types.length
-                          ? person.source_types.map(sourceLabel).join(", ")
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2">{person.account_label}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="min-h-0 flex-1">
+              <MatrxDataTable<DirectoryPerson>
+                tableId="google-workspace/directory-people"
+                data={people}
+                columns={PEOPLE_COLUMNS}
+                getRowId={(person) => person.resource_name}
+                appearance="embedded"
+                pageSize={0}
+                viewTabs={false}
+                detail={{ enabled: false }}
+                toolbar={{ searchPlaceholder: "Search directory people" }}
+                emptyState={{ title: "No Directory people were returned." }}
+              />
             </div>
           )}
         </div>
