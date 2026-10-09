@@ -45,6 +45,7 @@ export function BoardPage({
   workspaceId,
   initialLayout,
   preset,
+  titleMenuExtra,
 }: {
   target: SavedBoardTarget;
   /** The workspace's remembered layout (the chat's is the shell chat's: `shellChatHome`). */
@@ -52,6 +53,8 @@ export function BoardPage({
   initialLayout: CanvasWorkspaceLayout;
   /** A focus for this board (`presets/`); none = the whole board. */
   preset?: BoardPreset;
+  /** Extra items for the board's own title ▾ (a host's boards to switch to). Shown first. */
+  titleMenuExtra?: ReactNode;
 }) {
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
@@ -108,6 +111,7 @@ export function BoardPage({
         record={ready ? { resourceId: ready.board.id, resourceName: title, commentToken: BOARD_TOKEN } : undefined}
         titleMenu={
           <>
+            {titleMenuExtra}
             {ready && (
               <DropdownMenuItem onSelect={() => setRenaming(true)}>
                 <Pencil className="mr-2 h-4 w-4" />

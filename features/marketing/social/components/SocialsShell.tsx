@@ -54,6 +54,8 @@ export function SocialsShell({ children }: { children: ReactNode }) {
   const segment = pathname.startsWith(`${base}/`) ? pathname.slice(base.length + 1).split("/")[0] : "";
   const activeTab = SOCIALS_TABS.find((t) => t.id === segment)?.id ?? "accounts";
 
+  const fullBleed = activeTab === "studio";
+
   return (
     <SocialsContext.Provider
       value={{
@@ -63,7 +65,7 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         openTrack: () => setTrackOpen(true),
       }}
     >
-      <RecordPageHeader
+      {fullBleed ? null : <RecordPageHeader
         parents={[
           { label: "Marketing", href: marketingRoutes.home() },
           { label: brand.name, href: `/marketing/${brand.seg}` },
@@ -74,10 +76,15 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         actions={[
           { label: "Track account", icon: Plus, primary: true, showLabel: true, onPress: () => setTrackOpen(true) },
         ]}
-      />
-      <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
-        <div className="mx-auto w-full max-w-[1600px] px-3 pb-6 pt-3 sm:px-4">{children}</div>
-      </div>
+      />}
+      {fullBleed ? (
+        // The Studio is the Board, exactly as /board/<id>: its workspace header is the page top, full-bleed.
+        <div className="h-full min-h-0">{children}</div>
+      ) : (
+        <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
+          <div className="mx-auto w-full max-w-[1600px] px-3 pb-6 pt-3 sm:px-4">{children}</div>
+        </div>
+      )}
       <TrackAccountDialog
         open={trackOpen}
         onOpenChange={setTrackOpen}

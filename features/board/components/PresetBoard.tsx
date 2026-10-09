@@ -6,6 +6,7 @@
  * extra prop. `<PresetBoard preset="marketing-social" boardId={id} />`.
  */
 
+import type { ReactNode } from "react";
 import { BoardPage } from "../home/BoardPage";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
 import { BOARD_PRESETS, presetByKey } from "../presets/registry";
@@ -16,18 +17,22 @@ export function PresetBoard({
   boardId,
   workspaceId,
   initialLayout,
+  titleMenuExtra,
 }: {
   preset: BoardPresetKey;
   boardId: string;
   /** Default: `board-<boardId>` (the same workspace the plain board uses). */
   workspaceId?: string;
   initialLayout: CanvasWorkspaceLayout;
+  /** Extra items for the board's own title ▾. */
+  titleMenuExtra?: ReactNode;
 }) {
   return (
     <BoardPage
       target={{ boardId }}
       workspaceId={workspaceId ?? `board-${boardId}`}
       initialLayout={initialLayout}
+      titleMenuExtra={titleMenuExtra}
       preset={presetByKey(preset) ?? BOARD_PRESETS[preset]}
     />
   );
