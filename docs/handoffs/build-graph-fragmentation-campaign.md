@@ -26,7 +26,10 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 | 4 | Cache bloat: prune orphans at install → Vercel node_modules ≈ 4 GB, cache upload < 1 min | shipped, verify on Vercel | `.npmrc` `modules-cache-max-age=0`; local node_modules 32 → 8.7 GB. |
 | 3b | print inlined MathJax (2.4 MB) into BOTH /document and /markdown-html (`splitting:false` flattens lazy imports) → own `/mathjax` entry | **done**: print 0.12.14 published + adopted; local C run compile 7.2 → 4.3 min (single run, RSS flat 26.4 GB) | /document 3.4 MB → 766 KB, /markdown-html 3.3 MB → 694 KB |
 | 3c | Probe: stub the 3 context-menu lazy edges added Sep 26–Oct 5 (upper bound of their cost) | **done — leave them** | RSS −2.2 GB at most, compile within noise (7.3 min) |
-| 6 | Static page generation 6 s (Sep 22) → 37–41 s now, same page count ±9% | todo | find the slow prerenders |
+| 6 | Static page generation 6 s (Sep 22) → 37–48 s | **done 2026-10-09** | cause: 192 `templates_public` reads (every prerendered template page re-read the paged catalogue). Shared process read + guard test. Vercel static gen 48 s → 8 s. |
+| 7 | Generate workers 1 → 8 (generate process only first) | **done 2026-10-09** | tree peak 9.2 GB; page-data ~61 s → ~20 s |
+| 8 | One `next build` pass with 8 workers instead of compile + generate processes | **shipped locally, commit blocked** by another lane's unpublished chat export (commit hook); lands when chat publishes | lab: whole-tree peak 32.8 GB of 60; post-compile ~2.9 → ~1.3 min |
+| 9 | `@ai-matrx/chat` in `transpilePackages` (added Oct 1, dist is already compiled; React Compiler may re-run over 490 files) | lab run H running | |
 | 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
