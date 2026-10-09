@@ -236,3 +236,12 @@ no-unapproved-schedules law.
 - 2026-08-14 — Feedback editors adopted `ProTextarea`; target page became an explicit button.
 - 2026-08-08 — Added repair routing, assignment, and verification metadata.
 - 2026-07-21 — Created the original human-first queue.
+
+## Admin seat (2026-10-08)
+
+The item page lives in `/administration`, where the admin is usually NOT a member of the review thread (`communication.dm_conversations` is a private class; a lane-open INSERT into `dm_messages` is refused by row security — measured as admin@admin.com).
+
+- **Writes:** on the admin seat `recordHumanReviewAction` posts through `POST /api/admin/agent-review/feedback` (lane + admin identity re-checked, scoped to conversations that belong to an `agent.review_queue` row). Off the seat it inserts directly as before.
+- **Name:** the message's `actor_label` is the signed-in reviewer's own name (`selectDisplayName`), never a fixed one.
+- **Reading:** Realtime `postgres_changes` carry no lane, so `providers/MessagingHost.tsx` passes `observerRefresh` (5 s interval + window focus, only while `browserAdminLaneOpen()`) to `@ai-matrx/messaging`; `markRead` is a silent no-op for a viewer with no participant row.
+- Guard: `__tests__/seat-write.test.ts`.

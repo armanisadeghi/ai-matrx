@@ -78,3 +78,7 @@ no table or parallel writer was added.
   preserves existing drafts and automatically expands the composer.
 - **2026-08-15** — Added email-subject authoring and documented this existing feature as the
   shared frontend half of the message-template primitive.
+
+## Admin seat (2026-10-08)
+
+`fetchMessageTemplates()` with no `publishedToWeb` is the caller's own list (`created_by`) on every user page, and EVERY template on `/administration/utilities/message-templates` (no owner filter; the `platform_admin` lane admits the rows). Guard: `__tests__/admin-seat-lists-every-template.test.ts`.

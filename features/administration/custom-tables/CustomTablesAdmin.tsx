@@ -3,15 +3,12 @@
 // features/administration/custom-tables/CustomTablesAdmin.tsx — THE ADMIN LIST OF CUSTOM TABLES.
 //
 // /administration/database/custom-tables (lane ONE-HOME, wave 6). Every table in the organizations the
-// admin lane reaches — the admin's memberships plus the system organizations the store's wall admits a
-// super admin to ON THE ADMIN LANE ONLY (iam.has_org_access_for) — with one bulk action, Archive, and a
+// admin lane reaches — EVERY organization, listed through `custom.admin_all_tables()` (an admin-section
+// door: the store's own walls admit a platform admin only to system organizations) — with one bulk action, Archive, and a
 // "Test orgs" menu that marks organizations as test fixtures (TestOrgsMenu.tsx).
 //
-// READS, through @ai-matrx/records as the signed-in person (the browser client stamps
-// `x-matrx-admin-lane: 1` on /administration/**; no service role):
-//   · member organizations → `dataHomeTables(org | null)` (`custom.data_home_tables`) — one call;
-//   · system organizations → `tableList()` in that organization (the Table kernel, every page),
-//     since data_home_tables walks memberships only and a system organization has no members.
+// READS, as the signed-in person (the browser client stamps `x-matrx-admin-lane: 1` on /administration/**;
+// no service role): ONE call, `custom.admin_all_tables()`, every organization's tables.
 // WRITES: `archiveTables` → the package's `tableArchive`, per table (see archiveTables.ts).
 // This file never calls a store door itself (Guard 7, `pnpm check:no-custom-store-code`).
 //
@@ -56,6 +53,28 @@ const PROTECTION: Record<Exclude<ProtectionReason, null>, { label: string; tip: 
   "platform-example": { label: "Example", tip: "A platform example table" },
 };
 
+export interface AdminTableRow {
+  table_id: string;
+  table_name: string;
+  organization_id: string;
+  organization_name: string | null;
+  updated_at: string | null;
+  platform_owned: boolean;
+  system: boolean;
+}
+
+export function adminRowToTable(r: AdminTableRow): CustomTableRow {
+  return {
+    id: r.table_id,
+    name: r.table_name,
+    organizationId: r.organization_id,
+    organizationName: r.organization_name ?? "Organization",
+    updatedAt: r.updated_at,
+    system: r.system === true,
+    platformOwned: r.platform_owned === true,
+  };
+}
+
 /** The records client for one organization, or for every organization the person reaches (null). */
 function recordsIn(organizationId: string | null): RecordsClient {
   return createRecordsClient({
@@ -65,33 +84,18 @@ function recordsIn(organizationId: string | null): RecordsClient {
   });
 }
 
-async function readMemberTables(orgId: string | null): Promise<CustomTableRow[]> {
-  // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
-  const answer = await recordsIn(null).dataHomeTables({ organization_id: orgId, include_platform_tables: true });
-  if (!answer.ok) throw new Error(answer.error.message);
-  return answer.data.map((r) => ({
-    id: r.table_id,
-    name: r.table_name,
-    organizationId: r.organization_id,
-    organizationName: r.organization_name,
-    updatedAt: r.updated_at,
-    system: r.system === true,
-    platformOwned: r.platform_owned,
-  }));
-}
-
-async function readSystemTables(org: { id: string; name: string }): Promise<CustomTableRow[]> {
-  const answer = await recordsIn(org.id).tableList();
-  if (!answer.ok) throw new Error(`${org.name}: ${answer.error.message}`);
-  return answer.data.map((table) => ({
-    id: table.id,
-    name: typeof table.name === "string" && table.name.trim() ? table.name : "Untitled table",
-    organizationId: org.id,
-    organizationName: org.name,
-    updatedAt: null,
-    system: true,
-    platformOwned: documentIsKept(table as unknown as Record<string, unknown>),
-  }));
+/**
+ * EVERY organization's tables, in one call — `custom.admin_all_tables()`. The store's own walls admit a
+ * platform admin only to system organizations (iam.has_org_access_for), so `dataHomeTables` /
+ * `tableList` could never list the rest; this admin-section door answers only on the admin lane for a
+ * platform admin. The signed-in person's browser client stamps the lane on /administration/**.
+ */
+async function readAllTables(): Promise<CustomTableRow[]> {
+  const { data, error } = await (createClient() as unknown as SupabaseClient)
+    .schema("custom")
+    .rpc("admin_all_tables");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as AdminTableRow[]).map(adminRowToTable);
 }
 
 const tableArchiveDoor: TableArchiveDoor = async (args) => {
@@ -107,7 +111,7 @@ const tableArchiveDoor: TableArchiveDoor = async (args) => {
 export function CustomTablesAdmin() {
   const [orgId, setOrgId] = useOrgFilterParam([]);
   const [name, setName] = useUrlState("name", stringUrlCodec());
-  const { organizations: memberships, loading: membershipsLoading } = useUserOrganizations();
+  const { organizations: memberships } = useUserOrganizations();
   const [systemOrgs, setSystemOrgs] = useState<{ id: string; name: string }[] | null>(null);
   const [rows, setRows] = useState<CustomTableRow[] | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
@@ -126,7 +130,6 @@ export function CustomTablesAdmin() {
         .schema("iam")
         .from("organizations")
         .select("id, name")
-        .eq("is_system", true)
         .is("archived_at", null);
       if (!live) return;
       if (error) {
@@ -142,7 +145,6 @@ export function CustomTablesAdmin() {
   }, []);
 
   useEffect(() => {
-    if (systemOrgs === null || membershipsLoading) return;
     let live = true;
     void (async () => {
       await Promise.resolve();
@@ -150,14 +152,9 @@ export function CustomTablesAdmin() {
       setFetching(true);
       setReadError(null);
       try {
-        const memberIds = new Set(memberships.map((m) => m.id));
-        const systemTargets = systemOrgs.filter((o) => !memberIds.has(o.id) && (!orgId || o.id === orgId));
-        const wantMembers = !orgId || memberIds.has(orgId);
-        const parts = await Promise.all([
-          wantMembers ? readMemberTables(orgId) : Promise.resolve([]),
-          ...systemTargets.map((o) => readSystemTables(o)),
-        ]);
-        if (live) setRows(parts.flat().sort((a, b) => a.organizationName.localeCompare(b.organizationName) || a.name.localeCompare(b.name)));
+        const all = await readAllTables();
+        const kept = orgId ? all.filter((r) => r.organizationId === orgId) : all;
+        if (live) setRows(kept.sort((a, b) => a.organizationName.localeCompare(b.organizationName) || a.name.localeCompare(b.name)));
       } catch (e) {
         if (live) {
           setRows([]);
@@ -170,7 +167,7 @@ export function CustomTablesAdmin() {
     return () => {
       live = false;
     };
-  }, [orgId, systemOrgs, memberships, membershipsLoading, nonce]);
+  }, [orgId, nonce]);
 
   // The organization filter applies to the rows on screen at once, so rows of the previous
   // organization never linger (and stay selectable) while the new read is in flight.
@@ -296,7 +293,7 @@ export function CustomTablesAdmin() {
           refresh: { onRefresh: () => setNonce((n) => n + 1) },
           actions: (
             <>
-              <EntityOrgFilter orgId={orgId} onChange={changeOrg} extraOrganizations={systemOrgs ?? []} />
+              <EntityOrgFilter orgId={orgId} onChange={changeOrg} extraOrganizations={(systemOrgs ?? []).filter((o) => !memberships.some((m) => m.id === o.id))} />
               <TestOrgsMenu />
               <Button
                 icon={<ListChecks />}

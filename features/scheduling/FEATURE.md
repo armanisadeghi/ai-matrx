@@ -691,3 +691,7 @@ system job shows no Delete and its Edit mode opens the System jobs console.
 ## Realtime
 
 Realtime moved onto `@ai-matrx/realtime` (2026-09-07), including the PRIVATE Database Broadcast topic — the hand-rolled `config.private` + `realtime.setAuth()` dance is now `private: true` on the spec (the package gap that produced realtime 0.7.0). The feed gained a `resync` signal from the backfill door, wired to `fetchScheduledTasks` / `fetchRunsForTaskThunk` / `onResync`; before it, a schedule that fired or errored while the tab slept simply never arrived. `subscribeToTasks` no longer takes a SupabaseClient.
+
+## Admin seat run stream (2026-10-08)
+
+The scheduler broadcasts per OWNER. `useRunStream` joins the viewer's feed on user pages and the task OWNER's feed on the admin seat (`runStreamOwnerId`); on the seat it also re-reads the run history every 10 s because Realtime join authorization carries no admin lane. Guard: `__tests__/run-stream-owner.test.ts`.

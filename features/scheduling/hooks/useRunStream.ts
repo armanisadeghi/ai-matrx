@@ -9,6 +9,8 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
+import { selectTaskById } from "../redux/tasks/selectors";
 import { subscribeSchedulerBroadcast } from "@/lib/scheduler-client/realtime";
 import { removeRun, upsertRun } from "../redux/runs/slice";
 import { fetchRunsForTaskThunk } from "../redux/runs/thunks";
@@ -30,9 +32,44 @@ function buildTaskPatch(row: Partial<SchTaskRow>): Partial<AgendaTask> | null {
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
+/** How often the admin seat re-reads a run history it cannot rely on a live feed for. */
+export const ADMIN_SEAT_RUN_REFRESH_MS = 10_000;
+
+/**
+ * WHOSE FEED A TASK'S RUNS ARRIVE ON. The scheduler broadcasts per OWNER
+ * (`scheduler:user:<owner>`). On a user page the owner is the viewer. On the
+ * admin seat the admin reads someone else's task, so the feed to join is the
+ * task OWNER's — and with no owner known yet there is no feed to join (never
+ * the admin's own, which would be a silent room of one).
+ */
+export function runStreamOwnerId(args: {
+  viewerId: string | null | undefined;
+  taskOwnerId: string | null | undefined;
+  adminSeat: boolean;
+}): string | null {
+  if (args.adminSeat) return args.taskOwnerId ?? null;
+  return args.viewerId ?? null;
+}
+
 export function useRunStream(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
-  const userId = useAppSelector(selectUserId);
+  const viewerId = useAppSelector(selectUserId);
+  const taskOwnerId = useAppSelector(
+    (state) => selectTaskById(state, taskId)?.userId ?? null,
+  );
+  const adminSeat = browserAdminLaneOpen();
+  const userId = runStreamOwnerId({ viewerId, taskOwnerId, adminSeat });
+
+  // Realtime join authorization carries no admin lane, so on the admin seat the
+  // owner's feed may be refused; the history is also re-read on a timer there.
+  useEffect(() => {
+    if (!taskId || !adminSeat) return undefined;
+    const timer = setInterval(
+      () => void dispatch(fetchRunsForTaskThunk(taskId)),
+      ADMIN_SEAT_RUN_REFRESH_MS,
+    );
+    return () => clearInterval(timer);
+  }, [dispatch, taskId, adminSeat]);
 
   useEffect(() => {
     if (!taskId || !userId) return undefined;

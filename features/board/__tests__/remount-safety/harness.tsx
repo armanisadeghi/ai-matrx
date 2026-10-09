@@ -364,7 +364,11 @@ export function selectInRich(rich: RichEditorHandle, text: string): [number, num
   });
   if (!range) throw new Error(`"${text}" is not in the rich editor`);
   const [from, to] = range as [number, number];
-  act(() => void rich.view.dispatch(rich.view.state.tr.setSelection(TextSelection.create(rich.view.state.doc, from, to))));
+  act(() => {
+    rich.view.dispatch(rich.view.state.tr.setSelection(TextSelection.create(rich.view.state.doc, from, to)));
+    // A browser tells the page the selection moved; jsdom does not move the DOM selection of an editor.
+    document.dispatchEvent(new Event("selectionchange"));
+  });
   return [from, to];
 }
 

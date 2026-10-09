@@ -175,12 +175,11 @@ export default function AdminSandboxManagementPage() {
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
-  // THE DOOR LAW, with a hard limit this console must respect: `/sandbox/[id]`
-  // reads `/api/sandbox/[id]`, which filters `.eq("user_id", user.id)`. This
-  // table is RLS-bound, so linking every row there would 404 for every
-  // sandbox the viewing admin does not own — a wrong door is worse than none.
-  // The door is therefore offered only for the viewer's own instances; every
-  // row's OWNER is reachable through `AdminUserRef` regardless.
+  // THE DOOR LAW: every row opens at the admin record page
+  // (`/administration/compute/sandbox/[id]`, read through `/api/admin/sandbox/[id]`),
+  // because the user page `/sandbox/[id]` is owner-only and would 404 for any
+  // sandbox the viewing admin does not own. The row's OWNER is reachable
+  // through `AdminUserRef`.
   const viewerUserId = useAppSelector(selectUserId);
   const [accessibleSandboxes, setAccessibleSandboxes] = useState<
     SandboxInstance[]
@@ -406,20 +405,15 @@ export default function AdminSandboxManagementPage() {
       label: "Sandbox ID",
       width: 184,
       className: "font-mono text-xs",
-      cell: (instance) =>
-        instance.user_id === viewerUserId ? (
-          <AppLink
-            href={`/sandbox/${instance.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={`Open ${instance.sandbox_id} in a new tab`}
-            className="underline-offset-2 hover:text-primary hover:underline"
-          >
-            {instance.sandbox_id}
-          </AppLink>
-        ) : (
-          instance.sandbox_id
-        ),
+      cell: (instance) => (
+        <AppLink
+          href={`/administration/compute/sandbox/${instance.id}`}
+          title={`Open ${instance.sandbox_id}`}
+          className="underline-offset-2 hover:text-primary hover:underline"
+        >
+          {instance.sandbox_id}
+        </AppLink>
+      ),
     },
     {
       accessorKey: "user_id",

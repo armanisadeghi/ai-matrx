@@ -35,7 +35,6 @@ const SECOND_PARAGRAPH = "Replace the smoke detector batteries before the walkth
 const TYPED = `${NOTE_TEXT}\n\n${SECOND_PARAGRAPH}`;
 const CARET: [number, number] = [TYPED.indexOf("smoke"), TYPED.indexOf("smoke") + "smoke detector".length];
 const WRITE_WORDS = "batteries before";
-let writeRange: [number, number] = [0, 0];
 const NOTE_RECORD = [/^workbench\.notes$/];
 
 /** Undo once in the note's editor, read the stored text, redo. */
@@ -67,7 +66,7 @@ remountType(
         await typeIntoRich(rich, ["", SECOND_PARAGRAPH]);
         await settle(3500);
         // The person selects words in Write, then looks at the note in Split and back.
-        writeRange = selectInRich(rich, WRITE_WORDS);
+        selectInRich(rich, WRITE_WORDS);
         await showSplitView(tile);
         const ta = tile.container.querySelector("textarea");
         if (!ta) throw new Error("the note's Split view never rendered its textarea");
@@ -105,11 +104,14 @@ remountType(
         remount: { caret: CARET },
       }),
     // The selection the person left in the Write editor (the rich one), not just the Split textarea's.
-    "write caret": (r) =>
-      expect({ wake: pick(r.keptAfterWake, "write"), remount: pick(r.keptAfterRemount, "write") }).toEqual({
-        wake: { write: { range: writeRange, text: WRITE_WORDS } },
-        remount: { write: { range: writeRange, text: WRITE_WORDS } },
-      }),
+    // (Positions shift when the editor rebuilds its document from the saved text, so the selection is judged by the words it covers.)
+    "write caret": (r) => {
+      const covered = (kept: unknown) => (kept as { write?: { text?: string } } | undefined)?.write?.text;
+      expect({ wake: covered(r.keptAfterWake), remount: covered(r.keptAfterRemount) }).toEqual({
+        wake: WRITE_WORDS,
+        remount: WRITE_WORDS,
+      });
+    },
     // ⌘Z after waking / remounting still undoes the typing (history is the note's, in Redux).
     "split-view undo": (r) =>
       expect({ wake: pick(r.keptAfterWake, "afterUndo"), remount: pick(r.keptAfterRemount, "afterUndo") }).toEqual({

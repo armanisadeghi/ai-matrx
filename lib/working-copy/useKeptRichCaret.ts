@@ -36,7 +36,6 @@ export function useKeptRichCaret(
   useLayoutEffect(() => {
     if (!key || !active) return undefined;
     let last: KeptRichCaret | null = getKeptRichCaret(store.getState(), key) ?? null;
-    console.log('[RC] mount', JSON.stringify(last));
     let restored = last === null;
     let tries = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -45,8 +44,12 @@ export function useKeptRichCaret(
     const track = () => {
       if (!restored) return;
       const host = root.current;
+      if (!host) return;
       const selection = document.getSelection();
-      if (!host || !selection || !selection.anchorNode || !host.contains(selection.anchorNode)) return;
+      const inside =
+        (selection?.anchorNode && host.contains(selection.anchorNode)) ||
+        (document.activeElement && host.contains(document.activeElement));
+      if (!inside) return;
       const caret = controller.current?.getCaret?.() ?? null;
       if (caret) last = caret;
     };
@@ -55,7 +58,6 @@ export function useKeptRichCaret(
     const restore = () => {
       timer = null;
       const kept = last;
-      console.log('[RC] restore try', tries, !!controller.current, JSON.stringify(kept));
       const c = controller.current;
       if (!kept) return;
       if (c && !personIsTypingElsewhere(root.current ?? undefined) && c.restoreCaret(kept, { focus: false })) {
@@ -77,7 +79,6 @@ export function useKeptRichCaret(
       // The editor's own answer at the last moment wins when it still has one (a selection set
       // by script or touch fires no selectionchange); else the last one tracked.
       if (restored) last = controller.current?.getCaret?.() ?? last;
-      console.log('[RC] cleanup', JSON.stringify(last));
       if (last) store.dispatch(workingCopyRichCaretKept({ key, caret: last }));
     };
   }, [key, active, controller, root, store]);

@@ -169,3 +169,7 @@ Built 2026-09-12 as lane L2 of the Question Desk campaign, then re-worked the sa
   now stops above the band (`.qd-rail` in `question-desk.css`:
   `calc(100dvh - var(--shell-header-h, 0px) - var(--shell-fixed-corner-clearance, 0px))` — the rail is sticky UNDER the shell header, so a plain 100dvh put its bottom 40px below the fold). Measured on the dev surface at 1280×720: rail bottom 672, chip band 48, nothing under the chip. Guard:
   `styles/__tests__/fixed-corner-clearance.test.ts` (RED on the padding, GREEN on the height).
+
+## Admin reading banner (2026-10-08)
+
+When the signed-in account is not the interview's respondent, the banner names the situation. On the admin seat (`/administration/question-desk/**`) it opens with "Admin view: you are reading this interview." and does not tell the admin to switch accounts; answering is unchanged (the database decides). Source: `identityBanner.ts`; guard: `__tests__/identity-banner.test.ts`.
