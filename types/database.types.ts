@@ -95229,6 +95229,7 @@ export type Database = {
           run_count: number
           success_count: number
           total_cost: number
+          warning_count: number
         }[]
       }
       extensibility_knob: {
@@ -109093,6 +109094,7 @@ export type Database = {
           updated_at: string
           version: number
           visibility: string
+          warning_count: number
           workflow_type: string
         }[]
       }

@@ -17,6 +17,11 @@
 // buckets; '0' = never used) and Last used (the since buckets). Success rate,
 // Failures and Cost have no server filter yet, so they declare `filter: false`
 // honestly rather than offering a control that would filter only the page.
+//
+// Warnings is the sixth column, offered only by an entity whose rollup counts
+// warnings (workflows: "Check and Revise" misses written to workflow.run_log,
+// counted since the workflow's last edit, so fixing a step clears it). Sort and
+// filter (the Runs buckets; '0' = none) are both served by the RPC.
 
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -46,6 +51,12 @@ export const USAGE_RUNS_FILTER_OPTIONS = [
   { value: "gt20", label: "More than 20" },
 ];
 
+/** Warnings buckets — the same SQL half (`wfx_bucket_matches`); '0' is "none". */
+export const USAGE_WARNINGS_FILTER_OPTIONS = [
+  { value: "0", label: "None" },
+  ...USAGE_RUNS_FILTER_OPTIONS.slice(1),
+];
+
 /** A link a usage cell opens (the door law: a count that has a page opens it). */
 export interface UsageDoor {
   href: string;
@@ -61,12 +72,27 @@ export interface UsageColumnOptions<TRow> {
   runsDoor?: (row: TRow) => UsageDoor | null;
   /** Where the last-used time opens, when the last run is a record. */
   lastUsedDoor?: (row: TRow) => UsageDoor | null;
+  /**
+   * The Warnings column, for an entity whose rollup counts warnings since its
+   * last edit (RPC sort/filter key `warnings`). Absent = no column.
+   */
+  warnings?: {
+    read: (row: TRow) => number;
+    door?: (row: TRow) => UsageDoor | null;
+  };
 }
 
 /** Facet value '0' is a bucket id; the panel reads words. */
 export function formatRunsFacet(value: string): string {
   return (
     USAGE_RUNS_FILTER_OPTIONS.find((o) => o.value === value)?.label ?? value
+  );
+}
+
+export function formatWarningsFacet(value: string): string {
+  return (
+    USAGE_WARNINGS_FILTER_OPTIONS.find((o) => o.value === value)?.label ??
+    value
   );
 }
 
@@ -83,11 +109,58 @@ function DoorLink({ door, children }: { door: UsageDoor; children: ReactNode }) 
   );
 }
 
-/** The five usage columns, in display order. Failures starts hidden. */
+function warningsColumn<TRow>(
+  warnings: NonNullable<UsageColumnOptions<TRow>["warnings"]>,
+): EntityColumnSpec<TRow> {
+  return {
+    id: "warnings",
+    label: "Warnings",
+    facet: "warnings",
+    formatFacetValue: formatWarningsFacet,
+    sortWords: { asc: "fewest first", desc: "most first" },
+    column: {
+      id: "warnings",
+      accessorFn: (row) => warnings.read(row),
+      header: "Warnings",
+      filter: "select",
+      filterOptions: USAGE_WARNINGS_FILTER_OPTIONS,
+      width: 90,
+      align: "right",
+      cell: (row) => {
+        const n = warnings.read(row);
+        if (n <= 0) return <Muted>—</Muted>;
+        const door = warnings.door?.(row);
+        const title = `${n} check ${n === 1 ? "warning" : "warnings"} since the last edit`;
+        if (door) {
+          return (
+            <Link
+              href={door.href}
+              onClick={(e) => e.stopPropagation()}
+              className="tabular-nums text-warning hover:underline"
+              title={door.title}
+            >
+              {n}
+            </Link>
+          );
+        }
+        return (
+          <span className="tabular-nums text-warning" title={title}>
+            {n}
+          </span>
+        );
+      },
+    },
+  };
+}
+
+/**
+ * The usage columns, in display order. Failures starts hidden; Warnings
+ * follows Failures when the entity counts them.
+ */
 export function usageColumns<TRow>(
   options: UsageColumnOptions<TRow>,
 ): EntityColumnSpec<TRow>[] {
-  const { read, lastUsedId, runsDoor, lastUsedDoor } = options;
+  const { read, lastUsedId, runsDoor, lastUsedDoor, warnings } = options;
   return [
     {
       id: "runs",
@@ -183,6 +256,7 @@ export function usageColumns<TRow>(
         },
       },
     },
+    ...(warnings ? [warningsColumn(warnings)] : []),
     {
       id: "cost",
       label: "Cost",

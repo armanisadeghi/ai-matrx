@@ -134,7 +134,8 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
   // Bump whenever WORKFLOW_BROWSE_COLUMNS gains or loses a column, so existing
   // users get the new default column set instead of keeping every new one ON.
   // 2: the shared usage columns (Success rate, Failures, Cost) and Type.
-  prefsVersion: 2,
+  // 3: Warnings (check warnings since the last edit).
+  prefsVersion: 3,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
   // THE DOOR LAW: the Name cell is a real anchor to /workflows/[id], resolved
