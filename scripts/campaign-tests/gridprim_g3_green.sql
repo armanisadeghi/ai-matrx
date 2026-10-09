@@ -153,13 +153,19 @@ begin
   end;
   perform custom.field_update(v_org, (select v from gp where k = 'f_phone'), jsonb_build_object('display_format', 'phone'));
   perform set_config('role', 'postgres', true);
+  -- The catalog is asserted by NAME, exactly: the 34 formats this grid shipped with plus 'barcode'
+  -- (NOTION-PROPS-2). A format added or lost without this line changing is a failure.
   select count(*) into v_n from unnest(custom.display_format_ids());
+  if (select array_agg(x order by x) from unnest(custom.display_format_ids()) x) is distinct from
+     (select array_agg(x order by x) from unnest(string_to_array('text,long_text,markdown,email,address,url,phone,color,number,decimal,currency,percent,progress,duration,integer,rating,file_size,boolean,date,datetime,time,autonumber,created_time,modified_time,relative_time,json,array,attachment,tags,choice,person,relation,multi_choice,formula,barcode', ',')) x) then
+    raise exception '5c: the display format catalog is not the expected 35: %', array_to_string(custom.display_format_ids(), ',');
+  end if;
   select f.data into v_doc from custom.record f where f.id = (select v from gp where k = 'f_phone');
   perform set_config('role', 'authenticated', true);
-  if v_n is distinct from 34 or v_doc -> 'display_format' ->> 'id' is distinct from 'phone' then
+  if v_n is distinct from 35 or v_doc -> 'display_format' ->> 'id' is distinct from 'phone' then
     raise exception '5c: % formats, and Owner phone reads %', v_n, v_doc -> 'display_format';
   end if;
-  raise notice '5 PASS — currency survives two formula edits; "sparkline" refused by name; Owner phone is drawn as a phone; the grid''s 34 formats.';
+  raise notice '5 PASS — currency survives two formula edits; "sparkline" refused by name; Owner phone is drawn as a phone; the grid''s 35 formats.';
 
   -- ══ PART 6 — AUTONUMBER: the store's, once, never typed, never reused. ═══════════════════
   f_number := custom.field_declare(v_org, v_appts, jsonb_build_object('key', 'visit_number', 'label', 'Visit number', 'type', 'autonumber', 'sort', 5));
