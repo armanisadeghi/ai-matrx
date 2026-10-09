@@ -188,7 +188,8 @@ tmp/fixer-logs/
 .matrx/fixer-ledger.json
 .matrx/fixer-dispatch.json
 # Parked checkouts other sessions drop here (aidream clones, 2026-09-22); never committed by a sweep.
-work/
+# Anchored: an unanchored `work/` also hid every route under app/(core)/work/.
+/work/
 
 # Agent scratch that a whole-tree commit (scripts/sync-main.py) must never pick up
 /=
