@@ -597,7 +597,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   }
 
   // A kept agent goes where today's door puts it: the mandate's holder controls (door #5).
-  // Door #6 opens it from BuildProgress itself.
+  // Door #6: BuildProgress forwards to the builder with the Side Chat open (R58).
   const placeKeptAgent = (agentId: string) => {
     if (mandate) mandate.onCreated(agentId);
   };
@@ -907,6 +907,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                     setBuildId(id);
                   }}
                   onKept={placeKeptAgent}
+                  forwardWhenKept={!mandateMode}
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center rounded-lg border border-border p-4 text-center">

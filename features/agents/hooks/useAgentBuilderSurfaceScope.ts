@@ -63,6 +63,7 @@ import {
   selectAgentVersion,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { readAgentDescription, readAgentName, readAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
+import { agentBuilderTestRun } from "./agentBuilderTestRun";
 
 /**
  * Returns a builder that snapshots the active agent definition from Redux at
@@ -149,6 +150,8 @@ export function useAgentBuilderSurfaceScope(
       // ── Editor state ───────────────────────────────────────────────────
       is_dirty: selectAgentIsDirty(state, agentId),
       dirty_fields: dirtyFields ? Object.keys(dirtyFields) : [],
+      // ── Test run (R58): the Side Chat helper sees the person's latest run ──
+      ...(agentBuilderTestRun(state, agentId) ?? {}),
     });
   }, [store, agentId]);
 }
