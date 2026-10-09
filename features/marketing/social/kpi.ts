@@ -19,8 +19,7 @@
  * is `own`. A competitor is in scope only when a goal names it.
  */
 
-import { median } from "./mappers";
-import { OUTLIER_TIER_THRESHOLDS } from "./outlier";
+import { OUTLIER_TIER_THRESHOLDS, profileBaseline } from "./outlier";
 import type { BrandPost, KpiGoalRow, TrackedRole } from "./types";
 
 const DAY_MS = 86_400_000;
@@ -317,29 +316,23 @@ export interface BenchmarkRow {
   profileId: string | null;
 }
 
-/** 30-day activity numbers for one account's posts. */
+/**
+ * Activity numbers for one account's posts: cadence and outlier rate over the last 30 days; median
+ * views and engagement from THE profile baseline (`profileBaseline`, latest 30 posts) so this
+ * table agrees with the account page.
+ */
 export function benchmarkActivity(
   posts: readonly BrandPost[],
   now: number,
   windowDays = 30,
 ): Pick<BenchmarkRow, "postsPerWeek" | "medianViews" | "engagementRate" | "outlierRate"> {
   const recent = posts.filter((p) => inWindow(p, now - windowDays * DAY_MS, now));
-  if (recent.length === 0) {
-    return { postsPerWeek: null, medianViews: null, engagementRate: null, outlierRate: null };
-  }
-  const views = recent.map((p) => p.views).filter((v): v is number => v !== null);
-  let viewSum = 0;
-  let engaged = 0;
-  for (const p of recent) {
-    if (p.views === null || p.views <= 0) continue;
-    viewSum += p.views;
-    engaged += (p.likes ?? 0) + (p.comments ?? 0) + (p.shares ?? 0);
-  }
+  const base = profileBaseline(posts);
   const scored = recent.filter((p) => p.outlierScore !== null);
   return {
-    postsPerWeek: Math.round((recent.length / (windowDays / 7)) * 10) / 10,
-    medianViews: median(views),
-    engagementRate: viewSum > 0 ? engaged / viewSum : null,
+    postsPerWeek: recent.length === 0 ? null : Math.round((recent.length / (windowDays / 7)) * 10) / 10,
+    medianViews: base.medianViews,
+    engagementRate: base.engagementRate,
     outlierRate:
       scored.length === 0
         ? null

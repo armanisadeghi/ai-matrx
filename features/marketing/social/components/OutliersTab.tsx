@@ -13,8 +13,9 @@
  * (`OUTLIER_ALERTS_ENABLED`).
  */
 
-import { useState } from "react";
-import { BellOff, CheckCheck, ExternalLink, Lightbulb, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { BellOff, Bookmark, CheckCheck, ExternalLink, Lightbulb, Plus, Trash2 } from "lucide-react";
 
 import {
   Button,
@@ -64,6 +65,7 @@ import {
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { PostDrawer, type DetailTab } from "./PostDetail";
+import { SaveToCollectionDialog } from "./SwipeDialogs";
 import { SocialPostCard } from "./SocialPostCard";
 import { useSocials } from "./SocialsContext";
 
@@ -75,6 +77,23 @@ interface FeedItem {
 
 const ALL = "all";
 const SEVERAL = "several";
+
+/** The viewer's last-selected watchlist, kept per brand in this browser; the URL param wins when present. */
+const watchlistPrefKey = (brandId: string) => `matrx.social.outliers.watchlist.${brandId}`;
+function readWatchlistPref(brandId: string): string | null {
+  try {
+    return window.localStorage.getItem(watchlistPrefKey(brandId));
+  } catch {
+    return null;
+  }
+}
+function writeWatchlistPref(brandId: string, id: string): void {
+  try {
+    window.localStorage.setItem(watchlistPrefKey(brandId), id);
+  } catch {
+    // Storage blocked: the URL param still carries the choice.
+  }
+}
 
 const SORT_OPTIONS = [
   { value: "multiple", label: "Multiple" },
@@ -110,7 +129,12 @@ export function OutliersTab() {
   const [showDismissed, setShowDismissed] = useState(false);
   const [open, setOpen] = useState<{ post: PostCardModel; tab: DetailTab } | null>(null);
   const [naming, setNaming] = useState(false);
+  const [savePost, setSavePost] = useState<PostCardModel | null>(null);
   const [now] = useState(() => Date.now());
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const restored = useRef(false);
 
   const posts = data.data?.posts ?? [];
   const accounts = data.data?.accounts ?? [];
@@ -167,7 +191,34 @@ export function OutliersTab() {
     const w = lists.find((x) => x.id === id);
     setFilter(w ? w.filter : { ...DEFAULT_OUTLIER_FILTER });
     setShowDismissed(false);
+    rememberWatchlist(id);
   }
+
+  function rememberWatchlist(id: string) {
+    writeWatchlistPref(brandId, id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === ALL) params.delete("watchlist");
+    else params.set("watchlist", id);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
+  // Reopen on the watchlist the viewer was last on: the link's ?watchlist= first, then their saved choice.
+  useEffect(() => {
+    if (restored.current || !watchlists.isSuccess) return;
+    restored.current = true;
+    const wanted = searchParams.get("watchlist") ?? readWatchlistPref(brandId);
+    const w = wanted ? lists.find((x) => x.id === wanted) : undefined;
+    if (!w) return;
+    setSelected(w.id);
+    setFilter(w.filter);
+    if (searchParams.get("watchlist") !== w.id) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("watchlist", w.id);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlists.isSuccess]);
 
   async function writeStates(targets: FeedItem[], state: HitState) {
     if (!active || targets.length === 0) return;
@@ -194,6 +245,7 @@ export function OutliersTab() {
       const id = await createWatchlist({ organizationId, brandId, name, filter });
       await invalidate();
       setSelected(id);
+      rememberWatchlist(id);
       setNaming(false);
       toast.success("Watchlist saved");
     } catch (err) {
@@ -454,6 +506,7 @@ export function OutliersTab() {
               post={item.post}
               isNew={item.state === "new"}
               onOpen={() => openPost(item)}
+              onSave={setSavePost}
               extraActions={[
                 { id: "why", label: "Why it worked", onSelect: () => openPost(item, "breakdown") },
                 ...(active
@@ -478,10 +531,19 @@ export function OutliersTab() {
           rowActions={(r) => [
             { id: "open", icon: ExternalLink, label: "Open post", onClick: () => openPost(r) },
             { id: "why", icon: Lightbulb, label: "Why it worked", onClick: () => openPost(r, "breakdown") },
+            { id: "save", icon: Bookmark, label: "Save to swipe file", onClick: () => setSavePost(r.post) },
           ]}
         />
       )}
 
+      <SaveToCollectionDialog
+        open={savePost !== null}
+        onOpenChange={(o) => (o ? undefined : setSavePost(null))}
+        organizationId={organizationId}
+        brandId={brandId}
+        targets={savePost ? [{ itemType: "social_post", itemId: savePost.postId }] : []}
+        defaultCollectionId={null}
+      />
       <PostDrawer post={open?.post ?? null} initialTab={open?.tab} onClose={() => setOpen(null)} />
       <TextInputDialog
         open={naming}

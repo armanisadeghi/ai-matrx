@@ -431,7 +431,7 @@ export async function readBrandSocialData(args: {
   const [profiles, snapshots, postRows] = await Promise.all([
     readProfiles(profileIds),
     readProfileSnapshots(profileIds, sinceIso),
-    readPostsWithStats(profileIds, sinceIso),
+    readPostsWithStats(profileIds),
   ]);
   const profileById = new Map(profiles.map((p) => [p.id, p]));
   const trackedByProfile = new Map(tracked.map((t) => [t.profile_id, t]));
@@ -458,25 +458,29 @@ export async function readBrandSocialData(args: {
   return { accounts, posts, snapshots };
 }
 
-async function readPostsWithStats(
-  profileIds: readonly string[],
-  sinceIso: string,
-): Promise<PostWithStat[]> {
+/**
+ * Every live post of the profiles. NOT date-limited: a creator's baseline (median / engagement) is
+ * its latest N posts whatever their age, so a lookback window here made the KPI benchmark disagree
+ * with the account page. Windows (7/30/90 days) are applied by the consumers.
+ */
+async function readPostsWithStats(profileIds: readonly string[], sinceIso?: string): Promise<PostWithStat[]> {
   const out: PostWithStat[] = [];
   for (const part of chunk(profileIds, 50)) {
     const rows = await readAllRows<PostWithStat>(
-      ({ from, to }) =>
-        supabase
+      ({ from, to }) => {
+        let q = supabase
           .schema("social")
           .from("post")
           .select("*, stat:post_stat(*)", { count: "exact" })
           .in("profile_id", part)
-          .gte("posted_at", sinceIso)
-          .is("deleted_at", null)
+          .is("deleted_at", null);
+        if (sinceIso) q = q.gte("posted_at", sinceIso);
+        return q
           .order("posted_at", { ascending: false })
           .order("id", { ascending: true })
           .range(from, to)
-          .returns<PostWithStat[]>(),
+          .returns<PostWithStat[]>();
+      },
       { label: "social.post brand roll-up" },
     );
     out.push(...rows);
@@ -657,6 +661,30 @@ export async function createKpiGoal(input: KpiGoalInput): Promise<void> {
       tracked_account_id: input.trackedAccountId,
     });
   if (error) fail("social.kpi_goal create", error.message);
+}
+
+/** Edit a goal's target, metric, period and scope (Layer B, RLS). Start date and history stay. */
+export async function updateKpiGoal(
+  id: string,
+  input: Pick<
+    KpiGoalInput,
+    "metric" | "metricLabel" | "targetValue" | "baselineValue" | "period" | "platform" | "trackedAccountId"
+  >,
+): Promise<void> {
+  const { error } = await supabase
+    .schema("social")
+    .from("kpi_goal")
+    .update({
+      metric: input.metric,
+      metric_label: input.metricLabel,
+      target_value: input.targetValue,
+      baseline_value: input.baselineValue,
+      period: input.period,
+      platform: input.platform,
+      tracked_account_id: input.trackedAccountId,
+    })
+    .eq("id", id);
+  if (error) fail("social.kpi_goal edit", error.message);
 }
 
 export async function updateKpiGoalStatus(id: string, status: "active" | "paused"): Promise<void> {

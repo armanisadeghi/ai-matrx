@@ -48,7 +48,7 @@ Data layer
   `usePostDetail`, `usePostMetrics`, `usePostTranscript`, `usePostAnalysis`, `useSwipeCollections`,
   `useInvalidateSocial`). A mutation calls `useInvalidateSocial()`.
 - `@/features/marketing/social/mappers` — pure row→view-model rules (unit-tested): `toPostCardModel`, `buildAccountRows`,
-  `judgeFollowerGrowth`, `filterAndSortPosts`, `postMetricSeries`, `availableMetrics`, `relativeAge`, `num`, `median`.
+  `judgeFollowerGrowth`, `filterAndSortPosts`, `postMetricSeries`, `availableMetrics`, `relativeAge`, `num`, `currentFollowers`. `outlier.ts` owns `profileBaseline` / `median` — the only place a creator's median views and engagement are computed (account page, Accounts table, KPI benchmark).
 - `@/features/marketing/social/outlier` — THE tier thresholds + text (`outlierBadgeModel`, `formatMultiplier`,
   `formatCompact`, `formatPercentile`, `OUTLIER_TIER_THRESHOLDS`). One source; change a threshold here only.
 - `@/features/marketing/social/link` — pasted-link helpers (`detectPlatform`, `looksLikePostUrl`, `handleFromInput`).
@@ -146,3 +146,10 @@ series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test
 - **Open:** `Add to board` (the board has no tile that holds a specific saved post/ad; add to the bulk bar when board-tiles lands);
   Meta video ads show a label tile (the normalizer keeps only the video file, no poster); Share link, Table view, Suggest tags/Brief.
 - Tests: `swipe.test.ts`, `ads.test.ts`, `providerCard.test.ts` (jest).
+
+## Player, watchlist memory, goals (SI-FIX-SOCIALS-2)
+
+- `PostMedia` (PostDetail): YouTube = official embed, never "Fetch"; other platforms = stored mp4 via the playback door. Frame sized by the real aspect ratio; the drawer is a fixed width.
+- Outliers: the last watchlist is kept in the URL (`?watchlist=`) and per brand in this browser; posts have "Save to swipe file" (card menu and table row action).
+- KPIs: goals are editable (`GoalDialog`, `updateKpiGoal`); with no tracked own accounts the empty state offers "Track own accounts" (`useTrackOwn`, shared with the Accounts tab).
+- Swipe: both save dialogs carry the note + tags editor (`NoteTagsFields`, shared with the item sheet).

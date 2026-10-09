@@ -56,7 +56,7 @@ import {
   relativeAge,
   type PostMetricKey,
 } from "../mappers";
-import { formatCompact, formatPercentile } from "../outlier";
+import { OUTLIER_MIN_POSTS, formatCompact, formatPercentile } from "../outlier";
 import {
   addToCollection,
   analyzePost,
@@ -85,24 +85,54 @@ const DETAIL_TABS = [
 // Media
 // ---------------------------------------------------------------------------
 
+/** Aspect ratio (w/h) a post's player starts with, before the poster or the video reports its own. */
+export function guessAspect(format: string, platform: string): number {
+  if (platform === "youtube") return format === "short" ? 9 / 16 : 16 / 9;
+  return ["reel", "short", "story", "video"].includes(format) && platform !== "facebook" && platform !== "linkedin" && platform !== "x"
+    ? 9 / 16
+    : 16 / 9;
+}
+
+/** The player frame: sized by the media's real aspect ratio, capped at 70vh, always the column's width at most. */
+function PlayerFrame({ ratio, children }: { ratio: number; children: React.ReactNode }) {
+  return (
+    <div
+      className="relative mx-auto max-w-full overflow-hidden rounded-lg bg-black"
+      style={{ aspectRatio: String(ratio), width: `min(100%, calc(70vh * ${ratio}))` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function PostMedia({
   postId,
   organizationId,
   thumbnailUrl,
   postUrl,
+  platform,
+  platformPostId,
+  format,
 }: {
   postId: string;
   organizationId: string;
   thumbnailUrl: string | null;
   postUrl: string;
+  platform: string;
+  platformPostId: string;
+  format: string;
 }) {
   const client = useQueryClient();
+  const embed = platform === "youtube";
   const media = useQuery({
     queryKey: ["marketing", "social", "media", postId],
     queryFn: ({ signal }) => listPostMedia(postId, { organizationId, signal }),
     staleTime: 60_000,
+    enabled: !embed,
   });
   const [src, setSrc] = useState<{ url: string; mime: string | null } | null>(null);
+  const [embedding, setEmbedding] = useState(false);
+  const [ratio, setRatio] = useState(() => guessAspect(format, platform));
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState("");
@@ -114,8 +144,11 @@ function PostMedia({
     };
   }, [src]);
 
-  const primary: PostMediaRef | undefined =
-    media.data?.find((m) => m.role === "video") ?? media.data?.find((m) => m.role.startsWith("image")) ?? media.data?.[0];
+  const primary: PostMediaRef | undefined = embed
+    ? undefined
+    : (media.data?.find((m) => m.role === "video") ??
+      media.data?.find((m) => m.role.startsWith("image")) ??
+      media.data?.[0]);
   const isVideo = primary?.mime_type?.startsWith("video") ?? primary?.role === "video";
 
   async function load() {
@@ -133,9 +166,9 @@ function PostMedia({
 
   async function fetchMedia() {
     const ok = await confirm({
-      title: "Fetch this post's media?",
-      description: "Downloads the video into your storage. Costs about 1 credit.",
-      confirmLabel: "Fetch media",
+      title: "Fetch this post's video?",
+      description: "Fetches the post again and stores its video privately so it can play here. Costs about 1 credit.",
+      confirmLabel: "Fetch video",
     });
     if (!ok) return;
     setFetching(true);
@@ -149,41 +182,80 @@ function PostMedia({
     }
   }
 
-  const frame = "relative aspect-[9/16] max-h-[70vh] w-full overflow-hidden rounded-lg bg-muted";
+  if (embedding && embed) {
+    return (
+      <PlayerFrame ratio={ratio}>
+        <iframe
+          title="YouTube player"
+          src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(platformPostId)}?autoplay=1&rel=0&playsinline=1`}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="absolute inset-0 h-full w-full border-0"
+        />
+      </PlayerFrame>
+    );
+  }
   if (src && isVideo) {
     return (
-      <div className={frame}>
-        <video src={src.url} poster={thumbnailUrl ?? undefined} controls autoPlay playsInline loop className="h-full w-full object-contain" />
-      </div>
+      <PlayerFrame ratio={ratio}>
+        <video
+          src={src.url}
+          poster={thumbnailUrl ?? undefined}
+          controls
+          autoPlay
+          playsInline
+          loop
+          onLoadedMetadata={(e) => {
+            const v = e.currentTarget;
+            if (v.videoWidth && v.videoHeight) setRatio(v.videoWidth / v.videoHeight);
+          }}
+          className="h-full w-full object-contain"
+        />
+      </PlayerFrame>
     );
   }
   if (src) {
     return (
-      <div className={frame}>
+      <PlayerFrame ratio={ratio}>
         <img src={src.url} alt="" className="h-full w-full object-contain" />
-      </div>
+      </PlayerFrame>
     );
   }
   return (
-    <div className={frame}>
+    <PlayerFrame ratio={ratio}>
       {thumbnailUrl ? (
-        <img src={thumbnailUrl} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={thumbnailUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          onLoad={(e) => {
+            const i = e.currentTarget;
+            // A YouTube poster is letterboxed 4:3 inside its own 16:9; trust the platform's own ratio there.
+            if (!embed && i.naturalWidth && i.naturalHeight) setRatio(i.naturalWidth / i.naturalHeight);
+          }}
+          className="absolute inset-0 h-full w-full object-contain"
+        />
       ) : null}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30">
-        {media.isLoading ? null : primary ? (
+        {embed ? (
+          <Button variant="primary" icon={<Play />} onClick={() => setEmbedding(true)}>
+            Play
+          </Button>
+        ) : media.isLoading ? null : primary ? (
           <Button variant="primary" icon={<Play />} onClick={() => void load()} disabled={loading}>
             {loading ? "Loading…" : "Play"}
           </Button>
         ) : (
           <Button variant="outline" icon={<RefreshCw />} onClick={() => void fetchMedia()} disabled={fetching}>
-            {fetching ? "Fetching…" : "Fetch media"}
+            {fetching ? "Fetching…" : "Fetch video"}
           </Button>
         )}
         <span className="min-h-4 text-xs text-white">
-          {error || (media.isError ? "Media unavailable" : !media.isLoading && !primary ? "Media not stored" : "")}
+          {error || (!embed && (media.isError ? "Media unavailable" : !media.isLoading && !primary ? "Video not stored" : ""))}
         </span>
       </div>
-    </div>
+    </PlayerFrame>
   );
 }
 
@@ -440,9 +512,18 @@ export function PostDetailBody({ postId, organizationId, brandSeg, initialTab = 
   const caption = post.caption ?? post.title ?? "";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-2">
-        <PostMedia key={postId} postId={postId} organizationId={organizationId} thumbnailUrl={post.thumbnail_url} postUrl={post.url} />
+        <PostMedia
+          key={postId}
+          postId={postId}
+          organizationId={organizationId}
+          thumbnailUrl={post.thumbnail_url}
+          postUrl={post.url}
+          platform={post.platform}
+          platformPostId={post.platform_post_id}
+          format={post.format}
+        />
         <div className="flex flex-wrap items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -489,12 +570,18 @@ export function PostDetailBody({ postId, organizationId, brandSeg, initialTab = 
               )}
             </LabelRow>
             <LabelRow label="Multiple">
-              <span className="inline-flex items-center gap-2">
-                <OutlierBadge input={outlier} />
-                <span className="tabular-nums text-muted-foreground">
-                  {`${formatPercentile(outlier.percentile)} · median ${formatCompact(outlier.baselineViews)}`}
+              {outlier.score === null ? (
+                <span className="text-muted-foreground" title={`A multiple compares this post with at least ${OUTLIER_MIN_POSTS} other posts of the creator`}>
+                  {`Needs ${OUTLIER_MIN_POSTS + 1}+ posts`}
                 </span>
-              </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <OutlierBadge input={outlier} />
+                  <span className="tabular-nums text-muted-foreground">
+                    {`${formatPercentile(outlier.percentile)} · median ${formatCompact(outlier.baselineViews)}`}
+                  </span>
+                </span>
+              )}
             </LabelRow>
             <LabelRow label="Views">{formatCompact(stat?.views ?? null)}</LabelRow>
             <LabelRow label="Likes">{formatCompact(stat?.likes ?? null)}</LabelRow>
@@ -541,7 +628,8 @@ export function PostDrawer({
   const brand = useMarketingBrand();
   return (
     <Drawer open={post !== null} onOpenChange={(open) => (open ? undefined : onClose())} direction="right">
-      <DrawerContent>
+      {/* A fixed width: content-sized (`w-auto`) made the drawer jump between a 16:9 and a 9:16 post. */}
+      <DrawerContent className="!w-[min(64rem,92vw)]">
         <DrawerHeader>
           <div className="flex items-center justify-between gap-2">
             <DrawerTitle className="truncate text-sm">{post?.hookLine || "Post"}</DrawerTitle>

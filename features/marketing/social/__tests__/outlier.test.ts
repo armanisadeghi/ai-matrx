@@ -6,6 +6,7 @@ import {
   formatPercentile,
   outlierBadgeModel,
   outlierTier,
+  profileBaseline,
 } from "../outlier";
 
 const base = { baselineViews: 31_000, percentile: 97, baselineWindow: 30, ageHours: 100 };
@@ -52,7 +53,7 @@ describe("badge model", () => {
   it("has no baseline: em dash, never 0x or 1.0x", () => {
     const m = outlierBadgeModel({ score: null, baselineViews: null, percentile: null, baselineWindow: null, ageHours: 500 });
     expect(m.text).toBe("—");
-    expect(m.tooltip).toBe("Needs 10 posts of history");
+    expect(m.tooltip).toBe("Needs 10 other posts to compare");
     expect(m.bars).toBe(0);
   });
   it("marks a young post with a tilde and its own tooltip", () => {
@@ -84,5 +85,32 @@ describe("number formats", () => {
   it("percentile", () => {
     expect(formatPercentile(96.6)).toBe("P97");
     expect(formatPercentile(null)).toBe("—");
+  });
+});
+
+describe("profileBaseline (the one median / engagement source)", () => {
+  const at = (d: number) => new Date(Date.UTC(2026, 8, d)).toISOString();
+  it("is the median of the latest N posts, newest first, undated last", () => {
+    const posts = [
+      { postedAt: at(1), views: 1_000_000 },
+      { postedAt: at(2), views: 10 },
+      { postedAt: at(3), views: 20 },
+      { postedAt: at(4), views: 30 },
+      { postedAt: null, views: 9_000_000 },
+    ];
+    expect(profileBaseline(posts, 3).medianViews).toBe(20);
+    expect(profileBaseline(posts, 3).posts).toBe(3);
+    expect(profileBaseline(posts).medianViews).toBe(30);
+  });
+  it("skips posts without views and never invents zeros", () => {
+    expect(profileBaseline([{ postedAt: at(1), views: null }]).medianViews).toBeNull();
+    expect(profileBaseline([]).engagementRate).toBeNull();
+  });
+  it("engagement is summed engagement over summed views", () => {
+    const b = profileBaseline([
+      { postedAt: at(1), views: 100, likes: 10, comments: 5, shares: 5 },
+      { postedAt: at(2), views: 300, likes: 20 },
+    ]);
+    expect(b.engagementRate).toBeCloseTo(40 / 400, 9);
   });
 });

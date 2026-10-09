@@ -8,8 +8,8 @@
  * exist. Other platforms' private stats wait on platform approvals and say so.
  */
 
-import { useState } from "react";
-import { Lock, Pause, Play, Plus, Target, Trash2, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Lock, Pause, Pencil, Play, Plus, Target, Trash2, UserPlus, Users } from "lucide-react";
 
 import {
   Badge,
@@ -36,7 +36,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { BrandChannelPanel } from "@/features/marketing/youtube/components/BrandChannelPanel";
 
-import { useBrandSocialData, useInvalidateSocial, useKpiGoals } from "../hooks";
+import { useAccountRows, useBrandSocialData, useInvalidateSocial, useKpiGoals } from "../hooks";
 import {
   KPI_METRICS,
   KPI_PERIODS,
@@ -56,7 +56,7 @@ import {
 import { formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
 import { formatCompact } from "../outlier";
 import { socialErrorMessage } from "../server";
-import { archiveKpiGoal, createKpiGoal, updateKpiGoalStatus } from "../service";
+import { archiveKpiGoal, createKpiGoal, updateKpiGoal, updateKpiGoalStatus } from "../service";
 import {
   SOCIAL_PLATFORM_LABELS,
   TRACKED_ROLE_LABELS,
@@ -68,6 +68,7 @@ import {
 import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
+import { TRACK_CREDITS, trackableOwn, useTrackOwn } from "./useTrackOwn";
 
 type KpiView = "trend" | "benchmark" | "own";
 
@@ -107,7 +108,10 @@ export function KpisTab() {
   const invalidate = useInvalidateSocial();
   const [view, setView] = useState<KpiView>("trend");
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<KpiGoalRow | null>(null);
   const [now] = useState(() => Date.now());
+  const accountRows = useAccountRows(organizationId, brandId);
+  const { busyRow, trackAllOwn } = useTrackOwn(organizationId, brandId);
 
   if (data.isLoading || goals.isLoading) return <RegionSkeleton shape="cards" count={4} />;
   if (data.isError || goals.isError) {
@@ -135,6 +139,7 @@ export function KpisTab() {
   const snapshots = data.data?.snapshots ?? [];
   const kpiAccounts = toKpiAccounts(accounts);
   const own = accounts.filter((a) => a.role === "own" && a.profileId);
+  const untrackedOwn = (accountRows.data ?? []).filter(trackableOwn);
 
   async function setStatus(goal: KpiGoalRow, status: "active" | "paused") {
     try {
@@ -193,6 +198,7 @@ export function KpisTab() {
               posts={posts}
               accountRows={accounts}
               now={now}
+              onEdit={() => setEditing(goal)}
               onPause={() => void setStatus(goal, goal.status === "paused" ? "active" : "paused")}
               onRemove={() => void remove(goal)}
             />
@@ -204,12 +210,28 @@ export function KpisTab() {
         own.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}
-            title="No own accounts"
-            line="Set a tracked account's role to Own"
+            title="No own accounts tracked"
+            line={
+              untrackedOwn.length > 0
+                ? `${untrackedOwn.length} own ${untrackedOwn.length === 1 ? "account is" : "accounts are"} not tracked yet`
+                : "Set a tracked account's role to Own"
+            }
             action={
-              <Button variant="outline" onClick={openTrack}>
-                Track account
-              </Button>
+              untrackedOwn.length > 0 ? (
+                <Button
+                  variant="primary"
+                  icon={<UserPlus />}
+                  disabled={busyRow !== null}
+                  title={`Track every own account not tracked yet · about ${untrackedOwn.length * TRACK_CREDITS} credits`}
+                  onClick={() => void trackAllOwn(untrackedOwn)}
+                >
+                  {busyRow === "bulk" ? "Tracking…" : `Track own accounts (${untrackedOwn.length})`}
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={openTrack}>
+                  Track account
+                </Button>
+              )
             }
           />
         ) : (
@@ -227,9 +249,14 @@ export function KpisTab() {
 
       {view === "own" ? <OwnChannel /> : null}
 
-      <NewGoalDialog
-        open={creating}
-        onOpenChange={setCreating}
+      <GoalDialog
+        open={creating || editing !== null}
+        goal={editing}
+        onOpenChange={(o) => {
+          if (o) return;
+          setCreating(false);
+          setEditing(null);
+        }}
         organizationId={organizationId}
         brandId={brandId}
         accounts={accounts}
@@ -251,6 +278,7 @@ function GoalTile({
   accountRows,
   posts,
   now,
+  onEdit,
   onPause,
   onRemove,
 }: {
@@ -259,6 +287,7 @@ function GoalTile({
   accountRows: AccountRow[];
   posts: BrandPost[];
   now: number;
+  onEdit: () => void;
   onPause: () => void;
   onRemove: () => void;
 }) {
@@ -285,18 +314,21 @@ function GoalTile({
 
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-md border border-border bg-card px-3 py-2">
-      <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 truncate type-meta font-medium uppercase tracking-wide text-muted-foreground">
-          {def.label} · {scope}
-        </span>
+      <span
+        className="min-w-0 break-words type-meta font-medium uppercase tracking-wide text-muted-foreground"
+        title={`${def.label} · ${scope}`}
+      >
+        {def.label} · {scope}
+      </span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 truncate text-lg font-semibold leading-tight tabular-nums text-foreground">
+          {formatKpiValue(metric, progress.current)}
+          <span className="text-sm font-normal text-muted-foreground">
+            {" / "}
+            {formatKpiValue(metric, progress.target)}
+          </span>
+        </div>
         <Badge tone={STATUS_TONE[progress.status]}>{KPI_STATUS_LABELS[progress.status]}</Badge>
-      </div>
-      <div className="truncate text-lg font-semibold leading-tight tabular-nums text-foreground">
-        {formatKpiValue(metric, progress.current)}
-        <span className="text-sm font-normal text-muted-foreground">
-          {" / "}
-          {formatKpiValue(metric, progress.target)}
-        </span>
       </div>
       <div
         role="progressbar"
@@ -324,6 +356,7 @@ function GoalTile({
           {measured.accounts === 1 ? "account" : "accounts"}
         </span>
         <span className="flex shrink-0 items-center">
+          <Button variant="quiet" icon={<Pencil />} aria-label="Edit goal" onClick={onEdit} />
           <Button
             variant="quiet"
             icon={goal.status === "paused" ? <Play /> : <Pause />}
@@ -532,8 +565,9 @@ const METRIC_OPTIONS: SelectOption[] = KPI_METRICS.map((m) => ({ value: m.id, la
 const PERIOD_OPTIONS: SelectOption[] = KPI_PERIODS.map((p) => ({ value: p.value, label: p.label }));
 const ALL = "all";
 
-function NewGoalDialog({
+function GoalDialog({
   open,
+  goal,
   onOpenChange,
   organizationId,
   brandId,
@@ -543,6 +577,8 @@ function NewGoalDialog({
   now,
 }: {
   open: boolean;
+  /** The goal being edited; null creates a new one. */
+  goal: KpiGoalRow | null;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   brandId: string;
@@ -557,6 +593,23 @@ function NewGoalDialog({
   const [period, setPeriod] = useState("month");
   const [scope, setScope] = useState(ALL);
   const [busy, setBusy] = useState(false);
+
+  // Open on the goal's own values (edit) or the defaults (new).
+  useEffect(() => {
+    if (!open) return;
+    if (!goal) {
+      setMetric("followers");
+      setTarget("");
+      setPeriod("month");
+      setScope(ALL);
+      return;
+    }
+    setMetric(goalMetricId(goal) ?? "followers");
+    setTarget(String(goal.target_value));
+    setPeriod(goal.period);
+    setScope(goal.tracked_account_id ? `account:${goal.tracked_account_id}` : goal.platform ? `platform:${goal.platform}` : ALL);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, goal?.id]);
 
   const scopeOptions: SelectOption[] = [
     { value: ALL, label: "All own accounts" },
@@ -588,19 +641,34 @@ function NewGoalDialog({
     const baseline = def.cumulative ? measureGoal({ goal: draft, metric, accounts: kpiAccounts, posts, now }).value : null;
     setBusy(true);
     try {
-      await createKpiGoal({
-        organizationId,
-        brandId,
-        metric: def.db,
-        metricLabel: def.dbLabel,
-        targetValue: value,
-        baselineValue: metric === "outlier_count" ? 0 : baseline,
-        period,
-        startsOn: draft.starts_on,
-        endsOn: null,
-        platform,
-        trackedAccountId: accountId,
-      });
+      if (goal) {
+        // Re-baseline only when what is measured changed; a target or period edit keeps the pace origin.
+        const sameSubject =
+          goalMetricId(goal) === metric && goal.platform === platform && goal.tracked_account_id === accountId;
+        await updateKpiGoal(goal.id, {
+          metric: def.db,
+          metricLabel: def.dbLabel,
+          targetValue: value,
+          baselineValue: sameSubject ? goal.baseline_value : metric === "outlier_count" ? 0 : baseline,
+          period,
+          platform,
+          trackedAccountId: accountId,
+        });
+      } else {
+        await createKpiGoal({
+          organizationId,
+          brandId,
+          metric: def.db,
+          metricLabel: def.dbLabel,
+          targetValue: value,
+          baselineValue: metric === "outlier_count" ? 0 : baseline,
+          period,
+          startsOn: draft.starts_on,
+          endsOn: null,
+          platform,
+          trackedAccountId: accountId,
+        });
+      }
       await invalidate();
       setTarget("");
       onOpenChange(false);
@@ -615,7 +683,7 @@ function NewGoalDialog({
     <Dialog open={open} onOpenChange={(next) => (busy ? undefined : onOpenChange(next))}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>New goal</DialogTitle>
+          <DialogTitle>{goal ? "Edit goal" : "New goal"}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <Select aria-label="Metric" value={metric} options={METRIC_OPTIONS} onValueChange={(v) => setMetric(v as KpiMetricId)} />

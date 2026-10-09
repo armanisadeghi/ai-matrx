@@ -146,7 +146,7 @@ describe("goalProgress (current vs target)", () => {
 });
 
 describe("benchmark", () => {
-  it("30-day cadence, median views, engagement, outlier rate", () => {
+  it("30-day cadence and outlier rate; median and engagement from the one profile baseline", () => {
     const posts = [
       post("a", "r1", 3, { views: 1000, outlierScore: 3 }),
       post("b", "r1", 5, { views: 3000, outlierScore: 1 }),
@@ -154,12 +154,12 @@ describe("benchmark", () => {
     ];
     const a = benchmarkActivity(posts, NOW);
     expect(a.postsPerWeek).toBe(0.5);
-    expect(a.medianViews).toBe(2000);
+    expect(a.medianViews).toBe(3000);
     expect(a.outlierRate).toBe(0.5);
-    expect(a.engagementRate).toBeCloseTo(140 / 4000, 6);
+    expect(a.engagementRate).toBeCloseTo(210 / 13999, 6);
   });
-  it("nothing in 30 days is all null, not zeros", () => {
-    expect(benchmarkActivity([post("z", "r1", 80)], NOW)).toEqual({ postsPerWeek: null, medianViews: null, engagementRate: null, outlierRate: null });
+  it("nothing in 30 days has no cadence or rate, but the baseline still reads the latest posts", () => {
+    expect(benchmarkActivity([post("z", "r1", 80)], NOW)).toEqual({ postsPerWeek: null, medianViews: 1000, engagementRate: 0.07, outlierRate: null });
   });
   it("own rows sort first", () => {
     const row = (id: string, role: "own" | "competitor", followers: number) =>

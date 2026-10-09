@@ -42,7 +42,7 @@ import {
   filterAndSortPosts,
   formatGrowth,
   judgeFollowerGrowth,
-  median,
+  currentFollowers,
   postsPerWeek,
   profileFollowerSeries,
   refreshSummary,
@@ -50,7 +50,7 @@ import {
   type PostFilter,
   type PostSort,
 } from "../mappers";
-import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile } from "../outlier";
+import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseline } from "../outlier";
 import { refreshProfile, socialErrorMessage } from "../server";
 import { TRACKED_ROLE_LABELS, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
@@ -326,7 +326,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const list = posts.data ?? [];
   const role = tracked.data && isTrackedRole(tracked.data.role) ? tracked.data.role : null;
   const growth = judgeFollowerGrowth(snapshots.data ?? []);
-  const views = list.map((x) => x.views).filter((v): v is number => v !== null);
+  const baseline = profileBaseline(list);
+  const followers = currentFollowers(p.follower_count, snapshots.data ?? []);
   const best = list.reduce<PostCardModel | null>(
     (acc, x) => (x.outlierScore !== null && (acc === null || x.outlierScore > (acc.outlierScore ?? -1)) ? x : acc),
     null,
@@ -376,10 +377,10 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-        <KpiTile label="Followers" value={p.follower_count === null ? null : formatCompact(Number(p.follower_count))} />
+        <KpiTile label="Followers" value={followers === null ? null : formatCompact(followers)} />
         <KpiTile label="30d growth" value={growth.fraction === null ? null : formatGrowth(growth.fraction)} hint={growth.fraction === null ? growth.note : undefined} title="Follower change between snapshots about 30 days apart." />
         <KpiTile label="Posts / week" value={perWeek === null ? null : String(perWeek)} title="Posts in the last 30 days, per week." />
-        <KpiTile label="Median views" value={views.length ? formatCompact(median(views)) : null} title="Median views across the posts tracked." />
+        <KpiTile label="Median views" value={baseline.medianViews === null ? null : formatCompact(baseline.medianViews)} title="Median views of this creator's latest 30 posts." />
         <KpiTile
           label="Best multiple"
           value={best ? <OutlierBadge input={best.outlier} /> : null}

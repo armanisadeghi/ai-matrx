@@ -254,3 +254,16 @@ describe("refreshSummary", () => {
     expect(refreshSummary(reused)).toBe("Refreshed within the last 12h; served from the shared cache.");
   });
 });
+
+describe("currentFollowers", () => {
+  it("reads the newest snapshot that has a count, never a null one", async () => {
+    const { currentFollowers } = await import("../mappers");
+    const snaps = [
+      { observed_at: "2026-10-09T09:32:58Z", follower_count: 21_400_000 },
+      { observed_at: "2026-10-09T09:45:17Z", follower_count: null },
+    ];
+    expect(currentFollowers(null, snaps)).toBe(21_400_000);
+    expect(currentFollowers(5, [])).toBe(5);
+    expect(currentFollowers(null, [])).toBeNull();
+  });
+});

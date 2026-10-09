@@ -22,7 +22,8 @@ import { toast } from "@/lib/toast";
 import { useAllSwipeCollections, useInvalidateSocial } from "../hooks";
 import { looksLikePostUrl } from "../link";
 import { addToCollection, createCollection, ingestPost, socialErrorMessage } from "../server";
-import { visibleCollections } from "../swipe";
+import { parseTagInput, visibleCollections } from "../swipe";
+import { NoteTagsFields } from "./NoteTagsFields";
 
 // ---------------------------------------------------------------------------
 // Name a collection
@@ -148,6 +149,8 @@ export function SaveToCollectionDialog({
   const invalidate = useInvalidateSocial();
   const { options, choice, setChoice, loading } = useCollectionChoice(open, defaultCollectionId);
   const [newName, setNewName] = useState("");
+  const [note, setNote] = useState("");
+  const [tagText, setTagText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [failure, setFailure] = useState<unknown>(null);
@@ -155,6 +158,8 @@ export function SaveToCollectionDialog({
   useEffect(() => {
     if (open) {
       setNewName("");
+      setNote("");
+      setTagText("");
       setError("");
       setFailure(null);
     }
@@ -170,7 +175,14 @@ export function SaveToCollectionDialog({
         const made = await createCollection({ name: newName.trim(), brandId }, { organizationId });
         collectionId = made.collection_id;
       }
-      for (const t of targets) await addToCollection(collectionId, t, { organizationId });
+      const tags = parseTagInput(tagText);
+      for (const t of targets) {
+        await addToCollection(
+          collectionId,
+          { ...t, ...(note.trim() ? { note: note.trim() } : {}), ...(tags.length ? { tags } : {}) },
+          { organizationId },
+        );
+      }
       await invalidate();
       toast.success(targets.length === 1 ? "Saved" : `Saved ${targets.length} items`);
       onSaved?.();
@@ -194,6 +206,7 @@ export function SaveToCollectionDialog({
           {creating ? (
             <Field aria-label="New collection name" placeholder="Collection name" value={newName} onChange={(e) => setNewName(e.target.value)} />
           ) : null}
+          <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} />
           <p className="min-h-4 text-xs text-destructive" aria-live="polite">
             {error}
             {error ? <ErrorAlchemyMenu error={failure} operation="save to swipe file" /> : null}
@@ -233,6 +246,8 @@ export function SaveLinkDialog({
   const { options, choice, setChoice, loading } = useCollectionChoice(open, defaultCollectionId);
   const [url, setUrl] = useState("");
   const [newName, setNewName] = useState("Saved");
+  const [note, setNote] = useState("");
+  const [tagText, setTagText] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -242,6 +257,8 @@ export function SaveLinkDialog({
   useEffect(() => {
     if (open) {
       setUrl("");
+      setNote("");
+      setTagText("");
       setError("");
       setFailure(null);
       setStatus("");
@@ -267,7 +284,12 @@ export function SaveLinkDialog({
         const made = await createCollection({ name: newName.trim() || "Saved", brandId }, { organizationId });
         collectionId = made.collection_id;
       }
-      await addToCollection(collectionId, { itemType: "social_post", itemId: result.post_id }, { organizationId });
+      const tags = parseTagInput(tagText);
+      await addToCollection(
+        collectionId,
+        { itemType: "social_post", itemId: result.post_id, ...(note.trim() ? { note: note.trim() } : {}), ...(tags.length ? { tags } : {}) },
+        { organizationId },
+      );
       await invalidate();
       toast.success("Saved");
       onOpenChange(false);
@@ -292,6 +314,7 @@ export function SaveLinkDialog({
           {creating ? (
             <Field aria-label="New collection name" placeholder="Collection name" value={newName} onChange={(e) => setNewName(e.target.value)} />
           ) : null}
+          <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} disabled={busy} />
           <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
             {error ? (
               <span className="text-destructive">

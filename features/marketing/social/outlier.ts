@@ -5,7 +5,7 @@
  *
  *   4.2x  — one decimal under 10x, integer from 10x, `99x+` cap
  *   <2x   plain muted text, no fill   · 2–4x neutral · 4–10x accent · ≥10x strong
- *   no baseline → "—" + "Needs 10 posts of history" (never 0x / 1.0x)
+ *   no baseline → "—" + "Needs 10 other posts to compare" (never 0x / 1.0x)
  *   young post  → "~4.2x" + "Still gaining views"
  */
 
@@ -20,8 +20,10 @@ export const OUTLIER_TIER_THRESHOLDS = {
 
 /** Display cap: anything at or above renders `99x+`. */
 export const OUTLIER_CAP = 99;
-/** Minimum history for a score (knob `outlier_min_posts`). */
+/** Minimum OTHER posts for a score (knob `outlier_min_posts`): a profile needs 11 posts before any post has a multiple. */
 export const OUTLIER_MIN_POSTS = 10;
+/** How many of a profile's latest posts make its baseline (knob `outlier_baseline_posts`). */
+export const OUTLIER_BASELINE_POSTS = 30;
 /** A post younger than this is still gaining views (knob `velocity_window_hours`). */
 export const OUTLIER_YOUNG_HOURS = 24;
 
@@ -83,7 +85,7 @@ export function outlierBadgeModel(input: OutlierInput): OutlierBadgeModel {
       bars: 0,
       text: "—",
       tilde: false,
-      tooltip: `Needs ${OUTLIER_MIN_POSTS} posts of history`,
+      tooltip: `Needs ${OUTLIER_MIN_POSTS} other posts to compare`,
     };
   }
   const tier = outlierTier(score);
@@ -112,4 +114,65 @@ export function formatPercentile(percentile: number | null): string {
   return percentile === null || !Number.isFinite(percentile)
     ? "—"
     : `P${Math.round(percentile)}`;
+}
+
+// ---------------------------------------------------------------------------
+// THE baseline (the only place a creator's median / engagement is computed)
+// ---------------------------------------------------------------------------
+
+export function median(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+}
+
+export interface BaselinePostInput {
+  postedAt: string | null;
+  views: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+}
+
+export interface ProfileBaseline {
+  /** Median views of the latest `window` posts that report views; null with none. */
+  medianViews: number | null;
+  /** (likes + comments + shares) / views over the same posts; null with no views. */
+  engagementRate: number | null;
+  /** How many posts the numbers rest on. */
+  posts: number;
+}
+
+/**
+ * A profile's baseline: its latest `window` posts (newest first, undated last)
+ * that report views. Account page, Accounts table and the KPI benchmark all
+ * read this and nothing else, so the same creator never shows two medians.
+ * Mirrors the server's per-post rule (`aidream/services/social/stats.py`),
+ * which excludes the post being scored; a profile-level figure has no such post.
+ */
+export function profileBaseline(
+  posts: readonly BaselinePostInput[],
+  window: number = OUTLIER_BASELINE_POSTS,
+): ProfileBaseline {
+  const at = (p: BaselinePostInput): number => {
+    const t = p.postedAt ? Date.parse(p.postedAt) : NaN;
+    return Number.isFinite(t) ? t : -Infinity;
+  };
+  const latest = posts
+    .filter((p) => p.views !== null && Number.isFinite(p.views))
+    .sort((a, b) => at(b) - at(a))
+    .slice(0, window);
+  let viewSum = 0;
+  let engaged = 0;
+  for (const p of latest) {
+    if (!p.views || p.views <= 0) continue;
+    viewSum += p.views;
+    engaged += (p.likes ?? 0) + (p.comments ?? 0) + (p.shares ?? 0);
+  }
+  return {
+    medianViews: median(latest.map((p) => p.views as number)),
+    engagementRate: viewSum > 0 ? engaged / viewSum : null,
+    posts: latest.length,
+  };
 }

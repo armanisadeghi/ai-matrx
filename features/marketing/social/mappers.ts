@@ -7,6 +7,7 @@
  */
 
 import { handleFromInput } from "./link";
+import { median, profileBaseline } from "./outlier";
 import type {
   AccountRow,
   IngestProfileResult,
@@ -28,12 +29,7 @@ export function num(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function median(values: readonly number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
-}
+export { median };
 
 const DAY_MS = 86_400_000;
 
@@ -78,6 +74,23 @@ export function judgeFollowerGrowth(
     fraction: (latest.v - base.v) / base.v,
     note: `Over ${spanDays} days`,
   };
+}
+
+/**
+ * Current followers: the newest snapshot that HAS a follower count, else the profile row's own
+ * count. A snapshot or row with a null count never reads as "no followers".
+ */
+export function currentFollowers(
+  profileCount: unknown,
+  snapshots: readonly Pick<ProfileSnapshotRow, "observed_at" | "follower_count">[],
+): number | null {
+  let best: { t: number; v: number } | null = null;
+  for (const s of snapshots) {
+    const v = num(s.follower_count);
+    const t = Date.parse(s.observed_at);
+    if (v !== null && Number.isFinite(t) && (best === null || t > best.t)) best = { t, v };
+  }
+  return best ? best.v : num(profileCount);
 }
 
 export function formatGrowth(fraction: number | null): string {
@@ -210,7 +223,9 @@ export function buildAccountRows(args: {
     if (!profile) continue;
     const role: TrackedRole = isTrackedRole(t.role) ? t.role : "inspiration";
     const posts = args.postStats.filter((p) => p.profile_id === profile.id);
-    const views = posts.map((p) => num(p.views)).filter((v): v is number => v !== null);
+    const baseline = profileBaseline(
+      posts.map((p) => ({ postedAt: p.posted_at, views: num(p.views) })),
+    );
     const recent = posts.filter((p) => {
       const at = p.posted_at ? Date.parse(p.posted_at) : NaN;
       return Number.isFinite(at) && now - at <= 30 * DAY_MS;
@@ -220,9 +235,8 @@ export function buildAccountRows(args: {
       const s = num(p.outlier_score);
       if (s !== null && (best === null || s > (num(best.outlier_score) ?? -1))) best = p;
     }
-    const growth = judgeFollowerGrowth(
-      args.snapshots.filter((s) => s.profile_id === profile.id),
-    );
+    const profileSnaps = args.snapshots.filter((s) => s.profile_id === profile.id);
+    const growth = judgeFollowerGrowth(profileSnaps);
     const lastPost = posts
       .map((p) => p.posted_at)
       .filter((d): d is string => Boolean(d))
@@ -239,11 +253,11 @@ export function buildAccountRows(args: {
       avatarUrl: profile.avatar_url,
       role,
       status: t.status,
-      followers: num(profile.follower_count),
+      followers: currentFollowers(profile.follower_count, profileSnaps),
       growth: growth.fraction,
       growthNote: growth.note,
       postsTracked: posts.length,
-      medianViews: median(views),
+      medianViews: baseline.medianViews,
       bestScore: best ? num(best.outlier_score) : null,
       bestPostId: best ? best.post_id : null,
       lastPostAt: lastPost,

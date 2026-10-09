@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
-import { Button, Field, Select, Textarea, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Button, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -23,6 +23,7 @@ import { addToCollection, removeFromCollection, setItemNotes, socialErrorMessage
 import { parseTagInput } from "../swipe";
 import type { SwipeCollectionRow, SwipeItem } from "../types";
 import { libraryLabel } from "./AdCard";
+import { NoteTagsFields } from "./NoteTagsFields";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 
 export function SwipeItemSheet({
@@ -150,21 +151,7 @@ export function SwipeItemSheet({
             {holdOptions.length > 1 ? (
               <Select aria-label="Collection to edit" value={editId} options={holdOptions} onValueChange={setEditId} />
             ) : null}
-            <Textarea
-              aria-label="Why saved"
-              placeholder="Why saved"
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={!edge}
-            />
-            <Field
-              aria-label="Tags"
-              placeholder="Tags, separated by commas"
-              value={tagText}
-              onChange={(e) => setTagText(e.target.value)}
-              disabled={!edge}
-            />
+            <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} disabled={!edge} />
             <div>
               <Button
                 variant="primary"
