@@ -552,6 +552,24 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     color: "cyan",
   },
   {
+    // Every dashboard built from tables, across organizations (ItemsHome kind "dashboard").
+    label: "Dashboards",
+    href: "/data/dashboards",
+    iconName: "LayoutDashboard",
+    description: "Dashboards built from your tables",
+    color: "cyan",
+    guestHidden: true,
+  },
+  {
+    // Every page built from tables (a dashboard record whose presentation is a page).
+    label: "Pages",
+    href: "/data/pages",
+    iconName: "AppWindow",
+    description: "Pages built from your tables",
+    color: "cyan",
+    guestHidden: true,
+  },
+  {
     // THE template gallery (lane CHAIR-GALLERY): one public route for everyone, signed in or out.
     label: "Templates",
     href: "/templates",
@@ -802,6 +820,16 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
         // A launchpad stays open while what it launches opens beside it.
         openInNewTab: true,
+      },
+      {
+        // features/start: the person's own start page — a Page built from tables they chose
+        // ("Make start page" on any page). Until this row it was reachable only from a page screen.
+        label: "Start Page",
+        href: "/start",
+        iconName: "Compass",
+        description: "Your own start page, built from your tables",
+        color: "sky",
+        guestHidden: true,
       },
       {
         // THE BOARD — boards work like every saved record: `/board` is the LIST (recents
