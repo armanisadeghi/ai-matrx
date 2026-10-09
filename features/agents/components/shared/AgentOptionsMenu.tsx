@@ -72,7 +72,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
 import { MenuTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationCost";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
-import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
+import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
 import { selectIsSuperAdmin } from "@ai-matrx/chat/host/identity";
 import { selectOrganizationId } from "@ai-matrx/chat/host/org";
