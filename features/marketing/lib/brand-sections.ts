@@ -308,12 +308,10 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   // The ad CENTER (campaigns, creative, budgets across providers) is still a
   // promise; the live Google Ads workspace is its first room at `ads`.
   { comingSoonId: "marketing.ads", subRoute: "ads" },
-  // Socials: Accounts and the detail pages are live; the umbrella row and one
-  // row per tab another lane is still building.
+  // Socials: Accounts, Outliers, Swipe file, Ads, KPIs and the detail pages are live; the umbrella
+  // row and the Studio tab are still being built.
   { comingSoonId: "marketing.social", subRoute: "socials" },
   { comingSoonId: "marketing.social.studio", subRoute: "socials/studio" },
-  { comingSoonId: "marketing.social.outliers", subRoute: "socials/outliers" },
-  { comingSoonId: "marketing.social.kpis", subRoute: "socials/kpis" },
 ];
 
 /** The unique filesystem segments under `/marketing/[brandId]` (drift test). */
