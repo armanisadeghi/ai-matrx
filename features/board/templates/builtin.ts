@@ -60,10 +60,12 @@ function doc(nodes: BoardNode[], groups: BoardGroup[], edges: BoardEdge[]): Boar
   return { camera: { x: 0, y: 0, z: 0.6 }, nodes, groups, edges, shapes: [] };
 }
 
+/** An empty social tile only asks for a link: compact, and it grows to its full size once it has something to show (`growOnFill`). */
+const PASTE = { w: 440, h: 168 };
 const COL = { note: { w: 460, h: 420 }, chat: { w: 520, h: 640 }, small: { w: 460, h: 300 }, social: { w: 580, h: 560 }, feed: { w: 520, h: 620 } };
 
 function viralBreakdown(): BoardDocument {
-  const post = socialTile("social-post", "The post", { x: 0, y: 0, ...COL.social });
+  const post = socialTile("social-post", "The post", { x: 0, y: 0, ...PASTE });
   const talk = chat("Break it down", { x: 680, y: 0, ...COL.chat });
   const why = note(
     "Why it worked",
@@ -75,7 +77,7 @@ function viralBreakdown(): BoardDocument {
 }
 
 function repurposeVideo(): BoardDocument {
-  const video = socialTile("social-post", "The long video", { x: 0, y: 0, ...COL.social });
+  const video = socialTile("social-post", "The long video", { x: 0, y: 0, ...PASTE });
   const talk = chat("Find the clips", { x: 680, y: 0, ...COL.chat });
   const shorts = [1, 2, 3].map((n, i) =>
     note(`Short ${n}`, { x: 1300, y: i * 340, w: 460, h: 300 }, `Clip ${n}\nStart and end:\nHook line:\nCaption:\n`),
@@ -85,7 +87,7 @@ function repurposeVideo(): BoardDocument {
 }
 
 function swipeFile(): BoardDocument {
-  const who = socialTile("social-profile", "A competitor", { x: 0, y: 0, ...COL.social });
+  const who = socialTile("social-profile", "A competitor", { x: 0, y: 0, ...PASTE });
   const talk = chat("What are they doing?", { x: 680, y: 0, ...COL.chat });
   const swipe = socialTile("social-outlier-feed", "Their best posts", { x: 1300, y: 0, ...COL.feed });
   const patterns = note("Patterns to steal", { x: 1300, y: 700, ...COL.small }, "Formats that keep working:\n\nHooks that keep working:\n\nWhat nobody is doing yet:\n");

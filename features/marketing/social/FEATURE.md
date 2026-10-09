@@ -102,6 +102,13 @@ Standards components (`@/features/marketing/social/components/…`)
 - The six distilled kinds have one canonical component each (`components/mardown-display/blocks/social-kinds/social-kind-blocks.tsx`, reusing `SocialPostCard`, `OutlierBadge`, `PlatformMark`); compiled mirrors in `features/content-ir/kinds/social-kinds.ts`; `kind_component` rows landed and the kinds activated through `content_ir.set_kind_activation`. Placeholders (`post_breakdown`, `hook_set`, ...) stay inactive.
 - Board tiles and their surfaces: `features/board/FEATURE.md` § Social tiles. Studio boards: `studio/studio-boards.ts` (`settings.brand_id`), `components/StudioTab.tsx`.
 
+## Polish rules (SOC-POLISH-B, 2026-10-09)
+
+- **A post's address and author come from the stored post.** `link.ts` `canonicalPostUrl` / `mappers.ts` `postAddress`: where the stored address names another account than the post's author (TikTok, X) it is rebuilt from the author and post id; the pasted link is only a way in. Cards, kinds and the Board tile all read it through `postAddress`. Server mirror: `ingest.py` `canonical_post_url` (SCHEMA.md A5).
+- **A refused read speaks in a person's words.** `failure.ts` `describeSocialFailure` (title, one reason, `canRetry`, `canCapture`); `socialErrorMessage` no longer carries vendor or cache wording. Every surface that shows a refusal uses it, with `gated/RefusedReadOffer` / `GatedCaptureOffer` for the capture ways.
+- **A brand's post panel belongs to that brand's pages** (`panelScope.ts`, used by `SocialPostWindow`): it closes on another brand, /board or any non-brand page, and a restored `?panels=` link on another page does not open it. A panel opened outside a brand follows the person.
+- **A brand's accounts become profile tiles** through `board-accounts.ts` (own first, stored-only for the Studio starter) and `studio/studio-starter.ts`; the Add menu's "From this brand's accounts" picker is in `features/board/items/social-items.tsx`.
+
 ## Decisions and edges
 
 - **Reads direct, compute through the server.** No Next.js API routes. Plain edits (role) are Layer B row updates under RLS.

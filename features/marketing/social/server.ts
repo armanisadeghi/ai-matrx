@@ -104,10 +104,10 @@ export function socialErrorMessage(error: unknown, fallback: string): string {
         ? error.userMessage
         : undefined;
   if (code === "social_not_found") {
-    return specific ? `Not found or private: ${notFoundReason(specific)}` : "That account or post was not found, or is private.";
+    return "This page is private or restricted, so it can't be read the usual way.";
   }
   if (code === "social_provider_failed") {
-    return specific ? `The data provider failed (${trimTech(specific)}). Retry in a moment.` : "The data provider failed. Retry in a moment.";
+    return "That didn't load just now. Trying again usually works.";
   }
   if (specific) return specific;
   if (code === "social_unsupported") return "That platform or link is not supported yet.";
@@ -130,16 +130,6 @@ export function socialErrorCredits(error: unknown): number | null {
         : undefined;
   const raw = details && typeof details === "object" ? (details as Record<string, unknown>).credits_charged : null;
   return typeof raw === "number" ? raw : null;
-}
-
-/** "get_profile: /v1/instagram/profile: not found or private (Profile is private)" -> "Profile is private". */
-function notFoundReason(text: string): string {
-  const m = text.match(/\(([^()]+)\)\s*$/);
-  return m ? m[1] : trimTech(text);
-}
-
-function trimTech(text: string): string {
-  return text.replace(/^[a-z_]+: /, "").replace(/\/v\d\/[\w/-]+: /g, "").slice(0, 160);
 }
 
 /**

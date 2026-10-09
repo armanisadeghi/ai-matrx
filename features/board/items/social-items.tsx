@@ -15,16 +15,19 @@
  * keeps the stored post's id. A repeated mount shares one in-flight ingest per address.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Bookmark, FileText, Images, Megaphone, PanelRightOpen, Sparkle, TrendingUp, UserRound, Wand2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Bookmark, CircleAlert, FileText, Images, Link2, LockKeyhole, Megaphone, PanelRightOpen, RefreshCw, Sparkle, TrendingUp, UserRound, Users, Wand2 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
-import { readOf } from "@ai-matrx/design-system";
+import { ReadGate, readOf } from "@ai-matrx/design-system";
+import { Checkbox } from "@/components/ui/checkbox";
+import { accountTileSeeds } from "@/features/marketing/social/board-accounts";
 import {
   useSurfaceClientTools,
   useSurfaceRuntimeRegistration,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useQuery } from "@tanstack/react-query";
 
+import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { PostTranscriptBlock } from "@/components/mardown-display/blocks/social-kinds/social-kind-blocks";
@@ -34,6 +37,7 @@ import {
   useInvalidateSocial,
   usePostDetail,
   usePostTranscript,
+  useAccountRows,
   useProfile,
   useProfilePosts,
   useProfileSnapshots,
@@ -68,6 +72,8 @@ import {
   trackAccount,
 } from "@/features/marketing/social/server";
 import { classifySocialLink, type SocialLink } from "@/features/marketing/social/link";
+import { describeSocialFailure, type SocialFailure } from "@/features/marketing/social/failure";
+import { GatedCaptureAction } from "./social-gated-seam";
 import {
   SOCIAL_PLATFORM_LABELS,
   TRACKABLE_PLATFORMS,
@@ -165,15 +171,53 @@ function shared<T>(key: string, run: () => Promise<T>): Promise<T> {
   return started;
 }
 
-function IngestState({ what, progress, error, onRetry }: { what: string; progress: string | null; error: string | null; onRetry: () => void }) {
+/** What a tile needs to offer the capture ways when its read fails. */
+interface CaptureTarget {
+  platform?: string;
+  handleOrUrl: string;
+  target: "profile" | "post";
+}
+
+function IngestState({
+  what,
+  progress,
+  error,
+  onRetry,
+  capture,
+  organizationId,
+}: {
+  what: string;
+  progress: string | null;
+  error: SocialFailure | null;
+  onRetry: () => void;
+  capture: CaptureTarget;
+  organizationId: string;
+}) {
   if (error) {
+    const Icon = error.kind === "restricted" ? LockKeyhole : error.kind === "busy" ? RefreshCw : CircleAlert;
     return (
-      <Centered>
-        <p className="text-foreground">{error}</p>
-        <Button variant="outline" onClick={onRetry}>
-          Try again
-        </Button>
-      </Centered>
+      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 overflow-y-auto p-4 text-center" role="status">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="flex max-w-xs flex-col gap-1">
+          <p className="text-sm font-medium text-foreground">{error.title}</p>
+          <p className="text-xs leading-snug text-muted-foreground">{error.reason}</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {error.canRetry ? (
+            <Button variant="outline" icon={<RefreshCw />} onClick={onRetry}>
+              Try again
+            </Button>
+          ) : null}
+          {error.canCapture ? (
+            <GatedCaptureAction
+              organizationId={organizationId}
+              target={{ platform: capture.platform, handleOrUrl: capture.handleOrUrl, target: capture.target }}
+            />
+          ) : null}
+        </div>
+      </div>
     );
   }
   return (
@@ -184,9 +228,9 @@ function IngestState({ what, progress, error, onRetry }: { what: string; progres
   );
 }
 
-function IngestPostTile({ url, organizationId, onDone }: { url: string; organizationId: string; onDone: (postId: string) => void }) {
+function IngestPostTile({ url, platform, organizationId, onDone }: { url: string; platform?: string; organizationId: string; onDone: (postId: string) => void }) {
   const [progress, setProgress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SocialFailure | null>(null);
   const [attempt, setAttempt] = useState(0);
   const done = useRef(onDone);
   useEffect(() => {
@@ -198,7 +242,7 @@ function IngestPostTile({ url, organizationId, onDone }: { url: string; organiza
       ingestPost({ url, landMedia: false, transcript: false }, { organizationId, onProgress: (p) => live && setProgress(p.message) }),
     ).then(
       (r) => live && done.current(r.post_id),
-      (e: unknown) => live && setError(socialErrorMessage(e, "Could not read that post.")),
+      (e: unknown) => live && setError(describeSocialFailure(e, "Could not read that post.")),
     );
     return () => {
       live = false;
@@ -209,6 +253,8 @@ function IngestPostTile({ url, organizationId, onDone }: { url: string; organiza
       what="the post"
       progress={progress}
       error={error}
+      organizationId={organizationId}
+      capture={{ platform, handleOrUrl: url, target: "post" }}
       onRetry={() => {
         setError(null);
         setAttempt((n) => n + 1);
@@ -229,7 +275,7 @@ function IngestProfileTile({
   onDone: (profileId: string, handle: string) => void;
 }) {
   const [progress, setProgress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SocialFailure | null>(null);
   const [attempt, setAttempt] = useState(0);
   const done = useRef(onDone);
   useEffect(() => {
@@ -244,7 +290,7 @@ function IngestProfileTile({
       ),
     ).then(
       (r) => live && done.current(r.profile_id, r.handle),
-      (e: unknown) => live && setError(socialErrorMessage(e, "Could not read that account.")),
+      (e: unknown) => live && setError(describeSocialFailure(e, "Could not read that account.")),
     );
     return () => {
       live = false;
@@ -255,6 +301,8 @@ function IngestProfileTile({
       what="the account"
       progress={progress}
       error={error}
+      organizationId={organizationId}
+      capture={{ platform, handleOrUrl, target: "profile" }}
       onRetry={() => {
         setError(null);
         setAttempt((n) => n + 1);
@@ -482,6 +530,7 @@ function SocialPostBody(props: ItemBodyProps) {
     return (
       <IngestPostTile
         url={meta.url}
+        platform={meta.platform}
         organizationId={organizationId}
         onDone={(postId) => props.onSource(entity(SOCIAL_POST_KEY, postId, meta), props.title)}
       />
@@ -509,13 +558,18 @@ function linkItem(kind: "post" | "profile", link: SocialLink) {
   };
 }
 
-/** The link box a picker and an empty tile (a template's) share. */
+/**
+ * The link box a picker and an empty tile (a template's) share. In a tile it is compact: one clear label and
+ * one row (the field and its button), vertically centred in a tile sized to it; in the Add menu's picker it
+ * stacks with Cancel.
+ */
 function LinkForm({ kind, onLink, onCancel }: { kind: "post" | "profile"; onLink: (link: SocialLink) => void; onCancel?: () => void }) {
   const [value, setValue] = useState("");
   const [bad, setBad] = useState(false);
+  const inTile = !onCancel;
   return (
     <form
-      className="flex flex-col gap-3 p-3"
+      className={cn("flex flex-col gap-2 p-3", inTile && "h-full justify-center")}
       onSubmit={(e) => {
         e.preventDefault();
         const link = classifySocialLink(value);
@@ -524,30 +578,119 @@ function LinkForm({ kind, onLink, onCancel }: { kind: "post" | "profile"; onLink
       }}
     >
       <label className="text-sm font-medium text-foreground" htmlFor={`social-link-${kind}`}>
-        {kind === "post" ? "Post link" : "Account link"}
+        {inTile ? `Paste ${kind === "post" ? "a post" : "an account"} link` : kind === "post" ? "Post link" : "Account link"}
       </label>
-      <input
-        id={`social-link-${kind}`}
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          setBad(false);
-        }}
-        placeholder={kind === "post" ? "tiktok.com/@name/video/..." : "tiktok.com/@name"}
-        className="h-8 rounded-md border border-border bg-background px-2 text-base text-foreground"
-      />
-      {bad ? <p className="text-xs text-destructive">That is not a {kind === "post" ? "post" : "account"} link.</p> : null}
-      <div className="flex justify-end gap-2">
-        {onCancel ? (
+      <div className="flex items-center gap-2">
+        <input
+          id={`social-link-${kind}`}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setBad(false);
+          }}
+          placeholder={kind === "post" ? "tiktok.com/@name/video/..." : "tiktok.com/@name"}
+          aria-invalid={bad}
+          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-base text-foreground"
+        />
+        {inTile ? (
+          <Button type="submit" variant="primary" disabled={!value.trim()}>
+            Read it
+          </Button>
+        ) : null}
+      </div>
+      {bad ? <p className="text-xs text-destructive">That is not {kind === "post" ? "a post" : "an account"} link.</p> : null}
+      {inTile ? null : (
+        <div className="flex justify-end gap-2">
           <Button type="button" variant="quiet" onClick={onCancel}>
             Cancel
           </Button>
-        ) : null}
-        <Button type="submit" variant="primary" disabled={!value.trim()}>
-          {onCancel ? "Add to board" : "Read it"}
+          <Button type="submit" variant="primary" disabled={!value.trim()}>
+            Add to board
+          </Button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+// ─── From this brand's accounts ──────────────────────────────────────────────
+
+/**
+ * "From this brand's accounts": the brand's own accounts and everything it tracks, as profile tiles. Own accounts
+ * that are already stored start checked; an account not read yet starts unchecked and is marked, because opening its tile reads it (it uses part of the plan). Outside a brand there is no
+ * list to offer, so the picker says so and takes a pasted link instead (never a dead end).
+ */
+function BrandAccountsPicker({ onPick, onCancel }: PickerProps) {
+  const organizationId = useBoardOrganizationId() ?? "";
+  const brand = useMarketingBrandOptional();
+  const accounts = useAccountRows(organizationId, brand?.id ?? "");
+  const seeds = useMemo(() => accountTileSeeds(accounts.data ?? []), [accounts.data]);
+  const [chosen, setChosen] = useState<ReadonlySet<string> | null>(null);
+  const checked = chosen ?? new Set(seeds.filter((s) => s.own && s.profileId !== null).map((s) => s.rowId));
+  if (!brand) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="px-3 pt-3 text-sm text-muted-foreground">Accounts belong to a brand. Open a brand's Studio to pick from them, or paste a link here.</p>
+        <LinkForm kind="profile" onLink={(l) => onPick([linkItem("profile", l)])} onCancel={onCancel} />
+      </div>
+    );
+  }
+  const toggle = (id: string) => {
+    const next = new Set(checked);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setChosen(next);
+  };
+  const pickedSeeds = seeds.filter((s) => checked.has(s.rowId));
+  const readState = readOf(
+    { loading: accounts.isLoading, error: accounts.error instanceof Error ? accounts.error.message : null },
+    { what: "this brand's accounts", onRetry: () => void accounts.refetch() },
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <ReadGate
+        read={readState}
+        isEmpty={seeds.length === 0}
+        empty={<div className="px-3 py-6 text-center text-sm text-muted-foreground">No accounts yet. Track one on the Socials page, or paste a link.</div>}
+        loading={<div className="px-3 py-6 text-center text-sm text-muted-foreground" aria-busy="true">Reading accounts…</div>}
+      >
+        <ul className="max-h-[min(420px,60dvh)] divide-y divide-border overflow-y-auto rounded-lg border border-border">
+          {seeds.map((s) => (
+            <li key={s.rowId}>
+              <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50">
+                <Checkbox checked={checked.has(s.rowId)} onCheckedChange={() => toggle(s.rowId)} aria-label={s.title} />
+                <span className="min-w-0 flex-1 truncate text-foreground">{s.title}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {SOCIAL_PLATFORM_LABELS[isSocialPlatform(s.platform) ? s.platform : "tiktok"]}
+                  {s.own ? " · Own" : ""}
+                  {s.profileId ? "" : " · Not read yet"}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </ReadGate>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="quiet" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          disabled={pickedSeeds.length === 0}
+          onClick={() =>
+            onPick(
+              pickedSeeds.map((s) => ({
+                title: s.title,
+                source: entity(SOCIAL_PROFILE_KEY, s.profileId, s.profileId ? { platform: s.platform } : { url: s.handleOrUrl, platform: s.platform }),
+              })),
+            )
+          }
+        >
+          {pickedSeeds.length > 1 ? `Add ${pickedSeeds.length} to board` : "Add to board"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -895,6 +1038,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     accent: "rose",
     status: none("A stored post has no running state; its numbers refresh from the Socials section."),
     defaultSize: { w: 620, h: 560 },
+    growOnFill: true,
     matches: ENTITY(SOCIAL_POST_KEY),
     Body: SocialPostBody,
     bringIn: { label: "Social post from a link", Picker: PostLinkPicker },
@@ -913,9 +1057,14 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     accent: "rose",
     status: none("A stored account has no running state."),
     defaultSize: { w: 620, h: 700 },
+    growOnFill: true,
     matches: ENTITY(SOCIAL_PROFILE_KEY),
     Body: SocialProfileBody,
-    bringIn: { label: "Social profile from a link", Picker: ProfileLinkPicker },
+    // The brand's accounts first (what a person has already tracked), a pasted link second.
+    startNew: [
+      { label: "From this brand's accounts", icon: Users, Picker: BrandAccountsPicker },
+      { label: "Social profile from a link", icon: Link2, Picker: ProfileLinkPicker },
+    ],
     record: { place: (id, title) => ({ title: title?.trim() || "Social profile", source: entity(SOCIAL_PROFILE_KEY, id) }) },
     href: (s) => metaOf(s).url ?? null,
   },

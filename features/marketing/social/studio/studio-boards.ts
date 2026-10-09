@@ -16,6 +16,9 @@ import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { makeBoardFromTemplate } from "@/features/board/templates/board-templates";
 import { BRAND_BOARD_SETTING, STUDIO_BOARD_SETTING, isBoardError } from "@/features/board/persistence/boardsService";
+import { starterAccountSeeds } from "../board-accounts";
+import { readAccountRows } from "../service";
+import { withAccountTiles } from "./studio-starter";
 
 const db = projectsDb(supabase);
 
@@ -88,11 +91,19 @@ export function getOrCreateStudioBoard(args: { organizationId: string; brandId: 
   const work = (async () => {
     const found = await readCanonical(args);
     if (found) return found;
+    // The brand's own accounts that are already stored start on the board as profile tiles. A failed read
+    // only means the board starts without them (the Add menu still offers "From this brand's accounts").
+    const accounts = await readAccountRows({ organizationId: args.organizationId, brandId: args.brandId })
+      .then((rows) => starterAccountSeeds(rows))
+      .catch(() => []);
     try {
-      const board = await makeBoardFromTemplate(STUDIO_STARTER_TEMPLATE, args.organizationId, args.title, {
-        [BRAND_BOARD_SETTING]: args.brandId,
-        [STUDIO_BOARD_SETTING]: args.brandId,
-      });
+      const board = await makeBoardFromTemplate(
+        STUDIO_STARTER_TEMPLATE,
+        args.organizationId,
+        args.title,
+        { [BRAND_BOARD_SETTING]: args.brandId, [STUDIO_BOARD_SETTING]: args.brandId },
+        (doc) => withAccountTiles(doc, accounts),
+      );
       return { id: board.id, title: board.title, lastOpenedAt: null, canonical: true };
     } catch (e) {
       if (isBoardError(e) && e.code === "conflict") {

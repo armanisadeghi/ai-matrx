@@ -65,12 +65,21 @@ export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-/** True when `cam` shows at least a sliver of one of `rects` through a viewport of `size`
- * (a restored or linked camera that shows none is "lost in space"; the board fits instead). */
+/**
+ * True when `cam` shows real content through a viewport of `size`: at least `MIN_SHOWN` of some item (or of the
+ * viewport, for an item bigger than the screen) is in view. A restored or linked camera that shows only slivers, or
+ * nothing, is "lost in space"; the board fits to its content instead.
+ */
+export const MIN_SHOWN = 0.3;
 export function cameraShowsContent(cam: Camera, size: Size, rects: readonly Rect[]): boolean {
   if (rects.length === 0) return true;
   const view = visibleWorldRect(cam, size);
-  return rects.some((r) => rectsIntersect(view, r));
+  return rects.some((r) => {
+    const w = Math.min(r.x + r.w, view.x + view.w) - Math.max(r.x, view.x);
+    const h = Math.min(r.y + r.h, view.y + view.h) - Math.max(r.y, view.y);
+    if (w <= 0 || h <= 0) return false;
+    return (w * h) / Math.min(r.w * r.h, view.w * view.h) >= MIN_SHOWN;
+  });
 }
 
 export function inflateRect(r: Rect, by: number): Rect {

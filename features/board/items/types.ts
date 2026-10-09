@@ -194,6 +194,11 @@ export interface BoardItemType {
   /** The item's live state on its tile (see `ItemStatusDoor`). */
   status: ItemStatusDoor;
   defaultSize: { w: number; h: number };
+  /**
+   * An EMPTY tile of this type (no id, no meta: it only asks for a link) is placed compact, sized to its one
+   * field. When it takes its first source it grows to `defaultSize` (never shrinks).
+   */
+  growOnFill?: boolean;
   /** Does this type render that saved source? */
   matches: (source: NodeSource) => boolean;
   /** The tile body — the feature's canonical component. */

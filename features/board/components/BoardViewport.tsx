@@ -215,16 +215,18 @@ export function BoardViewport({
     let checked = false;
     const checkLost = () => {
       const items = [...store.getItems().values()];
-      if (checked || items.length === 0 || store.getSize().w <= 1) return;
+      if (checked || items.length === 0) return;
+      if (store.getSize().w <= 1) return settleSoon();
       checked = true;
       if (store.getCamera() === applied && !cameraShowsContent(applied, store.getSize(), items)) store.fitAll();
     };
-    const offLost = restored
-      ? store.subscribeItems(() => {
-          if (settle) clearTimeout(settle);
-          settle = setTimeout(checkLost, 350);
-        })
-      : () => undefined;
+    const settleSoon = () => {
+      if (settle) clearTimeout(settle);
+      settle = setTimeout(checkLost, 350);
+    };
+    // Tiles register in their own effects, which run before this one: check once now as well as on every change.
+    if (restored) settleSoon();
+    const offLost = restored ? store.subscribeItems(settleSoon) : () => undefined;
     return () => {
       ro.disconnect();
       offItems();

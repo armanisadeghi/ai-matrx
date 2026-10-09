@@ -54,9 +54,14 @@ export async function makeBoardFromTemplate(
   organizationId: string | null,
   title: string,
   settings?: JsonObject,
+  /** Built-in templates only: adds to the fresh document before it is stored (the Studio adds the brand's own accounts). */
+  extend?: (doc: BoardDocument) => BoardDocument,
 ): Promise<LoadedBoard> {
   const builtin = builtinTemplateByKey(key);
-  if (builtin) return createBoardFromDocument({ organizationId, title, doc: builtin.build(), settings });
+  if (builtin) {
+    const doc = builtin.build();
+    return createBoardFromDocument({ organizationId, title, doc: extend ? extend(doc) : doc, settings });
+  }
   // A saved template is a board: its notes and documents are the AUTHOR'S records, so the copy gets clones of them
   // (`clone-content.ts` holds the per-type ruling), never the same records.
   return duplicateBoard(key, { title, dropBrand: true, cloneContent: (doc) => cloneBoardContent(doc) });

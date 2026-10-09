@@ -10,6 +10,8 @@
  * the canvas.
  */
 
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { PanelRightOpen } from "lucide-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 
@@ -18,7 +20,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
 import { postTabOpenInput } from "@/features/marketing/social/canvas/postKind";
 import { PostDetailBody, type DetailTab } from "@/features/marketing/social/components/PostDetail";
-import { useState } from "react";
+import { postPanelOutOfScope } from "@/features/marketing/social/panelScope";
 
 export interface SocialPostWindowProps {
   onClose: () => void;
@@ -49,6 +51,16 @@ export default function SocialPostWindow({
 }: SocialPostWindowProps) {
   const canvas = useOptionalCanvas();
   const [title, setTitle] = useState("Post");
+
+  // Scoped to its brand's pages: another brand's Studio, /board or any page outside the brand closes it
+  // (it must never reopen over a different client's data, however it was restored).
+  const pathname = usePathname();
+  const outOfScope = postPanelOutOfScope({ brandSeg, pathname });
+  useEffect(() => {
+    if (outOfScope) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outOfScope]);
+  if (outOfScope) return null;
 
   // Cascade so a second post never lands exactly on the first.
   const cascade = (stackIndex % 8) * 28;

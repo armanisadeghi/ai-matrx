@@ -81,3 +81,16 @@ describe("board templates", () => {
     expect(BUILTIN_BOARD_TEMPLATES.map((t) => t.key)).toContain(starter);
   });
 });
+
+describe("an empty social tile is compact and grows when it takes a link", () => {
+  it("the starter templates place their link tiles sized to one field, not the full tile", () => {
+    for (const t of BUILTIN_BOARD_TEMPLATES) {
+      const empties = t.build().nodes.filter((n) => n.source.kind === "entity" && n.source.id === null && /^social-(post|profile)$/.test(n.source.entity));
+      for (const n of empties) expect(n.rect.h).toBeLessThanOrEqual(200);
+    }
+  });
+  it("social post and profile ask to grow on fill", () => {
+    const grows = ["social-post", "social-profile"].map((k) => BOARD_ITEM_TYPES.find((t) => t.key === k)?.growOnFill);
+    expect(grows).toEqual([true, true]);
+  });
+});
