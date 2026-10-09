@@ -45,6 +45,22 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-09 — Applet block (lane B1, the "one roof" first piece; Arman 2026-10-09: "we add the power of applets").
+  Stored `applet {appletId uuid, height? whole px}` (lib/spaces-blocks; live `content.space_snapshot_schema()` regenerated).
+  "/" → Embeds › Applet (aliases applet, app) opens `editor/applet-picker.tsx` FIRST (search; opens to "Yours", else "All";
+  every Applet she can open, never narrowed by the active organization; "Build a new Applet") and the block lands only
+  once one is chosen. `editor/applet-block.tsx`: EDITOR-LIVE — the Applet mounts through the ONE host
+  (`features/applets/embed` `AppletInPageLazy`, `embedded`) in a reserved-height frame once the block nears the view;
+  bottom edge resizes; hover bar Open Applet (new tab, `https://www.aimatrx.com/applets/<slug>`) · Change with AI (the
+  Applet's builder) · Remove; a published page whose Applet is not on the web shows one line + Publish. PUBLIC-STATIC —
+  on a Site (`publicSite` in the static context) the block draws `AppletCard` (name, description, Open this Applet; the
+  Publish line for a viewer who can read it; nothing for a signed-out visitor) — live Applets on Sites wait for G1 guest
+  data (switch point commented). First paint (`static-body`) draws the same frame (`editor/applet-frame.tsx`); a pasted
+  `/applets/<slug>` link offers "Embed Applet"; Markdown export links `[Applet: name](www link)`. Space Builder is not
+  taught the block yet (no visibility check on agent-written blocks). Tests: `editor/__tests__/applet-block.test.ts`,
+  `lib/spaces-blocks/__tests__/snapshot-schema.test.ts`. First Spaces import of `features/applets/embed` (outgoing; the
+  fence is unchanged).
+
 - 2026-10-08 — Sites (lane spaces-published-list): a "Sites" row in the sidebar foot (beside Templates and Trash,
   `sidebar/SitesPopover.tsx`) lists every live page the person can open that is published to the web: title, public
   link (open in a new tab, copy), indexed or not, publish date, "Open in Spaces". One read, `content.space_published(p_org)`

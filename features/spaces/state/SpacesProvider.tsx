@@ -135,6 +135,8 @@ interface SpacesContextValue {
   pageHref?: (id: SpaceId) => string;
   /** What a link to a page this screen cannot show says; default: "Page in Trash" only when it is. */
   missingPageLabel?: string;
+  /** The page is a published Site read by anyone (`/site/<link>`): blocks that run as the viewer draw a static stand-in (an Applet block shows its card). */
+  publicSite?: boolean;
   /**
    * A linked page the tree does not hold (a page shared from another organization, a link to a page
    * outside it): read once by id under row security — access, never organization. undefined = not asked

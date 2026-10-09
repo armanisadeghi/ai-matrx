@@ -14,7 +14,12 @@ export interface MarkdownContext {
   hrefOf: (spaceId: string) => string;
   /** A stored file's address (image / file blocks with a fileId); null = unknown. */
   fileUrl?: (fileId: string) => string | null;
+  /** An Applet block's Applet (name + slug), when the exporter read it; null/absent = unknown or not readable. */
+  appletOf?: (appletId: string) => { name: string; slug: string } | null;
 }
+
+/** Where an Applet opens on the web (the full address, so a file outside the app still opens it). */
+const APPLET_WEB = "https://www.aimatrx.com/applets/";
 
 const esc = (s: string) => s.replace(/([\\`*_[\]<>])/g, "\\$1");
 
@@ -116,6 +121,11 @@ function blockLines(b: SpaceBlock, ctx: MarkdownContext, number: number): string
     case "bookmark":
     case "embed":
       return typeof p.url === "string" ? [`[${esc(p.url)}](${p.url})`] : [];
+    case "applet": {
+      // An Applet runs only in a browser: the export carries a link to it (or says what it was).
+      const app = typeof p.appletId === "string" ? ctx.appletOf?.(p.appletId) : null;
+      return app ? [`[Applet: ${esc(app.name)}](${APPLET_WEB}${encodeURIComponent(app.slug)})`] : ["*Applet (opens only in AI Matrx)*"];
+    }
     case "database":
       return typeof p.title === "string" && p.title ? [`**${esc(p.title)}**`] : [];
     case "tableOfContents":

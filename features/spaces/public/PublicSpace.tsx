@@ -71,6 +71,7 @@ function useStaticValue(
   const refuse = READ_ONLY("This");
   return {
     store: new Proxy({} as SpacesContextValue["store"], { get: () => refuse }),
+    publicSite: true,
     ready: true,
     loadError: null,
     access: null,

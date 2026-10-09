@@ -1,11 +1,16 @@
 "use client";
 
 // features/spaces/editor/PasteUrlMenu.tsx — B12: pasting a lone URL puts it in as a link and offers
-// Notion's choice beside it: keep it a Link, Mention (a Space's address or any link), Bookmark or Embed.
+// Notion's choice beside it: keep it a Link, Mention (a Space's address or any link), Bookmark or Embed —
+// and, for one of our `/applets/<slug>` links, "Embed Applet" (the live Applet block).
 
-import { AtSign, Bookmark, Code2, Link2 } from "lucide-react";
+import { AppWindow, AtSign, Bookmark, Code2, Link2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+
+import { readAppletBySlug } from "@/features/applets/embed/appletsPort";
+import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
+import { toast } from "@/lib/toast";
 
 import type { SpacesEditor } from "./schema";
 
@@ -40,6 +45,42 @@ export function spaceIdOf(url: string): string | null {
     return m ? m[1] : null;
   } catch {
     return null;
+  }
+}
+
+/** Our hosts an Applet link may come from: this app, and the public site (www.aimatrx.com / aimatrx.com). */
+const APPLET_HOSTS = /^(?:www\.)?aimatrx\.com$/i;
+
+/** The Applet slug a pasted address opens, when it is one of ours (`/applets/<slug>`). */
+export function appletSlugOf(url: string, here: string | null = typeof window !== "undefined" ? window.location.host : null): string | null {
+  try {
+    const u = new URL(url);
+    if (u.host !== here && !APPLET_HOSTS.test(u.host)) return null;
+    const m = /^\/applets\/([A-Za-z0-9][A-Za-z0-9_-]*)\/?$/.exec(u.pathname);
+    return m && !isReservedAppletSlug(m[1]) ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Swap the pasted link for the Applet block it names (read as the viewer; one she cannot open is said so). */
+async function toAppletBlock(editor: SpacesEditor, p: PastedUrl, slug: string) {
+  let app: Awaited<ReturnType<typeof readAppletBySlug>> = null;
+  try {
+    app = await readAppletBySlug(slug);
+  } catch {
+    toast.error("The Applet could not be read.");
+    return;
+  }
+  if (!app) {
+    toast.error("This Applet has not been shared with you.");
+    return;
+  }
+  const block = { type: "applet", props: { data: JSON.stringify({ props: { appletId: app.id } }) } } as never;
+  if (p.alone) editor.replaceBlocks([p.blockId], [block]);
+  else {
+    swapLink(editor, p.blockId, p.url, []);
+    editor.insertBlocks([block], p.blockId, "after");
   }
 }
 
@@ -93,6 +134,7 @@ function linkElement(blockId: string, url: string): HTMLElement | null {
 export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor; pasted: PastedUrl; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const spaceId = spaceIdOf(pasted.url);
+  const appletSlug = appletSlugOf(pasted.url);
   // Notion's placement: under the pasted link's first line, left edges aligned; above it when the room
   // below is short; kept inside the window; it follows the link as the page scrolls.
   useLayoutEffect(() => {
@@ -175,6 +217,12 @@ export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor
         <Code2 size={16} />
         Embed
       </button>
+      {appletSlug ? (
+        <button type="button" role="menuitem" className="spaces-paste-item" onClick={pick(() => void toAppletBlock(editor, pasted, appletSlug))}>
+          <AppWindow size={16} />
+          Embed Applet
+        </button>
+      ) : null}
     </div>,
     document.body,
   );

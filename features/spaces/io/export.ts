@@ -6,7 +6,9 @@ import { PAGE_BREAK_MARKDOWN } from "@ai-matrx/print/markdown";
 
 import { downloadBlob } from "@/utils/file-operations/utils";
 
-import type { SpaceDoc, SpaceId } from "../contract";
+import { readAppletCards } from "@/features/applets/embed/appletsPort";
+
+import type { SpaceBlock, SpaceDoc, SpaceId } from "../contract";
 import { spaceToMarkdown, type MarkdownContext } from "./markdown";
 
 export type ExportFormat = "markdown" | "html" | "pdf";
@@ -54,9 +56,27 @@ function relative(from: string, to: string): string {
   return [...a.slice(i).map(() => ".."), ...b.slice(i)].map(encodeURIComponent).join("/");
 }
 
-function contextFor(entry: Entry, all: Entry[], source: ExportSource, ext: string): MarkdownContext {
+type AppletOf = NonNullable<MarkdownContext["appletOf"]>;
+
+/** Every Applet block's Applet in these pages, read once (name + slug for the export's link). */
+async function appletsIn(entries: Entry[]): Promise<AppletOf> {
+  const ids: string[] = [];
+  const walk = (blocks: SpaceBlock[]) =>
+    blocks.forEach((b) => {
+      if (b.type === "applet" && typeof b.props?.appletId === "string") ids.push(b.props.appletId);
+      if (b.children?.length) walk(b.children);
+    });
+  entries.forEach((e) => walk(e.doc.blocks));
+  if (!ids.length) return () => null;
+  // A failed read leaves the export whole: each block then says what it was instead of linking.
+  const cards = await readAppletCards(ids).catch(() => new Map<string, { name: string; slug: string }>());
+  return (id) => cards.get(id) ?? null;
+}
+
+function contextFor(entry: Entry, all: Entry[], source: ExportSource, ext: string, appletOf: AppletOf): MarkdownContext {
   const byId = new Map(all.map((e) => [e.doc.id, e]));
   return {
+    appletOf,
     titleOf: (id) => byId.get(id)?.doc.title ?? source.titleOf(id),
     hrefOf: (id) => {
       const hit = byId.get(id);
@@ -70,11 +90,12 @@ export async function exportSpace(source: ExportSource, rootId: SpaceId, format:
   const entries = await collect(source, rootId, withChildren);
   if (!entries.length) throw new Error("This page could not be read.");
   const root = entries[0];
+  const appletOf = await appletsIn(entries);
 
   if (format === "pdf") {
     const { printMarkdown } = await import("@ai-matrx/print/markdown");
     const markdown = entries
-      .map((e) => spaceToMarkdown(e.doc.title, e.doc.blocks, { titleOf: source.titleOf, hrefOf: (id) => `${window.location.origin}/spaces/${id}` }))
+      .map((e) => spaceToMarkdown(e.doc.title, e.doc.blocks, { titleOf: source.titleOf, hrefOf: (id) => `${window.location.origin}/spaces/${id}`, appletOf }))
       .join(`\n\n${PAGE_BREAK_MARKDOWN}\n\n`);
     const outcome = printMarkdown(markdown, { title: root.doc.title || "Untitled", withPrintActions: true });
     return outcome === "downloaded" ? "The print window was blocked, so the page was downloaded instead" : "Opened for printing";
@@ -82,7 +103,7 @@ export async function exportSpace(source: ExportSource, rootId: SpaceId, format:
 
   const ext = format === "markdown" ? "md" : "html";
   const render = async (e: Entry): Promise<string> => {
-    const md = spaceToMarkdown(e.doc.title, e.doc.blocks, contextFor(e, entries, source, ext));
+    const md = spaceToMarkdown(e.doc.title, e.doc.blocks, contextFor(e, entries, source, ext, appletOf));
     if (format === "markdown") return md;
     const { renderMarkdownDocument } = await import("@ai-matrx/print/markdown");
     return renderMarkdownDocument(md, { title: e.doc.title || "Untitled" });

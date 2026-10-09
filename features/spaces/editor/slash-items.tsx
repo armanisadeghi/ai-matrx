@@ -39,6 +39,7 @@ import {
   Paperclip,
   FileType2,
   Bookmark,
+  AppWindow,
   Globe,
   AtSign,
   CalendarDays,
@@ -52,6 +53,7 @@ import type { PickedSource } from "../data/SourcePicker";
 import { newViewId, type SpaceDbView } from "../data/sources";
 import type { SpacesEditor } from "./schema";
 import { insertAtSlash, slashTarget } from "./slash-insert";
+import { openAppletPicker } from "./applet-picker";
 import { blockElement, openMediaPicker, type MediaKind, type PickedMedia } from "./media-insert";
 import { EMBED_PROVIDERS, GENERIC_EMBED, type EmbedProvider } from "./embed-providers";
 
@@ -141,6 +143,14 @@ function mediaAt(editor: SpacesEditor, kind: MediaKind | "embed" | "bookmark", p
         },
       }),
     );
+  };
+}
+
+/** "/applet": the picker opens first; the block lands where the "/" was only once an Applet is chosen. */
+export function appletAt(editor: SpacesEditor): () => void {
+  return () => {
+    const at = slashTarget(editor);
+    window.requestAnimationFrame(() => openAppletPicker((a) => insertAtSlash(editor, at, stored("applet", { appletId: a.id }))));
   };
 }
 
@@ -276,6 +286,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
       onItemClick: () => editor.insertInlineContent([{ type: "inlineEquation", props: { span: JSON.stringify({ text: "x", equation: "x" }) } }, " "] as never),
     },
     { title: GENERIC_EMBED.title, subtext: GENERIC_EMBED.subtext, aliases: GENERIC_EMBED.aliases, group: embeds, icon: <Globe size={ICON} />, onItemClick: mediaAt(editor, "embed") },
+    { title: "Applet", subtext: "Put one of your Applets live in the page.", aliases: ["applet", "app", "applets"], group: embeds, icon: <AppWindow size={ICON} />, onItemClick: appletAt(editor) },
     { title: "PDF", subtext: "Embed a PDF to read in the page.", aliases: ["pdf", "document"], group: embeds, icon: <FileType2 size={ICON} />, onItemClick: mediaAt(editor, "pdf") },
     ...EMBED_PROVIDERS.map((p) => ({ title: p.title, subtext: p.subtext, aliases: p.aliases, group: embeds, icon: <Globe size={ICON} />, onItemClick: mediaAt(editor, "embed", p) })),
     { title: "Table of contents", subtext: "Show an outline of this page.", aliases: ["toc", "contents", "outline"], group: advanced, icon: <ListTree size={ICON} />, onItemClick: set(stored("tableOfContents", {})) },
