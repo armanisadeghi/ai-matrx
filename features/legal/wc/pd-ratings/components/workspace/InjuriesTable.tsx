@@ -6,20 +6,13 @@ import { toDelimited } from "@ai-matrx/kit/delimited";
 import * as React from "react";
 import { Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 import type { InjuryDraft } from "../../state/types";
 import type { WcImpairmentDefinitionRead } from "../../api/types";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_NOWRAP_CELLS,
-} from "@/components/official/mobile-table/mobileTable";
 
 const SIDE_LABELS: Record<string, string> = {
   left: "Left",
@@ -89,194 +82,11 @@ export function rowsToTsv(rows: InjuryRowData[]): string {
   return toDelimited([TSV_HEADER, ...rows.map((row, idx) => rowToCells(row, idx))], { format: "tsv" });
 }
 
-export function InjuriesTable({
-  rows,
-  onEdit,
-  onDelete,
-  className,
-}: InjuriesTableProps) {
-  return (
-    <div
-      className={cn(
-        "w-full overflow-x-auto rounded-lg border border-border bg-card",
-        className,
-      )}
-    >
-      <table className={cn("border-collapse text-sm", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
-        <thead className="bg-muted/40">
-          <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            <Th className="w-10 pl-4 text-left">#</Th>
-            <Th className={cn("text-left", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Impairment</Th>
-            <Th className="text-left whitespace-nowrap">AMA code</Th>
-            <Th className="text-left">Side</Th>
-            <Th className="text-right">WPI</Th>
-            <Th className="text-right">UE</Th>
-            <Th className="text-right">LE</Th>
-            <Th className="text-right">Digit</Th>
-            <Th className="text-right">Pain</Th>
-            <Th className="text-right whitespace-nowrap">Industrial</Th>
-            <Th className="pr-2 text-right">Actions</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, idx) => (
-            <InjuryTableRow
-              key={row.injury.tmpId}
-              index={idx}
-              row={row}
-              onEdit={() => onEdit(row.injury.tmpId)}
-              onDelete={() => onDelete(row.injury.tmpId)}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+function Dash() {
+  return <span className="text-muted-foreground/60">—</span>;
 }
 
-function Th({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <th
-      className={cn("px-2 py-2 font-medium whitespace-nowrap", className)}
-      scope="col"
-    >
-      {children}
-    </th>
-  );
-}
-
-function InjuryTableRow({
-  index,
-  row,
-  onEdit,
-  onDelete,
-}: {
-  index: number;
-  row: InjuryRowData;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { copyText } = useClipboard({
-    notify: copyNotify,
-  });
-  const { injury, definition, warnings } = row;
-  const acceptsSide = definition?.attributes?.side ?? true;
-  const incomplete = !definition;
-
-  const handleCopy = async () => {
-    const tsv = toDelimited([rowToCells(row, index)], { format: "tsv" });
-    if (!(await copyText(tsv, `Row ${index + 1} copied — paste into Excel or Sheets`))) return;
-  };
-
-  return (
-    <>
-      <tr
-        className={cn(
-          "border-t border-border/60 transition-colors hover:bg-muted/30",
-          incomplete && "bg-muted/15",
-        )}
-      >
-        <td className="px-2 py-2.5 pl-4 align-top">
-          <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
-            {index + 1}
-          </span>
-        </td>
-        <td className={cn("px-2 py-2.5 align-top sm:min-w-0", MOBILE_TABLE_FROZEN_CELL)}>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="text-left w-full truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {definition ? (
-              <span className="font-medium text-foreground">
-                {definition.name}
-              </span>
-            ) : (
-              <span className="italic text-muted-foreground">
-                Click to choose an impairment
-              </span>
-            )}
-          </button>
-        </td>
-        <td className="px-2 py-2.5 align-top font-mono text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-          {definition?.impairment_number ?? <Dash />}
-        </td>
-        <td className="px-2 py-2.5 align-top text-foreground whitespace-nowrap">
-          {acceptsSide ? SIDE_LABELS[injury.side] ?? injury.side : <Dash />}
-        </td>
-        <NumberCell value={injury.wpi} suffix="%" />
-        <NumberCell value={injury.ue} suffix="%" />
-        <NumberCell value={injury.le} suffix="%" />
-        <NumberCell value={injury.digit} suffix="%" />
-        <NumberCell value={injury.pain} showZero />
-        <NumberCell value={injury.industrial} suffix="%" showZero />
-        <td className="px-2 py-2.5 pr-2 align-top text-right whitespace-nowrap">
-          <div className="inline-flex items-center gap-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  icon={<Copy />}
-                  type="button"
-                  variant="quiet"
-                  onClick={handleCopy}
-                  aria-label="Copy row"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top">Copy row</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  icon={<Pencil />}
-                  type="button"
-                  variant="quiet"
-                  onClick={onEdit}
-                  aria-label="Edit injury"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top">Edit injury</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  icon={<Trash2 />}
-                  type="button"
-                  variant="quiet"
-                  onClick={onDelete}
-                  aria-label="Delete injury"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top">Delete injury</TooltipContent>
-            </Tooltip>
-          </div>
-        </td>
-      </tr>
-      {warnings.length > 0 && (
-        <tr className="border-t border-amber-200/50 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <td className="pl-4 align-top" />
-          <td colSpan={10} className="px-2 py-1.5">
-            <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <ul className="space-y-0.5 min-w-0">
-                {warnings.map((warning, wIdx) => (
-                  <li key={wIdx}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
-function NumberCell({
+function Pct({
   value,
   suffix,
   showZero,
@@ -286,20 +96,244 @@ function NumberCell({
   showZero?: boolean;
 }) {
   const hide = value == null || (!showZero && value === 0);
-  return (
-    <td className="px-2 py-2.5 align-top text-right font-mono text-sm tabular-nums whitespace-nowrap">
-      {hide ? (
-        <Dash />
-      ) : (
-        <span className="text-foreground">
-          {value}
-          {suffix}
-        </span>
-      )}
-    </td>
+  return hide ? (
+    <Dash />
+  ) : (
+    <span className="font-mono tabular-nums text-foreground">
+      {value}
+      {suffix}
+    </span>
   );
 }
 
-function Dash() {
-  return <span className="text-muted-foreground/60">—</span>;
+const INJURY_COPY: MatrxDataTableCopyConfig<InjuryRowData> = {
+  label: "Injury",
+  listLabel: "Injuries (this view)",
+  location: "Workers' comp PD rating calculator — Injuries",
+  rowKind: "pd-injury",
+  listKind: "pd-injuries",
+  rowDescription: "One injury entered in the PD rating calculator.",
+  listDescription: "The injuries entered in the PD rating calculator.",
+  humanRow: (row) =>
+    TSV_HEADER.slice(1)
+      .map((label, i) => `${label}: ${rowToCells(row, 0)[i + 1]}`)
+      .join("\n"),
+};
+
+export function InjuriesTable({
+  rows,
+  onEdit,
+  onDelete,
+}: InjuriesTableProps) {
+  const { copyText } = useClipboard({ notify: copyNotify });
+  const indexOf = React.useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((row, idx) => map.set(row.injury.tmpId, idx));
+    return map;
+  }, [rows]);
+
+  // Warnings open under their row by default; the person can fold them away.
+  const [folded, setFolded] = React.useState<ReadonlySet<string>>(new Set());
+  const expandedIds = React.useMemo(
+    () =>
+      new Set(
+        rows
+          .filter((r) => r.warnings.length > 0 && !folded.has(r.injury.tmpId))
+          .map((r) => r.injury.tmpId),
+      ),
+    [rows, folded],
+  );
+
+  const columns = React.useMemo<MatrxColumnDef<InjuryRowData>[]>(
+    () => [
+      {
+        id: "n",
+        header: "#",
+        accessorFn: (row) => (indexOf.get(row.injury.tmpId) ?? 0) + 1,
+        cell: (row) => (
+          <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
+            {(indexOf.get(row.injury.tmpId) ?? 0) + 1}
+          </span>
+        ),
+        width: 56,
+      },
+      {
+        id: "impairment",
+        header: "Impairment",
+        accessorFn: (row) => row.definition?.name ?? "(no impairment selected)",
+        cell: (row) =>
+          row.definition ? (
+            <span className="block truncate font-medium text-foreground">
+              {row.definition.name}
+            </span>
+          ) : (
+            <span className="italic text-muted-foreground">
+              Click to choose an impairment
+            </span>
+          ),
+        filter: "text",
+        frozen: true,
+        width: 260,
+      },
+      {
+        id: "ama",
+        header: "AMA code",
+        accessorFn: (row) => row.definition?.impairment_number ?? "—",
+        cell: (row) => (
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {row.definition?.impairment_number ?? <Dash />}
+          </span>
+        ),
+        filter: "text",
+        width: 110,
+      },
+      {
+        id: "side",
+        header: "Side",
+        accessorFn: (row) => sideLabel(row.injury, row.definition),
+        filter: "select",
+        width: 100,
+      },
+      {
+        id: "wpi",
+        header: "WPI",
+        accessorFn: (row) => row.injury.wpi,
+        copyValue: (row) => pctOrDash(row.injury.wpi),
+        cell: (row) => <Pct value={row.injury.wpi} suffix="%" />,
+        filter: "number",
+        align: "right",
+        width: 80,
+      },
+      {
+        id: "ue",
+        header: "UE",
+        accessorFn: (row) => row.injury.ue,
+        copyValue: (row) => pctOrDash(row.injury.ue),
+        cell: (row) => <Pct value={row.injury.ue} suffix="%" />,
+        filter: "number",
+        align: "right",
+        width: 80,
+      },
+      {
+        id: "le",
+        header: "LE",
+        accessorFn: (row) => row.injury.le,
+        copyValue: (row) => pctOrDash(row.injury.le),
+        cell: (row) => <Pct value={row.injury.le} suffix="%" />,
+        filter: "number",
+        align: "right",
+        width: 80,
+      },
+      {
+        id: "digit",
+        header: "Digit",
+        accessorFn: (row) => row.injury.digit,
+        copyValue: (row) => pctOrDash(row.injury.digit),
+        cell: (row) => <Pct value={row.injury.digit} suffix="%" />,
+        filter: "number",
+        align: "right",
+        width: 80,
+      },
+      {
+        id: "pain",
+        header: "Pain",
+        accessorFn: (row) => row.injury.pain ?? 0,
+        cell: (row) => <Pct value={row.injury.pain} showZero />,
+        filter: "number",
+        align: "right",
+        width: 80,
+      },
+      {
+        id: "industrial",
+        header: "Industrial",
+        accessorFn: (row) => row.injury.industrial ?? 100,
+        copyValue: (row) => `${row.injury.industrial ?? 100}%`,
+        cell: (row) => <Pct value={row.injury.industrial} suffix="%" showZero />,
+        filter: "number",
+        align: "right",
+        width: 100,
+      },
+      {
+        id: "warnings",
+        header: "Warnings",
+        accessorFn: (row) => row.warnings.join(" · "),
+        filter: "text",
+        hidden: true,
+        width: 240,
+      },
+    ],
+    [indexOf],
+  );
+
+  return (
+    <MatrxDataTable<InjuryRowData>
+      tableId="legal/wc/pd-ratings/injuries"
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.injury.tmpId}
+      appearance="embedded"
+      viewTabs={false}
+      pageSize={0}
+      density="condensed"
+      searchText={(row) =>
+        `${row.definition?.name ?? ""} ${row.definition?.impairment_number ?? ""}`
+      }
+      toolbar={{ searchPlaceholder: "Search injuries" }}
+      detail={{ enabled: false }}
+      copy={INJURY_COPY}
+      onRowOpen={(row) => onEdit(row.injury.tmpId)}
+      rowActions={(row) => [
+        {
+          id: "copy-row",
+          icon: Copy,
+          label: "Copy row",
+          tooltip: "Copy row for Excel or Sheets",
+          onClick: () => {
+            const index = indexOf.get(row.injury.tmpId) ?? 0;
+            void copyText(
+              toDelimited([rowToCells(row, index)], { format: "tsv" }),
+              `Row ${index + 1} copied — paste into Excel or Sheets`,
+            );
+          },
+        },
+        {
+          id: "edit",
+          icon: Pencil,
+          label: "Edit injury",
+          onClick: () => onEdit(row.injury.tmpId),
+        },
+        {
+          id: "delete",
+          icon: Trash2,
+          label: "Delete injury",
+          tone: "destructive",
+          onClick: () => onDelete(row.injury.tmpId),
+        },
+      ]}
+      expandedDetail={{
+        expandedIds,
+        onExpandedIdsChange: (next) =>
+          setFolded(
+            new Set(
+              rows
+                .filter((r) => r.warnings.length > 0 && !next.has(r.injury.tmpId))
+                .map((r) => r.injury.tmpId),
+            ),
+          ),
+        canExpand: (row) => row.warnings.length > 0,
+        render: (row) => (
+          <div className="flex items-start gap-1.5 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <ul className="min-w-0 space-y-0.5">
+              {row.warnings.map((warning, wIdx) => (
+                <li key={wIdx}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        ),
+      }}
+      rowClassName={(row) => (!row.definition ? "bg-muted/15" : undefined)}
+      emptyState={{ title: "No injuries yet" }}
+    />
+  );
 }

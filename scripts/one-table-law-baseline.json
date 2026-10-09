@@ -76,8 +76,6 @@
     "features/hr/time/timesheet/BulkApproveDialog.tsx",
     "features/hr/time/timesheet/EmploymentPeriodDetail.tsx",
     "features/hr/time/timesheet/WeekBlocks.tsx",
-    "features/legal/wc/pd-ratings/components/workspace/InjuriesTable.tsx",
-    "features/legal/wc/pd-ratings/components/workspace/RatingBreakdownTable.tsx",
     "features/make/gallery/TemplateShowcase.tsx",
     "features/mandates/admin/MandateReferenceBoardView.tsx",
     "features/mandates/run-history/MandateRunHistory.tsx",

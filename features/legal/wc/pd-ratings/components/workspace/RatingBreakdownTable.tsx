@@ -24,11 +24,10 @@ import type {
   WcImpairmentDefinitionRead,
 } from "../../api/types";
 import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_NOWRAP_CELLS,
-} from "@/components/official/mobile-table/mobileTable";
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 
 interface RatingBreakdownTableProps {
   result: StatelessRatingResponse;
@@ -227,6 +226,208 @@ function buildExportText(
   return lines.join("\n");
 }
 
+function pct(v: number | null | undefined, showZero = false): string {
+  if (v == null) return "—";
+  if (!showZero && v === 0) return "—";
+  return Number.isInteger(v) ? `${v}%` : `${v.toFixed(2)}%`;
+}
+
+function Mono({ text, strong }: { text: string; strong?: boolean }) {
+  return text === "—" ? (
+    <Dash />
+  ) : (
+    <span
+      className={cn(
+        "font-mono tabular-nums text-foreground",
+        strong && "font-semibold",
+      )}
+    >
+      {text}
+    </span>
+  );
+}
+
+function pctColumn(
+  id: string,
+  header: string,
+  get: (row: InjuryDetailRow) => number | null | undefined,
+  showZero = false,
+): MatrxColumnDef<InjuryDetailRow> {
+  return {
+    id,
+    header,
+    accessorFn: (row) => get(row) ?? null,
+    copyValue: (row) => pct(get(row), showZero),
+    cell: (row) => <Mono text={pct(get(row), showZero)} />,
+    filter: "number",
+    align: "right",
+    width: 96,
+  };
+}
+
+function plainNum(v: number | string | null | undefined): string {
+  if (v == null) return "—";
+  if (typeof v === "string") return v;
+  return num(v);
+}
+
+const BREAKDOWN_COLUMNS: MatrxColumnDef<InjuryDetailRow>[] = [
+  {
+    id: "n",
+    header: "#",
+    accessorFn: (row) => row.index + 1,
+    cell: (row) => (
+      <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
+        {row.index + 1}
+      </span>
+    ),
+    width: 56,
+  },
+  {
+    id: "impairment",
+    header: "Impairment",
+    accessorFn: (row) => row.impairment.name,
+    cell: (row) => (
+      <span className="block truncate font-medium text-foreground">
+        {row.impairment.name}
+      </span>
+    ),
+    filter: "text",
+    frozen: true,
+    width: 260,
+  },
+  {
+    id: "ama",
+    header: "AMA code",
+    accessorFn: (row) => row.impairment.impairment_number ?? "—",
+    cell: (row) => (
+      <span className="font-mono text-xs text-muted-foreground tabular-nums">
+        {row.impairment.impairment_number ?? "—"}
+      </span>
+    ),
+    filter: "text",
+    width: 110,
+  },
+  {
+    id: "side",
+    header: "Side",
+    accessorFn: (row) =>
+      row.acceptsSide ? (SIDE_LABELS[row.side] ?? row.side) : "—",
+    filter: "select",
+    width: 100,
+  },
+  pctColumn("wpi", "WPI", (row) => row.wpi),
+  {
+    id: "pain",
+    header: "Pain",
+    accessorFn: (row) => row.pain ?? 0,
+    cell: (row) => <Mono text={num(row.pain ?? 0)} />,
+    filter: "number",
+    align: "right",
+    width: 80,
+  },
+  pctColumn("final-wpi", "Final WPI", (row) => row.finalWpi),
+  {
+    id: "fec",
+    header: "FEC",
+    accessorFn: (row) => row.fec,
+    cell: (row) => <Mono text={plainNum(row.fec)} />,
+    copyValue: (row) => plainNum(row.fec),
+    filter: "number",
+    align: "right",
+    width: 80,
+  },
+  pctColumn("wpi-adj", "WPI Adj", (row) => row.wpiAdj),
+  {
+    id: "group",
+    header: "Group",
+    accessorFn: (row) => row.occupationGroup,
+    cell: (row) => <Mono text={plainNum(row.occupationGroup)} />,
+    copyValue: (row) => plainNum(row.occupationGroup),
+    filter: "select",
+    align: "right",
+    width: 80,
+  },
+  {
+    id: "letter",
+    header: "Letter",
+    accessorFn: (row) => row.occupationLetter ?? "",
+    cell: (row) => <Mono text={row.occupationLetter ?? "—"} />,
+    copyValue: (row) => row.occupationLetter ?? "—",
+    filter: "select",
+    align: "center",
+    width: 80,
+  },
+  pctColumn("occup-adj", "Occup Adj", (row) => row.occupAdj),
+  pctColumn("age-adj", "Age Adj", (row) => row.ageAdj),
+  pctColumn("industrial", "Industrial", (row) => row.industrial ?? 100, true),
+  {
+    id: "final-pd",
+    header: "Final PD",
+    accessorFn: (row) => row.finalPd,
+    copyValue: (row) => (row.finalPd != null ? `${row.finalPd}%` : "—"),
+    cell: (row) =>
+      row.finalPd != null ? <Mono text={`${row.finalPd}%`} strong /> : <Dash />,
+    filter: "number",
+    align: "right",
+    width: 96,
+  },
+  {
+    id: "notes",
+    header: "Notes",
+    accessorFn: (row) => [...row.errors, ...row.warnings].join(" · "),
+    cell: (row) =>
+      row.errors.length + row.warnings.length > 0 ? (
+        <ul className="space-y-0.5 text-xs">
+          {row.errors.map((e, idx) => (
+            <li
+              key={`e-${idx}`}
+              className="flex gap-1 text-destructive"
+              title={e}
+            >
+              <AlertTriangle
+                className="mt-0.5 h-3 w-3 shrink-0"
+                aria-hidden
+              />
+              <span className="truncate">{e}</span>
+            </li>
+          ))}
+          {row.warnings.map((w, idx) => (
+            <li
+              key={`w-${idx}`}
+              className="flex gap-1 text-amber-700 dark:text-amber-400"
+              title={w}
+            >
+              <AlertTriangle
+                className="mt-0.5 h-3 w-3 shrink-0"
+                aria-hidden
+              />
+              <span className="truncate">{w}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Dash />
+      ),
+    filter: "text",
+    width: 260,
+  },
+];
+
+const BREAKDOWN_COPY: MatrxDataTableCopyConfig<InjuryDetailRow> = {
+  label: "Injury",
+  listLabel: "Rating breakdown (this view)",
+  location: "Workers' comp PD rating calculator — Rating breakdown",
+  rowKind: "pd-rating-injury",
+  listKind: "pd-rating-breakdown",
+  rowDescription: "One injury's step-by-step PD rating math.",
+  listDescription: "Per-injury PD rating math for the current calculation.",
+  humanRow: (row) =>
+    TSV_HEADER.slice(1)
+      .map((label, i) => `${label}: ${injuryRowToCells(row)[i + 1]}`)
+      .join("\n"),
+};
+
 export function RatingBreakdownTable({
   result,
   isStale,
@@ -310,35 +511,22 @@ export function RatingBreakdownTable({
       {/* Per-injury math grid. Mirrors the AMA Guides workflow that
           California WC professionals expect to see end-to-end:
           WPI → +Pain → ×FEC → ×Variant → AgeAdj → ×Industrial → Final PD */}
-      <div className="w-full overflow-x-auto rounded-lg border border-border bg-background/40">
-        <table className={cn("border-collapse text-sm", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
-          <thead className="bg-muted/40">
-            <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              <Th className="w-10 pl-4 text-left">#</Th>
-              <Th className={cn("text-left", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Impairment</Th>
-              <Th className="text-left whitespace-nowrap">AMA code</Th>
-              <Th className="text-left">Side</Th>
-              <Th className="text-right">WPI</Th>
-              <Th className="text-right">Pain</Th>
-              <Th className="text-right whitespace-nowrap">Final WPI</Th>
-              <Th className="text-right">FEC</Th>
-              <Th className="text-right whitespace-nowrap">WPI Adj</Th>
-              <Th className="text-right">Group</Th>
-              <Th className="text-center">Letter</Th>
-              <Th className="text-right whitespace-nowrap">Occup Adj</Th>
-              <Th className="text-right whitespace-nowrap">Age Adj</Th>
-              <Th className="text-right whitespace-nowrap">Industrial</Th>
-              <Th className="text-right whitespace-nowrap">Final PD</Th>
-              <Th className="text-left whitespace-nowrap pr-2">Notes</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <BreakdownRow key={row.index} row={row} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable<InjuryDetailRow>
+        tableId="legal/wc/pd-ratings/breakdown"
+        data={rows}
+        columns={BREAKDOWN_COLUMNS}
+        getRowId={(row) => String(row.index)}
+        appearance="embedded"
+        viewTabs={false}
+        pageSize={0}
+        density="condensed"
+        searchText={(row) =>
+          `${row.impairment.name} ${row.impairment.impairment_number ?? ""}`
+        }
+        toolbar={{ searchPlaceholder: "Search injuries" }}
+        detail={{ enabled: false }}
+        copy={BREAKDOWN_COPY}
+      />
 
       {combined?.warnings && combined.warnings.length > 0 && (
         <div className="mt-4 rounded-lg border border-amber-200/60 bg-amber-50/40 px-3 py-2.5 dark:border-amber-900/40 dark:bg-amber-950/20">
@@ -389,134 +577,6 @@ function SideFormulaCard({
         </ul>
       )}
     </div>
-  );
-}
-
-function Th({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <th
-      className={cn("px-2 py-2 font-medium whitespace-nowrap", className)}
-      scope="col"
-    >
-      {children}
-    </th>
-  );
-}
-
-function BreakdownRow({ row }: { row: InjuryDetailRow }) {
-  const hasNotes = row.warnings.length > 0 || row.errors.length > 0;
-
-  return (
-    <tr className="border-t border-border/60 hover:bg-muted/30 transition-colors">
-      <td className="px-2 py-2.5 pl-4 align-top">
-        <span className="font-mono text-xs font-medium text-muted-foreground tabular-nums">
-          {row.index + 1}
-        </span>
-      </td>
-      <td className={cn("px-2 py-2.5 align-top sm:min-w-0", MOBILE_TABLE_FROZEN_CELL)}>
-        <span className="font-medium text-foreground">
-          {row.impairment.name}
-        </span>
-      </td>
-      <td className="px-2 py-2.5 align-top font-mono text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-        {row.impairment.impairment_number ?? "—"}
-      </td>
-      <td className="px-2 py-2.5 align-top whitespace-nowrap">
-        {row.acceptsSide ? (
-          <span className="text-foreground">
-            {SIDE_LABELS[row.side] ?? row.side}
-          </span>
-        ) : (
-          <Dash />
-        )}
-      </td>
-      <NumCell value={row.wpi} suffix="%" />
-      <NumCell value={row.pain ?? 0} showZero />
-      <NumCell value={row.finalWpi} suffix="%" />
-      <NumCell value={row.fec} />
-      <NumCell value={row.wpiAdj} suffix="%" />
-      <NumCell value={row.occupationGroup ?? null} />
-      <td className="px-2 py-2.5 align-top text-center font-mono tabular-nums whitespace-nowrap">
-        {row.occupationLetter ? (
-          <span className="text-foreground">{row.occupationLetter}</span>
-        ) : (
-          <Dash />
-        )}
-      </td>
-      <NumCell value={row.occupAdj} suffix="%" />
-      <NumCell value={row.ageAdj} suffix="%" />
-      <NumCell value={row.industrial ?? 100} suffix="%" showZero />
-      <td className="px-2 py-2.5 align-top text-right font-mono tabular-nums whitespace-nowrap">
-        {row.finalPd != null ? (
-          <span className="font-semibold text-foreground">
-            {row.finalPd}%
-          </span>
-        ) : (
-          <Dash />
-        )}
-      </td>
-      <td className="px-2 py-2.5 pr-2 align-top text-xs text-muted-foreground min-w-[140px]">
-        {hasNotes ? (
-          <ul className="space-y-0.5">
-            {row.errors.map((e, idx) => (
-              <li key={`e-${idx}`} className="flex gap-1 text-destructive">
-                <AlertTriangle
-                  className="h-3 w-3 mt-0.5 shrink-0"
-                  aria-hidden
-                />
-                <span>{e}</span>
-              </li>
-            ))}
-            {row.warnings.map((w, idx) => (
-              <li
-                key={`w-${idx}`}
-                className="flex gap-1 text-amber-700 dark:text-amber-400"
-              >
-                <AlertTriangle
-                  className="h-3 w-3 mt-0.5 shrink-0"
-                  aria-hidden
-                />
-                <span>{w}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Dash />
-        )}
-      </td>
-    </tr>
-  );
-}
-
-function NumCell({
-  value,
-  suffix,
-  showZero,
-}: {
-  value: number | string | null | undefined;
-  suffix?: string;
-  showZero?: boolean;
-}) {
-  const display =
-    value == null
-      ? null
-      : typeof value === "string"
-        ? value
-        : !showZero && value === 0
-          ? null
-          : Number.isInteger(value)
-            ? `${value}${suffix ?? ""}`
-            : `${value.toFixed(2)}${suffix ?? ""}`;
-  return (
-    <td className="px-2 py-2.5 align-top text-right font-mono text-sm tabular-nums whitespace-nowrap">
-      {display == null ? <Dash /> : <span className="text-foreground">{display}</span>}
-    </td>
   );
 }
 
