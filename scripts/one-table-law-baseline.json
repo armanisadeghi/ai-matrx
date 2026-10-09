@@ -151,7 +151,6 @@
     "features/scopes/components/management/ScopeOnboarding.tsx",
     "features/scraper/parts/RemovalDetails.tsx",
     "features/settings/universal/ConfigurationExport.tsx",
-    "features/tasks/components/TasksTableView.tsx",
     "features/tool-call-visualization/admin/McpToolsManager.tsx",
     "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx"
   ]
