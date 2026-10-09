@@ -55,11 +55,8 @@ dialog on the page — no builder is forked.
   one Template spec), checks it with `validateTemplate` (describe profile; a failure is one line + Try again),
   declares it `template_declare('org')` and installs it with the gallery's `runTemplateDoor`, `Progress` and
   `Landing` (`describe/describeTemplate.ts`). Guard: `describe/__tests__/describe-installs-only-what-passes-the-check.test.ts`.
-<!-- matrx-auto-git-docs-resolution-needed-delete-this-when-resolved — two versions follow: LOCAL first, then GITHUB. (LOCAL latest 2026-10-09 00:39; GITHUB latest 2026-10-09 01:07; LOCAL lacks 14 of GITHUB's 14 new lines; GITHUB lacks 2 of LOCAL's 2 new lines; recover: git show ede216c8ac:'features/make/FEATURE.md' / 1dcb78466f:'features/make/FEATURE.md') Delete these three marker lines when resolved. -->
 - 2026-10-09 — lane MAKE-WORKS: the describe box is ONE GUIDED RUN — the plan shown at once (`describe/plan.ts`), each step with its own clock, the model runs streamed in the floating LiveRunWindow (was headless), a workspace-shaped sentence routed to the Space Builder and opened, a data result with one Open button, up to three follow-ups that run through the same box, and Try again RESUMING at the failed step (a finished design or Space is never redone). Guards: `describe/__tests__/a-sentence-goes-to-the-door-that-can-build-it.test.ts`, `describe/__tests__/a-failed-run-resumes-where-it-stopped.test.tsx`.
-<!-- matrx-auto-git-docs-resolution-needed-delete-this-when-resolved — GITHUB version below -->
 
 - 2026-10-09 (M3): describe agent output schema + prompt (individual, fewest tables, sample rows, nothing invented); failed-run
   recording; plain failure copy; kept press while the organization loads; 14 abandoned installs settled.
-<!-- matrx-auto-git-docs-resolution-needed-delete-this-when-resolved — end of both versions -->
 - 2026-10-09 — lane F13: the design run's `coerce` is `readDesign` (read + safe reuses + the store's check), so every refused answer fails the run itself and the person reads a plain sentence, never a JS error; a Space build shows only its own person-written refusals (`SpaceBuildRefused`). Guard: `the-live-personal-requests-build.test.ts` (the three live v8 answers).
