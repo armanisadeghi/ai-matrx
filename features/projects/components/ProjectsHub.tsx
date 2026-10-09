@@ -50,7 +50,7 @@ import {
 } from "@/components/navigation/MetricNavigation";
 import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { StaleDataNotice } from "@ai-matrx/design-system";
+import { ErrorNotice, StaleDataNotice } from "@ai-matrx/design-system";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -296,11 +296,9 @@ export function ProjectsHub({
   React.useEffect(() => {
     let cancelled = false;
     const ids = projects.map((p) => p.id);
-    if (ids.length === 0) {
-      setStats(new Map());
-      setStatsLoading(false);
-      return undefined;
-    }
+    // No projects: nothing to read. Stats are keyed by project id, so a stale
+    // map is never shown for projects that are gone.
+    if (ids.length === 0) return undefined;
     (async () => {
       setStatsReadFailed(false);
       setStatsLoading(true);
@@ -798,11 +796,16 @@ export function ProjectsHub({
             )}
 
             {scopeReadFailed && (
-              <StaleDataNotice
-                hasData={false}
-                what="projects for this scope"
-                detail={scopeReadError}
-                onRetry={retryScopeProjects}
+              <ErrorNotice
+                size="compact"
+                title="Couldn't load projects for this scope"
+                message={scopeReadError ?? "The read failed."}
+                operation="Read the projects for this scope"
+                actions={
+                  <Button variant="outline" size="sm" onClick={retryScopeProjects}>
+                    Try again
+                  </Button>
+                }
               />
             )}
 
