@@ -189,6 +189,8 @@ Row click → `/marketing/[brandId]/socials/[platform]/[tracked_account_id]` whe
 the competitor / inspiration accounts; the brands list counts via `readBrandSocialCounts`. Confirming a discovered social profile writes the property
 with `handle` from `classifySocialLink` and invalidates `["marketing","social","brand-accounts"|"brand-counts"]`.
 
+**One identity per account (A3):** `propertyIdentity` (link.ts) = `web.property_identity` in the DB; unique index `property_social_identity_unique` forbids a second live row per (brand, kind, owner_kind, identity). Create paths (`createProperty`, `confirmDiscoveredProperty`, server `link_brand_property`) find-or-create. The person chip (`PersonOwnerChip`) shows the linked person or offers "Link person".
+
 **Read counts** — `supabase.schema("social").rpc("brand_social_counts", { p_brand_ids: string[] })` →
 `{ brand_id, accounts, tracked, company_accounts, person_accounts }[]` (brands with zero accounts are absent → 0). The
 brands list "Socials" column shows `tracked/accounts`; same source as the list.

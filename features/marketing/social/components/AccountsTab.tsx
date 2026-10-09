@@ -40,6 +40,7 @@ import {
   type AccountRow,
   type TrackedRole,
 } from "../types";
+import { PersonOwnerChip } from "../../components/brands/PersonOwnerChip";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
@@ -128,7 +129,7 @@ export function AccountsTab() {
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
-                  {r.ownerKind === "person" ? <Badge>{r.ownerName ?? "Person"}</Badge> : null}
+                  {r.ownerKind === "person" ? <PersonOwnerChip propertyId={r.propertyId ?? null} ownerName={r.ownerName ?? null} organizationId={organizationId} brandId={brandId} /> : null}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
               </span>
@@ -258,7 +259,7 @@ export function AccountsTab() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandSeg, organizationId],
+    [brandSeg, organizationId, brandId],
   );
 
   const rows = accounts.data ?? [];

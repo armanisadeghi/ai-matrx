@@ -116,3 +116,31 @@ export function classifySocialLink(text: string): SocialLink | null {
   if (platform === "tiktok" && !first.startsWith("@")) return null;
   return { kind: "profile", platform, url: url.href, handle };
 }
+
+/** Kinds with no per-account identity (a site, a listing, a catch-all). */
+const NO_IDENTITY_KINDS = new Set(["website", "google_business_profile", "other"]);
+
+/**
+ * The ONE canonical identity of a brand's social account on a platform: its lowercased bare handle (or
+ * the account segment of its address when no handle is stored). Mirrors `web.property_identity` in the
+ * database, whose partial unique index `property_social_identity_unique` enforces one live row per
+ * (brand, kind, owner_kind, identity). Null = no identity (not an account address, e.g. a video link).
+ */
+export function propertyIdentity(
+  kind: string,
+  handle: string | null | undefined,
+  url: string | null | undefined,
+): string | null {
+  if (NO_IDENTITY_KINDS.has(kind)) return null;
+  const stored = (handle ?? "").trim();
+  let raw = stored;
+  if (!raw) {
+    const u = url ?? "";
+    const m = /(?:\/@|\/channel\/|\/user\/|\/c\/|\/r\/|\/in\/|\/company\/|\/school\/)([^/?#]+)/.exec(u);
+    // YouTube and LinkedIn need a marker (a /watch or /feed address is not an account); the rest name the account first.
+    const first = kind === "youtube" || kind === "linkedin" ? null : /^(?:https?:\/\/)?[^/]+\/([^/?#]+)/.exec(u);
+    raw = m?.[1] ?? first?.[1] ?? "";
+  }
+  const id = raw.replace(/^[\s/@]+|[\s/@]+$/g, "").toLowerCase();
+  return id || null;
+}

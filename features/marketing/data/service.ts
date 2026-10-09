@@ -93,7 +93,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
-import { classifySocialLink } from "@/features/marketing/social/link";
+import { classifySocialLink, propertyIdentity } from "@/features/marketing/social/link";
 import { readBrandSocialCounts } from "@/features/marketing/social/service";
 import {
   marketingKeyProblem,
@@ -2605,22 +2605,18 @@ export async function confirmDiscoveredProperty(
     throw new Error("A social property discovery needs a URL.");
   }
   const db = await authenticatedWebDb(supabase);
-  const property = await db
-    .from("property")
-    .insert({
-      organization_id: input.item.organization_id,
-      brand_id: input.item.brand_id,
-      kind: input.propertyKind,
-      url: input.item.url,
-      // The same handle rule the server uses, so the brand's social list shows a handle at once.
-      handle: classifySocialLink(input.item.url)?.handle ?? null,
-      display_name: input.displayName,
-      status: "active",
-      metadata: { source_discovery_id: input.item.id },
-    })
-    .select("id")
-    .single();
-  const created = assertData(property.data, property.error);
+  // The same handle rule the server uses, so the brand's social list shows a handle at once.
+  const handle = classifySocialLink(input.item.url)?.handle ?? null;
+  const created = await findOrCreateProperty(db, {
+    organization_id: input.item.organization_id,
+    brand_id: input.item.brand_id,
+    kind: input.propertyKind,
+    url: input.item.url,
+    handle,
+    display_name: input.displayName,
+    status: "active",
+    metadata: { source_discovery_id: input.item.id },
+  });
   await writeOne(
     db
       .from("discovered_item")
@@ -3749,24 +3745,74 @@ export async function undismissDiscoveredItem(itemId: string): Promise<void> {
 export async function createProperty(
   input: CreatePropertyInput,
 ): Promise<BrandProperty> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+  const db = await authenticatedWebDb(supabase);
+  const row = await findOrCreateProperty(db, {
+    organization_id: input.organizationId,
+    brand_id: input.brandId,
+    kind: input.kind,
+    url: input.url,
+    handle: input.handle,
+    display_name: input.displayName,
+    status: input.status,
+    ...(input.ownerKind ? { owner_kind: input.ownerKind } : {}),
+    ...(input.ownerPartyId ? { owner_party_id: input.ownerPartyId } : {}),
+  });
+  const full = await db
     .from("property")
-    .insert({
-      organization_id: input.organizationId,
-      brand_id: input.brandId,
-      kind: input.kind,
-      url: input.url,
-      handle: input.handle,
-      display_name: input.displayName,
-      status: input.status,
-      ...(input.ownerKind ? { owner_kind: input.ownerKind } : {}),
-      ...(input.ownerPartyId ? { owner_party_id: input.ownerPartyId } : {}),
-    })
     .select(PROPERTY_COLUMNS)
+    .eq("id", row.id)
     .single();
-  return assertData(response.data, response.error);
+  return assertData(full.data, full.error);
+}
+
+/**
+ * Find-or-create a brand's social property by its canonical identity (`propertyIdentity`): a second
+ * add of the same account returns the live row instead of a twin. The database's partial unique index
+ * is the backstop - a racing insert that loses (23505) re-reads the winner.
+ */
+async function findOrCreateProperty(
+  db: Awaited<ReturnType<typeof authenticatedWebDb>>,
+  values: {
+    organization_id: string;
+    brand_id: string;
+    kind: string;
+    url: string | null;
+    handle: string | null;
+    display_name: string | null;
+    status: string;
+    metadata?: Record<string, string>;
+    owner_kind?: "company" | "person";
+    owner_party_id?: string | null;
+  },
+): Promise<{ id: string }> {
+  const identity = propertyIdentity(values.kind, values.handle, values.url);
+  const owner = values.owner_kind ?? "company";
+  const findExisting = async (): Promise<{ id: string } | null> => {
+    if (!identity) return null;
+    const live = await db
+      .from("property")
+      .select("id, kind, handle, url, owner_kind")
+      .eq("brand_id", values.brand_id)
+      .eq("kind", values.kind)
+      .eq("owner_kind", owner)
+      .is("deleted_at", null);
+    const rows = assertData(live.data, live.error);
+    return (
+      rows.find((r) => propertyIdentity(r.kind, r.handle, r.url) === identity) ?? null
+    );
+  };
+  const existing = await findExisting();
+  if (existing) return existing;
+  const inserted = await db
+    .from("property")
+    .insert(values)
+    .select("id")
+    .single();
+  if (inserted.error?.code === "23505") {
+    const winner = await findExisting();
+    if (winner) return winner;
+  }
+  return assertData(inserted.data, inserted.error);
 }
 
 export async function updateProperty(
@@ -4648,4 +4694,20 @@ export async function getSiteRootStructuredData(
     capturedAt: snapshotResponse.data.captured_at,
     structuredData: snapshotResponse.data.structured_data,
   };
+}
+
+/** Link (or clear) the person who owns a person-owned account. Direct write under RLS; the DB checks the party is in the same organization. */
+export async function setPropertyOwnerParty(
+  propertyId: string,
+  partyId: string | null,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("property")
+    .update({ owner_party_id: partyId })
+    .eq("id", propertyId)
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "link this person");
 }

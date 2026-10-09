@@ -13,6 +13,7 @@ import { ExternalLink, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { PropertyKindMark } from "@/features/marketing/components/shared/PropertyKindMark";
+import { PersonOwnerChip } from "@/features/marketing/components/brands/PersonOwnerChip";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSocialAccounts } from "@/features/marketing/social/hooks";
 import { formatGrowth, lastPostLabel } from "@/features/marketing/social/mappers";
@@ -117,6 +118,8 @@ export function BrandSocialProfilesCard({
                 key={row.rowId}
                 row={row}
                 brandSeg={brandSeg}
+                brandId={brandId}
+                organizationId={organizationId}
                 busy={busyRow === row.rowId}
                 anyBusy={busyRow !== null}
                 progress={busyRow === row.rowId ? progress : null}
@@ -148,6 +151,8 @@ function Stat({ label, children, className }: { label: string; children: React.R
 function SocialRow({
   row,
   brandSeg,
+  brandId,
+  organizationId,
   busy,
   anyBusy,
   progress,
@@ -158,6 +163,8 @@ function SocialRow({
 }: {
   row: AccountRow;
   brandSeg: string;
+  brandId: string;
+  organizationId: string;
   busy: boolean;
   anyBusy: boolean;
   progress: string | null;
@@ -210,7 +217,9 @@ function SocialRow({
           ) : (
             name
           )}
-          {row.ownerKind === "person" ? <Badge>{row.ownerName ?? "Person"}</Badge> : null}
+          {row.ownerKind === "person" ? (
+            <PersonOwnerChip propertyId={row.propertyId} ownerName={row.ownerName ?? null} organizationId={organizationId} brandId={brandId} />
+          ) : null}
           {tracked ? <Badge tone="success">Tracked</Badge> : <Badge tone="warning">Not tracked</Badge>}
         </span>
         <span className="truncate text-xs text-muted-foreground">
