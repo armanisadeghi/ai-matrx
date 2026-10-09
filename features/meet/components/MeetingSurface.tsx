@@ -457,6 +457,8 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
  */
 /** Where this device remembers a guest's display name (per viewer, CORE-DESIGN §3.5). */
 const GUEST_NAME_KEY = "matrx.meet.guest-name";
+/** `@ai-matrx/meet`'s per-browser guest device id (the guest's person key). */
+const GUEST_DEVICE_KEY = "mx.meet.device";
 
 function GuestRoom({
   meeting,
@@ -582,6 +584,25 @@ function GuestRoom({
           preJoinControls={
             <>
               <BackToMeeting />
+              {/* A shared browser remembers the last guest: the next person changes it here,
+                  and gets their own guest identity (never announced under the first's name). */}
+              <Button
+                type="button"
+                variant="quiet"
+                data-meet-control="change-guest-name"
+                onClick={() => {
+                  try {
+                    window.localStorage.removeItem(GUEST_NAME_KEY);
+                    window.localStorage.removeItem(GUEST_DEVICE_KEY);
+                  } catch {
+                    // Private mode: nothing was remembered.
+                  }
+                  setTypedName("");
+                  setGuestName(null);
+                }}
+              >
+                {`Not ${guestName}?`}
+              </Button>
               <MeetingInviteButton
                 meeting={meeting}
                 signedIn={false}

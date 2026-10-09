@@ -417,11 +417,54 @@ ship_guard_lockfiles() {  # $1 = the temporary index holding SHIP_BASE_TREE
         rm -f "$out"
     done < <(git ls-tree -r --name-only "$SHIP_BASE_TREE" | grep -E '(^|/)(pnpm-lock\.yaml|package-lock\.json)$' || true)
 }
+# THE TWINS GUARD (2026-10-09) — the same class, one step later: v0.4.3061 parsed
+# fine, then Vercel's postinstall `check-matrx-packages.mjs --duplicates` exited 1
+# because the release lockfile held design-system 0.86.26 AND 0.86.27 (commit
+# 31b02bc6b3 reached main by a plain push). scripts/lockfile-twins.sh runs that exact
+# check on the release TREE (no node_modules, as Vercel sees it); twins are remedied
+# lockfile-only (`pnpm update -r "@ai-matrx/*" --depth Infinity`) INSIDE the release
+# commit (WARNING); twins it cannot remedy stop the release — a pushed release that
+# cannot install ships nothing and costs four failed builds.
+SHIP_TWINS_REMEDIED=""
+ship_guard_twins() {  # $1 = the temporary index (lockfile repairs already applied)
+    local idx="$1" helper="$SCRIPT_DIR/lockfile-twins.sh" tree out err moved rc blob
+    [[ -f "$helper" ]] || {
+        ship_finding "WARNING" "Lockfile" "Twins guard missing ($helper) — the release lockfile was NOT checked for two versions of one @ai-matrx package" "node scripts/check-matrx-packages.mjs --duplicates"
+        return 0
+    }
+    tree=$(GIT_INDEX_FILE="$idx" git write-tree) || return 1
+    out=$(mktemp); err=$(mktemp)
+    rc=0
+    moved=$(bash "$helper" "$tree" --out "$out" 2>"$err") || rc=$?
+    cat "$err" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>/dev/null || true
+    case "$rc" in
+        0) ;;
+        3)
+            blob=$(git hash-object -w "$out") || { rm -f "$out" "$err"; return 1; }
+            GIT_INDEX_FILE="$idx" git update-index --cacheinfo "100644,$blob,pnpm-lock.yaml" || { rm -f "$out" "$err"; return 1; }
+            if [[ -z "$SHIP_TWINS_REMEDIED" ]]; then
+                SHIP_TWINS_REMEDIED=1
+                ship_finding "WARNING" "Lockfile" "pnpm-lock.yaml held two versions of one @ai-matrx package (Vercel's postinstall refuses it) — remedied inside the release commit: ${moved:0:600}" "pnpm sync:matrx-packages, commit the lockfile"
+            fi
+            ;;
+        1)
+            echo "--- lockfile-twins ---" >&2; tail -20 "$err" >&2
+            rm -f "$out" "$err"
+            ship_finding "ERROR" "Lockfile" "pnpm-lock.yaml on $REMOTE/$BRANCH holds two versions of one @ai-matrx package and the remedy could not fix it — release NOT pushed" "pnpm sync:matrx-packages, commit the lockfile, release again"
+            fail "pnpm-lock.yaml in the release tree has @ai-matrx twins that Vercel's postinstall (check-matrx-packages.mjs --duplicates) refuses, and pnpm update -r \"@ai-matrx/*\" --depth Infinity could not collapse them — every build would fail, so nothing was pushed. Run: bash scripts/lockfile-twins.sh origin/main --out /tmp/l ; then pnpm sync:matrx-packages, commit the lockfile, and release again."
+            ;;
+        *)
+            ship_finding "WARNING" "Lockfile" "Twins guard could not judge the release lockfile (exit $rc: $(tail -1 "$err")) — not checked" "node scripts/check-matrx-packages.mjs --duplicates"
+            ;;
+    esac
+    rm -f "$out" "$err"
+}
 ship_build_commit() {  # uses CURRENT_VERSION NEW_VERSION RELEASE_COMMIT_MSG; sets RELEASE_SHA
     local idx blob tree
     idx=$(mktemp) && rm -f "$idx"
     GIT_INDEX_FILE="$idx" git read-tree "$SHIP_BASE_TREE" || return 1
     ship_guard_lockfiles "$idx" || return 1
+    ship_guard_twins "$idx" || return 1
     blob=$(git cat-file -p "$SHIP_BASE_TREE:$VERSION_FILE" \
         | sed "s/^  \"version\": \"${CURRENT_VERSION}\"/  \"version\": \"${NEW_VERSION}\"/" \
         | git hash-object -w --stdin) || return 1
