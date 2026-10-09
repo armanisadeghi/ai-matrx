@@ -37,6 +37,7 @@ export interface BlockSpec {
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown) => typeof v === "string";
 const nonEmpty = (v: unknown) => typeof v === "string" && v.length > 0;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ok: PropsCheck = () => null;
 
@@ -282,6 +283,19 @@ const SPECS: BlockSpec[] = [
       if (typeof p?.prompt !== "string") return "props.prompt must be text";
       if (p.output !== undefined && typeof p.output !== "string") return "props.output must be text (Markdown)";
       if (p.ranAt !== undefined && typeof p.ranAt !== "string") return "props.ranAt must be an ISO time";
+      return null;
+    },
+  },
+  {
+    type: "applet",
+    parity: "C23",
+    label: "Applet (a live Applet in place)",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => {
+      if (typeof p?.appletId !== "string" || !UUID.test(p.appletId)) return "props.appletId must be an Applet id (uuid)";
+      if (p.height !== undefined && !(typeof p.height === "number" && Number.isInteger(p.height) && p.height > 0)) return "props.height must be a whole number of pixels";
       return null;
     },
   },

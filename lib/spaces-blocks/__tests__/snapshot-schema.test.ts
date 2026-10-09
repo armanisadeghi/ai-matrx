@@ -80,8 +80,13 @@ function everyType() {
         { id: "tab-b", type: "tab", text: [span("Notes")], children: [{ id: id(), type: "todo", text: [span("b")], props: { checked: true } }] },
       ],
     },
+    { id: id(), type: "applet", props: { appletId: APPLET_ID, height: 480 } },
+    { id: id(), type: "applet", props: { appletId: APPLET_ID } },
   ];
 }
+
+const APPLET_ID = "3f2a9c4e-8b1d-4c7a-9e0f-1a2b3c4d5e6f";
+const appletAt = (s: any) => s.blocks.find((b: any) => b.type === "applet");
 
 const snap = (blocks: unknown[] = everyType()) => ({ v: 1, settings: { ...DEFAULT_PAGE_SETTINGS }, icon: { icon: "TreePalm" }, cover: { url: "https://x.y/c.png", offsetY: 4 }, blocks });
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -143,6 +148,14 @@ describe("Space snapshot JSON Schema", () => {
     "tab at the page root": (s) => s.blocks.push({ id: "z", type: "tab", text: [span("x")] }),
     "tabs with text": (s) => (s.blocks[30].text = [span("x")]),
     "tabs activeTab not text": (s) => (s.blocks[30].props.activeTab = 3),
+    "applet without appletId": (s) => delete appletAt(s).props.appletId,
+    "applet without props": (s) => delete appletAt(s).props,
+    "applet id not a uuid": (s) => (appletAt(s).props.appletId = "my-applet"),
+    "applet height zero": (s) => (appletAt(s).props.height = 0),
+    "applet height fractional": (s) => (appletAt(s).props.height = 480.5),
+    "applet height text": (s) => (appletAt(s).props.height = "480"),
+    "applet with text": (s) => (appletAt(s).text = [span("x")]),
+    "applet with children": (s) => (appletAt(s).children = [{ id: "z", type: "text" }]),
     "column inside a tab": (s) => (s.blocks[30].children[0].children = [{ id: "z", type: "column", props: { width: 1 } }]),
   };
   for (const [name, mutate] of Object.entries(bad)) {

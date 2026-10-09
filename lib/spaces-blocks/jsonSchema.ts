@@ -127,6 +127,16 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
   },
   slot: { required: true, schema: { required: ["label"], properties: { label: { type: "string" } } } },
   ai: { required: true, schema: { required: ["prompt"], properties: { prompt: { type: "string" }, output: { type: "string" }, ranAt: { type: "string" } } } },
+  applet: {
+    required: true,
+    schema: {
+      required: ["appletId"],
+      properties: {
+        appletId: { type: "string", pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" },
+        height: { type: "integer", exclusiveMinimum: 0 },
+      },
+    },
+  },
 };
 
 function databaseView(): J {
