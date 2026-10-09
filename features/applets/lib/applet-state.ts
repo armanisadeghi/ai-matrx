@@ -197,3 +197,17 @@ export function appletHeaderTransitions(state: AppletState, input: { name: strin
   if (state.kind === "in_use") return [putOnWeb, stopUsing];
   return [putOnWeb];
 }
+
+/**
+ * ON THE WEB, BUT ITS DATA IS NOT (Applet audit 2026-10-09: post-tracker, post-approvals, reading list). A
+ * web visitor is signed out, and a custom table or platform entity has no door for a signed-out reader —
+ * every read is refused, so the visitor sees the Applet without its data. True when the Applet is live on
+ * the web and reads any stored source. Never a grant: Manage says so and offers to take it off the web.
+ */
+export function webVisitorsMissData(
+  row: AppletStateFields & { sources?: unknown },
+  sources: readonly ({ table_id?: string; entity?: string } | object)[],
+): boolean {
+  if (!appletState(row).live) return false;
+  return sources.some((s) => "table_id" in s || "entity" in s);
+}

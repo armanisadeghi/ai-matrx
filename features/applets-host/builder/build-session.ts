@@ -416,3 +416,22 @@ export function buildingStep(requests: readonly BuildEntry[] | null | undefined)
   const since = Date.parse(latest.started_at);
   return { label: latest.fix ? fixNarration(latest.fix.message) : "Building your Applet", since: Number.isFinite(since) ? since : Date.now() };
 }
+
+/**
+ * ONE CONVERSATION PER BUILD (lane F6b). The build's conversation is the first run's: every later round — the
+ * automatic fix round, "Change it", her replies — is the next turn of THAT conversation, so she reads and
+ * answers the whole build in one place and the builder sees every earlier round. Stored with the build
+ * (`metadata.build.requests[].conversation_id`); null until the first run exists.
+ */
+export function buildConversationId(requests: readonly Pick<BuildEntry, "conversation_id">[]): string | null {
+  return requests.find((r) => r.conversation_id)?.conversation_id ?? null;
+}
+
+/** The turn the HOST writes for a fix round — never quoted as hers (`host_turn`; the details ride `context`). */
+export function fixHostTurn(message: string | null | undefined): { text: string; reason: string } {
+  const subject = problemSubject(message);
+  return {
+    text: `Your last answer could not be saved${subject ? ` (${subject})` : ""}. The reason is in last_check. Fix only that and return the whole record.`,
+    reason: "applets.build fix round",
+  };
+}

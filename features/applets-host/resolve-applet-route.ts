@@ -13,6 +13,7 @@
 import "server-only";
 import { cache } from "react";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { DEFINITION_COLUMNS } from "@ai-matrx/applets/platform";
 
 import { readAppletIntro } from "@/features/marketing/applets/publicApplets.server";
 import type { AppletIntro } from "@/features/marketing/applets/types";
@@ -115,3 +116,17 @@ export async function resolveAppletView(key: string, signedIn: boolean): Promise
   if (fate === "none") return { kind: "missing" };
   return { kind: "sign-in" };
 }
+
+/**
+ * The Applet's `app.definition` row, read while the page renders, through THIS viewer's own server client
+ * (row security decides: a signed-out visitor reads only a published public Applet — the same rows the
+ * browser's guest read answers). Handed to the host as `definition`, so the Applet's first `record()` never
+ * waits for hydration to ask again. Null when the read is refused or empty: the browser then reads, and says
+ * why when it cannot.
+ */
+export const readAppletDefinition = cache(async (id: string): Promise<Record<string, unknown> | null> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("app").from("definition").select(DEFINITION_COLUMNS).eq("id", id).is("deleted_at", null).maybeSingle();
+  if (error || !data) return null;
+  return data as Record<string, unknown>;
+});
