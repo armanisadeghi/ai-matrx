@@ -26,7 +26,10 @@ export function BrandTopicalMapCard({
   brandId,
   brandSeg,
   organizationId,
+  title = "Topical map",
 }: {
+  /** The card's name for this brand kind (`brand-kind.ts` overview.mapTitle). */
+  title?: string;
   brandId: string;
   brandSeg: string;
   organizationId: string;
@@ -37,7 +40,7 @@ export function BrandTopicalMapCard({
 
   return (
     <SectionCard
-      title="Topical map"
+      title={title}
       action={{
         label: "Open Content",
         href: marketingRoutes.brandTopicalMapHome(brandSeg),
@@ -45,14 +48,14 @@ export function BrandTopicalMapCard({
     >
       {maps.isPending ? (
         <p className="p-4 text-xs text-muted-foreground">
-          Loading this brand&apos;s topical maps…
+          Loading this brand&apos;s {title.toLowerCase()}s…
         </p>
       ) : maps.isError ? (
         <ErrorNotice size="inline" className="p-4 text-xs" message={topicalMapErrorText(maps.error)} />
       ) : maps.data.length === 0 ? (
         <div className="grid gap-2 p-4">
           <p className="text-xs text-muted-foreground">
-            No topical map yet. The map decides which pages this brand should have
+            No {title.toLowerCase()} yet. The map decides which pages this brand should have
             and where they live; the content plan writes the ones it calls for.
           </p>
           {/* Placement §7 #4 — "Generate map" when there is none. */}

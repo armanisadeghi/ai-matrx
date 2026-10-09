@@ -237,28 +237,43 @@ export function extractPresenceLinks(
 }
 
 /**
- * The outbound link most likely to be the person's own website: a host whose
- * name carries their handle or their name (melrobbins.com for @melrobbins).
- * Null when nothing matches — the person picks, nothing is guessed.
+ * Outbound links that are the person's OWN site: a host whose name carries the
+ * whole handle or the whole name (jeffnippard.com for @jeffnippard). Press
+ * mentions and articles about them (a university page, a magazine, a journal)
+ * never match, so they are never offered as "their website". Origins, deduped,
+ * in the order found.
  */
-export function likelyWebsite(
+export function ownSiteLinks(
   links: readonly string[],
   who: { handle?: string | null; name?: string | null },
-): string | null {
+): string[] {
   const keys = [who.handle, who.name]
     .map((v) => (v ?? "").toLowerCase().replace(/[^a-z0-9]/g, ""))
     .filter((v) => v.length >= 4);
-  if (keys.length === 0) return null;
+  if (keys.length === 0) return [];
+  const found: string[] = [];
   for (const link of links) {
     const url = parseHttpUrl(link);
     if (!url) continue;
     const label = hostOf(url).split(".").slice(0, -1).join("").replace(/[^a-z0-9]/g, "");
     // The host must carry the WHOLE handle or name: "melrob.co" is a short-link domain, not melrobbins.com.
     if (keys.some((k) => label === k || label.includes(k))) {
-      return `https://${hostOf(url)}`;
+      const origin = `https://${hostOf(url)}`;
+      if (!found.includes(origin)) found.push(origin);
     }
   }
-  return null;
+  return found;
+}
+
+/**
+ * The outbound link most likely to be the person's own website (see `ownSiteLinks`).
+ * Null when nothing matches — the person picks, nothing is guessed.
+ */
+export function likelyWebsite(
+  links: readonly string[],
+  who: { handle?: string | null; name?: string | null },
+): string | null {
+  return ownSiteLinks(links, who)[0] ?? null;
 }
 
 /** Display text for a link: host + path, no scheme. */

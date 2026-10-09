@@ -17,6 +17,7 @@
  */
 
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import {
   LoadingSurface,
@@ -43,8 +44,9 @@ export function BrandScopedCompetitors({
   if (sites.isError) return <QueryError error={sites.error} />;
 
   // A brand with no website still has competitors: the social ones. The directory works without
-  // a site; the website analysis screens need one.
-  if ((sites.data ?? []).length === 0) return <BrandCompetitorDirectory />;
+  // a site; the website analysis screens need one. A person brand's peers are always the
+  // directory: the autopsy screens are a company-website practice.
+  if (isPersonBrand(brand) || (sites.data ?? []).length === 0) return <BrandCompetitorDirectory />;
 
   return <CompetitorAutopsyWorkspace brandId={brand.id} view={view} />;
 }

@@ -10,9 +10,11 @@ import {
   brandKindOf,
   isBrandSelf,
   isPersonBrand,
+  arrangeBrandNav,
+  brandNavLabel,
   BRAND_KIND_COPY,
 } from "../brand-kind";
-import { extractPresenceLinks, isLinkInBioUrl, likelyWebsite, urlsInText } from "../link-in-bio";
+import { extractPresenceLinks, isLinkInBioUrl, likelyWebsite, ownSiteLinks, urlsInText } from "../link-in-bio";
 import {
   classifyStartInput,
   createPersonBrand,
@@ -64,6 +66,94 @@ describe("brand kind — one switch, company by default", () => {
     }
     expect(brandKindCopy({ kind: "person" }).rooms.competitors.name).toBe("Peers");
     expect(brandKindCopy(null).rooms.competitors.name).toBe("Competitors");
+  });
+});
+
+describe("person brand wording — every screen reads the one config", () => {
+  const person = BRAND_KIND_COPY.person;
+  const company = BRAND_KIND_COPY.company;
+
+  it("words the overview, strategy, peers and audience for a person", () => {
+    expect(person.overview).toMatchObject({ factsTitle: "About", mapTitle: "Content map" });
+    expect(person.overview.factsTitle).not.toBe(company.overview.factsTitle);
+    expect(person.strategy.noun).toBe("strategy");
+    expect(company.strategy.noun).toBe("brand strategy");
+    expect([person.rivals.title, person.rivals.one, person.rooms.competitors.name]).toEqual(["Peers", "Peer", "Peers"]);
+    expect(person.audience.noun).toBe("audience profile");
+    expect(company.audience.noun).toBe("persona");
+  });
+
+  it("no person-brand string says competitor, persona, business or brand strategy", () => {
+    // Values only: object keys (rooms.competitors) are identifiers, not words on screen.
+    const strings: string[] = [];
+    JSON.stringify(
+      { ...person, offeringsLine: person.offeringsLine("X"), emptyLine: person.rivals.emptyLine("X") },
+      (_key, value) => {
+        if (typeof value === "string") strings.push(value);
+        return value;
+      },
+    );
+    const text = strings.join(" | ").toLowerCase();
+    expect(text).not.toMatch(/competitor|persona|business|brand strategy|topical/);
+  });
+
+  it("the Competitors sidebar row reads Peers on a person brand only", () => {
+    const row = { slug: "intelligence", subPath: "competitors", name: "Competitors" };
+    expect(brandNavLabel("person", row)).toBe("Peers");
+    expect(brandNavLabel("company", row)).toBe("Competitors");
+    expect(brandNavLabel("person", { slug: "email", name: "Email" })).toBe("Email");
+  });
+
+  const groups = [
+    { label: "Properties", modes: [{ slug: "websites", group: "Properties" }, { slug: "locations", group: "Properties" }] },
+    { label: "Marketing", modes: [{ slug: "seo", group: "Marketing" }, { slug: "email", group: "Marketing" }] },
+  ];
+  const slugs = (g: { modes: { slug: string }[] }[]) => g.flatMap((x) => x.modes.map((m) => m.slug));
+
+  it("a company's sidebar is untouched", () => {
+    expect(slugs(arrangeBrandNav(groups, "company", false))).toEqual(["websites", "locations", "seo", "email"]);
+  });
+
+  it("a person without a website loses Locations and parks Websites and SEO under More", () => {
+    const out = arrangeBrandNav(groups, "person", false);
+    expect(slugs(out)).toEqual(["email", "websites", "seo"]);
+    expect(out[out.length - 1].label).toBe("More");
+  });
+
+  it("a person with a website keeps Websites and SEO in place, still without Locations", () => {
+    const out = arrangeBrandNav(groups, "person", true);
+    expect(slugs(out)).toEqual(["websites", "seo", "email"]);
+    expect(out.map((g) => g.label)).not.toContain("More");
+  });
+});
+
+describe("website suggestions — their own site, never press", () => {
+  const who = { handle: "jeffnippard", name: "Jeff Nippard" };
+  it("keeps links whose host carries their handle or name", () => {
+    expect(
+      ownSiteLinks(
+        [
+          "https://www.usf.edu/news/jeff-nippard-study",
+          "https://www.gq.com/story/jeff-nippard-workout",
+          "https://www.sciencedirect.com/science/article/pii/S1",
+          "https://jeffnippard.com/programs",
+          "https://www.jeffnippard.com/blog",
+          "https://macrofactorapp.com",
+        ],
+        who,
+      ),
+    ).toEqual(["https://jeffnippard.com"]);
+  });
+  it("offers nothing when no host carries their name", () => {
+    expect(ownSiteLinks(["https://www.gq.com/story/x", "https://usf.edu"], who)).toEqual([]);
+    expect(ownSiteLinks(["https://jeffnippard.com"], { handle: "jn", name: "" })).toEqual([]);
+  });
+  it("discovery offers only own-site candidates", async () => {
+    const jeff: SeedProfile = { ...seed, handle: "jeffnippard", displayName: "Jeff Nippard", bio: "Science-Based Bodybuilding", externalUrl: "https://linktr.ee/jeffnippard" };
+    const out = await discoverPresence(jeff, {
+      scrape: async () => "https://jeffnippard.com/ https://www.usf.edu/news/x https://www.gq.com/story/jeff https://www.sciencedirect.com/a",
+    });
+    expect(out.siteCandidates).toEqual(["https://jeffnippard.com"]);
   });
 });
 
@@ -180,6 +270,7 @@ describe("person brand creation flow", () => {
       resolvePerson,
       createBrand: async (i: CreateBrandInput) => ({ id: "b1", ...i }) as unknown as MarketingBrand,
       createProperty: async () => ({ id: "p1" }),
+      createSite: async () => ({ id: "s1" }),
     });
     expect(resolvePerson).not.toHaveBeenCalled();
     expect(out.partyId).toBeNull();
@@ -212,13 +303,48 @@ describe("person brand creation flow", () => {
         if (input.kind === "threads") throw new Error("duplicate");
         return { id: `prop-${input.kind}` };
       },
+      createSite: async (input) => {
+        calls.push("site");
+        // The confirmed website becomes the brand's website property, under the new brand.
+        expect(input).toMatchObject({ brandId: "brand-1", domain: "melrobbins.com", rootUrl: "https://melrobbins.com/" });
+        return { id: "site-1" };
+      },
     });
-    expect(calls).toEqual(["party", "brand", "property:instagram", "property:threads"]);
+    expect(calls).toEqual(["party", "brand", "property:instagram", "property:threads", "site"]);
+    expect(out.siteId).toBe("site-1");
     expect(props.every((p) => p.ownerPartyId === "party-1" && p.brandId === "brand-1")).toBe(true);
     expect(out.properties).toEqual([
       expect.objectContaining({ platform: "instagram", propertyId: "prop-instagram", error: null }),
       expect.objectContaining({ platform: "threads", propertyId: null, error: "duplicate" }),
     ]);
+  });
+
+  it("a website that cannot be saved is said, and the brand still stands", async () => {
+    const plan = planPersonBrand({ organizationId: "org", name: "Mel Robbins", seed, chosen: [], website: "melrobbins.com", selfUserId: null });
+    const out = await createPersonBrand(plan, seed, {
+      resolvePerson: async () => "party-1",
+      createBrand: async () => ({ id: "brand-1" }) as MarketingBrand,
+      createProperty: async () => ({ id: "p" }),
+      createSite: async () => {
+        throw new Error("site refused");
+      },
+    });
+    expect(out.brand.id).toBe("brand-1");
+    expect(out.siteId).toBeNull();
+    expect(out.siteError).toBe("site refused");
+  });
+
+  it("no website given means no site is created", async () => {
+    const plan = planPersonBrand({ organizationId: "org", name: "Mel Robbins", seed, chosen: [], website: null, selfUserId: null });
+    const createSite = jest.fn();
+    const out = await createPersonBrand(plan, seed, {
+      resolvePerson: async () => "party-1",
+      createBrand: async () => ({ id: "brand-1" }) as MarketingBrand,
+      createProperty: async () => ({ id: "p" }),
+      createSite,
+    });
+    expect(createSite).not.toHaveBeenCalled();
+    expect(out.siteId).toBeNull();
   });
 
   it("tells a handle, a social profile URL and a website apart", () => {

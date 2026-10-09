@@ -43,12 +43,16 @@ function lines(value: string): string[] {
 export function BrandAudiencePage({
   brandId,
   brandName,
+  brandKind,
   organizationId,
 }: {
   brandId: string;
   brandName: string;
+  brandKind?: string | null;
   organizationId: string;
 }) {
+  const audience = brandKindCopy(brandKind).audience;
+  const Noun = audience.noun.charAt(0).toUpperCase() + audience.noun.slice(1);
   const personas = useBrandPersonas(brandId);
   const create = useCreateBrandPersona(brandId);
   const update = useUpdateBrandPersona(brandId);
@@ -68,10 +72,10 @@ export function BrandAudiencePage({
       } else if (editing) {
         await update.mutateAsync({ persona: editing, values });
       }
-      toast.success("Persona saved");
+      toast.success(`${Noun} saved`);
       setEditing(null);
     } catch (error) {
-      toast.error("Could not save persona", { description: extractErrorMessage(error) });
+      toast.error(`Could not save ${audience.noun}`, { description: extractErrorMessage(error) });
     }
   };
 
@@ -80,7 +84,7 @@ export function BrandAudiencePage({
       await remove.mutateAsync(persona.id);
       toast.success(`Removed ${persona.name}`);
     } catch (error) {
-      toast.error("Could not remove persona", { description: extractErrorMessage(error) });
+      toast.error(`Could not remove ${audience.noun}`, { description: extractErrorMessage(error) });
     }
   };
 
@@ -95,18 +99,18 @@ export function BrandAudiencePage({
             {brandName} · Audience
           </h1>
           <Button variant="primary" icon={<Plus />} onClick={() => setEditing("new")}>
-            Persona
+            {Noun}
           </Button>
         </header>
 
         {personas.isPending ? (
-          <LoadingSurface label="Loading personas…" />
+          <LoadingSurface label={`Loading ${audience.plural}…`} />
         ) : rows.length === 0 ? (
           <Card className="flex flex-col items-center gap-2 p-8 text-center">
             <Users className="h-5 w-5 text-muted-foreground" aria-hidden />
-            <p className="text-sm text-muted-foreground">No personas yet.</p>
+            <p className="text-sm text-muted-foreground">No {audience.plural} yet.</p>
             <Button variant="quiet" icon={<Plus />} onClick={() => setEditing("new")}>
-              Add the first persona
+              Add the first {audience.noun}
             </Button>
           </Card>
         ) : (
@@ -125,6 +129,7 @@ export function BrandAudiencePage({
 
       {editing ? (
         <PersonaDialog
+          audience={audience}
           persona={editing === "new" ? null : editing}
           busy={create.isPending || update.isPending}
           onCancel={() => setEditing(null)}
@@ -188,11 +193,13 @@ function PersonaCard({
 }
 
 function PersonaDialog({
+  audience,
   persona,
   busy,
   onCancel,
   onSave,
 }: {
+  audience: BrandKindCopy["audience"];
   persona: BrandPersona | null;
   busy: boolean;
   onCancel: () => void;
@@ -211,12 +218,12 @@ function PersonaDialog({
     <Dialog open onOpenChange={(open) => (!open ? onCancel() : undefined)}>
       <DialogContent className="flex max-h-[85dvh] max-w-xl flex-col overflow-y-auto overscroll-contain">
         <DialogHeader>
-          <DialogTitle className="text-base">{persona ? `Edit ${persona.name}` : "New persona"}</DialogTitle>
+          <DialogTitle className="text-base">{persona ? `Edit ${persona.name}` : `New ${audience.noun}`}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <Label className="text-xs">Name</Label>
-            <Input autoFocus aria-label="Persona name" value={name} onChange={(e) => setName(e.target.value)} placeholder="IT director at a mid-size company" />
+            <Input autoFocus aria-label={`${audience.noun} name`} value={name} onChange={(e) => setName(e.target.value)} placeholder={audience.namePlaceholder} />
           </div>
           <div className="grid gap-1.5">
             <Label className="text-xs">Summary</Label>

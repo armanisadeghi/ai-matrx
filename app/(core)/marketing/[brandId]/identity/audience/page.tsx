@@ -15,6 +15,7 @@ export default async function BrandAudienceRoute({
     <BrandAudiencePage
       brandId={brand.id}
       brandName={brand.name}
+      brandKind={brand.kind}
       organizationId={brand.organization_id}
     />
   );

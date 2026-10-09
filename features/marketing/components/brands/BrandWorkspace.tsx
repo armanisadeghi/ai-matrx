@@ -67,6 +67,7 @@ import {
   useBrandProperties,
   useBrandSites,
   useBusinessFacts,
+  useCreateSite,
   useDeleteBrand,
   useDeleteBrandAsset,
   useDeleteBusinessFact,
@@ -90,9 +91,10 @@ import {
 } from "@/features/marketing/components/shared/PropertyKindMark";
 import { BrandSocialProfilesCard } from "@/features/marketing/components/brands/BrandSocialProfilesCard";
 import { PersonBrandAvatar, PersonFollowerTotal } from "@/features/marketing/components/brands/PersonBrandAvatar";
-import { BRAND_KIND_COPY, isPersonBrand } from "@/features/marketing/lib/brand-kind";
+import { BRAND_KIND_COPY, brandKindCopy, isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { secureImageUrl } from "@/features/marketing/lib/website-url";
+import { normalizeWebsiteUrl, secureImageUrl } from "@/features/marketing/lib/website-url";
+import { linkLabel as linkLabelOf } from "@/features/marketing/lib/link-in-bio";
 import {
   BRAND_ASSET_KIND_LABELS,
   BUSINESS_FACT_KIND_LABELS,
@@ -386,6 +388,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   >({});
   // access-errors: ok — cockpit section list; the brand read below is the gated primary and a failed section shows as empty, editable via its own card
   const sites = useBrandSites(brandId);
+  const createSite = useCreateSite();
   // access-errors: ok — cockpit section list under the gated brand primary
   const properties = useBrandProperties(brandId);
   const personas = useBrandPersonas(brandId);
@@ -486,6 +489,25 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           }
         : {}),
     });
+  };
+
+  const overviewCopy = brandKindCopy(current).overview;
+
+  // The brand names a website that is not yet a managed site: one click makes it the website property.
+  const addBrandWebsite = async () => {
+    try {
+      const parsed = normalizeWebsiteUrl(current.website_url ?? "");
+      await createSite.mutateAsync({
+        organizationId: current.organization_id,
+        name: parsed.hostname,
+        rootUrl: parsed.toString(),
+        domain: parsed.hostname.toLowerCase(),
+        brandId: current.id,
+      });
+      toast.success(`Added ${parsed.hostname}`);
+    } catch (error) {
+      toast.error("Could not add website", { description: extractErrorMessage(error) });
+    }
   };
 
   const brandCopy = webCopy({
@@ -757,6 +779,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               where they live. A map belongs to the BRAND, so it is a card here
               rather than another row action on one site. */}
           <BrandTopicalMapCard
+            title={overviewCopy.mapTitle}
             brandId={current.id}
             brandSeg={marketingSeg(current)}
             organizationId={current.organization_id}
@@ -771,9 +794,18 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             }}
           >
             {websiteSites.length === 0 ? (
-              <p className="p-4 text-xs text-muted-foreground">
-                No website property yet.
-              </p>
+              <div className="flex flex-wrap items-center gap-3 p-4 text-xs text-muted-foreground">
+                <p>{overviewCopy.websitesEmpty}</p>
+                {current.website_url ? (
+                  <Button
+                    variant="outline"
+                    disabled={createSite.isPending}
+                    onClick={() => void addBrandWebsite()}
+                  >
+                    {`Add ${linkLabelOf(current.website_url)}`}
+                  </Button>
+                ) : null}
+              </div>
             ) : (
               <ul className="divide-y divide-border">
                 {websiteSites.map((site) => (
@@ -861,19 +893,17 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             />
 
             <SectionCard
-              title="Business facts"
+              title={overviewCopy.factsTitle}
               className="lg:col-span-2"
               copy={factsCopy}
               action={{
-                label: "Add fact",
+                label: overviewCopy.factsAdd,
                 onClick: () => setFactEditor({ open: true, fact: null }),
               }}
             >
               {factRows.length === 0 ? (
                 <p className="p-4 text-xs text-muted-foreground">
-                  No confirmed facts yet. Add one directly, or review the
-                  discovery inbox to confirm phones, emails, addresses, and
-                  taglines.
+                  {overviewCopy.factsEmpty}
                 </p>
               ) : (
                 <div className="divide-y divide-border">

@@ -13,6 +13,7 @@ export function BrandStrategyRoom() {
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
       <StrategyBriefWorkspace
         scope="brand"
+        brandKind={brand.kind}
         id={brand.id}
         brandId={brand.id}
         brandSeg={brand.seg}

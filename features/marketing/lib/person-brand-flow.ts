@@ -12,8 +12,9 @@
  * `components/brands/PersonBrandCreator.tsx`; real deps are `person-brand-io.ts`.
  */
 
-import type { CreateBrandInput, CreatePropertyInput, MarketingBrand } from "../types";
+import type { CreateBrandInput, CreatePropertyInput, CreateSiteInput, MarketingBrand } from "../types";
 import type { BrandKind } from "./brand-kind";
+import { normalizeWebsiteUrl } from "./website-url";
 import type { SocialPlatform, SocialProfileRow } from "../social/types";
 import { SOCIAL_PLATFORMS } from "../social/types";
 import {
@@ -21,6 +22,7 @@ import {
   isLinkInBioUrl,
   isShortLink,
   likelyWebsite,
+  ownSiteLinks,
   parseHttpUrl,
   type DiscoveredAccount,
 } from "./link-in-bio";
@@ -96,6 +98,8 @@ export interface Discovery {
   accounts: DiscoveredAccount[];
   /** Other outbound links (podcast, shop, site), for the website choice. */
   links: string[];
+  /** Links that look like their own site (never press or articles): the chips offered for the website. */
+  siteCandidates: string[];
   /** Best website guess (the bio link when it is a plain site, or a host carrying their name). */
   website: string | null;
   /** The link-in-bio page that was read, if any. */
@@ -144,7 +148,10 @@ export async function discoverPresence(seed: SeedProfile, deps: DiscoverDeps): P
       ? originOf(seed.externalUrl)
       : null;
   const website = plainBioSite ?? likelyWebsite(links, { handle: seed.handle, name: seed.displayName });
-  return { accounts, links, website, hub, hubError };
+  const siteCandidates = [
+    ...new Set([website, ...ownSiteLinks(links, { handle: seed.handle, name: seed.displayName })].filter((v): v is string => Boolean(v))),
+  ];
+  return { accounts, links, siteCandidates, website, hub, hubError };
 }
 
 function extractHubsFromText(text: string): string[] {
@@ -244,6 +251,8 @@ export interface PersonBrandDeps {
   }) => Promise<string>;
   createBrand: (input: CreateBrandInput) => Promise<MarketingBrand>;
   createProperty: (input: CreatePropertyInput) => Promise<{ id: string }>;
+  /** A confirmed website becomes the brand's website property (a managed site). */
+  createSite: (input: CreateSiteInput) => Promise<{ id: string }>;
 }
 
 export interface CreatedPersonBrand {
@@ -252,6 +261,9 @@ export interface CreatedPersonBrand {
   partyId: string | null;
   /** One per planned account: the property id, or why it failed (the brand still stands). */
   properties: Array<{ platform: string; handle: string; url: string | null; propertyId: string | null; error: string | null }>;
+  /** The confirmed website saved as the brand's site; null when none was given, `siteError` when it failed (the brand still stands). */
+  siteId: string | null;
+  siteError: string | null;
 }
 
 /** Run a plan: person, brand, then each account. A failed account never undoes the brand. */
@@ -290,7 +302,26 @@ export async function createPersonBrand(
       });
     }
   }
-  return { brand, partyId, properties };
+  let siteId: string | null = null;
+  let siteError: string | null = null;
+  const siteUrl = plan.brand.websiteUrl;
+  if (siteUrl) {
+    try {
+      // The same address rules as Add website (throws on a non-address).
+      const parsed = normalizeWebsiteUrl(siteUrl);
+      const site = await deps.createSite({
+        organizationId: plan.brand.organizationId,
+        name: parsed.hostname,
+        rootUrl: parsed.toString(),
+        domain: parsed.hostname.toLowerCase(),
+        brandId: brand.id,
+      });
+      siteId = site.id;
+    } catch (error) {
+      siteError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  return { brand, partyId, properties, siteId, siteError };
 }
 
 /** What Add brand does with the first field: a social profile (person/handle path) or a website. */

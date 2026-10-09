@@ -10,8 +10,8 @@
  * Every failure is shown where it happened with a way forward; nothing dead-ends.
  */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, ExternalLink, Loader2, Search, UserRound } from "lucide-react";
 import { Button, Field, Select, type SelectOption } from "@ai-matrx/design-system/controls";
@@ -93,6 +93,13 @@ export function HandleBrandCreator({
   const [isMe, setIsMe] = useState(false);
   const [created, setCreated] = useState<CreatedPersonBrand | null>(null);
   const [tracking, setTracking] = useState<Record<string, TrackState>>({});
+  const pathname = usePathname();
+  const [opening, setOpening] = useState(false);
+  // The dialog stays up, saying "Opening", until the brand page is the page: a first visit can
+  // take a moment, and a dialog that vanishes with nothing behind it reads as a dead button.
+  useEffect(() => {
+    if (opening && created && pathname?.startsWith(marketingRoutes.brand(marketingSeg(created.brand)))) onClose();
+  }, [opening, created, pathname, onClose]);
 
   const startKind = classifyStartInput(handle);
   const keyOf = (a: { platform: string; handle: string }) => `${a.platform}:${a.handle.toLowerCase()}`;
@@ -148,6 +155,11 @@ export function HandleBrandCreator({
       const result = await createPersonBrand(plan, seed, personBrandDeps);
       setCreated(result);
       void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "brands"] });
+      if (result.siteError) {
+        toast.error("The website was not added", {
+          description: `${result.siteError} Add it from Websites.`,
+        });
+      }
       const failed = result.properties.filter((p) => p.error);
       if (failed.length) {
         toast.error(`${failed.length} account${failed.length === 1 ? "" : "s"} not added`, {
@@ -168,7 +180,7 @@ export function HandleBrandCreator({
 
   const openBrand = () => {
     if (!created) return;
-    onClose();
+    setOpening(true);
     router.push(marketingRoutes.brand(marketingSeg(created.brand)));
   };
 
@@ -310,9 +322,10 @@ export function HandleBrandCreator({
 
   if ((step === "confirm" || step === "creating") && seed && discovery) {
     const busy = step === "creating";
+    // Only links that look like their own site: press and articles about them are never offered.
     const websiteOptions = [
-      ...new Set([discovery.website, websiteTyped.trim(), ...discovery.links].filter((v): v is string => Boolean(v))),
-    ].slice(0, 8);
+      ...new Set([discovery.website, websiteTyped.trim(), ...discovery.siteCandidates].filter((v): v is string => Boolean(v))),
+    ].slice(0, 6);
     return (
       <div className="grid gap-3" data-testid="handle-brand-confirm">
         <SeedHeader seed={seed} />
@@ -472,13 +485,18 @@ export function HandleBrandCreator({
         </ul>
         <div className="flex items-center justify-end gap-2">
           {!anyDone && trackCost ? <span className="text-xs text-muted-foreground">{trackCost}</span> : null}
-          <Button variant="quiet" disabled={busy} onClick={openBrand}>
-            {anyDone ? "Open brand" : "Skip, open brand"}
+          <Button
+            variant="quiet"
+            disabled={busy || opening}
+            icon={opening ? <Loader2 className="animate-spin" /> : null}
+            onClick={openBrand}
+          >
+            {opening ? "Opening…" : anyDone ? "Open brand" : "Skip, open brand"}
           </Button>
           {!anyDone && trackable.length ? (
             <Button
               variant="primary"
-              disabled={busy}
+              disabled={busy || opening}
               icon={busy ? <Loader2 className="animate-spin" /> : null}
               onClick={() => void trackAll()}
             >
@@ -496,17 +514,19 @@ export function HandleBrandCreator({
 function SeedHeader({ seed }: { seed: SeedProfile }) {
   return (
     <div className="flex gap-3 rounded-md border border-border p-2">
-      <SocialImage
-        door={seed.avatarFileId ? profileAvatarDoor(seed.profileId) : null}
-        url={seed.avatarUrl}
-        alt={seed.displayName}
-        className="h-12 w-12 shrink-0 rounded-full object-cover"
-        fallback={
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
-            <UserRound className="h-5 w-5 text-muted-foreground" aria-hidden />
-          </span>
-        }
-      />
+      {/* SocialImage fills its nearest positioned box: without this one it covers the dialog. */}
+      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
+        <SocialImage
+          door={seed.avatarFileId ? profileAvatarDoor(seed.profileId) : null}
+          url={seed.avatarUrl}
+          alt={seed.displayName}
+          fallback={
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <UserRound className="h-5 w-5 text-muted-foreground" aria-hidden />
+            </span>
+          }
+        />
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <PlatformMark platform={seed.platform} size={14} />

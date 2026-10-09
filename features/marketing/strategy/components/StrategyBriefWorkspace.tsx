@@ -40,6 +40,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import { marketingSeg } from "@/features/marketing/lib/keys";
+import { brandKindCopy, type BrandKind } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import type { StrategyBrief, StrategyScope } from "../data";
@@ -160,7 +161,10 @@ export function StrategyBriefWorkspace({
   brandId,
   brandSeg,
   organizationId,
+  brandKind,
 }: {
+  /** The owning brand's kind: a person brand's strategy is not a "brand strategy". */
+  brandKind?: BrandKind;
   scope: StrategyScope;
   /** brand id for brand scope, site id for site scope. */
   id: string;
@@ -184,7 +188,8 @@ export function StrategyBriefWorkspace({
   const [guidance, setGuidance] = useState<string | null>(null);
   const current = brief.data ?? null;
   const guidanceValue = guidance ?? current?.guidance ?? "";
-  const noun = SCOPE_NOUN[scope];
+  const noun =
+    scope === "brand" ? brandKindCopy(brandKind).strategy.noun : SCOPE_NOUN[scope];
   const brandStrategyHref = `${marketingRoutes.brandIdentity(brandSeg)}/strategy`;
 
   async function runGenerate() {
@@ -266,12 +271,12 @@ export function StrategyBriefWorkspace({
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs">
           <span className="text-foreground">
             {brandStrategy.data
-              ? `Reads the brand strategy (${brandStrategy.data.status === "confirmed" ? "confirmed" : brandStrategy.data.status === "auto_accepted" ? "accepted by lapse" : "not yet reviewed"}).`
-              : "This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the brand strategy first for a better brief."}
+              ? `Reads the ${brandKindCopy(brandKind).strategy.noun} (${brandStrategy.data.status === "confirmed" ? "confirmed" : brandStrategy.data.status === "auto_accepted" ? "accepted by lapse" : "not yet reviewed"}).`
+              : "This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the ${brandKindCopy(brandKind).strategy.noun} first for a better brief."}
           </span>
           <Button asChild variant="quiet">
             <Link href={brandStrategyHref} target="_blank" rel="noopener noreferrer">
-              Brand strategy
+              <span className="capitalize">{brandKindCopy(brandKind).strategy.noun}</span>
               <ExternalLink className="size-3" aria-hidden />
             </Link>
           </Button>

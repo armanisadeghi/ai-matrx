@@ -8,7 +8,7 @@
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import { resolveParty } from "@/features/crm/service";
-import { createBrand, createProperty } from "../data/service";
+import { createBrand, createProperty, createSite } from "../data/service";
 import { ingestProfile } from "../social/server";
 import { readProfile } from "../social/service";
 import type { SocialPlatform, SocialProgress } from "../social/types";
@@ -82,5 +82,6 @@ export const personBrandDeps: PersonBrandDeps = {
   },
   createBrand,
   createProperty,
+  createSite,
 };
 
