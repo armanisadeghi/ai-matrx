@@ -4,6 +4,7 @@ import {
   type DiscoveredItem,
   type PropertyKind,
 } from "@/features/marketing/types";
+import { classifyRedditUrl } from "@/features/marketing/lib/reddit-links";
 
 /** Resolve a social discovery into the canonical web.property taxonomy. */
 export function inferDiscoveredPropertyType(
@@ -27,7 +28,7 @@ export function inferDiscoveredPropertyType(
     if (host === "linkedin.com") return "linkedin";
     if (host === "pinterest.com" || host === "pin.it") return "pinterest";
     if (host === "threads.net" || host === "threads.com") return "threads";
-    if (host === "reddit.com" || host === "old.reddit.com") return "reddit";
+    if (host === "reddit.com" || host.endsWith(".reddit.com")) return "reddit";
     if (host === "snapchat.com") return "snapchat";
   } catch {
     // Malformed URLs are still reviewable as a labeled Other property.
@@ -150,6 +151,16 @@ export function describeDiscoveredSocialProfile(
         providerLabel,
         identity: second || first || providerLabel,
         profileType,
+        hostname,
+      };
+    }
+    if (kind === "reddit") {
+      const reddit = classifyRedditUrl(item.url);
+      return {
+        kind,
+        providerLabel,
+        identity: reddit?.label ?? (first || providerLabel),
+        profileType: reddit ? (reddit.type === "subreddit" ? "Subreddit" : "User profile") : "Profile",
         hostname,
       };
     }

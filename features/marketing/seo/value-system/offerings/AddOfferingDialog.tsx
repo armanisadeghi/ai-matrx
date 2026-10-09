@@ -30,14 +30,16 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { searchOfferingTemplates, type CatalogOffering, type OfferingTemplate } from "./data";
-import { OFFERING_KIND_META, offeringKindLabel, type OfferingKindValue } from "./vocabulary";
+import { OFFERING_KIND_META, offeringKindLabel, priceProblems, type OfferingKindValue } from "./vocabulary";
+import { EMPTY_PRICE_DRAFT, OfferingPriceFields, type OfferingPriceDraft } from "./OfferingPriceFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 
+/** `price` is the optional published price; an empty amount = none. */
 export type AddOfferingChoice =
-  | { mode: "template"; templateId: string; name: string; reason: string }
-  | { mode: "existing"; offeringId: string; name: string; reason: string }
-  | { mode: "custom"; name: string; kind: OfferingKindValue; reason: string };
+  | { mode: "template"; templateId: string; name: string; reason: string; price: OfferingPriceDraft }
+  | { mode: "existing"; offeringId: string; name: string; reason: string; price: OfferingPriceDraft }
+  | { mode: "custom"; name: string; kind: OfferingKindValue; reason: string; price: OfferingPriceDraft };
 
 export function AddOfferingDialog({
   siteId,
@@ -56,6 +58,9 @@ export function AddOfferingDialog({
   const [debounced, setDebounced] = useState("");
   const [kind, setKind] = useState<OfferingKindValue>("service");
   const [reason, setReason] = useState("");
+  const [price, setPrice] = useState<OfferingPriceDraft>(EMPTY_PRICE_DRAFT);
+  const priceBad = priceProblems(price.priceAmount, price.priceCurrency);
+  const priceInvalid = priceBad.amount || priceBad.currency;
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(query.trim()), 250);
@@ -81,9 +86,9 @@ export function AddOfferingDialog({
   const chooseTemplate = (template: OfferingTemplate) => {
     const owned = byTemplate.get(template.id);
     if (owned) {
-      onChoose({ mode: "existing", offeringId: owned.id, name: owned.name, reason });
+      onChoose({ mode: "existing", offeringId: owned.id, name: owned.name, reason, price });
     } else {
-      onChoose({ mode: "template", templateId: template.id, name: template.name, reason });
+      onChoose({ mode: "template", templateId: template.id, name: template.name, reason, price });
     }
   };
 
@@ -112,9 +117,9 @@ export function AddOfferingDialog({
               {exactOwn ? (
                 <OptionButton
                   onClick={() =>
-                    onChoose({ mode: "existing", offeringId: exactOwn.id, name: exactOwn.name, reason })
+                    onChoose({ mode: "existing", offeringId: exactOwn.id, name: exactOwn.name, reason, price })
                   }
-                  disabled={busy || exactOwn.available}
+                  disabled={busy || priceInvalid || exactOwn.available}
                   title={exactOwn.name}
                   detail={
                     exactOwn.available
@@ -151,8 +156,8 @@ export function AddOfferingDialog({
                     <Button
                       icon={<Plus />}
                       variant="primary"
-                      disabled={busy}
-                      onClick={() => onChoose({ mode: "custom", name: typed, kind, reason })}
+                      disabled={busy || priceInvalid}
+                      onClick={() => onChoose({ mode: "custom", name: typed, kind, reason, price })}
                     >
                       Add
                     </Button>
@@ -189,7 +194,7 @@ export function AddOfferingDialog({
                       <OptionButton
                         key={template.id}
                         onClick={() => chooseTemplate(template)}
-                        disabled={busy || offeredHere}
+                        disabled={busy || priceInvalid || offeredHere}
                         title={template.name}
                         detail={
                           offeredHere
@@ -210,6 +215,8 @@ export function AddOfferingDialog({
               Suggestions appear as you type. Nothing is added until you choose.
             </p>
           )}
+
+          <OfferingPriceFields value={price} onChange={setPrice} />
 
           <div className="grid gap-1.5">
             <Label htmlFor="add-offering-reason" className="text-xs">

@@ -8,6 +8,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Loader2, Plus, X } from "lucide-react";
+import { AutosaveIndicator } from "@/components/AutosaveIndicator";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { useBrand, useUpdateBrand } from "@/features/marketing/data/hooks";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import {
   HASHTAG_USES,
+  displayHashtag,
   mergeBrandProfile,
   parseBrandProfile,
   type BrandHashtag,
@@ -35,12 +37,19 @@ function lines(value: string): string[] {
     .filter(Boolean);
 }
 
+/** What the page says about its save: the repo's AutosaveIndicator, kept after the toast is gone. */
+interface SaveReport {
+  savedAt: Date | null;
+  failed: boolean;
+}
+
 function PageFrame({
   title,
   hint,
   busy,
   dirty,
   onSave,
+  saved,
   children,
 }: {
   title: string;
@@ -48,6 +57,7 @@ function PageFrame({
   busy: boolean;
   dirty: boolean;
   onSave: () => void;
+  saved: SaveReport;
   children: ReactNode;
 }) {
   return (
@@ -57,14 +67,20 @@ function PageFrame({
           <h1 className="text-base font-semibold text-foreground" title={hint}>
             {title}
           </h1>
-          <Button
-            variant="primary"
-            disabled={busy || !dirty}
-            icon={busy ? <Loader2 className="animate-spin" /> : null}
-            onClick={onSave}
-          >
-            Save
-          </Button>
+          <div className="flex items-center gap-3">
+            <AutosaveIndicator
+              status={busy ? "saving" : dirty ? "unsaved" : saved.failed ? "error" : saved.savedAt ? "saved" : "idle"}
+              lastSavedAt={saved.savedAt}
+            />
+            <Button
+              variant="primary"
+              disabled={busy || !dirty}
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
+              onClick={onSave}
+            >
+              Save
+            </Button>
+          </div>
         </header>
         <div className="grid gap-3">{children}</div>
       </div>
@@ -116,7 +132,7 @@ function Text({
   );
 }
 
-function useProfileSave(brand: MarketingBrand) {
+function useProfileSave(brand: MarketingBrand, report: (next: SaveReport) => void) {
   const update = useUpdateBrand();
   const save = async (edited: BrandProfile) => {
     try {
@@ -125,8 +141,10 @@ function useProfileSave(brand: MarketingBrand) {
         expectedVersion: brand.version,
         patch: { profile: mergeBrandProfile(brand.profile, edited) },
       });
+      report({ savedAt: new Date(), failed: false });
       toast.success("Saved");
     } catch (error) {
+      report({ savedAt: null, failed: true });
       toast.error("Could not save", { description: extractErrorMessage(error) });
     }
   };
@@ -134,21 +152,29 @@ function useProfileSave(brand: MarketingBrand) {
 }
 
 /** Loads the brand, then remounts the editor per stored version so the draft restarts clean. */
-function WithBrand({ brandId, render }: { brandId: string; render: (brand: MarketingBrand) => ReactNode }) {
+function WithBrand({
+  brandId,
+  render,
+}: {
+  brandId: string;
+  render: (brand: MarketingBrand, saved: SaveReport, report: (next: SaveReport) => void) => ReactNode;
+}) {
   const brand = useBrand(brandId);
+  // Held here, above the per-version remount, so "Saved" survives the editor restarting clean.
+  const [saved, setSaved] = useState<SaveReport>({ savedAt: null, failed: false });
   if (!brand.data) return <LoadingSurface label="Loading brand…" />;
-  return <div key={brand.data.version} className="contents">{render(brand.data)}</div>;
+  return <div key={brand.data.version} className="contents">{render(brand.data, saved, setSaved)}</div>;
 }
 
 // ── Messaging ────────────────────────────────────────────────────────────
 
 export function BrandMessagingPage({ brandId }: { brandId: string }) {
-  return <WithBrand brandId={brandId} render={(brand) => <MessagingEditor brand={brand} />} />;
+  return <WithBrand brandId={brandId} render={(brand, saved, report) => <MessagingEditor brand={brand} saved={saved} report={report} />} />;
 }
 
-function MessagingEditor({ brand }: { brand: MarketingBrand }) {
+function MessagingEditor({ brand, saved, report }: { brand: MarketingBrand; saved: SaveReport; report: (next: SaveReport) => void }) {
   const stored = parseBrandProfile(brand.profile);
-  const { save, busy } = useProfileSave(brand);
+  const { save, busy } = useProfileSave(brand, report);
   const [mission, setMission] = useState(stored.mission ?? "");
   const [vision, setVision] = useState(stored.vision ?? "");
   const [story, setStory] = useState(stored.story ?? "");
@@ -193,6 +219,7 @@ function MessagingEditor({ brand }: { brand: MarketingBrand }) {
       busy={busy}
       dirty={dirty}
       onSave={() => void save(edited)}
+      saved={saved}
     >
       <Card className="grid gap-3 p-4 sm:grid-cols-2">
         <Field label="Mission" hint="Why the brand exists, today">
@@ -290,7 +317,7 @@ function MessagingEditor({ brand }: { brand: MarketingBrand }) {
           <div key={index} className="grid grid-cols-[1fr_9rem_auto] gap-2">
             <Input
               aria-label="Hashtag"
-              value={entry.tag}
+              value={displayHashtag(entry.tag)}
               placeholder="#ShredItRight"
               onChange={(event) => setTags(tags.map((t, i) => (i === index ? { ...t, tag: event.target.value } : t)))}
             />
@@ -319,12 +346,12 @@ function MessagingEditor({ brand }: { brand: MarketingBrand }) {
 // ── Claims & compliance ──────────────────────────────────────────────────
 
 export function BrandClaimsPage({ brandId }: { brandId: string }) {
-  return <WithBrand brandId={brandId} render={(brand) => <ClaimsEditor brand={brand} />} />;
+  return <WithBrand brandId={brandId} render={(brand, saved, report) => <ClaimsEditor brand={brand} saved={saved} report={report} />} />;
 }
 
-function ClaimsEditor({ brand }: { brand: MarketingBrand }) {
+function ClaimsEditor({ brand, saved, report }: { brand: MarketingBrand; saved: SaveReport; report: (next: SaveReport) => void }) {
   const stored = parseBrandProfile(brand.profile);
-  const { save, busy } = useProfileSave(brand);
+  const { save, busy } = useProfileSave(brand, report);
   const [approved, setApproved] = useState((stored.approved_claims ?? []).join("\n"));
   const [forbidden, setForbidden] = useState((stored.forbidden_claims ?? []).join("\n"));
   const [disclaimers, setDisclaimers] = useState((stored.disclaimers ?? []).join("\n"));
@@ -344,6 +371,7 @@ function ClaimsEditor({ brand }: { brand: MarketingBrand }) {
       busy={busy}
       dirty={dirty}
       onSave={() => void save(edited)}
+      saved={saved}
     >
       <Card className="grid gap-3 p-4">
         <Field label="Approved claims (one per line)" hint="Statements the brand can make as written">

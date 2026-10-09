@@ -1980,3 +1980,10 @@ placement` / `User-posted`), and `r412` renders as `Authority 412`. The
 
 Removed page introduction copy and redundant body titles. Workspace identity belongs in the shell header; Marketing view and create actions share the query toolbar. Brand descriptions remain editable record data but are not repeated as card/table subtitles.
 in editable record data but are not repeated as card/table subtitles.
+
+### 2026-10-09 — Brand identity fixes (SI-FIX-BRAND-A)
+
+- Create brand: web.brand.visibility's column default calls `platform.entity_default_visibility`, which was revoked from signed-in callers, so every brand/website create failed 42501. It is now a declared `platform.client_callable_door` with the grant. The dialog also shows a failure inline (a toast can sit under floating chrome) and caps its height by the measured floating clearance.
+- Offerings: Add offering takes a price (shared `OfferingPriceFields`, also used by Edit); the table has a Price column (`formatOfferingPrice`).
+- Competitors: the bare `…/intelligence/competitors` route is the brand competitor list (All); the SEO autopsy modes follow, Run is now `…/competitors/run`. Brand Home has a Competitors room.
+- Add property placeholders follow Type; Messaging/Claims show the AutosaveIndicator after a save; hashtags display with `#` and store without (`displayHashtag`); Reddit r/x vs u/x via `lib/reddit-links.ts`.

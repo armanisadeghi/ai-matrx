@@ -25,7 +25,8 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/styles/themes/utils";
 import type { CatalogOffering } from "./data";
-import { OFFERING_KIND_META, type OfferingKindValue } from "./vocabulary";
+import { OfferingPriceFields } from "./OfferingPriceFields";
+import { OFFERING_KIND_META, priceProblems, type OfferingKindValue } from "./vocabulary";
 
 export interface OfferingEditDraft {
   offeringId: string | null;
@@ -39,16 +40,6 @@ export interface OfferingEditDraft {
   priceUnit: string;
   priceNote: string;
 }
-
-const PRICE_UNITS = [
-  { value: "", label: "No unit" },
-  { value: "one_time", label: "One time" },
-  { value: "per_month", label: "Per month" },
-  { value: "per_year", label: "Per year" },
-  { value: "per_hour", label: "Per hour" },
-  { value: "per_item", label: "Per item" },
-  { value: "starting_at", label: "Starting at" },
-] as const;
 
 export function OfferingEditDialog({
   draft,
@@ -75,9 +66,9 @@ export function OfferingEditDialog({
   const [priceCurrency, setPriceCurrency] = useState(draft.priceCurrency);
   const [priceUnit, setPriceUnit] = useState(draft.priceUnit);
   const [priceNote, setPriceNote] = useState(draft.priceNote);
-  const priceInvalid =
-    priceAmount.trim() !== "" && !(Number.isFinite(Number(priceAmount)) && Number(priceAmount) >= 0);
-  const currencyInvalid = priceAmount.trim() !== "" && !/^[A-Za-z]{3}$/.test(priceCurrency.trim());
+  const problems = priceProblems(priceAmount, priceCurrency);
+  const priceInvalid = problems.amount;
+  const currencyInvalid = problems.currency;
   const creating = draft.offeringId === null;
 
   const needle = parentSearch.trim().toLocaleLowerCase();
@@ -192,48 +183,15 @@ export function OfferingEditDialog({
             />
           </div>
 
-          <div className="grid gap-1.5">
-            <Label className="text-xs">Price (optional)</Label>
-            <div className="grid grid-cols-[1fr_5rem_1fr] gap-1.5">
-              <Input
-                aria-label="Price amount"
-                inputMode="decimal"
-                value={priceAmount}
-                onChange={(event) => setPriceAmount(event.target.value)}
-                placeholder="199"
-              />
-              <Input
-                aria-label="Currency"
-                value={priceCurrency}
-                onChange={(event) => setPriceCurrency(event.target.value.toUpperCase())}
-                placeholder="USD"
-                maxLength={3}
-              />
-              <select
-                aria-label="Price unit"
-                value={priceUnit}
-                onChange={(event) => setPriceUnit(event.target.value)}
-                className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
-              >
-                {PRICE_UNITS.map((unit) => (
-                  <option key={unit.value} value={unit.value}>
-                    {unit.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Input
-              aria-label="Price note"
-              value={priceNote}
-              onChange={(event) => setPriceNote(event.target.value)}
-              placeholder="Note, e.g. volume discounts over 50 drives"
-            />
-            {priceInvalid || currencyInvalid ? (
-              <p className="text-[11px] text-destructive">
-                {priceInvalid ? "Amount must be a number, 0 or more." : "Currency is a 3-letter code, like USD."}
-              </p>
-            ) : null}
-          </div>
+          <OfferingPriceFields
+            value={{ priceAmount, priceCurrency, priceUnit, priceNote }}
+            onChange={(next) => {
+              setPriceAmount(next.priceAmount);
+              setPriceCurrency(next.priceCurrency);
+              setPriceUnit(next.priceUnit);
+              setPriceNote(next.priceNote);
+            }}
+          />
         </div>
 
         <DialogFooter className="pb-safe">

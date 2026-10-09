@@ -121,20 +121,27 @@ type Artifact = {
   };
 };
 
+/**
+ * "All" is the default landing view: the brand's competitor list with their
+ * social accounts. The SEO autopsy screens (Run … History) are the other modes.
+ */
 const COMPETITOR_VIEWS = [
+  { id: "all", name: "All", icon: Users },
   { id: "run", name: "Run", icon: ScanSearch },
   { id: "review", name: "Review", icon: ClipboardCheck },
   { id: "opportunities", name: "Opportunities", icon: Target },
   { id: "competitors", name: "Competitors", icon: Swords },
   { id: "evidence", name: "Evidence", icon: FileSearch },
   { id: "history", name: "History", icon: History },
-  { id: "all", name: "All", icon: Users },
 ] as const;
 
 type CompetitorView = (typeof COMPETITOR_VIEWS)[number]["id"];
 
+/** The view the bare route (and a link with no `?view=`) lands on. */
+const DEFAULT_COMPETITOR_VIEW: CompetitorView = "all";
+
 function competitorView(raw: string | null): CompetitorView {
-  return COMPETITOR_VIEWS.find((view) => view.id === raw)?.id ?? "run";
+  return COMPETITOR_VIEWS.find((view) => view.id === raw)?.id ?? DEFAULT_COMPETITOR_VIEW;
 }
 
 /**
@@ -161,9 +168,9 @@ function competitorViewHref(
 ): string {
   const params = new URLSearchParams();
   if (siteId) params.set("siteId", siteId);
-  if (!routed && view !== "run") params.set("view", view);
+  if (!routed && view !== DEFAULT_COMPETITOR_VIEW) params.set("view", view);
   const query = params.toString();
-  const path = routed && view !== "run" ? `${basePath}/${view}` : basePath;
+  const path = routed && view !== DEFAULT_COMPETITOR_VIEW ? `${basePath}/${view}` : basePath;
   return `${path}${query ? `?${query}` : ""}`;
 }
 
@@ -173,7 +180,7 @@ function competitorViewHref(
  * segment below it, so the base is the pathname with that segment removed.
  */
 function competitorBasePath(pathname: string, view: CompetitorView): string {
-  if (view === "run") return pathname;
+  if (view === DEFAULT_COMPETITOR_VIEW) return pathname;
   return pathname.endsWith(`/${view}`)
     ? pathname.slice(0, -(view.length + 1))
     : pathname;
@@ -324,7 +331,7 @@ export default function CompetitorAutopsyWorkspace({
   // segment comes back off before the siblings are built from it.
   const basePath = competitorBasePath(
     pathname ?? marketingRoutes.competitors(),
-    routed ? activeView : "run",
+    routed ? activeView : DEFAULT_COMPETITOR_VIEW,
   );
 
   const data = workspace.data;
@@ -1729,7 +1736,7 @@ export default function CompetitorAutopsyWorkspace({
           </TabsContent>
         </Tabs>
 
-        {activeView !== "run" ? (
+        {activeView !== "run" && activeView !== "all" ? (
           <p className="text-xs text-muted-foreground">
             {tracked} competitor{tracked === 1 ? "" : "s"} tracked.
           </p>
