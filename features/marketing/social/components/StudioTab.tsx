@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Check, Plus, Users } from "lucide-react";
+import { getBoard } from "@/features/board/persistence/boardsService";
 
 import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -21,6 +22,9 @@ import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { toast } from "@/lib/toast";
 
 import { createLinkedBoard, getOrCreateStudioBoard, listStudioBoards } from "../studio/studio-boards";
+import { addAccountsToStudioBoard, hasProfileTiles } from "../studio/studio-repair";
+import { starterAccountSeeds } from "../board-accounts";
+import { useAccountRows } from "../hooks";
 import { useSocials } from "./SocialsContext";
 
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
@@ -35,6 +39,9 @@ export function StudioTab() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
+  // Bumped when the board was changed behind the open canvas (a mend, accounts added): the canvas opens again on the saved board.
+  const [rev, setRev] = useState(0);
+  const [addingAccounts, setAddingAccounts] = useState(false);
 
   async function add(title: string, studio: boolean) {
     setBusy(true);
@@ -66,6 +73,35 @@ export function StudioTab() {
   const list = boards.data ?? [];
   // Opens on the brand's Studio board (listed first), whatever else was opened last.
   const current = list.find((b) => b.id === picked) ?? list.find((b) => b.canonical) ?? null;
+  const currentId = current?.id ?? null;
+
+  // Nothing here rewrites a board on its own: a board is changed only by the person's click.
+  // One click to put the brand's own accounts on a board that has none.
+  const accounts = useAccountRows(organizationId, brandId);
+  const ownSeeds = starterAccountSeeds(accounts.data ?? []);
+  const shape = useQuery({
+    queryKey: ["marketing", "social", "studio-board-shape", currentId, rev],
+    queryFn: async () => {
+      const b = await getBoard(currentId as string);
+      return b ? !hasProfileTiles(b.doc) : false;
+    },
+    enabled: Boolean(currentId),
+    staleTime: 15_000,
+  });
+  const offerAccounts = shape.data === true && ownSeeds.length > 0;
+
+  async function addAccounts() {
+    if (!currentId) return;
+    setAddingAccounts(true);
+    try {
+      await addAccountsToStudioBoard(currentId, ownSeeds);
+      setRev((n) => n + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not add the accounts.");
+    } finally {
+      setAddingAccounts(false);
+    }
+  }
 
   if (boards.isError || error) {
     return (
@@ -109,5 +145,16 @@ export function StudioTab() {
     </>
   );
 
-  return <PresetBoard key={current.id} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} />;
+  return (
+    <div className="relative h-full min-h-0 w-full">
+      <PresetBoard key={`${current.id}:${rev}`} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} />
+      {offerAccounts ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center">
+          <Button variant="primary" className="pointer-events-auto shadow-lg" icon={<Users />} disabled={addingAccounts} onClick={() => void addAccounts()}>
+            Add your accounts
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
 }

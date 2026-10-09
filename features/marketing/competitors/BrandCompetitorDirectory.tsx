@@ -44,6 +44,7 @@ import { toast } from "@/lib/toast";
 import {
   ensureWebsiteCompetitor,
   findSocialsOnWebsite,
+  WebsiteUnreadableError,
   linkAccountToWebsiteCompetitor,
   listBrandCompetitors,
   normalizeDomain,
@@ -90,7 +91,14 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
           variant="outline"
           disabled={busy}
           icon={found?.status === "finding" ? <Loader2 className="animate-spin" /> : <Search />}
-          onClick={() => void find(row)}
+          onClick={async () => {
+            // A failure is told in a toast and in the competitor's detail panel, never inside this cell (it would push the row).
+            const out = await find(row);
+            if (out.status === "found" && out.links.length === 0 && out.message) toast.info(out.message);
+            if (out.status === "error" && out.message) {
+              toast.error(out.unreadable ? `${out.message}. Open ${row.name} to add their accounts.` : out.message);
+            }
+          }}
         >
           {found?.status === "finding" ? "Reading…" : "Find socials"}
         </Button>
@@ -107,10 +115,6 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
         >
           {found.status === "tracking" ? "Tracking…" : `Track ${found.links.length}`}
         </Button>
-      ) : found?.message ? (
-        <span className="max-w-48 truncate text-[11px] text-muted-foreground" title={found.message}>
-          {found.message}
-        </span>
       ) : null}
     </span>
   );
@@ -537,7 +541,7 @@ function AddCompetitorDialog({
         setFindNote(`Found ${found.length}: ${found.map((l) => PLATFORM_LABEL[l.platform]).join(", ")}. Check them, then add.`);
       }
     } catch (e) {
-      setFindNote(e instanceof Error ? e.message : "The website could not be read.");
+      setFindNote(e instanceof WebsiteUnreadableError ? `${e.message}. Enter their handles below.` : e instanceof Error ? e.message : "Couldn't read that website");
     } finally {
       setFinding(false);
     }

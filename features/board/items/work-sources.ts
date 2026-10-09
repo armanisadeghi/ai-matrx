@@ -262,7 +262,7 @@ export function noteTilePlan(source: NodeSource): NoteTilePlan | null {
 
 /** A note's name from its first line (how pasted text is titled). */
 export function noteLabelFromText(text: string): string {
-  return text.trim().split("\n")[0].slice(0, 80) || "Note";
+  return text.trim().split("\n")[0].replace(/[\s:;,.\-–—]+$/, "").slice(0, 80) || "Note";
 }
 
 /** A note created at once from pasted text. */

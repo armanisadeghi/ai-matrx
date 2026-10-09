@@ -102,7 +102,8 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
     switch (plan.step) {
       case "create-from-seed": {
         const label = noteLabelFromText(plan.seed);
-        const organizationId = await resolveOrganization();
+        // Filed under the board's own organization (a starter's note is the board's, never another workspace's).
+        const organizationId = boardOrganizationId ?? (await resolveOrganization());
         const note = await NotesAPI.create({
           label,
           content: plan.seed,

@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 
 import { listBrandCompetitors, type BrandCompetitor } from "./brand-competitors";
 import { competitorDetailModel, platformLabel } from "./competitor-detail";
+import { AddHandlesForm } from "./AddHandlesForm";
 import { directoryKey, useCompetitorSocialActions, useFoundSocials, type BrandRef } from "./useCompetitorSocials";
 
 function Heading({ children }: { children: string }) {
@@ -123,7 +124,15 @@ export function CompetitorDetail({
         </section>
       ) : null}
 
-      {found && (found.links.length > 0 || found.message) ? (
+      {found?.unreadable || model.accounts.length === 0 ? (
+        <section className="space-y-2">
+          <Heading>Add handles</Heading>
+          {found?.unreadable ? <p className="text-xs text-muted-foreground">{found.message}. Add their accounts here instead.</p> : null}
+          <AddHandlesForm row={current} brand={brand} />
+        </section>
+      ) : null}
+
+      {found && !found.unreadable && (found.links.length > 0 || found.message) ? (
         <section>
           <Heading>Found on their website</Heading>
           {found.links.length > 0 ? (

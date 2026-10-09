@@ -28,11 +28,12 @@ const uid = () => crypto.randomUUID();
 
 type Rect = { x: number; y: number; w: number; h: number };
 
+/** The note starts with its own name on the first line: a note is named from its first line, so the tile never takes the name of a form field. */
 const note = (title: string, rect: Rect, seed: string): BoardNode => ({
   id: uid(),
   rect,
   title,
-  source: { kind: "entity", entity: "note", id: null, meta: { seed } },
+  source: { kind: "entity", entity: "note", id: null, meta: { seed: `${title}\n\n${seed}` } },
 });
 /** A social tile with no link yet: it asks for one inside the tile. */
 const socialTile = (entity: string, title: string, rect: Rect): BoardNode => ({

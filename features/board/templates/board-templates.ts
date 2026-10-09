@@ -15,6 +15,7 @@ import type { JsonObject } from "@/types/json";
 import { cloneBoardContent } from "./clone-content";
 import { BUILTIN_BOARD_TEMPLATES, builtinTemplateByKey } from "./builtin";
 import type { BoardDocument } from "../board/document";
+import { materializeStarterNotes } from "./starter-notes";
 
 export interface BoardTemplateEntry {
   /** `builtin:<id>` or the saved board's id. */
@@ -59,7 +60,9 @@ export async function makeBoardFromTemplate(
 ): Promise<LoadedBoard> {
   const builtin = builtinTemplateByKey(key);
   if (builtin) {
-    const doc = builtin.build();
+    const built = builtin.build();
+    // Its notes are filed now, in this board's organization (`starter-notes.ts`).
+    const doc = await materializeStarterNotes(built, organizationId);
     return createBoardFromDocument({ organizationId, title, doc: extend ? extend(doc) : doc, settings });
   }
   // A saved template is a board: its notes and documents are the AUTHOR'S records, so the copy gets clones of them

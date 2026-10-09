@@ -74,6 +74,22 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   );
 }
 
+/** The social-data provider's own admin row (its spend comes as the social line, not as a provider row). */
+function SocialProviderRow({ usd, calls }: { usd: number | null; calls: number | null }) {
+  const { unit, rate: costRate } = useCostDisplay();
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card p-2.5">
+      <span className="text-xs font-medium text-foreground">Scrape Creators</span>
+      <span className="text-right font-mono text-xs font-semibold tabular-nums">
+        {usd == null ? "—" : formatRuntimeCost(usd, costRate, unit)}
+      </span>
+      <span className="col-span-2 text-[10px] text-muted-foreground">
+        {calls ?? 0} paid call{calls === 1 ? "" : "s"} · social data
+      </span>
+    </div>
+  );
+}
+
 /** The person-facing line: an activity (SEO data, Web search, Social data…), never a vendor. */
 function CategoryRow({ row }: { row: SpendCategoryRow }) {
   const { unit, rate: costRate } = useCostDisplay();
@@ -148,6 +164,9 @@ export function SeoSpendPanel() {
   const paidThisMonth = data.this_month.filter(
     (row) => row.effective_cost > 0 || row.run_count > 0,
   );
+  const hasSocialRow =
+    ((data.social_this_month_usd ?? 0) > 0 || (data.social_this_month_calls ?? 0) > 0) &&
+    !paidThisMonth.some((r) => r.provider.trim().toLowerCase() === "scrapecreators");
   const categories = groupSpendByCategory(data.this_month, {
     usd: data.social_this_month_usd,
     calls: data.social_this_month_calls,
@@ -286,7 +305,7 @@ export function SeoSpendPanel() {
             ))}
           </div>
         )}
-        {isPlatformAdmin && paidThisMonth.length > 0 ? (
+        {isPlatformAdmin && (paidThisMonth.length > 0 || hasSocialRow) ? (
           <div className="mt-3 border-t border-border pt-3">
             <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Platform admin · by provider
@@ -295,6 +314,7 @@ export function SeoSpendPanel() {
               {paidThisMonth.map((row) => (
                 <ProviderRow key={row.provider} row={row} />
               ))}
+              {hasSocialRow ? <SocialProviderRow usd={data.social_this_month_usd} calls={data.social_this_month_calls} /> : null}
             </div>
           </div>
         ) : null}
@@ -307,11 +327,10 @@ export function SeoSpendPanel() {
         ) : null}
         {isPlatformAdmin ? (
         <p className="mt-2 text-[10px] text-muted-foreground">
-          Org·provider monthly ceiling{" "}
-          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, costRate, unit)} ·
-          platform-wide monthly ceiling{" "}
-          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, costRate, unit)} per
-          provider (placeholder values, pending final ruling).
+          Monthly ceiling per provider:{" "}
+          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, costRate, unit)} for each
+          organization, {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, costRate, unit)} across
+          the platform.
         </p>
         ) : null}
       </section>

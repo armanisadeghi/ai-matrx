@@ -14,6 +14,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 
 import {
   findSocialsOnWebsite,
+  WebsiteUnreadableError,
   linkAccountToWebsiteCompetitor,
   trackSocialAccount,
   type BrandCompetitor,
@@ -26,6 +27,8 @@ export interface FoundSocials {
   links: FoundSocialLink[];
   /** A plain sentence for the person: nothing found, the site could not be read, a handle refused. */
   message: string | null;
+  /** The website could not be read: the detail panel then leads with the handle form. */
+  unreadable?: boolean;
 }
 
 export interface BrandRef {
@@ -73,7 +76,13 @@ export function useCompetitorSocialActions(brand: BrandRef) {
           message: links.length === 0 ? "No new social links on their website." : null,
         };
       } catch (e) {
-        result = { status: "error", links: [], message: e instanceof Error ? e.message : "The website could not be read." };
+        const unreadable = e instanceof WebsiteUnreadableError;
+        result = {
+          status: "error",
+          links: [],
+          message: e instanceof Error ? e.message : "Couldn't read that website",
+          ...(unreadable ? { unreadable: true } : {}),
+        };
       }
       put(row.key, result);
       return result;

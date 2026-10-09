@@ -383,6 +383,14 @@ export function normalizeDomain(raw: string): string | null {
 }
 
 /** "Find their socials": scrape the competitor's home page links with the existing scraper. */
+/** The site blocks reading (or is down): a plain sentence, no vendor reason. The person adds the handles by hand. */
+export class WebsiteUnreadableError extends Error {
+  constructor() {
+    super("Couldn't read that website");
+    this.name = "WebsiteUnreadableError";
+  }
+}
+
 export async function findSocialsOnWebsite(
   domain: string,
   dispatch: AppDispatch,
@@ -420,7 +428,7 @@ export async function findSocialsOnWebsite(
       const data = (event as { data?: { results?: { success?: boolean; failure_reason?: string }[] } }).data;
       const failed = data?.results?.find((r) => r.success === false);
       if (failed) {
-        throw new Error(`That website could not be read (${failed.failure_reason ?? "blocked or unreachable"}). Enter the handles by hand.`);
+        throw new WebsiteUnreadableError();
       }
     }
   }
