@@ -16,6 +16,7 @@ import {
   BookOpen,
   Boxes,
   Briefcase,
+  Building2,
   CircleDollarSign,
   Compass,
   CircleDashed,
@@ -107,6 +108,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "ai-visibility:claims": MessageSquareQuote,
   "ai-visibility:sources": BookOpen,
   "ai-visibility:signals": Radar,
+  "ai-visibility:brand": Building2,
   "ai-visibility:history": History,
   "ai-visibility:panels": ListChecks,
 
