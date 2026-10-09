@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { recordLineageForSources } from "@/features/education/convert/recordSourceLineage";
@@ -124,13 +124,13 @@ export function MakePracticeTestButton({
             ? `The page closed while saving ${questionCount(stopped.request.count)}. Check the list below.`
             : `Making ${questionCount(stopped.request.count)} stopped when the page closed.`}{" "}
           {stopped.whileSaving ? (
-            <button type="button" className="underline" onClick={() => tabRun.dismiss()}>
+            <Button type="button" variant="quiet" onClick={() => tabRun.dismiss()}>
               Dismiss
-            </button>
+            </Button>
           ) : (
-            <button type="button" className="underline" onClick={retry}>
+            <Button type="button" variant="quiet" onClick={retry}>
               Try again
-            </button>
+            </Button>
           )}
         </p>
       ) : null}
@@ -298,7 +298,10 @@ function MakePracticeTestDialog({
           );
           const refused = filed.find((r) => !r.ok);
           if (refused && !refused.ok) {
-            toast.error(`The practice test was made but could not be filed under ${test.name}: ${refused.error.message}`);
+            recordToast.error(
+              { type: "assessment", id: assessment.id, title: assessment.title },
+              `The practice test was made but could not be filed under ${test.name}: ${refused.error.message}`,
+            );
           }
           const result = {
             targetKind: config.kind,
@@ -314,7 +317,10 @@ function MakePracticeTestDialog({
             () => recordLineageForSources(result, linkSources, orgId),
           );
           await generation.commit();
-          toast.success(`Made ${assessment.title} with ${questionCount(made.questions.length)}.`);
+          recordToast.success(
+            { type: "assessment", id: assessment.id, title: assessment.title },
+            `Made ${assessment.title} with ${questionCount(made.questions.length)}.`,
+          );
           for (const s of set.sources) set.remove(s.id);
           onMade();
           onClose();

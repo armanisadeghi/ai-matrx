@@ -219,6 +219,16 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-10-09 — generate into the kit.** `ConvertOptions.steer` (instruction, card / question
+  types, sections); deck and quiz / practice test honour it. A kit run (`ref.kitId`) drops any item
+  a deck / quiz of the kit already holds (`existingItems.ts`, kit-wide) and, when the kit has an
+  outline, runs per outline section (`readOutlineGroups`: cited chunks as `### Chunk <id>` + key
+  facts), stamping `topic` + `metadata.outline_section_id` from `groupOf`. `ConvertContentDialog`:
+  card-type / question-type chips, `ProTextarea` instruction, "Focus on gaps" (outline only, default
+  on → `gapSections`); a pre-aimed section turns gaps off. `recordSourceLineage` now RETURNS a
+  `LineageOutcome` naming failed edges (stamped on `ConvertResult.lineage`); every caller surfaces
+  "Saved, but not linked to the kit/its source" with Retry (`announceLineage`) — never console-only.
+
 - **2026-10-03** — `sectionJournal.ts` + `ConvertContext.sections`: a segmented generation records
   each section's conversation id; a retry over the same plan (`sectionPlanKey`: target, text
   fingerprint, segment count, total) reads finished sections back from `chat.user_request` /

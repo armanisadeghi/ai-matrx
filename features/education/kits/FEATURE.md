@@ -157,6 +157,19 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **2026-10-09 — the living kit (Outline, Coverage, Add more).** `outline/outlineService.ts`
+  reads the kit's live `study_structured_section` rows (by `kit_scope_id`, `position`), starts the
+  server workflow `education_kit_outline` through the system lane (subject `kit:<id>`; an active
+  run is rejoined, never doubled) and looks the run up by subject. `useKitOutline` reattaches to an
+  active run on mount (refresh-safe), re-reads when it ends, computes staleness and coverage.
+  Stale = the Sources the kit holds now differ from the `input.sources` of the run named by
+  `metadata.built_by_run_id` — the server's `sources_fingerprint` hashes ingested chunks and cannot
+  be recomputed in a browser. KitHub: Outline card (Build / Rebuild with its consequence; progress
+  is one line + Watch → floating run window), Coverage (per-section cards/questions by
+  `metadata.outline_section_id`, Make more / Go deeper, Not mapped), "Add more" on every deck/quiz
+  opening the existing top-up dialogs with the kit's Sources. New kits start the outline beside the
+  aids (`useKitGeneration`). Legacy anchor kits promote before building.
+
 - **2026-10-07 — one create page.** `ManualKitCreator` is gone: `/education/kits/new` is
   `StartHero` with two modes (Build with AI · Saved aids); `/education/start` forwards there.
   Adding saved aids to a kit is the kit page's own dialog (`AddSavedAidsDialog` over the shared

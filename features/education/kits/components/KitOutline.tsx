@@ -13,9 +13,8 @@
 //     on the press and opens THE existing top-up dialog with the kit's Sources.
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Eye, ListTree, Plus, RefreshCw } from "lucide-react";
-import { Button, Chip } from "@ai-matrx/design-system/controls";
-import { Skeleton } from "@ai-matrx/design-system";
+import { Eye, ListTree, Plus, RefreshCw } from "lucide-react";
+import { Button, Chip, DisclosureHeader, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -38,26 +37,16 @@ import type { KitCoverage } from "../outline/coverage";
 function SectionRow({ section }: { section: OutlineSection }) {
   const [open, setOpen] = useState(false);
   return (
-    <li className="py-2.5">
-      <button
-        type="button"
-        className="flex w-full items-start gap-2 text-left"
-        aria-expanded={open}
+    <li className="py-1.5">
+      <DisclosureHeader
+        open={open}
         onClick={() => setOpen((o) => !o)}
-      >
-        {open ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />}
-        <span className="min-w-0 flex-1">
-          <span className="block font-medium text-foreground">{section.title}</span>
-          {section.summary && !open ? (
-            <span className="mt-0.5 line-clamp-2 block type-secondary text-muted-foreground">{section.summary}</span>
-          ) : null}
-        </span>
-        {section.facts.length > 0 ? (
-          <span className="shrink-0 type-secondary text-muted-foreground">{`${section.facts.length} facts`}</span>
-        ) : null}
-      </button>
+        title={section.title}
+        meta={section.facts.length > 0 ? `${section.facts.length} facts` : undefined}
+        line={section.summary && !open ? section.summary : undefined}
+      />
       {open ? (
-        <div className="mt-2 space-y-3 pl-6">
+        <div className="mt-1 space-y-3 pb-2 pl-6">
           {section.facts.length > 0 ? (
             <ul className="list-disc space-y-1 pl-4 type-body text-foreground">
               {section.facts.map((f, i) => (
@@ -144,10 +133,7 @@ export function KitOutlineCard({
           </Button>
         </p>
       ) : sections === null ? (
-        <div className="mt-3 space-y-2">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-1/2" />
-        </div>
+        <RegionSkeleton shape="rows" count={3} className="mt-3" aria-label="Reading the outline" />
       ) : has ? (
         <ol className="mt-2 divide-y divide-border">
           {sections.map((s) => (
