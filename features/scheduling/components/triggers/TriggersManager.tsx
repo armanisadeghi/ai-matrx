@@ -11,6 +11,7 @@
  * The numbers are the Costs tab's own rollup; this adds creator, created time,
  * last fired, the extra flags, and the controls.
  */
+import { useAutomationReadiness } from "@/features/scheduling/service/automationReadiness";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Pause, Play, RefreshCw, Archive } from "lucide-react";
@@ -176,6 +177,7 @@ export function TriggersManager({
   orgSlug?: string;
 }) {
   const { format } = useCostDisplay();
+  useAutomationReadiness(); // re-renders the "Not ready" flag once the verdicts land
   const [rows, setRows] = useState<ManagedTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

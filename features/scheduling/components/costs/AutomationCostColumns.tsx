@@ -5,6 +5,7 @@
  * lists automations (Costs tab, System jobs tab, org admin) renders these, so a
  * flag, a link or a number can never disagree between two screens.
  */
+import { notReadyHit } from "@/features/scheduling/service/automationReadiness";
 import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
 import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import Link from "next/link";
@@ -42,6 +43,8 @@ export function automationFlagHits(row: AutomationCostRow | undefined): SpendFla
   if (automationAiState(row) === "spend_unattributed") {
     hits.push({ slot: "unattributed", severity: "warning", detail: "Cost is recorded on its runs, but no model call is linked" });
   }
+  const notReady = notReadyHit(row.mandates, row.organization_id);
+  if (notReady) hits.push(notReady);
   return hits;
 }
 

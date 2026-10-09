@@ -6,6 +6,7 @@
  * A row opens the record panel with its runs; each run opens its conversation
  * or workflow run.
  */
+import { useAutomationReadiness } from "@/features/scheduling/service/automationReadiness";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
@@ -345,6 +346,7 @@ export function AutomationCostTable({
 }) {
   const { rows, loading, error, reload } = useAutomationCosts(orgId);
   const { format } = useCostDisplay();
+  useAutomationReadiness(); // re-renders the "Not ready" flag once the verdicts land
   const total = rows.reduce((s, r) => s + r.cost, 0);
   const monthly = rows.reduce((s, r) => s + r.est_monthly_cost, 0);
 
