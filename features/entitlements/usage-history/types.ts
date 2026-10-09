@@ -61,6 +61,21 @@ function plainLabel(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
+/** Vendor names never reach a person ("our business, not the user's"); a label that somehow carries one is generalised. */
+const VENDOR_WORDS = /scrapecreators|dataforseo|serpapi|brave|twilio|\bxai\b|grok/i;
+
+/**
+ * What a usage row says happened. The server writes the full label for hard-cost rows
+ * ("Social data · Tracked @handle (Instagram)", "Web search"); rows written before that carry no
+ * label, so the client falls back to a plain category, never a vendor. Handles both old and new.
+ */
+export function usageActivityLabel(metadata: UsageMetadata): string | null {
+  const written = plainLabel(metadata.activity);
+  if (written) return VENDOR_WORDS.test(written) ? "Data service" : written;
+  if (metadata.link_kind === "external_api") return "Data service";
+  return displayMetadataValue(metadata.execution_type);
+}
+
 /**
  * Maps the small, user-safe portion of a ledger row. Metadata payloads are
  * deliberately not exposed: the history is about the recorded accounting
@@ -74,10 +89,7 @@ export function toUsageHistoryEntry(row: Pick<UsageLedgerRow, "id" | "created_at
     quantity: typeof row.quantity === "number" && Number.isFinite(row.quantity)
       ? row.quantity
       : null,
-    activity:
-      plainLabel(metadata.activity) ??
-      (metadata.link_kind === "external_api" ? "Connected service" : null) ??
-      displayMetadataValue(metadata.execution_type),
+    activity: usageActivityLabel(metadata),
     outcome: displayMetadataValue(metadata.status),
   };
 }

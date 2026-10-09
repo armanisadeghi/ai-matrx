@@ -748,6 +748,8 @@ export interface AgencyAccountRow {
 
 export interface AgencyOutlierRow {
   postId: string;
+  brandId: string | null;
+  profileId: string;
   brandName: string;
   platform: string;
   handle: string;
@@ -821,6 +823,8 @@ export async function readAgencySocial(args: { outlierWindowDays: number; minSco
     if (score === null || score < args.minScore || !owner) continue;
     outliers.push({
       postId: row.id,
+      brandId: owner.brandId,
+      profileId: owner.profileId,
       brandName: owner.brandName,
       platform: row.platform,
       handle: owner.handle,

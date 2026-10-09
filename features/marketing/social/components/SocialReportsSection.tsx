@@ -7,6 +7,7 @@
  * organization; the brand column says whose account each row is.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
@@ -21,7 +22,18 @@ import { formatCompact, formatMultiplier } from "../outlier";
 import type { AgencyAccountRow, AgencyOutlierRow } from "../service";
 import { SOCIAL_PLATFORM_LABELS, TRACKED_ROLE_LABELS, isSocialPlatform } from "../types";
 import { PlatformMark } from "./PlatformMark";
+import { agencyAccountHref, agencyBrandHref } from "../agencyLinks";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
+
+function RowLink({ href, children }: { href: string | null; children: React.ReactNode }) {
+  return href ? (
+    <Link href={href} className="min-w-0 truncate underline-offset-2 hover:underline" data-clickable="">
+      {children}
+    </Link>
+  ) : (
+    <>{children}</>
+  );
+}
 
 function platformLabel(p: string): string {
   return isSocialPlatform(p) ? SOCIAL_PLATFORM_LABELS[p] : p;
@@ -34,6 +46,7 @@ const ACCOUNT_COLUMNS: MatrxColumnDef<AgencyAccountRow>[] = [
     header: "Brand",
     accessorFn: (r) => r.brandName,
     filter: "select",
+    cell: (r) => <RowLink href={agencyBrandHref(r)}>{r.brandName}</RowLink>,
   },
   {
     id: "account",
@@ -45,7 +58,9 @@ const ACCOUNT_COLUMNS: MatrxColumnDef<AgencyAccountRow>[] = [
     cell: (r) => (
       <span className="flex min-w-0 items-center gap-2">
         <PlatformMark platform={r.platform} size={18} />
-        <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
+        <RowLink href={agencyAccountHref(r)}>
+          {formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}
+        </RowLink>
       </span>
     ),
   },
@@ -89,7 +104,14 @@ const ACCOUNT_COLUMNS: MatrxColumnDef<AgencyAccountRow>[] = [
 ];
 
 const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
-  { id: "brand", label: "Brand", header: "Brand", accessorFn: (r) => r.brandName, filter: "select" },
+  {
+    id: "brand",
+    label: "Brand",
+    header: "Brand",
+    accessorFn: (r) => r.brandName,
+    filter: "select",
+    cell: (r) => <RowLink href={agencyBrandHref(r)}>{r.brandName}</RowLink>,
+  },
   {
     id: "post",
     label: "Post",
@@ -103,7 +125,7 @@ const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
       </a>
     ),
   },
-  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) },
+  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => <RowLink href={agencyAccountHref(r)}>{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</RowLink> },
   {
     id: "platform",
     label: "Platform",

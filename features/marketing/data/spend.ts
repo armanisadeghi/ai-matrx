@@ -72,6 +72,9 @@ export type SeoSpendSummary = Omit<
   global_provider_monthly_ceiling_usd: number;
   unpriced_run_assumed_cost_usd: number;
   recent_budget_rejections: SeoBudgetRejectionRow[];
+  /** This month's social-data cost (USD) and calls; null when the server did not send it (older server) or could not read it. */
+  social_this_month_usd: number | null;
+  social_this_month_calls: number | null;
 };
 
 function decimal(value: unknown, field: string): number {
@@ -180,6 +183,9 @@ export function readSeoSpendSummary(value: unknown): SeoSpendSummary {
       "unpriced run assumed cost",
     ),
     recent_budget_rejections: value.recent_budget_rejections.map(rejectionRow),
+    social_this_month_usd: nullableDecimal(value.social_this_month_usd, "social cost"),
+    social_this_month_calls:
+      typeof value.social_this_month_calls === "number" ? value.social_this_month_calls : null,
   };
 }
 
@@ -214,6 +220,12 @@ function mergeProviderRows(
       row.ceiling_usd > 0 ? (row.effective_cost / row.ceiling_usd) * 100 : 0;
   }
   return [...byProvider.values()];
+}
+
+/** Sum of the figures that are known; null only when none is. */
+function sumKnown(values: Array<number | null>): number | null {
+  const known = values.filter((v): v is number => v !== null);
+  return known.length === 0 ? null : known.reduce((a, b) => a + b, 0);
 }
 
 /**
@@ -263,6 +275,8 @@ export function mergeSeoSpendSummaries(
     recent_budget_rejections: summaries
       .flatMap((s) => s.recent_budget_rejections)
       .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
+    social_this_month_usd: sumKnown(summaries.map((s) => s.social_this_month_usd)),
+    social_this_month_calls: sumKnown(summaries.map((s) => s.social_this_month_calls)),
     unreadOrganizationIds,
     organizationCount: summaries.length,
   };

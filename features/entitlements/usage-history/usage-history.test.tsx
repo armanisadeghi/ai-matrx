@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { UsageHistory } from "./UsageHistory";
 import { fetchPersonalUsageHistory } from "./service";
-import { toUsageHistoryEntry } from "./types";
+import { toUsageHistoryEntry, usageActivityLabel } from "./types";
 
 jest.mock("./service", () => ({ fetchPersonalUsageHistory: jest.fn() }));
 
@@ -53,5 +53,20 @@ describe("personal usage history", () => {
     await act(async () => { next?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     expect(readHistory).toHaveBeenLastCalledWith({ range: "30d", activity: "all", page: 1, snapshotAt: "2026-10-04T12:00:00.000Z", cursor: { createdAt: "2026-10-04T12:00:00.000Z", id: "ledger-harbor-1" } });
     expect(host.textContent).toContain("+25 points");
+  });
+});
+
+
+describe("usageActivityLabel", () => {
+  it("shows the label the server wrote, subject included", () => {
+    expect(usageActivityLabel({ activity: "Social data · Tracked @jeffnippard (Instagram)", link_kind: "external_api" }))
+      .toBe("Social data · Tracked @jeffnippard (Instagram)");
+  });
+  it("older hard-cost rows with no label get a plain category, not a vendor", () => {
+    expect(usageActivityLabel({ link_kind: "external_api" })).toBe("Data service");
+    expect(usageActivityLabel({ activity: "ScrapeCreators", link_kind: "external_api" })).toBe("Data service");
+  });
+  it("model rows keep the humanized execution type", () => {
+    expect(usageActivityLabel({ execution_type: "agent_run" })).toBe("Agent Run");
   });
 });

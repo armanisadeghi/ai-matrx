@@ -72,6 +72,7 @@ import {
 } from "./report-presentation";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { SavedSeoReportsSection } from "./saved/SavedSeoReportsSection";
+import { SocialReportsLink } from "@/features/marketing/social/components/SocialReportsLink";
 import { buildSearchReportDraft } from "./saved/search-report-draft";
 
 const SURFACE_NAME = "matrx-user/marketing-reports";
@@ -599,6 +600,7 @@ export function MarketingReportsWorkspace() {
                 </footer>
               </div>
             )}
+            <SocialReportsLink />
             <SavedSeoReportsSection
               draft={reportDraft}
               unavailableReason={reportDraftReason}

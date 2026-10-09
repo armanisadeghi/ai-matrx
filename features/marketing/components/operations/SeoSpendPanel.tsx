@@ -30,6 +30,11 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import {
+  groupSpendByCategory,
+  spendCategory,
+  type SpendCategoryRow,
+} from "@/features/marketing/data/spend-categories";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 
@@ -69,11 +74,37 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   );
 }
 
+/** The person-facing line: an activity (SEO data, Web search, Social data…), never a vendor. */
+function CategoryRow({ row }: { row: SpendCategoryRow }) {
+  const { unit, rate: costRate } = useCostDisplay();
+  const pct = Math.max(0, Math.min(100, row.pctUsed));
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card p-2.5">
+      <span className="text-xs font-medium text-foreground">{row.category}</span>
+      <span className="text-right font-mono text-xs font-semibold tabular-nums">
+        {formatRuntimeCost(row.usd, costRate, unit)}
+      </span>
+      {row.pctUsed > 0 ? (
+        <div className="col-span-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={row.pctUsed >= 100 ? "h-full bg-destructive" : row.pctUsed >= 80 ? "h-full bg-amber-500" : "h-full bg-primary"}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      ) : null}
+      <span className="col-span-2 text-[10px] text-muted-foreground">
+        {row.runs} paid call{row.runs === 1 ? "" : "s"}
+        {row.unpricedRuns > 0 ? ` · ${row.unpricedRuns} not yet priced` : ""}
+      </span>
+    </div>
+  );
+}
+
 export function SeoSpendPanel() {
   const { copyText } = useClipboard({
     notify: copyNotify,
   });
-  const { unit, rate: costRate } = useCostDisplay();
+  const { unit, rate: costRate, canToggle: isPlatformAdmin } = useCostDisplay();
   // THE PAGE'S ORGANIZATION FILTER (`?org_filter=`, default All organizations — never the active
   // organization, which only decides where new things are saved). All organizations sums the
   // person's organizations; one organization shows its own ceilings against its own spend, and
@@ -107,8 +138,7 @@ export function SeoSpendPanel() {
       <div>
         {orgFilterControl}
         <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading SEO provider
-          spend…
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading spend…
         </div>
       </div>
     );
@@ -118,14 +148,20 @@ export function SeoSpendPanel() {
   const paidThisMonth = data.this_month.filter(
     (row) => row.effective_cost > 0 || row.run_count > 0,
   );
+  const categories = groupSpendByCategory(data.this_month, {
+    usd: data.social_this_month_usd,
+    calls: data.social_this_month_calls,
+  });
   const rejectionColumns: MatrxColumnDef<SeoBudgetRejectionRow>[] = [
     {
       id: "provider",
       accessorKey: "provider",
-      header: "Provider",
+      header: isPlatformAdmin ? "Provider" : "Activity",
       filter: "select",
       cell: (row) => (
-        <span className="capitalize">{row.provider.replaceAll("_", " ")}</span>
+        <span className="capitalize">
+          {isPlatformAdmin ? row.provider.replaceAll("_", " ") : spendCategory(row.provider)}
+        </span>
       ),
     },
     {
@@ -190,7 +226,7 @@ export function SeoSpendPanel() {
     if (!row) return null;
     return {
       content: [
-        `${row.provider} — ${row.ceiling ?? "budget exceeded"}`,
+        `${isPlatformAdmin ? row.provider : spendCategory(row.provider)} — ${row.ceiling ?? "budget exceeded"}`,
         `spent=${row.spent_usd ?? "—"} limit=${row.limit_usd ?? "—"}`,
         `occurred: ${row.occurred_at}`,
         `run: ${row.run_id}`,
@@ -200,7 +236,11 @@ export function SeoSpendPanel() {
 
   const rejectionMenuSection: ContextMenuExtraSection = {
     id: "seo-budget-rejection-row",
-    label: clickedRejection ? clickedRejection.provider : "This rejection",
+    label: clickedRejection
+      ? isPlatformAdmin
+        ? clickedRejection.provider
+        : spendCategory(clickedRejection.provider)
+      : "This rejection",
     anchor: "after-compare",
     items: [
       {
@@ -224,7 +264,7 @@ export function SeoSpendPanel() {
       <section className="rounded-lg border border-border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            This month by provider{orgName ? ` · ${orgName}` : ""}
+            This month by activity{orgName ? ` · ${orgName}` : ""}
             {data.organizationCount > 1 ? ` (${data.organizationCount} organizations)` : ""}
           </h2>
           <Button
@@ -235,18 +275,29 @@ export function SeoSpendPanel() {
             Refresh
           </Button>
         </div>
-        {paidThisMonth.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="flex items-center gap-2 rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
-            <Gauge className="h-4 w-4" /> No SEO provider spend
-            recorded this month.
+            <Gauge className="h-4 w-4" /> No paid data activity recorded this month.
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {paidThisMonth.map((row) => (
-              <ProviderRow key={row.provider} row={row} />
+            {categories.map((row) => (
+              <CategoryRow key={row.category} row={row} />
             ))}
           </div>
         )}
+        {isPlatformAdmin && paidThisMonth.length > 0 ? (
+          <div className="mt-3 border-t border-border pt-3">
+            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Platform admin · by provider
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {paidThisMonth.map((row) => (
+                <ProviderRow key={row.provider} row={row} />
+              ))}
+            </div>
+          </div>
+        ) : null}
         {data.unreadOrganizationIds.length > 0 ? (
           <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-400">
             {data.unreadOrganizationIds.length} of your organizations could not
@@ -254,6 +305,7 @@ export function SeoSpendPanel() {
             organization above to see its own error.
           </p>
         ) : null}
+        {isPlatformAdmin ? (
         <p className="mt-2 text-[10px] text-muted-foreground">
           Org·provider monthly ceiling{" "}
           {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, costRate, unit)} ·
@@ -261,6 +313,7 @@ export function SeoSpendPanel() {
           {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, costRate, unit)} per
           provider (placeholder values, pending final ruling).
         </p>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-border bg-card p-3">
