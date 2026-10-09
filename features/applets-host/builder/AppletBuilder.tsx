@@ -16,7 +16,7 @@ import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } fro
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
+import { readAppletCatalogue, readJobInputs } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
@@ -31,12 +31,14 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
 import { APPLET_AUDIENCE_LABELS, appletAudience, appletState, appletVersionLabel, type AppletAudience } from "@/features/applets/lib/applet-state";
-import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { continueAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/continue-agent-json";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
 import {
   BuildRefused,
   coerceBuildAnswer,
@@ -53,7 +55,7 @@ import {
   type BuilderSource,
   type SavedApplet,
 } from "./build-applet";
-import { appletLink, buildingStep, doneLine, fixLabel, fixNarration, heldHint, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
+import { appletLink, buildConversationId, buildingStep, fixHostTurn, doneLine, fixLabel, fixNarration, heldHint, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
 import { UseAppletDialog } from "./UseAppletDialog";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
@@ -74,14 +76,13 @@ const noopSubscribe = () => () => {};
 /** False in the server HTML and the hydration render, true once the page answers clicks. */
 const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
 
-// Declared in aidream (client_mandates.py, applets.build / applets.fix); allowlisted in
+// Declared in aidream (client_mandates.py, applets.build); allowlisted in
 // scripts/mandate-keys-allowlist.json until @ai-matrx/agents publishes MANDATE_KEYS.applets__build.
+// ONE CONVERSATION PER BUILD (lane F6b): the first run starts it on `applets.build`; the automatic fix round
+// (a host turn), "Change it" and her replies are its next turns — never a second job or conversation.
 const BUILD = storedMandateKey("applets.build");
-const FIX = storedMandateKey("applets.fix");
-const DISCLOSURE = [
-  { mandateKey: BUILD, does: "builds your Applet from your sentence" },
-  { mandateKey: FIX, does: "fixes an error in your Applet" },
-] as const;
+const DISCLOSURE = [{ mandateKey: BUILD, does: "builds and fixes your Applet as you talk to it" }] as const;
+const SURFACE_KEY = "applets:build";
 
 type Phase = { kind: "idle" } | { kind: "building" } | { kind: "publishing" } | { kind: "failed"; why: string };
 
@@ -122,7 +123,11 @@ export function AppletBuilder({
   const openRunWindow = useOpenLiveRunWindow();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   useDeclaredSurfaceMandates(DISCLOSURE);
+  // A reply sent while a round runs steers the NEXT round: it waits here, and goes the moment this one ends.
+  const [queued, setQueued] = useState<string | null>(null);
+  const queuedRef = useRef<string | null>(null);
 
   const [sentence, setSentence] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -149,8 +154,8 @@ export function AppletBuilder({
     if (!open) return;
     // A closed window is never re-opened by a late "stop waiting" update (that re-dispatches the overlay).
     if (rejoinWindow.current === open.handle) rejoinWindow.current = null;
+    // The build's conversation stays: the left panel shows it, and the next round continues it.
     open.handle.close();
-    if (open.conversationId) dispatch(destroyInstanceIfAllowed(open.conversationId));
   };
   // "Use it" asks who can open it first (B8): the dialog is open while this holds the choice.
   const [useItOpen, setUseItOpen] = useState(false);
@@ -176,7 +181,9 @@ export function AppletBuilder({
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
         const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
+        // What each job really takes (F1): a form that fills a job with names it does not declare is refused.
+        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value));
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
@@ -297,7 +304,7 @@ export function AppletBuilder({
 
   /**
    * One request. A NEW build or change whose answer the checks refuse gets ONE automatic fix round
-   * (`applets.fix` with the refused answer and the reason) before anything is shown — she asked for an
+   * (a host turn on the build's one conversation, the refused answer and the reason as context) before anything is shown — she asked for an
    * app, not a list of what is wrong with it. A refused fix round is shown with "Fix it", as before.
    */
   const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet; refusedEntryId: string } | null = null) => {
@@ -339,32 +346,56 @@ export function AppletBuilder({
       const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
       stepTo("Starting the builder");
       let attached: Promise<void> = Promise.resolve();
-      const answer = await writer.run<BuildAnswer>({
-        mandateKey: fix ? FIX : BUILD,
-        surfaceKey: "applets:build",
-        sourceFeature: "agent-app",
-        expect: "json",
-        initiation: "user",
-        // The window renders the stream and keeps it after the run ends, so it never goes blank between
-        // "Done" and the save (B13); this builder lets the instance go when it closes the window.
-        displayMode: "direct",
-        keepInstance: true,
-        organizationId: runOrg,
-        variables: {
-          request,
-          applet: fix && (retry?.refusedApplet ?? refused) ? JSON.stringify(retry?.refusedApplet ?? refused) : current ? JSON.stringify(current.applet) : "",
-          catalogue: JSON.stringify(catalogue),
-          last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
-        },
-        onConversationCreated: (cid) => {
-          entry.conversation_id = cid;
-          attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
-          live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet", instanceId: buildWindowId(record.id) });
-          runWindow.current = { handle: live.handle, conversationId: cid };
-          stepTo(fix ? fixNarration(fix.message) : "Writing your Applet");
-        },
-        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems }),
-      });
+      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null));
+      const check = (v: unknown) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
+      const onConversation = (cid: string) => {
+        entry.conversation_id = cid;
+        attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
+        live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet", instanceId: buildWindowId(record.id) });
+        runWindow.current = { handle: live.handle, conversationId: cid };
+        stepTo(fix ? fixNarration(fix.message) : "Writing your Applet");
+      };
+      // The build's one conversation (every earlier request's run), when it has one.
+      const conversation = buildConversationId(record.requests.filter((r) => r.id !== entry.id));
+      const fixedApplet = fix ? (retry?.refusedApplet ?? refused) : null;
+      let answer: BuildAnswer;
+      if (conversation) {
+        onConversation(conversation);
+        const result = await continueAgentJson(dispatch, store.getState, {
+          conversationId: conversation,
+          surfaceKey: SURFACE_KEY,
+          ...(fix ? { hostTurn: fixHostTurn(fix.message) } : { userInput: request }),
+          // Structured parts ride context, never her message: the record as it stands (the refused answer
+          // in a fix round) and the check that refused it (removed on her own turns).
+          context: {
+            applet: fixedApplet ? JSON.stringify(fixedApplet) : current ? JSON.stringify(current.applet) : null,
+            last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : null,
+          },
+        });
+        if (!result.success) throw new Error(result.error ?? "The builder finished without an answer.");
+        answer = check(result.data);
+      } else {
+        answer = await writer.run<BuildAnswer>({
+          mandateKey: BUILD,
+          surfaceKey: SURFACE_KEY,
+          sourceFeature: "agent-app",
+          expect: "json",
+          initiation: "user",
+          // The window renders the stream and keeps it after the run ends, so it never goes blank between
+          // "Done" and the save (B13); the instance stays for the build's conversation in the left panel.
+          displayMode: "direct",
+          keepInstance: true,
+          organizationId: runOrg,
+          variables: {
+            request,
+            applet: fixedApplet ? JSON.stringify(fixedApplet) : current ? JSON.stringify(current.applet) : "",
+            catalogue: JSON.stringify(catalogue),
+            last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
+          },
+          onConversationCreated: onConversation,
+          coerce: check,
+        });
+      }
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
     } catch (err) {
@@ -383,6 +414,22 @@ export function AppletBuilder({
       if (live.handle && runWindow.current?.handle === live.handle) live.handle.update({ pending: false });
       setStep(null);
     }
+    // Her reply sent during this round steers the next one (an automatic fix round included).
+    const next = queuedRef.current;
+    if (next && !retry) {
+      queuedRef.current = null;
+      setQueued(null);
+      await run(next, null);
+    }
+  };
+
+  /** Send what she typed: now when nothing runs, else as the next round (it never waits on a disabled button). */
+  const send = (text: string) => {
+    if (!text) return;
+    if (!busy) return void run(text, null);
+    queuedRef.current = text;
+    setQueued(text);
+    setSentence("");
   };
 
   // "Use it" never puts a broken Applet in use: while the preview reports an error, Fix it is the action.
@@ -409,6 +456,17 @@ export function AppletBuilder({
   // Until the page is interactive the button says so, instead of sitting silently disabled.
   const hydrated = useHydrated();
   const boundNames = useSourceTableNames(saved?.bound ?? []);
+  // The build's one conversation, read into this tab once so the left panel shows it after a refresh.
+  const conversationId = buildConversationId(session.record?.requests ?? []);
+  const loadedConversation = useRef<string | null>(null);
+  useEffect(() => {
+    if (!conversationId || loadedConversation.current === conversationId) return;
+    loadedConversation.current = conversationId;
+    if (store.getState().conversations.byConversationId[conversationId]) return;
+    dispatch(loadConversation({ conversationId }))
+      .unwrap()
+      .catch((err: unknown) => console.error("[applet-build] could not read the build's conversation", { conversationId, err }));
+  }, [conversationId, dispatch, store]);
   // A request still open on the record is a build in progress even before this tab rejoins it (B1).
   const shownStep = step ?? buildingStep(session.record?.requests);
   return (
@@ -419,6 +477,13 @@ export function AppletBuilder({
       data-matrx-page-scroll=""
     >
       <div className="flex min-h-0 flex-col gap-3">
+        {conversationId ? (
+          // THE BUILD'S CONVERSATION: her requests and replies, the builder's answers and questions, the fix
+          // rounds — one transcript through the platform's one renderer (never a hand-rendered stream).
+          <div className="min-h-48 flex-1 overflow-y-auto" data-applet-build-conversation="">
+            <AgentConversationDisplay conversationId={conversationId} surfaceKey={SURFACE_KEY} compact bottomPinned />
+          </div>
+        ) : null}
         <ProTextarea
           aria-label="What you want"
           value={sentence}
@@ -440,11 +505,12 @@ export function AppletBuilder({
           {hydrated ? (
             <Button
               variant="primary"
-              disabled={busy || !sentence.trim()}
-              title={sentence.trim() ? undefined : "Say what you want first"}
-              onClick={() => void run(sentence.trim(), null)}
+              disabled={!sentence.trim()}
+              title={!sentence.trim() ? "Say what you want first" : busy ? "It goes to the builder when this round ends" : undefined}
+              onClick={() => send(sentence.trim())}
+              data-applet-send=""
             >
-              {appletId ? "Change it" : "Build"}
+              {busy ? "Send next" : appletId ? "Change it" : "Build"}
             </Button>
           ) : (
             <Button variant="primary" disabled aria-busy icon={<Loader2 className="animate-spin" />} data-applet-build-pending="">
@@ -458,7 +524,12 @@ export function AppletBuilder({
           ) : null}
         </div>
         {phase.kind === "failed" ? <p className="text-sm text-destructive">{phase.why}</p> : null}
-        <BuildHistory requests={session.record?.requests ?? []} />
+        {queued ? (
+          <p className="truncate text-xs text-muted-foreground" title={queued} data-applet-queued="">
+            Next: {queued}
+          </p>
+        ) : null}
+        {conversationId ? null : <BuildHistory requests={session.record?.requests ?? []} />}
         {lastError ? <p className="text-sm text-destructive" data-applet-error="">{lastError.message}</p> : null}
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
@@ -498,6 +569,11 @@ export function AppletBuilder({
                     <span className="truncate text-muted-foreground" title={t.fields.join(", ")}>
                       {t.fields.join(", ")}
                     </span>
+                    {t.examples ? (
+                      <span className="shrink-0 text-muted-foreground" data-applet-example-rows="">
+                        {t.examples === 1 ? "+ 1 from your example" : `+ ${t.examples} from your example`}
+                      </span>
+                    ) : null}
                   </div>
                 ))}
               </div>
