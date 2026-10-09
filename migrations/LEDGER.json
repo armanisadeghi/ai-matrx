@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T02:03:18.546Z",
+  "generated_at": "2026-10-09T05:04:19.673Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -392,6 +392,12 @@
       "checksum": "54e996dc1701feeea07cd78f3a491a2c573c2a3ef71d825ab63320c808905542",
       "applied_at": "2026-09-26 04:15:15.400393+00"
     },
+    "migrations/campaign/boardswimlanes_a_a_board_keeps_its_look.sql": {
+      "source": "matrx-frontend",
+      "filename": "boardswimlanes_a_a_board_keeps_its_look.sql",
+      "checksum": "3c68570836ba53a30353dee6144185b8ee4023c0cb9f97dee47ac62c6ef6345f",
+      "applied_at": "2026-10-09 05:04:18.473779+00"
+    },
     "migrations/campaign/booking_a_booking_is_a_record_with_a_held_slot.sql": {
       "source": "matrx-frontend",
       "filename": "booking_a_booking_is_a_record_with_a_held_slot.sql",
@@ -457,6 +463,12 @@
       "filename": "builders_a_summary_is_not_raw_json.sql",
       "checksum": "d92251abc1703e5554538eb92ffb4b7d8cd858a5cdc553ea77b46fc554a675d4",
       "applied_at": "2026-09-21 05:02:27.346461+00"
+    },
+    "migrations/campaign/calfeed_a_a_view_can_be_a_chart.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_a_a_view_can_be_a_chart.sql",
+      "checksum": "e5529785ef1be0f317f5cbba8de9df54f8e7c7df0fef7e2acee732f36d0e9001",
+      "applied_at": "2026-10-09 05:02:28.784186+00"
     },
     "migrations/campaign/capture_a_field_says_how_many_answers_it_holds.sql": {
       "source": "matrx-frontend",
