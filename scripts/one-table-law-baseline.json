@@ -62,7 +62,6 @@
     "features/files/components/surfaces/desktop/FileTable.tsx": "desktop file list (sort/select/filters)",
     "features/mandates/admin/MandateReferenceBoardView.tsx": "mandate board rows; partly MatrxDataTable already",
     "features/research/components/curation/CurationTable.tsx": "research sources curation list",
-    "features/research/components/sources/SourceList.tsx": "research sources list",
     "features/scope-system/components/ScopesList.tsx": "scopes list by name",
     "features/scopes/components/management/OrgScopeTypeSection.tsx": "org scope list; partly MatrxDataTable already",
     "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "test sample rows; partly MatrxDataTable already"
@@ -121,7 +120,6 @@
     "features/rag/components/library/TableRowsViewer.tsx",
     "features/rag/components/search/RagPageReferences.tsx",
     "features/research/components/curation/CurationTable.tsx",
-    "features/research/components/sources/SourceList.tsx",
     "features/review-walk/components/TurnDiagnosis.tsx",
     "features/scope-system/components/ScopeOnboarding.tsx",
     "features/scope-system/components/ScopesList.tsx",
