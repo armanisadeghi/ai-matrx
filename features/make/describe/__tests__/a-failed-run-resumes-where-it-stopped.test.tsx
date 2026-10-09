@@ -31,7 +31,7 @@ jest.mock("@ai-matrx/records/templates", () => ({ runTemplateDoor: (...a: unknow
 jest.mock("@ai-matrx/agents/mandates", () => ({ MANDATE_KEYS: { make__describe_template: "make.describe_template" } }));
 jest.mock("@ai-matrx/chat/agents/hooks/useFloatingAgentRun", () => ({ useFloatingAgentRun: () => ({ run: writerRun, isRunning: false }) }));
 // The box before the guided run ran its model headless; the same stand-in serves both so the guard can fail before.
-jest.mock("@ai-matrx/chat/agents/hooks/useHeadlessAgentJson", () => ({ useHeadlessAgentJson: () => ({ run: writerRun, isRunning: false }) }));
+jest.mock("@ai-matrx/chat/agents/hooks/useHeadlessAgentJson", () => ({ HeadlessAgentRunError: class extends Error {}, useHeadlessAgentJson: () => ({ run: writerRun, isRunning: false }) }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/surface-mandates", () => ({ useDeclaredSurfaceMandates: () => undefined }));
 jest.mock("@ai-matrx/kit/composer-keys", () => ({ enterSendsHere: () => true }));
 jest.mock("@/components/ui/button", () => ({
@@ -54,6 +54,7 @@ jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("../../gallery/TemplateGallery", () => ({ Landing: () => null, Progress: () => null }));
 jest.mock("../../gallery/galleryHref", () => ({ templatePreviewHref: (id: string) => `/make/templates/${id}` }));
 jest.mock("../describeTemplate", () => ({
+  AnswerRefused: class extends Error {},
   applySafeReuses: (a: { template: Record<string, unknown>; reuses: unknown[]; notes: string[] }) => ({ template: a.template, reuses: a.reuses, notes: [] }),
   bindReuses: (s: unknown) => s,
   checkDescribeTemplate: (t: unknown) => ({ ok: true, spec: t, autoFixes: [] }),
@@ -103,7 +104,8 @@ describe("the guided run on /make", () => {
 
     const alert = host.querySelector("[data-make-describe-refusal]");
     expect(alert?.getAttribute("data-make-failed-at")).toBe("build");
-    expect(alert?.textContent).toContain("Creating everything stopped: Failed to fetch");
+    expect(alert?.textContent).toContain("That stopped before it finished. Try again.");
+    expect(alert?.textContent).not.toContain("Failed to fetch");
 
     await act(async () => (host.querySelector("[data-retry]") as HTMLButtonElement).click());
     await act(async () => new Promise((r) => setTimeout(r, 20)));

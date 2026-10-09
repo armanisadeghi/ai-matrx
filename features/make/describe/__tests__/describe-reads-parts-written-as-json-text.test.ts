@@ -13,13 +13,16 @@
 import { checkDescribeTemplate, coerceDescribeAnswer } from "../describeTemplate";
 import goldReduced from "./fixtures/gold-reduced-to-describe.json";
 
-/** The live failure's shape: every list entry and every object part written as JSON text. */
+/** The parts the holder's stored output schema declares as "one JSON object, as text" (read live 2026-10-09). */
+const AS_TEXT = ["tables", "forms", "views", "relationships", "extras"];
+
+/** The live failure's shape: business and every entry of those lists written as JSON text. */
 function asTheModelWroteIt(template: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(template)) {
+  const out: Record<string, unknown> = { ...template };
+  if (template.business && typeof template.business === "object") out.business = JSON.stringify(template.business);
+  for (const k of AS_TEXT) {
+    const v = template[k];
     if (Array.isArray(v)) out[k] = v.map((item) => (item && typeof item === "object" ? JSON.stringify(item) : item));
-    else if (v && typeof v === "object") out[k] = JSON.stringify(v);
-    else out[k] = v;
   }
   return out;
 }
