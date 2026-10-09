@@ -37,6 +37,8 @@ export const READABLE_PX = 9.5;
  * 23% was a clean card.
  */
 export const OVERVIEW_ZOOM = READABLE_PX / BODY_FONT_PX;
+/** Below this zoom a tile is too small on screen to offer resize handles on hover (a card still can above it). */
+export const RESIZE_AFFORDANCE_ZOOM = 0.28;
 
 export function detailTierForZoom(z: number): DetailTier {
   if (BODY_FONT_PX * z >= READABLE_PX) return "read";

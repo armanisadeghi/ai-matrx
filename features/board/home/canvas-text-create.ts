@@ -33,8 +33,11 @@ function settled<T extends BoardTileBase>(board: BoardStore<T>, shape: BoardShap
 }
 
 function startTyping(store: BoardCameraStore, id: string) {
-  // After the layer has drawn it (the editor mounts over the drawn object).
+  // After the layer has drawn it (the editor mounts over the drawn object). A selection the person
+  // changed in the meantime (a click on empty board) is theirs: it is not overridden.
+  const before = store.getSelection();
   requestAnimationFrame(() => {
+    if (store.getSelection() !== before) return;
     store.select(id);
     store.setEditing(id);
   });

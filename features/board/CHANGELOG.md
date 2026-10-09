@@ -1,5 +1,21 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Full Board walk fixes (fw38 → pr39)
+
+- **Keyboard on load:** the board owns focus when it loads and keeps it against the shell chat composer's late autofocus until the person's first press (`engine/claim-load-focus.ts`, started by `BoardViewport`); ⌘A / Delete / ⌘Z work with no click. /chat is untouched (it has no board).
+- **Arrange acts on every object:** stickies, text, shapes and strokes join the arrange scene (`SHAPE_ARRANGE_GROUPS`; connectors follow what they bind to). "One column" on 12 stickies no longer says "Already arranged that way". By-type frames them as "Sticky notes" / "Text" / "Shapes" / "Drawings".
+- **New objects land clear of content:** `BoardStore.occupiedRects` / `freeSpot` include shapes; `addTile` and a sticky or text made at the view centre take the nearest free place. A selected tile rises above the drawings layer (z 7).
+- **Right-click:** selects the drawing, sticky or text under the pointer (JS hit test) and the menu header names the SELECTION ("Selection: 12 stickies", via `CONTEXT_MENU_HEADING_KEY`), never page text; a drawing selection has Bring to front / Send to back / Duplicate / Delete.
+- **Chrome never overlaps:** the selection toolbar is placed by `engine/toolbar-placement.ts` (above / below / slides past the minimap, zoom HUD and any `data-matrx-floating-bottom`); the minimap and zoom HUD rest above floating page chrome (the assists pill).
+- **Select-all toolbar:** a mixed selection shows shared controls inline (colour where every kind takes one, order, duplicate, delete) and the per-kind controls fold into one "By type" menu (`SelectionToolbarSection.scope` / `label` / `mixedOnly`); width capped to the board.
+- **Frames:** one delete (the toolbar's; the trash beside the title is gone); toolbar adds Rename, Colour (`BoardFrame.color`, saved), Fit to contents, Arrange inside (`components/FrameToolbarSection.tsx`); the title is a 12 px medium tag at every zoom and renders above contents.
+- **Shapes:** rounded rectangle, triangle, diamond, star (box kinds: select, resize, style, text, bindable); the sticky tool keeps `StickyNote`, the full Note uses `NotebookText`.
+- **Draw:** a pen style bar (colour, weight) shows while the pen is active and styles the next strokes (`engine/pen-style.ts`, `components/PenStyleBar.tsx`).
+- **Zoom tiers:** a tile body shows only while its text is legible (`OVERVIEW_ZOOM = READABLE_PX / BODY_FONT_PX`); below that, the card. The 0.28 cliff (content at 30%, card at 23%) is gone.
+- **Chat tile:** "New conversation" keeps the conversation list open or closed as the person left it.
+- **Console:** the "host registered no scopes.associationsService / favoritesService / scopesService" warnings were React Refresh probing the package's service proxies during module evaluation (dev only); the proxies now ignore such probes (`@ai-matrx/chat` `context/sources/scopes.tsx`).
+- Guards: `claim-load-focus`, `arrange-canvas-objects`, `new-objects-clear-of-content`, `selection-label`, `toolbar-placement`, `more-shapes` tests.
+
 ## 2026-10-09 — Follow-ups: one connector model, tile duplicate and order, no shared sticky Notes, Add → Text
 
 - **Add menu:** the Canvas section is Sticky note, Text, Frame, Draw, Shapes. Sticky note and Text now make the object at the view centre (same creator as the toolbar); the old "Label" row (which placed a label tile that turned into text on reload) is gone, with its Board-menu row.

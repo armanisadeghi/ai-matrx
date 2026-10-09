@@ -454,3 +454,15 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 ## Neighbours that own their tile behaviour
 
 `features/surfaces/FEATURE.md` (`SurfaceActivity`, captures) · `../aidream/apps/shared/chat/src/canvas/workspace/FEATURE.md` (the chat-beside-a-canvas layout) · `features/shell/FEATURE.md` (nav, chrome, floating clearance) · `features/war-room/FEATURE.md` · `features/meet/FEATURE.md` · `features/workflow-runtime/FEATURE.md` · `features/notes/FEATURE.md` · `features/data-tables/FEATURE.md`. Cross-repo node (pointer only): `common-docs/systems/board/boards/FEATURE.md`; vocabulary row: `common-docs/systems/platform/vocabulary/FEATURE.md`. Status handoff: `docs/handoffs/board.md`. Adding an item type: `.claude/skills/board-items/SKILL.md`. History: `CHANGELOG.md`.
+
+## Full Board walk fixes (2026-10-09, pr39)
+
+- **Focus:** `engine/claim-load-focus.ts` — the board takes the keyboard on load and holds it against automatic focus from a field outside it (the shell chat composer) until the first press / key / touch; then focus is the person's.
+- **Arrange covers canvas objects:** `runArrange` builds its scene from tiles AND non-connector shapes (`SHAPE_ARRANGE_GROUPS`); frames made by "Into frames by type" are titled `SHAPE_GROUP_LABEL`.
+- **Placement and z-order:** `BoardStore.occupiedRects()` (tiles, frames, non-connector shapes) feeds `addTile` and `freeSpot`; canvas objects made at the view centre (`canvas-text-create.ts`) use `freeSpot`. Drawings still paint above tiles (z 6); a SELECTED tile is z 7, frame titles z 8.
+- **Right-click:** `BoardMenu` records the press point, hit-tests shapes through the shape host, selects what is under the pointer (keeps a selection that holds it) and passes `CONTEXT_MENU_HEADING_KEY` = `describeSelection` (`board/selection-label.ts`, "12 stickies"). No heading ever falls back to page text.
+- **Selection toolbar:** sections carry `scope` (`shared` default | `type`), `label`, `mixedOnly`; a mixed selection folds `type` sections into one "By type" menu. Position: `engine/toolbar-placement.ts` `placeToolbar` (avoids `[data-board-minimap]`, `[data-board-zoom-hud]`, `[data-matrx-floating-bottom]`). `BoardChrome`'s minimap and zoom HUD lift above floating page chrome (`useClearOfFloatingChrome`).
+- **Frames:** `BoardFrame.color` (saved); `FrameToolbarSection` (Rename, Colour, Fit to contents, Arrange inside); delete is the shared actions section's only.
+- **Shapes:** kinds `rounded`, `triangle`, `diamond`, `star` (`isBoxKind`; polygons via `shapePolygon`); tools in the Shapes menu with no key.
+- **Pen:** `engine/pen-style.ts` + `PenStyleBar` (colour, weight for the next strokes).
+- **Zoom tiers:** `OVERVIEW_ZOOM` = `READABLE_PX / BODY_FONT_PX`; body only while legible, card below.

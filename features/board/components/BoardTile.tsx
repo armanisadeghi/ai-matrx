@@ -39,7 +39,7 @@ import {
   pressAction,
   resizeRect,
 } from "../engine/tile-gestures";
-import type { PaceTier } from "../engine/lod";
+import { type PaceTier, RESIZE_AFFORDANCE_ZOOM } from "../engine/lod";
 import { beginSnap } from "../engine/snap-gesture";
 import { boundsOf, groupMoveSet, shiftMoves } from "../engine/selection";
 import {
@@ -642,7 +642,7 @@ export function BoardTile({
           it, so a drag would resize instead of move: there, only the
           selected tile shows them (Figma). */}
       {/* Resizing is one tile at a time: a tile in a multi-selection shows none. */}
-      {onResize && !focused && (sole || interacting || (!selected && (tier === "read" || tier === "glance"))) && (
+      {onResize && !focused && (sole || interacting || (!selected && tier !== "offscreen" && store.getCamera().z >= RESIZE_AFFORDANCE_ZOOM)) && (
         <ResizeHandles id={id} rect={rect} selected={sole || interacting} onResize={onResize} />
       )}
     </div>
