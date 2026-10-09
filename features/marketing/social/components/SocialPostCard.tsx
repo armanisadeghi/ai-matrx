@@ -105,7 +105,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
             className="absolute left-1.5 top-8 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card"
           />
         ) : null}
-        <span className="absolute right-1.5 top-1.5 rounded-full bg-card/90">
+        <span className="absolute right-1.5 top-1.5 inline-flex rounded-full bg-card/90">
           <OutlierBadge model={badge} />
         </span>
         {duration || post.format === "carousel" ? (

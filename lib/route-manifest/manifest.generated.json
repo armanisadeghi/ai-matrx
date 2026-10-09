@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1380,
+  "routeCount": 1388,
   "routes": [
     {
       "pattern": "/",
@@ -4608,6 +4608,46 @@
       "pattern": "/marketing/[brandId]/socials",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/socials/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/[platform]/[accountId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/[platform]/[accountId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/accounts",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/accounts/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/ads",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/ads/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/kpis",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/kpis/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/outliers",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/outliers/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/post/[postId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/post/[postId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/studio",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/studio/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials/swipe",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/swipe/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/websites",
