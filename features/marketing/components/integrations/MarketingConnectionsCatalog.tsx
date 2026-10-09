@@ -13,6 +13,7 @@ import { parseSiteIntegrations } from "@/features/marketing/data/integrations-sc
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useBingConnectionInventory } from "@/features/marketing/bing/hooks";
 import { siteHasActiveBingBinding } from "@/features/marketing/bing/binding";
+import { SocialProviderCard } from "@/features/marketing/social/components/SocialProviderCard";
 
 export function MarketingConnectionsCatalog() {
   const inventory = useGoogleConnectionInventory();
@@ -205,6 +206,8 @@ export function MarketingConnectionsCatalog() {
               Manage Bing connection
             </p>
           </Link>
+
+          <SocialProviderCard />
         </div>
       </main>
     </SurfaceRuntimeProvider>
