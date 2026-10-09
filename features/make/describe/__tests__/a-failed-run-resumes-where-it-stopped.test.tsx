@@ -118,6 +118,22 @@ describe("the guided run on /make", () => {
     expect(spaceBuild).not.toHaveBeenCalled();
   });
 
+  it("designs once more on its own when the check refuses the first design, then builds", async () => {
+    const mod = jest.requireMock("../describeTemplate") as { checkDescribeTemplate: unknown };
+    const real = mod.checkDescribeTemplate;
+    let n = 0;
+    mod.checkDescribeTemplate = (t: unknown) => (++n === 1 ? { ok: false, line: "\"Call time\" is required, and this row leaves it empty.", problems: [], spec: t, autoFixes: [] } : { ok: true, spec: t, autoFixes: [] });
+    writerRun.mockResolvedValue({ template: { tables: [] }, notes: [], reuses: [] });
+    runTemplateDoor.mockResolvedValue({ ok: true, answer: { made: [{ kind: "table", ref: "call", id: TABLE, title: "Discovery calls" }] }, calls: 2 });
+    const host = await mount();
+    await say(host, "a booking page for discovery calls");
+    mod.checkDescribeTemplate = real;
+
+    expect(writerRun).toHaveBeenCalledTimes(2);
+    expect(host.querySelector("[data-make-describe]")?.getAttribute("data-make-describe")).toBe("installed");
+    expect(host.textContent).toContain("2nd try");
+  });
+
   it("sends a workspace to the Space Builder with the person's exact words and opens it", async () => {
     spaceBuild.mockResolvedValue({ summary: "Agency OS", rootSpaceId: "s1", url: "/spaces/s1", spaceIds: ["s1"], tableIds: [] });
     const words = "an agency OS with clients, retainers, a dashboard and a 90-day plan";

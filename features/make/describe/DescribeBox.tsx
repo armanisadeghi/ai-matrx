@@ -85,6 +85,8 @@ interface Run {
   install: TemplateDoorAnswer | null;
   notes: string[];
   failed: { at: MakeStepId; why: string } | null;
+  /** The first design was refused by the check and designed once more on its own. */
+  redesigned?: boolean;
 }
 
 /** The run's one word for the page and for timing runs (data-make-describe). */
@@ -152,36 +154,45 @@ export function DescribeBox() {
                 .sort((a, b) => Number(fromSpace.has(b.id)) - Number(fromSpace.has(a.id)))
             : [];
           const tables = await readExistingTables(client, r.organizationId, own);
-          const answer = await writer.run<DescribeAnswer>({
-            mandateKey: DESCRIBE,
-            label: "Designing your tables and forms",
-            surfaceKey: "make:describe",
-            sourceFeature: "udt",
-            expect: "json",
-            initiation: "user",
-            organizationId: r.organizationId,
-            variables: describeVariables(r.sentence, facts, tables),
-            coerce: (v) => {
-              try {
-                return coerceDescribeAnswer(v);
-              } catch (e) {
-                throw new AnswerRefused(e instanceof Error ? e.message : String(e));
-              }
-            },
-          });
-          mark("design", "done");
-          current = "check";
-          mark("check", "doing");
-          const safe = applySafeReuses(answer, tables);
-          const checked = checkDescribeTemplate(safe.template, tables);
-          if (!checked.ok) {
-            console.warn("[make:describe] the store's check refused the spec", checked.line, checked.problems, checked.autoFixes);
-            throw new DesignRefused(checked.line);
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const answer = await writer.run<DescribeAnswer>({
+              mandateKey: DESCRIBE,
+              label: "Designing your tables and forms",
+              surfaceKey: "make:describe",
+              sourceFeature: "udt",
+              expect: "json",
+              initiation: "user",
+              organizationId: r.organizationId,
+              variables: describeVariables(r.sentence, facts, tables),
+              coerce: (v) => {
+                try {
+                  return coerceDescribeAnswer(v);
+                } catch (e) {
+                  throw new AnswerRefused(e instanceof Error ? e.message : String(e));
+                }
+              },
+            });
+            mark("design", "done");
+            current = "check";
+            mark("check", "doing");
+            const safe = applySafeReuses(answer, tables);
+            const checked = checkDescribeTemplate(safe.template, tables);
+            if (!checked.ok) {
+              console.warn("[make:describe] the store's check refused the spec", checked.line, checked.problems, checked.autoFixes);
+              // ONE automatic second design before the person is asked: a refused design costs one more model run,
+              // never a press. The second refusal is said plainly and Try again designs afresh.
+              if (attempt === 1) throw new DesignRefused(checked.line);
+              commit({ ...r, redesigned: true, step: { ...r.step, design: undefined, check: undefined } });
+              current = "design";
+              mark("design", "doing");
+              continue;
+            }
+            const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+            const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
+            commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
+            mark("check", "done");
+            break;
           }
-          const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-          const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
-          commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
-          mark("check", "done");
           continue;
         } else if (id === "check") {
           // Reached only on a resume whose design finished but whose check failed: design again.
@@ -315,6 +326,7 @@ export function DescribeBox() {
                 {id === "build" && state === "doing" && run.install?.steps ? (
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{`${Math.min(run.install.next_step ?? 0, run.install.steps as number)} of ${run.install.steps}`}</span>
                 ) : null}
+                {id === "design" && run.redesigned ? <span className="shrink-0 text-xs text-muted-foreground">2nd try</span> : null}
                 {clock ? <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{clock}</span> : null}
               </li>
             );
