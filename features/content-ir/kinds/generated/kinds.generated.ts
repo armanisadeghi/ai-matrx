@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "ba965669d13c";
+export const KIND_REGISTRY_FINGERPRINT = "be5218682fcb";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -4502,12 +4502,27 @@ export interface NeedsHuman {
 }
 
 /**
- * A table she does not have yet — made in her organization when she presses Use it.
+ * One value of a sample row: the field's key and the value as she wrote it.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface NewTableCell {
+  key: string;
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
+ * A table she does not have yet — made in her organization on Use it or the first save in the app.
  *  *
  *  * From kind `applet_build_result`.
  */
 export interface NewTableDeclaration {
   name: string;
+  rows?: NewTableRow[] | null;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -4550,6 +4565,19 @@ export interface NewTableLink {
   __kind?: string;
   entities?: string[] | null;
   table_id?: string | null;
+}
+
+/**
+ * A sample row she gave ("save this one as the first entry"), one cell per field it fills.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface NewTableRow {
+  cells: NewTableCell[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -9142,7 +9170,7 @@ export interface AnswerGrade {
 }
 
 /**
- * Kind `applet_build_result` (registry v3).
+ * Kind `applet_build_result` (registry v4).
  */
 export interface AppletBuildResult {
   note: string;
