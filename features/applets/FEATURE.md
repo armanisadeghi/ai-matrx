@@ -191,6 +191,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- 2026-10-09 (lane F2): Manage (Overview and Sharing) shows one line when an Applet is on the web but reads stored data a signed-out visitor cannot read — `webVisitorsMissData` (`lib/applet-state.ts`), `components/AppletWebDataNotice.tsx` — with the one-click fix "Make organization-only". Sharing the data with visitors is not offered: no visitor read door exists for custom tables or entities, and opening one is an access decision. post-approvals' "empty" admin view was the data-loading skeleton (live read 2026-10-09: clients render at ~35s; 54 posts / 8 clients readable as admin).
+
 - 2026-10-09 — Lane F5 (live UI audit): lanes All · Mine · My Orgs · Shared · Public (L4; My team declared
   absent); About is not a sort (L9); dates read to the minute and a Versions row carries one chip (M8);
   Overview pages open at the Applet's address, a one-record page says it opens from its list, the public link is
