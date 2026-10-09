@@ -387,6 +387,16 @@ export async function findSocialsOnWebsite(
   if (result.error) {
     throw new Error(result.error.message ?? "The website could not be read.");
   }
-  (globalThis as { __si11?: unknown }).__si11 = events; // TEMP-DEBUG
-  return extractSocialLinks(events);
+  const links = extractSocialLinks(events);
+  if (links.length === 0) {
+    // Say WHY nothing came back when the page itself could not be read.
+    for (const event of events) {
+      const data = (event as { data?: { results?: { success?: boolean; failure_reason?: string }[] } }).data;
+      const failed = data?.results?.find((r) => r.success === false);
+      if (failed) {
+        throw new Error(`That website could not be read (${failed.failure_reason ?? "blocked or unreachable"}). Enter the handles by hand.`);
+      }
+    }
+  }
+  return links;
 }
