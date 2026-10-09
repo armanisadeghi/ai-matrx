@@ -39,6 +39,11 @@ Surface: `matrx-admin/reporting`, `reporting_section: "performance"`.
 
 ## Change log
 
+- 2026-10-09 PERF-WATCH-TAIL: the header's Collectors popover shows every perf cron job (the door probe is two jobs, admin and member
+  seat, each with doors, last run and seconds taken of its cap) and the page-speed routes under the roll-up minimum with n
+  ("not enough samples yet"); the board returns only judged numbers per sparkline point (30 asked, 120 cap) and no edit log;
+  `lib/perf/PerfVitalsReporter` does one random draw for an unsampled load and nothing else.
+
 - 2026-10-08 wave 3: each door watch probes as its own seat (`perf_subject.seat_email`; `@member` twins);
   an empty answer from a read door is probe_broken; re-declared subjects leave a marker sample (judge
   reads only after it). New kinds: `job:<name>` (hourly `ops.perf_job_collect`, pg_cron + platform
