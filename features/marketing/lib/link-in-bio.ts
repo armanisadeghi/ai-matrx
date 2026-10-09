@@ -38,9 +38,40 @@ export const LINK_IN_BIO_HOSTS: readonly string[] = [
   "direct.me",
 ];
 
+/** Short-link and smart-link hosts: they forward to something else, so they are never a website. */
+export const SHORT_LINK_HOSTS: readonly string[] = [
+  "bit.ly",
+  "apple.co",
+  "spoti.fi",
+  "lnk.to",
+  "ffm.to",
+  "smarturl.it",
+  "tinyurl.com",
+  "t.co",
+  "buff.ly",
+  "ow.ly",
+  "found.ee",
+  "hyperurl.co",
+  "pod.link",
+  "podlink.to",
+  "rebrand.ly",
+  "shorturl.at",
+  "cutt.ly",
+  "rb.gy",
+  "is.gd",
+  "trib.al",
+];
+
+/** True when the address is a short link that forwards elsewhere (apple.co, bit.ly, lnk.to, …). */
+export function isShortLink(raw: string | null | undefined): boolean {
+  const url = parseHttpUrl(raw);
+  return url ? hostMatches(hostOf(url), SHORT_LINK_HOSTS) : false;
+}
+
 /** Asset, tracking and infrastructure hosts that are never a person's link. */
 const NOISE_HOSTS: readonly string[] = [
   "schema.org",
+  "ogp.me",
   "w3.org",
   "googletagmanager.com",
   "google-analytics.com",
@@ -87,7 +118,8 @@ const NOISE_HOSTS: readonly string[] = [
   "thanks.is",
   "amzn.to",
   "geni.us",
-  "bit.ly",
+  // Short links and smart links (a podcast, a book, a song) forward elsewhere; never a home site.
+  ...SHORT_LINK_HOSTS,
 ];
 
 const ASSET_PATH = /\.(png|jpe?g|gif|webp|svg|ico|css|js|mjs|json|woff2?|ttf|otf|mp4|webm|mp3|m3u8|xml|txt|avif|heic)$/i;
@@ -221,7 +253,8 @@ export function likelyWebsite(
     const url = parseHttpUrl(link);
     if (!url) continue;
     const label = hostOf(url).split(".").slice(0, -1).join("").replace(/[^a-z0-9]/g, "");
-    if (keys.some((k) => label === k || label.includes(k) || (label.length >= 6 && k.includes(label)))) {
+    // The host must carry the WHOLE handle or name: "melrob.co" is a short-link domain, not melrobbins.com.
+    if (keys.some((k) => label === k || label.includes(k))) {
       return `https://${hostOf(url)}`;
     }
   }

@@ -19,6 +19,7 @@ import { SOCIAL_PLATFORMS } from "../social/types";
 import {
   extractPresenceLinks,
   isLinkInBioUrl,
+  isShortLink,
   likelyWebsite,
   parseHttpUrl,
   type DiscoveredAccount,
@@ -118,7 +119,9 @@ export async function discoverPresence(seed: SeedProfile, deps: DiscoverDeps): P
   // The bio link itself is a hub only when it is on a link-in-bio host; a bio
   // address mentioned in text is checked too (a "links: beacons.ai/…" line).
   const bioUrls = extractHubsFromText(seed.bio);
-  const hub = hubCandidates[0] ?? bioUrls[0] ?? null;
+  // Always a full https address: a profile stores "Linktr.ee/name", which the scraper's address gate refuses.
+  const rawHub = hubCandidates[0] ?? bioUrls[0] ?? null;
+  const hub = rawHub ? (parseHttpUrl(rawHub)?.href ?? rawHub) : null;
 
   let accounts = fromBio.accounts;
   let links = fromBio.links.filter((u) => !isLinkInBioUrl(u));
@@ -134,7 +137,10 @@ export async function discoverPresence(seed: SeedProfile, deps: DiscoverDeps): P
   }
 
   const plainBioSite =
-    seed.externalUrl && !isLinkInBioUrl(seed.externalUrl) && !extractPresenceLinks(seed.externalUrl).accounts.length
+    seed.externalUrl &&
+    !isLinkInBioUrl(seed.externalUrl) &&
+    !isShortLink(seed.externalUrl) &&
+    extractPresenceLinks(seed.externalUrl).links.length > 0
       ? originOf(seed.externalUrl)
       : null;
   const website = plainBioSite ?? likelyWebsite(links, { handle: seed.handle, name: seed.displayName });

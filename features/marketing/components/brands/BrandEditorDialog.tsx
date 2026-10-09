@@ -220,6 +220,7 @@ function BrandEditorDialogBody({
   const [kind, setKind] = useState<BrandKind>(() => brandKindOf(brand));
   const [startFrom, setStartFrom] = useState<"website" | "handle">("website");
   const fromHandle = !brand && (kind === "person" || startFrom === "handle");
+  const [kindLocked, setKindLocked] = useState(false);
 
   const set =
     <K extends keyof BrandDraft>(key: K) =>
@@ -317,6 +318,7 @@ function BrandEditorDialogBody({
           </DialogDescription>
         </DialogHeader>
 
+        {kindLocked ? null : (
         <div className="flex flex-wrap items-center gap-2" data-testid="brand-kind-choice">
           <SegmentedControl
             aria-label="Brand kind"
@@ -339,10 +341,11 @@ function BrandEditorDialogBody({
             </div>
           ) : null}
         </div>
+        )}
 
         {fromHandle && !brand ? (
           <>
-            {orgs.organizations.length > 1 ? (
+            {orgs.organizations.length > 1 && !kindLocked ? (
               <div className="space-y-1">
                 <Label className="text-xs">Owning organization</Label>
                 <Select value={selectedOrgId ?? ""} onValueChange={setOrganizationId} disabled={orgs.loading}>
@@ -364,6 +367,7 @@ function BrandEditorDialogBody({
               kind={kind}
               organizationId={selectedOrgId}
               onClose={() => onOpenChange(false)}
+              onLocked={setKindLocked}
             />
           </>
         ) : (

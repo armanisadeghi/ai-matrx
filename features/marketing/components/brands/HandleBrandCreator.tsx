@@ -63,10 +63,13 @@ export function HandleBrandCreator({
   kind,
   organizationId,
   onClose,
+  onLocked,
 }: {
   kind: BrandKind;
   organizationId: string | undefined;
   onClose: () => void;
+  /** True once a lookup started: the kind can no longer change under a profile in hand. */
+  onLocked?: (locked: boolean) => void;
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -103,6 +106,7 @@ export function HandleBrandCreator({
       return setFailure("That is a website. Paste a social profile, or use the website form.");
     }
     setStep("looking");
+    onLocked?.(true);
     setProgress([]);
     try {
       say("Fetching the profile");
@@ -123,6 +127,7 @@ export function HandleBrandCreator({
     } catch (error) {
       setFailure(socialErrorMessage(error, "The profile could not be fetched."));
       setStep("start");
+      onLocked?.(false);
     }
   };
 
@@ -412,6 +417,7 @@ export function HandleBrandCreator({
             onClick={() => {
               setStep("start");
               setFailure(null);
+              onLocked?.(false);
             }}
           >
             Back

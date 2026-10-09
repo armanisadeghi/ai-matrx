@@ -83,7 +83,7 @@ describe("link-in-bio parsing — real Linktree capture", () => {
     expect(keys).not.toContain("instagram:melrobbins");
     // Linktree's own footer, assets and blog never read as accounts or links.
     expect(found.links.some((l) => l.includes("linktr.ee"))).toBe(false);
-    expect(found.links.filter((l) => /mzstatic|gstatic|googleapis|w3\.org|schema\.org|sjv\.io|pxf\.io|thanks\.is|\.png|\.woff2/.test(l))).toEqual([]);
+    expect(found.links.filter((l) => /ogp\.me|mzstatic|gstatic|googleapis|w3\.org|schema\.org|sjv\.io|pxf\.io|thanks\.is|\.png|\.woff2/.test(l))).toEqual([]);
     // Outbound links survive as website candidates.
     expect(found.links).toEqual(expect.arrayContaining(["https://puregeniusprotein.com/mtt", "https://melrob.co/tt-letthem"]));
   });
@@ -108,6 +108,8 @@ describe("link-in-bio parsing — real Linktree capture", () => {
       "https://melrobbins.com",
     );
     expect(likelyWebsite(["https://puregeniusprotein.com/mtt"], { handle: "melrobbins", name: "Mel Robbins" })).toBeNull();
+    // Real Linktree link: Mel's vanity short-link domain is not her website.
+    expect(likelyWebsite(["https://melrob.co/tt-letthem"], { handle: "melrobbins", name: "Mel Robbins" })).toBeNull();
   });
 });
 
@@ -119,6 +121,13 @@ describe("person brand creation flow", () => {
     expect(d.hub).toBe("https://linktr.ee/melrobbins");
     expect(d.hubError).toBeNull();
     expect(d.accounts.map((a) => a.platform)).toEqual(expect.arrayContaining(["facebook", "youtube", "threads"]));
+  });
+
+  it("a scheme-less stored bio link (TikTok's real 'Linktr.ee/melrobbins') is read as a full https address", async () => {
+    const scrape = jest.fn(async () => fixture);
+    const d = await discoverPresence({ ...seed, platform: "tiktok", externalUrl: "Linktr.ee/melrobbins" }, { scrape });
+    expect(scrape).toHaveBeenCalledWith("https://linktr.ee/melrobbins");
+    expect(d.accounts.map((a) => a.platform)).toEqual(expect.arrayContaining(["instagram", "youtube", "facebook", "threads"]));
   });
 
   it("a hub that cannot be read is said, and the bio still counts", async () => {
@@ -135,6 +144,14 @@ describe("person brand creation flow", () => {
     const d = await discoverPresence({ ...seed, externalUrl: "https://www.melrobbins.com/start" }, { scrape });
     expect(scrape).not.toHaveBeenCalled();
     expect(d.website).toBe("https://melrobbins.com");
+  });
+
+  it("a short link in the bio (Mel Robbins' real Instagram bio: apple.co) is never guessed as the website", async () => {
+    const scrape = jest.fn();
+    const d = await discoverPresence({ ...seed, externalUrl: "https://apple.co/3AcqwBa" }, { scrape });
+    expect(scrape).not.toHaveBeenCalled();
+    expect(d.website).toBeNull();
+    expect(d.links).toEqual([]);
   });
 
   it("plans a person brand: seed first, every account owned by the person", () => {

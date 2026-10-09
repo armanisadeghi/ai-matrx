@@ -305,7 +305,7 @@ export function VoicePage({
           <h1 className="text-base font-semibold text-foreground">{ownerName} · Voice</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {scope === "brand" ? brandKindCopy(brandKind).voiceLine : "How you actually write"}, measured from real writing. Every pitch,
-            reply, subject line and statement written in {scope === "brand" ? "its" : "your"} name is checked against it,
+            reply, subject line and statement written in {scope === "brand" ? brandKindCopy(brandKind).possessive : "your"} name is checked against it,
             and the AI tells are rewritten before you see the draft.
           </p>
         </header>
