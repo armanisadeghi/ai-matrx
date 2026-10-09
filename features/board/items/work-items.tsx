@@ -59,6 +59,7 @@ import {
   chatSource,
   CHAT_LIST_WIDE_PX,
   chatSourceToSave,
+  chatTitleToSave,
   entityId,
   fileIdOf,
   chatItem,
@@ -128,7 +129,7 @@ function ChatBody({ tileId, source, title, tier, onSource }: ItemBodyProps) {
       list,
     });
     if (next) {
-      onSource(next, nextTitle ?? undefined);
+      onSource(next, chatTitleToSave({ serverHasIt, conversationTitle: nextTitle }));
     } else if (serverHasIt && nextTitle && nextTitle !== title) {
       // The server titles a conversation after its first turn; the tile follows.
       onSource(source, nextTitle);
@@ -236,6 +237,8 @@ function BoardChatList({
       keepLoaded
       serverSearch={false}
       showGroupingToggle={false}
+      titleFirst
+      emptyState={<p className="px-2 py-1 text-xs text-muted-foreground">No chats on this board yet</p>}
       headerSlot={
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
           <Button type="button" variant="outline" onClick={onNew} className="min-w-0 flex-1 justify-start gap-1">

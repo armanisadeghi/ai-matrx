@@ -1,5 +1,11 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Chat tile sidebar: empty state, title-first rows, header follows the conversation
+
+- Empty list: a board with no chats shows "No chats on this board yet" (the sidebar's `emptyState`) instead of a blank column.
+- Row titles: the tile's list uses the new `titleFirst` rows (`@ai-matrx/chat` 0.7.3) — no agent chip or origin badge, star only on a favorite (add one from the row menu); time stays. Other hosts keep the default rows. Guard: `conversation-history/__tests__/title-first-rows.test.tsx` (package).
+- Header title: after "New conversation" the unsent chat resets the tile title to "Chat" (`chatTitleToSave`), and adopts the server's title after the first turn. It kept the previous conversation's title before. Guard: `items/__tests__/chat-source.test.ts`.
+
 ## 2026-10-09 — Board chat list: package target, remount law green, organization contract
 
 - `board` is an association target: `@ai-matrx/associations` 0.13.201 lists it in `ASSOCIATION_TARGET_TYPES`; `items/board-chats.tsx` drops its cast. `board` was already a registry token (vocabulary check unchanged).

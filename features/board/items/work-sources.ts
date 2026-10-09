@@ -94,6 +94,19 @@ export function chatSourceToSave(input: {
   return input.conversationId !== input.savedId ? chatSource(input.conversationId, agentId, list) : null;
 }
 
+/** What a new chat tile is called until the server titles its conversation. */
+export const DEFAULT_CHAT_TITLE = "Chat";
+
+/**
+ * The tile title to save together with a changed chat source: the server's title for a
+ * conversation it has, else the default — an unsent chat (after "New conversation") must
+ * not keep the previous conversation's title. Undefined = leave the title as it is.
+ */
+export function chatTitleToSave(input: { serverHasIt: boolean; conversationTitle: string | null }): string | undefined {
+  if (!input.serverHasIt) return DEFAULT_CHAT_TITLE;
+  return input.conversationTitle?.trim() ? input.conversationTitle : undefined;
+}
+
 export function chatAgentId(source: NodeSource): string | null {
   if (!isEntity(source, "chat")) return null;
   const agentId = source.meta?.agentId;
