@@ -212,7 +212,7 @@ export function BrandCompetitorDirectory() {
       <SectionCard
         title="Competitors"
         headerExtra={
-          <Button size="sm" variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
+          <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
             Add competitor
           </Button>
         }
