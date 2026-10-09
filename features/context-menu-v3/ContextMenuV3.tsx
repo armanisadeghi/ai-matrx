@@ -558,7 +558,9 @@ export function ContextMenuV3({
     // A surface that resolves per target draws its row's doors through the `extraSections` PROP
     // (rebuilt from the state its resolver just set), so on a table row they join the table's
     // own at RENDER, when the prop is fresh — never from this closure's previous row.
-    setRowJoinsSurfaceSections(!!rowMenu && !!resolveContextOnOpen && !surfaceSections);
+    // A surface's own STATIC sections (a per-row menu wrapping a table row: Files' Preview,
+    // Rename, Move…) join the table's too — they used to be replaced by the row's sections.
+    setRowJoinsSurfaceSections(!!rowMenu && !surfaceSections);
     // The record whose content this is (a note's tab rows, drawn apart from its
     // content): its rows join THIS menu, so the record's ⋯ and a right-click on
     // its content are one menu (record-menu-registry.ts, R26). The content's own

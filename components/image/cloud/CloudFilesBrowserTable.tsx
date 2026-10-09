@@ -185,6 +185,9 @@ export function CloudFilesBrowserTable({
         header: "Owner",
         accessorFn: ownerLabelOf,
         width: 100,
+        // The narrow Cloud pane fits every column to its width; these two keep
+        // a readable header (the fit never goes below a column's minWidth).
+        minWidth: 108,
         cell: (row) => (
           <span className="text-muted-foreground">{ownerLabelOf(row)}</span>
         ),
@@ -194,6 +197,7 @@ export function CloudFilesBrowserTable({
         header: "Size",
         accessorFn: (row) => (row.kind === "file" ? row.file.fileSize : null),
         width: 90,
+        minWidth: 90,
         cell: (row) => (
           <span className="text-muted-foreground">
             {row.kind === "file" ? formatFileSize(row.file.fileSize) : "—"}
