@@ -163,6 +163,7 @@ export function AppletHostMount({
   preview,
   files,
   embedded = false,
+  definition = null,
 }: {
   appletId: string;
   slug: string;
@@ -173,6 +174,11 @@ export function AppletHostMount({
   files?: Readonly<Record<string, string>>;
   /** Placed inside another page (a Space block): its pages navigate in place; writes stay live. */
   embedded?: boolean;
+  /**
+   * The `app.definition` row the server already read for this viewer (the route's layout). The host's first
+   * `record()` answers from it, so the open never waits on a second read after hydration. "Try again" reads fresh.
+   */
+  definition?: Record<string, unknown> | null;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -195,6 +201,8 @@ export function AppletHostMount({
   const [slow, setSlow] = useState(false);
   // A data read the store refused: who is looking decides what the notice offers.
   const [readRefused, setReadRefused] = useState<"guest" | "member" | null>(null);
+  // The server's row is used once, on the first open; a refresh that re-sends it must not remount the Applet.
+  const [serverDefinition] = useState(definition);
 
   // One host per Applet, kept for the page's life: switching organization must not remount the Applet
   // (a running job would die with it). Jobs read the organization at the moment they start (below).
@@ -216,6 +224,7 @@ export function AppletHostMount({
     const host: PlatformHost = createPlatformHost({
       appletId,
       supabase,
+      ...(serverDefinition && attempt === 0 && !isPreview ? { definition: serverDefinition } : {}),
       agents: createIntelligencePort({
         transport: adoptAppletRunStreams(
           createMatrxTransport(store.getState, transportOptions),
@@ -395,7 +404,7 @@ export function AppletHostMount({
       stopHeld?.();
       host.dispose();
     };
-  }, [appletId, basePath, store, isPreview, inPlace, filesKey, attempt]);
+  }, [appletId, basePath, store, isPreview, inPlace, filesKey, attempt, serverDefinition]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {
@@ -437,7 +446,9 @@ export function AppletHostMount({
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl p-4">
-        <RegionSkeleton shape="cards" count={6} aria-label="Opening Applet" />
+        {/* Shape-neutral while the Applet compiles: its layout is unknown until then, and six avatar cards
+            jumped to a list (audit R3). */}
+        <RegionSkeleton shape="rows" count={4} aria-label="Opening Applet" />
       </div>
     );
   }

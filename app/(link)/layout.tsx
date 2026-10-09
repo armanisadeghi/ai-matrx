@@ -20,9 +20,13 @@
 // group that adds it. Route groups do not appear in the URL, so `/f/<id>` is
 // unchanged — only what is drawn around it is.
 //
-// WHAT IS STILL HERE. `Providers`, and deliberately: light and dark have to keep
-// working (a form is answered at night), and the app's own theme is how a form
-// stays legible in both without a second theme of its own.
+// WHAT IS STILL HERE. Nothing but the column — and deliberately no providers. Each route of the group
+// takes its own from its own layout: every one but the Applet takes the app's `Providers` through
+// `components/public-link/LinkProviders.tsx` (light and dark keep working — a form is answered at night);
+// the Applet at `/applets/<slug>` takes `features/applets-host/AppletProviders.tsx`, the short list a
+// running Applet reaches, because React hydrates only after every script the page names has loaded, and
+// the whole app's list was 257 of the 270 scripts a stranger downloaded before her Applet could open
+// (measured 2026-10-09). A new route in this group adds a layout that picks one of the two.
 //
 // THE REST OF THE CLASS. `(public)` still holds several routes of exactly this
 // shape — a share link `/s/<token>`, a short link
@@ -38,19 +42,10 @@
 
 import React from "react";
 
-import { Providers } from "@/app/Providers";
-import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
-
 export default function LinkLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Providers>
-      <div data-link-layout className="flex min-h-dvh flex-col">
-        {children}
-      </div>
-      {/* The `(link)` group has no shell, so — like `(public)/layout.tsx` — its
-          layout mounts the ONE canvas front door (lazy: nothing loads until an
-          item exists). Agent output on `/applets/<slug>` opens INTO it. */}
-      <ShellCanvasColumn />
-    </Providers>
+    <div data-link-layout className="flex min-h-dvh flex-col">
+      {children}
+    </div>
   );
 }
