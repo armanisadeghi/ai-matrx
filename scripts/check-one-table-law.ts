@@ -221,21 +221,51 @@ function scanCopyOptOut(rel: string, source: string): BlockingFinding[] {
   return out;
 }
 
-const HAND_TABLE_SIGNS = [
-  /<table[\s>]/,
-  /from\s+["'](@\/)?components\/ui\/table["']/,
-];
+/**
+ * Blank out comments, string literals and template literals (newlines kept so
+ * line numbers survive). A `<table>` inside a comment, a string, a type name or
+ * an HTML-producing exporter (email / print / markdown strings) is not a UI table.
+ */
+const NON_CODE =
+  /\/\*[\s\S]*?\*\/|\/\/[^\n]*|`(?:\\[\s\S]|[^`\\])*`|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g;
 
-function handTableLine(rel: string, source: string): number {
-  if (TEST_FILE.test(rel) || HAND_TABLE_EXCLUDED.test(rel)) return -1;
-  const lines = source.split("\n");
-  return lines.findIndex((l) => HAND_TABLE_SIGNS.some((re) => re.test(l)));
+export function stripNonCode(source: string): string {
+  return source.replace(NON_CODE, (m) => m.replace(/[^\n]/g, " "));
 }
 
-function loadBaseline(): string[] {
+const RAW_TABLE_JSX = /<table[\s>\/]/;
+const SHADCN_TABLE_IMPORT = /from\s+["'](@\/)?components\/ui\/table["']/;
+const SHADCN_TABLE_JSX = /<(Table|TableHeader|TableBody|TableRow|TableCell|TableHead)[\s>\/]/;
+
+function handTableLine(rel: string, source: string): number {
+  // Only .tsx can render JSX; .ts files (services, registries, types, routes) cannot.
+  if (!rel.endsWith(".tsx")) return -1;
+  if (TEST_FILE.test(rel) || HAND_TABLE_EXCLUDED.test(rel)) return -1;
+  const code = stripNonCode(source);
+  const lines = code.split("\n");
+  const shadcn = SHADCN_TABLE_IMPORT.test(source);
+  return lines.findIndex(
+    (l) => RAW_TABLE_JSX.test(l) || (shadcn && SHADCN_TABLE_JSX.test(l)),
+  );
+}
+
+interface Baseline {
+  notAList: Record<string, string>;
+  toConvert: Record<string, string>;
+}
+
+/** Reads `notAList` / `toConvert` ({file: reason}); falls back to the legacy flat `files` array. */
+function loadBaseline(): Baseline {
   const path = join(ROOT, BASELINE_FILE);
-  if (!existsSync(path)) return [];
-  return (JSON.parse(readFileSync(path, "utf8")).files ?? []) as string[];
+  const out: Baseline = { notAList: {}, toConvert: {} };
+  if (!existsSync(path)) return out;
+  const j = JSON.parse(readFileSync(path, "utf8"));
+  Object.assign(out.notAList, j.notAList ?? {});
+  Object.assign(out.toConvert, j.toConvert ?? {});
+  for (const f of (j.files ?? []) as string[]) {
+    if (!(f in out.notAList) && !(f in out.toConvert)) out.toConvert[f] = "legacy baseline entry";
+  }
+  return out;
 }
 
 interface BlockingResult {
@@ -245,7 +275,8 @@ interface BlockingResult {
   scanned: number;
 }
 
-function scanApp(baseline: string[]): BlockingResult {
+function scanApp(base: Baseline): BlockingResult {
+  const baseline = [...Object.keys(base.notAList), ...Object.keys(base.toConvert)];
   const files = APP_DIRS.flatMap((d) => walk(join(ROOT, d)));
   const findings: BlockingFinding[] = [];
   const handTableFiles: string[] = [];
@@ -287,6 +318,7 @@ function selfTest(): never {
     ["copyControls row false", "features/a/E.tsx", T + "export const E = () => <MatrxDataTable\n copyControls={{ row: false }}\n />;\n"],
     ["hideToolbar", "features/a/F.tsx", T + "export const F = () => <MatrxDataTable hideToolbar />;\n"],
     ["raw <table>", "features/a/G.tsx", "export const G = () => <table><tbody /></table>;\n"],
+    ["JSX <Table> TSX", "app/x/H2.tsx", "import { Table, TableBody } from '@/components/ui/table';\nexport const H2 = () => <Table><TableBody /></Table>;\n"],
     ["shadcn Table", "app/x/H.tsx", "import { Table } from '@/components/ui/table';\nexport const H = () => <Table />;\n"],
   ];
   const clean: Array<[string, string, string]> = [
@@ -295,6 +327,12 @@ function selfTest(): never {
     ["markdown renderer excluded", "components/mardown-display/Md.tsx", "export const Md = () => <table />;\n"],
     ["dev route excluded", "app/(dev)/x/page.tsx", "export default () => <table />;\n"],
     ["test file excluded", "features/a/A.test.tsx", "const x = <table />;\n"],
+    ["comment mentions <table>", "features/a/Cm.tsx", "// renders a <table> someday\n/* <table> */\nexport const Cm = () => null;\n"],
+    ["string mentions <table>", "features/a/St.tsx", "export const St = () => '<table><tr></tr></table>';\n"],
+    ["template HTML exporter", "features/a/Ex.tsx", "export const toHtml = (r: string[]) => `<table>${r.join('')}</table>`;\n"],
+    ["type name mentions Table", "features/a/Ty.tsx", "import type { TableRow } from '@/x/types';\nexport type Y = TableRow;\nexport const Ty = () => null;\n"],
+    ["unused shadcn import, no JSX", "features/a/Un.tsx", "import { Table } from '@/components/ui/table';\nexport type Z = typeof Table;\n"],
+    [".ts file with <table> code", "features/a/svc.ts", "export const x = <table />;\n"],
     ["table primitive excluded", "components/ui/table.tsx", "export const T = () => <table />;\n"],
   ];
   for (const [, rel, body] of [...cases, ...clean]) put(rel, body);
@@ -302,7 +340,7 @@ function selfTest(): never {
   put("features/a/Gone.tsx", "export const Gone = () => null;\n");
 
   ROOT = tmp;
-  const result = scanApp(["features/a/Base.tsx", "features/a/Gone.tsx"]);
+  const result = scanApp({ notAList: { "features/a/Base.tsx": "fixture" }, toConvert: { "features/a/Gone.tsx": "fixture" } });
   let ok = true;
   const report = (label: string, pass: boolean, want: string) => {
     if (!pass) ok = false;
@@ -411,7 +449,12 @@ function main(): void {
     `\n${C.bold}${C.white}P26 + P28 — ONE TABLE, ONE DATA ACCESS SYSTEM${C.reset}`,
   );
   console.log(
-    `${C.dim}Marketing (advisory): scanned ${files.length} files under ${SCAN_DIR}, ${Object.keys(ALLOWED).length} allowlisted. Whole app (blocking): scanned ${blocking.scanned} files, ${baseline.length} hand-built tables baselined.${C.reset}\n`,
+    `${C.dim}Marketing (advisory): scanned ${files.length} files under ${SCAN_DIR}, ${Object.keys(ALLOWED).length} allowlisted. Whole app (blocking): scanned ${blocking.scanned} files, ${Object.keys(baseline.notAList).length} notAList + ${Object.keys(baseline.toConvert).length} toConvert hand-built tables baselined.${C.reset}\n`,
+  );
+
+  const pending = blocking.handTableFiles.filter((f) => f in baseline.toConvert);
+  console.log(
+    `${C.bold}toConvert: ${pending.length} real data list${pending.length === 1 ? "" : "s"} still hand-built${C.reset}${pending.length ? "\n" + pending.map((f) => `  ${C.dim}${f}${C.reset}`).join("\n") : ""}\n`,
   );
 
   const byRule = new Map<string, Array<Finding | BlockingFinding>>();

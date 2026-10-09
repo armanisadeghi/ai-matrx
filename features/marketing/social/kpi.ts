@@ -304,6 +304,7 @@ export interface BenchmarkRow {
   rowId: string;
   platform: string;
   handle: string;
+  profileUrl?: string | null;
   displayName: string;
   role: TrackedRole;
   followers: number | null;

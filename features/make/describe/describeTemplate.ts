@@ -117,7 +117,8 @@ export function checkDescribeTemplate(template: Record<string, unknown>, existin
  * its own name, and a note says so; only link-only reuses remain to bind. The package owns the rule (safeReuses).
  */
 export function applySafeReuses(answer: DescribeAnswer, existing: ExistingTable[]): { template: Record<string, unknown>; reuses: DescribeAnswer["reuses"]; notes: string[] } {
-  const r = safeReuses(describeSpec(answer.template), answer.reuses, existing as PackageExistingTable[]);
+  const spec0 = describeSpec(answer.template);
+  const r = safeReuses(spec0, repairReuseIds(spec0, answer.reuses, existing), existing as PackageExistingTable[]);
   return { template: r.spec as unknown as Record<string, unknown>, reuses: r.reuses, notes: r.notes };
 }
 
@@ -162,6 +163,97 @@ export function readDesign(value: unknown, existing: ExistingTable[]): ReadDesig
     throw new DesignRefused(checked.line);
   }
   return { answer, safe, checked };
+}
+
+/**
+ * A reuse whose table id is not one of the organization's (a model copying a 36-character id can slip a character) is
+ * pointed at the one existing table whose name is exactly the template table's name; no such single table leaves it as said.
+ * Live 2026-10-09: "Posts" reused with an id one block off, so the install built a second Posts and refused its sample rows.
+ */
+export function repairReuseIds(spec: TemplateSpec, reuses: DescribeAnswer["reuses"], existing: ExistingTable[]): DescribeAnswer["reuses"] {
+  const ids = new Set(existing.map((t) => t.id));
+  const nameOf = new Map(spec.tables.map((t) => [t.token, String((t as { name?: string }).name ?? "").trim().toLowerCase()]));
+  return reuses.map((r) => {
+    if (ids.has(r.existing_table_id)) return r;
+    const name = nameOf.get(r.token);
+    const same = name ? existing.filter((t) => t.name.trim().toLowerCase() === name) : [];
+    return same.length === 1 ? { ...r, existing_table_id: same[0]!.id } : r;
+  });
+}
+
+/** What the person's reused table holds right now: how many rows, and the words each one shows (for matching a sample row to it). */
+export interface ReusedRows {
+  total: number;
+  rows: Array<{ id: string; words: string[] }>;
+}
+
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * A SAMPLE ROW IS NEVER DROPPED WHOLE. A reused (bound) table the person already has is handled by what it holds:
+ *  - EMPTY: the template's sample rows for it are seeded into it (`seedRows`), so every example row that points at one lands linked;
+ *  - HAS ROWS: each sample row is matched to an existing row by its words (its key or any of its text values equal to a word the
+ *    existing row shows) and the link lands on that row (`rowIds`); a sample row with no match keeps its own row and loses only
+ *    that one link.
+ * The notes say only what landed. Run after bindReuses. `held` is read per bound table id; a table not read is treated as having rows
+ * with no matches (its links are left empty, never the row).
+ */
+export function landReusedRows(spec: TemplateSpec, held: Record<string, ReusedRows>): { spec: TemplateSpec; notes: string[] } {
+  type Row = { key: string; values?: Record<string, unknown> };
+  type T = { token: string; name?: string; bindsTo?: { tableId: string; fields: string[]; seedRows?: boolean; rowIds?: Record<string, string> }; rows?: Row[]; fields: Array<{ key: string; parityType?: string; relationTarget?: string }> };
+  const tables = spec.tables as unknown as T[];
+  const notes: string[] = [];
+  const bound = tables.filter((t) => t.bindsTo);
+  if (!bound.length) return { spec, notes };
+  const out = new Map<string, T["bindsTo"]>();
+  for (const b of bound) {
+    const mine = held[b.bindsTo!.tableId];
+    const sample = b.rows ?? [];
+    const pointedAt = new Set<string>(
+      tables.flatMap((t) => (t.rows ?? []).flatMap((r) => t.fields.filter((f) => f.parityType === "relation" && f.relationTarget === b.token).flatMap((f) => [r.values?.[f.key]].flat().filter((v) => v != null && v !== "").map(String)))),
+    );
+    if (mine && mine.total === 0) {
+      if (sample.length) {
+        out.set(b.token, { ...b.bindsTo!, seedRows: true });
+        notes.push(`${b.name ?? b.token}: ${sample.length} example row${sample.length === 1 ? " is" : "s are"} added to your empty table.`);
+      }
+      continue;
+    }
+    const rowIds: Record<string, string> = {};
+    const taken = new Set<string>();
+    for (const r of sample) {
+      const wanted = new Set([norm(r.key), ...Object.values(r.values ?? {}).filter((v) => typeof v === "string").map(norm)].filter(Boolean));
+      const hit = (mine?.rows ?? []).find((e) => !taken.has(e.id) && e.words.some((w) => wanted.has(norm(w))));
+      if (hit) {
+        rowIds[r.key] = hit.id;
+        taken.add(hit.id);
+      }
+    }
+    out.set(b.token, { ...b.bindsTo!, rowIds });
+    const unmatched = [...pointedAt].filter((k) => !rowIds[k]).length;
+    if (unmatched) notes.push(`${b.name ?? b.token}: ${unmatched} example link${unmatched === 1 ? "" : "s"} left empty (nothing in your table matches ${unmatched === 1 ? "it" : "them"}); the example rows themselves are kept.`);
+  }
+  if (!out.size) return { spec, notes };
+  return { spec: { ...spec, tables: spec.tables.map((t) => (out.has(t.token) ? ({ ...t, bindsTo: out.get(t.token) } as typeof t) : t)) }, notes };
+}
+
+/** Read what each bound table holds: its row count and the words its first rows show. Capped (a match needs names, not a census). */
+export async function readReusedRows(client: SupabaseClient, organizationId: string, tableIds: string[]): Promise<Record<string, ReusedRows>> {
+  const out: Record<string, ReusedRows> = {};
+  await Promise.all(
+    tableIds.map(async (id) => {
+      const page = await client.schema("custom").rpc("read_records_page", { p_organization_id: organizationId, p_table_id: id, p_limit: 200, p_offset: 0 });
+      if (page.error || !page.data) return;
+      const d = page.data as { rows?: Array<{ id: string; document?: Record<string, unknown> }>; total?: number };
+      const words = (doc: Record<string, unknown> | undefined) => {
+        const vals = (doc?._values ?? {}) as Record<string, unknown>;
+        const pick = (v: unknown): unknown => (v && typeof v === "object" && "v" in (v as object) ? (v as { v: unknown }).v : v);
+        return [...Object.values(vals).map(pick), ...Object.entries(doc ?? {}).filter(([k]) => !k.startsWith("_")).map(([, v]) => v)].filter((v): v is string => typeof v === "string" && v.trim() !== "");
+      };
+      out[id] = { total: Number(d.total ?? d.rows?.length ?? 0), rows: (d.rows ?? []).map((r) => ({ id: r.id, words: words(r.document) })) };
+    }),
+  );
+  return out;
 }
 
 /**
@@ -262,28 +354,4 @@ export async function declareDescribeSpec(client: SupabaseClient, organizationId
   const declared = await client.schema("custom").rpc("template_declare", { p_scope: "org", p_spec: declaration as never });
   if (declared.error) throw new Error(declared.error.message);
   return (declared.data as unknown as { template_id: string }).template_id;
-}
-
-/**
- * REATTACH, NEVER REBUILD: the Space the Space Builder made for this run, when its step was started before (a reload, a
- * paused tab, a stream that dropped while the server kept building). The first page the agent created in this organization,
- * by this person, since the step started. Null when none landed yet.
- */
-export async function findBuiltSpace(client: SupabaseClient, organizationId: string, sinceMs: number): Promise<{ id: string; title: string } | null> {
-  const { data: session } = await client.auth.getSession();
-  const me = session.session?.user.id;
-  if (!me) return null;
-  const { data } = await client
-    .schema("content")
-    .from("document")
-    .select("id, title")
-    .eq("organization_id", organizationId)
-    .eq("created_by", me)
-    .eq("last_origin", "agent")
-    .is("deleted_at", null)
-    .gte("created_at", new Date(sinceMs - 5_000).toISOString())
-    .order("created_at", { ascending: true })
-    .limit(1);
-  const row = (data ?? [])[0] as { id: string; title: string | null } | undefined;
-  return row ? { id: row.id, title: row.title ?? "" } : null;
 }

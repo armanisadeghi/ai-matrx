@@ -90,6 +90,14 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # ONE WAY TO TALK TO THE DATABASE (@ai-matrx/data owns it — data layer design,
+        # common-docs projects/npm-package-extraction/lanes/data-layer-design.md). Every
+        # direct supabase call (.from/.rpc/.schema/auth/createClient/a /rest/v1 URL) is
+        # counted per file against aidream's shrink-only baseline: a file over its count
+        # fails, a NEW file starts at zero — move the call onto a generated door instead.
+        # No aidream checkout beside this one exits 2 (UNMEASURED), never a quiet green.
+        "No new direct database call outside @ai-matrx/data (shrink-only baseline)|pnpm check:db-doors"
+        "…and that guard can still fail|pnpm check:db-doors:self-test"
         # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
         # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
         # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.
@@ -1133,6 +1141,14 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # ONE WAY TO TALK TO THE DATABASE (@ai-matrx/data owns it — data layer design,
+        # common-docs projects/npm-package-extraction/lanes/data-layer-design.md). Every
+        # direct supabase call (.from/.rpc/.schema/auth/createClient/a /rest/v1 URL) is
+        # counted per file against aidream's shrink-only baseline: a file over its count
+        # fails, a NEW file starts at zero — move the call onto a generated door instead.
+        # No aidream checkout beside this one exits 2 (UNMEASURED), never a quiet green.
+        "No new direct database call outside @ai-matrx/data (shrink-only baseline)|pnpm check:db-doors"
+        "…and that guard can still fail|pnpm check:db-doors:self-test"
         # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
         # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
         # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.

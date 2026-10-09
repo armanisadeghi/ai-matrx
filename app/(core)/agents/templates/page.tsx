@@ -20,7 +20,7 @@ export default async function AgentTemplatesPage() {
     .schema("agent")
     .from("template")
     .select(
-      "id, name, description, category, is_featured, use_count, is_archived, created_at, updated_at",
+      "id, name, description, category, is_featured, use_count, is_archived, created_by, created_at, updated_at",
     )
     .is("deleted_at", null)
     // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):

@@ -729,6 +729,7 @@ export function GscDimensionTable({
           <ErrorAlchemyMenu error={breakdown.error.message} />
         </div>
       ) : (
+        <div className={compactHeight ? "flex flex-col" : "flex min-h-0 flex-1 flex-col"}>
         <MatrxDataTable<GscBreakdownRow>
           data={rows}
           columns={columns}
@@ -823,8 +824,8 @@ export function GscDimensionTable({
             description:
               "No Search Console rows match this period and filter set. Widen the range, clear filters, or sync the site.",
           }}
-          className={compactHeight ? undefined : "flex-1"}
         />
+        </div>
       )}
     </div>
   );

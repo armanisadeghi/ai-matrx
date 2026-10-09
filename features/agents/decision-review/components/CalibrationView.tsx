@@ -23,6 +23,8 @@ import {
   type GroupCalibration,
   type QueueFacets,
 } from "../service";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ReliabilityCurve } from "./ReliabilityCurve";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -72,6 +74,57 @@ function AgreementCell({ group, minLabels }: { group: GroupCalibration; minLabel
       </span>
     </span>
   );
+}
+
+function calibrationColumns(
+  signal: Signal,
+  minLabels: number,
+  targetPrecision: number,
+): MatrxColumnDef<GroupCalibration>[] {
+  const mono = "font-mono";
+  return [
+    { id: "version", header: "Version", accessorFn: (g) => g.version, filter: "number", width: 90, cell: (g) => <span className={mono}>v{g.version}</span> },
+    { id: "question", header: "Question", accessorFn: (g) => g.question, filter: "text", width: 160, cell: (g) => <span className={mono}>{g.question}</span> },
+    { id: "labeled", header: "Labeled", accessorFn: (g) => g.labeled ?? 0, filter: "number", width: 100, align: "right", cell: (g) => <span className={mono}>{g.labeled} / {g.items}</span> },
+    { id: "right", header: "Right", accessorFn: (g) => g[signal].accuracy ?? null, filter: "number", width: 90, align: "right", cell: (g) => <span className={mono}>{pct(g[signal].accuracy)}</span> },
+    { id: "stated", header: "Stated", accessorFn: (g) => g[signal].mean_predicted ?? null, filter: "number", width: 90, align: "right", cell: (g) => <span className={mono}>{pct(g[signal].mean_predicted)}</span> },
+    { id: "brier", header: "Brier", accessorFn: (g) => g[signal].brier_score ?? null, filter: "number", width: 90, align: "right", cell: (g) => <span className={mono}>{dec(g[signal].brier_score)}</span> },
+    { id: "calibration-error", header: "Calib. error", accessorFn: (g) => g[signal].expected_calibration_error ?? null, filter: "number", width: 110, align: "right", cell: (g) => <span className={mono}>{pct(g[signal].expected_calibration_error)}</span> },
+    {
+      id: "agreement",
+      header: "Agreement (kappa)",
+      accessorFn: (g) => ((g.agreement.cases ?? 0) < minLabels ? null : (g.agreement.cohens_kappa ?? null)),
+      filter: "number",
+      width: 220,
+      cell: (g) => <span className={mono}><AgreementCell group={g} minLabels={minLabels} /></span>,
+    },
+    {
+      id: "threshold",
+      header: `Threshold for ${pct(targetPrecision)}`,
+      accessorFn: (g) => g[signal].recommended_threshold?.threshold ?? null,
+      filter: "number",
+      width: 300,
+      cell: (g) => {
+        const rec = g[signal].recommended_threshold;
+        return (
+          <span className={mono}>
+            {rec?.threshold != null ? (
+              <span>
+                ≥ {pct(rec.threshold)}{" "}
+                <span className="text-muted-foreground">
+                  ({pct(rec.precision)} right, {pct(rec.coverage)} pass)
+                </span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground" title={rec?.note ?? undefined}>
+                {(g.labeled ?? 0) === 0 ? "—" : "none reaches it"}
+              </span>
+            )}
+          </span>
+        );
+      },
+    },
+  ];
 }
 
 export function CalibrationView({ agentId }: { agentId: string }) {
@@ -177,65 +230,19 @@ export function CalibrationView({ agentId }: { agentId: string }) {
           <p className="type-secondary text-muted-foreground">This agent has no recorded decision answers yet.</p>
         ) : report ? (
           <>
-            <table className="w-full border-collapse type-secondary">
-              <thead>
-                <tr className="text-left type-meta uppercase tracking-wide text-muted-foreground">
-                  <th className="py-1 pr-3 font-medium">Version</th>
-                  <th className="py-1 pr-3 font-medium">Question</th>
-                  <th className="py-1 pr-3 text-right font-medium">Labeled</th>
-                  <th className="py-1 pr-3 text-right font-medium">Right</th>
-                  <th className="py-1 pr-3 text-right font-medium">Stated</th>
-                  <th className="py-1 pr-3 text-right font-medium">Brier</th>
-                  <th className="py-1 pr-3 text-right font-medium">Calib. error</th>
-                  <th className="py-1 pr-3 font-medium">Agreement (kappa)</th>
-                  <th className="py-1 font-medium">Threshold for {pct(report.target_precision)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(report.groups ?? []).map((g) => {
-                  const m = g[signal];
-                  const rec = m.recommended_threshold;
-                  const key = groupKey(g);
-                  return (
-                    <tr
-                      key={key}
-                      onClick={() => setSelectedKey(key)}
-                      className={cn(
-                        "cursor-pointer border-t border-border/60",
-                        key === selectedKey ? "bg-accent" : "hover:bg-muted/50",
-                      )}
-                    >
-                      <td className="py-1.5 pr-3 font-mono">v{g.version}</td>
-                      <td className="py-1.5 pr-3 font-mono">{g.question}</td>
-                      <td className="py-1.5 pr-3 text-right font-mono">
-                        {g.labeled} / {g.items}
-                      </td>
-                      <td className="py-1.5 pr-3 text-right font-mono">{pct(m.accuracy)}</td>
-                      <td className="py-1.5 pr-3 text-right font-mono">{pct(m.mean_predicted)}</td>
-                      <td className="py-1.5 pr-3 text-right font-mono">{dec(m.brier_score)}</td>
-                      <td className="py-1.5 pr-3 text-right font-mono">{pct(m.expected_calibration_error)}</td>
-                      <td className="py-1.5 pr-3 font-mono">
-                        <AgreementCell group={g} minLabels={report.min_labels} />
-                      </td>
-                      <td className="py-1.5 font-mono">
-                        {rec?.threshold != null ? (
-                          <span>
-                            ≥ {pct(rec.threshold)}{" "}
-                            <span className="text-muted-foreground">
-                              ({pct(rec.precision)} right, {pct(rec.coverage)} pass)
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground" title={rec?.note ?? undefined}>
-                            {(g.labeled ?? 0) === 0 ? "—" : "none reaches it"}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <MatrxDataTable<GroupCalibration>
+              tableId="agents/decision-review/calibration"
+              data={report.groups ?? []}
+              columns={calibrationColumns(signal, report.min_labels, report.target_precision)}
+              getRowId={groupKey}
+              selectedId={selectedKey}
+              onSelectedIdChange={setSelectedKey}
+              onRowOpen={(g) => setSelectedKey(groupKey(g))}
+              detail={{ enabled: false }}
+              pageSize={0}
+              toolbar={{ title: "Calibration by version and question" }}
+              emptyState={{ title: "No calibration groups" }}
+            />
 
             {selected && measure && (
               <div className="mt-4 flex flex-wrap items-start gap-6 border-t border-border pt-4">

@@ -12,17 +12,10 @@
 // other client's workspace, and choosing the right site appeared to do nothing.
 
 import { Suspense } from "react";
-import type { Metadata } from "next";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedMonitoring } from "@/features/marketing/front-doors/BrandScopedMonitoring";
-
-export const metadata: Metadata = {
-  title: "Monitoring",
-  description:
-    "Who wrote about you, what happened to your links, and whether the answer engines cite you — watched per website.",
-};
 
 export default function BrandMonitoringPage() {
   return (

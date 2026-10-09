@@ -439,75 +439,76 @@ export function NewPagesTab({
             resolveContextOnOpen={resolveRowContext}
             extraSections={clickedRow ? [sitePageSection] : []}
           >
-          <MatrxDataTable<LaunchRow>
-            urlState={{ id: "gsc-new-pages" }}
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={tracked.isLoading}
-            isFetching={tracked.isFetching || firstDates.isFetching}
-            toolbar={{ searchPlaceholder: "Search tracked pages…" }}
-            copy={{
-              label: "Tracked page",
-              listLabel: "New Pages launch tracker",
-              location: webLocation("Search Console — New Pages"),
-              rowKind: "web-gsc-launch-page",
-              listKind: "web-gsc-launch-tracker",
-              rowDescription:
-                "One manually tracked new page with its launch lifecycle and lifetime search totals.",
-              listDescription:
-                "Every page in the site's launch tracker (manual adds; first-impression milestone from GSC history).",
-              humanRow: (row) =>
-                humanLines([
-                  ["Page", row.url],
-                  ["Stage", LAUNCH_STAGE_LABELS[row.lifecycle.stage].label],
-                  ["Added", formatCompactDate(row.tracking.added_at)],
-                  [
-                    "Indexing requested",
-                    row.tracking.indexing_requested_at
-                      ? formatCompactDate(row.tracking.indexing_requested_at)
-                      : "not yet",
-                  ],
-                  [
-                    "First impression",
-                    row.lifecycle.firstImpressionDate
-                      ? formatCompactDate(row.lifecycle.firstImpressionDate)
-                      : "not yet",
-                  ],
-                  [
-                    "Lifetime clicks",
-                    formatCount(row.firstDates?.lifetime_clicks ?? 0),
-                  ],
-                  [
-                    "Lifetime impressions",
-                    formatCount(row.firstDates?.lifetime_impressions ?? 0),
-                  ],
-                  ["Notes", row.tracking.notes],
-                ]),
-              rowAttributes: (row) => ({
-                ...gscScopeAttributes(siteId, siteName, periods, {}),
-                page_id: row.id,
-                url: row.url,
-                stage: row.lifecycle.stage,
-              }),
-              listAttributes: (visible) => ({
-                ...gscScopeAttributes(siteId, siteName, periods, {}),
-                visible_rows: visible.length,
-                tracked_pages: rows.length,
-              }),
-            }}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={openQueriesPanel}
-            pageSize={50}
-            emptyState={{
-              icon: <Rocket className="h-8 w-8 text-muted-foreground" />,
-              title: "No tracked pages yet",
-              description:
-                "Add a page right after publishing it. The first GSC impression is the milestone — this tab celebrates it and keeps the early numbers visible.",
-            }}
-            className="flex-1"
-          />
+          <div className="flex-1 flex flex-col">
+            <MatrxDataTable<LaunchRow>
+              urlState={{ id: "gsc-new-pages" }}
+              data={rows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              isLoading={tracked.isLoading}
+              isFetching={tracked.isFetching || firstDates.isFetching}
+              toolbar={{ searchPlaceholder: "Search tracked pages…" }}
+              copy={{
+                label: "Tracked page",
+                listLabel: "New Pages launch tracker",
+                location: webLocation("Search Console — New Pages"),
+                rowKind: "web-gsc-launch-page",
+                listKind: "web-gsc-launch-tracker",
+                rowDescription:
+                  "One manually tracked new page with its launch lifecycle and lifetime search totals.",
+                listDescription:
+                  "Every page in the site's launch tracker (manual adds; first-impression milestone from GSC history).",
+                humanRow: (row) =>
+                  humanLines([
+                    ["Page", row.url],
+                    ["Stage", LAUNCH_STAGE_LABELS[row.lifecycle.stage].label],
+                    ["Added", formatCompactDate(row.tracking.added_at)],
+                    [
+                      "Indexing requested",
+                      row.tracking.indexing_requested_at
+                        ? formatCompactDate(row.tracking.indexing_requested_at)
+                        : "not yet",
+                    ],
+                    [
+                      "First impression",
+                      row.lifecycle.firstImpressionDate
+                        ? formatCompactDate(row.lifecycle.firstImpressionDate)
+                        : "not yet",
+                    ],
+                    [
+                      "Lifetime clicks",
+                      formatCount(row.firstDates?.lifetime_clicks ?? 0),
+                    ],
+                    [
+                      "Lifetime impressions",
+                      formatCount(row.firstDates?.lifetime_impressions ?? 0),
+                    ],
+                    ["Notes", row.tracking.notes],
+                  ]),
+                rowAttributes: (row) => ({
+                  ...gscScopeAttributes(siteId, siteName, periods, {}),
+                  page_id: row.id,
+                  url: row.url,
+                  stage: row.lifecycle.stage,
+                }),
+                listAttributes: (visible) => ({
+                  ...gscScopeAttributes(siteId, siteName, periods, {}),
+                  visible_rows: visible.length,
+                  tracked_pages: rows.length,
+                }),
+              }}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              onRowOpen={openQueriesPanel}
+              pageSize={50}
+              emptyState={{
+                icon: <Rocket className="h-8 w-8 text-muted-foreground" />,
+                title: "No tracked pages yet",
+                description:
+                  "Add a page right after publishing it. The first GSC impression is the milestone — this tab celebrates it and keeps the early numbers visible.",
+              }}
+            />
+          </div>
           </NonEditableContextMenu>
         </div>
       )}

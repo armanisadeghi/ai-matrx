@@ -13,7 +13,8 @@
 // render completion identically. React Compiler is on: no manual memo.
 
 import { useState } from "react";
-import { BarChart3, ChevronRight, RefreshCw, Users } from "lucide-react";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
+import { BarChart3, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -29,10 +30,7 @@ import {
   ProgressCell,
   ScorePill,
 } from "./assignmentDisplay";
-import type {
-  AssignmentProgress,
-  ClassProgressStudent,
-} from "../types";
+import type { ClassProgressStudent } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ClassProgressPanel({
@@ -47,6 +45,7 @@ export function ClassProgressPanel({
   const ownProgress = useClassProgressOverview(classId, !progress);
   const { overview, loading, error, reload } = progress ?? ownProgress;
 
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
   const assignments = overview?.assignments ?? [];
   const students = overview?.students ?? [];
 
@@ -120,88 +119,96 @@ export function ClassProgressPanel({
           </div>
 
           {/* Grid */}
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                    Student
-                  </th>
-                  {assignments.map((a) => {
-                    const route = educationEntityRoute(a.token);
-                    const Icon = route.Icon;
-                    return (
-                      <th
-                        key={`${a.token}:${a.resourceId}`}
-                        className="px-2 py-2 text-center align-bottom"
-                      >
-                        <div className="flex flex-col items-center gap-1">
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span
-                            className="max-w-[6rem] truncate text-xs font-medium text-foreground"
-                            title={titleFor({ token: a.token, id: a.resourceId })}
-                          >
-                            {titleFor({ token: a.token, id: a.resourceId })}
-                          </span>
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((s) => (
-                  <StudentRow key={s.userId} student={s} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MatrxDataTable<ClassProgressStudent>
+            tableId="education/classes/progress"
+            data={students}
+            columns={[
+              {
+                id: "student",
+                header: "Student",
+                accessorFn: studentLabel,
+                filter: "text",
+                width: 200,
+                frozen: true,
+                cell: (s) => (
+                  <span className="block max-w-[10rem] truncate" title={s.email ?? s.userId}>
+                    {studentLabel(s)}
+                  </span>
+                ),
+              },
+              ...assignments.map((a): MatrxColumnDef<ClassProgressStudent> => {
+                const route = educationEntityRoute(a.token);
+                const Icon = route.Icon;
+                const title = titleFor({ token: a.token, id: a.resourceId });
+                const cellOf = (s: ClassProgressStudent) =>
+                  s.cells.find((c) => c.resourceId === a.resourceId && c.token === a.token);
+                return {
+                  id: `a:${a.token}:${a.resourceId}`,
+                  label: title,
+                  header: (
+                    <span className="flex items-center gap-1.5" title={title}>
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="max-w-[6rem] truncate">{title}</span>
+                    </span>
+                  ),
+                  accessorFn: (s) => cellOf(s)?.status ?? "not_started",
+                  sortValue: (s) => cellOf(s)?.scorePct ?? -1,
+                  filter: "select",
+                  filterOptions: [
+                    { value: "not_started", label: "Not started" },
+                    { value: "in_progress", label: "In progress" },
+                    { value: "completed", label: "Completed" },
+                  ],
+                  width: 130,
+                  cell: (s) => {
+                    const c = cellOf(s);
+                    return c ? <ProgressCell status={c.status} scorePct={c.scorePct} /> : null;
+                  },
+                };
+              }),
+            ]}
+            getRowId={(s) => s.userId}
+            pageSize={0}
+            density="condensed"
+            viewTabs={false}
+            toolbar={{ searchPlaceholder: "Search students" }}
+            detail={{ enabled: false }}
+            copy={progressCopy(titleFor)}
+            searchText={studentLabel}
+            expandedDetail={{
+              expandedIds,
+              onExpandedIdsChange: setExpandedIds,
+              render: (s) => <StudentDrill student={s} />,
+            }}
+            emptyState={{ title: "No students on the roster yet" }}
+          />
         </div>
       )}
     </section>
   );
 }
 
-function StudentRow({ student }: { student: ClassProgressStudent }) {
-  const [open, setOpen] = useState(false);
-  const cellByResource = new Map<string, AssignmentProgress>();
-  for (const c of student.cells) cellByResource.set(c.resourceId, c);
+const studentLabel = (s: ClassProgressStudent) => s.name || s.email || s.userId;
 
-  return (
-    <>
-      <tr
-        className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/40"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <td className="sticky left-0 z-10 bg-card px-3 py-2">
-          <div className="flex items-center gap-1.5">
-            <ChevronRight
-              className={cn(
-                "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
-                open && "rotate-90",
-              )}
-            />
-            <span className="max-w-[10rem] truncate text-foreground" title={student.email ?? student.userId}>
-              {student.name || student.email || student.userId}
-            </span>
-          </div>
-        </td>
-        {student.cells.map((c) => (
-          <td key={`${c.token}:${c.resourceId}`} className="px-2 py-2">
-            <ProgressCell status={c.status} scorePct={c.scorePct} />
-          </td>
-        ))}
-      </tr>
-      {open && (
-        <tr className="border-b border-border bg-muted/20">
-          <td colSpan={student.cells.length + 1} className="px-3 py-3">
-            <StudentDrill student={student} />
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
+const progressCopy = (
+  titleFor: (ref: { token: string; id: string }) => string,
+): MatrxDataTableCopyConfig<ClassProgressStudent> => ({
+  label: "Student progress",
+  listLabel: "Class progress (this view)",
+  location: "Class — progress",
+  rowKind: "class-student-progress",
+  listKind: "class-progress",
+  rowDescription: "One student's completion and score on each assignment of the class.",
+  listDescription: "The class roster with completion on every assignment, as currently shown.",
+  humanRow: (s) =>
+    [
+      `Student: ${studentLabel(s)}`,
+      ...s.cells.map(
+        (c) =>
+          `${titleFor({ token: c.token, id: c.resourceId })} — ${c.status.replace("_", " ")}${c.scorePct == null ? "" : `, ${c.scorePct}%`}${c.dueDate ? `, due ${c.dueDate}` : ""}`,
+      ),
+    ].join("\n"),
+});
 
 /** The per-student drill-in: each assignment's status, score, due, last activity. */
 function StudentDrill({ student }: { student: ClassProgressStudent }) {

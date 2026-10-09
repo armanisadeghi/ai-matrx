@@ -460,58 +460,59 @@ export function ReferringDomainIntelligenceTable({
       {/* ONE RECORD, TWO RENDERS — the same `crm_fold` setting is rendered on
           the site-settings surface too. Here is where its consequence shows. */}
       <CrmFoldControl siteId={siteId} source="backlink" />
-      <MatrxDataTable
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      isLoading={profiles.isLoading}
-      isFetching={profiles.isFetching}
-      query={{
-        mode: "controlled",
-        totalItems: profiles.data?.total ?? 0,
-        state: table.state,
-        onStateChange: table.onStateChange,
-      }}
-      toolbar={{ searchPlaceholder: "Search sites, kinds, or what we said…" }}
-      copy={{
-        label: "Referring domain",
-        listLabel: "Referring domain intelligence",
-        location: webLocation(
-          `Backlinks — ${site.root_url} — Referring domains`,
-        ),
-        rowKind: "web-referring-domain",
-        listKind: "web-referring-domains",
-        humanRow: (row) =>
-          humanLines([
-            ["Domain", row.display_domain],
-            ["Kind of site", humanizeAssessmentValue(row.domain_type)],
-            ["Links from this site", row.current_backlinks],
-            ["Our score", row.opinion_score ?? "Not reviewed"],
-            ["Our verdict", humanizeAssessmentValue(row.opinion_verdict)],
-            ["Why we say that", row.opinion_summary || "Not reviewed yet"],
-            ["Site authority", providerNumber(row, "domain_rank") ?? "—"],
-          ]),
-      }}
-      detail={{
-        title: (row) => row.display_domain,
-        description: (row) => row.opinion_summary || "What we know about this site",
-        render: (row) => (
-          <DomainDetail
-            row={row}
-            siteId={siteId}
-            onSaved={() => void profiles.refetch()}
-          />
-        ),
-      }}
-      pageSize={50}
-      pageSizeOptions={[25, 50, 100]}
-      emptyState={{
-        icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
-        title: "No referring domains yet",
-        description: backlinkEmptyHint("the websites that link to you"),
-      }}
-      className="min-h-0 flex-1"
-      />
+      <div className="min-h-0 flex-1 flex flex-col">
+        <MatrxDataTable
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        isLoading={profiles.isLoading}
+        isFetching={profiles.isFetching}
+        query={{
+          mode: "controlled",
+          totalItems: profiles.data?.total ?? 0,
+          state: table.state,
+          onStateChange: table.onStateChange,
+        }}
+        toolbar={{ searchPlaceholder: "Search sites, kinds, or what we said…" }}
+        copy={{
+          label: "Referring domain",
+          listLabel: "Referring domain intelligence",
+          location: webLocation(
+            `Backlinks — ${site.root_url} — Referring domains`,
+          ),
+          rowKind: "web-referring-domain",
+          listKind: "web-referring-domains",
+          humanRow: (row) =>
+            humanLines([
+              ["Domain", row.display_domain],
+              ["Kind of site", humanizeAssessmentValue(row.domain_type)],
+              ["Links from this site", row.current_backlinks],
+              ["Our score", row.opinion_score ?? "Not reviewed"],
+              ["Our verdict", humanizeAssessmentValue(row.opinion_verdict)],
+              ["Why we say that", row.opinion_summary || "Not reviewed yet"],
+              ["Site authority", providerNumber(row, "domain_rank") ?? "—"],
+            ]),
+        }}
+        detail={{
+          title: (row) => row.display_domain,
+          description: (row) => row.opinion_summary || "What we know about this site",
+          render: (row) => (
+            <DomainDetail
+              row={row}
+              siteId={siteId}
+              onSaved={() => void profiles.refetch()}
+            />
+          ),
+        }}
+        pageSize={50}
+        pageSizeOptions={[25, 50, 100]}
+        emptyState={{
+          icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
+          title: "No referring domains yet",
+          description: backlinkEmptyHint("the websites that link to you"),
+        }}
+        />
+      </div>
     </div>
     </NonEditableContextMenu>
     {outreachRow ? (

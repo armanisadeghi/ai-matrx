@@ -79,6 +79,46 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Every tracked keyword across every brand and site — position, movement, freshness.",
     letter: "Rk",
   },
+  "/marketing/reports/search-console/new-pages": {
+    titlePrefix: "New Pages in Search",
+    description: "Pages that just started appearing in Search Console, across every client.",
+    letter: "Nw",
+  },
+  "/marketing/reports/search-console/insights": {
+    titlePrefix: "Search Console Insights",
+    description: "What changed in Search Console across every client, and what is worth acting on.",
+    letter: "Si",
+  },
+  "/marketing/reports/search-console/digs": {
+    titlePrefix: "Dig Here",
+    description: "The Search Console findings most worth digging into first.",
+    letter: "Dg",
+  },
+  "/marketing/reports/search-console/watchlist": {
+    titlePrefix: "Search Console Watchlist",
+    description: "The Search Console queries and pages you are watching.",
+    letter: "Wl",
+  },
+  "/marketing/operations/automations/history": {
+    titlePrefix: "Automation Run History",
+    description: "Every automation run, what it did, and how it ended.",
+    letter: "Ah",
+  },
+  "/marketing/operations/automations/proposals": {
+    titlePrefix: "Automation Proposals",
+    description: "Work the automations proposed and are waiting on a decision.",
+    letter: "Aq",
+  },
+  "/marketing/operations/automations/unplaced": {
+    titlePrefix: "Not Placed",
+    description: "Automation work that could not be placed on a brand or site.",
+    letter: "Ax",
+  },
+  "/marketing/monitoring": {
+    titlePrefix: "News Monitors",
+    description: "Every news monitor, what its AI checks read, and what it costs.",
+    letter: "Nm",
+  },
   "/marketing/operations": {
     titlePrefix: "Operations",
     description:
@@ -158,7 +198,10 @@ function brandSectionIdentity(
     candidates.find(
       (candidate) =>
         "subPath" in candidate && candidate.subPath && candidate.subPath === subPath,
-    ) ?? candidates.find((candidate) => !("subPath" in candidate && candidate.subPath));
+    ) ??
+    candidates.find((candidate) => !("subPath" in candidate && candidate.subPath)) ??
+    // A section whose only row is sub-routed (socials → accounts) still names its bare route.
+    (subPath === undefined && candidates.length === 1 ? candidates[0] : undefined);
   if (!match) return null;
   return {
     titlePrefix: match.titlePrefix,
@@ -181,6 +224,14 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
   const segments = normalizedPath.split("/").filter(Boolean);
   const first = segments[1];
   if (!first) return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
+
+  if (segments[1] === "monitoring" && segments[2]) {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "News Monitor",
+      description: "What this news monitor's AI checks read.",
+      letter: "Nt",
+    });
+  }
 
   if (segments[1] === "tools" && segments[2] === "youtube" && segments[4]) {
     return createMarketingMetadata(normalizedPath, {
@@ -384,6 +435,52 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
         letter: "Pn",
       },
     );
+  }
+
+  // The competitor screens: each route is its own tab (agency-model tree).
+  if (section === "intelligence" && segments[3] === "competitors" && segments[4]) {
+    const competitorViews: Record<string, MarketingRouteIdentity> = {
+      opportunities: {
+        titlePrefix: "Opportunities \u00b7 Competitors",
+        description: "The ranked work a competitor autopsy turned up, and what it is worth doing about.",
+        letter: "Cq",
+      },
+      evidence: {
+        titlePrefix: "Evidence \u00b7 Competitors",
+        description: "The pages and rankings behind each competitor finding.",
+        letter: "Cx",
+      },
+      run: {
+        titlePrefix: "Autopsy \u00b7 Competitors",
+        description: "Run a competitor autopsy and read what it found.",
+        letter: "Cj",
+      },
+      competitors: {
+        titlePrefix: "Tracked \u00b7 Competitors",
+        description: "The competitors this brand tracks.",
+        letter: "Ct",
+      },
+      review: {
+        titlePrefix: "Review \u00b7 Competitors",
+        description: "Review the competitors an autopsy proposed.",
+        letter: "Cz",
+      },
+      history: {
+        titlePrefix: "History \u00b7 Competitors",
+        description: "Every competitor autopsy run for this brand.",
+        letter: "Cf",
+      },
+    };
+    const view = competitorViews[segments[4]];
+    if (view) return createMarketingMetadata(normalizedPath, view);
+  }
+
+  if (section === "intelligence" && segments[3] === "monitoring" && segments[4] === "setup") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Monitor Setup \u00b7 Monitoring",
+      description: "Choose what to watch — who writes about you and the news you can join.",
+      letter: "Ms",
+    });
   }
 
   // One site's reputation workspace: each screen is its own tab.

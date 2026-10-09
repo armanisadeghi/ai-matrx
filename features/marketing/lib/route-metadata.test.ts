@@ -21,6 +21,15 @@ const ROUTES = [
   ["/marketing/operations/connections/bing", "Bi"],
   ["/marketing/operations/automations", "At"],
   ["/marketing/operations/approvals", "Ap"],
+  ["/marketing/operations/automations/history", "Ah"],
+  ["/marketing/operations/automations/proposals", "Aq"],
+  ["/marketing/operations/automations/unplaced", "Ax"],
+  ["/marketing/reports/search-console/new-pages", "Nw"],
+  ["/marketing/reports/search-console/insights", "Si"],
+  ["/marketing/reports/search-console/digs", "Dg"],
+  ["/marketing/reports/search-console/watchlist", "Wl"],
+  ["/marketing/monitoring", "Nm"],
+  ["/marketing/monitoring/tracker-1", "Nt"],
   ["/marketing/operations/capabilities", "Cb"],
   ["/marketing/operations/data-quality", "Dq"],
   ["/marketing/tools", "Tl"],
@@ -52,7 +61,14 @@ const ROUTES = [
   [`${B}/pr`, "Pr"],
   [`${B}/ads`, "Az"],
   [`${B}/intelligence/competitors`, "Cm"],
+  [`${B}/intelligence/competitors/opportunities`, "Cq"],
+  [`${B}/intelligence/competitors/evidence`, "Cx"],
+  [`${B}/intelligence/competitors/run`, "Cj"],
+  [`${B}/intelligence/competitors/competitors`, "Ct"],
+  [`${B}/intelligence/competitors/review`, "Cz"],
+  [`${B}/intelligence/competitors/history`, "Cf"],
   [`${B}/intelligence/monitoring`, "Mo"],
+  [`${B}/intelligence/monitoring/setup`, "Ms"],
   [`${B}/intelligence/reputation`, "Ru"],
   [`${B}/analytics`, "Ay"],
   [`${B}/planning`, "Pl"],
@@ -134,6 +150,11 @@ describe("getMarketingRouteMetadata", () => {
     expect(
       new Set(canonical.map(([pathname]) => faviconDataUri(pathname))).size,
     ).toBe(canonical.length);
+  });
+
+  it("titles competitor sub-pages with the section, not a bare page title", () => {
+    const title = getMarketingRouteMetadata(`${B}/intelligence/competitors/opportunities`).title;
+    expect(JSON.stringify(title)).toContain("Opportunities \u00b7 Competitors");
   });
 
   it("normalizes query strings and trailing slashes", () => {

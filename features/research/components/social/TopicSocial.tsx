@@ -8,9 +8,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, BadgeCheck, Mic, UserRound } from "lucide-react";
-import { ReadFailure, Skeleton } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger, ReadFailure, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
+import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker";
 import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
 import { SocialPostCard } from "@/features/marketing/social/components/SocialPostCard";
 import { formatCompact } from "@/features/marketing/social/outlier";
@@ -66,9 +68,48 @@ function handlesOf(subject: unknown): Handle[] {
   );
 }
 
-function trackHref(brandId: string | null, text: string): string {
-  if (!brandId) return marketingRoutes.brands();
+function trackHref(brandId: string, text: string): string {
   return `${marketingRoutes.brandSocials(brandId)}/accounts?track=${encodeURIComponent(text)}`;
+}
+
+const TRACK_CLASS = "inline-flex items-center gap-0.5 type-meta font-medium text-primary-ink hover:underline";
+
+/**
+ * "Track in Socials": straight to the topic's brand when it has one; otherwise the person picks
+ * the brand right here and lands on that brand's Socials Accounts with the Track dialog open
+ * and this profile already typed in.
+ */
+function TrackInSocials({ brandId, url }: { brandId: string | null; url: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  if (brandId) {
+    return (
+      <Link href={trackHref(brandId, url)} className={TRACK_CLASS}>
+        Track in Socials <ArrowUpRight className="h-3 w-3" />
+      </Link>
+    );
+  }
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className={TRACK_CLASS}>
+          Track in Socials <ArrowUpRight className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3">
+        <BrandPicker
+          organizationId={null}
+          value={null}
+          label="Track in which brand?"
+          onChange={(id) => {
+            if (!id) return;
+            setOpen(false);
+            router.push(trackHref(id, url));
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function TopicSocial() {
@@ -168,12 +209,7 @@ export default function TopicSocial() {
                         >
                           Open profile <ArrowUpRight className="h-3 w-3" />
                         </a>
-                        <Link
-                          href={trackHref(brandId, url)}
-                          className="inline-flex items-center gap-0.5 type-meta font-medium text-primary-ink hover:underline"
-                        >
-                          Track in Socials <ArrowUpRight className="h-3 w-3" />
-                        </Link>
+                        <TrackInSocials brandId={brandId} url={url} />
                       </div>
                     </div>
                   </div>
@@ -229,7 +265,7 @@ export default function TopicSocial() {
 
         {brandId === null && handles.length > 0 && (
           <div className="flex justify-end">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={marketingRoutes.brands()}>Choose a brand to track in</Link>
             </Button>
           </div>

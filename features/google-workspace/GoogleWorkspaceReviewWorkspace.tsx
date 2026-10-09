@@ -21,6 +21,7 @@ import { sheetTextToValues, sheetValuesToText } from "@/features/google-workspac
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import {
   Card,
   CardContent,
@@ -162,6 +163,23 @@ function connectionStatus(connection: GoogleConnectionSummary): string {
   if (connection.health === "revoked") return "Disconnected";
   return "Connected";
 }
+
+const ACCOUNT_COPY: MatrxDataTableCopyConfig<GoogleConnectionSummary> = {
+  label: "Google account",
+  listLabel: "Connected Google accounts (this view)",
+  location: "Google Workspace — connected accounts",
+  rowKind: "google-account-connection",
+  listKind: "google-account-connections",
+  rowDescription: "One connected Google account and what it has granted.",
+  listDescription: "The Google accounts connected by this person, as currently shown.",
+  humanRow: (connection) =>
+    [
+      `Account: ${connectionName(connection)}`,
+      `Docs & Sheets: ${hasScope(connection, GOOGLE_SCOPE.driveFile) ? "Granted" : "Not granted"}`,
+      `Gmail sending: ${hasScope(connection, GOOGLE_SCOPE.gmailSend) ? "Granted" : "Not granted"}`,
+      `Connection: ${connectionStatus(connection)}`,
+    ].join("\n"),
+};
 
 interface GoogleWorkspaceReviewWorkspaceProps {
   pickerInitialQuery?: string;
@@ -614,6 +632,118 @@ export function GoogleWorkspaceReviewWorkspace({
     activeConnection && hasScope(activeConnection, GOOGLE_SCOPE.gmailSend),
   );
 
+  type AccountRow = (typeof personalConnections)[number];
+  const grantedCell = (granted: boolean) => (
+    <span
+      className={
+        granted
+          ? "text-emerald-700 dark:text-emerald-400"
+          : "text-muted-foreground"
+      }
+    >
+      {granted ? "Granted" : "Not granted"}
+    </span>
+  );
+  const sessionText = (connection: AccountRow) =>
+    google.isAuthenticated && pickerSessionConnectionId === connection.id
+      ? "Signed in"
+      : "Sign-in when needed";
+  const accountColumns: MatrxColumnDef<AccountRow>[] = [
+    {
+      id: "account",
+      header: "Account",
+      accessorFn: connectionName,
+      filter: "text",
+      width: 260,
+      frozen: true,
+      cell: (connection) => (
+        <button
+          type="button"
+          onClick={() => selectWorkspaceConnection(connection.id)}
+          className="max-w-64 truncate text-left font-medium hover:text-primary hover:underline"
+        >
+          {connectionName(connection)}
+        </button>
+      ),
+    },
+    {
+      id: "docs",
+      header: "Docs & Sheets",
+      accessorFn: (connection) =>
+        hasScope(connection, GOOGLE_SCOPE.driveFile) ? "Granted" : "Not granted",
+      filter: "select",
+      filterOptions: [
+        { value: "Granted", label: "Granted" },
+        { value: "Not granted", label: "Not granted" },
+      ],
+      width: 140,
+      cell: (connection) => grantedCell(hasScope(connection, GOOGLE_SCOPE.driveFile)),
+    },
+    {
+      id: "gmail",
+      header: "Gmail sending",
+      accessorFn: (connection) =>
+        hasScope(connection, GOOGLE_SCOPE.gmailSend) ? "Granted" : "Not granted",
+      filter: "select",
+      filterOptions: [
+        { value: "Granted", label: "Granted" },
+        { value: "Not granted", label: "Not granted" },
+      ],
+      width: 150,
+      cell: (connection) => grantedCell(hasScope(connection, GOOGLE_SCOPE.gmailSend)),
+    },
+    {
+      id: "connection",
+      header: "Connection",
+      accessorFn: connectionStatus,
+      filter: "select",
+      filterOptions: [
+        { value: "Connected", label: "Connected" },
+        { value: "Needs attention", label: "Needs attention" },
+        { value: "Disconnected", label: "Disconnected" },
+      ],
+      width: 160,
+      cell: (connection) => (
+        <span className="inline-flex items-center gap-1.5">
+          {connection.health === "connected" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          ) : (
+            <CircleAlert className="h-3.5 w-3.5 text-amber-600" />
+          )}
+          {connectionStatus(connection)}
+        </span>
+      ),
+    },
+    {
+      id: "session",
+      header: "Google session",
+      accessorFn: sessionText,
+      filter: "text",
+      width: 170,
+      cell: (connection) => (
+        <span className="text-muted-foreground">{sessionText(connection)}</span>
+      ),
+    },
+    {
+      id: "manage",
+      header: "Manage",
+      accessorFn: (connection) =>
+        connection.id === effectiveConnectionId ? "Selected" : "",
+      sortable: false,
+      width: 110,
+      align: "right",
+      cell: (connection) => (
+        <Button
+          type="button"
+          variant={connection.id === effectiveConnectionId ? "outline" : "quiet"}
+          onClick={() => selectWorkspaceConnection(connection.id)}
+        >
+          {connection.id === effectiveConnectionId ? "Selected" : "Manage"}
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:p-4">
       <header>
@@ -650,123 +780,35 @@ export function GoogleWorkspaceReviewWorkspace({
           </Button>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Account</th>
-                  <th className="px-4 py-2 font-medium">Docs & Sheets</th>
-                  <th className="px-4 py-2 font-medium">Gmail sending</th>
-                  <th className="px-4 py-2 font-medium">Connection</th>
-                  <th className="px-4 py-2 font-medium">Google session</th>
-                  <th className="px-4 py-2 text-right font-medium">Manage</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {inventory.isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center">
-                      <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />
-                    </td>
-                  </tr>
-                ) : inventory.isError && personalConnections.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <ReadFailure
-                        error={inventory.error}
-                        what="your Google accounts"
-                        onRetry={() => void inventory.refetch()}
-                      />
-                    </td>
-                  </tr>
-                ) : personalConnections.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-4 py-6 text-center text-muted-foreground"
-                    >
-                      No Google accounts connected.
-                    </td>
-                  </tr>
-                ) : (
-                  personalConnections.map((connection) => {
-                    const selected = connection.id === effectiveConnectionId;
-                    const docsGranted = hasScope(
-                      connection,
-                      GOOGLE_SCOPE.driveFile,
-                    );
-                    const gmailGranted = hasScope(
-                      connection,
-                      GOOGLE_SCOPE.gmailSend,
-                    );
-                    const signedIn =
-                      google.isAuthenticated &&
-                      pickerSessionConnectionId === connection.id;
-                    return (
-                      <tr
-                        key={connection.id}
-                        className={selected ? "bg-primary/5" : undefined}
-                      >
-                        <td className="px-4 py-2.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              selectWorkspaceConnection(connection.id)
-                            }
-                            className="max-w-64 truncate text-left font-medium hover:text-primary hover:underline"
-                          >
-                            {connectionName(connection)}
-                          </button>
-                        </td>
-                        <td
-                          className={
-                            docsGranted
-                              ? "px-4 py-2.5 text-emerald-700 dark:text-emerald-400"
-                              : "px-4 py-2.5 text-muted-foreground"
-                          }
-                        >
-                          {docsGranted ? "Granted" : "Not granted"}
-                        </td>
-                        <td
-                          className={
-                            gmailGranted
-                              ? "px-4 py-2.5 text-emerald-700 dark:text-emerald-400"
-                              : "px-4 py-2.5 text-muted-foreground"
-                          }
-                        >
-                          {gmailGranted ? "Granted" : "Not granted"}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="inline-flex items-center gap-1.5">
-                            {connection.health === "connected" ? (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                            ) : (
-                              <CircleAlert className="h-3.5 w-3.5 text-amber-600" />
-                            )}
-                            {connectionStatus(connection)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-muted-foreground">
-                          {signedIn ? "Signed in" : "Sign-in when needed"}
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <Button
-                            type="button"
-                            variant={selected ? "outline" : "quiet"}
-                            onClick={() =>
-                              selectWorkspaceConnection(connection.id)
-                            }
-                          >
-                            {selected ? "Selected" : "Manage"}
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          {inventory.isLoading ? (
+            <div className="px-4 py-6 text-center">
+              <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : inventory.isError && personalConnections.length === 0 ? (
+            <ReadFailure
+              error={inventory.error}
+              what="your Google accounts"
+              onRetry={() => void inventory.refetch()}
+            />
+          ) : (
+            <MatrxDataTable<(typeof personalConnections)[number]>
+              tableId="google-workspace/connected-accounts"
+              data={personalConnections}
+              columns={accountColumns}
+              getRowId={(connection) => connection.id}
+              pageSize={0}
+              density="condensed"
+              viewTabs={false}
+              toolbar={{ searchPlaceholder: "Search accounts" }}
+              detail={{ enabled: false }}
+              copy={ACCOUNT_COPY}
+              searchText={(connection) => connectionName(connection)}
+              rowClassName={(connection) =>
+                connection.id === effectiveConnectionId ? "bg-primary/5" : undefined
+              }
+              emptyState={{ title: "No Google accounts connected" }}
+            />
+          )}
         </CardContent>
       </Card>
 

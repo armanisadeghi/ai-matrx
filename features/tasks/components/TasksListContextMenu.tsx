@@ -63,6 +63,8 @@ export function TasksListContextMenu({
         ?.closest?.(`[${TASK_TITLE_DOM_ATTR}]`)
         ?.getAttribute(TASK_TITLE_DOM_ATTR) ??
       target?.closest?.("[data-task-id]")?.getAttribute("data-task-id") ??
+      // The canonical table's row identity (TasksTableView rows are tasks).
+      target?.closest?.("tr[data-row-id]")?.getAttribute("data-row-id") ??
       null;
     const next = taskId
       ? (tasks.find((task) => task.id === taskId) ?? null)

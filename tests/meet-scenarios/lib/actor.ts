@@ -59,6 +59,8 @@ export interface EnvEvent {
 export const THROTTLE_PROFILES: Record<string, Throttle & { downloadKbps: number; uploadKbps: number }> = {
   /** A bad café: 400 ms one-way, ~300 kbps. */
   poor: { latencyMs: 400, kbps: 300, downloadKbps: 300, uploadKbps: 300 },
+  /** The name the P1 connection-network scenarios use for the same bad café (an unknown name used to throttle nothing). */
+  "bad-cafe": { latencyMs: 400, kbps: 300, downloadKbps: 300, uploadKbps: 300 },
   /** Tethered 3G. */
   "3g": { latencyMs: 150, kbps: 750, downloadKbps: 750, uploadKbps: 250 },
 };
@@ -383,6 +385,7 @@ export class Actor {
 
   async throttle(profile: keyof typeof THROTTLE_PROFILES | null): Promise<void> {
     const p = profile === null ? null : THROTTLE_PROFILES[profile];
+    if (profile !== null && p === undefined) throw new Error(`unknown throttle profile "${profile}" (known: ${Object.keys(THROTTLE_PROFILES).join(", ")})`);
     this.gate.setThrottle(p ?? { latencyMs: 0, kbps: 0 });
     if (this.browserName === "chromium") {
       for (const page of this.pages.filter((x) => !x.isClosed())) {

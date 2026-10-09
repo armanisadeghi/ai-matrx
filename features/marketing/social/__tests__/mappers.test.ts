@@ -5,6 +5,7 @@ import {
   formatGrowth,
   hookLineOf,
   judgeFollowerGrowth,
+  lastPostLabel,
   median,
   num,
   postMetricSeries,
@@ -265,5 +266,17 @@ describe("currentFollowers", () => {
     expect(currentFollowers(null, snaps)).toBe(21_400_000);
     expect(currentFollowers(5, [])).toBe(5);
     expect(currentFollowers(null, [])).toBeNull();
+  });
+});
+
+describe("last post label", () => {
+  it("shows the age of the newest post, never the outlier no-baseline text", () => {
+    expect(lastPostLabel(iso(3), 12, NOW)).toBe("3d ago");
+    expect(lastPostLabel(iso(0), 12, NOW)).toBe("just now");
+  });
+  it("says No posts when none are stored and a dash when posts lack dates", () => {
+    expect(lastPostLabel(null, 0, NOW)).toBe("No posts");
+    expect(lastPostLabel(null, 4, NOW)).toBe("—");
+    expect(lastPostLabel(null, 0, NOW)).not.toMatch(/\+ posts/);
   });
 });

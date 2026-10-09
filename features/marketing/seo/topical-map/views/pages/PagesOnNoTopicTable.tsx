@@ -242,12 +242,12 @@ export function PagesOnNoTopicTable({
         <div className="min-h-0 flex-1">
           <MatrxDataTableHost>
             <MatrxDataTable<PageWithoutTopic>
+              density="condensed"
               data={bare.data.items}
               columns={columnsFor()}
               getRowId={(row) => row.page_id}
               isFetching={bare.isFetching}
               zebra
-              className="text-xs [&_td]:py-1 [&_th]:py-1"
               pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
               query={{
                 mode: "controlled",

@@ -17,7 +17,8 @@ describe("FileTableRow responsive action contract", () => {
       source.match(
         /flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto/g,
       ),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+    expect(source.match(/className=\{ROW_ACTIONS_CLASS\}/g)).toHaveLength(2);
   });
 
   it("keeps the tablet More controls at the 44px touch minimum", () => {
@@ -27,8 +28,11 @@ describe("FileTableRow responsive action contract", () => {
   });
 
   it("does not activate rows from portal-rendered menu actions", () => {
-    expect(
-      source.match(/!e\.currentTarget\.contains\(e\.target as Node\)/g),
-    ).toHaveLength(2);
+    // Row activation is the shared table's `onRowOpen`, which ignores clicks
+    // whose real target is outside the row (portalled menus) and clicks on
+    // interactive descendants — the shell adds no click handler of its own.
+    const table = readFileSync(join(__dirname, "FileTable.tsx"), "utf8");
+    expect(table).toMatch(/onRowOpen=\{\(row\) => handleRowActivate\(row\.item\)\}/);
+    expect(source).not.toMatch(/onClick=\{\(e\) => \{\s*if \(!e\.currentTarget/);
   });
 });

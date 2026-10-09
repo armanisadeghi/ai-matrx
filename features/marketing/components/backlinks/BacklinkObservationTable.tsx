@@ -659,113 +659,114 @@ export function BacklinkObservationTable({
           onRetry={() => void backlinks.refetch()}
         />
       ) : (
-        <MatrxDataTable<BacklinkObservationRow>
-          data={rows}
-          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: onAnalyze
-              ? (row, controls) => {
-                  const running = analysisRuns[row.id]?.status === "running";
-                  const action = backlinkAnalysisDirectiveState(
-                    row.enrichment_status,
-                    running,
-                    analysisDisabled,
-                  );
-                  return (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={action.disabled}
-                      title={action.title}
-                      onClick={() => {
-                        controls.openWindow();
-                        onAnalyze(row);
-                      }}
-                    >
-                      {running || action.inProgress ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <AGENT_ICON className="h-3 w-3" />
-                      )}
-                      {action.label}
-                    </Button>
-                  );
-                }
-              : undefined }]}
-          getRowId={(row) => row.id}
-          isLoading={backlinks.isLoading}
-          isFetching={backlinks.isFetching}
-          query={{
-            mode: "controlled",
-            totalItems: total,
-            state: table.state,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{
-            searchPlaceholder: "Search by linking site, your page, or link text…",
-          }}
-          copy={{
-            label: "Backlink",
-            listLabel: lensLabel
-              ? `Backlinks — ${lensLabel}`
-              : "Backlinks table",
-            location: webLocation(
-              lensLabel ? `Backlinks — ${lensLabel}` : "Backlinks",
-            ),
-            rowKind: "web-backlink",
-            listKind: "web-backlink-table",
-            rowDescription:
-              "One link to this site: where it comes from, where it points, how much authority it carries, whether it passes credit, and when we first and last saw it.",
-            listDescription:
-              "The links currently on screen (respecting the search, sort, filters, view, and page you are on).",
-            humanRow: humanBacklinkRow,
-            agentRow: projectBacklinkRow,
-            rowAttributes: (row) => ({
-              site_id: siteId,
-              lens: lens ?? undefined,
-              id: row.id,
-              state: row.state,
-              source_domain: row.source_domain ?? undefined,
-              domain_rank: row.domain_rank ?? undefined,
-              spam_score: row.spam_score ?? undefined,
-            }),
-            listAttributes: (visible) => ({
-              site_id: siteId,
-              lens: lens ?? undefined,
-              page: table.state.page,
-              visible_rows: visible.length,
-              total_rows: total,
-              search: table.state.search || undefined,
-            }),
-          }}
-          detail={{
-            title: (row) =>
-              `Link from ${row.source_domain ?? "another website"}`,
-            description: () => "Everything we know about this link",
-            render: renderBacklinkDrawer,
-          }}
+        <div className="min-h-0 flex-1 flex flex-col">
+          <MatrxDataTable<BacklinkObservationRow>
+            data={rows}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: onAnalyze
+                ? (row, controls) => {
+                    const running = analysisRuns[row.id]?.status === "running";
+                    const action = backlinkAnalysisDirectiveState(
+                      row.enrichment_status,
+                      running,
+                      analysisDisabled,
+                    );
+                    return (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={action.disabled}
+                        title={action.title}
+                        onClick={() => {
+                          controls.openWindow();
+                          onAnalyze(row);
+                        }}
+                      >
+                        {running || action.inProgress ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <AGENT_ICON className="h-3 w-3" />
+                        )}
+                        {action.label}
+                      </Button>
+                    );
+                  }
+                : undefined }]}
+            getRowId={(row) => row.id}
+            isLoading={backlinks.isLoading}
+            isFetching={backlinks.isFetching}
+            query={{
+              mode: "controlled",
+              totalItems: total,
+              state: table.state,
+              onStateChange: table.onStateChange,
+            }}
+            toolbar={{
+              searchPlaceholder: "Search by linking site, your page, or link text…",
+            }}
+            copy={{
+              label: "Backlink",
+              listLabel: lensLabel
+                ? `Backlinks — ${lensLabel}`
+                : "Backlinks table",
+              location: webLocation(
+                lensLabel ? `Backlinks — ${lensLabel}` : "Backlinks",
+              ),
+              rowKind: "web-backlink",
+              listKind: "web-backlink-table",
+              rowDescription:
+                "One link to this site: where it comes from, where it points, how much authority it carries, whether it passes credit, and when we first and last saw it.",
+              listDescription:
+                "The links currently on screen (respecting the search, sort, filters, view, and page you are on).",
+              humanRow: humanBacklinkRow,
+              agentRow: projectBacklinkRow,
+              rowAttributes: (row) => ({
+                site_id: siteId,
+                lens: lens ?? undefined,
+                id: row.id,
+                state: row.state,
+                source_domain: row.source_domain ?? undefined,
+                domain_rank: row.domain_rank ?? undefined,
+                spam_score: row.spam_score ?? undefined,
+              }),
+              listAttributes: (visible) => ({
+                site_id: siteId,
+                lens: lens ?? undefined,
+                page: table.state.page,
+                visible_rows: visible.length,
+                total_rows: total,
+                search: table.state.search || undefined,
+              }),
+            }}
+            detail={{
+              title: (row) =>
+                `Link from ${row.source_domain ?? "another website"}`,
+              description: () => "Everything we know about this link",
+              render: renderBacklinkDrawer,
+            }}
 
-          window={{
-            title: (row) =>
-              `Link from ${row.source_domain ?? "another website"}`,
-            renderView: renderBacklinkWindow,
-            renderEdit: false,
-            defaultTab: "view",
-          }}
-          pageSize={50}
-          pageSizeOptions={[25, 50, 100, 250]}
-          emptyState={{
-            icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
-            title: lensLabel
-              ? `${lensLabel}: nothing found`
-              : "No links stored yet",
-            description:
-              backlinks.isSuccess && (lens || table.queryState.search)
-                ? lens
-                  ? LENS_EMPTY_LINE[lens]
-                  : "No links match what you searched and filtered for."
-                : backlinkEmptyHint("the individual links to this site"),
-          }}
-          className="min-h-0 flex-1"
-        />
+            window={{
+              title: (row) =>
+                `Link from ${row.source_domain ?? "another website"}`,
+              renderView: renderBacklinkWindow,
+              renderEdit: false,
+              defaultTab: "view",
+            }}
+            pageSize={50}
+            pageSizeOptions={[25, 50, 100, 250]}
+            emptyState={{
+              icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
+              title: lensLabel
+                ? `${lensLabel}: nothing found`
+                : "No links stored yet",
+              description:
+                backlinks.isSuccess && (lens || table.queryState.search)
+                  ? lens
+                    ? LENS_EMPTY_LINE[lens]
+                    : "No links match what you searched and filtered for."
+                  : backlinkEmptyHint("the individual links to this site"),
+            }}
+          />
+        </div>
       )}
     </div>
     </NonEditableContextMenu>

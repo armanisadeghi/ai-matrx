@@ -20,6 +20,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -976,6 +977,69 @@ function Schedule({ plan, rulebook }: { plan: NonNullable<CapturePlanState["plan
   );
 }
 
+type LedgerRow = CapturePlanState["yields"][string] & {
+  drafted: number;
+  approved: number;
+  perHour: number | null;
+};
+
+function ledgerStanding(row: LedgerRow): string {
+  if (row.dropped) return `Dropped — ${row.droppedReason}`;
+  if (plannableMethod(row.method)?.deferredYield) return "Pays later — rules appear when the cases land";
+  if (row.zeroYieldStreak > 0) return "One empty session; one more go before it is dropped.";
+  return "In the rotation";
+}
+
+const LEDGER_COLUMNS: MatrxColumnDef<LedgerRow>[] = [
+  { id: "method", header: "Method", accessorFn: (row) => methodName(row.method), filter: "text", width: 220, frozen: true },
+  { id: "sessions", header: "Sessions", accessorFn: (row) => row.sessions, filter: "number", width: 100, align: "right" },
+  { id: "minutes", header: "Minutes", accessorFn: (row) => row.minutes, filter: "number", width: 100, align: "right" },
+  { id: "rules", header: "Rules", accessorFn: (row) => row.drafted, filter: "number", width: 90, align: "right" },
+  { id: "kept", header: "Kept", accessorFn: (row) => row.approved, filter: "number", width: 90, align: "right" },
+  {
+    id: "per-hour",
+    header: "Kept / hour",
+    accessorFn: (row) => row.perHour,
+    filter: "number",
+    width: 120,
+    align: "right",
+    cell: (row) => <span className="tabular-nums">{row.perHour == null ? "—" : row.perHour.toFixed(1)}</span>,
+  },
+  {
+    id: "standing",
+    header: "Standing",
+    accessorFn: ledgerStanding,
+    filter: "text",
+    width: 360,
+    cell: (row) =>
+      row.dropped ? (
+        <span className="text-xs text-amber-700 dark:text-amber-400">{ledgerStanding(row)}</span>
+      ) : (
+        <span className="text-xs">{ledgerStanding(row)}</span>
+      ),
+  },
+];
+
+const LEDGER_COPY: MatrxDataTableCopyConfig<LedgerRow> = {
+  label: "Capture method",
+  listLabel: "What each method gives you (this view)",
+  location: "Capture plan — method ledger",
+  rowKind: "capture-method-yield",
+  listKind: "capture-method-ledger",
+  rowDescription: "One capture method: sessions, minutes, rules drafted and kept.",
+  listDescription: "What each capture method has produced for this expert, as currently shown.",
+  humanRow: (row) =>
+    [
+      `Method: ${methodName(row.method)}`,
+      `Sessions: ${row.sessions}`,
+      `Minutes: ${row.minutes}`,
+      `Rules: ${row.drafted}`,
+      `Kept: ${row.approved}`,
+      `Kept / hour: ${row.perHour == null ? "—" : row.perHour.toFixed(1)}`,
+      `Standing: ${ledgerStanding(row)}`,
+    ].join("\n"),
+};
+
 /**
  * THE META-ASSET, on screen. Doctrine CORE.md §5: "the elicitation protocol is
  * itself a versioned, scored artifact". This table IS that artifact for one
@@ -996,6 +1060,15 @@ function MethodLedger({
       ),
     [state.yields],
   );
+  const ledgerRows: LedgerRow[] = rows.map((row) => {
+    const tally = yieldOfRuleIds(row.ruleIds, rulebook.rules);
+    return {
+      ...row,
+      drafted: tally.drafted,
+      approved: tally.approved,
+      perHour: row.minutes > 0 ? tally.approved / (row.minutes / 60) : null,
+    };
+  });
   if (rows.length === 0) {
     return (
       <section className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">
@@ -1011,51 +1084,19 @@ function MethodLedger({
       <h3 className="border-b px-4 py-2 text-sm font-semibold">
         What each method gives you
       </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-xs text-muted-foreground">
-            <tr className="border-b">
-              <th className="px-4 py-1.5 text-left font-medium">Method</th>
-              <th className="px-2 py-1.5 text-right font-medium">Sessions</th>
-              <th className="px-2 py-1.5 text-right font-medium">Minutes</th>
-              <th className="px-2 py-1.5 text-right font-medium">Rules</th>
-              <th className="px-2 py-1.5 text-right font-medium">Kept</th>
-              <th className="px-2 py-1.5 text-right font-medium">Kept / hour</th>
-              <th className="px-4 py-1.5 text-left font-medium">Standing</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const tally = yieldOfRuleIds(row.ruleIds, rulebook.rules);
-              const perHour =
-                row.minutes > 0 ? (tally.approved / (row.minutes / 60)).toFixed(1) : "—";
-              return (
-                <tr key={row.method} className="border-b last:border-0">
-                  <td className="px-4 py-1.5">{methodName(row.method)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{row.sessions}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{row.minutes}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{tally.drafted}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{tally.approved}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{perHour}</td>
-                  <td className="px-4 py-1.5 text-xs">
-                    {row.dropped ? (
-                      <span className="text-amber-700 dark:text-amber-400">
-                        Dropped — {row.droppedReason}
-                      </span>
-                    ) : plannableMethod(row.method)?.deferredYield ? (
-                      <>Pays later — rules appear when the cases land</>
-                    ) : row.zeroYieldStreak > 0 ? (
-                      <>One empty session; one more go before it is dropped.</>
-                    ) : (
-                      <>In the rotation</>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable<LedgerRow>
+        tableId="masterwork/capture-plan/method-ledger"
+        data={ledgerRows}
+        columns={LEDGER_COLUMNS}
+        getRowId={(row) => row.method}
+        pageSize={0}
+        density="condensed"
+        viewTabs={false}
+        toolbar={{ searchPlaceholder: "Search methods" }}
+        detail={{ enabled: false }}
+        copy={LEDGER_COPY}
+        emptyState={{ title: "Nothing measured yet" }}
+      />
       <p className="border-t px-4 py-2 text-xs text-muted-foreground">
         {benchNote(false)}
       </p>

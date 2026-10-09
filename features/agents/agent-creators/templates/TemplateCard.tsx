@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Copy, Star, Loader2 } from "lucide-react";
+import { Eye, Copy, Star, Loader2, Archive, ArchiveRestore } from "lucide-react";
 
 interface TemplateCardProps {
   id: string;
@@ -16,6 +16,10 @@ interface TemplateCardProps {
   /** Archived templates stay usable; the badge is what stops the card lying. */
   isArchived?: boolean;
   onUseTemplate?: (id: string) => void;
+  /** Absent when this person may not edit the template (row security would refuse). */
+  onArchive?: (id: string, name: string) => void;
+  onRestore?: (id: string, name: string) => void;
+  isArchiving?: boolean;
   onNavigate?: (id: string, path: string) => void;
   isNavigating?: boolean;
   isUsingTemplate?: boolean;
@@ -31,6 +35,9 @@ export function TemplateCard({
   useCount,
   isArchived,
   onUseTemplate,
+  onArchive,
+  onRestore,
+  isArchiving,
   onNavigate,
   isNavigating,
   isUsingTemplate,
@@ -51,7 +58,7 @@ export function TemplateCard({
   };
 
   const isDisabled = isAnyProcessing || false;
-  const showLoadingOverlay = isNavigating || isUsingTemplate;
+  const showLoadingOverlay = isNavigating || isUsingTemplate || isArchiving;
 
   return (
     <Card
@@ -65,7 +72,7 @@ export function TemplateCard({
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <span className="type-title text-foreground">
-              {isNavigating ? "Loading..." : "Creating Agent..."}
+              {isNavigating ? "Loading..." : isArchiving ? (isArchived ? "Restoring..." : "Archiving...") : "Creating Agent..."}
             </span>
           </div>
         </div>
@@ -110,12 +117,12 @@ export function TemplateCard({
       </div>
 
       <div className="border-t border-border p-4 bg-muted rounded-b-lg">
-        <div className="flex gap-2 justify-center">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Link
             href={`/agents/templates/${id}`}
             tabIndex={-1}
             onClick={(e) => handleView(e)}
-            className="flex-1"
+            className="flex-1 min-w-[6.5rem]"
           >
             <Button
               icon={isNavigating ? (
@@ -140,10 +147,21 @@ export function TemplateCard({
             variant="primary"
             onClick={handleUseTemplate}
             disabled={isDisabled}
-            className="flex-1"
+            className="flex-1 min-w-[6.5rem]"
           >
             Use Template
           </Button>
+          {(isArchived ? onRestore : onArchive) && (
+            <Button
+              variant="outline"
+              icon={isArchived ? <ArchiveRestore /> : <Archive />}
+              aria-label={isArchived ? "Restore template" : "Archive template"}
+              title={isArchived ? "Restore" : "Archive"}
+              disabled={isDisabled}
+              className="h-7 w-7 p-0"
+              onClick={() => (isArchived ? onRestore?.(id, name) : onArchive?.(id, name))}
+            />
+          )}
         </div>
       </div>
     </Card>

@@ -40,6 +40,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -220,6 +221,11 @@ interface FsNode {
   loading: boolean;
   error?: string;
   children: FsNode[];
+}
+
+interface AgentEnvRow {
+  key: string;
+  state: string;
 }
 
 interface AgentEnvKv {
@@ -672,6 +678,19 @@ export const SandboxDiagnosticsPanel = forwardRef<
     );
   }
 
+  // Filtering is by NAME only: the orchestrator does not return values
+  // (feedback 34dcf28a), so there is nothing else here to search.
+  const agentEnvRows: AgentEnvRow[] = (
+    (agentEnv?.[envView] as AgentEnvKv[] | undefined) ?? []
+  )
+    .filter(
+      (kv) => !envFilter || kv.key.toLowerCase().includes(envFilter.toLowerCase()),
+    )
+    .map((kv) => ({
+      key: kv.key,
+      state: kv.present === false ? "set, empty" : `set · ${kv.chars ?? 0} chars`,
+    }));
+
   return (
     <div className="space-y-3 text-sm">
       {showStatus && (
@@ -1037,65 +1056,29 @@ export const SandboxDiagnosticsPanel = forwardRef<
                   <ErrorAlchemyMenu />
                 </div>
               )}
-              <ScrollArea className="h-96 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
-                <table className="w-full text-[11px] font-mono">
-                  <thead className="text-left text-muted-foreground sticky top-0 bg-background">
-                    <tr>
-                      <th className="p-2 w-2/3">name</th>
-                      <th className="p-2">value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const list: AgentEnvKv[] =
-                        (agentEnv?.[envView] as AgentEnvKv[]) || [];
-                      // Filtering is by NAME only: the orchestrator does not
-                      // return values (feedback 34dcf28a), so there is nothing
-                      // else here to search.
-                      const filtered = envFilter
-                        ? list.filter((kv) =>
-                            kv.key
-                              .toLowerCase()
-                              .includes(envFilter.toLowerCase()),
-                          )
-                        : list;
-                      if (!filtered.length) {
-                        return (
-                          <tr>
-                            <td
-                              colSpan={2}
-                              className="p-2 text-muted-foreground"
-                            >
-                              {agentEnvLoading ? (
-                                <SuspenseLoader
-                                  centered={false}
-                                  size="xs"
-                                  message="Loading environment variables…"
-                                />
-                              ) : (
-                                "(no entries)"
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      }
-                      return filtered.map((kv) => (
-                        <tr
-                          key={kv.key}
-                          className="border-t border-border align-top"
-                        >
-                          <td className="p-2 break-all"><code>{kv.key}</code></td>
-                          <td className="p-2 break-all text-muted-foreground">
-                            {kv.present === false
-                              ? "set, empty"
-                              : `set · ${kv.chars ?? 0} chars`}
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </ScrollArea>
+              <div className="h-96 md:h-auto md:flex-1 md:min-h-0 flex flex-col">
+                <MatrxDataTable<AgentEnvRow>
+                  tableId="sandbox-agent-env"
+                  data={agentEnvRows}
+                  columns={[
+                    { id: "key", accessorKey: "key", header: "name" },
+                    { id: "state", accessorKey: "state", header: "value" },
+                  ]}
+                  getRowId={(row) => row.key}
+                  density="condensed"
+                  frameHeight="fill"
+                  isLoading={agentEnvLoading && agentEnvRows.length === 0}
+                  copy={{
+                    label: "Environment variable",
+                    listLabel: "Agent environment variables",
+                    location: "Sandbox diagnostics",
+                    rowKind: "sandbox_agent_env",
+                    listKind: "sandbox_agent_env_list",
+                    humanRow: (row) => `${row.key} — ${row.state}`,
+                  }}
+                  emptyState={{ title: "(no entries)" }}
+                />
+              </div>
               <p className="text-[11px] text-muted-foreground mt-2 shrink-0">
                 <strong>Values are never shown here.</strong> The orchestrator
                 returns the NAME, whether it is set, and how long the value is —

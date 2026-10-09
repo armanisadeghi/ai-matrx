@@ -10,7 +10,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Package, Pencil, Plus, Trash2 } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,9 +32,21 @@ import {
 } from "./data";
 import { buildCatalogTree, forbiddenParents } from "./catalog-tree";
 import { OfferingEditDialog, type OfferingEditDraft } from "./OfferingEditDialog";
-import { formatOfferingPrice, offeringKindLabel } from "./vocabulary";
+import { OfferingCatalogTable, type CatalogRowActions } from "./OfferingCatalogTable";
 
 const KEY = ["marketing", "brand-offerings"] as const;
+
+/** The row actions that only mean something with a website; the brand-only table never shows them. */
+const SITE_ONLY_NOOPS: CatalogRowActions = {
+  onToggleOffered: () => undefined,
+  onSetWorth: () => undefined,
+  onEdit: () => undefined,
+  onAddChild: () => undefined,
+  onViewKeywords: () => undefined,
+  onRemove: () => undefined,
+  onMove: () => undefined,
+  onBulkAvailability: () => undefined,
+};
 
 const NEW_DRAFT: OfferingEditDraft = {
   offeringId: null,
@@ -52,6 +64,7 @@ export function BrandOfferingsEditor() {
   const brand = useMarketingBrand();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<OfferingEditDraft | null>(null);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const catalog = useQuery({
     queryKey: [...KEY, "catalog", brand.id],
     queryFn: ({ signal }) => listBrandCatalogForBrand(brand.id, signal),
@@ -120,7 +133,6 @@ export function BrandOfferingsEditor() {
 
   const offerings = catalog.data;
   const tree = buildCatalogTree(offerings, new Map());
-  const nameOf = (id: string | null) => offerings.find((o) => o.id === id)?.name;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain pt-[var(--shell-header-h)]">
@@ -141,71 +153,61 @@ export function BrandOfferingsEditor() {
             to see where each one earns search traffic.
           </p>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setDraft(NEW_DRAFT)}>
-          <Plus className="mr-1 h-3.5 w-3.5" />
-          Add offering
-        </Button>
+        {offerings.length === 0 ? (
+          <Button variant="primary" onClick={() => setDraft(NEW_DRAFT)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add offering
+          </Button>
+        ) : null}
       </header>
 
-      <div className="mx-auto w-full max-w-3xl px-3 py-3 sm:px-4">
+      <div className="w-full px-3 py-3 sm:px-4">
         {offerings.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             No offerings yet. Add the first thing {brand.name} sells.
           </p>
         ) : (
-          <ul className="divide-y divide-border rounded-md border border-border">
-            {offerings.map((offering) => {
-              const price = formatOfferingPrice(prices.data?.[offering.id]);
-              const parent = nameOf(offering.parentId);
-              return (
-                <li key={offering.id} className="flex items-center gap-3 px-3 py-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {offering.name}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {offeringKindLabel(offering.kind)}
-                      {parent ? ` · part of ${parent}` : ""}
-                      {offering.description ? ` · ${offering.description}` : ""}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-xs tabular-nums text-foreground">
-                    {price ?? <span className="text-muted-foreground">No price</span>}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Edit ${offering.name}`}
-                    onClick={() => {
-                      const p = prices.data?.[offering.id];
-                      setDraft({
-                        offeringId: offering.id,
-                        name: offering.name,
-                        kind: offering.kind,
-                        description: offering.description ?? "",
-                        parentId: offering.parentId,
-                        priceAmount: p?.amount == null ? "" : String(p.amount),
-                        priceCurrency: p?.currency ?? "USD",
-                        priceUnit: p?.unit ?? "",
-                        priceNote: p?.note ?? "",
-                      });
-                    }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Remove ${offering.name}`}
-                    disabled={remove.isPending}
-                    onClick={() => remove.mutate(offering)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+          <OfferingCatalogTable
+            brandOnly
+            tree={tree}
+            prices={prices.data ?? {}}
+            metas={[]}
+            collapsed={collapsed}
+            selectedId={null}
+            selectedIds={[]}
+            busy={remove.isPending}
+            actions={{
+              ...SITE_ONLY_NOOPS,
+              onEdit: (node) => {
+                const o = node.offering;
+                const p = prices.data?.[o.id];
+                setDraft({
+                  offeringId: o.id,
+                  name: o.name,
+                  kind: o.kind,
+                  description: o.description ?? "",
+                  parentId: o.parentId,
+                  priceAmount: p?.amount == null ? "" : String(p.amount),
+                  priceCurrency: p?.currency ?? "USD",
+                  priceUnit: p?.unit ?? "",
+                  priceNote: p?.note ?? "",
+                });
+              },
+              onAddChild: (node) => setDraft({ ...NEW_DRAFT, parentId: node.offering.id }),
+              onRemove: (node) => remove.mutate(node.offering),
+            }}
+            onToggle={(id) =>
+              setCollapsed((current) => {
+                const next = new Set(current);
+                if (!next.delete(id)) next.add(id);
+                return next;
+              })
+            }
+            onSelect={() => undefined}
+            onSelectedIdsChange={() => undefined}
+            onAdd={() => setDraft(NEW_DRAFT)}
+            onSaveEdits={async () => undefined}
+          />
         )}
       </div>
 

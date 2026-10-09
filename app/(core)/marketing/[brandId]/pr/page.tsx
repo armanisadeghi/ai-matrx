@@ -14,18 +14,11 @@
 // to `useMarketingBrand()` is a component change, tracked in the restructure
 // handoff.
 
-import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedPressRoom } from "@/features/marketing/pr/BrandScopedPressRoom";
 import { PressRoomHeader } from "@/features/marketing/pr/PressRoomDoors";
-
-export const metadata: Metadata = {
-  title: "Press Room",
-  description:
-    "What is newsworthy about this business, the proof each story still needs, the journalists asking for it right now, and the coverage it produced.",
-};
 
 export default async function BrandPressRoomPage({
   params,

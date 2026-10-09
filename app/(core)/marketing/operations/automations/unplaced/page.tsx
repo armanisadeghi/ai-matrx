@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { OrganizationRunConsoleMount } from "@/features/marketing/seo/run-console/OrganizationRunConsoleMount";
@@ -8,12 +7,6 @@ import { OrganizationRunConsoleMount } from "@/features/marketing/seo/run-consol
  * `view` fixes the screen; the bare `/marketing/operations/automations` URL
  * stays "This run". See `features/marketing/seo/run-console/FEATURE.md`.
  */
-
-export const metadata: Metadata = {
-  title: "Not placed",
-  description:
-    "The keywords the engine could not place for the brands your organization controls, and why it refused to guess.",
-};
 
 export default function MarketingAutomationUnplacedPage() {
   return (

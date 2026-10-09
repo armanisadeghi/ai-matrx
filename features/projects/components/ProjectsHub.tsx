@@ -33,12 +33,8 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Search,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
   Filter,
   X,
-  ListFilter,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
@@ -47,18 +43,6 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system/controls";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   MetricNavigation,
@@ -66,16 +50,10 @@ import {
 } from "@/components/navigation/MetricNavigation";
 import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { StaleDataNotice } from "@ai-matrx/design-system";
+import { ErrorNotice, StaleDataNotice } from "@ai-matrx/design-system";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { scopesService } from "@/features/scopes/service/scopesService";
@@ -95,7 +73,6 @@ import type {
   ProjectPriority,
 } from "@/features/projects/types";
 import {
-  compareTimestamps,
   formatAbsoluteDate,
   formatRelativeTime,
   toEpochMs,
@@ -137,7 +114,6 @@ type Stat = {
   done: number;
   preview: { id: string; title: string }[];
 };
-type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string }>;
 
 type ProjectListRow = Pick<
@@ -320,11 +296,9 @@ export function ProjectsHub({
   React.useEffect(() => {
     let cancelled = false;
     const ids = projects.map((p) => p.id);
-    if (ids.length === 0) {
-      setStats(new Map());
-      setStatsLoading(false);
-      return undefined;
-    }
+    // No projects: nothing to read. Stats are keyed by project id, so a stale
+    // map is never shown for projects that are gone.
+    if (ids.length === 0) return undefined;
     (async () => {
       setStatsReadFailed(false);
       setStatsLoading(true);
@@ -581,7 +555,10 @@ export function ProjectsHub({
     const projectId =
       target
         ?.closest?.(`[${PROJECT_ROW_DOM_ATTR}]`)
-        ?.getAttribute(PROJECT_ROW_DOM_ATTR) ?? null;
+        ?.getAttribute(PROJECT_ROW_DOM_ATTR) ??
+      // The canonical table's row identity (hub table rows are projects).
+      target?.closest?.("tr[data-row-id]")?.getAttribute("data-row-id") ??
+      null;
     const project = projectId
       ? (filtered.find((item) => item.id === projectId) ?? null)
       : null;
@@ -819,11 +796,16 @@ export function ProjectsHub({
             )}
 
             {scopeReadFailed && (
-              <StaleDataNotice
-                hasData={false}
-                what="projects for this scope"
-                detail={scopeReadError}
-                onRetry={retryScopeProjects}
+              <ErrorNotice
+                size="compact"
+                title="Couldn't load projects for this scope"
+                message={scopeReadError ?? "The read failed."}
+                operation="Read the projects for this scope"
+                actions={
+                  <Button variant="outline" onClick={retryScopeProjects}>
+                    Try again
+                  </Button>
+                }
               />
             )}
 
@@ -980,324 +962,6 @@ function ProjectsHubSkeleton({
   );
 }
 
-type UpdatedFilter =
-  "any" | "hour" | "today" | "week" | "month" | "quarter" | "year";
-
-type ProjectColumnFilters = {
-  name: string;
-  organizationId: string;
-  openMin?: number;
-  openMax?: number;
-  doneMin?: number;
-  doneMax?: number;
-  updated: UpdatedFilter;
-};
-
-const EMPTY_COLUMN_FILTERS: ProjectColumnFilters = {
-  name: "",
-  organizationId: "",
-  updated: "any",
-};
-
-const UPDATED_FILTER_OPTIONS: ReadonlyArray<{
-  value: UpdatedFilter;
-  label: string;
-}> = [
-  { value: "any", label: "Any time" },
-  { value: "hour", label: "Last hour" },
-  { value: "today", label: "Last 24 hours" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "Last 30 days" },
-  { value: "quarter", label: "Last 90 days" },
-  { value: "year", label: "Last year" },
-];
-
-function hasActiveColumnFilters(filters: ProjectColumnFilters): boolean {
-  return (
-    filters.name.trim().length > 0 ||
-    filters.organizationId.length > 0 ||
-    filters.openMin !== undefined ||
-    filters.openMax !== undefined ||
-    filters.doneMin !== undefined ||
-    filters.doneMax !== undefined ||
-    filters.updated !== "any"
-  );
-}
-
-function passesNumberRange(
-  value: number,
-  min: number | undefined,
-  max: number | undefined,
-): boolean {
-  if (min !== undefined && value < min) return false;
-  if (max !== undefined && value > max) return false;
-  return true;
-}
-
-function passesUpdatedFilter(
-  updatedAt: string,
-  filter: UpdatedFilter,
-): boolean {
-  if (filter === "any") return true;
-  const updated = toEpochMs(updatedAt);
-  if (Number.isNaN(updated)) return false;
-  const age = Date.now() - updated;
-  const hour = 60 * 60 * 1000;
-  const day = 24 * hour;
-  switch (filter) {
-    case "hour":
-      return age <= hour;
-    case "today":
-      return age <= day;
-    case "week":
-      return age <= 7 * day;
-    case "month":
-      return age <= 30 * day;
-    case "quarter":
-      return age <= 90 * day;
-    case "year":
-      return age <= 365 * day;
-    default:
-      return true;
-  }
-}
-
-function ColumnFilterButton({
-  active,
-  label,
-  children,
-  align = "start",
-}: {
-  active: boolean;
-  label: string;
-  children: React.ReactNode;
-  align?: "start" | "end";
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          title={`Filter ${label}`}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "flex h-11 w-11 items-center justify-center rounded transition-colors lg:h-5 lg:w-5",
-            active
-              ? "text-primary hover:text-primary/80"
-              : "text-muted-foreground/40 hover:text-muted-foreground",
-          )}
-        >
-          <ListFilter className={cn("h-3 w-3", active && "fill-primary/20")} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        /* sizing: fixed — content already decides its own width; no fixed box to remove */
-        align={align}
-        side="bottom"
-        className="w-auto p-3"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function TextColumnFilter({
-  label,
-  value,
-  placeholder,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[200px]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Filter: {label}
-        </p>
-        {value.trim().length > 0 && (
-          <button
-            type="button"
-            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
-            onClick={() => onChange("")}
-          >
-            clear
-          </button>
-        )}
-      </div>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
-
-function NumberRangeColumnFilter({
-  label,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  min: number | undefined;
-  max: number | undefined;
-  onChange: (patch: { min?: number; max?: number }) => void;
-}) {
-  const [minText, setMinText] = React.useState(
-    min !== undefined ? String(min) : "",
-  );
-  const [maxText, setMaxText] = React.useState(
-    max !== undefined ? String(max) : "",
-  );
-
-  const commit = (raw: string, kind: "min" | "max") => {
-    if (raw.trim() === "") {
-      onChange({ [kind]: undefined });
-      return;
-    }
-    const n = parseInt(raw.replace(/[^0-9]/g, ""), 10);
-    if (!Number.isNaN(n)) onChange({ [kind]: n });
-  };
-
-  const hasFilter = min !== undefined || max !== undefined;
-
-  return (
-    <div className="flex flex-col gap-2 w-[190px]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Filter: {label}
-        </p>
-        {hasFilter && (
-          <button
-            type="button"
-            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
-            onClick={() => {
-              setMinText("");
-              setMaxText("");
-              onChange({ min: undefined, max: undefined });
-            }}
-          >
-            clear
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5">
-        <Input
-          value={minText}
-          onChange={(e) => setMinText(e.target.value)}
-          onBlur={(e) => commit(e.target.value, "min")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          placeholder="min"
-          className="w-[80px]"
-        />
-        <span className="text-xs text-muted-foreground">–</span>
-        <Input
-          value={maxText}
-          onChange={(e) => setMaxText(e.target.value)}
-          onBlur={(e) => commit(e.target.value, "max")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          placeholder="max"
-          className="w-[80px]"
-        />
-      </div>
-    </div>
-  );
-}
-
-function UpdatedColumnFilter({
-  value,
-  onChange,
-}: {
-  value: UpdatedFilter;
-  onChange: (next: UpdatedFilter) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[180px]">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Filter: Updated
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {UPDATED_FILTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              "min-h-11 rounded px-2 py-1 text-left text-xs hover:bg-accent lg:min-h-0",
-              value === opt.value && "bg-accent font-medium",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ProjectsColumnHead({
-  k,
-  children,
-  className,
-  align = "left",
-  filter,
-  sortKey,
-  sortDir,
-  onSort,
-}: {
-  k: SortKey;
-  children: React.ReactNode;
-  className?: string;
-  align?: "left" | "right";
-  filter: React.ReactNode;
-  sortKey: SortKey;
-  sortDir: "asc" | "desc";
-  onSort: (key: SortKey) => void;
-}) {
-  return (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => onSort(k)}
-          className={cn(
-            "inline-flex min-h-11 items-center gap-1 px-2 -mx-2 hover:text-foreground transition-colors lg:min-h-0 lg:px-0 lg:mx-0",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
-}
-
 function ProjectsTable({
   projects,
   stats,
@@ -1310,436 +974,197 @@ function ProjectsTable({
   statsReadFailed: boolean;
 }) {
   const router = useRouter();
-  const [sortKey, setSortKey] = React.useState<SortKey>("updated");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
-  const [columnFilters, setColumnFilters] =
-    React.useState<ProjectColumnFilters>(EMPTY_COLUMN_FILTERS);
 
-  const orgEntry = (p: ProjectWithRole) =>
-    p.organizationId ? (orgMap.get(p.organizationId) ?? null) : null;
-  const orgLabel = (p: ProjectWithRole) => orgEntry(p)?.name ?? "—";
+  const orgEntry = React.useCallback(
+    (p: ProjectWithRole) =>
+      p.organizationId ? (orgMap.get(p.organizationId) ?? null) : null,
+    [orgMap],
+  );
 
-  const seenOrganizations = new Map<string, string>();
-  for (const project of projects) {
-    if (!project.organizationId) continue;
-    const name = orgMap.get(project.organizationId)?.name ?? "—";
-    seenOrganizations.set(project.organizationId, name);
-  }
-  const orgOptions = [...seenOrganizations.entries()]
-    .map(([id, name]) => ({ id, name }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const patchFilters = (patch: Partial<ProjectColumnFilters>) => {
-    setColumnFilters((prev) => ({ ...prev, ...patch }));
-  };
-
-  const nameQuery = columnFilters.name.trim().toLowerCase();
-  const filteredRows = projects.filter((project) => {
-    if (nameQuery && !project.name.toLowerCase().includes(nameQuery)) {
-      return false;
-    }
-    if (
-      columnFilters.organizationId &&
-      project.organizationId !== columnFilters.organizationId
-    ) {
-      return false;
-    }
-    const projectStats = stats.get(project.id);
-    if (projectStats) {
-      if (
-        !passesNumberRange(
-          projectStats.open,
-          columnFilters.openMin,
-          columnFilters.openMax,
-        )
-      ) {
-        return false;
+  const countCell = React.useCallback(
+    (p: ProjectWithRole, which: "open" | "done") => {
+      const s = stats.get(p.id);
+      if (!s && statsReadFailed) {
+        return <span title="Task summary unavailable">—</span>;
       }
-      if (
-        !passesNumberRange(
-          projectStats.done,
-          columnFilters.doneMin,
-          columnFilters.doneMax,
-        )
-      ) {
-        return false;
+      if (!s) {
+        return (
+          <Skeleton
+            className="ml-auto h-4 w-6"
+            aria-label={`Loading ${which === "open" ? "open" : "completed"}-task count for ${p.name}`}
+          />
+        );
       }
-    }
-    return passesUpdatedFilter(project.updatedAt, columnFilters.updated);
-  });
-
-  const sorted = (() => {
-    const arr = [...filteredRows];
-    const dir = sortDir === "asc" ? 1 : -1;
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "name":
-          return a.name.localeCompare(b.name) * dir;
-        case "org":
-          return orgLabel(a).localeCompare(orgLabel(b)) * dir;
-        case "open":
-          if (!stats.has(a.id) || !stats.has(b.id)) return 0;
-          return (
-            ((stats.get(a.id)?.open ?? 0) - (stats.get(b.id)?.open ?? 0)) * dir
-          );
-        case "done":
-          if (!stats.has(a.id) || !stats.has(b.id)) return 0;
-          return (
-            ((stats.get(a.id)?.done ?? 0) - (stats.get(b.id)?.done ?? 0)) * dir
-          );
-        case "updated":
-          return compareTimestamps(a.updatedAt, b.updatedAt) * dir;
-        default:
-          return 0;
-      }
-    });
-    return arr;
-  })();
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir(
-        key === "open" || key === "done" || key === "updated" ? "desc" : "asc",
+      const n = which === "open" ? s.open : s.done;
+      return (
+        <Link
+          // `?done=1` expands the Done group on arrival — that section is
+          // collapsed by default.
+          href={which === "open" ? `/projects/${p.id}` : `/projects/${p.id}?done=1`}
+          onClick={(e) => e.stopPropagation()}
+          title={`Open ${p.name} — ${n} ${which === "open" ? "open" : "completed"} task${n === 1 ? "" : "s"}`}
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
+        >
+          {n}
+        </Link>
       );
-    }
-  };
+    },
+    [stats, statsReadFailed],
+  );
 
-  const filtersActive = hasActiveColumnFilters(columnFilters);
+  const columns = React.useMemo<MatrxColumnDef<ProjectWithRole>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Project",
+        accessorKey: "name",
+        filter: "text",
+        width: 310,
+        minWidth: 200,
+        cell: (p) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
+              <FolderKanban className="h-4 w-4" />
+            </span>
+            {/* THE DOOR LAW: the whole-row click is a mouse convenience; the
+                NAME is the real anchor (keyboard, screen reader,
+                middle-click), plus new tab + peek. */}
+            <EntityRef
+              token="project"
+              id={p.id}
+              name={p.name}
+              showIcon={false}
+              className="inline-flex min-h-11 items-center font-medium text-foreground lg:min-h-0"
+            />
+          </div>
+        ),
+      },
+      {
+        id: "org",
+        header: "Organization",
+        accessorFn: (p) => orgEntry(p)?.name ?? "—",
+        width: 120,
+        minWidth: 110,
+        cell: (p) =>
+          p.organizationId ? (
+            <EntityRef
+              token="organization"
+              id={p.organizationId}
+              // NOT a fallback string: `orgMap` only holds orgs the user is a
+              // member of; EntityRef degrades to a truncated id, which is
+              // true and still opens.
+              name={orgEntry(p)?.name ?? null}
+              className="inline-flex min-h-11 items-center text-sm text-muted-foreground lg:min-h-0"
+            />
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Building2 className="h-3.5 w-3.5 shrink-0" />—
+            </span>
+          ),
+      },
+      {
+        id: "open",
+        header: "Open",
+        accessorFn: (p) => stats.get(p.id)?.open ?? null,
+        filter: "number",
+        defaultSortDirection: "desc",
+        align: "right",
+        width: 92,
+        minWidth: 92,
+        // A COUNT IS A DOOR: /projects/[id] lists this project's tasks.
+        cell: (p) => <span className="tabular-nums">{countCell(p, "open")}</span>,
+      },
+      {
+        id: "done",
+        header: "Done",
+        accessorFn: (p) => stats.get(p.id)?.done ?? null,
+        filter: "number",
+        defaultSortDirection: "desc",
+        align: "right",
+        width: 92,
+        minWidth: 92,
+        cell: (p) => (
+          <span className="tabular-nums text-muted-foreground">
+            {countCell(p, "done")}
+          </span>
+        ),
+      },
+      {
+        id: "updated",
+        header: "Updated",
+        accessorFn: (p) => p.updatedAt,
+        sortValue: (p) => toEpochMs(p.updatedAt),
+        filter: "date",
+        defaultSortDirection: "desc",
+        width: 135,
+        minWidth: 130,
+        cell: (p) => (
+          <span
+            className="whitespace-nowrap text-sm text-muted-foreground"
+            title={formatAbsoluteDate(p.updatedAt)}
+          >
+            {formatRelativeTime(p.updatedAt, { style: "long" })}
+          </span>
+        ),
+      },
+      {
+        id: "project-actions",
+        header: "Actions",
+        sortable: false,
+        filter: false,
+        width: 130,
+        minWidth: 130,
+        // ONE visible action. The table adds its own row Alchemy (copy) and
+        // panel buttons; Manage settings lives in the row menu (entity door).
+        customActions: (p) => (
+          <div className="flex items-center justify-end gap-1.5">
+            {/* An anchor, so Open can be cmd- or middle-clicked. */}
+            <Button asChild variant="quiet">
+              <Link href={`/projects/${p.id}`}>Open</Link>
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [countCell, orgEntry, stats],
+  );
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      {filtersActive && (
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1.5">
-          <span className="text-xs text-muted-foreground">
-            Column filters active
-          </span>
-          <Button
-            variant="quiet"
-            onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <ProjectsColumnHead
-              k="name"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.name.trim().length > 0}
-                  label="project"
-                >
-                  <TextColumnFilter
-                    label="Project"
-                    value={columnFilters.name}
-                    placeholder="Contains…"
-                    onChange={(name) => patchFilters({ name })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Project
-            </ProjectsColumnHead>
-            <ProjectsColumnHead
-              k="org"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              className="w-60"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.organizationId.length > 0}
-                  label="organization"
-                >
-                  <div className="flex flex-col gap-2 w-[200px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Filter: Organization
-                      </p>
-                      {columnFilters.organizationId.length > 0 && (
-                        <button
-                          type="button"
-                          className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
-                          onClick={() => patchFilters({ organizationId: "" })}
-                        >
-                          clear
-                        </button>
-                      )}
-                    </div>
-                    <Select
-                      value={columnFilters.organizationId || "__all__"}
-                      onValueChange={(v) =>
-                        patchFilters({
-                          organizationId: v === "__all__" ? "" : v,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All organizations" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">
-                          All organizations
-                        </SelectItem>
-                        {orgOptions.map((o) => (
-                          <SelectItem key={o.id} value={o.id}>
-                            {o.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </ColumnFilterButton>
-              }
-            >
-              Organization
-            </ProjectsColumnHead>
-            <ProjectsColumnHead
-              k="open"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              className="w-24 text-right"
-              align="right"
-              filter={
-                <ColumnFilterButton
-                  active={
-                    columnFilters.openMin !== undefined ||
-                    columnFilters.openMax !== undefined
-                  }
-                  label="open tasks"
-                  align="end"
-                >
-                  <NumberRangeColumnFilter
-                    key={`open:${columnFilters.openMin ?? "none"}:${columnFilters.openMax ?? "none"}`}
-                    label="Open"
-                    min={columnFilters.openMin}
-                    max={columnFilters.openMax}
-                    onChange={({ min, max }) =>
-                      patchFilters({ openMin: min, openMax: max })
-                    }
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Open
-            </ProjectsColumnHead>
-            <ProjectsColumnHead
-              k="done"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              className="w-24 text-right"
-              align="right"
-              filter={
-                <ColumnFilterButton
-                  active={
-                    columnFilters.doneMin !== undefined ||
-                    columnFilters.doneMax !== undefined
-                  }
-                  label="done tasks"
-                  align="end"
-                >
-                  <NumberRangeColumnFilter
-                    key={`done:${columnFilters.doneMin ?? "none"}:${columnFilters.doneMax ?? "none"}`}
-                    label="Done"
-                    min={columnFilters.doneMin}
-                    max={columnFilters.doneMax}
-                    onChange={({ min, max }) =>
-                      patchFilters({ doneMin: min, doneMax: max })
-                    }
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Done
-            </ProjectsColumnHead>
-            <ProjectsColumnHead
-              k="updated"
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              className="w-36"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.updated !== "any"}
-                  label="updated"
-                >
-                  <UpdatedColumnFilter
-                    value={columnFilters.updated}
-                    onChange={(updated) => patchFilters({ updated })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Updated
-            </ProjectsColumnHead>
-            <TableHead className="w-40 text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
-          {sorted.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={6}
-                className="py-10 text-center text-sm text-muted-foreground"
-              >
-                No projects match these column filters.
-              </TableCell>
-            </TableRow>
-          ) : (
-            sorted.map((p) => {
-              const s = stats.get(p.id);
-              return (
-                <TableRow
-                  key={p.id}
-                  data-project-row-id={p.id}
-                  className="group/entity-ref cursor-pointer"
-                  onClick={() => router.push(`/projects/${p.id}`)}
-                >
-                  <TableCell className="py-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
-                        <FolderKanban className="h-4 w-4" />
-                      </span>
-                      {/* THE DOOR LAW: the whole-row click is a mouse
-                          convenience; the NAME is the real anchor (keyboard,
-                          screen reader, middle-click), plus new tab + peek. */}
-                      <EntityRef
-                        token="project"
-                        id={p.id}
-                        name={p.name}
-                        showIcon={false}
-                        className="inline-flex min-h-11 items-center font-medium text-foreground lg:min-h-0"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    {/* A resolvable relationship is rendered AND linked. */}
-                    {p.organizationId ? (
-                      <EntityRef
-                        token="organization"
-                        id={p.organizationId}
-                        // NOT a fallback string. `orgMap` only holds orgs the
-                        // user is a MEMBER of, so a project reached by a
-                        // permission grant resolves to nothing here — and
-                        // printing the word "Organization" would present a
-                        // label we invented as if it were the org's name.
-                        // EntityRef already degrades to a truncated id, which
-                        // is true and still opens.
-                        name={orgEntry(p)?.name ?? null}
-                        className="inline-flex min-h-11 items-center text-sm text-muted-foreground lg:min-h-0"
-                      />
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Building2 className="h-3.5 w-3.5 shrink-0" />—
-                      </span>
-                    )}
-                  </TableCell>
-                  {/* A COUNT IS A DOOR: /projects/[id] lists this project's
-                      tasks grouped Open / Done (ProjectTaskList). */}
-                  <TableCell className="py-2 text-right tabular-nums">
-                    {!s && statsReadFailed ? (
-                      <span title="Task summary unavailable">—</span>
-                    ) : !s ? (
-                      <Skeleton
-                        className="ml-auto h-4 w-6"
-                        aria-label={`Loading open-task count for ${p.name}`}
-                      />
-                    ) : (
-                      <Link
-                        href={`/projects/${p.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        title={`Open ${p.name} — ${s.open} open task${
-                          s.open === 1 ? "" : "s"
-                        }`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
-                      >
-                        {s.open}
-                      </Link>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
-                    {!s && statsReadFailed ? (
-                      <span title="Task summary unavailable">—</span>
-                    ) : !s ? (
-                      <Skeleton
-                        className="ml-auto h-4 w-6"
-                        aria-label={`Loading completed-task count for ${p.name}`}
-                      />
-                    ) : (
-                      <Link
-                        // `?done=1` expands the Done group on arrival — that
-                        // section is collapsed by default, so a bare link would
-                        // land the user on a page where the tasks this number
-                        // counts are still hidden.
-                        href={`/projects/${p.id}?done=1`}
-                        onClick={(e) => e.stopPropagation()}
-                        title={`Open ${p.name} — ${s.done} completed task${
-                          s.done === 1 ? "" : "s"
-                        }`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
-                      >
-                        {s.done}
-                      </Link>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-2 text-sm text-muted-foreground whitespace-nowrap">
-                    <span title={formatAbsoluteDate(p.updatedAt)}>
-                      {formatRelativeTime(p.updatedAt, { style: "long" })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div
-                      className="flex items-center justify-end gap-1.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ProjectCopyForAiButton
-                        projectId={p.id}
-                        projectName={p.name}
-                        location="Projects — hub table"
-                        size="icon"
-                        className="h-11 w-11 lg:h-7 lg:w-7"
-                      />
-                      {/* An anchor, like the Settings button beside it — an
-                          onClick-only Open cannot be cmd- or middle-clicked,
-                          so the row's own "open in a new tab" door died at the
-                          one control most likely to be used for it. */}
-                      <Button
-                        asChild
-                        variant="quiet"
-                      >
-                        <Link href={`/projects/${p.id}`}>Open</Link>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="quiet"
-                        className="w-11 lg:w-auto"
-                      >
-                        <Link
-                          href={`/projects/${p.id}/settings`}
-                          aria-label={`Manage ${p.name}`}
-                          title={`Manage ${p.name}`}
-                        >
-                          <Settings className="h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <MatrxDataTable<ProjectWithRole>
+      tableId="projects-hub"
+      data={projects}
+      columns={columns}
+      getRowId={(p) => p.id}
+      defaultSort={{ id: "updated", direction: "desc" }}
+      zebra
+      pageSize={0}
+      fitToWidth="grow"
+      rowVersion={(p) => [stats.get(p.id), statsReadFailed, orgMap]}
+      detail={{ enabled: false }}
+      onRowOpen={(p) => router.push(`/projects/${p.id}`)}
+      window={{}}
+      getRowHref={(p) => `/projects/${p.id}`}
+      emptyState={{ title: "No projects match these column filters." }}
+      copy={{
+        label: "Project",
+        listLabel: "Projects",
+        location: "AI Matrx — Projects (/projects)",
+        rowKind: "project",
+        listKind: "projects-list",
+        humanRow: (p) => {
+          const s = stats.get(p.id);
+          return `${p.name} — ${orgEntry(p)?.name ?? "no organization"}${s ? `, ${s.open} open, ${s.done} done` : ""}`;
+        },
+        agentRow: (p) => ({
+          id: p.id,
+          name: p.name,
+          organization: orgEntry(p)?.name ?? null,
+          open_tasks: stats.get(p.id)?.open ?? null,
+          done_tasks: stats.get(p.id)?.done ?? null,
+          updated_at: p.updatedAt,
+        }),
+      }}
+    />
   );
 }
 

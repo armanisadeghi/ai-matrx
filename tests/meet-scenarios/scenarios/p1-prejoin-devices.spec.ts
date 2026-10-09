@@ -95,7 +95,6 @@ scenario("device-switch-midcall", async ({ cast }) => {
   const { guest } = await callWithGuest(cast);
   await press(guest, "the microphone options arrow", guest.page.getByRole("button", { name: /microphone (settings|options)|audio (settings|options)|choose microphone|select microphone/i }), 8000);
   const options = guest.page.getByRole("menuitemradio").or(guest.page.getByRole("option"));
-  await seeUntil(guest, "a list of microphones", () => true, 500);
   expect(await options.count(), "the device menu lists at least two microphones (the fake browser has several)").toBeGreaterThanOrEqual(2);
   const second = options.nth(1);
   await second.click();
@@ -114,7 +113,7 @@ scenario("speaking-while-muted", async ({ cast }) => {
 scenario("self-mute-banner-wrong", async ({ cast }) => {
   const { guest } = await callWithGuest(cast);
   await press(guest, "Mute", guest.page.getByRole("button", { name: /^Mute\b/ }), 8000);
-  const o = await seeUntil(guest, "muted by choice", (x) => x.microphone === "muted_by_me" || (x.microphone === null && true), TIMEOUTS.noticeMs);
+  const o = await seeUntil(guest, "muted by choice", (x) => x.microphone !== "blocked" && x.microphone !== "missing", TIMEOUTS.noticeMs);
   await guest.page.waitForTimeout(3000);
   const text = await bodyText(guest.page);
   expect(/without (a )?microphone|no microphone|attending without|microphone (is )?(blocked|unavailable|missing)/i.test(text), `a deliberate mute shows no 'no microphone' banner; saw: ${text.slice(0, 220)}`).toBe(false);

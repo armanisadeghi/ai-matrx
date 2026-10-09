@@ -2,21 +2,23 @@
  * OPENING ONE FILE NEVER REDRAWS EVERY ROW OF THE FILES TABLE.
  *
  * 🚨 Measured live on /files/all (2026-10-07): clicking one file redrew 50 of
- * 51 rows. `FileTable` handed every row three inline handlers and a freshly
- * built `granteeIds` array on each of its renders, and `FileTableRow` was not
- * memoised, so any table render (opening a file moves `activeFileId`) redrew
- * them all. Rows now take one stable `commands` object and are memoised on
- * what they show.
+ * 51 rows — the list flickered and every row's hover state jumped. The list now
+ * runs on the shared `MatrxDataTable` (2026-10-09), whose row memo holds a row
+ * still unless something that row SHOWS changed. That only works while the host
+ * hands it stable inputs: one `commands` object, one `rowWrapper`, memoised
+ * columns. This harness mounts the real table exactly the way `FileTable` does
+ * and counts row draws (the row shell's context menu draws once per row draw).
  *
- * This host renders rows exactly the way `FileTable` does — new arrays every
- * render, the same commands — and counts row draws.
- *
- * RED against the old FileTableRow (no memo): every row redraws on every render.
+ * The third case plants the classic shift — a `commands` object rebuilt on
+ * every render (what FileTable did before 2026-10-07) — and proves the counter
+ * sees it, so a green run means the rows truly held still.
  */
-import React, { act, useState } from "react";
+import React, { act, useCallback, useMemo, useState } from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRoot, type Root } from "react-dom/client";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -24,6 +26,10 @@ import { createRoot, type Root } from "react-dom/client";
 
 let rowDraws = new Map<string, number>();
 
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => null,
+  useAppDispatch: () => () => undefined,
+}));
 jest.mock("@/features/files/components/core/RowContextMenu/RowContextMenu", () => ({
   FileRowContextMenu: ({ fileId, children }: { fileId: string; children: React.ReactNode }) => {
     rowDraws.set(fileId, (rowDraws.get(fileId) ?? 0) + 1);
@@ -38,6 +44,7 @@ jest.mock("@/features/files/components/core/FileActions/useFolderActions", () =>
   useFolderActions: () => ({}),
 }));
 jest.mock("@dnd-kit/core", () => ({
+  ...jest.requireActual("@dnd-kit/core"),
   useDraggable: () => ({ attributes: {}, listeners: {}, setNodeRef: () => undefined, isDragging: false }),
   useDroppable: () => ({ isOver: false, setNodeRef: () => undefined }),
 }));
@@ -55,68 +62,105 @@ jest.mock("@/features/files/components/core/FileContextMenu/FileContextMenu", ()
 jest.mock("@/features/files/components/core/FolderContextMenu/FolderContextMenu", () => ({
   FolderContextMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock("../AccessCell", () => ({ AccessCell: () => <td /> }));
-jest.mock("../OwnerCell", () => ({ OwnerCell: () => <td /> }));
-jest.mock("../RagStatusCell", () => ({ RagStatusCell: () => <td /> }));
-jest.mock("../FileContextCell", () => ({ FileContextCell: () => <td /> }));
+jest.mock("../AccessCell", () => ({ AccessCell: () => null }));
+jest.mock("../OwnerCell", () => ({ OwnerCell: () => null }));
+jest.mock("../RagStatusCell", () => ({ RagStatusCell: () => null }));
+jest.mock("../FileContextCell", () => ({ FileContextCell: () => null }));
 jest.mock("../FileTypeBadge", () => ({ FileTypeBadge: () => null }));
 jest.mock("../FolderIconWithMembers", () => ({ FolderIconWithMembers: () => null }));
 
-import { FileTableRow, type FileTableRowCommands } from "../FileTableRow";
+import {
+  FileTableCell,
+  FileTableRowShell,
+  type FileListRow,
+  type FileTableRowCommands,
+} from "../FileTableRow";
 import type { CloudFileRecord } from "@/features/files/types";
 
-const FILES = Array.from({ length: 20 }, (_, i) => ({
+const NAMES = [
+  "Harbor Dental lease 2026.pdf",
+  "Q3 patient intake summary.xlsx",
+  "Front desk script.docx",
+  "Hygienist schedule October.pdf",
+  "Insurance remittance 0914.pdf",
+  "Waiting room remodel quote.pdf",
+  "Sterilization log week 40.pdf",
+  "New patient welcome packet.pdf",
+];
+
+const ROWS: FileListRow[] = NAMES.map((fileName, i) => ({
   id: `file-${i}`,
-  fileName: `File ${i}.pdf`,
-  fileSize: 1000 + i,
-  mimeType: "application/pdf",
-  ownerId: "user-1",
-  parentFolderId: null,
-  visibility: "private",
-  createdAt: "2026-10-01T00:00:00Z",
-  updatedAt: "2026-10-01T00:00:00Z",
-  metadata: {},
-  source: { kind: "real" },
-  deletedAt: null,
-})) as unknown as CloudFileRecord[];
+  item: {
+    kind: "file",
+    file: {
+      id: `file-${i}`,
+      fileName,
+      fileSize: 48_000 + i * 1_024,
+      mimeType: "application/pdf",
+      ownerId: "user-1",
+      parentFolderId: null,
+      visibility: "private",
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-01T00:00:00Z",
+      metadata: {},
+      source: { kind: "real" },
+      deletedAt: null,
+    } as unknown as CloudFileRecord,
+  },
+  isShared: false,
+  memberCount: 0,
+  granteeIds: [],
+  parentPath: null,
+}));
 
 let openFile: (id: string | null) => void = () => undefined;
 let bump: () => void = () => undefined;
 const calls: string[] = [];
 
-/** Mirrors FileTable: one stable commands object, fresh arrays every render. */
-function RowsHarness() {
+/** Mirrors FileTable: one stable commands object, one stable row shell, memoised columns. */
+function FilesTableHarness({ plantShift = false }: { plantShift?: boolean }) {
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   openFile = setActiveFileId;
   bump = () => setTick((t) => t + 1);
-  const [commands] = useState<FileTableRowCommands>(() => ({
-    toggleSelected: (id) => calls.push(`toggle:${id}`),
+  const [stableCommands] = useState<FileTableRowCommands>(() => ({
     activate: (id) => calls.push(`activate:${id}`),
     openShare: (id, kind) => calls.push(`share:${kind}:${id}`),
   }));
+  const commands: FileTableRowCommands = plantShift
+    ? {
+        activate: (id) => calls.push(`activate:${id}`),
+        openShare: (id, kind) => calls.push(`share:${kind}:${id}`),
+      }
+    : stableCommands;
+  const columns = useMemo<MatrxColumnDef<FileListRow>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: (row) => (row.item.kind === "file" ? row.item.file.fileName : row.item.folder.folderName),
+        cell: (row) => <FileTableCell id="name" row={row} currentUserId="user-1" commands={commands} />,
+      },
+    ],
+    [commands],
+  );
+  const rowWrapper = useCallback(
+    (row: FileListRow, children: React.ReactNode) => (
+      <FileTableRowShell row={row}>{children}</FileTableRowShell>
+    ),
+    [],
+  );
   return (
-    <table>
-      <tbody>
-        {FILES.map((file) => (
-          <FileTableRow
-            key={file.id}
-            kind="file"
-            file={file}
-            selected={false}
-            isPreviewActive={file.id === activeFileId}
-            isFocused={false}
-            visibleColumnIds={["name", "size"]}
-            currentUserId="user-1"
-            commands={commands}
-            isShared={false}
-            memberCount={0}
-            granteeIds={[].filter(Boolean)}
-            parentPath={null}
-          />
-        ))}
-      </tbody>
-    </table>
+    <MatrxDataTable<FileListRow>
+      tableId="files-list-hold-still"
+      data={ROWS}
+      columns={columns}
+      getRowId={(row) => row.id}
+      detail={{ enabled: false }}
+      selectedId={activeFileId}
+      rowWrapper={rowWrapper}
+      pageSize={0}
+    />
   );
 }
 
@@ -138,30 +182,32 @@ const redrawnSince = (before: Map<string, number>) =>
   [...rowDraws].filter(([id, n]) => n > (before.get(id) ?? 0)).map(([id]) => id);
 
 it("a table render that changes nothing a row shows redraws no row", () => {
-  act(() => root.render(<RowsHarness />));
-  expect(rowDraws.size).toBe(FILES.length);
+  act(() => root.render(<FilesTableHarness />));
+  expect(rowDraws.size).toBe(ROWS.length);
   const before = new Map(rowDraws);
   for (let i = 0; i < 3; i += 1) act(() => bump());
   expect(redrawnSince(before)).toEqual([]);
 });
 
 it("opening a file redraws only that row", () => {
-  act(() => root.render(<RowsHarness />));
+  act(() => root.render(<FilesTableHarness />));
   const before = new Map(rowDraws);
-  act(() => openFile("file-7"));
-  expect(redrawnSince(before)).toEqual(["file-7"]);
+  act(() => openFile("file-5"));
+  expect(redrawnSince(before)).toEqual(["file-5"]);
 });
 
-it("a held row's checkbox reaches the table's commands with its own id", () => {
-  act(() => root.render(<RowsHarness />));
+it("the counter catches a planted shift: commands rebuilt every render redraw every row", () => {
+  act(() => root.render(<FilesTableHarness plantShift />));
+  const before = new Map(rowDraws);
   act(() => bump());
-  const box = container.querySelector<HTMLElement>('[aria-label="Select File 4.pdf"]')!;
-  act(() => box.click());
-  expect(calls).toEqual(["toggle:file-4"]);
+  expect(redrawnSince(before)).toHaveLength(ROWS.length);
 });
 
-it("FileTable hands every row the one stable commands object", () => {
+it("FileTable hands the table the same stable pieces this harness proves", () => {
   const table = readFileSync(join(__dirname, "..", "FileTable.tsx"), "utf8");
-  expect(table).toContain("commands={rowCommands}");
-  expect(table).not.toMatch(/onToggleSelected=\{|onActivate=\{\(\) =>|onOpenShare=\{\(\) =>/);
+  expect(table).toContain("const [commands] = useState<FileTableRowCommands>");
+  expect(table).toContain("rowWrapper={rowWrapper}");
+  expect(table).toMatch(/const rowWrapper = useCallback\(/);
+  expect(table).toMatch(/const columns = useMemo<MatrxColumnDef<FileListRow>\[\]>/);
+  expect(table).toContain("commands={commands}");
 });

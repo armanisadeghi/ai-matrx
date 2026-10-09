@@ -458,66 +458,67 @@ function CopySubsetWindowBody<T>({
             contentSource={{ type: "raw" }}
             resolveContextOnOpen={resolveRowContext}
           >
-            <MatrxDataTable<T>
-              data={session.rows}
-              columns={tableColumns}
-              getRowId={session.getRowId}
-              query={{
-                mode: "controlled-local",
-                state: state.query,
-                onStateChange: setQuery,
-              }}
-              toolbar={{
-                searchPlaceholder: "Search every shown column…",
-                searchMatch: {},
-                layeredFilters: {
-                  fields: layeredFields,
-                  maxRules: 20,
-                  label: "Advanced row filters",
-                },
-                actions: (
-                  <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        setSelectedRowIds(
-                          computation.matched.map((row) =>
-                            session.getRowId(row),
-                          ),
-                        )
-                      }
-                    >
-                      Select matching (
-                      {computation.matched.length.toLocaleString()})
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      disabled={state.selectedRowIds.length === 0}
-                      onClick={() => setSelectedRowIds([])}
-                    >
-                      Clear selection
-                    </Button>
-                  </div>
-                ),
-              }}
-              selection={{
-                selectedIds: state.selectedRowIds,
-                onSelectedIdsChange: setSelectedRowIds,
-                noun: "row",
-              }}
-              detail={{ enabled: false }}
-              window={{ enabled: false }}
-              pageSize={state.query.pageSize}
-              pageSizeOptions={[20, 50, 100, 200]}
-              className="min-h-0 flex-1"
-              emptyState={{
-                title: "No rows match",
-                description:
-                  "Clear or loosen the search and filters to see more rows.",
-              }}
-            />
+            <div className="min-h-0 flex-1 flex flex-col">
+              <MatrxDataTable<T>
+                data={session.rows}
+                columns={tableColumns}
+                getRowId={session.getRowId}
+                query={{
+                  mode: "controlled-local",
+                  state: state.query,
+                  onStateChange: setQuery,
+                }}
+                toolbar={{
+                  searchPlaceholder: "Search every shown column…",
+                  searchMatch: {},
+                  layeredFilters: {
+                    fields: layeredFields,
+                    maxRules: 20,
+                    label: "Advanced row filters",
+                  },
+                  actions: (
+                    <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setSelectedRowIds(
+                            computation.matched.map((row) =>
+                              session.getRowId(row),
+                            ),
+                          )
+                        }
+                      >
+                        Select matching (
+                        {computation.matched.length.toLocaleString()})
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="quiet"
+                        disabled={state.selectedRowIds.length === 0}
+                        onClick={() => setSelectedRowIds([])}
+                      >
+                        Clear selection
+                      </Button>
+                    </div>
+                  ),
+                }}
+                selection={{
+                  selectedIds: state.selectedRowIds,
+                  onSelectedIdsChange: setSelectedRowIds,
+                  noun: "row",
+                }}
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                pageSize={state.query.pageSize}
+                pageSizeOptions={[20, 50, 100, 200]}
+                emptyState={{
+                  title: "No rows match",
+                  description:
+                    "Clear or loosen the search and filters to see more rows.",
+                }}
+              />
+            </div>
           </NonEditableContextMenu>
         )}
       </div>

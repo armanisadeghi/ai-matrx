@@ -327,6 +327,9 @@ export async function copyDocument(
   const original = await getDocument(documentId);
   if (!original.success) return original;
   const row = original.data;
+  if (!row.organization_id) {
+    return { success: false, error: "This document has no organization and cannot be copied." };
+  }
   const created = await createDocument({
     name: row.document_name,
     description: row.description ?? null,

@@ -6,18 +6,11 @@
 // `/marketing/[brandId]/seo/[siteId]/capabilities` — same component, bound;
 // this page is the Operations plane's control-surface door across every client.
 
-import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { SeoCapabilitiesWorkspace } from "@/features/marketing/seo/capabilities/SeoCapabilitiesWorkspace";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
-
-export const metadata: Metadata = {
-  title: "SEO Capabilities",
-  description:
-    "The shared measurement catalogue — what's on for each website, with evidence.",
-};
 
 export default function OperationsCapabilitiesPage() {
   return (

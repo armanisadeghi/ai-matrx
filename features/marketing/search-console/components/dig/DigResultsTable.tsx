@@ -356,53 +356,54 @@ export function DigResultsTable({
         {dimension === "query" && keywordSurfaces.isOpen ? (
           <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
         ) : null}
-        <MatrxDataTable<GscDigResultRow>
-          urlState={{ id: `gsc-dig-${dimension}` }}
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.key}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          toolbar={{
-            searchPlaceholder: `Search results…`,
-          }}
-          copy={{
-            label: "Dig result",
-            listLabel: `Dig Here — ${ruleLabel}`,
-            location: webLocation("Search Console — Dig Here"),
-            rowKind: `web-gsc-dig-${dimension}`,
-            listKind: "web-gsc-dig-results",
-            rowDescription: `One ${dimension} surfaced by the "${ruleLabel}" dig rule for the selected site and period.`,
-            listDescription: `The rows the "${ruleLabel}" dig rule surfaced (rule conditions already applied server-side).`,
-            humanRow: (row) =>
-              humanLines(gscMetricCopyLines(columnLabel, dimension, row)),
-            rowAttributes: (row) => ({
-              ...gscScopeAttributes(siteId, siteName, periods, baseFilters),
-              dig_rule: ruleLabel,
-              dimension,
-              key: row.key,
-              page_id: row.page_id ?? "",
-              keyword_id: row.keyword_id ?? "",
-            }),
-            listAttributes: (visible) => ({
-              ...gscScopeAttributes(siteId, siteName, periods, baseFilters),
-              dig_rule: ruleLabel,
-              dimension,
-              visible_rows: visible.length,
-              total_rows: rows.length,
-            }),
-          }}
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          onRowOpen={onDrill}
-          pageSize={50}
-          emptyState={{
-            icon: <Pickaxe className="h-8 w-8 text-muted-foreground" />,
-            title: "Nothing matches this rule",
-            description: `No rows pass every condition ${describeGscWindow(periods.current)}. Loosen a threshold, widen the range, or try another rule.`,
-          }}
-          className="flex-1"
-        />
+        <div className="flex-1 flex flex-col">
+          <MatrxDataTable<GscDigResultRow>
+            urlState={{ id: `gsc-dig-${dimension}` }}
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.key}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            toolbar={{
+              searchPlaceholder: `Search results…`,
+            }}
+            copy={{
+              label: "Dig result",
+              listLabel: `Dig Here — ${ruleLabel}`,
+              location: webLocation("Search Console — Dig Here"),
+              rowKind: `web-gsc-dig-${dimension}`,
+              listKind: "web-gsc-dig-results",
+              rowDescription: `One ${dimension} surfaced by the "${ruleLabel}" dig rule for the selected site and period.`,
+              listDescription: `The rows the "${ruleLabel}" dig rule surfaced (rule conditions already applied server-side).`,
+              humanRow: (row) =>
+                humanLines(gscMetricCopyLines(columnLabel, dimension, row)),
+              rowAttributes: (row) => ({
+                ...gscScopeAttributes(siteId, siteName, periods, baseFilters),
+                dig_rule: ruleLabel,
+                dimension,
+                key: row.key,
+                page_id: row.page_id ?? "",
+                keyword_id: row.keyword_id ?? "",
+              }),
+              listAttributes: (visible) => ({
+                ...gscScopeAttributes(siteId, siteName, periods, baseFilters),
+                dig_rule: ruleLabel,
+                dimension,
+                visible_rows: visible.length,
+                total_rows: rows.length,
+              }),
+            }}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            onRowOpen={onDrill}
+            pageSize={50}
+            emptyState={{
+              icon: <Pickaxe className="h-8 w-8 text-muted-foreground" />,
+              title: "Nothing matches this rule",
+              description: `No rows pass every condition ${describeGscWindow(periods.current)}. Loosen a threshold, widen the range, or try another rule.`,
+            }}
+          />
+        </div>
       </div>
     </NonEditableContextMenu>
   );

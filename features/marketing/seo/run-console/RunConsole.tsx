@@ -937,27 +937,28 @@ function TopicPlacementConsole({
                         : []
                     }
                   >
-                    <MatrxDataTable<BrandTableRow>
-                      data={brandRows}
-                      columns={brandColumns}
-                      getRowId={(r) => r.site.id}
-                      isLoading={sites.isLoading}
-                      toolbar={{
-                        search: true,
-                        searchPlaceholder: "Find a brand",
-                      }}
-                      selectedId={focusedSiteId}
-                      onRowOpen={(r) => setFocusedSiteId(r.site.id)}
-                      selection={{
-                        selectedIds: selected,
-                        onSelectedIdsChange: setSelected,
-                        noun: "brand",
-                      }}
-                      pageSize={0}
-                      zebra
-                      emptyState={{ title: "No brands match your search." }}
-                      className="h-full"
-                    />
+                    <div className="h-full flex flex-col">
+                      <MatrxDataTable<BrandTableRow>
+                        data={brandRows}
+                        columns={brandColumns}
+                        getRowId={(r) => r.site.id}
+                        isLoading={sites.isLoading}
+                        toolbar={{
+                          search: true,
+                          searchPlaceholder: "Find a brand",
+                        }}
+                        selectedId={focusedSiteId}
+                        onRowOpen={(r) => setFocusedSiteId(r.site.id)}
+                        selection={{
+                          selectedIds: selected,
+                          onSelectedIdsChange: setSelected,
+                          noun: "brand",
+                        }}
+                        pageSize={0}
+                        zebra
+                        emptyState={{ title: "No brands match your search." }}
+                      />
+                    </div>
                   </NonEditableContextMenu>
                 )}
               </div>
@@ -1343,16 +1344,16 @@ function RunDecisions({
         }}
         extraSections={[keywordSection]}
       >
-        <MatrxDataTable<RunPlacementRow>
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.keywordId}
-          toolbar={{ search: true, searchPlaceholder: "Find a keyword" }}
-          pageSize={0}
-          zebra
-          className="h-full"
-          tableClassName="text-[11px]"
-        />
+        <div className="h-full flex flex-col">
+          <MatrxDataTable<RunPlacementRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.keywordId}
+            toolbar={{ search: true, searchPlaceholder: "Find a keyword" }}
+            pageSize={0}
+            zebra
+          />
+        </div>
       </NonEditableContextMenu>
     </div>
   );

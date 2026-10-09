@@ -35,8 +35,12 @@ import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
 import { FavoriteAgentButton } from "@ai-matrx/agents/catalog/react";
-import { AddToOrchestraMenu } from "@/features/agents/orchestras/components/AddToOrchestraMenu";
-import { useState } from "react";
+import {
+  AddToOrchestraMenu,
+  AddToOrchestraSubmenu,
+} from "@/features/agents/orchestras/components/AddToOrchestraMenu";
+import { CreateOrchestraDialog } from "@/features/agents/orchestras/components/CreateOrchestraDialog";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast-service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -97,12 +101,26 @@ export function AgentCard({
     : null;
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isOrchestraCreateOpen, setIsOrchestraCreateOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCreateAppModalOpen, setIsCreateAppModalOpen] = useState(false);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isSneakPeekOpen, setIsSneakPeekOpen] = useState(false);
   const [isConvertingToTemplate, setIsConvertingToTemplate] = useState(false);
   const [lastModalCloseTime, setLastModalCloseTime] = useState(0);
+  // The ⋯ menu renders in a portal outside the card's container, so a container
+  // query can't drive its narrow-only twins: measure the card instead.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => {
+      setIsNarrow(entry.contentRect.width < 340);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleView = (e?: React.MouseEvent) => {
     if (e && (e.metaKey || e.ctrlKey)) return;
@@ -223,6 +241,9 @@ export function AgentCard({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // React bubbles events through portals: a click inside a modal/menu that is
+    // rendered by this card is not a click on the card body.
+    if (!e.currentTarget.contains(e.target as Node)) return;
     if (e.metaKey || e.ctrlKey) {
       window.open(`${basePath}/${id}/run`, "_blank");
       return;
@@ -252,6 +273,7 @@ export function AgentCard({
           : "hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 cursor-pointer hover:scale-[1.02] group",
         isArchived && !isDisabled && "opacity-70",
       )}
+      ref={cardRef}
       onClick={handleCardClick}
       title={
         isDisabled
@@ -265,9 +287,7 @@ export function AgentCard({
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <span className="type-title text-foreground">
-              Loading...
-            </span>
+            <span className="type-title text-foreground">Loading...</span>
           </div>
         </div>
       )}
@@ -363,47 +383,47 @@ export function AgentCard({
               />
             </Link>
             <div className="hidden @[340px]:contents">
-            <Link
-              href={`${basePath}/${id}/run`}
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleView(e);
-              }}
-            >
+              <Link
+                href={`${basePath}/${id}/run`}
+                tabIndex={-1}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleView(e);
+                }}
+              >
+                <IconButton
+                  icon={Eye}
+                  tooltip={isDisabled ? "Please wait..." : "View"}
+                  variant="ghost"
+                  tooltipSide="top"
+                  tooltipAlign="center"
+                  disabled={isDisabled}
+                />
+              </Link>
+            </div>
+            <div className="hidden @[340px]:contents">
               <IconButton
-                icon={Eye}
-                tooltip={isDisabled ? "Please wait..." : "View"}
+                icon={Lightbulb}
+                tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
                 variant="ghost"
                 tooltipSide="top"
                 tooltipAlign="center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isDisabled) setIsSneakPeekOpen(true);
+                }}
                 disabled={isDisabled}
               />
-            </Link>
-            </div>
-            <div className="hidden @[340px]:contents">
-            <IconButton
-              icon={Lightbulb}
-              tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isDisabled) setIsSneakPeekOpen(true);
-              }}
-              disabled={isDisabled}
-            />
-            <IconButton
-              icon={Share2}
-              tooltip="Share"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={handleShareClickInline}
-              disabled={isDisabled}
-            />
-            <AddToOrchestraMenu agentId={id} disabled={isDisabled} />
+              <IconButton
+                icon={Share2}
+                tooltip="Share"
+                variant="ghost"
+                tooltipSide="top"
+                tooltipAlign="center"
+                onClick={handleShareClickInline}
+                disabled={isDisabled}
+              />
+              <AddToOrchestraMenu agentId={id} disabled={isDisabled} />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -421,27 +441,39 @@ export function AgentCard({
                 className="w-48"
                 onClick={(e) => e.stopPropagation()}
               >
-                <DropdownMenuItem
-                  className="gap-2 @[340px]:hidden"
-                  onSelect={() => handleView()}
-                >
-                  <Eye className="h-4 w-4" />
-                  View
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2 @[340px]:hidden"
-                  onSelect={() => setIsSneakPeekOpen(true)}
-                >
-                  <Lightbulb className="h-4 w-4" />
-                  Sneak Peek
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2 @[340px]:hidden"
-                  onSelect={() => setIsShareModalOpen(true)}
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </DropdownMenuItem>
+                {isNarrow && (
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onSelect={() => handleView()}
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </DropdownMenuItem>
+                )}
+                {isNarrow && (
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onSelect={() => setIsSneakPeekOpen(true)}
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    Sneak Peek
+                  </DropdownMenuItem>
+                )}
+                {isNarrow && (
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onSelect={() => setIsShareModalOpen(true)}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </DropdownMenuItem>
+                )}
+                {isNarrow && (
+                  <AddToOrchestraSubmenu
+                    agentId={id}
+                    onCreate={() => setIsOrchestraCreateOpen(true)}
+                  />
+                )}
                 <DropdownMenuItem
                   className="gap-2"
                   disabled={isDuplicating}
@@ -475,11 +507,13 @@ export function AgentCard({
                   ) : (
                     <LayoutPanelTop className="h-4 w-4" />
                   )}
-                  {isConvertingToTemplate ? "Saving template..." : "Save as Template"}
+                  {isConvertingToTemplate
+                    ? "Saving template..."
+                    : "Save as Template"}
                 </DropdownMenuItem>
-                {handleDelete && (
+                {handleDelete && isNarrow && (
                   <DropdownMenuItem
-                    className="gap-2 text-destructive @[340px]:hidden"
+                    className="gap-2 text-destructive"
                     disabled={isDeleting}
                     onSelect={handleDelete}
                   >
@@ -514,22 +548,22 @@ export function AgentCard({
                 Delete button at all rather than one that swallows the click. */}
             {handleDelete && (
               <div className="hidden @[340px]:contents">
-              <IconButton
-                icon={isDeleting ? Loader2 : Trash2}
-                tooltip={
-                  isDeleting
-                    ? "Deleting..."
-                    : isDisabled
-                      ? "Please wait..."
-                      : "Delete"
-                }
-                variant="ghost"
-                tooltipSide="top"
-                tooltipAlign="center"
-                onClick={handleDelete}
-                disabled={isDeleting || isDisabled}
-                spinning={isDeleting}
-              />
+                <IconButton
+                  icon={isDeleting ? Loader2 : Trash2}
+                  tooltip={
+                    isDeleting
+                      ? "Deleting..."
+                      : isDisabled
+                        ? "Please wait..."
+                        : "Delete"
+                  }
+                  variant="ghost"
+                  tooltipSide="top"
+                  tooltipAlign="center"
+                  onClick={handleDelete}
+                  disabled={isDeleting || isDisabled}
+                  spinning={isDeleting}
+                />
               </div>
             )}
           </div>
@@ -554,6 +588,14 @@ export function AgentCard({
         isDeleting={isDeleting}
         isDuplicating={isDuplicating}
       />
+
+      {isOrchestraCreateOpen ? (
+        <CreateOrchestraDialog
+          open={isOrchestraCreateOpen}
+          onOpenChange={setIsOrchestraCreateOpen}
+          seedMemberId={id}
+        />
+      ) : null}
 
       <ShareModal
         isOpen={isShareModalOpen}

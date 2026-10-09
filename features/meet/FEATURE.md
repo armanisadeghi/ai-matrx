@@ -367,9 +367,7 @@ Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
   in ONE org-aware client and a guard fails its build if a second way appears; playback also
   streams through the platform's `POST /files/session` cookie instead of downloading the whole
   file. (2)+(3) The recording indicator never went solid and a guest saw none at all — the durable
-  `meet_recordings` state now reaches a member over Postgres Changes and a guest over a new
-  `matrx.meet.recording` room event (**needs the matching aidream deploy**; without it a guest
-  sees the same nothing as before, never a wrong indicator). (4) The guest's caption rail printed
+  `meet_recordings` state now reaches a member over Postgres Changes and a guest over the room's replicated state (S8; the one-shot `matrx.meet.recording` packet this release used is gone). (4) The guest's caption rail printed
   the raw LiveKit identity where the host read a name. (5) A knocking participant was invisible
   unless that browser held the lobby broadcast. (6) The guest record view claimed "No wrap-up was
   written" under a panel that had just refused to read those rows.

@@ -24,14 +24,11 @@ import {
   TestTube2,
   ListChecks,
   ChevronDown,
-  ChevronUp,
-  ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -104,7 +101,8 @@ import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
-import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -155,16 +153,6 @@ type TestFilter =
 
 type ColumnType = "text" | "enum" | "boolean" | "number" | "date";
 
-interface ColumnFilter {
-  text?: string;
-  enumValues?: string[]; // selected; empty = no filter
-  bool?: "all" | "true" | "false";
-  numMin?: number | null;
-  numMax?: number | null;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
 interface ColumnDef {
   key: string;
   header: string;
@@ -176,25 +164,6 @@ interface ColumnDef {
   ) => string | number | boolean | null | undefined;
   render: (t: Tool, ctx: ToolCounts) => React.ReactNode;
 }
-
-const isFilterActive = (
-  f: ColumnFilter | undefined,
-  type: ColumnType,
-): boolean => {
-  if (!f) return false;
-  switch (type) {
-    case "text":
-      return !!f.text && f.text.length > 0;
-    case "enum":
-      return Array.isArray(f.enumValues) && f.enumValues.length > 0;
-    case "boolean":
-      return f.bool !== undefined && f.bool !== "all";
-    case "number":
-      return (f.numMin ?? null) !== null || (f.numMax ?? null) !== null;
-    case "date":
-      return !!f.dateFrom || !!f.dateTo;
-  }
-};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -224,11 +193,9 @@ export function McpToolsManager() {
     toolName: string | null;
   }>({ isOpen: false, toolId: null, toolName: null });
 
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [columnFilters, setColumnFilters] = useState<
-    Record<string, ColumnFilter>
-  >({});
+  // The rows the table shows after its own search, column filters and sort — bulk
+  // "visible" actions, the counts and the exports act on exactly these.
+  const [visibleTools, setVisibleTools] = useState<Tool[] | null>(null);
 
   useEffect(() => {
     setTools(
@@ -304,9 +271,7 @@ export function McpToolsManager() {
       selectedStatus !== "all",
       selectedTag !== "all",
       selectedTestFilter !== "all",
-    ].filter(Boolean).length +
-    Object.values(columnFilters).filter((f) => f && Object.keys(f).length > 0)
-      .length;
+    ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSelectedCategory("all");
@@ -315,7 +280,6 @@ export function McpToolsManager() {
     setSelectedTag("all");
     setSelectedTestFilter("all");
     setSearchQuery("");
-    setColumnFilters({});
   };
 
   // ─── Column definitions ──────────────────────────────────────────────────
@@ -714,7 +678,7 @@ export function McpToolsManager() {
   }, [columns, tools, toolCounts]);
 
   // ─── Filter + sort pipeline ──────────────────────────────────────────────
-  const filteredTools = useMemo(() => {
+  const pageFilteredTools = useMemo(() => {
     const nonSearchMatches = tools.filter((tool) => {
       const counts = toolCounts[tool.name] ?? {
         sampleCount: 0,
@@ -758,54 +722,6 @@ export function McpToolsManager() {
       ))
         return false;
 
-      // Column-level filters
-      for (const col of columns) {
-        const f = columnFilters[col.key];
-        if (!f || !isFilterActive(f, col.type)) continue;
-        const raw = col.getValue(tool, counts);
-        switch (col.type) {
-          case "text": {
-            const s = String(raw ?? "").toLowerCase();
-            if (!s.includes((f.text ?? "").toLowerCase())) return false;
-            break;
-          }
-          case "enum": {
-            const s = String(raw ?? "");
-            if (!(f.enumValues ?? []).includes(s)) return false;
-            break;
-          }
-          case "boolean": {
-            const b = !!raw;
-            if (f.bool === "true" && !b) return false;
-            if (f.bool === "false" && b) return false;
-            break;
-          }
-          case "number": {
-            const n =
-              typeof raw === "number" ? raw : raw == null ? null : Number(raw);
-            if (n === null || Number.isNaN(n)) return false;
-            if (f.numMin != null && n < f.numMin) return false;
-            if (f.numMax != null && n > f.numMax) return false;
-            break;
-          }
-          case "date": {
-            const s = String(raw ?? "");
-            if (!s) return false;
-            const d = new Date(s).getTime();
-            if (Number.isNaN(d)) return false;
-            if (f.dateFrom) {
-              const from = new Date(f.dateFrom).getTime();
-              if (!Number.isNaN(from) && d < from) return false;
-            }
-            if (f.dateTo) {
-              const to = new Date(f.dateTo).getTime();
-              if (!Number.isNaN(to) && d > to) return false;
-            }
-            break;
-          }
-        }
-      }
-
       return true;
     });
 
@@ -819,36 +735,7 @@ export function McpToolsManager() {
           { get: (t) => t.source_kind, weight: "meta" },
         ]);
 
-    // Apply column sort. If searchQuery is set, search-scoring already sorted;
-    // skip column sort to keep the relevance order — unless the user has changed
-    // sort from the default ("name" asc).
-    if (searchQuery && sortKey === "name" && sortDir === "asc") return searched;
-
-    const col = columns.find((c) => c.key === sortKey);
-    if (!col) return searched;
-    const dirMul = sortDir === "asc" ? 1 : -1;
-    const sorted = [...searched].sort((a, b) => {
-      const ca = toolCounts[a.name] ?? { sampleCount: 0, uiComponentCount: 0 };
-      const cb = toolCounts[b.name] ?? { sampleCount: 0, uiComponentCount: 0 };
-      const va = col.getValue(a, ca);
-      const vb = col.getValue(b, cb);
-      if (va == null && vb == null) return 0;
-      if (va == null) return 1;
-      if (vb == null) return -1;
-      if (typeof va === "number" && typeof vb === "number")
-        return (va - vb) * dirMul;
-      if (typeof va === "boolean" && typeof vb === "boolean")
-        return (Number(va) - Number(vb)) * dirMul;
-      if (col.type === "date") {
-        const da = new Date(String(va)).getTime();
-        const db = new Date(String(vb)).getTime();
-        return (
-          ((Number.isNaN(da) ? 0 : da) - (Number.isNaN(db) ? 0 : db)) * dirMul
-        );
-      }
-      return String(va).localeCompare(String(vb)) * dirMul;
-    });
-    return sorted;
+    return searched;
   }, [
     tools,
     toolCounts,
@@ -858,11 +745,8 @@ export function McpToolsManager() {
     selectedStatus,
     selectedTag,
     selectedTestFilter,
-    columns,
-    columnFilters,
-    sortKey,
-    sortDir,
   ]);
+  const filteredTools = visibleTools ?? pageFilteredTools;
 
   const navigateTo = useCallback(
     (path: string) => {
@@ -889,6 +773,66 @@ export function McpToolsManager() {
   const handleDeleteTool = (toolId: string, toolName: string) => {
     setDeleteConfirmation({ isOpen: true, toolId, toolName });
   };
+
+  // The table owns column filters and sort; the page keeps its own filter bar and search.
+  const tableColumns: MatrxColumnDef<Tool>[] = (() => {
+    const countsFor = (t: Tool): ToolCounts =>
+      toolCounts[t.name] ?? { sampleCount: 0, uiComponentCount: 0 };
+    const filterKind = {
+      text: "text",
+      enum: "select",
+      boolean: "boolean",
+      number: "number",
+      date: "date",
+    } as const;
+    const converted = columns.map(
+      (col): MatrxColumnDef<Tool> => ({
+        id: col.key,
+        header: col.header,
+        accessorFn: (t) => col.getValue(t, countsFor(t)),
+        filter: filterKind[col.type],
+        ...(col.type === "enum"
+          ? {
+              filterOptions: (enumValuesByColumn[col.key] ?? []).map((v) => ({
+                value: v,
+                label: v,
+              })),
+            }
+          : {}),
+        width: Number(col.width?.match(/\d+/)?.[0] ?? 160),
+        cell: (t) => col.render(t, countsFor(t)),
+      }),
+    );
+    const actions: MatrxColumnDef<Tool> = {
+      id: "actions",
+      header: "Actions",
+      accessorFn: () => "",
+      sortable: false,
+      filter: false,
+      width: 280,
+      customActions: (tool) => (
+        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <Switch
+            checked={tool.is_active ?? false}
+            onCheckedChange={(v) => void handleToggleActive(tool.id, v)}
+            disabled={pendingWrites.isPending(tool.id)}
+            aria-busy={pendingWrites.isPending(tool.id) || undefined}
+            aria-label={
+              pendingWrites.isPending(tool.id)
+                ? `Saving ${tool.name}`
+                : `${tool.is_active ? "Deactivate" : "Activate"} ${tool.name}`
+            }
+          />
+          <Button icon={<FlaskConical />} aria-label="View Samples" variant="quiet" onClick={() => navigateTo(toolHref(tool.id))} title="View Samples" />
+          <Button icon={<Zap />} aria-label="UI Component" variant="quiet" onClick={() => navigateTo(toolUiHref(tool.id))} title="UI Component" />
+          <Button icon={<Bug />} aria-label="Incidents" variant="quiet" onClick={() => navigateTo(toolIncidentsHref(tool.id))} title="Incidents" />
+          <Button icon={<Edit />} aria-label="Edit Tool" variant="quiet" onClick={() => navigateTo(toolEditHref(tool.id))} title="Edit Tool" />
+          <Button icon={<Trash2 />} aria-label="Move to Trash" variant="quiet" onClick={() => handleDeleteTool(tool.id, tool.name)} title="Move to Trash" />
+        </div>
+      ),
+    };
+    return [...converted, actions];
+  })();
 
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkScope, setBulkScope] = useState<"visible" | "selected">("visible");
@@ -986,6 +930,10 @@ export function McpToolsManager() {
     });
   };
 
+  const allVisibleSelected =
+    filteredTools.length > 0 &&
+    filteredTools.every((t) => selectedToolIds.has(t.id));
+
   const confirmDelete = async () => {
     if (!deleteConfirmation.toolId) return;
     try {
@@ -1027,28 +975,6 @@ export function McpToolsManager() {
       </div>
     );
   }
-
-  const allVisibleSelected =
-    filteredTools.length > 0 &&
-    filteredTools.every((t) => selectedToolIds.has(t.id));
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
-  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
-    setColumnFilters((prev) => {
-      const next = { ...prev };
-      if (!value || Object.keys(value).length === 0) delete next[key];
-      else next[key] = value;
-      return next;
-    });
-  };
 
   // Catalog rows for the custom Copy-for-AI export — same sanitized posture
   // as the surface emitter below.
@@ -1097,7 +1023,6 @@ export function McpToolsManager() {
         selectedSourceKind !== "all" ? selectedSourceKind : undefined,
       status_filter: selectedStatus,
       tag_filter: selectedTag !== "all" ? selectedTag : undefined,
-      sort_state: { key: sortKey, dir: sortDir },
       selection: window.getSelection()?.toString() || undefined,
     });
 
@@ -1127,7 +1052,7 @@ export function McpToolsManager() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center ml-auto">
               {activeFilterCount > 0 && (
                 <Button
                   icon={<X />}
@@ -1553,180 +1478,35 @@ export function McpToolsManager() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 min-h-0 overflow-auto px-4 py-3 pb-safe">
-          <div className="border border-border rounded-md bg-card">
-            <table className={cn("text-sm border-collapse", MOBILE_TABLE)}>
-              <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
-                <tr className="border-b border-border">
-                  <th className="w-[36px] px-2 py-2 text-left">
-                    <Checkbox
-                      checked={allVisibleSelected}
-                      onCheckedChange={toggleSelectAllVisible}
-                      aria-label="Select all visible"
-                    />
-                  </th>
-                  {columns.map((col) => (
-                    <th
-                      key={col.key}
-                      className={cn(
-                        "px-2 py-2 text-left align-middle text-[11px] font-medium text-muted-foreground whitespace-nowrap",
-                        col.width,
-                      )}
-                    >
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSort(col.key)}
-                          className="flex items-center gap-1 hover:text-foreground transition-colors"
-                          title={`Sort by ${col.header}`}
-                        >
-                          <span>{col.header}</span>
-                          <SortIcon
-                            active={sortKey === col.key}
-                            dir={sortDir}
-                          />
-                        </button>
-                        <ColumnFilterControl
-                          column={col}
-                          value={columnFilters[col.key]}
-                          onChange={(v) => setColumnFilter(col.key, v)}
-                          enumOptions={enumValuesByColumn[col.key] ?? []}
-                        />
-                      </div>
-                    </th>
-                  ))}
-                  <th className="w-[220px] px-2 py-2 text-left text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTools.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={columns.length + 2}
-                      className="text-center py-16 text-muted-foreground text-sm"
-                    >
-                      <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                      {searchQuery || activeFilterCount > 0
-                        ? "No tools match your filters"
-                        : "No tools in the system"}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTools.map((tool) => {
-                    const counts = toolCounts[tool.name] ?? {
-                      sampleCount: 0,
-                      uiComponentCount: 0,
-                    };
-                    const isSelected = selectedToolIds.has(tool.id);
-                    return (
-                      <tr
-                        key={tool.id}
-                        className={cn(
-                          "border-b border-border hover:bg-accent/30 transition-colors",
-                          !tool.is_active && "opacity-60",
-                          isSelected && "bg-accent/20",
-                        )}
-                      >
-                        <td className="px-2 py-1.5 align-middle">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleToolSelection(tool.id)}
-                            aria-label={`Select ${tool.name}`}
-                          />
-                        </td>
-                        {columns.map((col) => (
-                          <td
-                            key={col.key}
-                            className={cn(
-                              "px-2 py-1.5 align-middle cursor-pointer",
-                              col.width,
-                            )}
-                            onClick={() => navigateTo(toolHref(tool.id))}
-                          >
-                            {col.render(tool, counts)}
-                          </td>
-                        ))}
-                        <td
-                          className="px-2 py-1.5 align-middle whitespace-nowrap"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center gap-0.5">
-                            <CopyButtons
-                              size="xs"
-                              label={`Tool ${tool.name}`}
-                              human={() => toolSummary(tool)}
-                              json={() => tool}
-                              agent={() => ({
-                                kind: "mcp-tool",
-                                location: PAGE_LOCATION,
-                                description:
-                                  "One tool definition row from the registry catalog.",
-                                data: tool,
-                                summary: toolSummary(tool),
-                                attributes: {
-                                  id: tool.id,
-                                  name: tool.name,
-                                  active: tool.is_active ?? false,
-                                },
-                              })}
-                            />
-                            <Switch
-                              checked={tool.is_active ?? false}
-                              onCheckedChange={(v) =>
-                                void handleToggleActive(tool.id, v)
-                              }
-                              disabled={pendingWrites.isPending(tool.id)}
-                              aria-busy={pendingWrites.isPending(tool.id) || undefined}
-                              aria-label={
-                                pendingWrites.isPending(tool.id)
-                                  ? `Saving ${tool.name}`
-                                  : `${tool.is_active ? "Deactivate" : "Activate"} ${tool.name}`
-                              }
-                            />
-                            <Button
-                              icon={<FlaskConical />} aria-label="View Samples"
-                              variant="quiet"
-                              onClick={() => navigateTo(toolHref(tool.id))}
-                              title="View Samples"
-                            />
-                            <Button
-                              icon={<Zap />} aria-label="UI Component"
-                              variant="quiet"
-                              onClick={() => navigateTo(toolUiHref(tool.id))}
-                              title="UI Component"
-                            />
-                            <Button
-                              icon={<Bug />} aria-label="Incidents"
-                              variant="quiet"
-                              onClick={() =>
-                                navigateTo(toolIncidentsHref(tool.id))
-                              }
-                              title="Incidents"
-                            />
-                            <Button
-                              icon={<Edit />} aria-label="Edit Tool"
-                              variant="quiet"
-                              onClick={() => navigateTo(toolEditHref(tool.id))}
-                              title="Edit Tool"
-                            />
-                            <Button
-                              icon={<Trash2 />} aria-label="Move to Trash"
-                              variant="quiet"
-                              onClick={() =>
-                                handleDeleteTool(tool.id, tool.name)
-                              }
-                              title="Move to Trash"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+        <div className="flex-1 min-h-0 px-4 py-3 pb-safe">
+          <div className="h-full min-h-[320px]">
+            <MatrxDataTable<Tool>
+              tableId="admin/tools/registry"
+              data={pageFilteredTools}
+              columns={tableColumns}
+              getRowId={(tool) => tool.id}
+              defaultSort={{ id: "name", direction: "asc" }}
+              pageSize={50}
+              frameHeight="fill"
+              toolbar={{ search: false }}
+              onViewChange={setVisibleTools}
+              detail={{ enabled: false }}
+              getRowHref={(tool) => toolHref(tool.id)}
+              onRowOpen={(tool) => navigateTo(toolHref(tool.id))}
+              rowClassName={(tool) => (tool.is_active ? undefined : "opacity-60")}
+              rowVersion={(tool) => `${tool.is_active}:${pendingWrites.isPending(tool.id)}`}
+              selection={{
+                selectedIds: [...selectedToolIds],
+                onSelectedIdsChange: (ids) => setSelectedToolIds(new Set(ids)),
+                noun: "tool",
+              }}
+              emptyState={{
+                title:
+                  searchQuery || activeFilterCount > 0
+                    ? "No tools match your filters"
+                    : "No tools in the system",
+              }}
+            />
           </div>
         </div>
 
@@ -1790,214 +1570,5 @@ function BoolPill({
     >
       {value ? okLabel : warnLabel}
     </span>
-  );
-}
-
-function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
-  if (!active) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
-  return dir === "asc" ? (
-    <ChevronUp className="h-3 w-3" />
-  ) : (
-    <ChevronDown className="h-3 w-3" />
-  );
-}
-
-function ColumnFilterControl({
-  column,
-  value,
-  onChange,
-  enumOptions,
-}: {
-  column: ColumnDef;
-  value: ColumnFilter | undefined;
-  onChange: (v: ColumnFilter | undefined) => void;
-  enumOptions: string[];
-}) {
-  const active = isFilterActive(value, column.type);
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted",
-            active && "text-primary",
-          )}
-          title={`Filter ${column.header}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Filter className={cn("h-3 w-3", !active && "opacity-50")} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent sizing="content" align="start" className="p-3 space-y-2">
-        <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-          Filter {column.header}
-        </div>
-        {column.type === "text" && (
-          <Input
-            autoFocus
-            placeholder="Contains…"
-            value={value?.text ?? ""}
-            onChange={(e) =>
-              onChange({ ...(value ?? {}), text: e.target.value })
-            }
-          />
-        )}
-        {column.type === "enum" && (
-          <>
-            {enumOptions.length > 0 && (
-              <div className="flex items-center justify-between gap-2 pb-1 border-b border-border/60">
-                <Button
-                  variant="quiet"
-                  onClick={() =>
-                    onChange({
-                      ...(value ?? {}),
-                      enumValues: [...enumOptions],
-                    })
-                  }
-                  disabled={
-                    enumOptions.length > 0 &&
-                    enumOptions.every((opt) => value?.enumValues?.includes(opt))
-                  }
-                >
-                  Select all
-                </Button>
-                <Button
-                  variant="quiet"
-                  onClick={() =>
-                    onChange({
-                      ...(value ?? {}),
-                      enumValues: [],
-                    })
-                  }
-                  disabled={(value?.enumValues?.length ?? 0) === 0}
-                >
-                  Clear all
-                </Button>
-              </div>
-            )}
-            <div className="max-h-56 overflow-y-auto space-y-1">
-              {enumOptions.length === 0 ? (
-                <div className="text-xs text-muted-foreground">No values</div>
-              ) : (
-                enumOptions.map((opt) => {
-                  const selected = value?.enumValues?.includes(opt) ?? false;
-                  return (
-                    <label
-                      key={opt}
-                      className="flex items-center gap-2 text-xs cursor-pointer py-0.5"
-                    >
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={() => {
-                          const cur = new Set(value?.enumValues ?? []);
-                          if (cur.has(opt)) cur.delete(opt);
-                          else cur.add(opt);
-                          onChange({
-                            ...(value ?? {}),
-                            enumValues: Array.from(cur),
-                          });
-                        }}
-                      />
-                      <span className="truncate" title={opt}>
-                        {humanizeIdentifier(opt)}
-                      </span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </>
-        )}
-        {column.type === "boolean" && (
-          <Select
-            value={value?.bool ?? "all"}
-            onValueChange={(v) =>
-              onChange({
-                ...(value ?? {}),
-                bool: v as "all" | "true" | "false",
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                All
-              </SelectItem>
-              <SelectItem value="true" className="text-xs">
-                Yes / true
-              </SelectItem>
-              <SelectItem value="false" className="text-xs">
-                No / false
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        {column.type === "number" && (
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              placeholder="Min"
-              value={value?.numMin ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...(value ?? {}),
-                  numMin: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-            <span className="text-xs text-muted-foreground">–</span>
-            <Input
-              type="number"
-              placeholder="Max"
-              value={value?.numMax ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...(value ?? {}),
-                  numMax: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-          </div>
-        )}
-        {column.type === "date" && (
-          <div className="space-y-2">
-            <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-              From
-              <Input
-                type="date"
-                value={value?.dateFrom ?? ""}
-                onChange={(e) =>
-                  onChange({ ...(value ?? {}), dateFrom: e.target.value })
-                }
-                className="mt-0.5"
-              />
-            </label>
-            <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-              To
-              <Input
-                type="date"
-                value={value?.dateTo ?? ""}
-                onChange={(e) =>
-                  onChange({ ...(value ?? {}), dateTo: e.target.value })
-                }
-                className="mt-0.5"
-              />
-            </label>
-          </div>
-        )}
-        <div className="flex justify-between pt-1">
-          <Button
-            variant="quiet"
-            onClick={() => onChange(undefined)}
-            disabled={!active}
-          >
-            Clear
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
   );
 }

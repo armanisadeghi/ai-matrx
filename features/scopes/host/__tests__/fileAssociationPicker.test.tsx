@@ -69,7 +69,7 @@ import { FileAssociationPickerImpl } from "../associationsHostPortsImpl";
  * it — so a scream here is the same scream a user would see.
  */
 const store = createAssociationsStore({
-  dataSource: { rpc: async () => ({ data: null, error: null }) },
+  dataSource: { schema: () => ({ from: () => ({}), rpc: async () => ({ data: null, error: null }) }) },
   identity: { requireUserId: () => "00000000-0000-0000-0000-000000000001" },
   errorSink: () => {},
 });

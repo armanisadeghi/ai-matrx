@@ -21,6 +21,7 @@ import { formatCompact, formatMultiplier } from "../outlier";
 import type { AgencyAccountRow, AgencyOutlierRow } from "../service";
 import { SOCIAL_PLATFORM_LABELS, TRACKED_ROLE_LABELS, isSocialPlatform } from "../types";
 import { PlatformMark } from "./PlatformMark";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 function platformLabel(p: string): string {
   return isSocialPlatform(p) ? SOCIAL_PLATFORM_LABELS[p] : p;
@@ -44,7 +45,7 @@ const ACCOUNT_COLUMNS: MatrxColumnDef<AgencyAccountRow>[] = [
     cell: (r) => (
       <span className="flex min-w-0 items-center gap-2">
         <PlatformMark platform={r.platform} size={18} />
-        <span className="truncate">@{r.handle}</span>
+        <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
       </span>
     ),
   },
@@ -102,7 +103,7 @@ const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
       </a>
     ),
   },
-  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => `@${r.handle}` },
+  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) },
   {
     id: "platform",
     label: "Platform",

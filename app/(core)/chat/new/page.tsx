@@ -52,7 +52,26 @@ function requestedAgentId(
   return value && isUuidShape(value) ? value : null;
 }
 
-export default async function NewChatPage({
+/**
+ * 🚨 THE PAGE STREAMS. Nothing here is awaited above a Suspense boundary: the
+ * shell and the composer outline go out with the first byte, and the default
+ * agent's seed (three sequential reads — mandate, treatment, agent name)
+ * fills in behind it. Awaiting them at the top held the whole document until
+ * every read had come back (first byte ~6 s signed in, 2026-10-09).
+ */
+export default function NewChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <Suspense fallback={<ChatNewLandingSkeleton />}>
+      <NewChatSeeded searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function NewChatSeeded({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

@@ -12,16 +12,9 @@
 // brand link in the data model — they stay, and the page says out loud that
 // they reach past this client. A filter we cannot apply is never faked.
 
-import type { Metadata } from "next";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { BrandScopedEmail } from "@/features/marketing/front-doors/BrandScopedEmail";
-
-export const metadata: Metadata = {
-  title: "Email",
-  description:
-    "The mailbox you send from, the templates you send, and the sequences that send them — outreach email, end to end.",
-};
 
 export default function BrandEmailPage() {
   return (

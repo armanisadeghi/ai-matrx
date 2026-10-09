@@ -678,151 +678,152 @@ export function BacklinkProspectsTab({
           className="flex min-h-0 flex-1 flex-col"
           data-surface-value="link_gap_prospects"
         >
-          <MatrxDataTable
-            data={prospects.rows}
-            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-              <>
-                {row.review_status === "approved" ? (
+          <div className="min-h-0 flex-1 flex flex-col">
+            <MatrxDataTable
+              data={prospects.rows}
+              columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                <>
+                  {row.review_status === "approved" ? (
+                    <Button
+                      variant="quiet"
+                      disabled={prospects.reviewing}
+                      onClick={() => void prospects.review([row.id], "pending")}
+                    >
+                      Undo
+                    </Button>
+                  ) : (
+                    <Button
+                      icon={<CheckCircle2 />}
+                      variant="outline"
+                      disabled={prospects.reviewing}
+                      onClick={() => void prospects.review([row.id], "approved")}
+                    >
+                      Approve
+                    </Button>
+                  )}
                   <Button
                     variant="quiet"
                     disabled={prospects.reviewing}
-                    onClick={() => void prospects.review([row.id], "pending")}
+                    onClick={() => void prospects.review([row.id], "rejected")}
                   >
-                    Undo
+                    Reject
                   </Button>
-                ) : (
-                  <Button
-                    icon={<CheckCircle2 />}
-                    variant="outline"
-                    disabled={prospects.reviewing}
-                    onClick={() => void prospects.review([row.id], "approved")}
-                  >
-                    Approve
-                  </Button>
-                )}
-                <Button
-                  variant="quiet"
-                  disabled={prospects.reviewing}
-                  onClick={() => void prospects.review([row.id], "rejected")}
-                >
-                  Reject
-                </Button>
-              </>
-            ) }]}
-            getRowId={(row) => row.id}
-            isLoading={prospects.isLoading}
-            isFetching={prospects.isFetching}
-            query={{
-              mode: "controlled",
-              totalItems: prospects.total,
-              state: prospects.table.state,
-              onStateChange: prospects.table.onStateChange,
-            }}
-            toolbar={{ searchPlaceholder: "Search prospect sites…" }}
-            selection={{
-              selectedIds: prospects.selectedIds,
-              onSelectedIdsChange: prospects.setSelectedIds,
-              noun: "prospect",
-              actions: (_selected, selectedIds) => (
-                <div className="flex items-center gap-1">
-                  <Button
-                    icon={<CheckCircle2 />}
-                    variant="primary"
-                    disabled={prospects.reviewing}
-                    onClick={() =>
-                      void prospects.review(selectedIds, "approved")
-                    }
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    icon={<Clock />}
-                    variant="outline"
-                    disabled={prospects.reviewing}
-                    onClick={() =>
-                      void prospects.review(selectedIds, "snoozed")
-                    }
-                  >
-                    Later
-                  </Button>
-                  <Button
-                    icon={<Ban />}
-                    variant="quiet"
-                    disabled={prospects.reviewing}
-                    onClick={() =>
-                      void prospects.review(selectedIds, "rejected")
-                    }
-                  >
-                    Not for us
-                  </Button>
-                </div>
-              ),
-            }}
+                </>
+              ) }]}
+              getRowId={(row) => row.id}
+              isLoading={prospects.isLoading}
+              isFetching={prospects.isFetching}
+              query={{
+                mode: "controlled",
+                totalItems: prospects.total,
+                state: prospects.table.state,
+                onStateChange: prospects.table.onStateChange,
+              }}
+              toolbar={{ searchPlaceholder: "Search prospect sites…" }}
+              selection={{
+                selectedIds: prospects.selectedIds,
+                onSelectedIdsChange: prospects.setSelectedIds,
+                noun: "prospect",
+                actions: (_selected, selectedIds) => (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      icon={<CheckCircle2 />}
+                      variant="primary"
+                      disabled={prospects.reviewing}
+                      onClick={() =>
+                        void prospects.review(selectedIds, "approved")
+                      }
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      icon={<Clock />}
+                      variant="outline"
+                      disabled={prospects.reviewing}
+                      onClick={() =>
+                        void prospects.review(selectedIds, "snoozed")
+                      }
+                    >
+                      Later
+                    </Button>
+                    <Button
+                      icon={<Ban />}
+                      variant="quiet"
+                      disabled={prospects.reviewing}
+                      onClick={() =>
+                        void prospects.review(selectedIds, "rejected")
+                      }
+                    >
+                      Not for us
+                    </Button>
+                  </div>
+                ),
+              }}
 
-            detail={{
-              title: (row) => row.display_domain,
-              description: (row) => matchCountLabel(row.match_count),
-              render: (row) => (
-                <ProspectDetail
-                  row={row}
-                  brandId={brandId}
-                  siteId={siteId}
-                  partyId={prospects.partyByDomainId[row.id]}
-                />
-              ),
-            }}
-            window={{
-              title: (row) => row.display_domain,
-              renderView: (row) => (
-                <ProspectDetail
-                  row={row}
-                  brandId={brandId}
-                  siteId={siteId}
-                  partyId={prospects.partyByDomainId[row.id]}
-                />
-              ),
-              enabled: true,
-            }}
-            copy={{
-              label: "Prospect",
-              listLabel: "Link prospects",
-              location: webLocation(`Backlinks — ${siteDomain} — Prospects`),
-              rowKind: "seo-link-prospect",
-              listKind: "seo-link-prospects",
-              humanRow: (row) =>
-                humanLines([
-                  ["Site", row.display_domain],
-                  ["Competitors it links to", row.match_count],
-                  [
-                    "Matrx Authority Score",
-                    row.priority_score ?? UNMEASURED_LABEL,
-                  ],
-                  ["Why", row.priority_reason ?? "Not scored yet"],
-                  ["Spam score", row.spam_score ?? UNMEASURED_LABEL],
-                  ["Your call", linkGapReviewLabel(row.review_status)],
-                ]),
-            }}
-            pageSize={50}
-            pageSizeOptions={[25, 50, 100]}
-            emptyState={{
-              icon: <Target className="h-8 w-8 text-muted-foreground" />,
-              title: "No prospects yet",
-              description: seed?.can_run
-                ? `Run the comparison to find the sites that link to your competitors but not to ${siteDomain}.`
-                : "Confirm at least one competitor, then run the comparison — the prospects come from who links to them.",
-              action: seed?.can_run ? undefined : (
-                <Button variant="primary" asChild>
-                  <Link
-                    href={`${marketingRoutes.competitors()}?siteId=${prospects.siteId}`}
-                  >
-                    <Users className="h-3.5 w-3.5" />
-                    Confirm your competitors
-                  </Link>
-                </Button>
-              ),
-            }}
-            className="min-h-0 flex-1"
-          />
+              detail={{
+                title: (row) => row.display_domain,
+                description: (row) => matchCountLabel(row.match_count),
+                render: (row) => (
+                  <ProspectDetail
+                    row={row}
+                    brandId={brandId}
+                    siteId={siteId}
+                    partyId={prospects.partyByDomainId[row.id]}
+                  />
+                ),
+              }}
+              window={{
+                title: (row) => row.display_domain,
+                renderView: (row) => (
+                  <ProspectDetail
+                    row={row}
+                    brandId={brandId}
+                    siteId={siteId}
+                    partyId={prospects.partyByDomainId[row.id]}
+                  />
+                ),
+                enabled: true,
+              }}
+              copy={{
+                label: "Prospect",
+                listLabel: "Link prospects",
+                location: webLocation(`Backlinks — ${siteDomain} — Prospects`),
+                rowKind: "seo-link-prospect",
+                listKind: "seo-link-prospects",
+                humanRow: (row) =>
+                  humanLines([
+                    ["Site", row.display_domain],
+                    ["Competitors it links to", row.match_count],
+                    [
+                      "Matrx Authority Score",
+                      row.priority_score ?? UNMEASURED_LABEL,
+                    ],
+                    ["Why", row.priority_reason ?? "Not scored yet"],
+                    ["Spam score", row.spam_score ?? UNMEASURED_LABEL],
+                    ["Your call", linkGapReviewLabel(row.review_status)],
+                  ]),
+              }}
+              pageSize={50}
+              pageSizeOptions={[25, 50, 100]}
+              emptyState={{
+                icon: <Target className="h-8 w-8 text-muted-foreground" />,
+                title: "No prospects yet",
+                description: seed?.can_run
+                  ? `Run the comparison to find the sites that link to your competitors but not to ${siteDomain}.`
+                  : "Confirm at least one competitor, then run the comparison — the prospects come from who links to them.",
+                action: seed?.can_run ? undefined : (
+                  <Button variant="primary" asChild>
+                    <Link
+                      href={`${marketingRoutes.competitors()}?siteId=${prospects.siteId}`}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      Confirm your competitors
+                    </Link>
+                  </Button>
+                ),
+              }}
+            />
+          </div>
         </div>
       )}
       </NonEditableContextMenu>

@@ -1,11 +1,12 @@
 # Meet state scenarios (MD-06)
 
-Real browsers, real LiveKit Cloud, the real local app: one scenario per P0 state in
+Real browsers, real LiveKit Cloud, the real local app: one scenario per P0 and P1 state in
 `common-docs/systems/communications/meet/duplicates/states-catalog.json`, asserting what each
 person SEES through the observation contract (`HARNESS-CONTRACT.md` beside the catalog), plus
 server truth where the catalog asks for it (the token door, the meeting row, the LiveKit room).
 
-    bash tests/meet-scenarios/run.sh                 # every P0 scenario, Chromium
+    bash tests/meet-scenarios/run.sh                 # every scenario (P0 + P1), Chromium
+    MEET_SET=p1 bash tests/meet-scenarios/run.sh     # only the P1 files (scenarios/p1-<category>.spec.ts); MEET_SET=p0 = the rest
     bash tests/meet-scenarios/run.sh wr-denied       # one state id
     MEET_NO_PROXY=1 MEET_BROWSERS=webkit bash tests/meet-scenarios/run.sh wr-denied   # needs: pnpm exec playwright install webkit
 
@@ -124,3 +125,21 @@ ends each one still live: UI first, then the backstop calls `POST /api/v1/meet/e
 product's page does (bearer, `X-Organization-Id`, browser User-Agent so Cloudflare does not answer
 1010). A backstop that fails, or leaves the meeting live, is never swallowed: the report gets a
 `CLEANUP FAILURES` section with the HTTP status and the headline counts them.
+
+## P1 scenarios (`scenarios/p1-<catalog category>.spec.ts`, helpers in `lib/p1.ts`)
+
+One scenario per P1 state id (63 files-worth here; `wr-denied-reknock` is the three `reknock_after_deny` variants in
+`waiting-room.spec.ts`). Written from the catalog's `requirement` and CORE-DESIGN §11's honest screen, never from the code, so
+most are RED until the core and a skin render the contract. Where the products differ the scenario creates its meeting with the
+profile through `meet_schedule_meeting` (`createMeetingWithProfile` / `scheduleMeeting`) — never a user-level profile.
+
+Levers a P1 scenario may add, each recorded on the person's timeline: an init script that removes or breaks a device
+(`device-none-found`, `device-busy`, `perm-prompt-pending`), a canvas-stream screen source standing in for the share picker
+(`shareSourceInit`: the picker cannot be driven headless; the product publishes a real track), a mobile user agent.
+
+**UNPROVEN by design** (the browser cannot produce the situation; each says so in its report row):
+`plan-concurrency-limit`, `gallery-paging`, `mobile-background-camera`, `mobile-call-interrupt`, `codec-ua-gating`; and by
+precondition, at run time: `tab-hidden-throttle` (page never became hidden), `captions-unavailable` (captions worked),
+`link-expired` (scheduling door refuses a start in the past). Parts not covered: PSTN/SIP labels in
+`participant-roster-hidden-kinds`; the meeting-pass refresh in `token-expiry` (6 h, organization-level knob; only the
+10-minute room credential is exercised); `rec-auto-stop` exercises the cap path (1 minute via `max_recording_minutes`), not the 8 h wait.

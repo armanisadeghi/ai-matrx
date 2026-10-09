@@ -130,15 +130,15 @@ export function CoverageAuditCard({
                         disabled={disabled || isAdded || pending !== null}
                         onClick={() => void add(query)}
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
+                          "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
                           isAdded
                             ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                             : "border-border/60 bg-background/40 text-foreground/80 hover:bg-accent/50 disabled:opacity-50",
                         )}
                         title={
                           isAdded
-                            ? "Added to this topic's keywords"
-                            : "Add as keyword"
+                            ? `Added to this topic's keywords: ${query}`
+                            : `Add as keyword: ${query}`
                         }
                       >
                         {isPending ? (
@@ -148,7 +148,7 @@ export function CoverageAuditCard({
                         ) : (
                           <Plus className="h-3 w-3" />
                         )}
-                        <span className="max-w-64 truncate">{query}</span>
+                        <span className="max-w-[14rem] truncate">{query}</span>
                       </button>
                     );
                   })}

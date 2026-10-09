@@ -10,7 +10,7 @@
  * `ops.perf_watch_update`: budget, pause/resume, pin/unpin the baseline (FEATURE.md).
  */
 
-import { Suspense, useEffect, useMemo, useState, useTransition } from "react";
+import { Suspense, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Gauge, Pause, Pin, PinOff, Play, RefreshCw, XCircle } from "lucide-react";
 import { Field } from "@ai-matrx/design-system/controls";
@@ -173,7 +173,6 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
             row={selected}
             loadingSnapshot={snapshot.status === "loading"}
             history={history}
-            now={now || Date.now()}
             onBack={() => navigate(null, true)}
             onRetry={() => setReloadKey((k) => k + 1)}
             onEdit={async (edit) => {
@@ -526,13 +525,11 @@ function WatchBoard({
 
 // ── drill ────────────────────────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 25;
 
 function WatchDrill({
   row,
   loadingSnapshot,
   history,
-  now,
   onBack,
   onRetry,
   onEdit,
@@ -540,12 +537,10 @@ function WatchDrill({
   row: WatchRow | null;
   loadingSnapshot: boolean;
   history: Load<PerfSample[]>;
-  now: number;
   onBack: () => void;
   onRetry: () => void;
   onEdit: (edit: PerfWatchEdit) => Promise<void>;
 }) {
-  const [page, setPage] = useState(0);
   if (!row) {
     return (
       <div className="space-y-2 text-xs">
@@ -558,8 +553,6 @@ function WatchDrill({
   }
   const w = row.watch;
   const samples = history.status === "ready" ? history.data : [];
-  const pages = Math.max(1, Math.ceil(samples.length / PAGE_SIZE));
-  const visible = samples.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const transitions = stateHistory(samples);
 
   return (
@@ -631,20 +624,7 @@ function WatchDrill({
               ))}
             </div>
           ) : null}
-          <SampleTable rows={visible} now={now} stat={w.budget_stat} budget={w.budget_ms} />
-          {pages > 1 ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Button variant="quiet" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-                Newer
-              </Button>
-              <span>
-                {page + 1} / {pages}
-              </span>
-              <Button variant="quiet" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>
-                Older
-              </Button>
-            </div>
-          ) : null}
+          <SampleTable rows={samples} stat={w.budget_stat} budget={w.budget_ms} />
         </>
       )}
     </div>
@@ -730,60 +710,64 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function SampleTable({
   rows,
-  now,
   stat,
   budget,
 }: {
   rows: PerfSample[];
-  now: number;
   stat: string | null;
   budget: number | null;
 }) {
-  void now;
+  const overOf = (s: PerfSample) => {
+    const judged = judgedValue(s, stat);
+    return judged != null && budget != null && judged > budget;
+  };
+  const num = (id: string, header: string, get: (s: PerfSample) => number | null | undefined, cell: (s: PerfSample) => ReactNode, width = 80): MatrxColumnDef<PerfSample> => ({
+    id,
+    header,
+    accessorFn: (s) => get(s) ?? null,
+    filter: "number",
+    align: "right",
+    width,
+    cell,
+  });
+  const columns: MatrxColumnDef<PerfSample>[] = [
+    {
+      id: "measured",
+      header: "Measured",
+      accessorFn: (s) => s.measured_at,
+      filter: "date",
+      defaultSortDirection: "desc",
+      width: 110,
+      cell: (s) => <span title={new Date(s.measured_at).toLocaleString()}>{formatRelativeTime(s.measured_at)}</span>,
+    },
+    { id: "source", header: "Source", accessorFn: (s) => s.source, filter: "text", width: 110, cell: (s) => <span className="text-muted-foreground">{s.source}</span> },
+    num("n", "n", (s) => s.n, (s) => <span className="tabular-nums">{s.n ?? "—"}</span>, 60),
+    num("p50", "p50", (s) => s.p50_ms, (s) => <span className={`tabular-nums ${overOf(s) && stat === "p50" ? "font-medium text-warning" : ""}`}>{ms(s.p50_ms)}</span>),
+    ...(stat === "p75"
+      ? [num("p75", "p75", (s) => judgedValue(s, stat), (s) => <span className={`tabular-nums ${overOf(s) ? "font-medium text-warning" : ""}`}>{ms(judgedValue(s, stat))}</span>)]
+      : []),
+    num("p95", "p95", (s) => s.p95_ms, (s) => <span className={`tabular-nums ${overOf(s) && stat === "p95" ? "font-medium text-warning" : ""}`}>{ms(s.p95_ms)}</span>),
+    num("max", "Max", (s) => s.max_ms, (s) => <span className="tabular-nums text-muted-foreground">{ms(s.max_ms)}</span>),
+    num("mean", "Mean", (s) => s.mean_ms, (s) => <span className={`tabular-nums ${overOf(s) && stat === "mean" ? "font-medium text-warning" : ""}`}>{ms(s.mean_ms)}</span>),
+    num("calls", "Calls", (s) => s.calls, (s) => <span className="tabular-nums text-muted-foreground">{s.calls ?? "—"}</span>),
+    num("errors", "Errors", (s) => s.errors ?? 0, (s) => <span className={`tabular-nums ${s.errors ? "font-medium text-destructive" : "text-muted-foreground"}`}>{s.errors ?? 0}</span>),
+    num("bytes", "Bytes", (s) => s.bytes, (s) => <span className="tabular-nums text-muted-foreground">{s.bytes != null ? formatFileSize(s.bytes) : "—"}</span>),
+    { id: "state", header: "State", accessorFn: (s) => s.state_after ?? "", filter: "select", width: 110, cell: (s) => <span className="text-muted-foreground">{s.state_after ?? "—"}</span> },
+    { id: "note", header: "Note", accessorFn: (s) => s.note ?? "", filter: "text", width: 260, cell: (s) => <span className="text-muted-foreground">{s.note ?? "—"}</span> },
+    { id: "release", header: "Release", accessorFn: (s) => s.release_sha?.slice(0, 7) ?? "", filter: "text", width: 100, cell: (s) => <span className="font-mono text-[11px] text-muted-foreground">{s.release_sha?.slice(0, 7) ?? "—"}</span> },
+  ];
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full text-xs">
-        <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
-          <tr>
-            {["Measured", "Source", "n", "p50", ...(stat === "p75" ? ["p75"] : []), "p95", "Max", "Mean", "Calls", "Errors", "Bytes", "State", "Note", "Release"].map((h) => (
-              <th key={h} className={`px-2 py-1 font-medium ${h === "Measured" || h === "Source" || h === "State" || h === "Note" || h === "Release" ? "" : "text-right"}`}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((s) => {
-            const judged = judgedValue(s, stat);
-            const over = judged != null && budget != null && judged > budget;
-            return (
-              <tr key={s.id} className="border-t border-border/60">
-                <td className="px-2 py-1" title={new Date(s.measured_at).toLocaleString()}>
-                  {formatRelativeTime(s.measured_at)}
-                </td>
-                <td className="px-2 py-1 text-muted-foreground">{s.source}</td>
-                <td className="px-2 py-1 text-right tabular-nums">{s.n ?? "—"}</td>
-                <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "p50" ? "font-medium text-warning" : ""}`}>{ms(s.p50_ms)}</td>
-                {stat === "p75" ? (
-                  <td className={`px-2 py-1 text-right tabular-nums ${over ? "font-medium text-warning" : ""}`}>{ms(judged)}</td>
-                ) : null}
-                <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "p95" ? "font-medium text-warning" : ""}`}>{ms(s.p95_ms)}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{ms(s.max_ms)}</td>
-                <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "mean" ? "font-medium text-warning" : ""}`}>{ms(s.mean_ms)}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{s.calls ?? "—"}</td>
-                <td className={`px-2 py-1 text-right tabular-nums ${s.errors ? "font-medium text-destructive" : "text-muted-foreground"}`}>{s.errors ?? 0}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{s.bytes != null ? formatFileSize(s.bytes) : "—"}</td>
-                <td className="px-2 py-1 text-muted-foreground">{s.state_after ?? "—"}</td>
-                <td className="max-w-[22rem] truncate px-2 py-1 text-muted-foreground" title={s.note ?? undefined}>
-                  {s.note ?? "—"}
-                </td>
-                <td className="px-2 py-1 font-mono text-[11px] text-muted-foreground">{s.release_sha?.slice(0, 7) ?? "—"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <MatrxDataTable<PerfSample>
+      tableId="admin/performance-watch/samples"
+      data={rows}
+      columns={columns}
+      getRowId={(s) => s.id}
+      defaultSort={{ id: "measured", direction: "desc" }}
+      pageSize={25}
+      viewTabs={false}
+      toolbar={{ title: "Samples" }}
+      emptyState={{ title: "No samples" }}
+    />
   );
 }
 

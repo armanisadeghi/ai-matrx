@@ -1,14 +1,12 @@
 "use client";
 
-import { readOf } from "@ai-matrx/design-system";
-import { UntrustedCount } from "@ai-matrx/design-system";
 import {
   useState,
+  useEffect,
+  useRef,
   useCallback,
   useMemo,
   useTransition,
-  useEffect,
-  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,11 +19,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Download,
-  ChevronDown,
-  ChevronUp,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Loader2,
   Globe,
   Play,
@@ -40,7 +33,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type {
+  ColumnFilterValue,
+  ColumnFiltersState,
+  MatrxColumnDef,
+  MatrxDataTableMobileCardControls,
+  MatrxDataTableQueryState,
+  MatrxDataTableRead,
+} from "@ai-matrx/design-system/data-table/types";
 import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import {
   useResearchSources,
@@ -87,7 +88,6 @@ import {
   preReadDisplayScore,
   priorityScoreTone,
 } from "./sourceScoreDisplay";
-import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
 import { TextInputDialog } from "@ai-matrx/design-system";
 import type { ResearchTag } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
@@ -95,6 +95,7 @@ import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
 import type {
   ResearchSource,
+  SourceFilters as SourceFilterValues,
   BulkAction,
   SourceSortBy,
   SortDir,
@@ -115,8 +116,6 @@ import {
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@ai-matrx/design-system";
-import { StaleDataNotice } from "@ai-matrx/design-system";
 import { researchTopicHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 function formatPageAge(pageAge: string | null): {
@@ -364,84 +363,11 @@ function localSortComparator(
   };
 }
 
-function SortHeader({
-  label,
-  field,
-  currentSort,
-  currentDir,
-  onSort,
-  className,
-}: {
-  label: string;
-  field: SortKey;
-  currentSort?: SortKey;
-  currentDir?: string;
-  onSort: (field: SortKey) => void;
-  className?: string;
-}) {
-  const isActive = currentSort === field;
-  return (
-    <button
-      onClick={() => onSort(field)}
-      className={cn(
-        "flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors",
-        isActive && "text-foreground",
-        className,
-      )}
-    >
-      {label}
-      {isActive ? (
-        currentDir === "asc" ? (
-          <ArrowUp className="h-3 w-3" />
-        ) : (
-          <ArrowDown className="h-3 w-3" />
-        )
-      ) : (
-        <ArrowUpDown className="h-3 w-3 opacity-40" />
-      )}
-    </button>
-  );
-}
-
-interface SourceRowProps {
-  source: ResearchSource;
-  importance: SourceImportance | undefined;
-  topicId: string;
-  selected: boolean;
-  scraping: boolean;
-  analyzing: boolean;
-  navigating: boolean;
-  anyNavigating: boolean;
-  tags: ResearchTag[];
-  assignedTags: { id: string; name: string }[];
-  onTagsChanged: () => void;
-  onCreateTag: (sourceId: string) => void;
-  onSelect: (id: string) => void;
-  onToggleInclude: (source: ResearchSource) => void;
-  onScrape: (source: ResearchSource, e: React.MouseEvent) => void;
-  onAnalyze: (source: ResearchSource, e: React.MouseEvent) => void;
-  onNavigate: (id: string, e?: React.MouseEvent) => void;
-  topicPriorityScores: readonly number[];
-  /** Global-library identity when this source is a YouTube video. */
-  videoIdentity: YouTubeVideoIdentity | undefined;
-}
-
 /** Default table order when the user has not picked another sort axis. */
 const DEFAULT_SORT: { key: SourceSortBy; dir: SortDir } = {
   key: "pre_read_score",
   dir: "desc",
 };
-
-/** Columns left untouched when a row expands (select, priority, thumbnail). */
-const EXPAND_PRESERVED_COLUMNS = 3;
-
-/** Column count of the desktop data table — keep in sync with the header +
- *  the body row so the expandable detail row spans the remaining width.
- *  14 = select, priority, thumbnail, source, scrape, analysis, best, quality,
- *  auth, post, age, type, origin, actions. */
-const DESKTOP_COLUMN_COUNT = 14;
-
-const EXPAND_DETAIL_COLSPAN = DESKTOP_COLUMN_COUNT - EXPAND_PRESERVED_COLUMNS;
 
 /**
  * Research topics are bounded (tens to a few hundred sources), so we fetch the
@@ -458,437 +384,116 @@ const EXPAND_DETAIL_COLSPAN = DESKTOP_COLUMN_COUNT - EXPAND_PRESERVED_COLUMNS;
  */
 const FETCH_ALL_LIMIT = 1000;
 
-function SourceRow({
-  source,
-  importance,
-  topicId,
-  selected,
-  scraping,
-  analyzing,
-  navigating,
-  anyNavigating,
-  tags,
-  assignedTags,
-  onTagsChanged,
-  onCreateTag,
-  onSelect,
-  onToggleInclude,
-  onScrape,
-  onAnalyze,
-  onNavigate,
-  topicPriorityScores,
-  videoIdentity,
-}: SourceRowProps) {
-  const [expanded, setExpanded] = useState(false);
-  const { display: pageAgeDisplay } = formatPageAge(source.page_age);
+/** The sort axis each sortable table column sorts by (and back). */
+const SORT_KEY_BY_COLUMN: Record<string, SortKey> = {
+  priority: "pre_read_score",
+  source: "hostname",
+  read: "scrape_status",
+  best: "local:rank",
+  quality: "final_source_score",
+  auth: "authority_score",
+  post: "post_read_score",
+  age: "page_age",
+  type: "local:source_type",
+  origin: "local:origin",
+};
+const COLUMN_BY_SORT_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(SORT_KEY_BY_COLUMN).map(([column, key]) => [key, column]),
+);
+
+const PAGE_SIZE_CHOICES = [25, 50, 100, 200];
+
+/** A single-choice select filter value, as the table's query state carries it. */
+function selectFilter(value: string | null | undefined): ColumnFilterValue | undefined {
+  return value ? { kind: "select", value, values: [value] } : undefined;
+}
+
+function selectedChoice(value: ColumnFilterValue | undefined): string | null {
+  if (!value || value.kind !== "select") return null;
+  return value.values?.[0] ?? (value.value || null);
+}
+
+/** The expanded detail under a row: authority reasoning + search snippets. */
+function SourceExpandedDetail({ source }: { source: ResearchSource }) {
+  // The detail row spans the table's full (possibly scrolled) width, so its
+  // text would run past the visible edge. Pin it to the left and hold it to the
+  // scroller's visible width so it wraps inside what the person can see.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [visibleWidth, setVisibleWidth] = useState<number | null>(null);
+  useEffect(() => {
+    let scroller: HTMLElement | null = rootRef.current?.parentElement ?? null;
+    while (scroller) {
+      const overflowX = getComputedStyle(scroller).overflowX;
+      if (overflowX === "auto" || overflowX === "scroll") break;
+      scroller = scroller.parentElement;
+    }
+    if (!scroller) return;
+    const el = scroller;
+    const measure = () => setVisibleWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const snippets = stringArrayFromJson(source.extra_snippets);
   const hasSnippets = snippets.length > 0;
   const hasReasoning = !!source.authority_reasoning;
-  const scores = sourceScoreValues(source, importance?.bestRank ?? null);
-  const canExpand = hasSnippets || hasReasoning;
-  const isExpanded = expanded && canExpand;
-  const needsScrape = NEEDS_SCRAPE_STATUSES.has(source.scrape_status);
-
-  // Every data cell gets a right + bottom hairline → real gridlines. The final
-  // (actions) column drops the right border so the table edge stays clean.
-  const cellBase =
-    "border-b border-border/60 border-r [&:last-child]:border-r-0";
-  const mergedRowSpan = isExpanded ? 2 : undefined;
-
   return (
-    <>
-      <tr
-        className={cn(
-          "transition-colors group even:bg-muted/20 dark:even:bg-muted/10",
-          !source.is_included && "opacity-50",
-          navigating && "bg-muted/60",
-          !anyNavigating && "hover:bg-muted/40 cursor-pointer",
-          anyNavigating && !navigating && "cursor-not-allowed opacity-70",
-        )}
-        onClick={(e) => !anyNavigating && onNavigate(source.id, e)}
-      >
-        {/* Checkbox + Include — merges down; vertically centered like quality/thumb */}
-        <td
-          rowSpan={mergedRowSpan}
-          className={cn("px-2 py-2.5 w-10 align-middle", cellBase)}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className={cn(
-              "flex flex-col items-center justify-center gap-1.5",
-              isExpanded ? "h-full" : "min-h-[4.5rem]",
-            )}
-          >
-            <Checkbox
-              checked={selected}
-              onCheckedChange={() => onSelect(source.id)}
-              disabled={anyNavigating}
-            />
-            <Switch
-              checked={source.is_included ?? false}
-              onCheckedChange={() => onToggleInclude(source)}
-              disabled={anyNavigating}
-            />
-          </div>
-        </td>
-
-        {/* Priority — merges down; primary score, vertically centered */}
-        <td
-          rowSpan={mergedRowSpan}
-          className={cn("px-1 py-2.5 w-16 align-middle text-center", cellBase)}
-        >
-          <div
-            className={cn(
-              "flex items-center justify-center",
-              isExpanded ? "h-full" : "min-h-[4.5rem]",
-            )}
-          >
-            {sourceRowMode(source) === "captured" ? null : (
-              <PriorityCell source={source} topicScores={topicPriorityScores} />
-            )}
-          </div>
-        </td>
-
-        {/* Thumbnail — merges down when expanded */}
-        <td
-          rowSpan={mergedRowSpan}
-          className={cn("py-2.5 px-3 w-16 align-middle", cellBase)}
-        >
-          <div className="flex items-center justify-center">
-            <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-              {source.thumbnail_url || videoIdentity?.thumbnail_url ? (
-                <Image
-                  src={
-                    source.thumbnail_url ?? videoIdentity!.thumbnail_url ?? ""
-                  }
-                  alt=""
-                  width={56}
-                  height={56}
-                  className="w-full h-full object-cover"
-                  unoptimized
-                />
-              ) : (
-                <Globe className="h-5 w-5 text-muted-foreground" />
-              )}
-            </div>
-          </div>
-        </td>
-
-        {/* Source: Title + URL + Description + hostname + tags + scrape */}
-        <td className={cn("px-2 py-2.5 w-full max-w-0 align-top", cellBase)}>
-          <div className="min-w-0 overflow-hidden">
-            {/* The title is a real anchor, so this row is cmd/middle-clickable
-                into a new tab and keyboard-reachable — the mobile card already
-                was, the desktop table only answered a plain mouse click. */}
-            <Link
-              href={`/research/topics/${topicId}/sources/${source.id}`}
-              onClick={(e) => !anyNavigating && onNavigate(source.id, e)}
-              className="block type-title leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors"
-            >
-              {source.title || source.url}
-            </Link>
-            {/* The page this row is ABOUT — the outbound door, previously only
-                reachable through the row's overflow menu. */}
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              title={`Open ${source.url} in a new tab`}
-              className="mt-0.5 block type-secondary text-muted-foreground break-all line-clamp-1 hover:text-foreground "
-            >
-              {source.url}
-            </a>
-            {source.description && (
-              <div className="type-secondary text-muted-foreground/80 mt-0.5 line-clamp-2 leading-relaxed break-words">
-                {source.description}
-              </div>
-            )}
-            {(source.hostname || source.redundancy_group) && (
-              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                {source.hostname && (
-                  <span className="type-meta text-muted-foreground truncate max-w-48 inline-block">
-                    {source.hostname}
-                  </span>
-                )}
-                <RedundancyGroupBadge group={source.redundancy_group} />
-              </div>
-            )}
-            {videoIdentity && (
-              <VideoSourceMeta identity={videoIdentity} className="mt-1" />
-            )}
-            <SocialSourceSignal source={source} className="mt-1.5" />
-            <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-              <SourceTagsInline
-                sourceId={source.id}
-                assigned={assignedTags}
-                tags={tags}
-                onChanged={onTagsChanged}
-                onCreateTag={onCreateTag}
+    <div
+      ref={rootRef}
+      className="sticky left-0 space-y-2.5 break-words px-4 py-3"
+      style={visibleWidth ? { width: Math.max(visibleWidth - 32, 200) } : undefined}
+    >
+      {hasReasoning && (
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Authority reasoning
+            </span>
+            {tierFromSource(source) && (
+              <AuthorityTierBadge
+                score={source.authority_score}
+                tier={source.authority_tier}
+                reasoning={null}
               />
-            </div>
-          </div>
-        </td>
-
-        {/* Scrape — status + an ALWAYS-VISIBLE trigger ([status] [▶ button]).
-            One of the two PRIMARY actions on the page: never buried in the row
-            dropdown. "Read" when pending/never-read, "Re-read" otherwise. */}
-        <td
-          className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {sourceRowMode(source) === "captured" ? (
-            <SocialOpenPost url={source.url} />
-          ) : (
-            <div className="flex flex-col items-start gap-1.5">
-              <ScrapeOutcomeCell status={source.scrape_status} />
-              <ScrapeWorthinessFlag scrapeWorthiness={source.scrape_worthiness} />
-              <ActionTrigger
-                label={needsScrape ? "Read" : "Re-read"}
-                busy={scraping}
-                disabled={anyNavigating}
-                onClick={(e) => onScrape(source, e)}
-              />
-            </div>
-          )}
-        </td>
-
-        {/* Analysis — status + an ALWAYS-VISIBLE trigger, the matched pair to
-            Scrape and the page's other PRIMARY action. "Analyze" when not yet
-            analyzed, "Re-analyze" once analyzed/failed. */}
-        <td
-          className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex flex-col items-start gap-1.5">
-            {analyzing ? (
-              <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
-                <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500/80" />
-                Analyzing…
-              </span>
-            ) : (
-              <AnalysisOutcomeCell source={source} />
-            )}
-            <ActionTrigger
-              label={
-                analysisStateFor(source) === "none" ? "Analyze" : "Re-analyze"
-              }
-              busy={analyzing}
-              disabled={anyNavigating}
-              onClick={(e) => onAnalyze(source, e)}
-            />
-          </div>
-        </td>
-
-        {/* Best keyword rank */}
-        <td className={cn("px-2 py-2.5 w-14 align-top text-right", cellBase)}>
-          <span
-            title={
-              importance
-                ? `importance ${importance.score} · ${importance.keywordCount} keyword${importance.keywordCount === 1 ? "" : "s"}`
-                : undefined
-            }
-          >
-            <ScoreCell value={scores.best} />
-          </span>
-        </td>
-
-        {/* Quality (post-read blend) */}
-        <td className={cn("px-2 py-2.5 w-14 align-top text-right", cellBase)}>
-          <ScoreCell
-            value={scores.quality}
-            title="Final quality after page read (85% post-read + 15% priority)"
-          />
-        </td>
-
-        {/* Authority (search-metadata ranker) */}
-        <td className={cn("px-2 py-2.5 w-11 align-top text-right", cellBase)}>
-          <ScoreCell
-            value={scores.auth}
-            title="Authority from search metadata (before page read)"
-          />
-        </td>
-
-        {/* Post-read page score (before final blend) */}
-        <td className={cn("px-2 py-2.5 w-11 align-top text-right", cellBase)}>
-          <ScoreCell
-            value={scores.post}
-            title="Post-read page value (after analyze, before final blend)"
-          />
-        </td>
-
-        {/* Age */}
-        <td className={cn("px-2 py-2.5 w-16 align-top", cellBase)}>
-          <span className="type-meta text-muted-foreground whitespace-nowrap">
-            {pageAgeDisplay}
-          </span>
-        </td>
-
-        {/* Type — de-emphasized, pushed to the right (almost always "web") */}
-        <td className={cn("px-2 py-2.5 w-14 align-top text-center", cellBase)}>
-          <div
-            className="flex items-center justify-center opacity-70"
-            title={
-              SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label
-            }
-          >
-            <SourceTypeIcon
-              type={sourceTypeFromDb(source.source_type)}
-              size={14}
-              className="text-muted-foreground"
-            />
-          </div>
-        </td>
-
-        {/* Origin — de-emphasized, pushed to the right (almost always "search") */}
-        <td className={cn("px-2 py-2.5 w-20 align-top opacity-70", cellBase)}>
-          <OriginBadge origin={sourceOriginFromDb(source.origin)} />
-        </td>
-
-        {/* Actions */}
-        <td
-          className={cn("px-2 py-2.5 w-10 align-top", cellBase)}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex flex-col items-center gap-1">
-            {navigating ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    icon={<MoreVertical />} aria-label="More actions"
-                    variant="quiet"
-                    disabled={anyNavigating}
-                  />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey) {
-                        window.open(
-                          `/research/topics/${topicId}/sources/${source.id}`,
-                          "_blank",
-                        );
-                        return;
-                      }
-                      onNavigate(source.id);
-                    }}
-                  >
-                    View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => window.open(source.url, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open URL
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onToggleInclude(source)}>
-                    {source.is_included ? "Exclude" : "Include"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => onScrape(source, e)}>
-                    <Download className="h-4 w-4 mr-2" />
-                    {needsScrape ? "Read" : "Re-read"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => onAnalyze(source, e)}>
-                    <Play className="h-4 w-4 mr-2" />
-                    {analysisStateFor(source) === "none"
-                      ? "Analyze"
-                      : "Re-analyze"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      updateSource(source.id, { scrape_status: "complete" })
-                    }
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Mark Complete
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => updateSource(source.id, { is_stale: true })}
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Mark Stale
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {canExpand && (
-              <button
-                className="p-0.5 rounded hover:bg-muted transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpanded((v) => !v);
-                }}
-                title={expanded ? "Collapse" : "Expand"}
-              >
-                {expanded ? (
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                )}
-              </button>
             )}
           </div>
-        </td>
-      </tr>
-
-      {/* Expanded detail — only trailing columns; first 3 merge via rowSpan above */}
-      {isExpanded && (
-        <tr className="even:bg-muted/20 dark:even:bg-muted/10">
-          <td
-            colSpan={EXPAND_DETAIL_COLSPAN}
-            className="border-b border-border/60 px-4 py-3 bg-muted/20 dark:bg-muted/10"
-          >
-            <div className="space-y-2.5">
-              {hasReasoning && (
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
-                      Authority reasoning
-                    </span>
-                    {tierFromSource(source) && (
-                      <AuthorityTierBadge
-                        score={source.authority_score}
-                        tier={source.authority_tier}
-                        reasoning={null}
-                      />
-                    )}
-                  </div>
-                  <p className="mt-1 type-secondary text-foreground/80 leading-relaxed">
-                    {source.authority_reasoning}
-                  </p>
-                </div>
-              )}
-              {hasSnippets && (
-                <div>
-                  <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
-                    Snippets
-                  </span>
-                  <div className="mt-1 space-y-1.5">
-                    {snippets.map((snippet, i) => (
-                      <p
-                        key={i}
-                        className="type-secondary text-foreground/70 leading-relaxed"
-                      >
-                        {snippet}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </td>
-        </tr>
+          <p className="mt-1 type-secondary text-foreground/80 leading-relaxed">
+            {source.authority_reasoning}
+          </p>
+        </div>
       )}
-    </>
+      {hasSnippets && (
+        <div>
+          <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+            Snippets
+          </span>
+          <div className="mt-1 space-y-1.5">
+            {snippets.map((snippet, i) => (
+              <p
+                key={i}
+                className="type-secondary text-foreground/70 leading-relaxed"
+              >
+                {snippet}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function canExpandSource(source: ResearchSource): boolean {
+  return (
+    stringArrayFromJson(source.extra_snippets).length > 0 ||
+    !!source.authority_reasoning
   );
 }
 
 export default function SourceList() {
   const { topicId, topic, refresh } = useTopicContext();
   const api = useResearchApi();
-  const isMobile = useIsMobile();
   const debug = useStreamDebug();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -902,7 +507,7 @@ export default function SourceList() {
   // INITIAL fetch order — but every client axis now sees the complete set, so
   // it can't lie about rows past the old 50-row server page. `filters.limit`
   // is repurposed as the CLIENT page size (not the fetch size); `filters.offset`
-  // as the CLIENT page position (see `pagedSources` / the pager below).
+  // as the CLIENT page position (see `pagedSources` / the table's pager below).
   const fetchFilters = useMemo(
     () => ({ ...filters, limit: FETCH_ALL_LIMIT, offset: 0 }),
     [filters],
@@ -933,6 +538,7 @@ export default function SourceList() {
     useTopicSourceTags(topicId);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [scrapingIds, setScrapingIds] = useState<Set<string>>(new Set());
   const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -943,7 +549,7 @@ export default function SourceList() {
   const [creatingTag, setCreatingTag] = useState(false);
 
   // Client-only sort axis (source_type / origin / authority_tier / tags) — the
-  // server `SourceSortBy` type can't carry these, so they sort the fetched page
+  // server `SourceSortBy` type can't carry these, so they sort the fetched set
   // locally. Mutually exclusive with the server sort: activating one clears the
   // other, so exactly one sort arrow is ever lit.
   const [localSort, setLocalSort] = useState<{
@@ -951,8 +557,11 @@ export default function SourceList() {
     dir: SortDir;
   } | null>(null);
   // Client-only Authority TIER header filter — there is no server column for
-  // tier (it's derived from the score), so this narrows the fetched page.
+  // tier (it's derived from the score), so this narrows the fetched set.
   const [tierFilter, setTierFilter] = useState<string | null>(null);
+  // Filters the person set on columns the page itself does not own; the table
+  // applies them to the loaded rows.
+  const [otherFilters, setOtherFilters] = useState<ColumnFiltersState>({});
 
   const tagList = tags ?? [];
   const tagsBySource = sourceTagMap ?? {};
@@ -1015,18 +624,19 @@ export default function SourceList() {
     [sourceList],
   );
 
-  // Client-side pagination over the fully-processed list.
-  // page size and `filters.offset` the page position (both from the URL). We
-  // clamp the offset so a filter that shrinks the list can never strand the user
-  // on an empty page past the new end.
+  // Client-side pagination: `filters.limit` is the page size and
+  // `filters.offset` the page position (both from the URL). We clamp the offset
+  // so a filter that shrinks the list can never strand the user on an empty
+  // page past the new end.
   const pageSize = filters.limit;
   const totalCount = sourceList.length;
   const maxOffset =
     totalCount === 0 ? 0 : Math.floor((totalCount - 1) / pageSize) * pageSize;
   const pageOffset = Math.min(filters.offset, maxOffset);
-  const pagedSources = useMemo(
-    () => sourceList.slice(pageOffset, pageOffset + pageSize),
-    [sourceList, pageOffset, pageSize],
+  const pageNumber = Math.floor(pageOffset / pageSize) + 1;
+  const pageSizeOptions = useMemo(
+    () => [...new Set([...PAGE_SIZE_CHOICES, pageSize])].sort((a, b) => a - b),
+    [pageSize],
   );
 
   // Hostname facet reflects the WHOLE processed set, not just the visible page.
@@ -1042,28 +652,17 @@ export default function SourceList() {
 
   // Publish the user's EXACT displayed order (full sorted + filtered set, pre-
   // pagination) so the source DETAIL view's prev/next walks the same order the
-  // user is looking at — not the raw fetch order. Keyed on the processed list,
-  // so every sort / filter / search change re-publishes.
-  useEffect(() => {
-    setSourceNavOrder(
-      topicId,
-      sourceList.map((s) => s.id),
-    );
-  }, [topicId, sourceList]);
-
-  // The client-side controls (search, tier filter, local sort) don't flow
-  // through `setFilters`, so changing them won't auto-reset the page the way a
-  // server-filter change does. Snap back to page 1 when any of them changes so
-  // the user lands on the first results of the new view (the `pageOffset` clamp
-  // already guarantees safety; this is the expected, non-surprising behavior).
-  const clientViewKey = `${search}|${tierFilter ?? ""}|${localSort?.key ?? ""}:${localSort?.dir ?? ""}`;
-  const prevClientViewKey = useRef(clientViewKey);
-  useEffect(() => {
-    if (prevClientViewKey.current !== clientViewKey) {
-      prevClientViewKey.current = clientViewKey;
-      if (filters.offset !== 0) setFilters({ offset: 0 });
-    }
-  }, [clientViewKey, filters.offset, setFilters]);
+  // user is looking at — not the raw fetch order. The table reports its whole
+  // processed view (including filters it applied itself) on every change.
+  const publishViewOrder = useCallback(
+    (rows: ResearchSource[]) => {
+      setSourceNavOrder(
+        topicId,
+        rows.map((s) => s.id),
+      );
+    },
+    [topicId],
+  );
 
   const handleNavigate = useCallback(
     (id: string, e?: React.MouseEvent) => {
@@ -1086,66 +685,106 @@ export default function SourceList() {
     ? localSort.dir
     : (filters.sort_dir ?? DEFAULT_SORT.dir);
 
-  // One tri-state toggle (asc → desc → none) shared by EVERY column header,
-  // whether it sorts server-side or client-side.
-  const handleSort = useCallback(
-    (field: SortKey) => {
-      if (isLocalSortKey(field)) {
-        // Switching to a local sort: drop any server sort so only one is active.
-        if (filters.sort_by)
-          setFilters({ sort_by: undefined, sort_dir: undefined });
-        setLocalSort((prev) => {
-          if (prev?.key !== field) return { key: field, dir: "asc" };
-          if (prev.dir === "asc") return { key: field, dir: "desc" };
-          return null;
-        });
-        return;
+  // The table's whole query state, owned here: the page position and size and
+  // the server filters live in the address, the rest in this component.
+  const tableColumnFilters: ColumnFiltersState = {
+    ...otherFilters,
+    read: selectFilter(filters.scrape_status),
+    type: selectFilter(filters.source_type),
+    origin: selectFilter(filters.origin),
+    auth: selectFilter(tierFilter),
+  };
+  const tableState: MatrxDataTableQueryState = {
+    page: pageNumber,
+    pageSize,
+    search,
+    anyOf: "",
+    columnFilters: tableColumnFilters,
+    sort:
+      activeSort && COLUMN_BY_SORT_KEY[activeSort]
+        ? { id: COLUMN_BY_SORT_KEY[activeSort], direction: activeDir ?? "asc" }
+        : null,
+  };
+
+  const handleTableState = (next: MatrxDataTableQueryState) => {
+    const updates: Partial<SourceFilterValues> = {};
+    let queryChanged = false;
+
+    if (next.search !== search) {
+      setSearch(next.search);
+      queryChanged = true;
+    }
+
+    // Header filters the page owns: scrape status / type / origin ride the
+    // address (and refetch), the authority tier is held here.
+    const scrape = selectedChoice(next.columnFilters.read);
+    if (scrape !== (filters.scrape_status ?? null)) {
+      updates.scrape_status = (scrape ?? undefined) as SourceFilterValues["scrape_status"];
+    }
+    const type = selectedChoice(next.columnFilters.type);
+    if (type !== (filters.source_type ?? null)) {
+      updates.source_type = (type ?? undefined) as SourceFilterValues["source_type"];
+    }
+    const origin = selectedChoice(next.columnFilters.origin);
+    if (origin !== (filters.origin ?? null)) {
+      updates.origin = (origin ?? undefined) as SourceFilterValues["origin"];
+    }
+    const tier = selectedChoice(next.columnFilters.auth);
+    if (tier !== tierFilter) {
+      setTierFilter(tier);
+      queryChanged = true;
+    }
+    const rest: ColumnFiltersState = {};
+    for (const [id, value] of Object.entries(next.columnFilters)) {
+      if (value && !["read", "type", "origin", "auth"].includes(id)) {
+        rest[id] = value;
       }
-      // Server sort: clear any local sort first.
-      if (localSort) setLocalSort(null);
-      if (field === DEFAULT_SORT.key && !filters.sort_by) {
-        // Virtual default is Priority desc; first click makes explicit asc.
-        setFilters({ sort_by: field, sort_dir: "asc" });
-        return;
-      }
-      if (filters.sort_by === field) {
-        if (filters.sort_dir === "asc") {
-          setFilters({ sort_by: field, sort_dir: "desc" });
-        } else {
-          setFilters({ sort_by: undefined, sort_dir: undefined });
+    }
+    if (JSON.stringify(rest) !== JSON.stringify(otherFilters)) {
+      setOtherFilters(rest);
+      queryChanged = true;
+    }
+
+    // Sort: a server axis rides the address, a client-only axis is held here;
+    // only one of the two is ever active.
+    const nextKey = next.sort ? SORT_KEY_BY_COLUMN[next.sort.id] : undefined;
+    const nextDir: SortDir = next.sort?.direction === "desc" ? "desc" : "asc";
+    const sortChanged =
+      nextKey !== activeSort ||
+      (nextKey !== undefined && nextDir !== (activeDir ?? "asc"));
+    if (sortChanged) {
+      if (!nextKey) {
+        setLocalSort(null);
+        if (filters.sort_by) {
+          updates.sort_by = undefined;
+          updates.sort_dir = undefined;
+        }
+      } else if (isLocalSortKey(nextKey)) {
+        setLocalSort({ key: nextKey, dir: nextDir });
+        if (filters.sort_by) {
+          updates.sort_by = undefined;
+          updates.sort_dir = undefined;
         }
       } else {
-        setFilters({ sort_by: field, sort_dir: "asc" });
+        if (localSort) setLocalSort(null);
+        updates.sort_by = nextKey;
+        updates.sort_dir = nextDir;
       }
-    },
-    [filters.sort_by, filters.sort_dir, setFilters, localSort],
-  );
+      queryChanged = true;
+    }
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+    // Paging: a changed query lands on page 1; otherwise follow the pager.
+    if (next.pageSize !== pageSize) {
+      updates.limit = next.pageSize;
+      updates.offset = 0;
+    } else if (queryChanged) {
+      if (filters.offset !== 0) updates.offset = 0;
+    } else if (next.page !== pageNumber) {
+      updates.offset = (next.page - 1) * pageSize;
+    }
 
-  // "Select all" toggles the VISIBLE page (selections persist across pages in
-  // the `selected` Set). All-selected = every row on this page is selected.
-  const pageAllSelected =
-    pagedSources.length > 0 && pagedSources.every((s) => selected.has(s.id));
-  const toggleAll = useCallback(() => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      const allOn = pagedSources.every((s) => next.has(s.id));
-      if (allOn) {
-        for (const s of pagedSources) next.delete(s.id);
-      } else {
-        for (const s of pagedSources) next.add(s.id);
-      }
-      return next;
-    });
-  }, [pagedSources]);
+    if (Object.keys(updates).length > 0) setFilters(updates);
+  };
 
   const handleBulk = useCallback(
     async (action: BulkAction) => {
@@ -1291,58 +930,679 @@ export default function SourceList() {
   // The Scrape filter uses the SAME clear "what happened" labels as the cells
   // (`scrapeOutcomeFor`) so the dropdown and the column read identically — e.g.
   // the option is "Read", not the ambiguous raw "Success".
-  const statusFilterOptions: ColumnFilterOption[] = useMemo(
+  const statusFilterOptions = useMemo(
     () =>
       Object.keys(SCRAPE_STATUS_CONFIG).map((id) => ({
-        id,
+        value: id,
         label: scrapeOutcomeFor(id).label,
       })),
     [],
   );
-  const typeFilterOptions: ColumnFilterOption[] = useMemo(
+  const typeFilterOptions = useMemo(
     () =>
       Object.entries(SOURCE_TYPE_CONFIG).map(([id, cfg]) => ({
-        id,
+        value: id,
         label: cfg.label,
       })),
     [],
   );
-  const originFilterOptions: ColumnFilterOption[] = useMemo(
+  const originFilterOptions = useMemo(
     () =>
       Object.entries(ORIGIN_CONFIG).map(([id, cfg]) => ({
-        id,
+        value: id,
         label: cfg.label,
       })),
     [],
   );
-  const tierFilterOptions: ColumnFilterOption[] = useMemo(
-    () => [
-      { id: "high", label: "High" },
-      { id: "medium", label: "Medium" },
-      { id: "low", label: "Low" },
-    ],
-    [],
-  );
+  const tierFilterOptions = [
+    { value: "high", label: "High" },
+    { value: "medium", label: "Medium" },
+    { value: "low", label: "Low" },
+  ];
 
   // The top bar's "reset" must also clear the local tier filter + local sort.
   const anyFilterActive = hasActiveFilters || tierFilter != null;
   const resetAllFilters = useCallback(() => {
     setTierFilter(null);
     setLocalSort(null);
+    setOtherFilters({});
     resetFilters();
   }, [resetFilters]);
 
+  const sourceHref = (id: string) => `/research/topics/${topicId}/sources/${id}`;
+
+  const columns: MatrxColumnDef<ResearchSource>[] = [
+    {
+      id: "include",
+      header: "Include",
+      label: "Include",
+      width: 84,
+      align: "center",
+      sortable: false,
+      accessorFn: (s) => Boolean(s.is_included),
+      filter: "boolean",
+      cell: (s) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Switch
+            checked={s.is_included ?? false}
+            onCheckedChange={() => handleToggleInclude(s)}
+            disabled={anyNavigating}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "priority",
+      header: PRIORITY_SCORE_LABEL,
+      label: PRIORITY_SCORE_LABEL,
+      width: 84,
+      align: "center",
+      accessorFn: (s) =>
+        sourceRowMode(s) === "captured" ? null : preReadDisplayScore(s),
+      cell: (s) =>
+        sourceRowMode(s) === "captured" ? null : (
+          <PriorityCell source={s} topicScores={topicPriorityScores} />
+        ),
+    },
+    {
+      id: "thumbnail",
+      header: "",
+      label: "Thumbnail",
+      width: 76,
+      sortable: false,
+      filter: false,
+      accessorFn: (s) => s.thumbnail_url ?? null,
+      copyValue: (s) => s.thumbnail_url ?? null,
+      cell: (s) => {
+        const thumb = s.thumbnail_url ?? videoIdentityFor(s)?.thumbnail_url;
+        return (
+          <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+            {thumb ? (
+              <Image
+                src={thumb}
+                alt=""
+                width={56}
+                height={56}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
+            ) : (
+              <Globe className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "source",
+      header: "Source",
+      label: "Source",
+      width: 420,
+      minWidth: 240,
+      accessorFn: (s) => s.title || s.url,
+      filterValue: (s) =>
+        [s.title, s.url, s.hostname, s.description].filter(Boolean).join(" "),
+      cell: (s) => {
+        const assigned = tagsBySource[s.id] ?? [];
+        const video = videoIdentityFor(s);
+        return (
+          <div className="min-w-0 overflow-hidden py-1">
+            {/* The title is a real anchor, so this row is cmd/middle-clickable
+                into a new tab and keyboard-reachable. */}
+            <Link
+              href={sourceHref(s.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!anyNavigating) handleNavigate(s.id, e);
+              }}
+              className="block type-title leading-snug line-clamp-2 break-words hover:text-primary transition-colors"
+            >
+              {s.title || s.url}
+            </Link>
+            {/* The page this row is ABOUT — the outbound door. */}
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title={`Open ${s.url} in a new tab`}
+              className="mt-0.5 block type-secondary text-muted-foreground break-all line-clamp-1 hover:text-foreground "
+            >
+              {s.url}
+            </a>
+            {s.description && (
+              <div className="type-secondary text-muted-foreground/80 mt-0.5 line-clamp-2 leading-relaxed break-words">
+                {s.description}
+              </div>
+            )}
+            {(s.hostname || s.redundancy_group) && (
+              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                {s.hostname && (
+                  <span className="type-meta text-muted-foreground truncate max-w-48 inline-block">
+                    {s.hostname}
+                  </span>
+                )}
+                <RedundancyGroupBadge group={s.redundancy_group} />
+              </div>
+            )}
+            {video && <VideoSourceMeta identity={video} className="mt-1" />}
+            <SocialSourceSignal source={s} className="mt-1.5" />
+            <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+              <SourceTagsInline
+                sourceId={s.id}
+                assigned={assigned}
+                tags={tagList}
+                onChanged={refreshTagState}
+                onCreateTag={(id) => setCreateTagTarget(id)}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "read",
+      header: "Read",
+      label: "Read",
+      width: 150,
+      accessorFn: (s) => s.scrape_status,
+      copyValue: (s) => scrapeOutcomeFor(s.scrape_status).label,
+      filter: "select",
+      filterSingle: true,
+      filterOptions: statusFilterOptions,
+      cell: (s) => {
+        const needsScrape = NEEDS_SCRAPE_STATUSES.has(s.scrape_status);
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            {sourceRowMode(s) === "captured" ? (
+              <SocialOpenPost url={s.url} />
+            ) : (
+              <div className="flex flex-col items-start gap-1.5">
+                <ScrapeOutcomeCell status={s.scrape_status} />
+                <ScrapeWorthinessFlag scrapeWorthiness={s.scrape_worthiness} />
+                <ActionTrigger
+                  label={needsScrape ? "Read" : "Re-read"}
+                  busy={scrapingIds.has(s.id)}
+                  disabled={anyNavigating}
+                  onClick={(e) => handleScrapeSource(s, e)}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "analysis",
+      header: "Analysis",
+      label: "Analysis",
+      width: 150,
+      sortable: false,
+      accessorFn: (s) => analysisStateFor(s),
+      copyValue: (s) =>
+        ({ analyzed: "Analyzed", failed: "Failed", none: "Not analyzed" })[
+          analysisStateFor(s)
+        ],
+      filter: "select",
+      filterOptions: [
+        { value: "analyzed", label: "Analyzed" },
+        { value: "failed", label: "Failed" },
+        { value: "none", label: "Not analyzed" },
+      ],
+      cell: (s) => (
+        <div
+          className="flex flex-col items-start gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {analyzingIds.has(s.id) ? (
+            <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
+              <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500/80" />
+              Analyzing…
+            </span>
+          ) : (
+            <AnalysisOutcomeCell source={s} />
+          )}
+          <ActionTrigger
+            label={analysisStateFor(s) === "none" ? "Analyze" : "Re-analyze"}
+            busy={analyzingIds.has(s.id)}
+            disabled={anyNavigating}
+            onClick={(e) => handleAnalyzeSource(s, e)}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "best",
+      header: "Best",
+      label: "Best",
+      width: 72,
+      align: "right",
+      accessorFn: (s) => bestRankFor(s.id),
+      copyValue: (s) => bestRankFor(s.id),
+      cell: (s) => {
+        const importance = importanceMap?.get(s.id);
+        return (
+          <span
+            title={
+              importance
+                ? `importance ${importance.score} · ${importance.keywordCount} keyword${importance.keywordCount === 1 ? "" : "s"}`
+                : undefined
+            }
+          >
+            <ScoreCell
+              value={sourceScoreValues(s, importance?.bestRank ?? null).best}
+            />
+          </span>
+        );
+      },
+    },
+    {
+      id: "quality",
+      header: QUALITY_SCORE_LABEL,
+      label: QUALITY_SCORE_LABEL,
+      width: 84,
+      align: "right",
+      accessorFn: (s) => s.final_source_score,
+      cell: (s) => (
+        <ScoreCell
+          value={sourceScoreValues(s).quality}
+          title="Final quality after page read (85% post-read + 15% priority)"
+        />
+      ),
+    },
+    {
+      id: "auth",
+      header: AUTH_SCORE_LABEL,
+      label: AUTH_SCORE_LABEL,
+      width: 84,
+      align: "right",
+      accessorFn: (s) => s.authority_score,
+      filterValue: (s) => tierFromSource(s),
+      filter: "select",
+      filterSingle: true,
+      filterOptions: tierFilterOptions,
+      cell: (s) => (
+        <ScoreCell
+          value={sourceScoreValues(s).auth}
+          title="Authority from search metadata (before page read)"
+        />
+      ),
+    },
+    {
+      id: "post",
+      header: POST_READ_SCORE_LABEL,
+      label: POST_READ_SCORE_LABEL,
+      width: 72,
+      align: "right",
+      accessorFn: (s) => s.post_read_score,
+      cell: (s) => (
+        <ScoreCell
+          value={sourceScoreValues(s).post}
+          title="Post-read page value (after analyze, before final blend)"
+        />
+      ),
+    },
+    {
+      id: "age",
+      header: "Age",
+      label: "Age",
+      width: 88,
+      accessorFn: (s) => s.page_age,
+      copyValue: (s) => formatPageAge(s.page_age).display,
+      filter: "text",
+      cell: (s) => (
+        <span className="type-meta text-muted-foreground whitespace-nowrap">
+          {formatPageAge(s.page_age).display}
+        </span>
+      ),
+    },
+    {
+      id: "type",
+      header: "Type",
+      label: "Type",
+      width: 84,
+      align: "center",
+      accessorFn: (s) => s.source_type,
+      copyValue: (s) => SOURCE_TYPE_CONFIG[sourceTypeFromDb(s.source_type)].label,
+      filter: "select",
+      filterSingle: true,
+      filterOptions: typeFilterOptions,
+      cell: (s) => (
+        <div
+          className="flex items-center justify-center opacity-70"
+          title={SOURCE_TYPE_CONFIG[sourceTypeFromDb(s.source_type)].label}
+        >
+          <SourceTypeIcon
+            type={sourceTypeFromDb(s.source_type)}
+            size={14}
+            className="text-muted-foreground"
+          />
+        </div>
+      ),
+    },
+    {
+      id: "origin",
+      header: "Origin",
+      label: "Origin",
+      width: 104,
+      accessorFn: (s) => s.origin,
+      copyValue: (s) => ORIGIN_CONFIG[sourceOriginFromDb(s.origin)].label,
+      filter: "select",
+      filterSingle: true,
+      filterOptions: originFilterOptions,
+      cell: (s) => (
+        <div className="opacity-70">
+          <OriginBadge origin={sourceOriginFromDb(s.origin)} />
+        </div>
+      ),
+    },
+    {
+      id: "url",
+      header: "URL",
+      label: "URL",
+      hidden: true,
+      sortable: false,
+      accessorKey: "url",
+    },
+    {
+      id: "hostname",
+      header: "Host",
+      label: "Host",
+      hidden: true,
+      sortable: false,
+      accessorKey: "hostname",
+    },
+    {
+      id: "description",
+      header: "Description",
+      label: "Description",
+      hidden: true,
+      sortable: false,
+      accessorKey: "description",
+    },
+    {
+      id: "rowmenu",
+      header: "",
+      label: "Row menu",
+      width: 64,
+      align: "center",
+      sortable: false,
+      filter: false,
+      copyValue: () => undefined,
+      cell: (s) => {
+        const needsScrape = NEEDS_SCRAPE_STATUSES.has(s.scrape_status);
+        return (
+          <div
+            className="flex flex-col items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {navigatingId === s.id ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    icon={<MoreVertical />}
+                    aria-label="More actions"
+                    variant="quiet"
+                    disabled={anyNavigating}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey) {
+                        window.open(sourceHref(s.id), "_blank");
+                        return;
+                      }
+                      handleNavigate(s.id);
+                    }}
+                  >
+                    View Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => window.open(s.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open URL
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToggleInclude(s)}>
+                    {s.is_included ? "Exclude" : "Include"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleScrapeSource(s, e)}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {needsScrape ? "Read" : "Re-read"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleAnalyzeSource(s, e)}>
+                    <Play className="h-4 w-4 mr-2" />
+                    {analysisStateFor(s) === "none" ? "Analyze" : "Re-analyze"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      updateSource(s.id, { scrape_status: "complete" })
+                    }
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark Complete
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => updateSource(s.id, { is_stale: true })}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Mark Stale
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  // The phone card: the same record, the same actions, one column. The table
+  // owns selection and the copy controls; the card places them.
+  const renderMobileCard = (
+    source: ResearchSource,
+    controls: MatrxDataTableMobileCardControls,
+  ) => {
+    const isNavigating = navigatingId === source.id;
+    const needsScrape = NEEDS_SCRAPE_STATUSES.has(source.scrape_status);
+    const imp = importanceMap?.get(source.id);
+    const scores = sourceScoreValues(source, imp?.bestRank ?? null);
+    const video = videoIdentityFor(source);
+    return (
+      <Link
+        href={sourceHref(source.id)}
+        onClick={(e) => !anyNavigating && handleNavigate(source.id, e)}
+        className={cn(
+          "rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden transition-colors relative block",
+          !source.is_included && "opacity-50",
+          isNavigating && "bg-muted/60",
+          anyNavigating && !isNavigating && "opacity-70",
+        )}
+      >
+        {isNavigating && (
+          <div className="absolute inset-0 rounded-xl bg-background/50 z-10 flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Thumbnail banner */}
+        <div className="w-full h-28 bg-muted/50 flex items-center justify-center relative">
+          {source.thumbnail_url ? (
+            <Image
+              src={source.thumbnail_url}
+              alt=""
+              width={400}
+              height={112}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <Globe className="h-8 w-8 text-muted-foreground/30" />
+          )}
+          {/* Rank badge overlay — real best rank across keywords */}
+          {imp?.bestRank != null && (
+            <span
+              className="absolute top-1.5 left-1.5 type-meta font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums"
+              title={`importance ${imp.score} · ${imp.keywordCount} keyword(s)`}
+            >
+              #{imp.bestRank}
+            </span>
+          )}
+          {/* Checkbox overlay */}
+          <div
+            className="absolute top-1.5 right-1.5"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <Checkbox
+              checked={controls.selected}
+              onCheckedChange={(v) => controls.onSelectedChange(v === true)}
+              disabled={anyNavigating}
+              className="h-5 w-5 bg-black/40 border-white/60 data-[state=checked]:bg-primary"
+            />
+          </div>
+        </div>
+
+        {/* Content below thumbnail */}
+        <div className="p-2.5 space-y-1.5">
+          {/* Title + toggle row */}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="type-title leading-snug line-clamp-2 break-words">
+                {source.title || source.url}
+              </div>
+              <div className="type-meta text-muted-foreground truncate mt-0.5">
+                {source.hostname}
+              </div>
+              {video && <VideoSourceMeta identity={video} className="mt-0.5" />}
+              <SocialSourceSignal source={source} className="mt-1" />
+            </div>
+            <Switch
+              checked={source.is_included ?? false}
+              onCheckedChange={() => handleToggleInclude(source)}
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 mt-0.5"
+              disabled={anyNavigating}
+            />
+          </div>
+
+          {source.description && (
+            <div className="type-secondary text-muted-foreground/70 line-clamp-2 leading-relaxed">
+              {source.description}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap type-meta tabular-nums text-muted-foreground">
+            {sourceRowMode(source) === "pipeline" && (
+              <span className="type-body font-bold tabular-nums">
+                {PRIORITY_SCORE_LABEL}{" "}
+                <span
+                  className={
+                    priorityScoreTone(
+                      preReadDisplayScore(source),
+                      topicPriorityScores,
+                    ).text
+                  }
+                >
+                  {scores.priority}
+                </span>
+              </span>
+            )}
+            <span>Best {scores.best}</span>
+            <span>
+              {QUALITY_SCORE_LABEL} {scores.quality}
+            </span>
+            <span>
+              {AUTH_SCORE_LABEL} {scores.auth}
+            </span>
+            <span>
+              {POST_READ_SCORE_LABEL} {scores.post}
+            </span>
+          </div>
+
+          {/* Badges row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <SourceTypeIcon
+              type={sourceTypeFromDb(source.source_type)}
+              size={12}
+              className="text-muted-foreground"
+            />
+            <StatusBadge status={source.scrape_status} />
+            <OriginBadge origin={sourceOriginFromDb(source.origin)} />
+            {source.page_age && (
+              <span className="type-meta text-muted-foreground">
+                {formatPageAge(source.page_age).display}
+              </span>
+            )}
+          </div>
+
+          {/* Primary actions — always-visible Scrape + Analyze, the same
+              matched pair as the desktop columns, so the core workflow is
+              reachable on mobile too (not buried). */}
+          <div
+            className="flex items-center gap-1.5"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            {sourceRowMode(source) === "captured" ? (
+              <SocialOpenPost url={source.url} />
+            ) : (
+              <ActionTrigger
+                label={needsScrape ? "Read" : "Re-read"}
+                busy={scrapingIds.has(source.id)}
+                disabled={anyNavigating}
+                onClick={(e) => handleScrapeSource(source, e)}
+              />
+            )}
+            <ActionTrigger
+              label={
+                analysisStateFor(source) === "none" ? "Analyze" : "Re-analyze"
+              }
+              busy={analyzingIds.has(source.id)}
+              disabled={anyNavigating}
+              onClick={(e) => handleAnalyzeSource(source, e)}
+            />
+            {controls.actions}
+          </div>
+
+          {/* Tags */}
+          <div
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <SourceTagsInline
+              sourceId={source.id}
+              assigned={tagsBySource[source.id] ?? []}
+              tags={tagList}
+              onChanged={refreshTagState}
+              onCreateTag={(id) => setCreateTagTarget(id)}
+            />
+          </div>
+        </div>
+      </Link>
+    );
+  };
+
+  const tableRead: MatrxDataTableRead = sourcesError
+    ? {
+        status: "error",
+        error: sourcesError,
+        onRetry: refetchSources,
+        what: "this topic's sources",
+      }
+    : { status: sourcesLoading && !sources ? "loading" : "ready" };
+
   return (
     <div className="p-3 sm:p-4 space-y-3 overflow-x-hidden">
-      {sourcesError && (sources?.length ?? 0) > 0 && (
-        <StaleDataNotice
-          hasData
-          what="this topic's sources"
-          onRetry={refetchSources}
-          retrying={sourcesLoading}
-          detail={sourcesError}
-        />
-      )}
       <SourceFilters
         filters={filters}
         onFilterChange={setFilters}
@@ -1351,8 +1611,6 @@ export default function SourceList() {
         keywords={(keywords as import("../../types").ResearchKeyword[]) ?? []}
         hostnames={hostnames}
         count={formatSourceScoreCoverage(sourceList)}
-        search={search}
-        onSearchChange={setSearch}
         trailing={
           <div className="flex items-center gap-2">
             {/* Finding this topic's captured pages across everything else you know is the
@@ -1377,440 +1635,83 @@ export default function SourceList() {
         }
       />
 
-      {/* Desktop Table */}
-      {!isMobile ? (
-        <div className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-x-auto">
-          <table className="w-full type-body border-collapse">
-            <thead>
-              <tr className="bg-muted/40 [&>th]:border-b [&>th]:border-r [&>th]:border-border/60 [&>th:last-child]:border-r-0">
-                {/* Select */}
-                <th className="w-10 px-2 py-2 align-middle whitespace-nowrap">
-                  <div className="flex justify-center">
-                    <Checkbox
-                      checked={pageAllSelected}
-                      onCheckedChange={toggleAll}
-                    />
-                  </div>
-                </th>
-                {/* Priority — default sort axis */}
-                <th className="w-16 px-1 py-2 text-center whitespace-nowrap">
-                  <SortHeader
-                    label={PRIORITY_SCORE_LABEL}
-                    field="pre_read_score"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                    className="justify-center w-full"
-                  />
-                </th>
-                {/* Thumbnail — no sort */}
-                <th className="w-16 px-3 py-2" />
-                {/* Source — sort by hostname */}
-                <th className="px-2 py-2 text-left w-full">
-                  <SortHeader
-                    label="Source"
-                    field="hostname"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                  />
-                </th>
-                {/* Scrape — the scrape OUTCOME (server sort + server filter) */}
-                <th className="w-32 px-2 py-2 text-left">
-                  <div className="flex items-center gap-1">
-                    <SortHeader
-                      label="Read"
-                      field="scrape_status"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                    />
-                    <ColumnFilterMenu
-                      label="Read"
-                      options={statusFilterOptions}
-                      selectedId={filters.scrape_status ?? null}
-                      onSelect={(id) =>
-                        setFilters({
-                          scrape_status: (id ??
-                            undefined) as typeof filters.scrape_status,
-                        })
-                      }
-                    />
-                  </div>
-                </th>
-                {/* Analysis — always-visible trigger paired with Scrape */}
-                <th className="w-32 px-2 py-2 text-left">
-                  <span className="type-secondary font-medium text-muted-foreground">
-                    Analysis
-                  </span>
-                </th>
-                <th className="w-14 px-2 py-2 text-right whitespace-nowrap">
-                  <SortHeader
-                    label="Best"
-                    field="local:rank"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                    className="justify-end w-full"
-                  />
-                </th>
-                <th className="w-14 px-2 py-2 text-right">
-                  <SortHeader
-                    label={QUALITY_SCORE_LABEL}
-                    field="final_source_score"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                    className="justify-end w-full"
-                  />
-                </th>
-                <th className="w-11 px-2 py-2 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <SortHeader
-                      label={AUTH_SCORE_LABEL}
-                      field="authority_score"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                      className="justify-end"
-                    />
-                    <ColumnFilterMenu
-                      label="Tier"
-                      options={tierFilterOptions}
-                      selectedId={tierFilter}
-                      onSelect={setTierFilter}
-                    />
-                  </div>
-                </th>
-                <th className="w-11 px-2 py-2 text-right whitespace-nowrap">
-                  <SortHeader
-                    label={POST_READ_SCORE_LABEL}
-                    field="post_read_score"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                    className="justify-end w-full"
-                  />
-                </th>
-                {/* Age — server sort */}
-                <th className="w-16 px-2 py-2 text-left">
-                  <SortHeader
-                    label="Age"
-                    field="page_age"
-                    currentSort={activeSort}
-                    currentDir={activeDir}
-                    onSort={handleSort}
-                  />
-                </th>
-                {/* Type — de-emphasized, far right (almost always "web") */}
-                <th className="w-14 px-2 py-2 text-left">
-                  <div className="flex items-center gap-1 opacity-70">
-                    <SortHeader
-                      label="Type"
-                      field="local:source_type"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                    />
-                    <ColumnFilterMenu
-                      label="Type"
-                      options={typeFilterOptions}
-                      selectedId={filters.source_type ?? null}
-                      onSelect={(id) =>
-                        setFilters({
-                          source_type: (id ??
-                            undefined) as typeof filters.source_type,
-                        })
-                      }
-                    />
-                  </div>
-                </th>
-                {/* Origin — de-emphasized, far right (almost always "search") */}
-                <th className="w-20 px-2 py-2 text-left">
-                  <div className="flex items-center gap-1 opacity-70">
-                    <SortHeader
-                      label="Origin"
-                      field="local:origin"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                    />
-                    <ColumnFilterMenu
-                      label="Origin"
-                      options={originFilterOptions}
-                      selectedId={filters.origin ?? null}
-                      onSelect={(id) =>
-                        setFilters({
-                          origin: (id ?? undefined) as typeof filters.origin,
-                        })
-                      }
-                    />
-                  </div>
-                </th>
-                {/* Actions — no sort */}
-                <th className="w-10 px-2 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {pagedSources.map((source) => (
-                <SourceRow
-                  key={source.id}
-                  source={source}
-                  importance={importanceMap?.get(source.id)}
-                  topicId={topicId}
-                  selected={selected.has(source.id)}
-                  scraping={scrapingIds.has(source.id)}
-                  analyzing={analyzingIds.has(source.id)}
-                  navigating={navigatingId === source.id}
-                  anyNavigating={anyNavigating}
-                  tags={tagList}
-                  assignedTags={tagsBySource[source.id] ?? []}
-                  onTagsChanged={refreshTagState}
-                  onCreateTag={(id) => setCreateTagTarget(id)}
-                  onSelect={toggleSelect}
-                  onToggleInclude={handleToggleInclude}
-                  onScrape={handleScrapeSource}
-                  onAnalyze={handleAnalyzeSource}
-                  onNavigate={handleNavigate}
-                  topicPriorityScores={topicPriorityScores}
-                  videoIdentity={videoIdentityFor(source)}
-                />
-              ))}
-            </tbody>
-          </table>
-          {totalCount === 0 &&
-            (sourcesError ? (
-              <ReadFailure
-                error={sourcesError}
-                what="this topic's sources"
-                onRetry={refetchSources}
-              />
-            ) : sourcesLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
-                Loading sources…
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
-                No sources found. Run a search to discover sources.
-              </div>
-            ))}
-        </div>
-      ) : (
-        /* Mobile Card List */
-        <div className="space-y-2">
-          {pagedSources.map((source) => {
-            const { display: pageAgeDisplay } = formatPageAge(source.page_age);
-            const isNavigating = navigatingId === source.id;
-            const needsScrape = NEEDS_SCRAPE_STATUSES.has(
-              source.scrape_status,
-            );
-            const imp = importanceMap?.get(source.id);
-            const scores = sourceScoreValues(source, imp?.bestRank ?? null);
-            return (
-              <Link
-                key={source.id}
-                href={`/research/topics/${topicId}/sources/${source.id}`}
-                onClick={(e) => !anyNavigating && handleNavigate(source.id, e)}
-                className={cn(
-                  "rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden transition-colors relative block",
-                  !source.is_included && "opacity-50",
-                  isNavigating && "bg-muted/60",
-                  !anyNavigating && "active:bg-muted/50 cursor-pointer",
-                  anyNavigating &&
-                    !isNavigating &&
-                    "cursor-not-allowed opacity-70",
-                )}
-              >
-                {isNavigating && (
-                  <div className="absolute inset-0 rounded-xl bg-background/50 z-10 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  </div>
-                )}
-
-                {/* Thumbnail banner */}
-                <div className="w-full h-28 bg-muted/50 flex items-center justify-center relative">
-                  {source.thumbnail_url ? (
-                    <Image
-                      src={source.thumbnail_url}
-                      alt=""
-                      width={400}
-                      height={112}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <Globe className="h-8 w-8 text-muted-foreground/30" />
-                  )}
-                  {/* Rank badge overlay — real best rank across keywords */}
-                  {imp?.bestRank != null && (
-                    <span
-                      className="absolute top-1.5 left-1.5 type-meta font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums"
-                      title={`importance ${imp.score} · ${imp.keywordCount} keyword(s)`}
-                    >
-                      #{imp.bestRank}
-                    </span>
-                  )}
-                  {/* Checkbox overlay */}
-                  <div
-                    className="absolute top-1.5 right-1.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={selected.has(source.id)}
-                      onCheckedChange={() => toggleSelect(source.id)}
-                      disabled={anyNavigating}
-                      className="h-5 w-5 bg-black/40 border-white/60 data-[state=checked]:bg-primary"
-                    />
-                  </div>
-                </div>
-
-                {/* Content below thumbnail */}
-                <div className="p-2.5 space-y-1.5">
-                  {/* Title + toggle row */}
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="type-title leading-snug line-clamp-2 break-words">
-                        {source.title || source.url}
-                      </div>
-                      <div className="type-meta text-muted-foreground truncate mt-0.5">
-                        {source.hostname}
-                      </div>
-                      {videoIdentityFor(source) && (
-                        <VideoSourceMeta
-                          identity={videoIdentityFor(source)!}
-                          className="mt-0.5"
-                        />
-                      )}
-                      <SocialSourceSignal source={source} className="mt-1" />
-                    </div>
-                    <Switch
-                      checked={source.is_included ?? false}
-                      onCheckedChange={() => handleToggleInclude(source)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="shrink-0 mt-0.5"
-                      disabled={anyNavigating}
-                    />
-                  </div>
-
-                  {source.description && (
-                    <div className="type-secondary text-muted-foreground/70 line-clamp-2 leading-relaxed">
-                      {source.description}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 flex-wrap type-meta tabular-nums text-muted-foreground">
-                    {sourceRowMode(source) === "pipeline" && (
-                    <span className="type-body font-bold tabular-nums">
-                      {PRIORITY_SCORE_LABEL}{" "}
-                      <span
-                        className={
-                          priorityScoreTone(
-                            preReadDisplayScore(source),
-                            topicPriorityScores,
-                          ).text
-                        }
-                      >
-                        {scores.priority}
-                      </span>
-                    </span>
-                    )}
-                    <span>Best {scores.best}</span>
-                    <span>
-                      {QUALITY_SCORE_LABEL} {scores.quality}
-                    </span>
-                    <span>
-                      {AUTH_SCORE_LABEL} {scores.auth}
-                    </span>
-                    <span>
-                      {POST_READ_SCORE_LABEL} {scores.post}
-                    </span>
-                  </div>
-
-                  {/* Badges row */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <SourceTypeIcon
-                      type={sourceTypeFromDb(source.source_type)}
-                      size={12}
-                      className="text-muted-foreground"
-                    />
-                    <StatusBadge status={source.scrape_status} />
-                    <OriginBadge origin={sourceOriginFromDb(source.origin)} />
-                    {source.page_age && (
-                      <span className="type-meta text-muted-foreground">
-                        {pageAgeDisplay}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Primary actions — always-visible Scrape + Analyze, the same
-                      matched pair as the desktop columns, so the core workflow is
-                      reachable on mobile too (not buried). */}
-                  <div
-                    className="flex items-center gap-1.5"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
-                    {sourceRowMode(source) === "captured" ? (
-                      <SocialOpenPost url={source.url} />
-                    ) : (
-                      <ActionTrigger
-                        label={needsScrape ? "Read" : "Re-read"}
-                        busy={scrapingIds.has(source.id)}
-                        disabled={anyNavigating}
-                        onClick={(e) => handleScrapeSource(source, e)}
-                      />
-                    )}
-                    <ActionTrigger
-                      label={
-                        analysisStateFor(source) === "none"
-                          ? "Analyze"
-                          : "Re-analyze"
-                      }
-                      busy={analyzingIds.has(source.id)}
-                      disabled={anyNavigating}
-                      onClick={(e) => handleAnalyzeSource(source, e)}
-                    />
-                  </div>
-
-                  {/* Tags */}
-                  <div
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
-                    <SourceTagsInline
-                      sourceId={source.id}
-                      assigned={tagsBySource[source.id] ?? []}
-                      tags={tagList}
-                      onChanged={refreshTagState}
-                      onCreateTag={(id) => setCreateTagTarget(id)}
-                    />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-          {totalCount === 0 &&
-            (sourcesError ? (
-              <ReadFailure
-                error={sourcesError}
-                what="this topic's sources"
-                onRetry={refetchSources}
-              />
-            ) : sourcesLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
-                Loading sources…
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12 text-muted-foreground type-body">
-                No sources found.
-              </div>
-            ))}
-        </div>
-      )}
+      <MatrxDataTable<ResearchSource>
+        tableId={`research/topic-sources/${topicId}`}
+        data={sourceList}
+        columns={columns}
+        getRowId={(s) => s.id}
+        viewTabs={false}
+        detail={{ enabled: false }}
+        isLoading={sourcesLoading && !sources}
+        isFetching={sourcesLoading && !!sources}
+        read={tableRead}
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        fitToWidth="grow"
+        query={{
+          mode: "controlled-local",
+          state: tableState,
+          onStateChange: handleTableState,
+          sourceProcessing: {
+            search: "source",
+            sort: "source",
+            columnFilters: { source: ["read", "type", "origin", "auth"] },
+          },
+        }}
+        toolbar={{ searchPlaceholder: "Search sources" }}
+        onViewChange={publishViewOrder}
+        onRowOpen={(s) => {
+          if (!anyNavigating) handleNavigate(s.id);
+        }}
+        getRowHref={(s) => sourceHref(s.id)}
+        rowClassName={(s) =>
+          cn(
+            !s.is_included && "opacity-50",
+            navigatingId === s.id && "bg-muted/60",
+            anyNavigating && navigatingId !== s.id && "opacity-70",
+          )
+        }
+        rowVersion={(s) => [
+          scrapingIds.has(s.id),
+          analyzingIds.has(s.id),
+          navigatingId === s.id,
+          anyNavigating,
+          tagsBySource[s.id],
+          tagList,
+          importanceMap?.get(s.id),
+          videoIdentityFor(s),
+          topicPriorityScores,
+          expandedIds.has(s.id),
+        ]}
+        expandedDetail={{
+          expandedIds,
+          onExpandedIdsChange: setExpandedIds,
+          canExpand: canExpandSource,
+          render: (s) => <SourceExpandedDetail source={s} />,
+        }}
+        selection={{
+          selectedIds: [...selected],
+          onSelectedIdsChange: (ids) => setSelected(new Set(ids)),
+          noun: "source",
+          actions: () => (
+            <BulkActionBar
+              tags={tagList}
+              onInclude={() => handleBulk("include")}
+              onExclude={() => handleBulk("exclude")}
+              onMarkStale={() => handleBulk("mark_stale")}
+              onMarkComplete={() => handleBulk("mark_complete")}
+              onAddTag={handleBatchAddTag}
+              onCreateTag={() => setCreateTagTarget("__bulk__")}
+              busy={tagBusy}
+            />
+          ),
+        }}
+        mobileCards={(s, _index, controls) => renderMobileCard(s, controls)}
+        mobileCardsBreakpoint="sm"
+        emptyState={{
+          title: "No sources found. Run a search to discover sources.",
+        }}
+      />
 
       {/* Honest truncation note — only when the topic genuinely exceeds the
           fetch cap, so the table never silently lies about its real size. */}
@@ -1822,52 +1723,6 @@ export default function SourceList() {
           </span>
         </div>
       )}
-
-      {/* Client-side pager over the fully-processed (sorted + filtered) list.
-          Gated on the REAL processed total, so a tier filter that shrinks a
-          page can never make the pager (and "Prev") vanish — fixes bug A3. */}
-      {totalCount > pageSize && (
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          <button
-            disabled={pageOffset === 0}
-            onClick={() =>
-              setFilters({ offset: Math.max(0, pageOffset - pageSize) })
-            }
-            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
-          >
-            Prev
-          </button>
-          <span className="type-meta text-muted-foreground tabular-nums px-1">
-            {pageOffset + 1}–{pageOffset + pagedSources.length} of{" "}
-            <UntrustedCount
-              read={readOf({ isLoading: sourcesLoading, error: sourcesError })}
-              value={totalCount}
-              label="Sources"
-            />
-          </span>
-          <button
-            disabled={pageOffset + pageSize >= totalCount}
-            onClick={() => setFilters({ offset: pageOffset + pageSize })}
-            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* Bulk Action Bar */}
-      <BulkActionBar
-        selectedCount={selected.size}
-        tags={tagList}
-        onInclude={() => handleBulk("include")}
-        onExclude={() => handleBulk("exclude")}
-        onMarkStale={() => handleBulk("mark_stale")}
-        onMarkComplete={() => handleBulk("mark_complete")}
-        onAddTag={handleBatchAddTag}
-        onCreateTag={() => setCreateTagTarget("__bulk__")}
-        onClear={() => setSelected(new Set())}
-        busy={tagBusy}
-      />
 
       <TextInputDialog
         open={createTagTarget !== null}

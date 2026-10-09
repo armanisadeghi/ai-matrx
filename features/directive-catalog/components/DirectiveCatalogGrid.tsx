@@ -166,79 +166,80 @@ export function DirectiveCatalogGrid({
     // Phone: natural height inside the page's one scroll area, the table at a
     // definite height of its own. lg: fills its pane.
     <div className="flex flex-col lg:h-full lg:min-h-0">
-      <MatrxDataTable<NounDirectives>
-        data={filtered}
-        columns={columns}
-        getRowId={(noun) => noun.noun}
-        defaultSort={{ id: "noun", direction: "asc" }}
-        // PAGED, never "show all" (G10B review, 2026-10-02): all 1,089 types
-        // put ~69,000 nodes on the page, so every dialog's scroll lock cost a
-        // ~800 ms style pass and the first confirm opened late.
-        pageSize={DIRECTIVE_CATALOG_PAGE_SIZE}
-        // Keep the catalog-wide count that the old toolbar exposed, inside the
-        // one canonical footer. Decision: table owner applying Arman's footer rule.
-        paginationLabelFormat={(start, end, total) =>
-          total === 0
-            ? `0 matching · ${catalog.nouns.length} nouns`
-            : total === catalog.nouns.length
-            ? `${start}–${end} of ${total} nouns`
-            : `${start}–${end} of ${total} matching · ${catalog.nouns.length} nouns`
-        }
-        detail={{ enabled: false }}
-        grouping={{
-          columnId: "family",
-          groupableColumnIds: ["family"],
-          order: "value-asc",
-          rowNoun: "noun",
-        }}
-        emptyState={{ title: "No nouns match the current filters." }}
-        toolbar={{
-          search: false,
-          leading: (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search name, token or table…"
-                aria-label="Search directive nouns and tables"
-                className="w-full sm:w-56"
-              />
-              <Select value={familyFilter} onValueChange={setFamilyFilter}>
-                <SelectTrigger
+      <div className="h-[70dvh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1 lg:shrink flex flex-col">
+        <MatrxDataTable<NounDirectives>
+          data={filtered}
+          columns={columns}
+          getRowId={(noun) => noun.noun}
+          defaultSort={{ id: "noun", direction: "asc" }}
+          // PAGED, never "show all" (G10B review, 2026-10-02): all 1,089 types
+          // put ~69,000 nodes on the page, so every dialog's scroll lock cost a
+          // ~800 ms style pass and the first confirm opened late.
+          pageSize={DIRECTIVE_CATALOG_PAGE_SIZE}
+          // Keep the catalog-wide count that the old toolbar exposed, inside the
+          // one canonical footer. Decision: table owner applying Arman's footer rule.
+          paginationLabelFormat={(start, end, total) =>
+            total === 0
+              ? `0 matching · ${catalog.nouns.length} nouns`
+              : total === catalog.nouns.length
+              ? `${start}–${end} of ${total} nouns`
+              : `${start}–${end} of ${total} matching · ${catalog.nouns.length} nouns`
+          }
+          detail={{ enabled: false }}
+          grouping={{
+            columnId: "family",
+            groupableColumnIds: ["family"],
+            order: "value-asc",
+            rowNoun: "noun",
+          }}
+          emptyState={{ title: "No nouns match the current filters." }}
+          toolbar={{
+            search: false,
+            leading: (
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search name, token or table…"
+                  aria-label="Search directive nouns and tables"
                   className="w-full sm:w-56"
-                  aria-label="Filter directive nouns by family"
-                >
-                  <SelectValue placeholder="All families" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_FAMILIES}>All families</SelectItem>
-                  {families.map((family) => (
-                    <SelectItem key={family} value={family}>
-                      {family}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground lg:min-h-0">
-                <Checkbox
-                  checked={writableOnly}
-                  onCheckedChange={(checked) =>
-                    setWritableOnly(checked === true)
-                  }
-                  className="h-6 w-6 lg:h-4 lg:w-4"
                 />
-                Writable only
-              </label>
-              <div className="ml-auto flex items-center gap-2">
-                <StateBadge state="yes" />
-                <StateBadge state="planned" />
-                <StateBadge state="no" />
+                <Select value={familyFilter} onValueChange={setFamilyFilter}>
+                  <SelectTrigger
+                    className="w-full sm:w-56"
+                    aria-label="Filter directive nouns by family"
+                  >
+                    <SelectValue placeholder="All families" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_FAMILIES}>All families</SelectItem>
+                    {families.map((family) => (
+                      <SelectItem key={family} value={family}>
+                        {family}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground lg:min-h-0">
+                  <Checkbox
+                    checked={writableOnly}
+                    onCheckedChange={(checked) =>
+                      setWritableOnly(checked === true)
+                    }
+                    className="h-6 w-6 lg:h-4 lg:w-4"
+                  />
+                  Writable only
+                </label>
+                <div className="ml-auto flex items-center gap-2">
+                  <StateBadge state="yes" />
+                  <StateBadge state="planned" />
+                  <StateBadge state="no" />
+                </div>
               </div>
-            </div>
-          ),
-        }}
-        className="h-[70dvh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1 lg:shrink"
-      />
+            ),
+          }}
+        />
+      </div>
       <CustomActionsSection
         catalog={catalog}
         query={query}

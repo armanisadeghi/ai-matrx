@@ -1,17 +1,10 @@
 "use client";
 
-import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 import React from "react";
-import {
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  CircleDashed,
-  Folder,
-  ListFilter,
-} from "lucide-react";
+import { CheckCircle2, CircleDashed, Folder } from "lucide-react";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFilteredTasks,
@@ -25,46 +18,23 @@ import {
 } from "@/features/tasks/redux/taskUiSlice";
 import { toggleTaskCompleteThunk } from "@/features/tasks/redux/thunks";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
   TASKS_LOCATION,
   buildTaskListPayload,
   taskListHuman,
   taskRow,
+  taskSummary,
 } from "@/features/tasks/lib/copy";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
 import {
-  TASK_ROW_DOM_ATTR,
   TASK_TITLE_DOM_ATTR,
 } from "@/features/tasks/components/TasksListContextMenu";
 import {
-  compareTimestamps,
   formatAbsoluteDate,
   formatRelativeTime,
   toEpochMs,
@@ -73,51 +43,14 @@ import { formatDateOnly } from "@ai-matrx/kit/dates";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { toast } from "@/lib/toast";
 
-type SortKey =
-  "status" | "title" | "project" | "priority" | "dueDate" | "updated";
+type DueBucket = "Overdue" | "Today" | "Next 7 days" | "Later" | "No due date";
 
-type UpdatedFilter =
-  "any" | "hour" | "today" | "week" | "month" | "quarter" | "year";
-
-type DueFilter = "any" | "overdue" | "today" | "week" | "none";
-
-type TaskColumnFilters = {
-  status: "any" | "open" | "completed";
-  title: string;
-  projectId: string;
-  priority: "any" | "high" | "medium" | "low" | "none";
-  due: DueFilter;
-  updated: UpdatedFilter;
-};
-
-const EMPTY_COLUMN_FILTERS: TaskColumnFilters = {
-  status: "any",
-  title: "",
-  projectId: "",
-  priority: "any",
-  due: "any",
-  updated: "any",
-};
-
-const UPDATED_FILTER_OPTIONS: ReadonlyArray<{
-  value: UpdatedFilter;
-  label: string;
-}> = [
-  { value: "any", label: "Any time" },
-  { value: "hour", label: "Last hour" },
-  { value: "today", label: "Last 24 hours" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "Last 30 days" },
-  { value: "quarter", label: "Last 90 days" },
-  { value: "year", label: "Last year" },
-];
-
-const DUE_FILTER_OPTIONS: ReadonlyArray<{ value: DueFilter; label: string }> = [
-  { value: "any", label: "Any due date" },
-  { value: "overdue", label: "Overdue" },
-  { value: "today", label: "Due today" },
-  { value: "week", label: "Due within 7 days" },
-  { value: "none", label: "No due date" },
+const DUE_BUCKET_OPTIONS: Array<{ value: DueBucket; label: string }> = [
+  { value: "Overdue", label: "Overdue" },
+  { value: "Today", label: "Due today" },
+  { value: "Next 7 days", label: "Due within 7 days" },
+  { value: "Later", label: "Later" },
+  { value: "No due date", label: "No due date" },
 ];
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -131,174 +64,16 @@ const LABEL_BY_VALUE = Object.fromEntries(
   TASK_LABEL_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<string, string>;
 
-function hasActiveColumnFilters(filters: TaskColumnFilters): boolean {
-  return (
-    filters.status !== "any" ||
-    filters.title.trim().length > 0 ||
-    filters.projectId.length > 0 ||
-    filters.priority !== "any" ||
-    filters.due !== "any" ||
-    filters.updated !== "any"
-  );
-}
-
-function passesUpdatedFilter(
-  updatedAt: string | null | undefined,
-  filter: UpdatedFilter,
-): boolean {
-  if (filter === "any") return true;
-  const updated = toEpochMs(updatedAt);
-  if (Number.isNaN(updated)) return false;
-  const age = Date.now() - updated;
-  const hour = 60 * 60 * 1000;
-  const day = 24 * hour;
-  switch (filter) {
-    case "hour":
-      return age <= hour;
-    case "today":
-      return age <= day;
-    case "week":
-      return age <= 7 * day;
-    case "month":
-      return age <= 30 * day;
-    case "quarter":
-      return age <= 90 * day;
-    case "year":
-      return age <= 365 * day;
-    default:
-      return true;
-  }
-}
-
-function passesDueFilter(
+function dueBucket(
   task: TaskWithProject,
-  filter: DueFilter,
   todayStr: string,
   weekStr: string,
-): boolean {
-  if (filter === "any") return true;
-  if (filter === "none") return !task.dueDate;
-  if (!task.dueDate) return false;
-  if (filter === "overdue") {
-    return !task.completed && task.dueDate < todayStr;
-  }
-  if (filter === "today") return task.dueDate === todayStr;
-  if (filter === "week") {
-    return task.dueDate >= todayStr && task.dueDate <= weekStr;
-  }
-  return true;
-}
-
-function ColumnFilterButton({
-  active,
-  label,
-  children,
-  align = "start",
-}: {
-  active: boolean;
-  label: string;
-  children: React.ReactNode;
-  align?: "start" | "end";
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          title={`Filter ${label}`}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "rounded p-0.5 transition-colors",
-            active
-              ? "text-primary hover:text-primary/80"
-              : "text-muted-foreground/40 hover:text-muted-foreground",
-          )}
-        >
-          <ListFilter className={cn("h-3 w-3", active && "fill-primary/20")} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        /* sizing: fixed — content already decides its own width; no fixed box to remove */
-        align={align}
-        side="bottom"
-        className="w-auto p-3"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function TextColumnFilter({
-  label,
-  value,
-  placeholder,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[200px]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Filter: {label}
-        </p>
-        {value.trim().length > 0 && (
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => onChange("")}
-          >
-            clear
-          </button>
-        )}
-      </div>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
-
-function OptionColumnFilter<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: ReadonlyArray<{ value: T; label: string }>;
-  onChange: (next: T) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[180px]">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Filter: {label}
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              "rounded px-2 py-1 text-left text-xs hover:bg-accent",
-              value === opt.value && "bg-accent font-medium",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+): DueBucket {
+  if (!task.dueDate) return "No due date";
+  if (task.dueDate < todayStr) return task.completed ? "Later" : "Overdue";
+  if (task.dueDate === todayStr) return "Today";
+  if (task.dueDate <= weekStr) return "Next 7 days";
+  return "Later";
 }
 
 function priorityLabel(priority: TaskWithProject["priority"]): string {
@@ -308,70 +83,12 @@ function priorityLabel(priority: TaskWithProject["priority"]): string {
   return "—";
 }
 
-function ColumnHead({
-  k,
-  children,
-  className,
-  align = "left",
-  filter,
-  sortKey,
-  sortDir,
-  onSort,
-}: {
-  k: SortKey;
-  children: React.ReactNode;
-  className?: string;
-  align?: "left" | "right";
-  filter: React.ReactNode;
-  sortKey: SortKey;
-  sortDir: "asc" | "desc";
-  onSort: (key: SortKey) => void;
-}) {
-  return (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => onSort(k)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3 w-3 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
-}
-
 export default function TasksTableView() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectFilteredTasks);
   const filterOrgId = useAppSelector(selectFilterOrgId);
   const tasksRead = useTasksRead();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
-  const copySourceId = React.useId();
-
-  const [sortKey, setSortKey] = React.useState<SortKey>("updated");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
-  const [columnFilters, setColumnFilters] =
-    React.useState<TaskColumnFilters>(EMPTY_COLUMN_FILTERS);
 
   const today = React.useMemo(() => {
     const d = new Date();
@@ -385,559 +102,276 @@ export default function TasksTableView() {
     return d.toISOString().split("T")[0];
   }, [today]);
 
-  const projectOptions = React.useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const task of tasks) {
-      if (!task.projectId) continue;
-      seen.set(task.projectId, task.projectName);
-    }
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [tasks]);
-
-  const patchFilters = (patch: Partial<TaskColumnFilters>) => {
-    setColumnFilters((prev) => ({ ...prev, ...patch }));
-  };
-
-  const filtered = React.useMemo(() => {
-    const titleQ = columnFilters.title.trim().toLowerCase();
-    return tasks.filter((task) => {
-      if (columnFilters.status === "open" && task.completed) return false;
-      if (columnFilters.status === "completed" && !task.completed) return false;
-      if (titleQ && !task.title.toLowerCase().includes(titleQ)) return false;
-      if (
-        columnFilters.projectId &&
-        task.projectId !== columnFilters.projectId
-      ) {
-        return false;
-      }
-      if (columnFilters.priority !== "any") {
-        const key = task.priority ?? "none";
-        if (key !== columnFilters.priority) return false;
-      }
-      if (!passesDueFilter(task, columnFilters.due, todayStr, weekStr)) {
-        return false;
-      }
-      if (!passesUpdatedFilter(task.updatedAt, columnFilters.updated)) {
-        return false;
-      }
-      return true;
-    });
-  }, [tasks, columnFilters, todayStr, weekStr]);
-
-  const sorted = React.useMemo(() => {
-    const arr = [...filtered];
-    const dir = sortDir === "asc" ? 1 : -1;
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "status":
+  const columns = React.useMemo<MatrxColumnDef<TaskWithProject>[]>(
+    () => [
+      {
+        id: "status",
+        header: <span className="sr-only">Status</span>,
+        label: "Status",
+        accessorFn: (task) => (task.completed ? "Completed" : "Open"),
+        sortValue: (task) => Number(task.completed),
+        defaultSortDirection: "desc",
+        filterOptions: [
+          { value: "Open", label: "Open" },
+          { value: "Completed", label: "Completed" },
+        ],
+        width: 56,
+        cell: (task) => (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              void dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
+                .unwrap()
+                .catch((error) => {
+                  console.error("Error changing task completion:", error);
+                  toast.error("Could not update task completion");
+                });
+            }}
+            className="text-muted-foreground/70 hover:text-primary transition-colors"
+            title={task.completed ? "Mark incomplete" : "Mark complete"}
+          >
+            {task.completed ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <CircleDashed className="h-3.5 w-3.5" />
+            )}
+          </button>
+        ),
+      },
+      {
+        id: "title",
+        header: "Task",
+        accessorKey: "title",
+        filter: "text",
+        width: 420,
+        minWidth: 240,
+        cell: (task) => {
+          const labels = (task.settings?.labels ?? []) as string[];
           return (
-            (Number(a.completed) - Number(b.completed)) * dir ||
-            a.title.localeCompare(b.title)
+            <div className="flex min-w-0 items-center gap-1.5">
+              {/* THE DOOR LAW. The row already selects the task into the
+                  detail pane; the name keeps cmd/middle-click to /tasks/{id}
+                  and the hover peek. */}
+              <span className="min-w-0" {...{ [TASK_TITLE_DOM_ATTR]: task.id }}>
+                <EntityRef
+                  token="task"
+                  id={task.id}
+                  name={task.title}
+                  showIcon={false}
+                  wrap
+                  onOpen={() => dispatch(setSelectedTaskId(task.id))}
+                  className="text-[13px]"
+                  labelClassName={
+                    task.completed
+                      ? "line-through text-muted-foreground break-words"
+                      : "font-medium text-foreground break-words"
+                  }
+                />
+              </span>
+              {labels.slice(0, 2).map((label) => (
+                <Badge
+                  key={label}
+                  variant="outline"
+                  className="h-4 shrink-0 px-1 text-[9px] font-normal"
+                >
+                  {LABEL_BY_VALUE[label] ?? label}
+                </Badge>
+              ))}
+              {labels.length > 2 && (
+                <span className="shrink-0 text-[9px] text-muted-foreground">
+                  +{labels.length - 2}
+                </span>
+              )}
+              <TaskProvenanceChip
+                compact
+                origin={task.origin ?? null}
+                sourceType={task.sourceType ?? null}
+                sourceUrl={task.sourceUrl ?? null}
+                sourceLabel={task.sourceLabel ?? null}
+                className="max-w-[180px] shrink-0"
+              />
+            </div>
           );
-        case "title":
-          return a.title.localeCompare(b.title) * dir;
-        case "project":
+        },
+      },
+      {
+        id: "project",
+        header: "Project",
+        accessorFn: (task) =>
+          task.projectId === UNASSIGNED_PROJECT_ID || !task.projectId
+            ? "Unassigned"
+            : task.projectName,
+        width: 150,
+        minWidth: 110,
+        cell: (task) =>
+          task.projectId === UNASSIGNED_PROJECT_ID || !task.projectId ? (
+            <span className="inline-flex min-w-0 max-w-[160px] items-center gap-1 text-sm text-muted-foreground">
+              <Folder className="h-3 w-3 shrink-0" />
+              <span className="truncate">
+                {task.projectId === UNASSIGNED_PROJECT_ID ? "Unassigned" : "—"}
+              </span>
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              <EntityRef
+                token="project"
+                id={task.projectId}
+                name={task.projectName}
+                className="max-w-[160px]"
+              />
+            </span>
+          ),
+      },
+      {
+        id: "priority",
+        header: "Priority",
+        accessorFn: (task) => priorityLabel(task.priority),
+        sortValue: (task) => PRIORITY_ORDER[task.priority ?? "__none__"] ?? 99,
+        filterOptions: [
+          { value: "High", label: "High" },
+          { value: "Medium", label: "Medium" },
+          { value: "Low", label: "Low" },
+          { value: "—", label: "None" },
+        ],
+        width: 124,
+        minWidth: 124,
+        cell: (task) => (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+            {task.priority && (
+              <span
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full shrink-0",
+                  task.priority === "high" && "bg-red-500",
+                  task.priority === "medium" && "bg-amber-500",
+                  task.priority === "low" && "bg-green-500",
+                )}
+              />
+            )}
+            {priorityLabel(task.priority)}
+          </span>
+        ),
+      },
+      {
+        id: "dueDate",
+        header: "Due",
+        accessorFn: (task) => task.dueDate || null,
+        sortValue: (task) => task.dueDate || "9999-12-31",
+        filterValue: (task) => dueBucket(task, todayStr, weekStr),
+        filter: "select",
+        filterOptions: DUE_BUCKET_OPTIONS,
+        width: 110,
+        minWidth: 110,
+        cell: (task) => {
+          const isPastDue =
+            !!task.dueDate && task.dueDate < todayStr && !task.completed;
           return (
-            (a.projectName ?? "").localeCompare(b.projectName ?? "") * dir ||
-            a.title.localeCompare(b.title)
+            <span
+              className={cn(
+                "whitespace-nowrap text-xs",
+                isPastDue
+                  ? "text-destructive font-medium"
+                  : "text-muted-foreground",
+              )}
+            >
+              {task.dueDate
+                ? formatDateOnly(task.dueDate, { month: "short", day: "numeric" })
+                : "—"}
+            </span>
           );
-        case "priority": {
-          const ak = PRIORITY_ORDER[a.priority ?? "__none__"] ?? 99;
-          const bk = PRIORITY_ORDER[b.priority ?? "__none__"] ?? 99;
-          return (ak - bk) * dir || a.title.localeCompare(b.title);
-        }
-        case "dueDate": {
-          const ad = a.dueDate || "9999-12-31";
-          const bd = b.dueDate || "9999-12-31";
-          return ad.localeCompare(bd) * dir || a.title.localeCompare(b.title);
-        }
-        case "updated":
-          return (
-            compareTimestamps(a.updatedAt, b.updatedAt) * dir ||
-            a.title.localeCompare(b.title)
-          );
-        default:
-          return 0;
-      }
-    });
-    return arr;
-  }, [filtered, sortKey, sortDir]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir(
-        key === "updated" || key === "priority" || key === "status"
-          ? "desc"
-          : "asc",
-      );
-    }
-  };
-
-  const filtersActive = hasActiveColumnFilters(columnFilters);
+        },
+      },
+      {
+        id: "updated",
+        header: "Updated",
+        accessorFn: (task) => task.updatedAt,
+        sortValue: (task) => toEpochMs(task.updatedAt),
+        defaultSortDirection: "desc",
+        filter: "date",
+        width: 130,
+        minWidth: 120,
+        cell: (task) => (
+          <span
+            className="whitespace-nowrap text-xs text-muted-foreground"
+            title={formatAbsoluteDate(task.updatedAt)}
+          >
+            {formatRelativeTime(task.updatedAt, { style: "long" })}
+          </span>
+        ),
+      },
+    ],
+    [dispatch, todayStr, weekStr],
+  );
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <div className="shrink-0 flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-2 py-1">
-        <span className="text-[11px] text-muted-foreground">
-          {filtersActive ? "Column filters active" : null}
-        </span>
-        <div className="flex items-center gap-0.5">
-          {filtersActive && (
-            <Button
-              variant="quiet"
-              onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
-            >
-              Clear all
-            </Button>
-          )}
-          {sorted.length > 0 && (
-            <>
-              {/* Copy/export cover every row this table is showing, and the
-                  envelope names the active column filters so an agent is
-                  never told a filtered set is the whole list. */}
-              <CopyButtons
-                sourceId={`task-table:${copySourceId}`}
-                size="xs"
-                unified
-                label="Task table"
-                human={() => taskListHuman(sorted)}
-                json={() => sorted.map(taskRow)}
-                agent={() =>
-                  buildTaskListPayload({
-                    tasks: sorted,
-                    view: {
-                      searchQuery: filtersActive
-                        ? JSON.stringify(columnFilters)
-                        : null,
-                    },
-                  })
-                }
-                aiVariants={[
-                  keyFieldsAiVariant({
-                    kind: "tasks-list",
-                    location: TASKS_LOCATION,
-                    description:
-                      "The visible task rows projected to title, status, project, priority and due date.",
-                    visible: sorted,
-                    project: (task) => ({
-                      id: task.id,
-                      title: task.title,
-                      status: task.status,
-                      project: task.projectName,
-                      priority: task.priority ?? null,
-                      due_date: task.dueDate || null,
-                    }),
-                    query: filtersActive ? columnFilters : undefined,
-                  }),
-                ]}
-                export={{
-                  sheetRows: () => sorted.map(taskRow),
-                  items: [],
-                }}
-              />
-            </>
-          )}
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 overflow-auto">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
-            <TableRow className="hover:bg-transparent">
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="status"
-                className="w-10"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.status !== "any"}
-                    label="status"
+      <MatrxDataTable<TaskWithProject>
+        tableId="tasks-table"
+        data={tasks}
+        columns={columns}
+        getRowId={(task) => task.id}
+        defaultSort={{ id: "updated", direction: "desc" }}
+        searchText={(task) => `${task.title} ${task.projectName ?? ""}`}
+        zebra
+        pageSize={0}
+        fitToWidth="grow"
+        frameHeight="fill"
+        selectedId={selectedTaskId}
+        detail={{ enabled: false }}
+        onRowOpen={(task) => dispatch(setSelectedTaskId(task.id))}
+        window={{}}
+        getRowHref={(task) => `/tasks/${task.id}`}
+        read={{
+          status: tasksRead.status,
+          error: tasksRead.error ?? undefined,
+          onRetry: tasksRead.retry,
+          what: "your tasks",
+        }}
+        emptyState={{
+          title: "No tasks match these filters.",
+          ...(filterOrgId
+            ? {
+                action: (
+                  <Button
+                    variant="outline"
+                    onClick={() => dispatch(setFilterOrgId(null))}
                   >
-                    <OptionColumnFilter
-                      label="Status"
-                      value={columnFilters.status}
-                      options={[
-                        { value: "any", label: "All" },
-                        { value: "open", label: "Open" },
-                        { value: "completed", label: "Completed" },
-                      ]}
-                      onChange={(status) => patchFilters({ status })}
-                    />
-                  </ColumnFilterButton>
-                }
-              >
-                <span className="sr-only">Status</span>
-              </ColumnHead>
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="title"
-                className="min-w-[18rem]"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.title.trim().length > 0}
-                    label="title"
-                  >
-                    <TextColumnFilter
-                      label="Task"
-                      value={columnFilters.title}
-                      placeholder="Contains…"
-                      onChange={(title) => patchFilters({ title })}
-                    />
-                  </ColumnFilterButton>
-                }
-              >
-                Task
-              </ColumnHead>
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="project"
-                className="min-w-[120px]"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.projectId.length > 0}
-                    label="project"
-                  >
-                    <div className="flex flex-col gap-2 w-[200px]">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Filter: Project
-                        </p>
-                        {columnFilters.projectId.length > 0 && (
-                          <button
-                            type="button"
-                            className="text-xs text-muted-foreground hover:text-foreground"
-                            onClick={() => patchFilters({ projectId: "" })}
-                          >
-                            clear
-                          </button>
-                        )}
-                      </div>
-                      <Select
-                        value={columnFilters.projectId || "__all__"}
-                        onValueChange={(v) =>
-                          patchFilters({
-                            projectId: v === "__all__" ? "" : v,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="All projects" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">All projects</SelectItem>
-                          {projectOptions.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </ColumnFilterButton>
-                }
-              >
-                Project
-              </ColumnHead>
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="priority"
-                className="w-24"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.priority !== "any"}
-                    label="priority"
-                  >
-                    <OptionColumnFilter
-                      label="Priority"
-                      value={columnFilters.priority}
-                      options={[
-                        { value: "any", label: "All" },
-                        { value: "high", label: "High" },
-                        { value: "medium", label: "Medium" },
-                        { value: "low", label: "Low" },
-                        { value: "none", label: "None" },
-                      ]}
-                      onChange={(priority) => patchFilters({ priority })}
-                    />
-                  </ColumnFilterButton>
-                }
-              >
-                Priority
-              </ColumnHead>
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="dueDate"
-                className="w-28"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.due !== "any"}
-                    label="due date"
-                  >
-                    <OptionColumnFilter
-                      label="Due"
-                      value={columnFilters.due}
-                      options={DUE_FILTER_OPTIONS}
-                      onChange={(due) => patchFilters({ due })}
-                    />
-                  </ColumnFilterButton>
-                }
-              >
-                Due
-              </ColumnHead>
-              <ColumnHead
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-                k="updated"
-                className="w-32"
-                filter={
-                  <ColumnFilterButton
-                    active={columnFilters.updated !== "any"}
-                    label="updated"
-                  >
-                    <OptionColumnFilter
-                      label="Updated"
-                      value={columnFilters.updated}
-                      options={UPDATED_FILTER_OPTIONS}
-                      onChange={(updated) => patchFilters({ updated })}
-                    />
-                  </ColumnFilterButton>
-                }
-              >
-                Updated
-              </ColumnHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
-            {sorted.length === 0 && tasksRead.status === "ready" ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-sm text-muted-foreground"
-                >
-                  No tasks match these filters.
-                  {filterOrgId ? (
-                    <div className="mt-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => dispatch(setFilterOrgId(null))}
-                      >
-                        View all organizations
-                      </Button>
-                    </div>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ) : sorted.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="p-0">
-                  {tasksRead.status === "error" ? (
-                    <ReadFailure
-                      error={tasksRead.error ?? true}
-                      what="your tasks"
-                      onRetry={tasksRead.retry}
-                    />
-                  ) : (
-                    <p
-                      className="py-10 text-center text-sm text-muted-foreground"
-                      role="status"
-                    >
-                      Reading your tasks…
-                    </p>
-                  )}
-                </TableCell>
-              </TableRow>
-            ) : (
-              sorted.map((task) => {
-                const isSelected = selectedTaskId === task.id;
-                const isPastDue =
-                  !!task.dueDate && task.dueDate < todayStr && !task.completed;
-                const labels = (task.settings?.labels ?? []) as string[];
-
-                return (
-                  <TableRow
-                    key={task.id}
-                    {...{ [TASK_ROW_DOM_ATTR]: task.id }}
-                    className={cn(
-                      "cursor-pointer",
-                      isSelected && "bg-primary/[0.08] hover:bg-primary/[0.1]",
-                    )}
-                    onClick={() => dispatch(setSelectedTaskId(task.id))}
-                  >
-                    <TableCell className="py-1.5 w-10">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void dispatch(
-                            toggleTaskCompleteThunk({ taskId: task.id }),
-                          )
-                            .unwrap()
-                            .catch((error) => {
-                              console.error(
-                                "Error changing task completion:",
-                                error,
-                              );
-                              toast.error("Could not update task completion");
-                            });
-                        }}
-                        className="text-muted-foreground/70 hover:text-primary transition-colors"
-                        title={
-                          task.completed ? "Mark incomplete" : "Mark complete"
-                        }
-                      >
-                        {task.completed ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                        ) : (
-                          <CircleDashed className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </TableCell>
-                    <TableCell className="w-full py-1.5 min-w-[18rem]">
-                      <div className="min-w-0">
-                        {/* THE DOOR LAW. The row already selects the task into
-                            the detail pane, and that is the RIGHT plain click
-                            — so it is preserved verbatim through `onOpen`
-                            rather than replaced by navigation. What the name
-                            gains is everything the row could never offer:
-                            cmd/middle-click opens `/tasks/{id}` natively in a
-                            new tab, and the hover controls carry the task peek.
-                            No `fill`: the old span had no click of its own (the
-                            ROW did), so there is no hit target to preserve, and
-                            in a 200px cell the controls read better beside the
-                            name than pinned to the far edge. */}
-                        <span {...{ [TASK_TITLE_DOM_ATTR]: task.id }}>
-                          <EntityRef
-                            token="task"
-                            id={task.id}
-                            name={task.title}
-                            showIcon={false}
-                            onOpen={() => dispatch(setSelectedTaskId(task.id))}
-                            className="text-[13px]"
-                            // On the LABEL, not the wrapper: `line-through` is
-                            // the completed-state signal, and whether a wrapper
-                            // decoration reaches an inline-flex child's link is
-                            // not something to leave to inheritance — especially
-                            // when that link carries its own ``.
-                            labelClassName={
-                              task.completed
-                                ? "line-through text-muted-foreground"
-                                : "font-medium text-foreground"
-                            }
-                          />
-                        </span>
-                        {labels.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-0.5">
-                            {labels.slice(0, 2).map((label) => (
-                              <Badge
-                                key={label}
-                                variant="outline"
-                                className="h-4 px-1 text-[9px] font-normal"
-                              >
-                                {LABEL_BY_VALUE[label] ?? label}
-                              </Badge>
-                            ))}
-                            {labels.length > 2 && (
-                              <span className="text-[9px] text-muted-foreground">
-                                +{labels.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {/* Same generic provenance badge the rows view shows —
-                            the table is the alternate view of the SAME list,
-                            so a projected task reads the same in both. */}
-                        <TaskProvenanceChip
-                          compact
-                          origin={task.origin ?? null}
-                          sourceType={task.sourceType ?? null}
-                          sourceUrl={task.sourceUrl ?? null}
-                          sourceLabel={task.sourceLabel ?? null}
-                          className="mt-0.5 max-w-[180px]"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      {/* The project a task belongs to was named on every row
-                          and reachable from none of them — a relationship we
-                          can resolve must be rendered AND linked. The sentinel
-                          "Unassigned" bucket is not a record, so it stays inert
-                          text; passing it to `EntityRef` would hand a route a
-                          non-id and 404. */}
-                      {task.projectId === UNASSIGNED_PROJECT_ID ||
-                      !task.projectId ? (
-                        <span className="inline-flex items-center gap-1 min-w-0 max-w-[160px]">
-                          <Folder className="h-3 w-3 shrink-0" />
-                          <span className="truncate">
-                            {task.projectId === UNASSIGNED_PROJECT_ID
-                              ? "Unassigned"
-                              : "—"}
-                          </span>
-                        </span>
-                      ) : (
-                        <EntityRef
-                          token="project"
-                          id={task.projectId}
-                          name={task.projectName}
-                          className="max-w-[160px]"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell className="py-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5">
-                        {task.priority && (
-                          <span
-                            className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0",
-                              task.priority === "high" && "bg-red-500",
-                              task.priority === "medium" && "bg-amber-500",
-                              task.priority === "low" && "bg-green-500",
-                            )}
-                          />
-                        )}
-                        {priorityLabel(task.priority)}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "py-1.5 text-xs whitespace-nowrap",
-                        isPastDue
-                          ? "text-destructive font-medium"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {task.dueDate
-                        ? formatDateOnly(task.dueDate, {
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="py-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                      <span title={formatAbsoluteDate(task.updatedAt)}>
-                        {formatRelativeTime(task.updatedAt, { style: "long" })}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    View all organizations
+                  </Button>
+                ),
+              }
+            : {}),
+        }}
+        copy={{
+          label: "Task",
+          listLabel: "Task table",
+          location: TASKS_LOCATION,
+          rowKind: "task",
+          listKind: "tasks-list",
+          humanRow: taskSummary,
+          agentRow: taskRow,
+          listHuman: (visible) => taskListHuman(visible),
+          listJson: (visible) => visible.map(taskRow),
+          listAgent: (visible) => buildTaskListPayload({ tasks: visible }),
+          aiVariants: (visible) => [
+            keyFieldsAiVariant({
+              kind: "tasks-list",
+              location: TASKS_LOCATION,
+              description:
+                "The visible task rows projected to title, status, project, priority and due date.",
+              visible,
+              project: (task) => ({
+                id: task.id,
+                title: task.title,
+                status: task.status,
+                project: task.projectName,
+                priority: task.priority ?? null,
+                due_date: task.dueDate || null,
+              }),
+            }),
+          ],
+        }}
+      />
     </div>
   );
 }

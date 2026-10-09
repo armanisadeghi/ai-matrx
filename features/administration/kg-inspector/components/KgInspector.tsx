@@ -43,14 +43,6 @@ import type {
   ColumnFilterValue,
 } from "@ai-matrx/design-system/data-table/types";
 
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,22 +124,6 @@ function ConfidenceBar({ value }: { value: number | null }) {
         {value.toFixed(2)}
       </span>
     </div>
-  );
-}
-
-function TableSkeleton({ rows, cols }: { rows: number; cols: number }) {
-  return (
-    <TableBody>
-      {Array.from({ length: rows }).map((_, r) => (
-        <TableRow key={r}>
-          {Array.from({ length: cols }).map((__, c) => (
-            <TableCell key={c}>
-              <Skeleton className="h-4 w-full" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </TableBody>
   );
 }
 

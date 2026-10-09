@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { resolveShortLinkPath } from "@ai-matrx/kit/short-link";
+import { resolveShortLinkPath } from "@ai-matrx/data/short-link";
 import { createClient } from "@/utils/supabase/server";
 
 // The platform short-link resolver (aidream migration 0557). A short token —
@@ -31,7 +31,7 @@ export default async function ShortLinkPage({ params }: PageProps) {
   const supabase = await createClient();
   // The whole resolve contract — token normalization, the anon RPC, and the
   // same-app-path re-assertion (the redirect can never leave the app even if
-  // a row were tampered with) — is @ai-matrx/kit's resolveShortLinkPath.
+  // a row were tampered with) — is @ai-matrx/data's resolveShortLinkPath.
   // This file is Next glue only.
   const result = await resolveShortLinkPath(supabase, token);
   if (!result.ok) {

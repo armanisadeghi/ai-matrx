@@ -719,71 +719,72 @@ export function BacklinkDimensionTable({
           onRetry={() => void dimension.refetch()}
         />
       ) : (
-        <MatrxDataTable<BacklinkDimensionRow>
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isLoading={dimension.isLoading}
-          isFetching={dimension.isFetching}
-          query={{
-            mode: "controlled",
-            totalItems: total,
-            state: table.state,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{ searchPlaceholder: config.searchPlaceholder }}
-          copy={{
-            label: config.surface,
-            listLabel: `${config.surface} table`,
-            location: webLocation(`Backlinks — ${config.surface}`),
-            rowKind: config.rowKind,
-            listKind: `${config.rowKind}-table`,
-            rowDescription: `One ${config.noun}, totalled up as of our last check.`,
-            listDescription: `The ${config.noun} rows currently on screen (respecting the search, sort, and page you are on).`,
-            humanRow: humanDimensionRow,
-            agentRow: projectDimensionRow,
-            rowAttributes: (row) => ({
-              site_id: siteId,
-              kind,
-              label: row.label ?? row.dimension_key,
-              backlinks: row.backlinks ?? undefined,
-              rank_score: row.rank_score ?? undefined,
-            }),
-            listAttributes: (visible) => ({
-              site_id: siteId,
-              kind,
-              page: table.state.page,
-              visible_rows: visible.length,
-              total_rows: total,
-              search: table.state.search || undefined,
-            }),
-          }}
-          detail={{
-            title: (row) => row.label ?? row.dimension_key,
-            description: (row) =>
-              `${formatCount(row.backlinks)} backlinks as of our last check`,
-            render: (row) => (
-              <DimensionDetail
-                kind={kind}
-                row={row}
-                brandId={brandId}
-                siteId={siteId}
-              />
-            ),
-          }}
-          window={{ enabled: false }}
-          pageSize={50}
-          pageSizeOptions={[25, 50, 100, 250]}
-          emptyState={{
-            icon: <EmptyIcon className="h-8 w-8 text-muted-foreground" />,
-            title: config.emptyTitle,
-            description:
-              dimension.isSuccess && table.queryState.search
-                ? `No ${config.noun}s match "${table.queryState.search}".`
-                : config.emptyDescription,
-          }}
-          className="min-h-0 flex-1"
-        />
+        <div className="min-h-0 flex-1 flex flex-col">
+          <MatrxDataTable<BacklinkDimensionRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            isLoading={dimension.isLoading}
+            isFetching={dimension.isFetching}
+            query={{
+              mode: "controlled",
+              totalItems: total,
+              state: table.state,
+              onStateChange: table.onStateChange,
+            }}
+            toolbar={{ searchPlaceholder: config.searchPlaceholder }}
+            copy={{
+              label: config.surface,
+              listLabel: `${config.surface} table`,
+              location: webLocation(`Backlinks — ${config.surface}`),
+              rowKind: config.rowKind,
+              listKind: `${config.rowKind}-table`,
+              rowDescription: `One ${config.noun}, totalled up as of our last check.`,
+              listDescription: `The ${config.noun} rows currently on screen (respecting the search, sort, and page you are on).`,
+              humanRow: humanDimensionRow,
+              agentRow: projectDimensionRow,
+              rowAttributes: (row) => ({
+                site_id: siteId,
+                kind,
+                label: row.label ?? row.dimension_key,
+                backlinks: row.backlinks ?? undefined,
+                rank_score: row.rank_score ?? undefined,
+              }),
+              listAttributes: (visible) => ({
+                site_id: siteId,
+                kind,
+                page: table.state.page,
+                visible_rows: visible.length,
+                total_rows: total,
+                search: table.state.search || undefined,
+              }),
+            }}
+            detail={{
+              title: (row) => row.label ?? row.dimension_key,
+              description: (row) =>
+                `${formatCount(row.backlinks)} backlinks as of our last check`,
+              render: (row) => (
+                <DimensionDetail
+                  kind={kind}
+                  row={row}
+                  brandId={brandId}
+                  siteId={siteId}
+                />
+              ),
+            }}
+            window={{ enabled: false }}
+            pageSize={50}
+            pageSizeOptions={[25, 50, 100, 250]}
+            emptyState={{
+              icon: <EmptyIcon className="h-8 w-8 text-muted-foreground" />,
+              title: config.emptyTitle,
+              description:
+                dimension.isSuccess && table.queryState.search
+                  ? `No ${config.noun}s match "${table.queryState.search}".`
+                  : config.emptyDescription,
+            }}
+          />
+        </div>
       )}
     </div>
     </NonEditableContextMenu>

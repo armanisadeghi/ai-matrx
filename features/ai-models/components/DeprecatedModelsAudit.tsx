@@ -670,258 +670,259 @@ export default function DeprecatedModelsAudit({
 
       {/* ── Table ──────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <MatrxDataTable<DeprecatedEntry>
-          tableId="ai-models/deprecated-audit"
-          data={visibleEntries}
-          columns={[...(auditColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (entry) =>
-            totalUsage(entry) > 0 && (
-              <div className="flex items-center gap-1">
-                {entry.error && (
-                  <span
-                    role="status"
-                    className="text-[11px] font-medium text-destructive"
-                  >
-                    Couldn&apos;t replace
-                    <ErrorAlchemyMenu />
-                  </span>
-                )}
-                <Button
-                  icon={<Settings />}
-                  variant="outline"
-                  disabled={
-                    !entry.replacementId || entry.replacing || entry.loading
-                  }
-                  onClick={() => handleOpenSettingsReview(entry)}
-                >
-                  Review
-                </Button>
-                <Button
-                  icon={entry.replacing ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <ArrowRightLeft />
-                  )}
-                  variant="primary"
-                  disabled={
-                    !entry.replacementId || entry.replacing || entry.loading
-                  }
-                  onClick={() => handleQuickReplace(entry)}
-                >
-                  Quick
-                </Button>
-              </div>
-            ) }]}
-          getRowId={(entry) => entry.model.id}
-          density="condensed"
-          className="min-h-0 flex-1"
-          query={{
-            mode: "controlled-local",
-            state: tableQuery,
-            onStateChange: setTableQuery,
-          }}
-          isLoading={
-            entries.length === 0 &&
-            allModels.some((model) => model.is_deprecated)
-          }
-          defaultSort={{ id: "total", direction: "desc" }}
-          coverage={{ noun: "deprecated model", answeredBy: "client" }}
-          copy={copy}
-          read={read}
-          emptyState={{
-            icon:
-              entries.length === 0 ? (
-                <CheckCircle2 className="h-10 w-10 opacity-30" />
-              ) : (
-                <Search className="h-10 w-10 opacity-30" />
-              ),
-            title:
-              entries.length === 0
-                ? "No deprecated models found"
-                : "No models match the current filters",
-          }}
-          toolbar={{
-            title: "Deprecated models",
-            search: true,
-            searchPlaceholder: "Search model name, identifier, or provider…",
-            refresh: {
-              onRefresh: async () => {
-                await onModelsChanged();
-              },
-            },
-            facets: [
-              {
-                type: "custom",
-                id: "deprecated-model-filters",
-                filter: {
-                  active: hasAnyDomainFilter,
-                  onReset: clearDomainFilters,
-                },
-                render: () => (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        icon={<SlidersHorizontal />}
-                        variant="outline"
-                      >
-                        Filters
-                        {activeDomainFilterCount > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="h-4 px-1 text-[10px]"
-                          >
-                            {activeDomainFilterCount}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      sizing="content"
-                      align="start"
-                      className="space-y-3"
+        <div className="min-h-0 flex-1 flex flex-col">
+          <MatrxDataTable<DeprecatedEntry>
+            tableId="ai-models/deprecated-audit"
+            data={visibleEntries}
+            columns={[...(auditColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (entry) =>
+              totalUsage(entry) > 0 && (
+                <div className="flex items-center gap-1">
+                  {entry.error && (
+                    <span
+                      role="status"
+                      className="text-[11px] font-medium text-destructive"
                     >
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium">Provider</span>
-                        <Select
-                          value={filterProvider}
-                          onValueChange={setFilterProvider}
-                        >
-                          <SelectTrigger className="h-8 w-full text-xs">
-                            <SelectValue placeholder="Provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">
-                              All providers
-                            </SelectItem>
-                            {deprecatedProviders.map((provider) => (
-                              <SelectItem key={provider} value={provider}>
-                                {provider}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium">Usage</span>
-                        <Select
-                          value={filterHasUsage}
-                          onValueChange={(value) =>
-                            setFilterHasUsage(
-                              value as "all" | "with" | "without",
-                            )
-                          }
-                        >
-                          <SelectTrigger className="h-8 w-full text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All usage</SelectItem>
-                            <SelectItem value="with">
-                              Has references (&gt;0)
-                            </SelectItem>
-                            <SelectItem value="without">
-                              No references (0)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium">
-                          Total references
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Input mono
-                            value={
-                              filterMinTotal !== undefined
-                                ? String(filterMinTotal)
-                                : ""
-                            }
-                            onChange={(event) => {
-                              const value = parseInt(event.target.value, 10);
-                              setFilterMinTotal(
-                                Number.isNaN(value) ? undefined : value,
-                              );
-                            }}
-                            placeholder="min"
-                            className="w-full"
-                            aria-label="Minimum total references"
-                          />
-                          <span className="text-xs text-muted-foreground">
-                            to
-                          </span>
-                          <Input mono
-                            value={
-                              filterMaxTotal !== undefined
-                                ? String(filterMaxTotal)
-                                : ""
-                            }
-                            onChange={(event) => {
-                              const value = parseInt(event.target.value, 10);
-                              setFilterMaxTotal(
-                                Number.isNaN(value) ? undefined : value,
-                              );
-                            }}
-                            placeholder="max"
-                            className="w-full"
-                            aria-label="Maximum total references"
-                          />
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                ),
-              },
-            ],
-            actions: (
-              <div className="flex items-center gap-2">
-                {allLoaded &&
-                  visibleEntries.filter((entry) => totalUsage(entry) > 0)
-                    .length > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-300 bg-amber-50 px-1 text-[10px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                    >
-                      {
-                        visibleEntries.filter((entry) => totalUsage(entry) > 0)
-                          .length
-                      }{" "}
-                      with usage
-                    </Badge>
+                      Couldn&apos;t replace
+                      <ErrorAlchemyMenu />
+                    </span>
                   )}
-                {replacedEntries.length > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="px-1 text-[10px] text-green-600"
-                  >
-                    {replacedEntries.length} replaced
-                  </Badge>
-                )}
-                {entriesReadyForBulk.length > 0 && (
                   <Button
-                    icon={bulkReplacing ? (
+                    icon={<Settings />}
+                    variant="outline"
+                    disabled={
+                      !entry.replacementId || entry.replacing || entry.loading
+                    }
+                    onClick={() => handleOpenSettingsReview(entry)}
+                  >
+                    Review
+                  </Button>
+                  <Button
+                    icon={entry.replacing ? (
                       <Loader2 className="animate-spin" />
                     ) : (
                       <ArrowRightLeft />
                     )}
                     variant="primary"
-                    disabled={bulkReplacing}
-                    onClick={() => setBulkConfirmOpen(true)}
+                    disabled={
+                      !entry.replacementId || entry.replacing || entry.loading
+                    }
+                    onClick={() => handleQuickReplace(entry)}
                   >
-                    Replace all ({entriesReadyForBulk.length})
+                    Quick
                   </Button>
-                )}
-                <Button
-                  icon={<X />}
-                  variant="quiet"
-                  onClick={onClose}
-                  aria-label="Close deprecated models audit"
-                />
-              </div>
-            ),
-          }}
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
+                </div>
+              ) }]}
+            getRowId={(entry) => entry.model.id}
+            density="condensed"
+            query={{
+              mode: "controlled-local",
+              state: tableQuery,
+              onStateChange: setTableQuery,
+            }}
+            isLoading={
+              entries.length === 0 &&
+              allModels.some((model) => model.is_deprecated)
+            }
+            defaultSort={{ id: "total", direction: "desc" }}
+            coverage={{ noun: "deprecated model", answeredBy: "client" }}
+            copy={copy}
+            read={read}
+            emptyState={{
+              icon:
+                entries.length === 0 ? (
+                  <CheckCircle2 className="h-10 w-10 opacity-30" />
+                ) : (
+                  <Search className="h-10 w-10 opacity-30" />
+                ),
+              title:
+                entries.length === 0
+                  ? "No deprecated models found"
+                  : "No models match the current filters",
+            }}
+            toolbar={{
+              title: "Deprecated models",
+              search: true,
+              searchPlaceholder: "Search model name, identifier, or provider…",
+              refresh: {
+                onRefresh: async () => {
+                  await onModelsChanged();
+                },
+              },
+              facets: [
+                {
+                  type: "custom",
+                  id: "deprecated-model-filters",
+                  filter: {
+                    active: hasAnyDomainFilter,
+                    onReset: clearDomainFilters,
+                  },
+                  render: () => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          icon={<SlidersHorizontal />}
+                          variant="outline"
+                        >
+                          Filters
+                          {activeDomainFilterCount > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="h-4 px-1 text-[10px]"
+                            >
+                              {activeDomainFilterCount}
+                            </Badge>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        sizing="content"
+                        align="start"
+                        className="space-y-3"
+                      >
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium">Provider</span>
+                          <Select
+                            value={filterProvider}
+                            onValueChange={setFilterProvider}
+                          >
+                            <SelectTrigger className="h-8 w-full text-xs">
+                              <SelectValue placeholder="Provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">
+                                All providers
+                              </SelectItem>
+                              {deprecatedProviders.map((provider) => (
+                                <SelectItem key={provider} value={provider}>
+                                  {provider}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium">Usage</span>
+                          <Select
+                            value={filterHasUsage}
+                            onValueChange={(value) =>
+                              setFilterHasUsage(
+                                value as "all" | "with" | "without",
+                              )
+                            }
+                          >
+                            <SelectTrigger className="h-8 w-full text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All usage</SelectItem>
+                              <SelectItem value="with">
+                                Has references (&gt;0)
+                              </SelectItem>
+                              <SelectItem value="without">
+                                No references (0)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium">
+                            Total references
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Input mono
+                              value={
+                                filterMinTotal !== undefined
+                                  ? String(filterMinTotal)
+                                  : ""
+                              }
+                              onChange={(event) => {
+                                const value = parseInt(event.target.value, 10);
+                                setFilterMinTotal(
+                                  Number.isNaN(value) ? undefined : value,
+                                );
+                              }}
+                              placeholder="min"
+                              className="w-full"
+                              aria-label="Minimum total references"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              to
+                            </span>
+                            <Input mono
+                              value={
+                                filterMaxTotal !== undefined
+                                  ? String(filterMaxTotal)
+                                  : ""
+                              }
+                              onChange={(event) => {
+                                const value = parseInt(event.target.value, 10);
+                                setFilterMaxTotal(
+                                  Number.isNaN(value) ? undefined : value,
+                                );
+                              }}
+                              placeholder="max"
+                              className="w-full"
+                              aria-label="Maximum total references"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ),
+                },
+              ],
+              actions: (
+                <div className="flex items-center gap-2">
+                  {allLoaded &&
+                    visibleEntries.filter((entry) => totalUsage(entry) > 0)
+                      .length > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="border-amber-300 bg-amber-50 px-1 text-[10px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                      >
+                        {
+                          visibleEntries.filter((entry) => totalUsage(entry) > 0)
+                            .length
+                        }{" "}
+                        with usage
+                      </Badge>
+                    )}
+                  {replacedEntries.length > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="px-1 text-[10px] text-green-600"
+                    >
+                      {replacedEntries.length} replaced
+                    </Badge>
+                  )}
+                  {entriesReadyForBulk.length > 0 && (
+                    <Button
+                      icon={bulkReplacing ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <ArrowRightLeft />
+                      )}
+                      variant="primary"
+                      disabled={bulkReplacing}
+                      onClick={() => setBulkConfirmOpen(true)}
+                    >
+                      Replace all ({entriesReadyForBulk.length})
+                    </Button>
+                  )}
+                  <Button
+                    icon={<X />}
+                    variant="quiet"
+                    onClick={onClose}
+                    aria-label="Close deprecated models audit"
+                  />
+                </div>
+              ),
+            }}
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
 
-        />
+          />
+        </div>
       </div>
 
       {/* ── Bulk replace confirm ────────────────────────────────────────── */}

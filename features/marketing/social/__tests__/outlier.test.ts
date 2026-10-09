@@ -50,9 +50,28 @@ describe("badge model", () => {
     expect(m.bars).toBe(2);
     expect(m.tooltip).toBe("4.2x this creator's median (31K). Percentile 97 of last 30.");
   });
-  it("has no baseline: em dash, never 0x or 1.0x", () => {
+  it("no view count says No views, with its own tooltip", () => {
+    const m = outlierBadgeModel({ score: null, baselineViews: null, percentile: null, baselineWindow: null, ageHours: 500, noViews: true });
+    expect(m.text).toBe("No views");
+    expect(m.tier).toBe("none");
+    expect(m.tooltip).toMatch(/no view count/);
+  });
+
+  it("an account with 0 posts says No posts; too few posts keeps 11+ posts", () => {
+    const none = { score: null, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null };
+    expect(outlierBadgeModel({ ...none, accountPosts: 0 }).text).toBe("No posts");
+    expect(outlierBadgeModel({ ...none, accountPosts: 4 }).text).toBe("11+ posts");
+    expect(outlierBadgeModel(none).text).toBe("11+ posts");
+    expect(outlierBadgeModel({ ...none, noViews: true, accountPosts: 0 }).text).toBe("No views");
+  });
+
+  it("a real score ignores the reason flags", () => {
+    expect(outlierBadgeModel({ score: 4.2, ...base, noViews: true, accountPosts: 0 }).text).toBe("4.2x");
+  });
+
+  it("has no baseline: a visible 11+ posts state, never 0x or 1.0x", () => {
     const m = outlierBadgeModel({ score: null, baselineViews: null, percentile: null, baselineWindow: null, ageHours: 500 });
-    expect(m.text).toBe("—");
+    expect(m.text).toBe("11+ posts");
     expect(m.tooltip).toBe("Needs 10 other posts to compare");
     expect(m.bars).toBe(0);
   });
@@ -60,7 +79,7 @@ describe("badge model", () => {
     const m = outlierBadgeModel({ score: 4.2, ...base, ageHours: 6 });
     expect(m.text).toBe("~4.2x");
     expect(m.tilde).toBe(true);
-    expect(m.tooltip).toBe("Still gaining views");
+    expect(m.tooltip).toBe("~ means provisional: still gaining views, so 4.2x will move.");
   });
   it("a sub-2x score is plain text with no bars", () => {
     const m = outlierBadgeModel({ score: 1.3, ...base });

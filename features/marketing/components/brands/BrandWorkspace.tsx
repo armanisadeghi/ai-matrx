@@ -110,6 +110,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { useFocusEditTarget, useIsEditTarget } from "@/features/marketing/lib/useEditTarget";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 /** Compact icon-button used by every cockpit row's edit/delete actions. */
 function RowActionButton({
@@ -638,7 +639,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       const label =
                         PROPERTY_KIND_LABELS[toPropertyKind(property.kind)];
                       const title = property.handle
-                        ? `${label} · ${property.handle}`
+                        ? `${label} · ${formatSocialHandle({ platform: property.kind, handle: property.handle, url: property.url })}`
                         : label;
                       return href ? (
                         <a
@@ -856,7 +857,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   {socialProperties.map((property) => {
                     const href = propertyPublicUrl(property);
                     const handle = property.handle
-                      ? `@${property.handle.replace(/^@/, "")}`
+                      ? formatSocialHandle({ platform: property.kind, handle: property.handle, url: property.url })
                       : null;
                     return (
                       <li

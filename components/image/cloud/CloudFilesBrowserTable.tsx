@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   Copy,
   Download,
@@ -64,6 +67,7 @@ import type {
 import {
   allCloudBrowserRowIds,
   buildCloudFilesBrowserRows,
+  type CloudFilesBrowserRow,
   getCloudFileKindLabel,
   toggleCloudBrowserSelection,
 } from "./cloudFilesBrowserUtils";
@@ -71,6 +75,15 @@ import { downloadUrl } from "@ai-matrx/kit/download";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
 
 const MAX_PARALLEL = 4;
+const CLOUD_BROWSER_LOCATION = "AI Matrx — Cloud files browser";
+
+function cloudRowId(row: CloudFilesBrowserRow): string {
+  return row.kind === "folder" ? row.folder.id : row.file.id;
+}
+
+function cloudRowName(row: CloudFilesBrowserRow): string {
+  return row.kind === "folder" ? row.folder.folderName : row.file.fileName;
+}
 
 interface CloudFilesBrowserTableProps {
   folders: CloudFolderRecord[];
@@ -112,6 +125,143 @@ export function CloudFilesBrowserTable({
   >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
+
+  const ownerLabelOf = useCallback(
+    (row: CloudFilesBrowserRow) =>
+      (row.kind === "folder" ? row.folder.ownerId : row.file.ownerId) ===
+      currentUserId
+        ? "You"
+        : "—",
+    [currentUserId],
+  );
+
+  const columns = useMemo<MatrxColumnDef<CloudFilesBrowserRow>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: cloudRowName,
+        width: 280,
+        cell: (row) =>
+          row.kind === "folder" ? (
+            <button
+              type="button"
+              onClick={() => onOpenFolder(row.folder.id)}
+              className="flex min-w-0 items-center gap-2 text-left font-medium"
+            >
+              <FileIcon isFolder size={20} />
+              <span className="truncate">{row.folder.folderName}</span>
+            </button>
+          ) : (
+            <CloudFileNameButton
+              file={row.file}
+              disabled={disabledFileIds?.has(row.file.id) ?? false}
+              resolving={resolvingId === row.file.id}
+              onActivate={() => onActivateFile(row.file)}
+            />
+          ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        accessorFn: (row) =>
+          row.kind === "folder" ? "Folder" : getCloudFileKindLabel(row.file),
+        width: 150,
+        cell: (row) =>
+          row.kind === "folder" ? (
+            <span className="text-muted-foreground">
+              <TypeBadge label="DIR" />
+              <span className="ml-2">Folder</span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              <TypeBadge label={extensionLabel(row.file.fileName)} />
+              <span className="ml-2">{getCloudFileKindLabel(row.file)}</span>
+            </span>
+          ),
+      },
+      {
+        id: "owner",
+        header: "Owner",
+        accessorFn: ownerLabelOf,
+        width: 100,
+        // The narrow Cloud pane fits every column to its width; these two keep
+        // a readable header (the fit never goes below a column's minWidth).
+        minWidth: 108,
+        cell: (row) => (
+          <span className="text-muted-foreground">{ownerLabelOf(row)}</span>
+        ),
+      },
+      {
+        id: "size",
+        header: "Size",
+        accessorFn: (row) => (row.kind === "file" ? row.file.fileSize : null),
+        width: 90,
+        minWidth: 90,
+        cell: (row) => (
+          <span className="text-muted-foreground">
+            {row.kind === "file" ? formatFileSize(row.file.fileSize) : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "modified",
+        header: "Modified",
+        accessorFn: (row) =>
+          row.kind === "folder" ? row.folder.updatedAt : row.file.updatedAt,
+        width: 140,
+        cell: (row) => (
+          <span className="text-muted-foreground">
+            {formatRelativeTime(
+              row.kind === "folder" ? row.folder.updatedAt : row.file.updatedAt,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "access",
+        header: "Access",
+        accessorFn: (row) =>
+          (row.kind === "folder" ? row.folder.visibility : row.file.visibility) ===
+          "public"
+            ? "Public"
+            : "Only you",
+        width: 110,
+        cell: (row) => (
+          <AccessCell
+            visibility={
+              row.kind === "folder" ? row.folder.visibility : row.file.visibility
+            }
+          />
+        ),
+      },
+      {
+        id: "row-actions",
+        header: "",
+        label: "Share and link",
+        sortable: false,
+        filter: false,
+        customActions: (row) => (
+          <CloudRowActions
+            row={row}
+            onShare={() =>
+              setShareTarget({
+                resourceId: cloudRowId(row),
+                resourceType: row.kind,
+              })
+            }
+          />
+        ),
+      },
+    ],
+    [
+      disabledFileIds,
+      onActivateFile,
+      onOpenFolder,
+      ownerLabelOf,
+      resolvingId,
+    ],
+  );
 
   const selectedFiles = useMemo(
     () => files.filter((file) => selectedIds.includes(file.id)),
@@ -297,70 +447,69 @@ export function CloudFilesBrowserTable({
             )}
           </div>
         ) : (
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10 bg-background">
-              <tr className="border-b text-xs text-muted-foreground">
-                <th className="w-8 px-3 py-2 text-left">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </th>
-                <HeaderCell label="Name" className="min-w-[320px]" />
-                <HeaderCell label="Type" className="w-[180px]" />
-                <HeaderCell label="Owner" className="w-[140px]" />
-                <HeaderCell label="Size" className="w-[120px]" />
-                <HeaderCell label="Modified" className="w-[140px]" />
-                <HeaderCell label="Access" className="w-[150px]" />
-                <th className="w-10 px-2 py-2 text-right">
-                  <MoreHorizontal className="ml-auto h-4 w-4" />
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) =>
-                row.kind === "folder" ? (
-                  <CloudFolderBrowserRow
-                    key={row.folder.id}
-                    folder={row.folder}
-                    selected={selectedIds.includes(row.folder.id)}
-                    ownerLabel={
-                      row.folder.ownerId === currentUserId ? "You" : "—"
-                    }
-                    onToggleSelected={() => toggleSelected(row.folder.id)}
-                    onOpen={() => onOpenFolder(row.folder.id)}
-                    onShare={() =>
-                      setShareTarget({
-                        resourceId: row.folder.id,
-                        resourceType: "folder",
-                      })
-                    }
-                  />
-                ) : (
-                  <CloudFileBrowserRow
-                    key={row.file.id}
-                    file={row.file}
-                    selected={selectedIds.includes(row.file.id)}
-                    imageSelected={selectedImageIds.has(`cloud:${row.file.id}`)}
-                    disabled={disabledFileIds?.has(row.file.id) ?? false}
-                    resolving={resolvingId === row.file.id}
-                    ownerLabel={
-                      row.file.ownerId === currentUserId ? "You" : "—"
-                    }
-                    onToggleSelected={() => toggleSelected(row.file.id)}
-                    onActivate={() => onActivateFile(row.file)}
-                    onShare={() =>
-                      setShareTarget({
-                        resourceId: row.file.id,
-                        resourceType: "file",
-                      })
-                    }
-                  />
-                ),
-              )}
-            </tbody>
-          </table>
+          <MatrxDataTable<CloudFilesBrowserRow>
+            tableId="cloud-files-browser"
+            data={rows}
+            columns={columns}
+            getRowId={cloudRowId}
+            searchText={(row) =>
+              row.kind === "folder" ? row.folder.folderName : row.file.fileName
+            }
+            pageSize={0}
+            fitToWidth
+            selection={{
+              selectedIds,
+              onSelectedIdsChange: setSelectedIds,
+              noun: "item",
+            }}
+            rowClassName={(row) =>
+              row.kind === "file"
+                ? cn(
+                    selectedImageIds.has(`cloud:${row.file.id}`) &&
+                      "border-l-2 border-l-primary bg-primary/10",
+                    disabledFileIds?.has(row.file.id) && "opacity-70",
+                  )
+                : undefined
+            }
+            rowVersion={(row) =>
+              row.kind === "file"
+                ? [
+                    selectedImageIds.has(`cloud:${row.file.id}`),
+                    disabledFileIds?.has(row.file.id) ?? false,
+                    resolvingId === row.file.id,
+                  ]
+                : undefined
+            }
+            rowWrapper={(row, children) => (
+              <Slot
+                onDoubleClick={() => {
+                  if (row.kind === "folder") {
+                    onOpenFolder(row.folder.id);
+                    return;
+                  }
+                  if (
+                    !disabledFileIds?.has(row.file.id) &&
+                    resolvingId !== row.file.id
+                  ) {
+                    onActivateFile(row.file);
+                  }
+                }}
+              >
+                {children}
+              </Slot>
+            )}
+            copy={{
+              label: "Cloud file",
+              listLabel: "Cloud files",
+              location: CLOUD_BROWSER_LOCATION,
+              rowKind: "cloud-file",
+              listKind: "cloud-files",
+              humanRow: (row) =>
+                row.kind === "folder"
+                  ? `${row.folder.folderName} — folder, ${row.folder.visibility === "public" ? "public" : "only you"}`
+                  : `${row.file.fileName} — ${getCloudFileKindLabel(row.file)}, ${formatFileSize(row.file.fileSize)}, ${row.file.visibility === "public" ? "public" : "only you"}`,
+            }}
+          />
         )}
       </div>
 
@@ -599,200 +748,98 @@ function MobileRowMenu({
   );
 }
 
-function HeaderCell({
-  label,
-  className,
-}: {
-  label: string;
-  className?: string;
-}) {
-  return (
-    <th
-      className={cn(
-        "px-2 py-2 text-left font-medium text-muted-foreground",
-        className,
-      )}
-    >
-      {label}
-    </th>
-  );
-}
-
-function CloudFolderBrowserRow({
-  folder,
-  selected,
-  ownerLabel,
-  onToggleSelected,
-  onOpen,
-  onShare,
-}: {
-  folder: CloudFolderRecord;
-  selected: boolean;
-  ownerLabel: string;
-  onToggleSelected: () => void;
-  onOpen: () => void;
-  onShare: () => void;
-}) {
-  const actions = useFolderActions(folder.id);
-  return (
-    <tr
-      className={cn(
-        "group border-b text-sm transition-colors hover:bg-accent/40",
-        selected && "bg-accent/70",
-      )}
-      onDoubleClick={onOpen}
-    >
-      <SelectCell
-        checked={selected}
-        label={`Select ${folder.folderName}`}
-        onChange={onToggleSelected}
-      />
-      <td className="px-2 py-2">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="flex min-w-0 items-center gap-2 text-left font-medium"
-        >
-          <FileIcon isFolder size={20} />
-          <span className="truncate">{folder.folderName}</span>
-        </button>
-      </td>
-      <td className="px-2 py-2">
-        <TypeBadge label="DIR" />
-        <span className="ml-2 text-muted-foreground">Folder</span>
-      </td>
-      <td className="px-2 py-2 text-muted-foreground">{ownerLabel}</td>
-      <td className="px-2 py-2 text-muted-foreground">—</td>
-      <td className="px-2 py-2 text-muted-foreground">
-        {formatRelativeTime(folder.updatedAt)}
-      </td>
-      <td className="px-2 py-2">
-        <AccessCell visibility={folder.visibility} />
-      </td>
-      <RowActionsCell
-        onShare={onShare}
-        onCopyLink={async () => actions.copyShareUrl()}
-      />
-    </tr>
-  );
-}
-
-function CloudFileBrowserRow({
+function CloudFileNameButton({
   file,
-  selected,
-  imageSelected,
   disabled,
   resolving,
-  ownerLabel,
-  onToggleSelected,
   onActivate,
-  onShare,
 }: {
   file: CloudFileRecord;
-  selected: boolean;
-  imageSelected: boolean;
   disabled: boolean;
   resolving: boolean;
-  ownerLabel: string;
-  onToggleSelected: () => void;
   onActivate: () => void;
-  onShare: () => void;
 }) {
-  const actions = useFileActions(file.id);
   const mime = resolveMime(file.mimeType, file.fileName);
   const showThumb = isImageMime(mime) || isVideoMime(mime);
   return (
-    <tr
-      className={cn(
-        "group border-b text-sm transition-colors hover:bg-accent/40",
-        selected && "bg-accent/70",
-        imageSelected && "border-l-2 border-l-primary bg-primary/10",
-        disabled && "opacity-70",
-      )}
-      onDoubleClick={() => {
-        if (!disabled && !resolving) onActivate();
-      }}
+    <button
+      type="button"
+      disabled={disabled || resolving}
+      onClick={onActivate}
+      className="flex min-w-0 items-center gap-2 text-left font-medium disabled:cursor-not-allowed"
     >
-      <SelectCell
-        checked={selected}
-        label={`Select ${file.fileName}`}
-        onChange={onToggleSelected}
-      />
-      <td className="px-2 py-2">
-        <button
-          type="button"
-          disabled={disabled || resolving}
-          onClick={onActivate}
-          className="flex min-w-0 items-center gap-2 text-left font-medium disabled:cursor-not-allowed"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
-            {showThumb ? (
-              <MediaThumbnail
-                mediaRef={{
-                  file_id: file.id,
-                  mime_type: file.mimeType ?? undefined,
-                }}
-                fileName={file.fileName}
-                mimeType={file.mimeType}
-                iconSize={18}
-                className="h-full w-full"
-              />
-            ) : (
-              <FileIcon fileName={file.fileName} size={18} />
-            )}
-          </span>
-          <span className="truncate">{file.fileName}</span>
-          {resolving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          ) : null}
-          {disabled ? (
-            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-          ) : null}
-        </button>
-      </td>
-      <td className="px-2 py-2 text-muted-foreground">
-        <TypeBadge label={extensionLabel(file.fileName)} />
-        <span className="ml-2">{getCloudFileKindLabel(file)}</span>
-      </td>
-      <td className="px-2 py-2 text-muted-foreground">{ownerLabel}</td>
-      <td className="px-2 py-2 text-muted-foreground">
-        {formatFileSize(file.fileSize)}
-      </td>
-      <td className="px-2 py-2 text-muted-foreground">
-        {formatRelativeTime(file.updatedAt)}
-      </td>
-      <td className="px-2 py-2">
-        <AccessCell visibility={file.visibility} />
-      </td>
-      <RowActionsCell
-        onShare={onShare}
-        onCopyLink={async () => actions.copyShareUrl()}
-      />
-    </tr>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
+        {showThumb ? (
+          <MediaThumbnail
+            mediaRef={{
+              file_id: file.id,
+              mime_type: file.mimeType ?? undefined,
+            }}
+            fileName={file.fileName}
+            mimeType={file.mimeType}
+            iconSize={18}
+            className="h-full w-full"
+          />
+        ) : (
+          <FileIcon fileName={file.fileName} size={18} />
+        )}
+      </span>
+      <span className="truncate">{file.fileName}</span>
+      {resolving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+      ) : null}
+      {disabled ? <Lock className="h-3.5 w-3.5 text-muted-foreground" /> : null}
+    </button>
   );
 }
 
-function SelectCell({
-  checked,
-  label,
-  onChange,
+function CloudRowActions({
+  row,
+  onShare,
 }: {
-  checked: boolean;
-  label: string;
-  onChange: () => void;
+  row: CloudFilesBrowserRow;
+  onShare: () => void;
 }) {
-  return (
-    <td className="w-8 px-3 py-2">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={onChange}
-        aria-label={label}
-      />
-    </td>
+  return row.kind === "folder" ? (
+    <FolderRowActionButtons folderId={row.folder.id} onShare={onShare} />
+  ) : (
+    <FileRowActionButtons fileId={row.file.id} onShare={onShare} />
   );
 }
 
-function RowActionsCell({
+function FileRowActionButtons({
+  fileId,
+  onShare,
+}: {
+  fileId: string;
+  onShare: () => void;
+}) {
+  const actions = useFileActions(fileId);
+  return (
+    <RowActionButtons
+      onShare={onShare}
+      onCopyLink={async () => actions.copyShareUrl()}
+    />
+  );
+}
+
+function FolderRowActionButtons({
+  folderId,
+  onShare,
+}: {
+  folderId: string;
+  onShare: () => void;
+}) {
+  const actions = useFolderActions(folderId);
+  return (
+    <RowActionButtons
+      onShare={onShare}
+      onCopyLink={async () => actions.copyShareUrl()}
+    />
+  );
+}
+
+function RowActionButtons({
   onShare,
   onCopyLink,
 }: {
@@ -804,35 +851,33 @@ function RowActionsCell({
     if (url) copyNotify("Link copied", "success");
   };
   return (
-    <td className="w-10 px-2 py-2">
-      <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          type="button"
-          onClick={onShare}
-          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Share"
-        >
-          <Share2 className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Copy link"
-        >
-          <Copy className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          disabled
-          title="Starred files are coming soon"
-          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground opacity-60"
-          aria-label="Star"
-        >
-          <Star className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </td>
+    <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover/matrx-row:opacity-100 focus-within:opacity-100">
+      <button
+        type="button"
+        onClick={onShare}
+        className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+        aria-label="Share"
+      >
+        <Share2 className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => void handleCopy()}
+        className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+        aria-label="Copy link"
+      >
+        <Copy className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        disabled
+        title="Starred files are coming soon"
+        className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground opacity-60"
+        aria-label="Star"
+      >
+        <Star className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
 

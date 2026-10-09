@@ -261,7 +261,10 @@ export function SourceResultsTable({
     scoreColumn(
       "priority",
       PRIORITY_SCORE_LABEL,
-      (source) => sourceScoreValues(source, rankFor(source)).priority,
+      (source) =>
+        sourceRowMode(source) === "captured"
+          ? "—"
+          : sourceScoreValues(source, rankFor(source)).priority,
     ),
     {
       id: "authority",
@@ -502,7 +505,6 @@ export function SourceResultsTable({
             },
           }
         : {})}
-      tableClassName="text-left"
     />
   );
 }

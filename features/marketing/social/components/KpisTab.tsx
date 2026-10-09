@@ -69,6 +69,7 @@ import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
 import { TRACK_CREDITS, trackableOwn, useTrackOwn } from "./useTrackOwn";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 type KpiView = "trend" | "benchmark" | "own";
 
@@ -305,7 +306,7 @@ function GoalTile({
   const scope = goal.tracked_account_id
     ? (() => {
         const a = accountRows.find((x) => x.trackedAccountId === goal.tracked_account_id);
-        return a ? `@${a.handle}` : "Account";
+        return a ? formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl }) : "Account";
       })()
     : goal.platform
       ? platformLabel(goal.platform)
@@ -389,7 +390,7 @@ function OwnTrend({
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
           <PlatformMark platform={account.platform} size={16} />
-          <span className="truncate">@{account.handle}</span>
+          <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl })}</span>
         </span>
         <Badge tone={growth.fraction === null ? "neutral" : growth.fraction >= 0 ? "success" : "destructive"}>
           <span title={growth.note}>{formatGrowth(growth.fraction)}</span>
@@ -430,6 +431,7 @@ function BenchmarkTable({
           handle: a.handle,
           displayName: a.displayName,
           role: a.role,
+          profileUrl: a.profileUrl,
           followers: a.followers,
           growth: growth.fraction,
           growthNote: growth.note,
@@ -450,7 +452,7 @@ function BenchmarkTable({
       cell: (r) => (
         <span className="flex min-w-0 items-center gap-2">
           <PlatformMark platform={r.platform} size={18} />
-          <span className="truncate">@{r.handle}</span>
+          <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
         </span>
       ),
     },
@@ -619,7 +621,7 @@ function GoalDialog({
     })),
     ...accounts
       .filter((a) => a.trackedAccountId)
-      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `@${a.handle} (${platformLabel(a.platform)})` })),
+      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} (${platformLabel(a.platform)})` })),
   ];
   const value = Number(target);
   const valid = Number.isFinite(value) && value > 0;

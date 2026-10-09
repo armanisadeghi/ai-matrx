@@ -385,12 +385,12 @@ function LocationKeywords({
 
   const table = (
     <MatrxDataTable<LocationKeywordRow>
+      appearance="embedded"
       data={rows}
       columns={columns}
       getRowId={(row) => row.keyword_id}
       isLoading={keywords.isPending}
       isFetching={keywords.isFetching}
-      className="border-0"
       query={{
         mode: "controlled",
         totalItems: total,

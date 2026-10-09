@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { OrganizationRunConsoleMount } from "@/features/marketing/seo/run-console/OrganizationRunConsoleMount";
@@ -15,12 +14,6 @@ import { OrganizationRunConsoleMount } from "@/features/marketing/seo/run-consol
  * `features/marketing/seo/run-console/OrganizationRunConsoleMount.tsx` and
  * `features/marketing/seo/run-console/FEATURE.md`.
  */
-
-export const metadata: Metadata = {
-  title: "Automations",
-  description:
-    "Drive the keyword-coverage engines by hand for the brands your organization controls, and author the schedule that overrides the system default.",
-};
 
 export default function MarketingAutomationsPage() {
   return (

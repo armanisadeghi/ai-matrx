@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { ChatConversationRoom } from "@ai-matrx/chat/agents/components/chat/ChatConversationRoom";
@@ -124,7 +125,7 @@ async function resolveMandateAgent(): Promise<{
   };
 }
 
-export default async function ChatConversationPage({
+async function ChatConversationSeeded({
   params,
 }: ConversationPageProps) {
   const { conversationId } = await params;
@@ -184,5 +185,18 @@ export default async function ChatConversationPage({
         composer={{ initialMode }}
       />
     </>
+  );
+}
+
+/**
+ * 🚨 THE PAGE STREAMS: the seed reads above resolve inside a Suspense child, so
+ * the shell goes out with the first byte instead of waiting for them
+ * (same fix as /chat/new, 2026-10-09).
+ */
+export default function ChatConversationPage({ params }: ConversationPageProps) {
+  return (
+    <Suspense fallback={<ChatNewLandingSkeleton />}>
+      <ChatConversationSeeded params={params} />
+    </Suspense>
   );
 }

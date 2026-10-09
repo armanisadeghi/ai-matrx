@@ -591,9 +591,7 @@ export default function KindRecordsTable({
         isFetching={isFetching || busy}
         zebra
         pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
-        className={cn(
-          prefs.density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1",
-        )}
+        density={prefs.density === "compact" ? "condensed" : undefined}
         query={{
           mode: "controlled",
           totalItems: total,

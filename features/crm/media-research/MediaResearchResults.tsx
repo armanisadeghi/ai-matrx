@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import {
   CONTACT_LABEL,
   STATUS_LABEL,
@@ -86,79 +87,175 @@ export function ResearchTable({
     return <p className="text-xs text-muted-foreground">No journalists in this group.</p>;
   }
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full min-w-[720px] text-xs" data-testid={cuts ? "media-research-cuts" : "media-research-table"}>
-        <caption className="px-2 py-1.5 text-left text-xs font-semibold text-foreground">{caption}</caption>
-        <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
-          <tr>
-            <th className="px-2 py-1">Journalist</th>
-            <th className="px-2 py-1">Outlet</th>
-            <th className="px-2 py-1">Status</th>
-            <th className="px-2 py-1">{cuts ? "Why cut" : "Why them"}</th>
-            <th className="px-2 py-1">Anchor</th>
-            {!cuts && <th className="px-2 py-1">Pitch note</th>}
-            <th className="px-2 py-1">Contact</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.party_id} className="border-t border-border align-top">
-              <td className="px-2 py-1.5">
-                <Link href={`/crm/${row.party_id}`} className="font-medium text-foreground hover:underline">
-                  {row.name}
-                </Link>
-                {row.first_wave ? (
-                  <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] text-primary-ink">first wave</span>
-                ) : null}
-                {row.fit_check ? (
-                  <div className="text-[10px] text-muted-foreground">fit check: {row.fit_check.replace("_", " ")}</div>
-                ) : null}
-              </td>
-              <td className="px-2 py-1.5 text-muted-foreground">{row.outlet ?? "—"}</td>
-              <td className="px-2 py-1.5">
-                <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", STATUS_TONE[row.status])}>
-                  {STATUS_LABEL[row.status]}
-                </span>
-              </td>
-              <td className="max-w-[260px] px-2 py-1.5 text-foreground">
-                {cuts && row.cut_reason ? (
-                  <span className="mr-1 font-mono text-[10px] text-muted-foreground">{row.cut_reason}</span>
-                ) : null}
-                {row.why_them || "—"}
-              </td>
-              <td className="max-w-[200px] px-2 py-1.5">
-                {row.anchor ? (
-                  <a href={row.anchor.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                    {row.anchor.title || row.anchor.url}
-                    {row.anchor.published_at ? (
-                      <span className="ml-1 text-muted-foreground">({row.anchor.published_at.slice(0, 10)})</span>
-                    ) : null}
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground">No dated piece</span>
-                )}
-              </td>
-              {!cuts && <td className="max-w-[200px] px-2 py-1.5 text-muted-foreground">{row.pitch_note || "—"}</td>}
-              <td className="px-2 py-1.5">
-                <span
-                  className={cn(
-                    "font-medium",
-                    row.contact_state === "verified" && "text-emerald-700 dark:text-emerald-400",
-                    row.contact_state === "quarantined" && "text-amber-700 dark:text-amber-400",
-                    row.contact_state === "unresolved" && "text-muted-foreground",
-                  )}
-                >
-                  {CONTACT_LABEL[row.contact_state ?? "unresolved"]}
-                </span>
-                {row.contact_address ? <div className="font-mono text-[10px]">{row.contact_address}</div> : null}
-                {row.contact_state !== "verified" && row.contact_note ? (
-                  <div className="text-[10px] text-muted-foreground">{row.contact_note}</div>
-                ) : null}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <MatrxDataTable<MediaResearchRow>
+      tableId={cuts ? "crm/media-research/cuts" : "crm/media-research/journalists"}
+      data={rows}
+      columns={cuts ? CUT_COLUMNS : JOURNALIST_COLUMNS}
+      getRowId={(row) => row.party_id}
+      pageSize={0}
+      density="condensed"
+      viewTabs={false}
+      toolbar={{ title: caption, searchPlaceholder: "Search journalists" }}
+      detail={{ enabled: false }}
+      copy={cuts ? CUT_COPY : JOURNALIST_COPY}
+      emptyState={{ title: "No journalists in this group" }}
+    />
   );
 }
+
+function contactText(row: MediaResearchRow): string {
+  return [CONTACT_LABEL[row.contact_state ?? "unresolved"], row.contact_address, row.contact_note]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function journalistColumns(cuts: boolean): MatrxColumnDef<MediaResearchRow>[] {
+  const cols: MatrxColumnDef<MediaResearchRow>[] = [
+    {
+      id: "journalist",
+      header: "Journalist",
+      accessorFn: (row) => row.name,
+      filter: "text",
+      width: 200,
+      frozen: true,
+      cell: (row) => (
+        <div>
+          <Link href={`/crm/${row.party_id}`} className="font-medium text-foreground hover:underline">
+            {row.name}
+          </Link>
+          {row.first_wave ? (
+            <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] text-primary-ink">first wave</span>
+          ) : null}
+          {row.fit_check ? (
+            <div className="text-[10px] text-muted-foreground">fit check: {row.fit_check.replace("_", " ")}</div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: "outlet",
+      header: "Outlet",
+      accessorFn: (row) => row.outlet ?? "",
+      filter: "text",
+      width: 150,
+      cell: (row) => <span className="text-muted-foreground">{row.outlet ?? "—"}</span>,
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorFn: (row) => row.status,
+      filter: "select",
+      filterOptions: (Object.keys(STATUS_LABEL) as MediaResearchRow["status"][]).map((value) => ({
+        value,
+        label: STATUS_LABEL[value],
+      })),
+      width: 140,
+      cell: (row) => (
+        <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", STATUS_TONE[row.status])}>
+          {STATUS_LABEL[row.status]}
+        </span>
+      ),
+    },
+    {
+      id: "why",
+      header: cuts ? "Why cut" : "Why them",
+      accessorFn: (row) => [cuts ? row.cut_reason : null, row.why_them].filter(Boolean).join(" "),
+      filter: "text",
+      width: 280,
+      cell: (row) => (
+        <span className="text-foreground">
+          {cuts && row.cut_reason ? (
+            <span className="mr-1 font-mono text-[10px] text-muted-foreground">{row.cut_reason}</span>
+          ) : null}
+          {row.why_them || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "anchor",
+      header: "Anchor",
+      accessorFn: (row) => row.anchor?.title || row.anchor?.url || "",
+      filter: "text",
+      width: 220,
+      cell: (row) =>
+        row.anchor ? (
+          <a href={row.anchor.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+            {row.anchor.title || row.anchor.url}
+            {row.anchor.published_at ? (
+              <span className="ml-1 text-muted-foreground">({row.anchor.published_at.slice(0, 10)})</span>
+            ) : null}
+          </a>
+        ) : (
+          <span className="text-muted-foreground">No dated piece</span>
+        ),
+    },
+  ];
+  if (!cuts) {
+    cols.push({
+      id: "pitch",
+      header: "Pitch note",
+      accessorFn: (row) => row.pitch_note ?? "",
+      filter: "text",
+      width: 220,
+      cell: (row) => <span className="text-muted-foreground">{row.pitch_note || "—"}</span>,
+    });
+  }
+  cols.push({
+    id: "contact",
+    header: "Contact",
+    accessorFn: (row) => row.contact_state ?? "unresolved",
+    filter: "select",
+    filterOptions: (Object.keys(CONTACT_LABEL) as (keyof typeof CONTACT_LABEL)[]).map((value) => ({
+      value,
+      label: CONTACT_LABEL[value],
+    })),
+    width: 200,
+    cell: (row) => (
+      <div>
+        <span
+          className={cn(
+            "font-medium",
+            row.contact_state === "verified" && "text-emerald-700 dark:text-emerald-400",
+            row.contact_state === "quarantined" && "text-amber-700 dark:text-amber-400",
+            row.contact_state === "unresolved" && "text-muted-foreground",
+          )}
+        >
+          {CONTACT_LABEL[row.contact_state ?? "unresolved"]}
+        </span>
+        {row.contact_address ? <div className="font-mono text-[10px]">{row.contact_address}</div> : null}
+        {row.contact_state !== "verified" && row.contact_note ? (
+          <div className="text-[10px] text-muted-foreground">{row.contact_note}</div>
+        ) : null}
+      </div>
+    ),
+  });
+  return cols;
+}
+
+const JOURNALIST_COLUMNS = journalistColumns(false);
+const CUT_COLUMNS = journalistColumns(true);
+
+function copyConfig(cuts: boolean): MatrxDataTableCopyConfig<MediaResearchRow> {
+  return {
+    label: cuts ? "Cut journalist" : "Journalist",
+    listLabel: cuts ? "Cut journalists (this view)" : "Researched journalists (this view)",
+    location: "Media research — results",
+    rowKind: cuts ? "media-research-cut" : "media-research-journalist",
+    listKind: cuts ? "media-research-cuts" : "media-research-journalists",
+    rowDescription: "One journalist the media research judged, with the reason and contact state.",
+    listDescription: "The journalists from a media research run, as currently shown.",
+    humanRow: (row) =>
+      [
+        `Journalist: ${row.name}`,
+        `Outlet: ${row.outlet ?? "—"}`,
+        `Status: ${STATUS_LABEL[row.status]}`,
+        `${cuts ? "Why cut" : "Why them"}: ${[cuts ? row.cut_reason : null, row.why_them].filter(Boolean).join(" ") || "—"}`,
+        `Anchor: ${row.anchor ? `${row.anchor.title || row.anchor.url} (${row.anchor.url})` : "No dated piece"}`,
+        ...(cuts ? [] : [`Pitch note: ${row.pitch_note || "—"}`]),
+        `Contact: ${contactText(row)}`,
+      ].join("\n"),
+  };
+}
+
+const JOURNALIST_COPY = copyConfig(false);
+const CUT_COPY = copyConfig(true);

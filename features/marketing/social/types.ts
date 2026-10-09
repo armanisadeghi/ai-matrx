@@ -214,6 +214,10 @@ export interface OutlierInput {
   baselineWindow: number | null;
   /** Hours since the post went up; null when unknown. */
   ageHours: number | null;
+  /** The post reports no view count (carousel / quote posts): the badge says "No views". */
+  noViews?: boolean;
+  /** The account's tracked post count when known; 0 makes the badge say "No posts". */
+  accountPosts?: number | null;
 }
 
 export interface AccountRow {

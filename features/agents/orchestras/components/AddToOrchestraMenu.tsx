@@ -16,6 +16,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast-service";
@@ -127,5 +130,76 @@ export function AddToOrchestraMenu({
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * The same "Add to Orchestra" choices as a submenu of a host ⋯ menu, for cards too narrow
+ * to carry the inline icon. The host owns the create dialog (`onCreate`), because this
+ * submenu unmounts with its menu and would take an open dialog down with it.
+ */
+export function AddToOrchestraSubmenu({
+  agentId,
+  onCreate,
+  className,
+}: {
+  agentId: string;
+  onCreate: () => void;
+  className?: string;
+}) {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { orchestras } = useOrchestrasList({ auto: false });
+
+  const addTo = async (conductorId: string, name: string) => {
+    const res = await dispatch(addAgentToOrchestra({ conductorId, agentId }));
+    if (res.ok) toast.success(`Added to \u201c${name}\u201d.`);
+    else toast.error(res.error ?? "Could not add to Orchestra.");
+  };
+
+  return (
+    <DropdownMenuSub
+      onOpenChange={(open) => {
+        if (open) dispatch(fetchOrchestras());
+      }}
+    >
+      <DropdownMenuSubTrigger className={cn("gap-2", className)}>
+        <Network className="h-4 w-4" />
+        Add to Orchestra
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="w-56">
+        <DropdownMenuItem onSelect={onCreate} className="gap-2">
+          <Plus className="h-4 w-4" />
+          New Orchestra with this agent…
+        </DropdownMenuItem>
+        {orchestras.length > 0 && <DropdownMenuSeparator />}
+        {orchestras.slice(0, 8).map((orchestra) => {
+          const a = accentClasses(orchestra.config.accent);
+          return (
+            <DropdownMenuItem
+              key={orchestra.conductorId}
+              onSelect={() =>
+                addTo(orchestra.conductorId, orchestra.label || orchestra.name)
+              }
+              className="gap-2"
+            >
+              <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", a.dot)} />
+              <span className="truncate">{orchestra.label || orchestra.name}</span>
+              <span className="ml-auto type-meta text-muted-foreground">
+                {orchestra.memberCount}
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => router.push("/agents/orchestras")}
+          className="gap-2"
+        >
+          <ListTree className="h-4 w-4" />
+          Browse all Orchestras
+        </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
 }

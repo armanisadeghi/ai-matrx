@@ -2,12 +2,15 @@
 
 import { Link as LinkIcon } from "lucide-react";
 import { useCopyShortLink } from "@ai-matrx/kit/short-link-react";
+import { shortLinkMinter } from "@ai-matrx/data/short-link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 import { MenuItemCloseLabel } from "./menuCheckboxId";
+
+const mint = shortLinkMinter(supabase);
 
 /**
  * "Copy short link" — a short URL for THE CURRENT PAGE, query string and all,
@@ -19,7 +22,7 @@ import { MenuItemCloseLabel } from "./menuCheckboxId";
  */
 export function CopyShortLinkMenuItem() {
   const organizationId = useAppSelector(selectOrganizationId);
-  const { copy } = useCopyShortLink(supabase, {
+  const { copy } = useCopyShortLink(mint, {
     organizationId: organizationId ?? "",
     onCopied: (url) => toast.success("Short link copied", { description: url }),
     onError: (error) =>
