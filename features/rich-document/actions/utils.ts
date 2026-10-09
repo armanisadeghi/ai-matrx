@@ -259,6 +259,23 @@ function boundOutputSchema(ctx: RichDocumentActionContext): unknown {
   return agentId ? selectAgentOutputSchema(state, agentId) : null;
 }
 
+/**
+ * The host store, ONLY when it carries every chat slice `need` names (the slices the selector about to run
+ * reads); null otherwise. Every menu-time and run-time read of chat state in these handlers goes through
+ * this, so a host state without them HIDES an action instead of throwing out of the whole menu
+ * (audit9 B14: `reading 'byConversationId'` on every Applet build). Guard:
+ * `actions/__tests__/visible-on-empty-host-state.test.ts` (every registered action, empty state).
+ */
+type HostState = ReturnType<RichDocumentActionContext["getState"]>;
+export function chatStateOf(
+  ctx: Pick<RichDocumentActionContext, "getState">,
+  need: readonly (keyof HostState)[],
+): HostState | null {
+  const state = ctx.getState?.() as Partial<HostState> | undefined;
+  if (!state || need.some((slice) => !state[slice])) return null;
+  return state as HostState;
+}
+
 export function contentForDestination(ctx: RichDocumentActionContext): string {
   // A structured JSON answer arrives as what its block draws (prose, chips,
   // tables), never its `{"summary": …}` payload.

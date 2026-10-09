@@ -8,7 +8,7 @@ import { Copy, Brain } from "lucide-react";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
-import { contentForDestination } from "../utils";
+import { chatStateOf, contentForDestination } from "../utils";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 // THE one-click Copy (Arman, 2026-10-04): formatted for Docs / Gmail AND the
@@ -51,7 +51,7 @@ registerAction({
     // read it from the store (the whole record, thinking included).
     const record =
       ctx.source.type === "chat-message"
-        ? ctx.getState().messages?.byConversationId?.[ctx.source.conversationId]
+        ? chatStateOf(ctx, ["messages"])?.messages.byConversationId[ctx.source.conversationId]
             ?.byId?.[ctx.source.messageId]
         : undefined;
     const fullContent = record

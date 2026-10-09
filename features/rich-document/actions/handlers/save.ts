@@ -28,6 +28,7 @@ import {
   contentFileName,
   deriveContentTitle,
   contentForDestination,
+  chatStateOf,
 } from "../utils";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
@@ -354,18 +355,18 @@ registerAction({
     // label as the title, cleaned previews as association labels).
     if (ctx.source.type === "chat-message") {
       const { conversationId, messageId } = ctx.source;
-      const state = ctx.getState();
+      const state = chatStateOf(ctx, ["conversations", "messages"]);
       ctx.dispatch(
         setPendingSource(
           buildTaskSeedFromMessage({
             content: contentForDestination(ctx),
             messageId: messageId || null,
             conversationId: conversationId || null,
-            conversationTitle: conversationId
+            conversationTitle: conversationId && state
               ? selectConversationTitle(conversationId)(state)
               : null,
             messagePosition:
-              conversationId && messageId
+              conversationId && messageId && state
                 ? selectMessagePosition(conversationId, messageId)(state)
                 : undefined,
             metadata: ctx.metadata,

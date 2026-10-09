@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { chatIds, deriveContentTitle } from "../utils";
+import { chatIds, chatStateOf, deriveContentTitle } from "../utils";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
@@ -28,10 +28,8 @@ function quote(ctx: RichDocumentActionContext): boolean {
   // outbound path that skips `contentForDestination`'s kind → markdown step.
   const text = unwrapKindEnvelopes(ctx.content).trim();
   if (!conversationId || !text) return false;
-  const existing = selectInstanceContextEntry(
-    conversationId,
-    QUOTED_PASSAGES_CONTEXT_KEY,
-  )(ctx.getState());
+  const state = chatStateOf(ctx, ["instanceContext"]);
+  const existing = state ? selectInstanceContextEntry(conversationId, QUOTED_PASSAGES_CONTEXT_KEY)(state) : undefined;
   const prior = Array.isArray(existing?.value) ? existing.value : [];
   ctx.dispatch(
     setContextEntries({

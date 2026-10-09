@@ -35,6 +35,7 @@ import {
   getErrorMessage,
   requireAuth,
   contentForDestination,
+  chatStateOf,
 } from "../utils";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -49,7 +50,8 @@ async function resolveAnsweredQuestion(
 ): Promise<string | null> {
   const { conversationId, messageId } = chatIds(ctx);
   if (!conversationId || !messageId) return null;
-  const state = ctx.getState();
+  const state = chatStateOf(ctx, ["messages"]);
+  if (!state) return null;
   const self = selectMessageById(conversationId, messageId)(state);
   if (!self || self.role === "user") return null;
   const thread = selectOrderedMessageIds(conversationId)(state).map((id) => {
