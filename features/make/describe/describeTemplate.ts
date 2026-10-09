@@ -21,6 +21,7 @@ import {
   describeCheck,
   describeSpec,
   describeVocabulary,
+  parseDescribeTemplate,
   safeReuses,
   templateDeclaration,
   type ExistingTable as PackageExistingTable,
@@ -67,6 +68,14 @@ export interface DescribeAnswer {
   reuses: Array<{ token: string; existing_table_id: string }>;
 }
 
+/** The mandate answered, but not in a shape the browser can use. Marks the failure so the box says it plainly. */
+export class AnswerRefused extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AnswerRefused";
+  }
+}
+
 /** Narrow the mandate's JSON; a missing spec throws in one line. */
 export function coerceDescribeAnswer(value: unknown): DescribeAnswer {
   const v = (value ?? {}) as Record<string, unknown>;
@@ -74,7 +83,8 @@ export function coerceDescribeAnswer(value: unknown): DescribeAnswer {
   if (!template || typeof template !== "object" || Array.isArray(template)) throw new Error("The answer held no template.");
   const notes = Array.isArray(v.notes) ? v.notes.filter((n): n is string => typeof n === "string") : [];
   const reuses = Array.isArray(v.reuses) ? (v.reuses as DescribeAnswer["reuses"]).filter((r) => r && typeof r.token === "string") : [];
-  return { template: template as Record<string, unknown>, notes, reuses };
+  // The agent's stored schema carries the deep parts as JSON text; the package's ONE deserializer opens them.
+  return { template: parseDescribeTemplate(template as Record<string, unknown>), notes, reuses };
 }
 
 /**

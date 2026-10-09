@@ -21,7 +21,7 @@ import Link from "next/link";
 import { supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
+import { HeadlessAgentRunError, useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import type { MadeObject } from "../gallery/catalogue";
 import { templatePreviewHref } from "../gallery/galleryHref";
 
 import { secondsWords } from "./made";
+import { AnswerRefused } from "./describeTemplate";
 import {
   applySafeReuses,
   bindReuses,
@@ -48,6 +49,10 @@ import {
 } from "./describeTemplate";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+// What the person reads when it fails — plain, no internal words; the reason is in the console and on the run.
+const WRITTEN_WRONG = "That did not come out right. Try again, or say it a little differently.";
+const STOPPED = "That stopped before it finished. Nothing was changed. Try again.";
+
 const DESCRIBE = MANDATE_KEYS.make__describe_template;
 const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
 
@@ -69,6 +74,7 @@ export function DescribeBox() {
   useDeclaredSurfaceMandates(DESCRIBE_DISCLOSURE);
   const [sentence, setSentence] = useState("");
   const [run, setRun] = useState<Run>({ phase: "idle" });
+  // A press before the organization has loaded is KEPT, not dropped: it runs the moment the organization is ready.
   const [askOrganization, setAskOrganization] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -78,6 +84,15 @@ export function DescribeBox() {
     const tick = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(tick);
   }, [busy]);
+
+  useEffect(() => {
+    if (askOrganization && organizationId) {
+      setAskOrganization(false);
+      void start();
+    }
+    // start reads the latest sentence; it must run exactly once per kept press
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askOrganization, organizationId]);
 
   const start = async () => {
     const said = sentence.trim();
@@ -117,7 +132,13 @@ export function DescribeBox() {
         initiation: "user",
         organizationId,
         variables: describeVariables(said, facts, tables),
-        coerce: (v) => coerceDescribeAnswer(v),
+        coerce: (v) => {
+          try {
+            return coerceDescribeAnswer(v);
+          } catch (e) {
+            throw new AnswerRefused(e instanceof Error ? e.message : String(e));
+          }
+        },
       });
       lap("model");
 
@@ -127,8 +148,8 @@ export function DescribeBox() {
       const checked = checkDescribeTemplate(safe.template, tables);
       lap("check");
       if (!checked.ok) {
-        console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
-        setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
+        console.warn("[make:describe] the store's check refused the spec", checked.line, checked.problems, checked.autoFixes);
+        setRun({ phase: "failed", why: WRITTEN_WRONG, templateId: null, answer: null });
         return;
       }
       const notes = [...answer.notes, ...safe.notes, ...checked.autoFixes];
@@ -143,13 +164,16 @@ export function DescribeBox() {
       split.install_calls = done.calls;
       if (!done.ok || !done.answer) {
         const refusal = done.answer?.refusal as { message?: string } | null | undefined;
-        setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
+        console.error("[make:describe] the install stopped", refusal?.message ?? done.error?.message);
+        setRun({ phase: "failed", why: STOPPED, templateId, answer: done.answer });
         return;
       }
       setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes });
     } catch (err: unknown) {
+      // The technical reason goes to the console (and, for a refused answer, onto the run itself); the person gets a plain sentence.
       const detail = (err as { detail?: string } | null)?.detail;
-      setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });
+      console.error("[make:describe] the setup failed", err, detail);
+      setRun({ phase: "failed", why: err instanceof AnswerRefused || err instanceof HeadlessAgentRunError ? WRITTEN_WRONG : STOPPED, templateId: null, answer: null });
     }
   };
 
