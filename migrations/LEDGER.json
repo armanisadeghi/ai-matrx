@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T05:23:49.566Z",
+  "generated_at": "2026-10-09T05:26:39.583Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3907,6 +3907,12 @@
       "filename": "hotdoors7_c_the_memo_sweep_compares_the_new_set_paths.sql",
       "checksum": "7471d53107fd500c55e954d33fc3b613bb06cd368d7fd16e4db805df5e78ab55",
       "applied_at": "2026-10-09 05:19:09.331871+00"
+    },
+    "migrations/campaign/hotdoors7_d_the_checklist_templates_are_asked_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_d_the_checklist_templates_are_asked_once.sql",
+      "checksum": "1c79a9a919063403780a9e98ee77fe58a99cc16289207ef5df2b91b039cc1c93",
+      "applied_at": "2026-10-09 05:26:37.621332+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",

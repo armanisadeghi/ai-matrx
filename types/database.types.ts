@@ -81158,6 +81158,7 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      code_locations: { Args: { p_keys?: string[] }; Returns: Json }
       latest_references: {
         Args: {
           p_exclude_type_ids?: string[]

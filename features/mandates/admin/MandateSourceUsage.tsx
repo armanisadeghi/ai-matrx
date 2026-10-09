@@ -31,7 +31,9 @@ import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, OctagonAlert } from "lucide-react";
+import { repoGithubNames } from "@/features/mandates/code-references/data";
+import { githubRangeUrl } from "@/features/mandates/code-location/codeLocation";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
@@ -80,7 +82,7 @@ export function splitLocation(location: string): {
   line: string | null;
   where: string;
 } {
-  const match = /^(.*?)(?::(\d+))?$/.exec(location);
+  const match = /^(.*?)(?::(\d+(?:-\d+)?))?$/.exec(location);
   const path = match?.[1] ?? location;
   const line = match?.[2] ?? null;
   const parts = path.split("/");
@@ -94,15 +96,35 @@ export function splitLocation(location: string): {
   };
 }
 
+/** The file at the reference's lines on GitHub (scanner >= 0.2.24 adds `line_end`). */
+function referenceGithubUrl(
+  row: MandateReferenceRow,
+  repos: ReadonlyMap<string, string | null> | undefined,
+): string | null {
+  const name = row.repo_slug ? repos?.get(row.repo_slug) : null;
+  if (!name || !row.file_path || typeof row.line !== "number" || row.line < 1) return null;
+  const lineEnd = (row as MandateReferenceRow & { line_end?: number | null }).line_end;
+  return githubRangeUrl(name, {
+    repo: row.repo_slug ?? "",
+    filePath: row.file_path,
+    lineStart: row.line,
+    lineEnd: typeof lineEnd === "number" && lineEnd >= row.line ? lineEnd : null,
+  });
+}
+
 function RowLine({
   row,
   singleSiteByDesign,
   copyLabel,
+  repos,
 }: {
   row: MandateReferenceRow;
   singleSiteByDesign: boolean;
   copyLabel: string;
+  /** Repo slug → GitHub name; given only for Defined in rows. */
+  repos?: ReadonlyMap<string, string | null>;
 }) {
+  const github = referenceGithubUrl(row, repos);
   return (
     <div className="px-3 py-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -118,6 +140,17 @@ function RowLine({
           {referenceTypeWords(row.reference_type)}
         </span>
         <TapTargetCopyButton value={row.location} variant="transparent" ariaLabel={copyLabel} />
+        {github ? (
+          <a
+            href={github}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open ${row.location} on GitHub`}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLink className="size-4" aria-hidden="true" />
+          </a>
+        ) : null}
       </div>
       {row.flag_sentence ? (
         <p className="mt-1 type-secondary text-destructive">
@@ -140,7 +173,7 @@ function LocationText({ location }: { location: string }) {
     <span className="min-w-0 flex-1" title={location}>
       <span className="font-medium [overflow-wrap:anywhere]">{file}</span>
       {line ? (
-        <span className="text-muted-foreground"> · line {line}</span>
+        <span className="text-muted-foreground"> · {line.includes("-") ? "lines" : "line"} {line}</span>
       ) : null}
       {where ? (
         <span className="block truncate type-secondary text-muted-foreground">
@@ -166,6 +199,21 @@ export function MandateSourceUsage({
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(true);
   const loading = reading;
+  // Repo → GitHub name, for the Defined in links. A failed read only means no
+  // link; the location itself still shows and copies.
+  const [repos, setRepos] = useState<ReadonlyMap<string, string | null>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    repoGithubNames().then(
+      (names) => {
+        if (!cancelled) setRepos(names);
+      },
+      (cause: unknown) => console.warn("[MandateSourceUsage] repository names unreadable", cause),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -264,6 +312,7 @@ export function MandateSourceUsage({
                 row={row}
                 singleSiteByDesign={false}
                 copyLabel="Copy declaration location"
+                repos={repos}
               />
             ))
           ) : usesFallbackDeclaration ? (
