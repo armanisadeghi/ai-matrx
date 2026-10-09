@@ -15,6 +15,7 @@
  * row draws the same slots in the same order.
  */
 import type { ComponentType } from "react";
+import Link from "next/link";
 import {
   Banknote,
   CalendarX,
@@ -116,6 +117,8 @@ export interface SpendFlagHit {
   slot: SpendFlagSlot;
   severity: "critical" | "warning" | "info" | "hint";
   detail?: string;
+  /** Where the problem is fixed (the "Not ready" flag opens the page that fills the input). */
+  href?: string;
 }
 
 const TONE: Record<SpendFlagHit["severity"], { tone: IndicatorTone; soft?: boolean }> = {
@@ -142,7 +145,30 @@ export function spendFlagItems(set: readonly SpendFlagSlot[], hits: readonly Spe
 }
 
 export function SpendFlagStrip({ set, hits }: { set: readonly SpendFlagSlot[]; hits: readonly SpendFlagHit[] }) {
-  return <IndicatorStrip items={spendFlagItems(set, hits)} />;
+  const items = spendFlagItems(set, hits);
+  const linked = hits.filter((h) => h.href);
+  if (linked.length === 0) return <IndicatorStrip items={items} />;
+  // A flag with a fix page opens it: the strip is split around each linked slot so every icon keeps
+  // its fixed position (same 4px gap), and the linked icon is a real link.
+  return (
+    <span className="inline-flex shrink-0 flex-nowrap items-center gap-1 align-middle">
+      {items.map((item) => {
+        const href = linked.find((h) => h.slot === item.id)?.href;
+        if (!href) return <IndicatorStrip key={item.id} items={[item]} />;
+        return (
+          <Link
+            key={item.id}
+            href={href}
+            data-flag-link={item.id}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex rounded-sm hover:opacity-80 focus-visible:outline focus-visible:outline-1 focus-visible:outline-ring"
+          >
+            <IndicatorStrip items={[item]} />
+          </Link>
+        );
+      })}
+    </span>
+  );
 }
 
 /** The strip's width for a column: 14px glyphs + 4px gaps + cell padding. */

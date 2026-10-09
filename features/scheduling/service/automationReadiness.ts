@@ -109,15 +109,30 @@ export function notReadyFor(mandateKeys: readonly (string | null | undefined)[],
   return out;
 }
 
-/** The flag-strip hit: one "Not ready" icon, the missing inputs in its tooltip. */
+/** A platform-wide run (no site, brand or tracker) is filled on the keyword data-quality desk. */
+export const PLATFORM_SCOPE_FILL_URL = "/marketing/operations/data-quality";
+
+/** Where one missing input is filled. Older rows wrote the generic "/marketing" for a platform-wide run. */
+export function fillUrlFor(verdict: NotReadyVerdict, missing: ReadinessMissing): string {
+  const url = missing.fill_url.trim();
+  if (verdict.scope_key === "platform" && (url === "" || url === "/" || url === "/marketing")) {
+    return PLATFORM_SCOPE_FILL_URL;
+  }
+  return url;
+}
+
+/** The flag-strip hit: one "Not ready" icon, the missing inputs in its tooltip, opening the fill page. */
 export function notReadyHit(mandateKeys: readonly (string | null | undefined)[], orgId?: string | null): SpendFlagHit | null {
   const verdicts = notReadyFor(mandateKeys, orgId);
   if (verdicts.length === 0) return null;
   const labels = Array.from(new Set(verdicts.flatMap((v) => v.missing.map((m) => m.label))));
   const scopes = new Set(verdicts.map((v) => `${v.organization_id}|${v.scope_key}`)).size;
+  const first = verdicts.find((v) => v.missing.length > 0);
+  const href = first ? fillUrlFor(first, first.missing[0]) : undefined;
   return {
     slot: "not_ready",
     severity: "critical",
     detail: `Missing ${labels.join(", ")}${scopes > 1 ? ` (${scopes} scopes)` : ""}`,
+    href: href && href.startsWith("/") ? href : undefined,
   };
 }
