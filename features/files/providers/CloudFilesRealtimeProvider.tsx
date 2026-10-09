@@ -17,7 +17,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   attachCloudFilesRealtime,
@@ -25,6 +25,8 @@ import {
 } from "@/features/files/redux/realtime-middleware";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
 import { whenPrimaryContentShown } from "@/lib/boot/primaryContent";
+import { whenLateIdle } from "@/lib/boot/lateIdle";
+import { selectTreeStatus } from "@/features/files/redux/selectors";
 import {
   invalidateAll as invalidateBlobCache,
   setBlobCacheIdentity,
@@ -38,6 +40,7 @@ export function CloudFilesRealtimeProvider({
   children,
 }: CloudFilesRealtimeProviderProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const userId = useAppSelector(selectUserId);
 
   // Stamp the blob cache (memory + IDB tiers) with the current identity.
@@ -62,23 +65,30 @@ export function CloudFilesRealtimeProvider({
       return undefined;
     }
 
-    // Hydrate the tree — and attach its channel, whose SUBSCRIBED reconcile reads it too — as soon as the page's own content is on screen
-    // (`lib/boot/primaryContent`, lane PAGE-BUNDLE-2: ~1.2 s of database work
-    // that competed with a table page's rows; no page hold → at load). The
-    // middleware also fires a reconcile on SUBSCRIBED — calling both is
-    // intentional: "files are ready" must not wait for the channel handshake.
-    let live = true;
-    void whenPrimaryContentShown().then(() => {
-      if (!live) return;
-      dispatch(attachCloudFilesRealtime(userId));
-      void dispatch(loadUserFileTree({ userId }));
-    });
+    // Hydrate the WHOLE tree — and attach its channel, whose SUBSCRIBED reconcile reads it too —
+    // in the late tier: after the page's own content is on screen (`lib/boot/primaryContent`) AND
+    // the page has gone idle plus a few seconds (`lib/boot/lateIdle`). ~1.2 s of database work no
+    // first paint needs: every surface that shows the tree (files pages, cloud tabs, pickers,
+    // `useCloudTree`, the camera library) reads it itself when the tree is still `idle`, so
+    // engaging one before the late tier loads it at once. The middleware also fires a reconcile
+    // on SUBSCRIBED — calling both is intentional: "files are ready" must not wait for the
+    // channel handshake.
+    const controller = new AbortController();
+    void whenPrimaryContentShown()
+      .then(() => whenLateIdle(undefined, controller.signal))
+      .then((ok) => {
+        if (!ok) return;
+        dispatch(attachCloudFilesRealtime(userId));
+        if (selectTreeStatus(store.getState()) === "idle") {
+          void dispatch(loadUserFileTree({ userId }));
+        }
+      });
 
     return () => {
-      live = false;
+      controller.abort();
       dispatch(detachCloudFilesRealtime());
     };
-  }, [dispatch, userId]);
+  }, [dispatch, store, userId]);
 
   return <>{children ?? null}</>;
 }

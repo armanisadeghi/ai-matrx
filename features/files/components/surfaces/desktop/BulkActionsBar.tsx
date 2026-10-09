@@ -1,10 +1,11 @@
 /**
- * features/files/components/surfaces/dropbox/BulkActionsBar.tsx
+ * features/files/components/surfaces/desktop/BulkActionsBar.tsx
  *
- * Bottom-anchored toolbar that appears whenever one or more rows are
- * checkbox-selected in the file list. Mirrors Dropbox / Drive: a sticky strip
- * with a clear count, a few high-signal actions, and a way to dismiss the
- * selection without firing anything.
+ * The Files bulk actions, drawn INSIDE the table's own selection bar
+ * (`MatrxDataTable` `selection.actions`), which owns the count, "Select all N"
+ * and Clear. It used to be a fixed pill floating over the table's footer.
+ * `ids` is what the actions act on: the checked ids, or — when the person chose
+ * "Select all N" — every item matching the list's current filters.
  *
  * Bulk delete and bulk move shipped 2026-04-26 (`DELETE /files/bulk`,
  * `POST /files/bulk/move`, `POST /folders/bulk/move`). Download is still
@@ -26,7 +27,6 @@ import {
   Star,
   Trash2,
   Users,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
@@ -50,7 +50,6 @@ import {
 import {
   selectAllFilesMap,
   selectAllFoldersMap,
-  selectSelection,
 } from "@/features/files/redux/selectors";
 import { clearSelection } from "@/features/files/redux/slice";
 import {
@@ -75,9 +74,8 @@ const MAX_PARALLEL = 4;
  */
 const NON_INGESTABLE_MIME_PREFIXES = ["image/", "video/", "audio/"];
 
-export function BulkActionsBar({ className }: { className?: string }) {
+export function BulkActionsBar({ ids }: { ids: readonly string[] }) {
   const dispatch = useAppDispatch();
-  const selection = useAppSelector(selectSelection);
   const filesById = useAppSelector(selectAllFilesMap);
   const foldersById = useAppSelector(selectAllFoldersMap);
 
@@ -93,14 +91,14 @@ export function BulkActionsBar({ className }: { className?: string }) {
   const { selectedFileIds, selectedFolderIds } = useMemo(() => {
     const fileIds: string[] = [];
     const folderIds: string[] = [];
-    for (const id of selection.selectedIds) {
+    for (const id of ids) {
       if (filesById[id]) fileIds.push(id);
       else if (foldersById[id]) folderIds.push(id);
     }
     return { selectedFileIds: fileIds, selectedFolderIds: folderIds };
-  }, [selection.selectedIds, filesById, foldersById]);
+  }, [ids, filesById, foldersById]);
 
-  const totalCount = selection.selectedIds.length;
+  const totalCount = ids.length;
   const hasFiles = selectedFileIds.length > 0;
   const hasAny = totalCount > 0;
 
@@ -120,10 +118,6 @@ export function BulkActionsBar({ className }: { className?: string }) {
   );
 
   // ─── Handlers ───────────────────────────────────────────────────────────
-
-  const handleClear = useCallback(() => {
-    dispatch(clearSelection());
-  }, [dispatch]);
 
   const handleDownload = useCallback(async () => {
     if (!hasFiles || busyKind) return;
@@ -327,17 +321,10 @@ export function BulkActionsBar({ className }: { className?: string }) {
 
   return (
     <div
-      className={cn(
-        "pointer-events-auto fixed bottom-4 left-1/2 z-30 -translate-x-1/2 flex max-w-[min(95vw,52rem)] items-center gap-2 rounded-full border border-border bg-card/95 backdrop-blur px-2 py-1.5 shadow-lg",
-        className,
-      )}
+      className="relative flex flex-wrap items-center gap-1"
       role="toolbar"
       aria-label="Bulk actions"
     >
-      <span className="px-2 text-sm font-medium tabular-nums">
-        {totalCount} selected
-      </span>
-      <span className="h-5 w-px bg-border" />
 
       <BulkActionButton
         icon={<Download className="h-3.5 w-3.5" />}
@@ -401,16 +388,6 @@ export function BulkActionsBar({ className }: { className?: string }) {
         tone="destructive"
       />
 
-      <span className="h-5 w-px bg-border" />
-      <button
-        type="button"
-        onClick={handleClear}
-        className="flex h-8 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-        aria-label="Clear selection"
-      >
-        <X className="h-3.5 w-3.5" />
-        Cancel
-      </button>
 
       {transientNote ? (
         <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning-ink whitespace-nowrap">

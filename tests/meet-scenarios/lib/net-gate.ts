@@ -77,24 +77,42 @@ export class NetGate {
     this.server = null;
   }
 
+  /**
+   * A bottleneck link, per direction: bytes leave at `kbps` and arrive `latencyMs` later, PIPELINED —
+   * many chunks are in flight at once, as on a real path. (Until 2026-10-09 every chunk waited its
+   * full latency before the next was accepted, so 1.2 KB TLS records crawled at ~24 kbps and a
+   * "400 ms / 300 kbps café" became a minute-deep queue.) A queue deeper than `QUEUE_MS` of the link
+   * pushes back on the sender (TCP backpressure), never drops bytes inside a TLS stream.
+   */
   private shaper(): Transform {
     const gate = this;
-    let budgetBytes = 0;
-    let last = Date.now();
+    const QUEUE_MS = 500;
+    let nextFree = Date.now();
+    let queued = 0;
+    let waiting: TransformCallback | null = null;
     return new Transform({
       transform(chunk: Buffer, _enc: BufferEncoding, done: TransformCallback) {
         const { latencyMs, kbps } = gate.throttle;
-        let wait = latencyMs;
-        if (kbps > 0) {
-          const now = Date.now();
-          const bytesPerMs = (kbps * 1000) / 8 / 1000;
-          budgetBytes = Math.min(budgetBytes + (now - last) * bytesPerMs, bytesPerMs * 250);
-          last = now;
-          budgetBytes -= chunk.length;
-          if (budgetBytes < 0) wait += Math.ceil(-budgetBytes / bytesPerMs);
+        if (latencyMs <= 0 && kbps <= 0) {
+          done(null, chunk);
+          return;
         }
-        if (wait <= 0) done(null, chunk);
-        else setTimeout(() => done(null, chunk), wait);
+        const now = Date.now();
+        const bytesPerMs = kbps > 0 ? (kbps * 1000) / 8 / 1000 : Infinity;
+        const sendAt = Math.max(now, nextFree) + (bytesPerMs === Infinity ? 0 : chunk.length / bytesPerMs);
+        nextFree = sendAt;
+        queued += chunk.length;
+        setTimeout(() => {
+          queued -= chunk.length;
+          this.push(chunk);
+          if (waiting !== null && (bytesPerMs === Infinity || queued / bytesPerMs < QUEUE_MS)) {
+            const resume = waiting;
+            waiting = null;
+            resume();
+          }
+        }, Math.max(0, sendAt + latencyMs - now));
+        if (bytesPerMs !== Infinity && queued / bytesPerMs >= QUEUE_MS) waiting = done;
+        else done();
       },
     });
   }

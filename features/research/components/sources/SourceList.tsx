@@ -114,6 +114,7 @@ import {
   authorityTier,
 } from "../../constants";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { researchTopicHubHref } from "@/features/knowledge/hub/legacyRoutes";
@@ -1592,6 +1593,9 @@ export default function SourceList() {
     );
   };
 
+  // Cards (below md) scroll with the page; the table fills it so its pager is on screen.
+  const tableWidth = useMediaQuery("(min-width: 768px)");
+
   const tableRead: MatrxDataTableRead = sourcesError
     ? {
         status: "error",
@@ -1602,7 +1606,14 @@ export default function SourceList() {
     : { status: sourcesLoading && !sources ? "loading" : "ready" };
 
   return (
-    <div className="p-3 sm:p-4 space-y-3 overflow-x-hidden">
+    // The table fills the page's height so its pager is pinned on screen: that is the
+    // spot the floating assists pill docks into (never over a row's copy icon).
+    <div
+      className={cn(
+        "gap-3 overflow-x-hidden p-3 sm:p-4",
+        tableWidth ? "flex h-full min-h-0 flex-col" : "space-y-3",
+      )}
+    >
       <SourceFilters
         filters={filters}
         onFilterChange={setFilters}
@@ -1612,7 +1623,7 @@ export default function SourceList() {
         hostnames={hostnames}
         count={formatSourceScoreCoverage(sourceList)}
         trailing={
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             {/* Finding this topic's captured pages across everything else you know is the
                 Knowledge hub's job (KNOWLEDGE-HUB §6, H6b); triage, ranking and export stay here. */}
             <Link
@@ -1641,6 +1652,7 @@ export default function SourceList() {
         columns={columns}
         getRowId={(s) => s.id}
         viewTabs={false}
+        frameHeight={tableWidth ? "fill" : "content"}
         detail={{ enabled: false }}
         isLoading={sourcesLoading && !sources}
         isFetching={sourcesLoading && !!sources}
@@ -1707,7 +1719,7 @@ export default function SourceList() {
           ),
         }}
         mobileCards={(s, _index, controls) => renderMobileCard(s, controls)}
-        mobileCardsBreakpoint="sm"
+        mobileCardsBreakpoint="md"
         emptyState={{
           title: "No sources found. Run a search to discover sources.",
         }}

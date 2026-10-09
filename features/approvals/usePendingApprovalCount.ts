@@ -22,6 +22,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -54,6 +55,8 @@ export function usePendingApprovalCount(): {
 } {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  // The shell's header badge mounts on every page: both counts wait for the idle flush.
+  const idleReady = useIdleReady();
   // The badge stands for the `/approvals` mount, so it counts that mount's kinds.
   const scope = {
     key: userId ?? "",
@@ -66,7 +69,7 @@ export function usePendingApprovalCount(): {
     // The badge's count is judged against the SAME mount the `/approvals` page
     // is — its kinds AND its scope (Bugbot round 10 #1).
     queryFn: () => countPendingProposals(userId ?? "", mounted, scope), // org-filter: server-call the organization only decides which kinds can act through an org-scoped server call; rows are never matched on it
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && idleReady,
     staleTime: 60_000,
     // A count that cannot be read is UNKNOWN, and the caller shows no badge —
     // "0" would be a claim nobody verified.
@@ -77,7 +80,7 @@ export function usePendingApprovalCount(): {
   const store = useQuery({
     queryKey: [...PENDING_APPROVALS_QUERY_KEY, "store", userId],
     queryFn: () => countStoreApprovals(userId ?? ""),
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && idleReady,
     staleTime: 60_000,
     retry: 1,
   });

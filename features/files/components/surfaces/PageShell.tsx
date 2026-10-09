@@ -145,10 +145,8 @@ import {
   loadVirtualChildren,
   moveAny,
 } from "@/features/files/redux/virtual-thunks";
-import { BulkActionsBar } from "./desktop/BulkActionsBar";
 import { ContentHeader } from "./desktop/ContentHeader";
 import { EmptyState } from "./desktop/EmptyState";
-import { FileGrid } from "./desktop/FileGrid";
 import { FileTable } from "./desktop/FileTable";
 import { FilesUrlSync } from "./FilesUrlSync";
 import { FilesRouteSelectionSync } from "./FilesRouteSelectionSync";
@@ -985,30 +983,8 @@ function PageShellDesktop({
                             onUploaded={handleUploadedIds}
                             onOpenFile={handleOpenUploadedFile}
                           >
-                            {viewMode === "grid" ? (
-                              <FileGrid
-                                folders={searchScopedFolders}
-                                files={searchScopedFiles}
-                                permissionsByResourceId={
-                                  permissionsByResourceId
-                                }
-                                section={section}
-                                searchQuery={searchQuery}
-                                filter={effectiveFilter}
-                                treeWideSearch={isSearching}
-                                onActivateFolder={handleSelectFolder}
-                                onActivateFile={handleSelectFile}
-                                emptyState={
-                                  section === "photos" ||
-                                  section === "shared" ||
-                                  section === "recents" ||
-                                  section === "trash" ? (
-                                    <SectionPlaceholder section={section} />
-                                  ) : undefined
-                                }
-                              />
-                            ) : (
                               <FileTable
+                                view={viewMode === "grid" ? "grid" : "list"}
                                 folders={searchScopedFolders}
                                 files={searchScopedFiles}
                                 permissionsByResourceId={
@@ -1029,7 +1005,6 @@ function PageShellDesktop({
                                   ) : undefined
                                 }
                               />
-                            )}
                           </FileUploadDropzone>
                         ) : null}
                       </div>
@@ -1088,12 +1063,7 @@ function PageShellDesktop({
               )}
             </ResizablePanelGroup>
 
-            {/* Bulk-actions toolbar — fixed-position pill at the bottom of the
-             * viewport. Renders nothing unless one or more rows are selected.
-             * Hidden in trash: its actions (move/visibility/soft-delete) are
-             * wrong for trashed rows — per-row Restore lives on the row menu
-             * instead (bulk trash ops tracked as a follow-up). */}
-            {section !== "trash" && <BulkActionsBar />}
+            {/* Bulk actions ride the table's own selection bar (FileTable). */}
 
             {/* Confirm dialog for keyboard-shortcut deletes. Destructive ops
              * always go through a dialog so an accidental Backspace press

@@ -1019,7 +1019,7 @@ function ProjectsTable({
         header: "Project",
         accessorKey: "name",
         filter: "text",
-        width: 310,
+        width: 270,
         minWidth: 200,
         cell: (p) => (
           <div className="flex items-center gap-2.5 min-w-0">
@@ -1043,8 +1043,8 @@ function ProjectsTable({
         id: "org",
         header: "Organization",
         accessorFn: (p) => orgEntry(p)?.name ?? "—",
-        width: 120,
-        minWidth: 110,
+        width: 240,
+        minWidth: 200,
         cell: (p) =>
           p.organizationId ? (
             <EntityRef
@@ -1143,6 +1143,9 @@ function ProjectsTable({
       detail={{ enabled: false }}
       onRowOpen={(p) => router.push(`/projects/${p.id}`)}
       window={{}}
+      // The page's own search (shared with the card view and the URL-less
+      // list query) is the single search box.
+      toolbar={{ search: false }}
       getRowHref={(p) => `/projects/${p.id}`}
       emptyState={{ title: "No projects match these column filters." }}
       copy={{

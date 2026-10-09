@@ -31,15 +31,19 @@ import {
   fetchAckedSuggestionIds,
 } from "@/features/kg-suggestions/service/kgSuggestionAckService";
 import { isLowConfidence } from "@/features/kg-suggestions/constants";
+import { useLateIdleReady } from "@/lib/boot/lateIdle";
 
 const TOAST_ID = "kg-new-suggestion";
-// Let the user land and orient before interrupting.
+// Let the user land and orient before interrupting. Nothing is READ before this either: the
+// suggestion list and the ack set are fetched when the delay (counted from the page's idle flush)
+// ends, and the toast shows as soon as they arrive — never a startup read for a toast 9 s away.
 const SHOW_DELAY_MS = 9000;
 
 export default function KgNewSuggestionNotifier() {
   const user = useAppSelector(selectUser);
   const userId = user?.id ?? null;
-  const { items } = useKgSuggestions({ global: true, status: "pending" });
+  const due = useLateIdleReady(SHOW_DELAY_MS);
+  const { items } = useKgSuggestions({ global: true, status: "pending" }, { autoFetch: due });
   const openInbox = useOpenKgSuggestions();
 
   // Durable "don't show again" set (loaded once per user). State (not ref) so
@@ -49,7 +53,7 @@ export default function KgNewSuggestionNotifier() {
   const shownRef = useRef(false);
 
   useEffect(() => {
-    if (!userId) return undefined;
+    if (!userId || !due) return undefined;
     let cancelled = false;
     fetchAckedSuggestionIds(userId)
       .then((set) => {
@@ -61,7 +65,7 @@ export default function KgNewSuggestionNotifier() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, due]);
 
   useEffect(() => {
     if (!userId || acked == null || shownRef.current) return undefined;
@@ -74,6 +78,7 @@ export default function KgNewSuggestionNotifier() {
     const unseenIds = unseen.map((i) => i.id);
     const count = unseen.length;
 
+    // The delay was already spent before the reads started (`due`); show on the next tick.
     const timer = setTimeout(() => {
       shownRef.current = true;
       toast.custom(
@@ -106,7 +111,7 @@ export default function KgNewSuggestionNotifier() {
         ),
         { id: TOAST_ID, duration: Infinity },
       );
-    }, SHOW_DELAY_MS);
+    }, 0);
 
     return () => clearTimeout(timer);
   }, [userId, acked, items, openInbox]);

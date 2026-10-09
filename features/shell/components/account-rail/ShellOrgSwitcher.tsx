@@ -52,8 +52,9 @@ type Variant = "rail" | "drawer";
 export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  // The closed trigger never asks for the scope tree (startup read); the open menu's panel does.
   const { activeOrgId, activeOrgName, organizations, promptForOrg, loadFailed } =
-    useActiveOrganizationPicker();
+    useActiveOrganizationPicker({ load: open });
   const objectOrganization = usePageObjectOrganization();
   const pathname = usePathname() ?? "";
   const adminSeat = pathname === "/administration" || pathname.startsWith("/administration/");

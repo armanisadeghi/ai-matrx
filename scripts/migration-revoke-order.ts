@@ -148,7 +148,7 @@ export class RevokeOrderRefusal extends Error {
 // ── small, local parsing helpers ────────────────────────────────────────────────────────
 
 /** Replace the CONTENT of '…' literals with spaces so a sentence can never read as a REVOKE. */
-function blankStrings(sql: string): string {
+export function blankStrings(sql: string): string {
   let out = "";
   let i = 0;
   while (i < sql.length) {
@@ -183,7 +183,7 @@ function blankStrings(sql: string): string {
 }
 
 /** Split `a(uuid, text), b(int)` on the commas that are not inside parentheses. */
-function splitTopLevel(list: string): string[] {
+export function splitTopLevel(list: string): string[] {
   const parts: string[] = [];
   let depth = 0;
   let cur = "";

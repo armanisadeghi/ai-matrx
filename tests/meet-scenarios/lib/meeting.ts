@@ -311,7 +311,7 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
 /** Press Leave the way a person does; if a leave menu opens, choose plain "Leave meeting". */
 export async function leave(actor: Actor, page: Page = actor.page): Promise<void> {
   await page.getByRole("button", { name: /^Leave( call| meeting)?$/ }).first().click();
-  const plain = page.getByRole("button", { name: /^Leave (the )?meeting$|^Just leave$/ });
+  const plain = page.getByRole("button", { name: /^Leave (the )?meeting$|^Just leave$|^Leave call$/ });
   if (await plain.first().isVisible({ timeout: 2000 }).catch(() => false)) await plain.first().click();
   actor.note("pressed Leave");
 }

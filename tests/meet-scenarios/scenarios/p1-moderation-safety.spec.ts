@@ -10,12 +10,12 @@ scenario("mod-mute-participant", async ({ cast }) => {
   const { host, guest } = await callWithGuest(cast);
   await openPersonMenu(host, GUEST);
   await pickMenuItem(host, /^Mute\b/i);
-  await seeUntil(guest, "muted by the host", (o) => o.microphone === "muted_by_host" || /muted by (the )?host/i.test(o.text), TIMEOUTS.noticeMs);
+  await seeUntil(guest, "muted by the host", (o) => o.microphone === "muted_by_host" || /(muted you|muted by (the )?host)/i.test(o.text), TIMEOUTS.noticeMs);
   // The host cannot unmute them, only ask.
   await openPersonMenu(host, GUEST);
   expect(await hasButton(host.page, /^Unmute\b.*/) && await host.page.getByRole("menuitem", { name: new RegExp(`^Unmute ${GUEST}`) }).count() > 0, "the host has no remote unmute").toBe(false);
   await pickMenuItem(host, /ask (to )?unmute/i);
-  await seeNotice(guest, "ask-unmute", /asked you to unmute|ask(ed)? to unmute|please unmute/i, TIMEOUTS.noticeMs);
+  await seeNotice(guest, "ask-unmute", /(asked|asking) you to unmute|ask(ed)? to unmute|please unmute/i, TIMEOUTS.noticeMs);
   // Still muted until the guest chooses.
   expect(await hasButton(guest.page, /^Unmute\b/), "still muted until the guest acts").toBe(true);
   await press(guest, "Unmute", guest.page.getByRole("button", { name: /^Unmute\b/ }), 5000);

@@ -17,13 +17,19 @@ function scopeKeyOf(scopes: readonly KnobScope[] | undefined): string {
   return (scopes ?? []).map((scope) => `${scope.kind}:${scope.id}`).join(",");
 }
 
-/** React-only facade over the shared effective-knob snapshot cache. */
+/**
+ * React-only facade over the shared effective-knob snapshot cache. `options.enabled: false`
+ * answers only what is already cached and asks for nothing (a provider that mounts on every page
+ * resolves its knob once something actually needs it).
+ */
 export function useEffectiveKnob(
   organizationId: string | null | undefined,
   userId: string | null | undefined,
   ref: KnobRef,
   scopes?: readonly KnobScope[],
+  options?: { enabled?: boolean },
 ): unknown {
+  const enabled = options?.enabled ?? true;
   const fullKey = typeof ref === "string" ? ref : `${ref.feature}.${ref.key}`;
   const scopeKey = scopeKeyOf(scopes);
   const value = useSyncExternalStore(
@@ -39,7 +45,7 @@ export function useEffectiveKnob(
   const signedIn = useSignedIn();
   const painted = usePaintedOrganizationHeld(organizationId);
   useEffect(() => {
-    if (value !== undefined || !signedIn || painted) return;
+    if (value !== undefined || !signedIn || painted || !enabled) return;
     void ensureEffectiveKnob(organizationId ?? null, userId ?? null, ref, scopes).catch(
       (error: unknown) => {
         const address = knobAddress(ref);
@@ -52,6 +58,6 @@ export function useEffectiveKnob(
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn, painted]);
+  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn, painted, enabled]);
   return value;
 }

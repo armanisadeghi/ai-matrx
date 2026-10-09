@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { whenPageIdle } from "@ai-matrx/kit/idle-scheduler";
 import { getFingerprint } from "@/lib/services/fingerprint-service";
 import {
   ACQUISITION_STORAGE_KEY,
@@ -37,12 +38,16 @@ function acquisitionVisitorId(): string | null {
   );
 }
 
+/** Where the person landed and from where — read at mount, before any client navigation. */
+type LandingSnapshot = { href: string; referrer: string };
+
 function buildPayload(
   visitorId: string,
   guestFingerprint: string,
+  landing: LandingSnapshot,
 ): FirstTouchPayload {
-  const url = new URL(window.location.href);
-  const referrer = safeObservedUrl(document.referrer);
+  const url = new URL(landing.href);
+  const referrer = safeObservedUrl(landing.referrer);
   let referrerHost: string | null = null;
   if (referrer) {
     try {
@@ -72,7 +77,7 @@ function buildPayload(
     capture_source: "browser_enrichment",
     referrer_state:
       isLocalAcquisitionHost(url.host) ||
-      isLocalAcquisitionReferrer(document.referrer)
+      isLocalAcquisitionReferrer(landing.referrer)
         ? "local_test"
         : !referrer
           ? "direct_or_withheld"
@@ -95,7 +100,12 @@ export function UserAcquisitionCapture() {
 
     let cancelled = false;
     const retryDelaysMs = [750, 2_500];
+    // The landing URL (its UTM parameters) and referrer are read NOW; the fingerprint and the
+    // first-touch POST wait for the page's idle flush — analytics never competes with paint.
+    const landing: LandingSnapshot = { href: window.location.href, referrer: document.referrer };
+    const controller = new AbortController();
     void (async () => {
+      if (!(await whenPageIdle(controller.signal)) || cancelled) return;
       const guestFingerprint = await getFingerprint();
       if (cancelled) return;
       const visitorId = acquisitionVisitorId() ?? guestFingerprint;
@@ -107,7 +117,7 @@ export function UserAcquisitionCapture() {
         // database function makes a repeat enrichment harmless.
       }
       const stored = readStored();
-      const observed = buildPayload(visitorId, guestFingerprint);
+      const observed = buildPayload(visitorId, guestFingerprint, landing);
       const payload: FirstTouchPayload = stored
         ? {
             ...observed,
@@ -169,6 +179,7 @@ export function UserAcquisitionCapture() {
     });
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 

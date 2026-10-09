@@ -87,6 +87,8 @@ export interface UseAiComplianceGateOptions {
    * write through the same audited `edu_set_age_band` RPC.
    */
   declarationVariant?: AgeDeclarationVariant;
+  /** `false` reads nothing (the first-sign-in popup already asked this session). Default true. */
+  enabled?: boolean;
 }
 
 export function useAiComplianceGate(
@@ -102,7 +104,7 @@ export function useAiComplianceGate(
     const res = await coppaService.getGate();
     if (!res.data) throw new Error(res.error ?? "The age and consent check could not be read");
     return res.data;
-  });
+  }, { enabled: options.enabled ?? true });
   const gate = gateRead.data ?? null;
   const loading = !gateRead.hasData && !gateRead.isError;
   const setGate = useCallback(

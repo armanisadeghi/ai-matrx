@@ -55,7 +55,7 @@ scenario("role-change-midcall", async ({ cast }) => {
   const before = await seeUntil(guest, "participant controls", (o) => o.phase === "in-call", TIMEOUTS.noticeMs);
   await openPersonMenu(host, GUEST);
   await pickMenuItem(host, /make (co-?host|presenter)/i);
-  await seeNotice(guest, "capability-gained", /you.re now (a |an )?(co-?host|presenter)|you.ve been made/i, TIMEOUTS.noticeMs);
+  await seeNotice(guest, "capability-gained", /you(.re| are) now (a |an )?(co-?host|presenter)|you.ve been made/i, TIMEOUTS.noticeMs);
   const after = await seeUntil(guest, "the new role on the guest's own screen", (o) => o.role !== before.role && (o.role === "cohost" || o.role === "presenter"), TIMEOUTS.noticeMs);
   expect(after.role, `the guest's role after the change; saw ${summarize(after)}`).toMatch(/cohost|presenter/);
   // Demote: the toolbar changes again and the reason is stated.

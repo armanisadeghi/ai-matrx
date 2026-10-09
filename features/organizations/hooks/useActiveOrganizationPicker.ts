@@ -17,7 +17,12 @@ import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap"
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
-export function useActiveOrganizationPicker() {
+/**
+ * `load: false` reads what is already in Redux without asking for the scope tree. The shell's
+ * switcher trigger passes `load: open` — the tree is warmed by DeferredSingletonCore at idle and
+ * the opened menu's own panel asks for it, so the closed trigger never reads at startup.
+ */
+export function useActiveOrganizationPicker({ load = true }: { load?: boolean } = {}) {
   const dispatch = useAppDispatch();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
@@ -31,9 +36,9 @@ export function useActiveOrganizationPicker() {
     // means this re-fires when auth hydrates async on (public) routes
     // (usePublicAuthSync lands ~100ms after mount) — without it, the org
     // picker on a public route would stay empty for a logged-in user.
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !load) return;
     void dispatch(ensureScopeTree({}));
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, load]);
 
   const selectOrganization = (id: string, name: string) => {
     dispatch(chooseActiveOrganization({ id, name }));
@@ -48,7 +53,7 @@ export function useActiveOrganizationPicker() {
     // anonymous visitor never dispatches ensureScopeTree, so treeStatus stays
     // 'idle' forever — reporting that as loading would spin the picker
     // indefinitely. Not authenticated = not loading, nothing to pick.
-    loading: isAuthenticated && (status === "idle" || status === "loading"),
+    loading: isAuthenticated && (status === "loading" || (load && status === "idle")),
     loadFailed: status === "error",
     selectOrganization,
   };

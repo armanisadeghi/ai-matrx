@@ -119,7 +119,12 @@ export function livenessSentenceFor(liveness: NeedsYouLiveness): string | null {
   }
 }
 
-export function useNeedsYou(): UseNeedsYouResult {
+/**
+ * `enabled: false` reads nothing, polls nothing and opens no channel. The always-mounted assist
+ * producer passes the late tier (`useLateIdleReady`) so the queue is never a startup read; the
+ * Needs You page reads at once.
+ */
+export function useNeedsYou({ enabled = true }: { enabled?: boolean } = {}): UseNeedsYouResult {
   // The queue is the PERSON's — every organization they can reach, never the
   // header's selected one. Rows carry their own organization.
   const userId = useAppSelector(selectUserId);
@@ -170,22 +175,24 @@ export function useNeedsYou(): UseNeedsYouResult {
 
   // `userId` is a dep so a sign-in re-reads at once instead of at the next poll.
   useEffect(() => {
+    if (!enabled) return;
     void load();
-  }, [load, userId]);
+  }, [load, userId, enabled]);
 
   // ── The poll floor ────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!enabled) return;
     const tick = () => {
       if (typeof document !== "undefined" && document.hidden) return;
       void loadRef.current();
     };
     const id = setInterval(tick, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [enabled]);
 
   // ── Postgres Changes ──────────────────────────────────────────────────────
   const { status: channelStatus } = useChannel(
-    userId
+    userId && enabled
       ? {
           topic: needsYouChannel.topic({ userId }),
           postgresChanges: [

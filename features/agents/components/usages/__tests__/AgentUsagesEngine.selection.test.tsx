@@ -183,12 +183,14 @@ describe("AgentUsagesEngine selection", () => {
     const immutableOnly = tableProps.selection.actions?.(
       rows.filter((row) => row.id.includes("immutable")),
       rows.filter((row) => row.id.includes("immutable")).map((row) => row.id),
+      { allMatching: false, count: rows.filter((row) => row.id.includes("immutable")).length, visibleCount: rows.filter((row) => row.id.includes("immutable")).length },
     );
     expect(renderToStaticMarkup(<>{immutableOnly}</>)).not.toContain("Move ");
 
     const mixed = tableProps.selection.actions?.(
       rows,
       rows.map((row) => row.id),
+      { allMatching: false, count: rows.length, visibleCount: rows.length },
     );
     expect(renderToStaticMarkup(<>{mixed}</>)).toContain("Move 1 mandate pin");
     expect(renderToStaticMarkup(<>{mixed}</>)).toContain("Move 1 usage");

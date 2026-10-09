@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T13:04:58.064Z",
+  "generated_at": "2026-10-09T14:14:01.626Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4939,6 +4939,24 @@
       "filename": "make_autodup_a_declaring_the_same_automation_again_reuses_it.sql",
       "checksum": "50633dce27ab336cd7decba65f0ac2aa5a128a3f6907e127ff3e1229d27749f4",
       "applied_at": "2026-10-09 13:04:55.810756+00"
+    },
+    "migrations/campaign/make_viewdup_a_declaring_the_same_view_again_reuses_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "make_viewdup_a_declaring_the_same_view_again_reuses_it.sql",
+      "checksum": "65001293a52dbb8c72294a5c7aa8f9653867d8cb4b1a715fceb7e6d95aacbf9e",
+      "applied_at": "2026-10-09 14:12:12.428224+00"
+    },
+    "migrations/campaign/make_viewdup_b_the_calendar_door_is_declared.sql": {
+      "source": "matrx-frontend",
+      "filename": "make_viewdup_b_the_calendar_door_is_declared.sql",
+      "checksum": "39995dad023d6e57efb3e381af8087093298c3688d2499401f236a7fe9fe9689",
+      "applied_at": "2026-10-09 14:12:07.202039+00"
+    },
+    "migrations/campaign/make_viewdup_c_the_admin_posts_table_keeps_one_of_each_view.sql": {
+      "source": "matrx-frontend",
+      "filename": "make_viewdup_c_the_admin_posts_table_keeps_one_of_each_view.sql",
+      "checksum": "1831d66874add1514b8a71833f33ad9dd32e120e5e2d930aa20076b4b2d99dd2",
+      "applied_at": "2026-10-09 14:14:00.704855+00"
     },
     "migrations/campaign/makehome_w5_a_public_form_wears_its_look.sql": {
       "source": "matrx-frontend",

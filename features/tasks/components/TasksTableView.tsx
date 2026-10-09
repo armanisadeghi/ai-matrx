@@ -147,7 +147,6 @@ export default function TasksTableView() {
         width: 420,
         minWidth: 240,
         cell: (task) => {
-          const labels = (task.settings?.labels ?? []) as string[];
           return (
             <div className="flex min-w-0 items-center gap-1.5">
               {/* THE DOOR LAW. The row already selects the task into the
@@ -169,28 +168,6 @@ export default function TasksTableView() {
                   }
                 />
               </span>
-              {labels.slice(0, 2).map((label) => (
-                <Badge
-                  key={label}
-                  variant="outline"
-                  className="h-4 shrink-0 px-1 text-[9px] font-normal"
-                >
-                  {LABEL_BY_VALUE[label] ?? label}
-                </Badge>
-              ))}
-              {labels.length > 2 && (
-                <span className="shrink-0 text-[9px] text-muted-foreground">
-                  +{labels.length - 2}
-                </span>
-              )}
-              <TaskProvenanceChip
-                compact
-                origin={task.origin ?? null}
-                sourceType={task.sourceType ?? null}
-                sourceUrl={task.sourceUrl ?? null}
-                sourceLabel={task.sourceLabel ?? null}
-                className="max-w-[180px] shrink-0"
-              />
             </div>
           );
         },
@@ -222,6 +199,57 @@ export default function TasksTableView() {
               />
             </span>
           ),
+      },
+      {
+        id: "labels",
+        header: "Labels",
+        accessorFn: (task) =>
+          ((task.settings?.labels ?? []) as string[])
+            .map((label) => LABEL_BY_VALUE[label] ?? label)
+            .join(", "),
+        width: 150,
+        minWidth: 110,
+        cell: (task) => {
+          const labels = (task.settings?.labels ?? []) as string[];
+          if (labels.length === 0) {
+            return <span className="text-xs text-muted-foreground">—</span>;
+          }
+          return (
+            <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+              {labels.slice(0, 2).map((label) => (
+                <Badge
+                  key={label}
+                  variant="outline"
+                  className="h-4 shrink-0 px-1 text-[9px] font-normal"
+                >
+                  {LABEL_BY_VALUE[label] ?? label}
+                </Badge>
+              ))}
+              {labels.length > 2 && (
+                <span className="shrink-0 text-[9px] text-muted-foreground">
+                  +{labels.length - 2}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "source",
+        header: "Source",
+        accessorFn: (task) => task.sourceLabel ?? task.origin ?? "",
+        width: 200,
+        minWidth: 140,
+        cell: (task) => (
+          <TaskProvenanceChip
+            compact
+            origin={task.origin ?? null}
+            sourceType={task.sourceType ?? null}
+            sourceUrl={task.sourceUrl ?? null}
+            sourceLabel={task.sourceLabel ?? null}
+            className="max-w-full"
+          />
+        ),
       },
       {
         id: "priority",
@@ -320,6 +348,9 @@ export default function TasksTableView() {
         detail={{ enabled: false }}
         onRowOpen={(task) => dispatch(setSelectedTaskId(task.id))}
         window={{}}
+        // The sidebar search (one redux query shared with every task view) is
+        // the page's single search box.
+        toolbar={{ search: false }}
         getRowHref={(task) => `/tasks/${task.id}`}
         read={{
           status: tasksRead.status,
