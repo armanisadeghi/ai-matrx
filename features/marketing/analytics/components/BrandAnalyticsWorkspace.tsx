@@ -11,6 +11,7 @@
  * never a side drawer and never a route change.
  */
 
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 import { BarChart3, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
@@ -190,10 +191,15 @@ export function BrandAnalyticsWorkspace({ brandId }: { brandId: string }) {
   const rows = sites.data ?? [];
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        This client has no websites yet, so there is nothing for Google Analytics
-        to report. Add a website and bind its Analytics property.
-      </p>
+      <NoWebsiteState
+        compact
+        brandId={brandId}
+        brandName="This client"
+        needs="Google Analytics traffic and conversions"
+        alternatives={[]}
+      >
+        <p className="mt-1 text-xs text-muted-foreground">Social numbers for the brand&apos;s own accounts are below.</p>
+      </NoWebsiteState>
     );
   }
   if (rows.length === 1) {

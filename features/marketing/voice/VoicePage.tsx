@@ -47,7 +47,14 @@ import {
   type VoiceSurface,
   type VoiceTextOutcome,
 } from "./service";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SpokespeoplePanel } from "./SpokespeoplePanel";
+import {
+  landSocialSample,
+  sampleKindForPlatform,
+  searchBrandSocialSamples,
+  type SocialSampleOption,
+} from "./socialSamples";
 import { formatCount } from "@ai-matrx/kit/format";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -67,7 +74,7 @@ export interface VoicePageProps {
   embedded?: boolean;
 }
 
-type Picked = { source: SourceOption; kind: VoiceSampleKind };
+type Picked = { source: SourceOption; kind: VoiceSampleKind; social?: SocialSampleOption };
 
 const REGISTERS = ["formal", "professional", "casual-professional", "casual", "irreverent"] as const;
 const EM_DASH = ["never", "rare", "habitual"] as const;
@@ -111,6 +118,9 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   const [spokes, setSpokes] = useState<FingerprintRow[]>([]);
   const [spokesNonce, setSpokesNonce] = useState(0);
   const brandScoped = scope === "brand" && !allSources && target === "brand";
+  // The brand's own social posts (captions, transcripts) are samples too: a brand with no website still has a voice.
+  const [socialPosts, setSocialPosts] = useState<SocialSampleOption[] | null>(null);
+  const [socialError, setSocialError] = useState<string | null>(null);
 
   const [measuring, setMeasuring] = useState(false);
   const [measured, setMeasured] = useState<VoiceMeasureResult | null>(null);
@@ -168,6 +178,48 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
     };
   }, [query, brandScoped, ownerId]);
 
+  useEffect(() => {
+    if (scope !== "brand" || target !== "brand") {
+      setSocialPosts([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      searchBrandSocialSamples(ownerId, query)
+        .then((data) => {
+          if (!cancelled) {
+            setSocialPosts(data);
+            setSocialError(null);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!cancelled) setSocialError(errorText(error));
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [scope, target, ownerId, query]);
+
+  const togglePost = (post: SocialSampleOption) => {
+    const id = `social:${post.postId}`;
+    setPicked((list) =>
+      list.some((p) => p.source.id === id)
+        ? list.filter((p) => p.source.id !== id)
+        : list.length >= MAX_SAMPLES
+          ? list
+          : [
+              ...list,
+              {
+                source: { id, name: `${post.handle ? `@${post.handle}` : post.platform} · ${post.preview}`, created_at: post.postedAt ?? "" },
+                kind: sampleKindForPlatform(post.platform),
+                social: post,
+              },
+            ],
+    );
+  };
+
   const org = async (): Promise<string> => {
     if (organizationId) return organizationId;
     if (resolveOrganization) return resolveOrganization();
@@ -191,11 +243,21 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
       if (asMe && !userId) throw new Error("Sign in to measure your own voice.");
       // A person's voice is fingerprinted only by that person, so "me" is a person-scope
       // measurement filed in this brand's organization, then linked to the brand.
+      const organization = await org();
+      // A social post becomes a Source only now, when it is actually measured (one Source per post).
+      const refs = await Promise.all(
+        picked.map(async (p) => ({
+          source_id: p.social
+            ? await landSocialSample({ option: p.social, organizationId: organization, userId: userId as string })
+            : p.source.id,
+          source: p.kind,
+        })),
+      );
       const result = await measureVoice(
-        await org(),
+        organization,
         asMe ? "person" : scope,
         asMe ? (userId as string) : ownerId,
-        picked.map((p) => ({ source_id: p.source.id, source: p.kind })),
+        refs,
       );
       if (asMe && result.fingerprint_id) {
         await setSpokespersonBrand(result.fingerprint_id, ownerId);
@@ -385,6 +447,44 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
               })
             )}
           </ul>
+          {scope === "brand" && target === "brand" ? (
+            <div className="mt-3" data-testid="voice-social-samples">
+              <h3 className="text-xs font-medium text-foreground">The brand&apos;s own social posts</h3>
+              {socialError ? <p className="mt-1 text-sm text-destructive">{socialError}</p> : null}
+              <ul className="mt-1 max-h-64 divide-y divide-border overflow-y-auto rounded-md border border-border">
+                {socialPosts === null ? (
+                  <li className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Listing posts
+                  </li>
+                ) : socialPosts.length === 0 ? (
+                  <li className="p-2 text-sm text-muted-foreground">
+                    No tracked posts to measure yet.{" "}
+                    <Link href={marketingRoutes.brandSocials(ownerId)} className="underline">
+                      Track the brand&apos;s accounts
+                    </Link>{" "}
+                    and their captions and transcripts appear here.
+                  </li>
+                ) : (
+                  socialPosts.map((post) => {
+                    const id = `social:${post.postId}`;
+                    const chosen = picked.find((p) => p.source.id === id);
+                    return (
+                      <li key={post.postId} className="flex items-center gap-2 p-2 text-sm">
+                        <input
+                          type="checkbox"
+                          aria-label={`Use ${post.platform} post ${post.preview.slice(0, 40)}`}
+                          checked={Boolean(chosen)}
+                          onChange={() => togglePost(post)}
+                        />
+                        <span className="min-w-0 flex-1 truncate">{post.preview}</span>
+                        <Badge variant="outline">{post.platform} {post.textKind}</Badge>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button icon={measuring ? <Loader2 className="animate-spin" aria-hidden /> : null} variant="primary" onClick={measure} disabled={measuring || picked.length < MIN_SAMPLES}>
               Measure voice

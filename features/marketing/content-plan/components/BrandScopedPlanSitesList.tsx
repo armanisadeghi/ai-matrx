@@ -14,9 +14,31 @@
 
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 
+import { useBrandSites } from "@/features/marketing/data/hooks";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+
 import { PlanSitesList } from "./PlanSitesList";
 
 export function BrandScopedPlanSitesList() {
   const brand = useMarketingBrand();
+  const sites = useBrandSites(brand.id);
+  // The content plan writes pages of a website. A brand with none plans on the topical map
+  // (brand-level) and in Socials, so say that instead of showing an empty list.
+  if (sites.isSuccess && (sites.data ?? []).length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <NoWebsiteState
+          brandId={brand.id}
+          brandName={brand.name}
+          needs="writing and publishing pages"
+          alternatives={[
+            { label: "Plan on the topical map", href: marketingRoutes.brandTopicalMapHome(brand.id) },
+            { label: "Open Socials", href: marketingRoutes.brandSocials(brand.id) },
+          ]}
+        />
+      </div>
+    );
+  }
   return <PlanSitesList brandId={brand.id} />;
 }

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { ArrowRight, Globe, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 import {
   LoadingSurface,
   QueryError,
@@ -56,19 +57,15 @@ export default function MarketingBrandSeoPage() {
             onRetry={() => void sites.refetch()}
           />
         ) : (sites.data ?? []).length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-6 text-center">
-            <Globe className="mx-auto h-5 w-5 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">
-              {brand.name} has no websites yet
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              SEO work starts from a property. Add one and its keyword, rank,
-              and link workspaces open with it.
-            </p>
-            <Button variant="primary" asChild className="mt-3">
-              <Link href={marketingRoutes.newSite(brand.id)}>Add website</Link>
-            </Button>
-          </div>
+          <NoWebsiteState
+            brandId={brand.id}
+            brandName={brand.name}
+            needs="keyword research, rankings, technical health and links"
+            alternatives={[
+              { label: "Open Socials", href: marketingRoutes.brandSocials(brand.id) },
+              { label: "See competitors", href: marketingRoutes.brandCompetitors(brand.id) },
+            ]}
+          />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {(sites.data ?? []).map((site) => (
