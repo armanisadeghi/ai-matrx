@@ -44,13 +44,15 @@ import type { RecordsDataSource } from "@ai-matrx/records";
 // `readObjectOrganizationAnswer` and the answer type are the store's "which organization owns this record"
 // port. This file is the website's implementation of that port: answers kept per object for the session and
 // seeded from the server render.
-export {
+import {
   readObjectOrganizationAnswer,
   resolveObjectOrganization,
   type ObjectKind,
   type ObjectOrganizationAnswer,
+  type RecordOrganizationPort,
 } from "@ai-matrx/records";
-import { readObjectOrganizationAnswer, resolveObjectOrganization, type ObjectOrganizationAnswer, type RecordOrganizationPort } from "@ai-matrx/records";
+export { readObjectOrganizationAnswer, resolveObjectOrganization };
+export type { ObjectKind, ObjectOrganizationAnswer };
 
 /** The website's `RecordOrganizationPort` (`createRecords({ organizationOf })`): kept answers, asked once. */
 export function keptObjectOrganizationPort(dataSource: Pick<RecordsDataSource, "rpc">): RecordOrganizationPort {
