@@ -93,8 +93,8 @@ describe("one state for the history, the card and the header", () => {
     expect(requestOutcome(requests, 0)).toEqual({ label: "Fixed · Saved v1", tone: "success" });
     expect(requestOutcome(requests, 1)).toEqual({ label: "Saved v1", tone: "success" });
   });
-  it("while its fix round runs it reads Fixing; refused with no fix it reads Not saved", () => {
-    expect(requestOutcome([entry({ state: "refused" }), entry({ fix: { where: "r", message: "x" }, state: "running" })], 0).label).toBe("Fixing");
+  it("while its fix round runs it reads Problem found (its fix row reads Fixing, F6); refused with no fix it reads Not saved", () => {
+    expect(requestOutcome([entry({ state: "refused" }), entry({ fix: { where: "r", message: "x" }, state: "running" })], 0).label).toBe("Problem found");
     expect(requestOutcome([entry({ state: "refused" })], 0).label).toBe("Not saved");
   });
   it("the held fix button reads Fix it to use it on a draft; the header says it is a preview that holds what she adds", () => {
