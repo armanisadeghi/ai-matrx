@@ -2,10 +2,16 @@
 
 /**
  * The reads the Board's social tiles need beyond the Socials section's own (`service.ts`): one ad,
- * one swipe collection, the stored ads a picker lists, and a brand's outlier feed. Direct Supabase
- * reads under RLS, `readAllRows` on nothing unbounded (every list here has a hard cap and says so).
+ * one swipe collection, the stored ads a picker lists, and a brand's outlier feed. Reads under RLS
+ * through `@ai-matrx/data` doors (`lib/db/generated/social.ts`); every list here is complete or has a
+ * hard cap and says so. The outlier feed's joined read (`post_stat` + `post!inner`) has no door shape
+ * yet and stays a direct read until it does.
  */
 
+import { listAll, page, read } from "@ai-matrx/data/db";
+
+import { browserDb } from "@/lib/db/browser-db";
+import { ad, swipeCollection, trackedAccount } from "@/lib/db/generated/social";
 import { supabase } from "@/utils/supabase/client";
 
 import { outlierRowKind, type OutlierRowKind } from "./kind-models";
@@ -23,35 +29,27 @@ function fail(label: string, message: string): never {
 }
 
 export async function readAd(adId: string): Promise<SocialAdRow | null> {
-  const { data, error } = await supabase.schema("social").from("ad").select("*").eq("id", adId).maybeSingle();
-  if (error) fail("social.ad read", error.message);
-  return (data as SocialAdRow | null) ?? null;
+  // An ad a tile already holds opens even after it left the library (the old read had no deleted filter).
+  const row = await read(browserDb, ad, adId, { includeDeleted: true }).catch((e: unknown) => fail("social.ad read", errorText(e)));
+  return (row as SocialAdRow | null) ?? null;
+}
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 /** The newest stored ads, for the "bring in an ad" picker (capped; the Ads tab searches the libraries). */
 export const AD_PICKER_LIMIT = 60;
 export async function readRecentAds(): Promise<SocialAdRow[]> {
-  const { data, error } = await supabase
-    .schema("social")
-    .from("ad")
-    .select("*")
-    .is("deleted_at", null)
-    .order("first_seen_at", { ascending: false })
-    .limit(AD_PICKER_LIMIT);
-  if (error) fail("social.ad list", error.message);
-  return (data ?? []) as SocialAdRow[];
+  const { rows } = await page(browserDb, ad, { from: 0, to: AD_PICKER_LIMIT - 1, orderBy: "first_seen_at", ascending: false }).catch(
+    (e: unknown) => fail("social.ad list", errorText(e)),
+  );
+  return rows as unknown as SocialAdRow[];
 }
 
 export async function readSwipeCollection(collectionId: string): Promise<SwipeCollectionRow | null> {
-  const { data, error } = await supabase
-    .schema("social")
-    .from("swipe_collection")
-    .select("*")
-    .eq("id", collectionId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (error) fail("social.swipe_collection read", error.message);
-  return (data as SwipeCollectionRow | null) ?? null;
+  const row = await read(browserDb, swipeCollection, collectionId).catch((e: unknown) => fail("social.swipe_collection read", errorText(e)));
+  return (row as SwipeCollectionRow | null) ?? null;
 }
 
 /** Rows an outlier feed lists at most. */
@@ -70,15 +68,12 @@ export async function readBrandOutliers(args: {
   brandId: string;
   limit?: number;
 }): Promise<OutlierRowKind[]> {
-  const tracked = await supabase
-    .schema("social")
-    .from("tracked_account")
-    .select("profile_id, role, brand_id")
-    .eq("organization_id", args.organizationId)
-    .is("deleted_at", null)
-    .or(`brand_id.eq.${args.brandId},brand_id.is.null`);
-  if (tracked.error) fail("social.tracked_account list", tracked.error.message);
-  const accounts = (tracked.data ?? []) as Pick<TrackedAccountRow, "profile_id" | "role" | "brand_id">[];
+  const accounts = (await listAll(
+    browserDb,
+    trackedAccount,
+    (q) => q.eq("organization_id", args.organizationId).or(`brand_id.eq.${args.brandId},brand_id.is.null`),
+    { columns: ["profile_id", "role", "brand_id"] },
+  ).catch((e: unknown) => fail("social.tracked_account list", errorText(e)))) as Pick<TrackedAccountRow, "profile_id" | "role" | "brand_id">[];
   if (accounts.length === 0) return [];
   const roleOf = new Map(accounts.map((a) => [a.profile_id, a.role]));
   const stats = await supabase
