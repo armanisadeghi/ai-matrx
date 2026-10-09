@@ -195,8 +195,9 @@ export function MeetingsHome() {
     directory.meetings.map((m) => [m.id as string, m]),
   );
 
-  // Scheduling needs an organization (a meeting belongs to one). With none
-  // chosen the organization picker opens, and the action continues once set.
+  // A meeting belongs to an organization: the ACTIVE one (no picker — the shell
+  // always has one). If the host is not ready yet the action is held until it
+  // is; if there is no organization at all, the person is told nothing started.
   const [held, setHeld] = useState<"create" | "start" | null>(null);
   const createFromEvent = (event: ExternalEvent) => {
     const at = utcToZoned(event.occurrenceStart, zone);
@@ -242,8 +243,10 @@ export function MeetingsHome() {
     setHeld(what);
     try {
       await ensureOrgId(null);
-    } catch {
+    } catch (thrown) {
+      // Nothing started: say so, never fail silently.
       setHeld(null);
+      toast.error(errorSentence(thrown));
     }
   };
   useEffect(() => {
