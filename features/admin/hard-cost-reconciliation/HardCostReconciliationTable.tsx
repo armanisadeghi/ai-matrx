@@ -44,7 +44,7 @@ export type ReconciliationRow = {
 };
 
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
-const usd = (v: number | null) => (v === null ? "—" : `$${v.toFixed(4)}`);
+const usd = (v: number | null) => (v === null ? "—" : `${v < 0 ? "-" : ""}$${Math.abs(v).toFixed(4)}`);
 const fmt = (v: number | null) => (v === null ? "—" : v.toLocaleString());
 
 function StatusBadge({ status }: { status: string }) {
