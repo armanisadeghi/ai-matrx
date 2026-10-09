@@ -544,7 +544,7 @@ function parseProvider(row: AiProviderRow): AiProvider {
 // screens read and write them through admin-lane doors that refuse outside the admin apps;
 // everyone else sees prices in credits (ai.model_public / ai.model_offering).
 const ENDPOINT_PUBLIC_COLUMNS =
-  "id,organization_id,is_system,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,priority,is_active,notes,doc_sources,shown_to,published_to_web,published_to_web_at,published_to_web_by,custom_fields,setting_profile_id";
+  "id,organization_id,is_system,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,vendor,internal_name,display_name,priority,is_active,notes,doc_sources,shown_to,published_to_web,published_to_web_at,published_to_web_by,custom_fields";
 const OFFERING_PUBLIC_COLUMNS =
   "id,organization_id,is_system,model_id,provider_model_id,priority,is_available,usage_basis,capabilities_override,override,notes,created_by,updated_by,created_at,updated_at,deleted_at,version,metadata,token_billed,endpoint_id,api_id,pricing_verified_at,shown_to,published_to_web,published_to_web_at,published_to_web_by,custom_fields,setting_profile_id";
 

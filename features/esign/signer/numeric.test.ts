@@ -11,7 +11,7 @@ describe("looksNotNumeric", () => {
 });
 
 import { valueOffer } from "./model";
-import type { FieldDefinitionV2 } from "@/features/esign/contract/types";
+import type { FieldDefinitionV2 } from "@/features/esign/contract/fieldModel";
 
 describe("valueOffer", () => {
   const num = { kind: "number", number: { min: 1, max: 10 } } as unknown as FieldDefinitionV2;

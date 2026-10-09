@@ -65,7 +65,7 @@ describe("surface sync --check keys child rows by the plan's full key", () => {
 
 describe("the sync archives what the code removed and revives what it re-declared", () => {
   const SURFACE = "matrx-user/cascade-pickup-board";
-  const declaredValues = () =>
+  const declaredValues = (): Array<Record<string, unknown>> =>
     plan()
       .tables.find((t) => t.table === "ui.ui_surface_value")!
       .rows.map((row, index) => ({ ...row, id: `v-${index}`, deleted_at: null as string | null }));

@@ -356,8 +356,8 @@ describe("tasks", () => {
 
 describe("quiz", () => {
   const QUIZ = {
-    quiz_title: "Yard safety",
-    multiple_choice: [
+    quizTitle: "Yard safety",
+    multipleChoice: [
       {
         id: 1,
         question: "What do you wear on the scale deck?",

@@ -364,6 +364,7 @@ const definitionRow = {
   version: 2,
   viewport: {},
   visibility: "internal",
+  workflow_type: "user",
 } satisfies Row<"workflow", "definition">;
 
 export function seedWorkflowRun(): void {
@@ -405,6 +406,7 @@ export const MEETING_ID = "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d";
 export const meetingRow = {
   agenda: "Unit 4B turnover budget and the December rent.",
   ai_enabled: true,
+  behavior_profile: null,
   calendar_sequence: 0,
   cancellation_reason: null,
   cancelled_at: null,
@@ -422,8 +424,6 @@ export const meetingRow = {
   locked: false,
   metadata: {},
   organization_id: ORGANIZATION.id,
-  outcome: null,
-  outcome_state: null,
   ...PUBLISH,
   recording_policy: "ask",
   recurrence_rule: null,
@@ -484,6 +484,7 @@ const documentSnapshotRow = {
   document_id: DOCUMENT_ID,
   id: "aa1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
   label: null,
+  metadata: {},
   origin: "autosave",
   snapshot: {
     id: "doc-unit-4b-lease",

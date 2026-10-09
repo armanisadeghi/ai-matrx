@@ -51,7 +51,7 @@ const TOPIC_ROW: Database["research"]["Tables"]["rs_topic"]["Row"] = {
   tag_suggestions: null,
   template_id: null,
   tone_profile: null,
-  updated_at: null,
+  updated_at: "2026-09-22T00:00:00Z",
   updated_by: null,
   version: 1,
   videos_per_keyword: 0,

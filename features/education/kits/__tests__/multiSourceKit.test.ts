@@ -155,7 +155,10 @@ describe("multi-source study kits", () => {
       ],
     };
     const out = groundKitTrust(trust, refs);
-    expect(out.citations.map((c) => [c.title, c.fileId, c.documentId])).toEqual([
+    expect(out.citations.map((c) => {
+      const refs = c as typeof c & { fileId?: string | null; documentId?: string | null };
+      return [c.title, refs.fileId ?? undefined, refs.documentId ?? undefined];
+    })).toEqual([
       ["Chapter 3.pdf", "f-pdf", "pd-pdf"],
       ["Wikipedia: Cell", undefined, "pd-wiki"],
       ["kept", undefined, undefined],

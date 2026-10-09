@@ -69,7 +69,7 @@ describe("MCP OAuth start", () => {
           }),
         }),
       }),
-    } as Awaited<ReturnType<typeof createClient>>);
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
     mockedCookies.mockResolvedValue({ set: jest.fn() } as never);
   });
 
@@ -153,7 +153,7 @@ describe("MCP OAuth start", () => {
           }),
         }),
       }),
-    } as Awaited<ReturnType<typeof createClient>>);
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
 
     const response = await GET(
       new NextRequest(

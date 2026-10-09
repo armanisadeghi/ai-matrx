@@ -26,6 +26,7 @@ const row = (id: string, name: string): ResearchTopicListRow => ({
   project_id: "",
   project_name: "",
   archived_at: "",
+  custom_fields: {},
   total_count: 2,
 });
 

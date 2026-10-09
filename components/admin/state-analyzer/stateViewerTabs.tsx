@@ -129,7 +129,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "messaging",
   "adminPreferences",
   "entitySystem",
-  "agentSettings",
   "modelRegistry",
   "mcp",
   "adminDebug",
@@ -585,16 +584,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="adminPreferences"
           state={completeState.adminPreferences}
-        />
-      ),
-    },
-    {
-      id: "agentSettings",
-      label: "Agent Settings",
-      content: (
-        <GenericSliceViewer
-          sliceKey="agentSettings"
-          state={completeState.agentSettings}
         />
       ),
     },

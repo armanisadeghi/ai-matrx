@@ -69,7 +69,11 @@ export function ProjectSettingsSample() {
   const { references } = useProjectReferences(id);
   const [section, setSection] = useState<Section>("general");
 
-  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name, meta: p.role }));
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.name,
+    meta: p.role ?? undefined,
+  }));
   const linked = references.reduce((n, r) => n + r.rowCount, 0);
 
   return (

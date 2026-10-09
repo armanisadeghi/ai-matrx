@@ -177,6 +177,7 @@ const defaultChatMandate = {
   updated_by: null,
   version: 3,
   visibility: "public",
+  typed_input_complete: false,
 } satisfies Database["mandate"]["Tables"]["definition"]["Row"];
 
 export const CHAT_REPLY = "Here is a 60-day notice raising the rent for Unit 4B from $1,850 to $1,925, effective December 1.";

@@ -136,7 +136,7 @@ describe("CRM native contact import parsing", () => {
       name: "outlook-contacts.xlsx",
       size: bytes.byteLength,
       text: async () => "",
-      arrayBuffer: async () => bytes,
+      arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
     };
 
     const parsed = await parseImportFile(file);

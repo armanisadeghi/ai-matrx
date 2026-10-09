@@ -10,6 +10,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers } from "redux";
 
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import proposedDirectivesReducer from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
@@ -39,13 +40,14 @@ import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/Pro
 
 async function mount(userId: string | null) {
   const initial = userAuthReducer(undefined, { type: "@@init" });
-  const store = configureStore({
-    reducer: {
+  const reducer = combineReducers({
       proposedDirectives: proposedDirectivesReducer,
       apiConfig: apiConfigReducer,
       storeReads: storeReadsReducer,
       userAuth: userAuthReducer,
-    },
+    });
+  const store = configureStore({
+    reducer,
     preloadedState: { userAuth: { ...initial, id: userId } } as never,
   });
   const host = document.createElement("div");

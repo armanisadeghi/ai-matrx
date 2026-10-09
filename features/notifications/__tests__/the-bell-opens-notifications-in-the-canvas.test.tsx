@@ -50,7 +50,7 @@ const NOTE_KIND = "test-note";
 registerCanvasKinds([
   notificationsKind,
   messagesKind,
-  defineCanvasKind<null>({ id: NOTE_KIND, label: "Note", icon: () => null, component: () => null }),
+  defineCanvasKind<null>({ id: NOTE_KIND, label: "Note", surface: "dom", icon: () => null, component: () => null }),
 ]);
 
 const NOTIFICATIONS_ID = `${NOTIFICATIONS_KIND}::default`;

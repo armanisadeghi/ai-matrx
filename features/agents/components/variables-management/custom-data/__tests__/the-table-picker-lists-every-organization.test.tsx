@@ -82,7 +82,6 @@ jest.mock("@ai-matrx/records/react", () => ({
       id: r.table_id,
       name: r.table_name,
       organization_id: RINCON,
-      ...(r.kept_by_the_app ? { kept_by_the_app: true } : {}),
     })),
     reload: () => {},
   }),
