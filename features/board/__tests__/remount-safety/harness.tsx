@@ -261,6 +261,7 @@ export function captureConsoleErrors(): { errors: string[]; restore: () => void 
     // act() scopes (a promise settling while the harness polls) — a property of
     // the harness's clock, never something a person sees.
     if (typeof args[0] === "string" && args[0].startsWith("An update to %s inside a test was not wrapped in act")) return;
+    if (process.env.REMOUNT_DEBUG) process.stderr.write(`[console.error] ${String(new Error().stack).split("\n").slice(2, 12).join("\n")}\n`);
     errors.push(args.map((a) => (a instanceof Error ? a.message : typeof a === "string" ? a : JSON.stringify(a))).join(" ").slice(0, 400));
   });
   return { errors, restore: () => spy.mockRestore() };
@@ -281,6 +282,98 @@ export async function typeInto(el: Element, text: string): Promise<void> {
       el.dispatchEvent(new InputEvent("input", { bubbles: true }));
     }
   });
+}
+
+/** The rich editor (ProseMirror) a tile renders, with the view a keystroke reaches. */
+export interface RichEditorHandle {
+  dom: HTMLElement;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  view: any;
+}
+
+export function richEditorIn(container: Element, index = 0): RichEditorHandle | null {
+  const dom = container.querySelectorAll<HTMLElement>(".ProseMirror")[index];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const view = (dom as any)?.editor?.view ?? (dom as any)?.pmViewDesc?.view ?? null;
+  return dom && view ? { dom, view } : null;
+}
+
+/** The text a person reads in the rich editor, one paragraph per line. */
+export function richTextOf(container: Element, index = 0): string | undefined {
+  const rich = richEditorIn(container, index);
+  if (!rich) return undefined;
+  const lines: string[] = [];
+  rich.view.state.doc.forEach((node: { textContent: string }) => lines.push(node.textContent));
+  return lines.join("\n");
+}
+
+function pressKey(rich: RichEditorHandle, init: KeyboardEventInit): void {
+  rich.dom.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init }));
+}
+
+/**
+ * Type into the rich editor the way a person does: the caret goes to the end of
+ * the document, each line is typed through the editor's own text-input path
+ * (the view's `handleTextInput`, else a plain insert) and Enter starts the next
+ * paragraph through the editor's own keymap.
+ */
+export async function typeIntoRich(rich: RichEditorHandle, lines: readonly string[]): Promise<void> {
+  await act(async () => {
+    const { view } = rich;
+    rich.dom.focus();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
+    // The caret goes after the last words (the editor keeps an empty paragraph after them).
+    let end = 0;
+    view.state.doc.descendants((node: { isTextblock: boolean; content: { size: number } }, pos: number) => {
+      if (node.isTextblock && node.content.size > 0) end = pos + 1 + node.content.size;
+      return true;
+    });
+    view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(end), -1)));
+    lines.forEach((line, i) => {
+      if (i > 0) pressKey(rich, { key: "Enter", code: "Enter" });
+      const { from, to } = view.state.selection;
+      const handled = view.someProp("handleTextInput", (f: (...a: unknown[]) => boolean) => f(view, from, to, line));
+      if (!handled) view.dispatch(view.state.tr.insertText(line, from, to));
+    });
+  });
+}
+
+/** Put the selection back at a range (the probe leaving the person's selection as it found it). */
+export function setRichSelection(rich: RichEditorHandle, from: number, to: number): void {
+  act(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
+    rich.view.dispatch(rich.view.state.tr.setSelection(TextSelection.create(rich.view.state.doc, from, to)));
+  });
+}
+
+/** Select the first occurrence of `text` in the rich editor (a person's drag across the words). */
+export function selectInRich(rich: RichEditorHandle, text: string): void {
+  act(() => {
+    const { view } = rich;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
+    let found: number | null = null;
+    view.state.doc.descendants((node: { isText: boolean; text?: string }, pos: number) => {
+      if (found === null && node.isText && node.text!.includes(text)) found = pos + node.text!.indexOf(text);
+      return found === null;
+    });
+    if (found === null) throw new Error(`"${text}" is not in the rich editor`);
+    view.focus();
+    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, found, found + text.length)));
+  });
+}
+
+/** What the rich editor has selected: the words and where they sit. */
+export function richSelectionOf(rich: RichEditorHandle): { text: string; from: number; to: number } {
+  const { from, to } = rich.view.state.selection;
+  return { text: rich.view.state.doc.textBetween(from, to, "\n"), from, to };
+}
+
+/** Undo once (or redo) with the keyboard shortcut a person uses. */
+export function pressUndo(rich: RichEditorHandle, redo = false): void {
+  act(() => pressKey(rich, { key: "z", code: "KeyZ", ctrlKey: true, metaKey: true, shiftKey: redo }));
 }
 
 export interface CycleResult {
@@ -307,7 +400,7 @@ export interface CycleSteps {
   /** The person's action: type, change a value. */
   act?: (tile: TileHandle) => Promise<void>;
   /** Read back what the person left. */
-  kept: (tile: TileHandle) => unknown;
+  kept: (tile: TileHandle) => unknown | Promise<unknown>;
   loadMs?: number;
   /** The feature's save debounce: the action's own write lands before the cycle starts. */
   saveDelayMs?: number;
@@ -350,12 +443,12 @@ export async function runCycle(type: BoardItemType, source: NodeSource, steps: C
     await tile.hide();
     await tile.show();
     const wake = trafficSince(wakeMark);
-    const keptAfterWake = steps.kept(tile);
+    const keptAfterWake = await steps.kept(tile);
 
     const remountMark = ledgerMark();
     await tile.remount();
     const remount = trafficSince(remountMark);
-    const keptAfterRemount = steps.kept(tile);
+    const keptAfterRemount = await steps.kept(tile);
     if (process.env.REMOUNT_DEBUG) {
       // eslint-disable-next-line no-console
       console.log(

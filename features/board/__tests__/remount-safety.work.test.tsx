@@ -15,8 +15,21 @@ jest.mock("@/utils/supabase/client", () => {
 jest.mock("next/navigation", () => jest.requireActual("./remount-safety/next-navigation"));
 
 import { act } from "react";
+import { redoNoteEdit } from "@/features/notes/redux/slice";
 import { BOARD_ITEM_TYPES } from "../items/catalog";
-import { expectRemountSafe, runCycle, typeInto } from "./remount-safety/harness";
+import {
+  expectRemountSafe,
+  pressUndo,
+  richEditorIn,
+  richSelectionOf,
+  richTextOf,
+  runCycle,
+  settle,
+  selectInRich,
+  setRichSelection,
+  typeInto,
+  typeIntoRich,
+} from "./remount-safety/harness";
 import { installBrowserGaps } from "./remount-safety/browser-gaps";
 import { CHAT_REPLY, CONVERSATION_ID, FILE_ID, NOTE_ID, NOTE_TEXT, seedChat, seedFile, seedNote } from "./remount-safety/fixtures-work";
 import { remountType } from "./remount-safety/cases";
@@ -29,23 +42,22 @@ const type = (key: string) => {
   return t;
 };
 
-const TYPED = `${NOTE_TEXT}\nReplace the smoke detector batteries before the walkthrough.`;
-const CARET: [number, number] = [TYPED.indexOf("smoke"), TYPED.indexOf("smoke") + "smoke detector".length];
+// The note opens in Write: the rich editor. The person adds a second paragraph
+// at the end; the stored copy is the markdown of both paragraphs.
+const SECOND_PARAGRAPH = "Replace the smoke detector batteries before the walkthrough.";
+const TYPED = `${NOTE_TEXT}\n\n${SECOND_PARAGRAPH}`;
+const TYPED_SHOWN = `${NOTE_TEXT}\n${SECOND_PARAGRAPH}`;
+const SELECTED_WORDS = "smoke detector";
 const NOTE_RECORD = [/^workbench\.notes$/];
 
-/** Undo once in the note's editor, read the stored text, redo. */
-function undoRoundTrip(ta: HTMLTextAreaElement, read: () => unknown): unknown {
-  const key = (shiftKey: boolean) =>
-    new KeyboardEvent("keydown", { key: "z", code: "KeyZ", ctrlKey: true, metaKey: true, shiftKey, bubbles: true, cancelable: true });
-  act(() => void ta.dispatchEvent(key(false)));
-  const afterUndo = read();
-  act(() => void ta.dispatchEvent(key(true)));
-  return afterUndo;
-}
+const noteEditor = (tile: { container: Element }) => {
+  const rich = richEditorIn(tile.container);
+  if (!rich) throw new Error("the note's Write editor never rendered");
+  return rich;
+};
 
 // Break: the note editor keeps the words in a view-local buffer that a remount
 // rebuilds from the last saved copy, re-saves on mount, or re-reads the note.
-// The default view (Split: the quick textarea beside the live preview).
 remountType(
   "note",
   () =>
@@ -57,37 +69,44 @@ remountType(
       loadMs: 800,
       saveDelayMs: 3500,
       act: async (tile) => {
-        const ta = tile.container.querySelector("textarea")!;
-        await typeInto(ta, TYPED);
-        act(() => ta.setSelectionRange(CARET[0], CARET[1]));
+        const rich = noteEditor(tile);
+        await typeIntoRich(rich, ["", SECOND_PARAGRAPH]);
+        selectInRich(rich, SELECTED_WORDS);
       },
-      kept: (tile) => {
-        const ta = tile.container.querySelector("textarea")!;
-        const caret = [ta.selectionStart, ta.selectionEnd];
+      kept: async (tile) => {
+        const rich = noteEditor(tile);
+        const selection = richSelectionOf(rich);
         const stored = () => tile.store.getState().notes.notes[NOTE_ID]?.content;
-        const shown = ta.value;
-        const afterUndo = undoRoundTrip(ta, stored);
-        // The round trip is this probe's, not the person's: leave the caret
-        // where the person left it for the next step of the cycle.
-        act(() => ta.setSelectionRange(caret[0] ?? 0, caret[1] ?? 0));
-        return { shown, stored: stored(), caret, afterUndo };
+        const shown = richTextOf(tile.container);
+        pressUndo(rich);
+        const afterUndo = stored();
+        // The undo is this probe's, not the person's: the note's own history
+        // steps forward again so the next step of the cycle starts from the
+        // same note, and the selection goes back where the person left it.
+        act(() => void tile.store.dispatch(redoNoteEdit({ id: NOTE_ID })));
+        await settle(1500);
+        setRichSelection(rich, selection.from, selection.to);
+        return { shown, stored: stored(), selection, afterUndo };
       },
     }),
   (r) =>
     expectRemountSafe(
       { ...r, keptAfterWake: pick(r.keptAfterWake, "shown", "stored"), keptAfterRemount: pick(r.keptAfterRemount, "shown", "stored") },
-      { shown: TYPED, stored: TYPED },
+      { shown: TYPED_SHOWN, stored: TYPED },
       NOTE_RECORD,
     ),
   {
-    // The caret / selection the person left in the Split view's textarea.
-    "split-view caret": (r) =>
-      expect({ wake: pick(r.keptAfterWake, "caret"), remount: pick(r.keptAfterRemount, "caret") }).toEqual({
-        wake: { caret: CARET },
-        remount: { caret: CARET },
+    // The words the person left selected in the Write editor.
+    "write-view selection": (r) =>
+      expect({
+        wake: pick(r.keptAfterWake, "selection"),
+        remount: pick(r.keptAfterRemount, "selection"),
+      }).toEqual({
+        wake: { selection: expect.objectContaining({ text: SELECTED_WORDS }) },
+        remount: { selection: expect.objectContaining({ text: SELECTED_WORDS }) },
       }),
-    // ⌘Z after waking / remounting still undoes the typing (history is the note's, in Redux).
-    "split-view undo": (r) =>
+    // ⌘Z after waking / remounting still undoes the typing (history is the note's).
+    "write-view undo": (r) =>
       expect({ wake: pick(r.keptAfterWake, "afterUndo"), remount: pick(r.keptAfterRemount, "afterUndo") }).toEqual({
         wake: { afterUndo: NOTE_TEXT },
         remount: { afterUndo: NOTE_TEXT },

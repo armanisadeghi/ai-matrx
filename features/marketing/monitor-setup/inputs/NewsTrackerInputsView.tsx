@@ -286,7 +286,7 @@ export function NewsTrackerInputsView({ trackerId }: { trackerId: string }) {
             : []
         }
       />
-      <div className="h-full min-h-0 overflow-y-auto">
+      <div className="h-full min-h-0 overflow-y-auto pt-[var(--shell-header-h)]">
         {query.isLoading ? (
           <RegionSkeleton />
         ) : query.isError ? (

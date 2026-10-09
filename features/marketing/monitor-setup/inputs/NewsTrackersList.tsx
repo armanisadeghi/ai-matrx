@@ -46,16 +46,30 @@ import {
 export const newsTrackerHref = (trackerId: string) =>
   `/marketing/monitoring/${trackerId}`;
 
-const STATUS_ICON: Record<TrackerStatus, { icon: typeof CircleDot; className: string; label: string }> = {
-  active: { icon: CircleDot, className: "text-emerald-600 dark:text-emerald-400", label: "Active" },
-  paused: { icon: CirclePause, className: "text-amber-600 dark:text-amber-400", label: "Paused" },
-  archived: { icon: Archive, className: "text-muted-foreground", label: "Archived" },
+const STATUS_ICON: Record<
+  TrackerStatus,
+  { icon: typeof CircleDot; className: string; label: string }
+> = {
+  active: { icon: CircleDot, className: "text-success", label: "Active" },
+  paused: { icon: CirclePause, className: "text-warning", label: "Paused" },
+  archived: {
+    icon: Archive,
+    className: "text-muted-foreground",
+    label: "Archived",
+  },
 };
 
-const READINESS: Record<TrackerReadiness, { icon: typeof CheckCircle2; className: string; label: string }> = {
-  missing: { icon: XCircle, className: "text-destructive", label: "Missing inputs" },
-  thin: { icon: CircleAlert, className: "text-amber-600 dark:text-amber-400", label: "Thin inputs" },
-  ready: { icon: CheckCircle2, className: "text-emerald-600 dark:text-emerald-400", label: "Ready" },
+const READINESS: Record<
+  TrackerReadiness,
+  { icon: typeof CheckCircle2; className: string; label: string }
+> = {
+  missing: {
+    icon: XCircle,
+    className: "text-destructive",
+    label: "Missing inputs",
+  },
+  thin: { icon: CircleAlert, className: "text-warning", label: "Thin inputs" },
+  ready: { icon: CheckCircle2, className: "text-success", label: "Ready" },
 };
 
 function IconWithTip({
@@ -101,7 +115,10 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       width: 280,
       href: (row) => newsTrackerHref(row.id),
       cell: (row) => (
-        <Link href={newsTrackerHref(row.id)} className="truncate font-medium hover:underline">
+        <Link
+          href={newsTrackerHref(row.id)}
+          className="truncate font-medium hover:underline"
+        >
           {row.name}
         </Link>
       ),
@@ -115,7 +132,11 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       align: "center",
       cell: (row) =>
         row.isDisposable ? (
-          <IconWithTip icon={FlaskConical} className="text-violet-600 dark:text-violet-400" tip="Test monitor" />
+          <IconWithTip
+            icon={FlaskConical}
+            className="text-info"
+            tip="Test monitor"
+          />
         ) : null,
     },
     {
@@ -128,8 +149,13 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       align: "center",
       cell: (row) => (
         <IconWithTip
-          {...READINESS[row.readiness]}
-          tip={row.gaps.length ? row.gaps.join(" · ") : "Everything the relevance check reads is filled in"}
+          icon={READINESS[row.readiness].icon}
+          className={READINESS[row.readiness].className}
+          tip={
+            row.gaps.length
+              ? row.gaps.join(" · ")
+              : "Everything the relevance check reads is filled in"
+          }
         />
       ),
     },
@@ -139,10 +165,14 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       accessorFn: (row) => row.brandName ?? "",
       filter: "select",
       width: 170,
-      href: (row) => (row.brandId ? marketingRoutes.brand(row.brandId) : undefined),
+      href: (row) =>
+        row.brandId ? marketingRoutes.brand(row.brandId) : undefined,
       cell: (row) =>
         row.brandId ? (
-          <Link href={marketingRoutes.brand(row.brandId)} className="truncate hover:underline">
+          <Link
+            href={marketingRoutes.brand(row.brandId)}
+            className="truncate hover:underline"
+          >
             {row.brandName}
           </Link>
         ) : (
@@ -189,9 +219,17 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       width: 64,
       cell: (row) =>
         row.briefIsEmpty ? (
-          <IconWithTip icon={XCircle} className="text-destructive" tip="No brief" />
+          <IconWithTip
+            icon={XCircle}
+            className="text-destructive"
+            tip="No brief"
+          />
         ) : (
-          <IconWithTip icon={CheckCircle2} className="text-emerald-600 dark:text-emerald-400" tip="Brief written" />
+          <IconWithTip
+            icon={CheckCircle2}
+            className="text-success"
+            tip="Brief written"
+          />
         ),
     },
     {
@@ -249,7 +287,11 @@ function buildColumns(): MatrxColumnDef<NewsTrackerInputs>[] {
       width: 110,
       defaultSortDirection: "desc",
       cell: (row) =>
-        row.lastRunAt ? formatRelativeTime(row.lastRunAt) : <Minus className="h-4 w-4 text-muted-foreground" aria-label="Never" />,
+        row.lastRunAt ? (
+          formatRelativeTime(row.lastRunAt)
+        ) : (
+          <Minus className="h-4 w-4 text-muted-foreground" aria-label="Never" />
+        ),
     },
   ];
 }
@@ -274,9 +316,11 @@ export function NewsTrackersList() {
     setBusyId(key);
     try {
       await setTrackerState(ids, action);
-      toast.success(`${ACTION_WORDS[action].done} ${ids.length === 1 ? "1 monitor" : `${ids.length} monitors`}`);
       setSelectedIds((current) => current.filter((id) => !ids.includes(id)));
       await invalidate();
+      toast.success(
+        `${ACTION_WORDS[action].done} ${ids.length === 1 ? "1 monitor" : `${ids.length} monitors`}`,
+      );
     } catch (error) {
       toast.error(ACTION_WORDS[action].failed, {
         description: error instanceof Error ? error.message : String(error),
@@ -289,7 +333,10 @@ export function NewsTrackersList() {
   async function archive(targets: NewsTrackerInputs[], key: string) {
     const scheduled = targets.filter((row) => row.status === "active").length;
     const ok = await confirm({
-      title: targets.length === 1 ? `Archive “${targets[0].name}”?` : `Archive ${targets.length} monitors?`,
+      title:
+        targets.length === 1
+          ? `Archive “${targets[0].name}”?`
+          : `Archive ${targets.length} monitors?`,
       description:
         scheduled > 0
           ? `Their scheduled runs stop now (${scheduled} still running on a schedule). Past stories stay; archived monitors move to the Archived view.`
@@ -297,7 +344,12 @@ export function NewsTrackersList() {
       confirmLabel: "Archive",
       variant: "destructive",
     });
-    if (ok) await run(targets.map((row) => row.id), "archive", key);
+    if (ok)
+      await run(
+        targets.map((row) => row.id),
+        "archive",
+        key,
+      );
   }
 
   const testIds = rows.filter((row) => row.isDisposable).map((row) => row.id);
@@ -309,12 +361,18 @@ export function NewsTrackersList() {
         data={rows}
         columns={buildColumns()}
         getRowId={(row) => row.id}
-        searchText={(row) => `${row.name} ${row.brandName ?? ""} ${row.organizationName}`}
+        searchText={(row) =>
+          `${row.name} ${row.brandName ?? ""} ${row.organizationName}`
+        }
         defaultSort={{ id: "cost30d", direction: "desc" }}
         isLoading={query.isLoading}
         isFetching={query.isFetching}
         read={{
-          status: query.isError ? "error" : query.isLoading ? "loading" : "ready",
+          status: query.isError
+            ? "error"
+            : query.isLoading
+              ? "loading"
+              : "ready",
           error: query.error,
           onRetry: () => void query.refetch(),
           what: "news monitors",
@@ -328,25 +386,38 @@ export function NewsTrackersList() {
           search: true,
           searchPlaceholder: "Search monitors, brands…",
           leading: (
-            <SegmentedControl<"live" | "archived">
-              aria-label="Which monitors"
-              variant="capsule"
-              value={view}
-              onValueChange={(next) => {
-                setSelectedIds([]);
-                setView(next);
-              }}
-              data={[
-                { value: "live", label: "Live" },
-                { value: "archived", label: "Archived" },
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <SegmentedControl<"live" | "archived">
+                aria-label="Which monitors"
+                value={view}
+                onValueChange={(next) => {
+                  setSelectedIds([]);
+                  setView(next);
+                }}
+                data={[
+                  { value: "live", label: "Live" },
+                  { value: "archived", label: "Archived" },
+                ]}
+              />
+              {view === "live" && testIds.length > 0 ? (
+                <Button
+                  variant="quiet"
+                  icon={<FlaskConical className="h-4 w-4" />}
+                  onClick={() => setSelectedIds(testIds)}
+                >
+                  {`Select ${testIds.length} test monitors`}
+                </Button>
+              ) : null}
+            </div>
           ),
         }}
         emptyState={{
-          title: view === "archived" ? "No archived monitors" : "No news monitors",
+          title:
+            view === "archived" ? "No archived monitors" : "No news monitors",
           description:
-            view === "archived" ? undefined : "Set one up from a brand's Monitoring page.",
+            view === "archived"
+              ? undefined
+              : "Set one up from a brand's Monitoring page.",
           action:
             view === "archived" ? undefined : (
               <Button asChild variant="outline">
@@ -364,24 +435,13 @@ export function NewsTrackersList() {
                   <Button
                     variant="danger"
                     icon={<Archive className="h-4 w-4" />}
-                    busy={busyId === "bulk"}
+                    disabled={busyId === "bulk"}
                     onClick={() => void archive(selected, "bulk")}
                   >
-                    Archive {selected.length}
+                    {`Archive ${selected.length}`}
                   </Button>
                 ),
               }
-        }
-        relatedTableActions={
-          view === "live" && testIds.length > 0 ? (
-            <Button
-              variant="quiet"
-              icon={<FlaskConical className="h-4 w-4" />}
-              onClick={() => setSelectedIds(testIds)}
-            >
-              Select {testIds.length} test monitors
-            </Button>
-          ) : undefined
         }
         rowActions={(row) =>
           row.status === "archived"
@@ -396,7 +456,8 @@ export function NewsTrackersList() {
                         ? "Resume scheduled runs; clears this month's cost pause"
                         : "Resume scheduled runs",
                       loading: busyId === `resume:${row.id}`,
-                      onClick: () => void run([row.id], "resume", `resume:${row.id}`),
+                      onClick: () =>
+                        void run([row.id], "resume", `resume:${row.id}`),
                     }
                   : {
                       id: "pause",
@@ -404,7 +465,8 @@ export function NewsTrackersList() {
                       label: "Pause",
                       tooltip: "Stop scheduled runs until resumed",
                       loading: busyId === `pause:${row.id}`,
-                      onClick: () => void run([row.id], "pause", `pause:${row.id}`),
+                      onClick: () =>
+                        void run([row.id], "pause", `pause:${row.id}`),
                     },
                 {
                   id: "archive",

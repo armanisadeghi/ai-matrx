@@ -443,7 +443,7 @@ $function$
 -- (3) the cron entry point runs as its caller too (SET ROLE cannot be called under a definer).
 alter function iam.kernel_memo_sweep(integer, integer) security invoker;
 
-revoke all on function iam._memo_ask(text, uuid, uuid, uuid, uuid[], text, text, integer, integer) from public, anon;
+revoke all on function iam._memo_ask(text, uuid, uuid, uuid, uuid[], text, text, integer, integer) from anon;  -- PUBLIC default is cleared at birth by the DDL guard; revoking it here contradicts the open signed-in door row
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
 values
