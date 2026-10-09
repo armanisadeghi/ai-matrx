@@ -90,13 +90,24 @@ function useCostState(): { unit: CostUnit; canToggle: boolean } {
   return { unit, canToggle };
 }
 
+/**
+ * Does this viewer's SEAT see dollars (and the points-per-dollar rate) at all? Only a system admin.
+ * Arman, 2026-10-08: "20,000 is correct and should be that for admins to see everywhere and nothing
+ * else. Users should never see that number or any conversion." Organization admins are users. Every
+ * dollar figure beside points (`AdminUsd`, `CostFigures`, `useAdminCost`) asks THIS, so a shared
+ * component rendered on an organization page can never leak a rate; no page decides for itself.
+ */
+export function useSeesDollars(): boolean {
+  return useCostState().canToggle;
+}
+
 export function useCostDisplay(): CostDisplay {
   const { unit, canToggle } = useCostState();
   // Subscribes: the moment the knob snapshot lands (or an organization's rate
   // changes), every cost on screen re-renders at the real rate.
   const rate = usePointsRate();
   const pathname = usePathname();
-  const showBoth = pathname?.startsWith("/administration") === true;
+  const showBoth = canToggle && pathname?.startsWith("/administration") === true;
   return {
     unit,
     canToggle,

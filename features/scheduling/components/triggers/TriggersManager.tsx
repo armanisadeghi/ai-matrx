@@ -25,7 +25,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
+import { AdminPoints, AdminUsd, CostFigures, UsdOnly } from "@/components/cost/AdminCost";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import { automationAiState } from "@/features/scheduling/service/automationCosts";
 import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
@@ -82,17 +82,17 @@ function TriggerStats({ t }: { t: ManagedTrigger }) {
   const c = t.cost;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Stat label="Cost 30d $"><AdminUsd usd={c.cost} /></Stat>
+      <UsdOnly><Stat label="Cost 30d $"><AdminUsd usd={c.cost} /></Stat></UsdOnly>
       <Stat label="Points 30d"><AdminPoints usd={c.cost} /></Stat>
-      <Stat label="Est./month $"><AdminUsd usd={c.est_monthly_cost} /></Stat>
+      <UsdOnly><Stat label="Est./month $"><AdminUsd usd={c.est_monthly_cost} /></Stat></UsdOnly>
       <Stat label="Est./month points"><AdminPoints usd={c.est_monthly_cost} /></Stat>
       <Stat label="Runs 7d">{c.runs_7d}</Stat>
       <Stat label="Runs 30d">{c.runs}</Stat>
       <Stat label="Avg turns">{c.avg_turns}</Stat>
       <Stat label="Max turns">{c.max_turns}</Stat>
-      <Stat label="Avg cost/run $"><AdminUsd usd={c.avg_run_cost} /></Stat>
+      <UsdOnly><Stat label="Avg cost/run $"><AdminUsd usd={c.avg_run_cost} /></Stat></UsdOnly>
       <Stat label="Avg cost/run points"><AdminPoints usd={c.avg_run_cost} /></Stat>
-      <Stat label="Max cost/run $"><AdminUsd usd={c.max_run_cost} /></Stat>
+      <UsdOnly><Stat label="Max cost/run $"><AdminUsd usd={c.max_run_cost} /></Stat></UsdOnly>
       <Stat label="Max cost/run points"><AdminPoints usd={c.max_run_cost} /></Stat>
       <Stat label="Runs as">{c.owner_email ?? "Unknown"}</Stat>
       <Stat label="For">{c.organization_name ?? "No organization"}</Stat>

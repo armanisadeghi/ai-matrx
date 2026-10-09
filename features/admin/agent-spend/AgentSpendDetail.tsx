@@ -15,7 +15,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Cost } from "@/components/cost/Cost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
-import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
+import { AdminPoints, AdminUsd, CostFigures, UsdOnly } from "@/components/cost/AdminCost";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -357,12 +357,12 @@ export function AgentSpendDetail({
           <SpendSubject row={row} seat={seat} orgSlug={orgSlug} days={days} />
           <AgentSpendFlagStrip row={row} money={format} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            <Stat label="Cost $"><AdminUsd usd={row.cost} /></Stat>
+            <UsdOnly><Stat label="Cost $"><AdminUsd usd={row.cost} /></Stat></UsdOnly>
             <Stat label="Points"><AdminPoints usd={row.cost} /></Stat>
             <Stat label="Runs">{formatCount(row.runs)}</Stat>
-            <Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat>
+            <UsdOnly><Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat></UsdOnly>
             <Stat label="Avg cost/run points"><AdminPoints usd={row.avg_run_cost} /></Stat>
-            <Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat>
+            <UsdOnly><Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat></UsdOnly>
             <Stat label="Max cost/run points"><AdminPoints usd={row.max_run_cost} /></Stat>
             <Stat label="Avg turns">{row.avg_turns}</Stat>
             <Stat label="Max turns">{row.max_turns}</Stat>
@@ -421,7 +421,7 @@ export function AgentSpendDetail({
                       </Link>
                     )}
                     <span className="tabular-nums text-muted-foreground">{`${formatCount(r.runs)} runs`}</span>
-                    <span className="tabular-nums"><AdminUsd usd={r.cost} /></span>
+                    <UsdOnly><span className="tabular-nums"><AdminUsd usd={r.cost} /></span></UsdOnly>
                     <span className="tabular-nums text-muted-foreground"><AdminPoints usd={r.cost} /></span>
                   </div>
                   );

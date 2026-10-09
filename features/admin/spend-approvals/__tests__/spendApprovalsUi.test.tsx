@@ -55,9 +55,10 @@ afterEach(() => {
 const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
 test("label formats the threshold", () => {
-  expect(underThresholdLabel(1)).toBe("Under $1");
-  expect(underThresholdLabel(0.5)).toBe("Under $0.50");
-  expect(underThresholdLabel(2.25)).toBe("Under $2.25");
+  expect(underThresholdLabel(1, true)).toBe("Under $1");
+  expect(underThresholdLabel(0.5, true)).toBe("Under $0.50");
+  expect(underThresholdLabel(2.25, true)).toBe("Under $2.25");
+  expect(underThresholdLabel(1, false)).toBe("Under the approval limit");
 });
 
 test("an org that lowered its threshold sees its own number, not $1", async () => {

@@ -46,3 +46,18 @@ export function currentCostUnit(): CostUnit {
     return "points";
   }
 }
+
+/**
+ * Does the viewer's seat see dollars (and the rate) at all, read at the moment it runs? A system admin
+ * only; an organization admin is a user. For text built outside render (a flag's tooltip, a copy payload,
+ * a toast). Render code uses `useSeesDollars()` in `useCostDisplay.ts`.
+ */
+export function currentSeesDollars(): boolean {
+  const store = getStoreSingleton();
+  if (!store) return false;
+  try {
+    return selectCanToggleCostUnit(store.getState() as RootState);
+  } catch {
+    return false;
+  }
+}

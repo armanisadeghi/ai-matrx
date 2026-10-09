@@ -12,6 +12,8 @@
 import { useCallback } from "react";
 import { formatAdminCost } from "./formatAdminCost";
 import { usePointsRate } from "./pointsRate.client";
+import { formatAdminPoints } from "./formatAdminCost";
+import { useSeesDollars } from "./useCostDisplay";
 
 export type AdminCostFormat = (
   usd: number | null | undefined,
@@ -20,7 +22,17 @@ export type AdminCostFormat = (
 
 export function useAdminCost(): AdminCostFormat {
   const rate = usePointsRate();
-  return useCallback<AdminCostFormat>((usd, options) => formatAdminCost(usd, { ...options, rate }), [rate]);
+  const sees = useSeesDollars();
+  // A user (an organization admin included) gets points alone, never "$x · y points".
+  return useCallback<AdminCostFormat>(
+    (usd, options) =>
+      sees
+        ? formatAdminCost(usd, { ...options, rate })
+        : usd == null || !Number.isFinite(usd)
+          ? (options?.unknown ?? "—")
+          : formatAdminPoints(usd, rate),
+    [rate, sees],
+  );
 }
 
 export { usePointsRate as useAdminRate };
