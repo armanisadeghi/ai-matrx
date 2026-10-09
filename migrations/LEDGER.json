@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T12:02:26.988Z",
+  "generated_at": "2026-10-09T13:04:58.064Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4933,6 +4933,12 @@
       "filename": "lockhyg_a_lock_row_carries_a_lease.sql",
       "checksum": "b9e7ee8b9391b935b0ba8d00b9c497c8a9ac68e48afb1cde210502b048022772",
       "applied_at": "2026-09-22 18:01:09.235786+00"
+    },
+    "migrations/campaign/make_autodup_a_declaring_the_same_automation_again_reuses_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "make_autodup_a_declaring_the_same_automation_again_reuses_it.sql",
+      "checksum": "50633dce27ab336cd7decba65f0ac2aa5a128a3f6907e127ff3e1229d27749f4",
+      "applied_at": "2026-10-09 13:04:55.810756+00"
     },
     "migrations/campaign/makehome_w5_a_public_form_wears_its_look.sql": {
       "source": "matrx-frontend",
