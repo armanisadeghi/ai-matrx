@@ -2,8 +2,9 @@
 
 // features/applets/embed/DataPage.tsx — A PAGE BUILT FROM TABLES, DRAWN IN PLACE.
 //
-// The host half of `@ai-matrx/applets/react`'s `<DataPage id>` (an Applet places a Space inside itself; the
-// host's `renderDataPage` draws it with this) and the start page's own page. Nested Applets are the
+// The host half of `@ai-matrx/applets/react`'s `<DataPage id>` (an Applet places a records-ui page — a dashboard
+// record whose `presentation.kind` is 'page' — inside itself; the host's `renderDataPage` draws it with this) and
+// the start page's own page. This is NOT a Space (a Space is a `content.document` page; lexicon). Nested Applets are the
 // package's `<Applet id>`. Data reach is the viewer's own: the page reads through the store's doors under
 // her session, so an Applet sees nothing she could not open herself.
 
