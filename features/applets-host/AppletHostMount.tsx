@@ -22,7 +22,7 @@ import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
 import { liveValues } from "@ai-matrx/alchemy/surface";
 import type { MatrxTransport } from "@ai-matrx/agents/matrx";
-import type { JobRunView } from "@ai-matrx/applets";
+import type { GuestSaveStatus, JobRunView } from "@ai-matrx/applets";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { RotateCw } from "lucide-react";
@@ -34,6 +34,9 @@ import type { AppStore } from "@/lib/redux/store";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
 import { AppletDataRefusedNotice } from "@/features/applets-host/AppletDataRefusedNotice";
+import { AppletGuestKeepLine, guestKeepLineShown } from "@/features/applets-host/AppletGuestKeepLine";
+import { guestSupabase } from "@/lib/guest/guest-supabase-client";
+import { ensureGuestSession } from "@/lib/guest/ensure-guest-session";
 import { AppletWritingBox } from "@/features/applets-host/AppletWritingBox";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
@@ -164,6 +167,7 @@ export function AppletHostMount({
   files,
   embedded = false,
   definition = null,
+  visitor = false,
 }: {
   appletId: string;
   slug: string;
@@ -179,6 +183,11 @@ export function AppletHostMount({
    * `record()` answers from it, so the open never waits on a second read after hydration. "Try again" reads fresh.
    */
   definition?: Record<string, unknown> | null;
+  /**
+   * A signed-out visitor of a published Applet (the route's guest lane). G2 guest data: their saves are
+   * their OWN records, through a guest session in its own cookie (lib/guest/), made on the first save.
+   */
+  visitor?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -201,6 +210,8 @@ export function AppletHostMount({
   const [slow, setSlow] = useState(false);
   // A data read the store refused: who is looking decides what the notice offers.
   const [readRefused, setReadRefused] = useState<"guest" | "member" | null>(null);
+  // A guest's saves and the two knobs: drives the ONE account line (AppletGuestKeepLine).
+  const [guestSaves, setGuestSaves] = useState<GuestSaveStatus | null>(null);
   // The server's row is used once, on the first open; a refresh that re-sends it must not remount the Applet.
   const [serverDefinition] = useState(definition);
 
@@ -223,7 +234,20 @@ export function AppletHostMount({
     let previewLocation: NavLocation = { path: [], params: {} };
     const host: PlatformHost = createPlatformHost({
       appletId,
-      supabase,
+      // A signed-out visitor reads and saves through the GUEST client (its own cookie; never the main
+      // session, so the rest of the app still sees a signed-out visitor). G2 guest data.
+      supabase: visitor && !isPreview ? guestSupabase() : supabase,
+      ...(visitor && !isPreview
+        ? {
+            ensureGuestSession: async () => {
+              const made = await ensureGuestSession();
+              return made ? { organizationId: made.organizationId } : null;
+            },
+            onGuestSaved: (status: GuestSaveStatus) => {
+              if (!cancelled) setGuestSaves(status);
+            },
+          }
+        : {}),
       ...(serverDefinition && attempt === 0 && !isPreview ? { definition: serverDefinition } : {}),
       agents: createIntelligencePort({
         transport: adoptAppletRunStreams(
@@ -350,7 +374,9 @@ export function AppletHostMount({
             announceRefusal: (error, where) => {
               if (where.startsWith("read(")) {
                 const state = store.getState();
-                if (!cancelled) setReadRefused(selectAccessToken(state) && !selectIsAnonymous(state) ? "member" : "guest");
+                // A visitor of a published Applet reads their own (empty until the first save) copies, so a
+                // refused read is never "sign in to see" for them.
+                if (!cancelled && !visitor) setReadRefused(selectAccessToken(state) && !selectIsAnonymous(state) ? "member" : "guest");
                 return;
               }
               toast.error(error.message);
@@ -404,7 +430,7 @@ export function AppletHostMount({
       stopHeld?.();
       host.dispose();
     };
-  }, [appletId, basePath, store, isPreview, inPlace, filesKey, attempt, serverDefinition]);
+  }, [appletId, basePath, store, isPreview, inPlace, filesKey, attempt, serverDefinition, visitor]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {
@@ -469,6 +495,7 @@ export function AppletHostMount({
   return (
     <>
       {readRefused ? <AppletDataRefusedNotice viewer={readRefused} /> : null}
+      {guestKeepLineShown(guestSaves) ? <AppletGuestKeepLine status={guestSaves} /> : null}
       <Component />
     </>
   );

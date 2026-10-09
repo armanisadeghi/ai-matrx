@@ -108,7 +108,21 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   `pnpm -s tsx scripts/applets/applet-render-sweep.ts --against-live`; it names every row that would break and exits 1.
   Self-test: `node scripts/applets/against-live.mjs --self-test`.
 
+## Guest data (G2, 2026-10-09)
+
+A signed-out visitor of a published Applet (`visitor` prop, the route's guest lane) reads and saves through the
+GUEST client (`lib/guest/guest-supabase-client.ts`, its own cookie). Their first save (or job) makes the guest
+(`lib/guest/ensure-guest-session.ts` → aidream `POST /auth/guest/session`); `@ai-matrx/applets` ≥ 0.18 then
+makes their OWN copy of each table (keyed by Applet + alias, `app.applet_visitor_tables`) in the guest's
+workspace. After the reminder knob (`applets.guest/saves_before_reminder`, 3) or at the ceiling
+(`applets.guest/max_records`, 25) `AppletGuestKeepLine` shows the one account line with its button. Sign-up keeps
+the same account; log in claims the workspace (`lib/guest/session-handover.ts`, see `utils/auth/FEATURE.md`).
+The layout settles a pending claim on a signed-in load (`settlePendingGuestClaim`).
+
 ## Change Log
+
+- 2026-10-09 — G2 guest data: `visitor` mode on `AppletHostMount` (guest client, `ensureGuestSession`,
+  `onGuestSaved`), `AppletGuestKeepLine`, pending-claim settle in the layout; adopts `@ai-matrx/applets` 0.18.0.
 
 - 2026-10-09 (audit9 close-out): with @ai-matrx/applets 0.17.3 served, the builder's job-input check is back (`readJobInputs` → `checkBuildAnswer({ jobInputs })`), and each new table on the saved card shows "+ N from your example" for the sample rows declared in `new_table.rows` (`tablesToMake().examples`). F6b's one-conversation build landed with B13 updated: closing the run window never destroys the build's conversation.
 - 2026-10-09 (lane F6b): A BUILD IS ONE CONVERSATION. The first run starts it on `applets.build`; the automatic fix round is a HOST turn on it (`fixHostTurn` → `host_turn`, never her words), and "Change it", "Fix it" and her replies are its next turns (`continueAgentJson`, @ai-matrx/chat; the record and `last_check` ride `context`). `applets.fix` is no longer used. The conversation is the first request's run (`buildConversationId` over `metadata.build.requests`); the left panel shows it through `AgentConversationDisplay` (read once per tab with `loadConversation`; closing a run window no longer destroys it). A reply sent while a round runs ("Send next") waits and is sent the moment the round ends. The agent (v5) takes her sentence as its user turn (catalogue/record/last_check in its system values), has `ask_person`, and its schema carries `new_table.rows`. Tests: `builder/build-conversation-f6b.test.ts`; chat `a-host-turn-continues-the-conversation.test.ts`.

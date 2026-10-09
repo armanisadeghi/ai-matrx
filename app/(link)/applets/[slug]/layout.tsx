@@ -14,6 +14,7 @@ import { AppletProviders } from "@/features/applets-host/AppletProviders";
 import { ShellCanvasColumn } from "@/features/canvas/host/ShellCanvasColumn";
 import { readAppletDefinition, resolveAppletRoute, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+import { settlePendingGuestClaim } from "@/lib/guest/session-handover";
 
 // Every view at this address (the running Applet, its introductory page, the not-found answers) renders inside
 // `AppletProviders` — the short provider list a running Applet reaches, not the whole app's (see that file),
@@ -40,10 +41,13 @@ async function AppletView({ children, params }: { children: ReactNode; params: P
     readAppletDefinition(view.id),
   ]);
   const isMaker = Boolean(own && user && own.created_by === user.id);
+  // G2 guest data, I7: a signed-in person whose browser still holds a guest (a claim that failed at sign-in)
+  // has it settled here, on the Applet's next load — idempotent, and it screams when it fails.
+  if (isAuthenticated && user) await settlePendingGuestClaim(user.id);
   return (
     <main className="min-h-dvh bg-background text-foreground">
       {isMaker ? <AppletOwnerBar appletId={view.id} /> : null}
-      <AppletHostMount appletId={view.id} slug={view.slug} definition={definition} />
+      <AppletHostMount appletId={view.id} slug={view.slug} definition={definition} visitor={view.guest !== null} />
       {children}
     </main>
   );
