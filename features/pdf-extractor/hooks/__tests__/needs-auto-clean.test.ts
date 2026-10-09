@@ -5,7 +5,6 @@ import {
 } from "../useAutoCleanOnOpen";
 import type { PdfDocument } from "../usePdfExtractor";
 
-const NOW = Date.parse("2026-10-06T12:00:00Z");
 const OLD = "2026-10-06T11:00:00Z";
 
 const doc = (over: Partial<PdfDocument> = {}): PdfDocument =>
@@ -21,7 +20,7 @@ const doc = (over: Partial<PdfDocument> = {}): PdfDocument =>
     ...over,
   }) as PdfDocument;
 
-const ok = { busy: false, pagesSettled: true, pagesHaveCleanText: false, now: NOW };
+const ok = { busy: false, pagesSettled: true, pagesHaveCleanText: false, runAnswered: true };
 
 beforeEach(() => resetAutoCleanHandled());
 
@@ -46,11 +45,16 @@ describe("needsAutoClean", () => {
   it("skips when any page has a section_kind", () => {
     expect(needsAutoClean(doc(), { ...ok, pagesHaveSectionKind: true })).toBe(false);
   });
-  it("skips a doc touched under 3 minutes ago (server run may be in flight)", () => {
-    const recent = new Date(NOW - 2 * 60_000).toISOString();
-    expect(needsAutoClean(doc({ updatedAt: recent }), ok)).toBe(false);
-    const older = new Date(NOW - 4 * 60_000).toISOString();
-    expect(needsAutoClean(doc({ updatedAt: older }), ok)).toBe(true);
+  it("waits for the run lookup to answer — an unanswered lookup never auto-runs", () => {
+    expect(needsAutoClean(doc(), { ...ok, runAnswered: false })).toBe(false);
+    expect(needsAutoClean(doc(), { ...ok, runAnswered: true })).toBe(true);
+  });
+  it("does not look at how recently the row changed — the run record decides", () => {
+    const justNow = new Date().toISOString();
+    expect(needsAutoClean(doc({ updatedAt: justNow, createdAt: justNow }), ok)).toBe(true);
+  });
+  it("skips while a live or failed run is reported as busy", () => {
+    expect(needsAutoClean(doc(), { ...ok, busy: true })).toBe(false);
   });
   it("skips when busy, unsettled, already cleaned, handled, or has clean content", () => {
     expect(needsAutoClean(doc(), { ...ok, busy: true })).toBe(false);

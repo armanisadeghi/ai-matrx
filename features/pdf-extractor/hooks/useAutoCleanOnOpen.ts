@@ -3,6 +3,7 @@
  * once — a doc reached from Knowledge or a Files link would otherwise sit with
  * an empty Clean pane and nothing started it. Once per doc per session, so a
  * failed run never loops; docs the upload stream handles are marked up front.
+ * The server's run record (not a clock) says whether a run is already going.
  */
 import { useEffect } from "react";
 import type { PdfDocument } from "./usePdfExtractor";
@@ -21,8 +22,6 @@ export function resetAutoCleanHandled(): void {
 
 /** Above this the server cleans per page (paid) — left to the manual button. */
 export const AUTO_CLEAN_MAX_PAGES = 200;
-/** No readable job state on the client: a row touched this recently may still have a server run. */
-export const AUTO_CLEAN_RECENT_MS = 3 * 60_000;
 
 export interface AutoCleanOpts {
   busy: boolean;
@@ -32,8 +31,12 @@ export interface AutoCleanOpts {
   pageCount?: number;
   /** Any page already carries a section_kind (e.g. an all-illegible doc is "cleaned"). */
   pagesHaveSectionKind?: boolean;
-  /** Test seam. */
-  now?: number;
+  /**
+   * The run record answered the by-link lookup (`usePdfDocRun().answered`).
+   * Until it has, nothing is known about a server run — never auto-run.
+   * A live / queued / failed run is reported through `busy`.
+   */
+  runAnswered: boolean;
 }
 
 function isPdfDoc(doc: PdfDocument): boolean {
@@ -46,7 +49,7 @@ export function needsAutoClean(
   doc: PdfDocument | null,
   opts: AutoCleanOpts,
 ): boolean {
-  if (!doc || opts.busy || !opts.pagesSettled || opts.pagesHaveCleanText) {
+  if (!doc || opts.busy || !opts.runAnswered || !opts.pagesSettled || opts.pagesHaveCleanText) {
     return false;
   }
   if (handledDocIds.has(doc.id)) return false;
@@ -54,13 +57,6 @@ export function needsAutoClean(
   if (opts.pagesHaveSectionKind) return false;
   const pages = doc.totalPages ?? opts.pageCount ?? 0;
   if (pages > AUTO_CLEAN_MAX_PAGES) return false;
-  const touched = Date.parse(doc.updatedAt || doc.createdAt);
-  if (
-    Number.isFinite(touched) &&
-    (opts.now ?? Date.now()) - touched < AUTO_CLEAN_RECENT_MS
-  ) {
-    return false;
-  }
   const hasText = Boolean(doc.content && doc.content.trim());
   const hasClean = Boolean(doc.cleanContent && doc.cleanContent.trim());
   return hasText && !hasClean;
@@ -73,6 +69,7 @@ export function useAutoCleanOnOpen(args: {
   pagesHaveCleanText: boolean;
   pageCount?: number;
   pagesHaveSectionKind?: boolean;
+  runAnswered: boolean;
   run: () => void;
 }): void {
   const { doc, run, ...rest } = args;

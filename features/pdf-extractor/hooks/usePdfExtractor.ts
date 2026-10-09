@@ -4,7 +4,7 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -38,9 +38,10 @@ import {
   CLEAN_QUEUED_LABEL,
   NO_RECORD_UPDATE_MESSAGE,
   classifyRecordUpdateStatus,
-  pollForCleanContent,
   shouldRefreshOnProcessingProgress,
 } from "../service/cleanOutcome";
+import { resolveEndedClean } from "../service/followEndedClean";
+import { createMatrxTransport } from "@/lib/api/matrx-transport";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -338,6 +339,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   });
   const { loadHistory: shouldLoadHistory = true } = options;
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const isAdmin = useAppSelector(selectIsAdmin);
 
@@ -1195,6 +1197,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // with no recovery short of a reload.
       let recordStatus: string | null = null;
       let confirmedUpdate = false;
+      let cleanRequestId: string | null = null;
       const runStreamOnce = async (): Promise<string | null> => {
         const watchdog = createInactivityWatchdog(90_000, 15 * 60_000);
         try {
@@ -1206,8 +1209,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               // server is alive — only silence trips the watchdog.
               onActivity: () => watchdog.bump(),
               // A refresh mid-clean reconnects to exactly this run.
-              onRequestId: (requestId) =>
-                savePdfRunRequest(docId, requestId, "clean"),
+              onRequestId: (requestId) => {
+                cleanRequestId = requestId;
+                savePdfRunRequest(docId, requestId, "clean");
+              },
               onCleanStarted: (info) => {
                 perPageMode = info.mode === "per_page";
               },
@@ -1318,16 +1323,32 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           !streamedClean &&
           !fresh?.cleanContent;
 
-        // The stream ended with no text and no queue notice: the server often
-        // finishes the write seconds later — poll the row for a bounded time
-        // before calling it an error.
+        // The stream ended with no text and no queue notice: the run record
+        // says what really happened — follow the run to its terminal status
+        // and reload the saved document once if it completed.
         if (!queued && !streamedClean && !fresh?.cleanContent) {
-          const polled = await pollForCleanContent(async () => {
-            invalidateProcessedDocumentCache(docId);
-            fresh = await fetchDocument(docId);
-            return fresh?.cleanContent ?? null;
+          const ended = await resolveEndedClean<PdfDocument>({
+            transport: createMatrxTransport(store.getState, {
+              source: "pdf-clean-ended",
+            }),
+            docId,
+            requestId: cleanRequestId,
+            reload: async () => {
+              invalidateProcessedDocumentCache(docId);
+              return fetchDocument(docId);
+            },
           });
-          if (polled) streamedClean = polled;
+          if (ended.kind === "failed") throw new Error(ended.message);
+          if (ended.kind === "unresolved") {
+            throw new Error(
+              ended.status === "cancelled"
+                ? "AI cleanup was stopped"
+                : "AI cleanup finished with no clean text",
+            );
+          }
+          if (ended.kind === "completed" && ended.document) {
+            fresh = ended.document;
+          }
         }
 
         if (queued) {
@@ -1407,7 +1428,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         throw err instanceof Error ? new Error(msg) : err;
       }
     },
-    [fetchDocument],
+    [fetchDocument, store],
   );
 
   // ── Refresh a single document from Supabase (explicit user action) ────────
