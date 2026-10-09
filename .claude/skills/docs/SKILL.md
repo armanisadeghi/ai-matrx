@@ -61,11 +61,18 @@ Never touch: generated files, a `.md` that code reads (grep `.py`/`.ts` for its 
 a published package README, `inbox/`, a repo's `.arman/`. A spotted duplicate that is not
 blocking you is still yours: run this section or dispatch it, never just report it.
 
-## 4. Delete what is finished
+## 4. Clean up as you go
 
-Finished work shrinks to a status phrase on the node ("Gmail: live"). Finished projects, closed
-handoff items, stale plans and bannered "superseded" docs are deleted, never archived. Git
-holds history.
+Working notes belong in your project or node; nobody cleans them but you and the daily sweep.
+Each time a step finishes, in the same commit:
+
+- **Status:** the step becomes one line on its board or main doc ("P27 cutover: landed").
+- **Resume point:** one line ("next: steps 2 and 3"); delete it when the lane closes.
+- **Evidence:** say how to rerun it (the command); keep only what a later decision needs.
+  Censuses, scans, logs and batch-by-batch verification notes are not kept once read.
+- **Arman's words** go to the node's VISION.md (§5). Anything for him is shown in the chat.
+- **Finished work** shrinks to a status phrase ("Gmail: live"); finished projects, closed
+  handoffs and stale plans are deleted, never archived. Git holds history.
 
 ## 5. Arman's words
 
@@ -109,28 +116,24 @@ package CLAUDE.md, PRINCIPLES.md, FOUND_DEFECTS.md, skills) and
 
 ## Daily sweep (the docs-steward schedule)
 
-Run in order; the commit message carries the scorecard (no log file).
+The sweep cleans what agents left behind while the work is still fresh. Commit message carries
+the scorecard (no log file).
 
-- [ ] `okf_lint.py` to zero; `skill_descriptions.py lint --workspace`; `sync_skills.py --check`.
-  In a detached worktree pass `MATRX_CODE_ROOT=/Users/armanisadeghi/code` or they find no repos.
-- [ ] **Inbox:** each unprocessed item in `inbox/` is dispositioned per
-  [/inbox/README.md](/inbox/README.md) and moved to `inbox/processed/<YYYY-MM>/`. Nothing in
-  `inbox/` is ever deleted.
-- [ ] **Tree drift:** every `platform.taxonomy_node.docs_path` exists; a new `systems/` folder the
-  tree lacks gets added (clear domain) or a conflicts line plus a chat proposal.
-- [ ] **Rotation health:** the separate dedupe-and-verify schedule runs §3 daily on the two nodes
-  with the oldest `platform.taxonomy_node.last_reviewed_at` (nulls first) and stamps it. Report
-  reviewed / never reviewed / oldest; a node past 45 days is an alarm in chat.
-- [ ] **Delete finished:** §4 across new and touched docs.
-- [ ] **Conflicts:** every entry in [/operations/conflicts.md](/operations/conflicts.md) is still
-  open (a settled one is deleted) and phrased so he can answer it in seconds.
-- [ ] **DDL guard log:** every row in `platform.ddl_guard_unacked` is acknowledged with live
-  evidence through `platform.ddl_guard_ack(...)` or filed as a defect (run
-  `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) before reading certification).
-- [ ] **Pointers:** repo guards from §7 run; pointer lines into this bundle resolve.
-- [ ] **Expired facts:** grep `re-check after (\d{4}-\d{2}-\d{2})`; each past date becomes one
-  `feedback` item ([declared vs observed state](/policies/declared-vs-observed-state.md)).
-- [ ] Commit, push. Never create or change a schedule.
+- [ ] **Yesterday's changes first:** every doc changed in the last 24 hours
+  (`git log --since=24.hours --name-only`). For each: apply §4 — finished steps become status
+  lines, regenerable evidence goes, resume points for closed lanes go, Arman's words move to
+  VISION.md, duplicates merge (§3). Keep anything a live lane, an open decision or a running
+  script needs; when unsure, keep it and list it in the commit message.
+- [ ] **Large binaries and source data** added that day go to file storage and are linked
+  ([how](/systems/files/file-service/STATE.md#platform-work-products)).
+- [ ] **Instructions that make agents write logs:** if a skill, brief or plan told an agent to
+  keep a log, evidence dump or per-event record, fix the instruction to §4, not just the file.
+- [ ] `okf_lint.py` to zero; `sync_skills.py --check`.
+- [ ] **Inbox:** each new item is dispositioned per [/inbox/README.md](/inbox/README.md); nothing
+  in `inbox/` is ever deleted.
+- [ ] **Conflicts:** settled entries in [/operations/conflicts.md](/operations/conflicts.md) are
+  deleted; the rest read in seconds.
+- [ ] Commit, push.
 
 ## Old skill names
 

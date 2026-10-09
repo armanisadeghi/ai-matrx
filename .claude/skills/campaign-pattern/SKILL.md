@@ -82,12 +82,12 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
 
 1. **Externalize everything; make yourself replaceable.** One register as the single tracking
    home (stable IDs; no parallel status docs; **an index, not a store** — a decision lives in
-   its item and the register only points at it). The register opens with the owner's words
-   verbatim and holds only decisions and reality-checked facts — each entry says how to check
+   its item and the register only points at it). The register links the owner's words
+   (in VISION.md) and holds only decisions and reality-checked facts — each entry says how to check
    it against the live system; an item that changes nothing the user will see is suspect on
    sight, and a log line that changes no decision is not written. A register that records
-   activity becomes the single source of lies every later lane inherits. Frozen specs. A rulings ledger. A log line for
-   EVERY processed event, committed and pushed immediately — *unpushed work doesn't exist*. A
+   activity becomes the single source of lies every later lane inherits. Frozen specs. A rulings ledger. Each finished step
+   becomes one status line ([§4](/skills/docs/SKILL.md#4-clean-up-as-you-go)), committed and pushed immediately — *unpushed work doesn't exist*. A
    `COORDINATOR.md` succession brief so any fresh session takes the chair with one sentence.
    This is why context wipes cost nothing: the head is a cache, the repo is the truth.
 2. **Coordinate; don't build.** The chair dispatches fresh-context specialist agents with tight
