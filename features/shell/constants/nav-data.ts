@@ -21,7 +21,12 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
-import { MESSENGER_HREF, MESSENGER_LABEL } from "@/features/messaging/messenger/messenger-route";
+import {
+  MESSENGER_AGENTS_HREF,
+  MESSENGER_AGENTS_LABEL,
+  MESSENGER_HREF,
+  MESSENGER_LABEL,
+} from "@/features/messaging/messenger/messenger-route";
 import {
   EDU_TOOL_NAV,
   eduToolHref,
@@ -1004,6 +1009,7 @@ export const primaryNavItems: ShellNavItem[] = [
       { label: "Chat", href: "/chat/new", iconName: "MessageCircle", exact: true, profileMenu: true, group: "Chat" },
       { label: "Voice", href: "/chat/voice", iconName: "Mic", group: "Chat" },
       { label: "Talk", href: "/chat/talk", iconName: "Speech", group: "Chat" },
+      { label: MESSENGER_AGENTS_LABEL, href: MESSENGER_AGENTS_HREF, iconName: "MessagesSquare", group: "Chat", guestHidden: true },
       ...AI_WORK_NAV_GROUP.children
         .filter((child) => child.href.startsWith("/work"))
         .map((child): ShellNavChild => ({

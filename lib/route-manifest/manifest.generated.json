@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1392,
+  "routeCount": 1394,
   "routes": [
     {
       "pattern": "/",
@@ -1237,6 +1237,11 @@
       "pattern": "/administration/usage/agents/detail",
       "status": "live",
       "source": "app/(admin)/administration/usage/agents/detail/page.tsx"
+    },
+    {
+      "pattern": "/administration/usage/reconciliation",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/reconciliation/page.tsx"
     },
     {
       "pattern": "/administration/users",
@@ -5364,6 +5369,11 @@
       "pattern": "/messenger",
       "status": "live",
       "source": "app/(core)/messenger/page.tsx"
+    },
+    {
+      "pattern": "/messenger/agents",
+      "status": "live",
+      "source": "app/(core)/messenger/agents/page.tsx"
     },
     {
       "pattern": "/news",

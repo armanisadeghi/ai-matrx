@@ -85,9 +85,15 @@ type DoorState =
 export interface StaffRoomProps {
   /** The Holder the page resolved at SSR, for the chat shell's first paint. */
   seedAgentId: string | null;
+  /**
+   * Mounted inside another surface's own chrome (the agents messenger's Chief
+   * of Staff seat), below that surface's header — so the sandbox note does not
+   * clear the shell header itself.
+   */
+  embedded?: boolean;
 }
 
-export function StaffRoom({ seedAgentId }: StaffRoomProps) {
+export function StaffRoom({ seedAgentId, embedded = false }: StaffRoomProps) {
   const authReady = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const organizationId = useAppSelector(selectOrganizationId);
@@ -163,7 +169,7 @@ export function StaffRoom({ seedAgentId }: StaffRoomProps) {
     );
   }
 
-  return <StaffThreadRoom thread={state.thread} seedAgentId={seedAgentId} />;
+  return <StaffThreadRoom thread={state.thread} seedAgentId={seedAgentId} embedded={embedded} />;
 }
 
 /**
@@ -173,9 +179,11 @@ export function StaffRoom({ seedAgentId }: StaffRoomProps) {
 function StaffThreadRoom({
   thread,
   seedAgentId,
+  embedded,
 }: {
   thread: StaffThread;
   seedAgentId: string | null;
+  embedded: boolean;
 }) {
   // `agent_name` is OPTIONAL on the generated contract, and absent means the
   // same thing as null: SHOW NO NAME, never a hardcoded one. Normalised here so
@@ -205,7 +213,7 @@ function StaffThreadRoom({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {thread.sandbox_note ? (
-        <StaffSandboxNote note={thread.sandbox_note} />
+        <StaffSandboxNote note={thread.sandbox_note} embedded={embedded} />
       ) : null}
       <div className="min-h-0 flex-1">
         <ChatRoomClient
@@ -228,7 +236,7 @@ function StaffThreadRoom({
  * (`/sandbox`) it implies. Quiet by design — a missing box is a lesser
  * arrangement, not a failure.
  */
-function StaffSandboxNote({ note }: { note: string }) {
+function StaffSandboxNote({ note, embedded }: { note: string; embedded: boolean }) {
   return (
     // 🚨 `pt-[var(--shell-header-h)]` IS NOT DECORATION. `.shell-main` is pulled
     // up behind the transparent header, so a page's own FIRST row draws inside
@@ -239,7 +247,13 @@ function StaffSandboxNote({ note }: { note: string }) {
     // nothing. The offset is on the NOTE only: the conversation column below
     // reserves its own, and putting it on the body would push the whole room
     // down by a header's height.
-    <div className="flex shrink-0 items-start gap-2 border-b border-border bg-muted/40 px-4 py-2 pt-[calc(var(--shell-header-h)+0.5rem)]">
+    <div
+      className={
+        embedded
+          ? "flex shrink-0 items-start gap-2 border-b border-border bg-muted/40 px-4 py-2"
+          : "flex shrink-0 items-start gap-2 border-b border-border bg-muted/40 px-4 py-2 pt-[calc(var(--shell-header-h)+0.5rem)]"
+      }
+    >
       <HardDrive
         aria-hidden
         className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
