@@ -6,6 +6,7 @@
  * (admin lane). seat="org": one organization (its admins), costs in points.
  * A row's name opens its detail page with every run.
  */
+import { notReadyHit, useAutomationReadiness } from "@/features/scheduling/service/automationReadiness";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -75,11 +76,14 @@ export const rowKey = (r: { agent_id: string | null; mandate_key: string | null;
 
 /** The agent spend rules' flags as icon-strip hits. */
 export function agentFlagHits(row: AgentSpendRow, money: (usd: number) => string): SpendFlagHit[] {
-  return agentSpendFlags(row, money).map((f) => ({
+  const hits: SpendFlagHit[] = agentSpendFlags(row, money).map((f) => ({
     slot: f.id === "parked_on_admin" ? "test_account" : f.id,
     severity: f.severity,
     detail: f.detail,
   }));
+  const notReady = notReadyHit([row.mandate_key]);
+  if (notReady) hits.push(notReady);
+  return hits;
 }
 
 export function AgentSpendFlagStrip({ row, money }: { row: AgentSpendRow; money: (usd: number) => string }) {
@@ -238,6 +242,7 @@ export function AgentSpendBoard({
 }) {
   const { rows, rawTotal, loading, error, reload } = useAgentSpend(orgId, days);
   const { format } = useCostDisplay();
+  useAutomationReadiness(); // re-renders the "Not ready" flag once the verdicts land
   const total = rows.reduce((s, r) => s + r.cost, 0);
   const unattributed = rows.reduce((s, r) => s + (r.unattributed_source ? r.cost : 0), 0);
 

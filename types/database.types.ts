@@ -6952,6 +6952,13 @@ export type Database = {
             referencedRelation: "run_approval"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "run_approval_event_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "run_approval_stats"
+            referencedColumns: ["id"]
+          },
         ]
       }
       spend_approval: {
@@ -7401,7 +7408,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      run_approval_stats: {
+        Row: {
+          api_mcp: number | null
+          avg_since: number | null
+          avg30: number | null
+          cost30: number | null
+          id: string | null
+          max_since: number | null
+          max30: number | null
+          n_since: number | null
+          n30: number | null
+          refreshed_at: string | null
+          scheduled: number | null
+          sub_agent: number | null
+          system: number | null
+          test_account: number | null
+          workflow: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _coupon_code: { Args: never; Returns: string }
@@ -7882,6 +7908,7 @@ export type Database = {
         }[]
       }
       run_approval_reconcile: { Args: never; Returns: number }
+      run_approval_refresh_stats: { Args: never; Returns: number }
       run_approval_status: {
         Args: { p_org_id?: string }
         Returns: {
@@ -76818,6 +76845,13 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
       }
+      child_parent_records_worth_asking: {
+        Args: { p_ids: string[]; p_orgs: string[]; p_person: string }
+        Returns: {
+          org: string
+          pid: string
+        }[]
+      }
       children_with_own_read_arms: {
         Args: never
         Returns: {
@@ -80338,6 +80372,87 @@ export type Database = {
         }
         Relationships: []
       }
+      readiness_verdict: {
+        Row: {
+          checked_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          door: string | null
+          id: string
+          mandate_key: string
+          metadata: Json
+          missing: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          ready: boolean
+          refused_count: number
+          required: Json
+          scope: Json
+          scope_key: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          summary: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          checked_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          door?: string | null
+          id?: string
+          mandate_key: string
+          metadata?: Json
+          missing?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          ready: boolean
+          refused_count?: number
+          required?: Json
+          scope?: Json
+          scope_key: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          checked_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          door?: string | null
+          id?: string
+          mandate_key?: string
+          metadata?: Json
+          missing?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          ready?: boolean
+          refused_count?: number
+          required?: Json
+          scope?: Json
+          scope_key?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          summary?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       reference: {
         Row: {
           caller_identity_hash: string | null
@@ -81221,6 +81336,7 @@ export type Database = {
           version_live: boolean
         }[]
       }
+      admin_run_counts: { Args: { p_since: string }; Returns: Json }
       binding_holder_runnable: {
         Args: {
           p_holder_id: string
@@ -81269,6 +81385,24 @@ export type Database = {
         Returns: string[]
       }
       output_schema_keys: { Args: { p_output_schema: Json }; Returns: string[] }
+      record_readiness_verdict: {
+        Args: {
+          p_door: string
+          p_mandate_key: string
+          p_missing: Json
+          p_organization_id: string
+          p_ready: boolean
+          p_required: Json
+          p_scope: Json
+          p_scope_key: string
+          p_summary: string
+        }
+        Returns: {
+          id: string
+          ready: boolean
+          refused_count: number
+        }[]
+      }
       reference_head: {
         Args: never
         Returns: {
@@ -95905,6 +96039,7 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: boolean
       }
+      non_person_account_ids: { Args: never; Returns: string[] }
       normalize_decision_label: {
         Args: { p_answer: string; p_metadata: Json }
         Returns: string
@@ -96539,6 +96674,10 @@ export type Database = {
         Returns: string
       }
       run_driver_rank: { Args: { p_driver: string }; Returns: number }
+      run_is_own_work: {
+        Args: { p_origin: string; p_real_person: boolean; p_source: string }
+        Returns: boolean
+      }
       schema_exposure_violations: {
         Args: { p_schema?: string }
         Returns: {

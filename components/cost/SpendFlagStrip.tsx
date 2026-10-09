@@ -19,6 +19,7 @@ import {
   Banknote,
   CalendarX,
   CircleDollarSign,
+  ClipboardX,
   Cpu,
   FlaskConical,
   Gem,
@@ -49,7 +50,8 @@ export type SpendFlagSlot =
   | "disposable"
   | "no_approval"
   | "unsaved_runs"
-  | "unattributed";
+  | "unattributed"
+  | "not_ready";
 
 type Glyph = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
 
@@ -68,6 +70,7 @@ const SLOT: Record<SpendFlagSlot, { icon: Glyph; label: string }> = {
   no_approval: { icon: CalendarX, label: "Schedule not approved" },
   unsaved_runs: { icon: SaveOff, label: "Unsaved runs" },
   unattributed: { icon: Unlink, label: "No model or agent linked" },
+  not_ready: { icon: ClipboardX, label: "Not ready: core inputs missing" },
 };
 
 /** Every slot, in THE order. A board's `set` is a subsequence of this. */
@@ -84,6 +87,7 @@ export const AUTOMATION_FLAG_SET: readonly SpendFlagSlot[] = [
   "test_account",
   "runs_as_person",
   "unattributed",
+  "not_ready",
 ];
 
 /** The triggers board adds its own two. */
@@ -104,6 +108,7 @@ export const AGENT_FLAG_SET: readonly SpendFlagSlot[] = [
   "test_account",
   "unsaved_runs",
   "unattributed",
+  "not_ready",
 ];
 
 /** A raised flag, as the rules return it. */
