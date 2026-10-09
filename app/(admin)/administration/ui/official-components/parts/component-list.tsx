@@ -228,6 +228,15 @@ export const componentList: ComponentEntry[] = [
     tags: ["dropdown", "menu", "icon", "ios", "selector", "sort", "filter"],
   },
   {
+    id: "generated-image-set",
+    name: "Generated Image Set",
+    path: "components/mardown-display/blocks/media-io/GeneratedImageSetBlock.tsx",
+    description:
+      "The generated_image_set block: several images show in the Carousel viewer",
+    categories: ["interactive"],
+    tags: ["image", "generation", "carousel", "chat", "media"],
+  },
+  {
     id: "carousel",
     name: "Carousel",
     path: "@ai-matrx/design-system/carousel (npm package)",

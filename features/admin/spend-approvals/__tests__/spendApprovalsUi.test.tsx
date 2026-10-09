@@ -20,6 +20,13 @@ jest.mock("@ai-matrx/design-system/controls", () => ({
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
+// The dollar seat: a system admin sees "Under $N"; everyone else (org admins included) sees no dollars.
+const mockSeat = { sees: true };
+jest.mock("@/components/cost/costUnit", () => ({
+  ...jest.requireActual("@/components/cost/costUnit"),
+  currentSeesDollars: () => mockSeat.sees,
+}));
+
 import { RunApprovalCell } from "../RunApprovalCell";
 import { WaitingApprovalsCount } from "../WaitingApprovalsCount";
 import { underThresholdLabel } from "../spendApprovals";
@@ -35,6 +42,7 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  mockSeat.sees = true;
   rpc.mockReset();
   countGate = new Promise<void>((r) => { openCountGate = r; });
   rpc.mockImplementation(async (fn: string, args: { p_org?: string }) => {
@@ -61,24 +69,37 @@ test("label formats the threshold", () => {
   expect(underThresholdLabel(1, false)).toBe("Under the approval limit");
 });
 
-test("an org that lowered its threshold sees its own number, not $1", async () => {
+const renderCell = async (thresholdOrgId: string, maxRunCost: number) => {
   await act(async () => {
-    root.render(<RunApprovalCell orgId={null} thresholdOrgId={ORG_LOW} subjects={[["agent", "a1"]]} maxRunCost={0.4} seat="admin" />);
+    root.render(<RunApprovalCell orgId={null} thresholdOrgId={thresholdOrgId} subjects={[["agent", "a1"]]} maxRunCost={maxRunCost} seat="admin" />);
   });
   await settle();
+};
+
+test("system admin: an org that lowered its threshold sees its own number, not $1", async () => {
+  await renderCell(ORG_LOW, 0.4);
   expect(host.textContent).toBe("Under $0.50");
 });
 
-test("default-threshold org sees Under $1; a run above the org's threshold shows no label", async () => {
-  await act(async () => {
-    root.render(<RunApprovalCell orgId={null} thresholdOrgId={ORG_DEFAULT} subjects={[["agent", "a1"]]} maxRunCost={0.4} seat="admin" />);
-  });
-  await settle();
+test("non-admin: the same cell says the approval limit, never a dollar figure", async () => {
+  mockSeat.sees = false;
+  await renderCell(ORG_LOW, 0.4);
+  expect(host.textContent).toBe("Under the approval limit");
+  expect(host.textContent).not.toContain("$");
+});
+
+test("system admin: default-threshold org sees Under $1; a run above the org's threshold shows no label", async () => {
+  await renderCell(ORG_DEFAULT, 0.4);
   expect(host.textContent).toBe("Under $1");
-  await act(async () => {
-    root.render(<RunApprovalCell orgId={null} thresholdOrgId={ORG_LOW} subjects={[["agent", "a1"]]} maxRunCost={0.9} seat="admin" />);
-  });
-  await settle();
+  await renderCell(ORG_LOW, 0.9);
+  expect(host.textContent).toBe("—");
+});
+
+test("non-admin: default-threshold org shows the approval limit; above the threshold still shows no label", async () => {
+  mockSeat.sees = false;
+  await renderCell(ORG_DEFAULT, 0.4);
+  expect(host.textContent).toBe("Under the approval limit");
+  await renderCell(ORG_LOW, 0.9);
   expect(host.textContent).toBe("—");
 });
 

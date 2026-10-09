@@ -22,7 +22,11 @@ import {
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { downloadBlob } from "@/utils/file-operations/utils";
-import { cn } from "@/lib/utils";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 
 const KIND_LABEL: Record<AttendanceKind, string> = {
   host: "Host",
@@ -40,6 +44,91 @@ function clock(iso: string | null): string {
     ? "—"
     : at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
+
+type AttendanceRow = ReturnType<typeof attendanceReport>[number];
+
+function attendanceStatus(row: AttendanceRow): string {
+  if (row.joinedAt !== null) return "Attended";
+  return row.admission === "denied" ? "Not let in" : "Never joined";
+}
+
+function leftLabel(row: AttendanceRow): string {
+  return row.leftAt ? clock(row.leftAt) : row.joinedAt ? "at end" : "—";
+}
+
+function timeLabel(row: AttendanceRow): string {
+  return row.durationMs === null
+    ? "—"
+    : formatDurationMs(row.durationMs, { style: "compact" });
+}
+
+const ATTENDANCE_COLUMNS: MatrxColumnDef<AttendanceRow>[] = [
+  {
+    id: "name",
+    header: "Name",
+    accessorFn: (row) => row.name,
+    cell: (row) => <span className="block truncate">{row.name}</span>,
+    filter: "text",
+    width: 220,
+  },
+  {
+    id: "role",
+    header: "Role",
+    accessorFn: (row) => KIND_LABEL[row.kind],
+    filter: "select",
+    width: 120,
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorFn: attendanceStatus,
+    filter: "select",
+    width: 120,
+  },
+  {
+    id: "joined",
+    header: "Joined",
+    accessorFn: (row) => row.joinedAt ?? "",
+    cell: (row) => <span className="tabular-nums">{clock(row.joinedAt)}</span>,
+    copyValue: (row) => clock(row.joinedAt),
+    width: 90,
+  },
+  {
+    id: "left",
+    header: "Left",
+    accessorFn: (row) => row.leftAt ?? "",
+    cell: (row) => <span className="tabular-nums">{leftLabel(row)}</span>,
+    copyValue: leftLabel,
+    width: 90,
+  },
+  {
+    id: "time",
+    header: "Time",
+    accessorFn: (row) => row.durationMs ?? -1,
+    cell: (row) => <span className="tabular-nums">{timeLabel(row)}</span>,
+    copyValue: timeLabel,
+    width: 90,
+  },
+];
+
+const ATTENDANCE_COPY: MatrxDataTableCopyConfig<AttendanceRow> = {
+  label: "Attendee",
+  listLabel: "Attendance (this view)",
+  location: "Meeting record — Attendance",
+  rowKind: "meeting-attendee",
+  listKind: "meeting-attendance",
+  rowDescription: "One person's attendance of a meeting.",
+  listDescription: "Who attended the meeting, as currently shown.",
+  humanRow: (row) =>
+    [
+      `Name: ${row.name}`,
+      `Role: ${KIND_LABEL[row.kind]}`,
+      `Status: ${attendanceStatus(row)}`,
+      `Joined: ${clock(row.joinedAt)}`,
+      `Left: ${leftLabel(row)}`,
+      `Time: ${timeLabel(row)}`,
+    ].join("\n"),
+};
 
 export function fileSafe(title: string): string {
   return (
@@ -111,47 +200,23 @@ export function AttendancePanel({
         </p>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-card text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="px-3 py-1.5 font-medium">Name</th>
-              <th className="px-2 py-1.5 font-medium">Joined</th>
-              <th className="px-2 py-1.5 font-medium">Left</th>
-              <th className="px-3 py-1.5 text-right font-medium">Time</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className={cn(row.joinedAt === null && "text-muted-foreground")}
-              >
-                <td className="max-w-0 px-3 py-1.5">
-                  <div className="truncate">{row.name}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {KIND_LABEL[row.kind]}
-                    {row.joinedAt === null
-                      ? row.admission === "denied"
-                        ? " · not let in"
-                        : " · never joined"
-                      : ""}
-                  </div>
-                </td>
-                <td className="px-2 py-1.5 tabular-nums">
-                  {clock(row.joinedAt)}
-                </td>
-                <td className="px-2 py-1.5 tabular-nums">
-                  {row.leftAt ? clock(row.leftAt) : row.joinedAt ? "at end" : "—"}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
-                  {row.durationMs === null
-                    ? "—"
-                    : formatDurationMs(row.durationMs, { style: "compact" })}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <MatrxDataTable<AttendanceRow>
+          tableId={`meet/attendance/${meeting.id}`}
+          data={[...rows]}
+          columns={ATTENDANCE_COLUMNS}
+          getRowId={(row) => row.id}
+          appearance="embedded"
+          viewTabs={false}
+          pageSize={0}
+          density="condensed"
+          searchText={(row) => `${row.name} ${KIND_LABEL[row.kind]}`}
+          toolbar={{ searchPlaceholder: "Search attendees" }}
+          detail={{ enabled: false }}
+          copy={ATTENDANCE_COPY}
+          rowClassName={(row) =>
+            row.joinedAt === null ? "text-muted-foreground" : undefined
+          }
+        />
       </div>
     </div>
   );

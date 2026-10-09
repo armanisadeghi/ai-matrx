@@ -357,9 +357,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   // "New extraction" tab state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [batchStatus, setBatchStatus] = useState<BatchStatus>("idle");
-  // The last upload was refused for want of an active organization; the
-  // selected files are kept so it can run again the moment one is chosen.
-  const [needsOrganization, setNeedsOrganization] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Live post-extraction pipeline status per doc id (clean → chunk → embed →
@@ -500,8 +497,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     async (opts: ExtractFilesOptions = {}): Promise<string[]> => {
       if (selectedFiles.length === 0) return [];
 
-      setNeedsOrganization(false);
-      let heldForOrganization = false;
+      // An organization-required refusal is shown on the tabs like any other
+      // failure, and the files stay selected so the person can retry.
+      let keepSelectedFiles = false;
       setBatchStatus("extracting");
       firstCompletedTabRef.current = null;
       const completedDocIds: string[] = [];
@@ -923,30 +921,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         }
       } catch (err) {
-        if (isOrganizationRequiredError(err)) {
-          // Not a failure of the files: offer the organization picker and keep
-          // them selected; the upload runs again once one is chosen.
-          heldForOrganization = true;
-          setNeedsOrganization(true);
-          setTabs((prev) =>
-            prev.filter((tab) => !placeholderTabs.some((p) => p.id === tab.id)),
-          );
-          setActiveTabId((prev) =>
-            placeholderTabs.some((p) => p.id === prev) ? "new" : prev,
-          );
-          if (debugSessionId) {
-            dispatch(
-              finishBatchExtractDebugSession({
-                sessionId: debugSessionId,
-                finishedAt: new Date().toISOString(),
-                status: "error",
-                response: null,
-                error: "organization_required",
-              }),
-            );
-          }
-          return [];
-        }
+        if (isOrganizationRequiredError(err)) keepSelectedFiles = true;
         const msg = err instanceof Error ? err.message : "Extraction failed";
         if (debugSessionId) {
           dispatch(
@@ -989,8 +964,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         );
 
         setBatchStatus("idle");
-        // Held for an organization: the files stay selected for the retry.
-        if (!heldForOrganization) {
+        // Refused for want of an organization: the files stay selected.
+        if (!keepSelectedFiles) {
           // The stream is over — no more processing events can arrive, so any
           // leftover per-doc status is stale. Clear it — except docs parked on
           // the batch queue, whose "Cleaning queued" label is still true.
@@ -1683,7 +1658,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     // "New" tab state
     selectedFiles,
     batchStatus,
-    needsOrganization,
     fileInputRef,
     addFiles,
     removeFile,

@@ -365,10 +365,13 @@ export async function findSocialsOnWebsite(
   domain: string,
   dispatch: AppDispatch,
 ): Promise<FoundSocialLink[]> {
+  // Every scraper endpoint streams NDJSON, so the events are collected and read together.
+  const events: unknown[] = [];
   const result = await dispatch(
     callApi({
       path: "/scraper/quick-scrape",
       method: "POST",
+      stream: true,
       body: {
         urls: [`https://${domain}`],
         get_links: true,
@@ -377,10 +380,12 @@ export async function findSocialsOnWebsite(
         get_structured_data: true,
         use_cache: true,
       },
+      onStreamEvent: (event) => events.push(event),
     }),
   );
   if (result.error) {
     throw new Error(result.error.message ?? "The website could not be read.");
   }
-  return extractSocialLinks(result.data);
+  (globalThis as { __si11?: unknown }).__si11 = events; // TEMP-DEBUG
+  return extractSocialLinks(events);
 }

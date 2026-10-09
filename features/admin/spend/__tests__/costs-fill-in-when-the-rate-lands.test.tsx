@@ -17,6 +17,12 @@ jest.mock("@/components/cost/pointsRate", () => ({
   ...jest.requireActual("@/components/cost/pointsRate"),
   currentPointsRate: () => mockRate.value,
 }));
+// The dollar seat: a system admin sees "$x · y points"; everyone else (org admins included) sees points alone.
+const mockSeat = { sees: true };
+jest.mock("@/components/cost/useCostDisplay", () => ({
+  ...jest.requireActual("@/components/cost/useCostDisplay"),
+  useSeesDollars: () => mockSeat.sees,
+}));
 jest.mock("@/components/cost/pointsRate.client", () => ({
   usePointsRate: () =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -45,7 +51,7 @@ function landRate(rate: number) {
   });
 }
 
-it("the Estimated total shows its points once the rate knob answers, after the data", async () => {
+async function mountPanel() {
   mockRate.value = null;
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -55,8 +61,25 @@ it("the Estimated total shows its points once the rate knob answers, after the d
   });
   await act(async () => {}); // the estimate read resolves
   const panel = () => host.querySelector("[data-testid=spend-estimated-cost]")?.textContent ?? "";
+  return { panel, unmount: () => act(() => root.unmount()) };
+}
+
+it("system admin: the Estimated total shows dollars and its points once the rate knob answers, after the data", async () => {
+  mockSeat.sees = true;
+  const { panel, unmount } = await mountPanel();
   expect(panel()).toContain("$0.0204 · —");
   landRate(20_000);
   expect(panel()).toContain("$0.0204 · 408 points");
-  act(() => root.unmount());
+  unmount();
+});
+
+it("non-admin: the Estimated total shows points alone once the rate lands, never a dollar or the rate", async () => {
+  mockSeat.sees = false;
+  const { panel, unmount } = await mountPanel();
+  expect(panel()).not.toContain("$");
+  landRate(20_000);
+  expect(panel()).toContain("408 points");
+  expect(panel()).not.toContain("$");
+  expect(panel()).not.toContain("20,000");
+  unmount();
 });

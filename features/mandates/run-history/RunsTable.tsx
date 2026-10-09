@@ -48,6 +48,7 @@ import {
   ranByWords,
   rungTitle,
   rungWords,
+  unmandatedRunLabel,
 } from "./format";
 
 export type RunsScope = { mandateKey: string } | { agentId: string };
@@ -88,6 +89,23 @@ const STATUS_TONE: Record<RunStatus, "ok" | "caution" | "error" | "neutral"> = {
   waiting: "neutral",
   running: "neutral",
 };
+
+function UnmandatedRunBadge({ run }: { run: MandateRun }) {
+  const label = unmandatedRunLabel(run);
+  return (
+    <span
+      className={
+        label.warning
+          ? "shrink-0 text-[11px] text-amber-700 dark:text-amber-400"
+          : "shrink-0 text-[11px] text-muted-foreground"
+      }
+      title={label.title}
+      data-run-attribution={label.warning ? "unattributed" : "direct"}
+    >
+      {label.words}
+    </span>
+  );
+}
 
 function isRunStatus(value: string): value is RunStatus {
   return RUN_STATUSES.some((status) => status === value);
@@ -245,9 +263,7 @@ export function RunsTable({
                   {mandateDisplayName(storedMandateKey(run.mandateKey), null)}
                 </Link>
               ) : (
-                <span className="text-muted-foreground" title="Run directly by its agent, not through a mandate">
-                  Direct run
-                </span>
+                <UnmandatedRunBadge run={run} />
               ),
           } satisfies MatrxColumnDef<MandateRun>,
         ]
@@ -269,14 +285,7 @@ export function RunsTable({
                     name={run.holderName ?? (run.holderType === "workflow" ? "Workflow" : "Agent")}
                     className="min-w-0 max-w-full"
                   />
-                  {run.foundBy === "holder_agent" ? (
-                    <span
-                      className="shrink-0 text-[11px] text-amber-700 dark:text-amber-400"
-                      title="Run directly by its agent, not through this mandate"
-                    >
-                      Direct run
-                    </span>
-                  ) : null}
+                  {run.foundBy === "holder_agent" ? <UnmandatedRunBadge run={run} /> : null}
                 </span>
               ) : (
                 <span className="text-muted-foreground" title="Not recorded for this run">

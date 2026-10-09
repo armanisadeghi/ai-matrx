@@ -832,8 +832,8 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
       },
       {
-        // Spaces also sits on Board so a person finds it from home (Arman 2026-10-09: "add it to Board so
-        // it's somewhere at least"). Its domain-tree home stays Content › Spaces below.
+        // Spaces lives on Board, beside the Dashboard, so a person finds it from home (Arman 2026-10-09:
+        // "add it to Board so it's somewhere at least"). One destination, one domain (nav-no-loss test).
         label: "Spaces",
         href: "/spaces",
         iconName: "NotebookTabs",
@@ -1250,18 +1250,6 @@ export const primaryNavItems: ShellNavItem[] = [
     description: "Pages, notes, documents, workbooks, maps and signatures",
     color: "amber",
     children: [
-      {
-        // Spaces (Notion-style pages) heads Content in the domain tree (content: spaces +, Arman 2026-10-05).
-        label: "Spaces",
-        href: "/spaces",
-        iconName: "NotebookTabs",
-        description: "Pages, databases and templates in one workspace",
-        guestHidden: true,
-        color: "amber",
-        profileMenu: false,
-        dashboard: true,
-        group: "Write",
-      },
       {
         label: "Notes",
         href: "/notes",
