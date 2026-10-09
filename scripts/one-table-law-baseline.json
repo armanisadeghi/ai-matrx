@@ -71,7 +71,6 @@
     "features/research/components/sources/SourceList.tsx": "research sources list",
     "features/scope-system/components/ScopesList.tsx": "scopes list by name",
     "features/scopes/components/management/OrgScopeTypeSection.tsx": "org scope list; partly MatrxDataTable already",
-    "features/scraper/parts/RemovalDetails.tsx": "sortable removal details list",
     "features/tasks/components/TasksTableView.tsx": "tasks table view with sortable headers",
     "features/tool-call-visualization/admin/McpToolsManager.tsx": "MCP tools list with actions",
     "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "test sample rows; partly MatrxDataTable already"
@@ -142,7 +141,6 @@
     "features/scope-system/components/ScopesList.tsx",
     "features/scopes/components/management/OrgScopeTypeSection.tsx",
     "features/scopes/components/management/ScopeOnboarding.tsx",
-    "features/scraper/parts/RemovalDetails.tsx",
     "features/settings/universal/ConfigurationExport.tsx",
     "features/tool-call-visualization/admin/McpToolsManager.tsx",
     "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx"
