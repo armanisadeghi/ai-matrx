@@ -33,6 +33,7 @@ import type {
   IngestProfileResult,
   PostMediaRef,
   SocialCapabilities,
+  SocialCosts,
   SocialCredits,
   SocialErrorCode,
   SocialPlatform,
@@ -366,7 +367,7 @@ export async function removeFromCollection(
 // Ads
 // ---------------------------------------------------------------------------
 
-/** One search of an ad library. Spends provider credits (about one) — callers confirm first. */
+/** One search of an ad library. A hard cost charged in points (`useSocialSpend`). */
 export async function searchAds(
   input: { library: AdLibrary; query?: string; advertiser?: string; cursor?: string },
   opts: CallOptions,
@@ -390,6 +391,15 @@ export async function searchAds(
 
 export async function getCapabilities(opts: CallOptions): Promise<SocialCapabilities> {
   const { data } = await getJson<SocialCapabilities>(`${BASE}/capabilities`, {
+    organizationId: org(opts.organizationId),
+    signal: opts.signal,
+  });
+  return data;
+}
+
+/** What each social action costs (USD, from the ledger's price knob). Render it with `useSocialSpend`. */
+export async function getCosts(opts: CallOptions): Promise<SocialCosts> {
+  const { data } = await getJson<SocialCosts>(`${BASE}/costs`, {
     organizationId: org(opts.organizationId),
     signal: opts.signal,
   });

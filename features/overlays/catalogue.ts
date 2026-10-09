@@ -1084,6 +1084,14 @@ export const OVERLAY_CATALOGUE = {
   },
   // One topic of one topical map. MULTI on purpose: comparing two topics side
   // by side is the whole reason the panel floats rather than taking over.
+  // One social post (TikTok, Reel, YouTube...) as a floating, non-blocking
+  // panel. MULTI: two posts side by side is the point; the instance id is the
+  // post id, so the same post focuses rather than stacks.
+  socialPostWindow: {
+    label: "Post",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   topicalMapTopicPanel: {
     label: "Topic",
     instanceMode: "multi",

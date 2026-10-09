@@ -51,6 +51,7 @@ import {
   type PostSort,
 } from "../mappers";
 import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseline } from "../outlier";
+import { useSocialSpend } from "../cost";
 import { refreshProfile, socialErrorMessage } from "../server";
 import { TRACKED_ROLE_LABELS, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
@@ -276,6 +277,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const invalidate = useInvalidateSocial();
   const profile = useProfile(profileId);
   const tracked = useTrackedForProfile(brand.organizationId, profileId);
+  const { costText, confirmSpend } = useSocialSpend(brand.organizationId);
   const handle = profile.data?.handle ?? null;
   const posts = useProfilePosts(profileId, handle);
   const snapshots = useProfileSnapshots(profileId);
@@ -287,11 +289,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const [refreshLine, setRefreshLine] = useState<{ text: string; failed: boolean; error?: unknown } | null>(null);
 
   async function refresh() {
-    const ok = await confirm({
-      title: `Refresh @${handle ?? ""}?`,
-      description: "Fetches the latest posts and numbers. Costs about 1 credit per page, billed to this organization.",
-      confirmLabel: "Refresh",
-    });
+    const ok = await confirmSpend("profile_page", 1, { title: `Refresh @${handle ?? ""}?`, confirmLabel: "Refresh" });
     if (!ok) return;
     setBusy(true);
     setRefreshLine({ text: "Starting…", failed: false });
@@ -371,7 +369,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             </span>
           ) : null}
           {tracked.data ? (
-            <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title="Refresh · about 1 credit per page">
+            <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}
             </Button>
           ) : null}

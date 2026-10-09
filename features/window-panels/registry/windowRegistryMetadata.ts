@@ -2910,6 +2910,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // float side by side, which is why it is multi-instance. `detail_panel`
   // (a `seo.topical_map` knob) lets an organization choose the drawer instead;
   // the component reads it, this metadata describes the window either way.
+  // ── Social post: one post as a floating panel ─────────────────────────────
+  // Wraps `PostDetailBody`, the same body `/socials/post/[postId]` renders and
+  // the `social-post` canvas tab shows. Instance id = post id.
+  {
+    slug: "social-post-window",
+    overlayId: "socialPostWindow",
+    kind: "window",
+    label: "Post",
+    defaultData: { postId: "", organizationId: "", brandSeg: "", tab: "overview" },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    urlSync: { key: "social_post" },
+    preservation: {
+      dataKeys: ["postId", "organizationId", "brandSeg", "tab"],
+      requiredDataKeys: ["postId", "organizationId"],
+    },
+  },
   {
     slug: "topical-map-topic-panel",
     overlayId: "topicalMapTopicPanel",

@@ -272,6 +272,26 @@ export function initUrlHydration() {
     );
   });
 
+  // Social post — `?panels=social_post:<postId>:o-<organizationId>_b-<brand>`
+  // reopens the floating post panel. The organization rides as an arg because
+  // every media / transcript call names it; the brand only builds the creator link.
+  registerPanelHydrator("social_post", (dispatch, id, args) => {
+    const organizationId = args.o;
+    if (!id || !organizationId) {
+      console.warn(
+        `[initUrlHydration] Ignoring "?panels=social_post:${id}": a post panel needs its post and organization ("social_post:<postId>:o-<organizationId>"). Re-copy the link from the panel.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "socialPostWindow",
+        instanceId: id,
+        data: { stackIndex: 0, postId: id, organizationId, brandSeg: args.b ?? "", tab: args.t ?? "overview" },
+      }),
+    );
+  });
+
   // Agent variable editor — `?panels=agent_variable:<agentId>|<variableName>`
   // reopens the editor on the exact variable the link was made from. The window
   // is a singleton (one editor at a time), so the subject rides in the URL's

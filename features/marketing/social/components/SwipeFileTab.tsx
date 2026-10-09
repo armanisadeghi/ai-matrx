@@ -48,7 +48,7 @@ import {
 } from "../swipe";
 import { isAdLibrary, isSocialPlatform, type PostCardModel, type SwipeItem } from "../types";
 import { AdCard, libraryLabel } from "./AdCard";
-import { PostDrawer } from "./PostDetail";
+import { useOpenPost } from "../useOpenPost";
 import { platformLabel } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
 import { SocialPostCard } from "./SocialPostCard";
@@ -88,7 +88,7 @@ export function SwipeFileTab() {
   const [filters, setFilters] = useState<SwipeFilters>(DEFAULT_SWIPE_FILTERS);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [sheetKey, setSheetKey] = useState<string | null>(null);
-  const [drawerPost, setDrawerPost] = useState<PostCardModel | null>(null);
+  const openInPanel = useOpenPost();
   const [nameDialog, setNameDialog] = useState<{ mode: "create" } | { mode: "rename"; id: string; name: string } | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [bulkSaveOpen, setBulkSaveOpen] = useState(false);
@@ -401,10 +401,9 @@ export function SwipeFileTab() {
         onOpenPost={(i) => {
           if (!i.post) return;
           setSheetKey(null);
-          setDrawerPost(i.post);
+          openInPanel(i.post);
         }}
       />
-      <PostDrawer post={drawerPost} onClose={() => setDrawerPost(null)} />
 
       <CollectionNameDialog
         open={nameDialog !== null}

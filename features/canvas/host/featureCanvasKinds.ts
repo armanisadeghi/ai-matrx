@@ -16,6 +16,7 @@ import { SOURCE_PREVIEW_CANVAS_KIND } from "@/features/kg-suggestions/components
 import { USER_JOURNEY_CANVAS_KIND } from "@/features/admin/users/canvas/userJourneyKind";
 import { DIRECTIVE_SHAPE_CANVAS_KIND } from "@/features/directive-catalog/canvas/directiveShapeKind";
 import { TOPICAL_MAP_TOPIC_CANVAS_KIND } from "@/features/marketing/seo/topical-map/canvas/topicKind";
+import { SOCIAL_POST_CANVAS_KIND } from "@/features/marketing/social/canvas/postKind";
 import { KG_SUGGESTIONS_CANVAS_KIND } from "@/features/kg-suggestions/canvas/kgSuggestionsKind";
 import {
   DOCUMENT_HISTORY_CANVAS_KIND,
@@ -40,6 +41,7 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = withOutputDecision
   USER_JOURNEY_CANVAS_KIND,
   DIRECTIVE_SHAPE_CANVAS_KIND,
   TOPICAL_MAP_TOPIC_CANVAS_KIND,
+  SOCIAL_POST_CANVAS_KIND,
   KG_SUGGESTIONS_CANVAS_KIND,
   // A document's / a workbook's snapshot history beside its editor.
   DOCUMENT_HISTORY_CANVAS_KIND,

@@ -4,7 +4,7 @@
  * Outliers (UI-SPEC §7): posts beating their creator's own baseline across the
  * brand's tracked accounts — multiplier first, raw views beside it (OutlierKit /
  * Spotter pattern). Filters sit in ONE row; the same result set renders as
- * `SocialPostCard`s or a `MatrxDataTable`; a click opens `PostDrawer`.
+ * `SocialPostCard`s or a `MatrxDataTable`; a click opens the floating post panel.
  *
  * A watchlist is a saved filter (`platform.saved_view`, surface
  * `social.outliers`). Its hits are computed on view; marking a post seen or
@@ -64,7 +64,8 @@ import {
 } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
-import { PostDrawer, type DetailTab } from "./PostDetail";
+import type { DetailTab } from "./PostDetail";
+import { useOpenPost } from "../useOpenPost";
 import { SaveToCollectionDialog } from "./SwipeDialogs";
 import { SocialPostCard } from "./SocialPostCard";
 import { useSocials } from "./SocialsContext";
@@ -127,7 +128,7 @@ export function OutliersTab() {
   const [sort, setSort] = useState<OutlierSort>("multiple");
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showDismissed, setShowDismissed] = useState(false);
-  const [open, setOpen] = useState<{ post: PostCardModel; tab: DetailTab } | null>(null);
+  const openInPanel = useOpenPost();
   const [naming, setNaming] = useState(false);
   const [savePost, setSavePost] = useState<PostCardModel | null>(null);
   const [now] = useState(() => Date.now());
@@ -236,7 +237,7 @@ export function OutliersTab() {
   }
 
   function openPost(item: FeedItem, tab: DetailTab = "overview") {
-    setOpen({ post: item.post, tab });
+    openInPanel(item.post, tab);
     if (item.state === "new") void writeStates([item], "seen");
   }
 
@@ -544,7 +545,6 @@ export function OutliersTab() {
         targets={savePost ? [{ itemType: "social_post", itemId: savePost.postId }] : []}
         defaultCollectionId={null}
       />
-      <PostDrawer post={open?.post ?? null} initialTab={open?.tab} onClose={() => setOpen(null)} />
       <TextInputDialog
         open={naming}
         onOpenChange={setNaming}

@@ -1178,6 +1178,10 @@ const ToolCallWindowPanel = lazyOverlay(
     import("@ai-matrx/chat/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
+const SocialPostWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/marketing/SocialPostWindow"),
+  { ssr: false },
+);
 const TopicalMapTopicPanel = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/TopicalMapTopicPanel"),
@@ -2270,6 +2274,9 @@ export default function OverlayController() {
     ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
+    ),
+    socialPostWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "socialPostWindow"),
     ),
     topicalMapTopicPanel: useAppSelector((s) =>
       selectOpenInstances(s, "topicalMapTopicPanel"),
@@ -7819,6 +7826,35 @@ export default function OverlayController() {
                 ? data.conversationId
                 : null
             }
+          />
+        );
+      })}
+
+      {/* socialPostWindow — multi-instance; instance id = post id */}
+      {instancesById.socialPostWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        // No post or no organization = nothing to show; a stale persisted
+        // session can carry that, the opener never produces it.
+        if (typeof data?.postId !== "string" || !data.postId) return null;
+        if (typeof data.organizationId !== "string" || !data.organizationId) return null;
+        return (
+          <SocialPostWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={typeof data.stackIndex === "number" ? data.stackIndex : 0}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "socialPostWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            postId={data.postId}
+            organizationId={data.organizationId}
+            brandSeg={typeof data.brandSeg === "string" ? data.brandSeg : ""}
+            initialTab={typeof data.tab === "string" ? data.tab : "overview"}
+            landscape={data.landscape === true}
           />
         );
       })}
