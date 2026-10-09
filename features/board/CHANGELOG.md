@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Board chat list: package target, remount law green, organization contract
+
+- `board` is an association target: `@ai-matrx/associations` 0.13.201 lists it in `ASSOCIATION_TARGET_TYPES`; `items/board-chats.tsx` drops its cast. `board` was already a registry token (vocabulary check unchanged).
+- Remount law, chat / agent-form / chat tile + list (root cause, not a board defect): the harness answered the old `knob_snapshot`, but the app reads `knob_defaults` + `knob_snapshot_delta` (KNOB-SNAPSHOT), and the chat composer's agent pill (`chat.cx_default` mandate, `agx_search` for an agent missing from the catalog) and the working-document type ids (`platform.categories`) were never seeded. Each is kept once per tab when it ANSWERS (defaults cache, mandate cache, type-id promise, catalog) and never kept when it fails, so an unseeded first read repeated on every wake. The three fixtures now seed those legitimate first reads (`remount-safety/platform-fixtures.ts`, `fixtures-work.ts`); wake and remount still read nothing. The chat list's `id in (board ids)` read is asserted by `chat-board-list.test.tsx` (passes).
+- Organization contract (2784f4f05a removed the hold; `ensureOrgId` never prompts): the new-document tile shows the refusal's own reason instead of "No workspace chosen"; `useSavedBoard`'s retry test uses an `ensureOrgId` refusal. Tests updated to match.
+- Still red, not this lane: remount cases `note` and `task` (the note's Write mode is a rich editor now; the case types into a textarea that no longer renders; the task description field likewise).
+
 ## 2026-10-08 — The chat tile's conversation list (board-scoped)
 
 - A chat tile has its own conversation list (the /chat list component) limited to the conversations filed on THIS board: New conversation, collapse, switch in place, ⋯ Remove from this board (edge only). Membership = `conversation -> board` association edge (pair registered `container_side none`), filed when a chat tile's / the shell chat's conversation exists on the server. Collapse saved per tile (`meta.list`), header toggle, none at overview, no list read on wake (`@ai-matrx/chat` 0.6.x `keepLoaded`, `onlyConversationIds`, `removeFromList`). Guards: `items/__tests__/chat-list.test.ts`, `board-chats.test.tsx`. Existing conversations are not backfilled.
