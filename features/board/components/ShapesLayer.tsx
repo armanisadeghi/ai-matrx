@@ -36,6 +36,8 @@ import {
   drawnPoints,
   hitShape,
   isBoxKind,
+  isBoxed,
+  isCanvasText,
   isConnector,
   shapeColorCss,
   strokeWidthOf,
@@ -46,6 +48,7 @@ import {
 import { startPointerGesture } from "../engine/pointer-gesture";
 import { isFrameKey } from "../engine/selection";
 import { ResizeHandles } from "./BoardTile";
+import { PlainText, PlainTextEditor, StickyCard, StickyEditor } from "./CanvasTextViews";
 
 /** Screen px a press may miss a thin stroke by and still hit it. */
 export const SHAPE_HIT_SLOP_PX = 6;
@@ -64,6 +67,10 @@ export function ShapesLayer<T extends BoardTileBase>({ board }: { board: BoardSt
         editable: (id) => {
           const s = b.getShape(id);
           return !!s && textCapable(s.kind);
+        },
+        clickEdits: (id) => {
+          const s = b.getShape(id);
+          return !!s && isCanvasText(s.kind);
         },
       }),
     [store, b],
@@ -93,7 +100,7 @@ function useDrawnPoints(shape: BoardShape, board: AnyBoard, shapes: readonly Boa
     const tile = id === startTile?.id ? startTile : id === endTile?.id ? endTile : undefined;
     if (tile) return { rect: tile.rect, outline: "rect" };
     const target = shapes.find((s) => s.id === id);
-    if (target && isBoxKind(target.kind)) {
+    if (target && isBoxed(target.kind)) {
       return { rect: boundsOfPoints(target.points), outline: target.kind === "oval" ? "oval" : "rect" };
     }
     return undefined;
@@ -116,6 +123,8 @@ function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoar
   const boxKey = `${box.x},${box.y},${box.w},${box.h}`;
   useEffect(() => store.updateItem(shape.id, boxRef.current), [store, shape.id, boxKey]);
 
+  if (shape.kind === "sticky") return <StickyCard shape={shape} box={box} editing={editing} />;
+  if (shape.kind === "text") return <PlainText shape={shape} box={box} board={board} editing={editing} />;
   const st = styleOf(shape);
   const width = strokeWidthOf(shape);
   const stroke = shapeColorCss(st.stroke);
@@ -150,6 +159,8 @@ function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoar
     case "pen":
       body = <polyline {...common} fill="none" points={pts.map((p) => `${p.x},${p.y}`).join(" ")} />;
       break;
+    default:
+      body = null;
   }
   const text = textCapable(shape.kind) && shape.text && !editing ? shape.text : null;
   return (
@@ -205,6 +216,8 @@ function ShapeChrome({ board, shapes }: { board: AnyBoard; shapes: readonly Boar
   const editing = useEditingTile();
   const shape = selected ? shapes.find((s) => s.id === selected) : undefined;
   if (!shape) return null;
+  if (editing === shape.id && shape.kind === "sticky") return <StickyEditor key={shape.id} shape={shape} board={board} />;
+  if (editing === shape.id && shape.kind === "text") return <PlainTextEditor key={shape.id} shape={shape} board={board} />;
   if (editing === shape.id && textCapable(shape.kind)) return <ShapeTextEditor key={shape.id} shape={shape} board={board} />;
   return isConnector(shape.kind) ? <EndHandles shape={shape} board={board} shapes={shapes} /> : <BoxHandles shape={shape} board={board} />;
 }
@@ -230,7 +243,7 @@ function bindTargetAt(board: AnyBoard, items: ReadonlyMap<string, Rect>, isMark:
   const shapes = board.getShapes();
   for (let i = shapes.length - 1; i >= 0; i--) {
     const s = shapes[i];
-    if (s.id === self || !isBoxKind(s.kind)) continue;
+    if (s.id === self || !isBoxed(s.kind)) continue;
     if (hitShape(s, p, 0, board.targetOf)) return s.id;
   }
   let hit: string | null = null;

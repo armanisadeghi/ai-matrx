@@ -40,6 +40,7 @@ import {
   bakeBindings,
   boundsOfPoints,
   isBoxKind,
+  isBoxed,
   isConnector,
   resizeShapeTo,
   shapeBounds,
@@ -256,7 +257,7 @@ export class BoardStore<T extends BoardTileBase> {
     const tile = now.byId[id];
     if (tile) return { rect: tile.rect, outline: "rect" };
     const shape = now.shapes.find((s) => s.id === id);
-    if (shape && isBoxKind(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
+    if (shape && isBoxed(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
     return undefined;
   };
   get frames(): BoardFrame[] {
@@ -421,7 +422,7 @@ export class BoardStore<T extends BoardTileBase> {
       const tile = s.byId[id];
       if (tile) return { rect: tile.rect, outline: "rect" };
       const shape = s.shapes.find((x) => x.id === id);
-      if (shape && isBoxKind(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
+      if (shape && isBoxed(shape.kind)) return { rect: boundsOfPoints(shape.points), outline: shape.kind === "oval" ? "oval" : "rect" };
       return undefined;
     };
   }
@@ -646,6 +647,34 @@ export class BoardStore<T extends BoardTileBase> {
       return { ...s, shapes };
     });
 
+  /**
+   * Record a fact about a shape WITHOUT an undo step: a sticky's Note id once
+   * the Note exists, plain text's measured box, a sticky's words refreshed from
+   * its Note. `everywhere` also writes it into every undo / redo snapshot that
+   * holds the shape, so ⌘Z never forgets which Note a sticky is (a forgotten id
+   * would file a second Note on the next keystroke).
+   */
+  stampShape = (id: string, patch: Partial<Omit<BoardShape, "id">>, opts: { everywhere?: boolean } = {}): void => {
+    const st = this.h;
+    const stamp = (s: Snapshot<T>): Snapshot<T> => {
+      const at = s.shapes.findIndex((x) => x.id === id);
+      if (at < 0) return s;
+      const cur = s.shapes[at];
+      if ((Object.keys(patch) as (keyof typeof patch)[]).every((k) => cur[k] === patch[k])) return s;
+      const shapes = [...s.shapes];
+      shapes[at] = { ...cur, ...patch };
+      return { ...s, shapes };
+    };
+    const now = stamp(st.now);
+    if (now === st.now) return;
+    this.commit({
+      now,
+      past: opts.everywhere ? st.past.map(stamp) : st.past,
+      future: opts.everywhere ? st.future.map(stamp) : st.future,
+      moving: st.moving,
+    });
+  };
+
   /** Restyle several shapes as ONE undoable step (the floating toolbar). */
   restyleShapes = (ids: readonly string[], patch: Partial<ShapeStyle>): void =>
     this.change((s) => {
@@ -735,6 +764,8 @@ export class BoardStore<T extends BoardTileBase> {
         if (outside.size) base = bakeBindings(sh, lookup, outside);
       }
       const copy = translateShape({ ...base, id: newId.get(sh.id)! }, offset, offset);
+      // A copied sticky is its own note: the copy's first save files a NEW Note (never two stickies on one).
+      delete copy.note;
       if (copy.bind) {
         copy.bind = {
           ...(copy.bind.start ? { start: newId.get(copy.bind.start) ?? copy.bind.start } : {}),

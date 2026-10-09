@@ -16,14 +16,15 @@
 
 import type { Camera, Rect } from "../engine/camera";
 import type { BoardShape } from "./useBoard";
-import { parseShape, serializeShape } from "../engine/shapes";
+import { boundsOfPoints, parseShape, serializeShape } from "../engine/shapes";
+import { labelToText } from "../engine/canvas-text";
 
 export type NodeSource =
   /** A live or finished agent run, by request id. */
   | { kind: "stream"; requestId: string; conversationId?: string }
   /** Text or markdown kept on the board itself (a note, a saved stream's text). */
   | { kind: "text"; markdown: string }
-  /** A large on-board label (the Text tool) — board-only, no record. */
+  /** RETIRED (2026-10-09): a large on-board label. Read only to migrate it to plain canvas text on load. */
   | { kind: "label"; text: string }
   | { kind: "html"; url?: string; html?: string }
   | { kind: "image"; fileId?: string; url?: string }
@@ -103,7 +104,7 @@ export interface BoardDocument {
   nodes: BoardNode[];
   groups: BoardGroup[];
   edges: BoardEdge[];
-  /** Drawn marks (rect, oval, arrow, line, pen). */
+  /** Drawn marks (rect, oval, arrow, line, pen) and words on the canvas (sticky notes, plain text). */
   shapes: BoardShape[];
 }
 
@@ -140,6 +141,12 @@ export function parseBoardDocument(raw: {
     }
     if (!isSource(n.source)) {
       problems.push(`node "${n.title}" has an unknown source`);
+      continue;
+    }
+    // The retired label tile (the old Text tool) is plain canvas text now: same id, words and
+    // place, migrated here once — the next save writes the text object, never a label node.
+    if (n.source.kind === "label") {
+      shapes.push(labelToText({ id: n.id, rect: n.rect, text: n.source.text }));
       continue;
     }
     const basics = isBasics(n.basics) ? n.basics : undefined;
@@ -219,6 +226,12 @@ export function toJsonCanvas(doc: BoardDocument, origin: string) {
       }
     }),
   ];
+  // Sticky notes and plain text are JSON Canvas text nodes.
+  for (const sh of doc.shapes) {
+    if (sh.kind !== "sticky" && sh.kind !== "text") continue;
+    const r = boundsOfPoints(sh.points);
+    nodes.push({ id: sh.id, type: "text", ...box(r), text: sh.text ?? "" });
+  }
   const edges = doc.edges.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
   return { nodes, edges };
 }

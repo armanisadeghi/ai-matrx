@@ -21,8 +21,8 @@
 
 import type { Rect } from "./camera";
 
-export type ShapeKind = "rect" | "oval" | "arrow" | "line" | "pen";
-export const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen"];
+export type ShapeKind = "rect" | "oval" | "arrow" | "line" | "pen" | "sticky" | "text";
+export const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen", "sticky", "text"];
 
 export interface Point {
   x: number;
@@ -44,6 +44,13 @@ export const TEXT_SIZES = { s: 16, m: 24, l: 36, xl: 56 } as const;
 export type TextSize = keyof typeof TEXT_SIZES;
 export const TEXT_ALIGNS = ["start", "center", "end"] as const;
 export type TextAlign = (typeof TEXT_ALIGNS)[number];
+export const TEXT_WEIGHTS = ["normal", "bold"] as const;
+export type TextWeight = (typeof TEXT_WEIGHTS)[number];
+/** Sticky note colours (FigJam / Miro); light + dark from `board-accents.css` (`--board-sticky-*`). */
+export const STICKY_COLORS = ["yellow", "orange", "pink", "violet", "blue", "green"] as const;
+export type StickyColor = (typeof STICKY_COLORS)[number];
+/** A new sticky's side in world px (FigJam's default square). */
+export const STICKY_SIZE = 220;
 
 export interface ShapeStyle {
   stroke: ShapeColor;
@@ -54,6 +61,10 @@ export interface ShapeStyle {
   dash: ShapeDash;
   textSize: TextSize;
   textAlign: TextAlign;
+  /** Plain canvas text's weight. */
+  textWeight: TextWeight;
+  /** A sticky note's colour. */
+  sticky: StickyColor;
 }
 
 export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
@@ -64,6 +75,8 @@ export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
   dash: "solid",
   textSize: "m",
   textAlign: "center",
+  textWeight: "normal",
+  sticky: "yellow",
 };
 
 /** What a line or arrow end is attached to: a tile id or a shape id. */
@@ -83,6 +96,14 @@ export interface BoardShape {
   text?: string;
   /** Line / arrow ends attached to objects (they follow them). */
   bind?: ShapeBinding;
+  /**
+   * A sticky's Note (its text is that Note's words; `text` here is the board's
+   * copy for painting and agents, refreshed from the Note when the board opens).
+   * Absent until the first typed character creates the Note.
+   */
+  note?: string;
+  /** Plain text: true once resized by hand (fixed width, wraps); absent = grows with its words. */
+  wrap?: boolean;
 }
 
 /** Something a connector end can attach to: its rect and outline. */
@@ -94,8 +115,14 @@ export type TargetLookup = (id: string) => BindTarget | undefined;
 
 export const isConnector = (kind: ShapeKind): boolean => kind === "line" || kind === "arrow";
 export const isBoxKind = (kind: ShapeKind): boolean => kind === "rect" || kind === "oval";
-/** Rectangles and ovals hold text. */
-export const textCapable = isBoxKind;
+/** Sticky notes and plain canvas text: words ON the canvas, no chrome (FigJam / tldraw). */
+export const isCanvasText = (kind: ShapeKind): boolean => kind === "sticky" || kind === "text";
+/** A drawing (stroke / fill / line style apply), as opposed to canvas text. */
+export const isDrawing = (kind: ShapeKind): boolean => !isCanvasText(kind);
+/** Objects stored as a box (two corners): resize takes the rect; a line or arrow end can bind to them. */
+export const isBoxed = (kind: ShapeKind): boolean => isBoxKind(kind) || isCanvasText(kind);
+/** Rectangles, ovals, stickies and plain text hold text. */
+export const textCapable = isBoxed;
 
 export function styleOf(shape: Pick<BoardShape, "style">): ShapeStyle {
   return shape.style ? { ...DEFAULT_SHAPE_STYLE, ...shape.style } : DEFAULT_SHAPE_STYLE;
@@ -159,6 +186,14 @@ export function parseShapeStyle(raw: unknown, problems: string[], label: string)
         if (oneOf(TEXT_ALIGNS, value)) out.textAlign = value;
         else bad.push(key);
         break;
+      case "textWeight":
+        if (oneOf(TEXT_WEIGHTS, value)) out.textWeight = value;
+        else bad.push(key);
+        break;
+      case "sticky":
+        if (oneOf(STICKY_COLORS, value)) out.sticky = value;
+        else bad.push(key);
+        break;
       default:
         bad.push(key);
     }
@@ -187,6 +222,8 @@ export function parseShape(raw: unknown, label = "shape"): { shape: BoardShape |
     if (typeof raw.bind.end === "string") bind.end = raw.bind.end;
     if (bind.start || bind.end) shape.bind = bind;
   }
+  if (typeof raw.note === "string" && raw.note) shape.note = raw.note;
+  if (raw.wrap === true) shape.wrap = true;
   return { shape, problems };
 }
 
@@ -199,6 +236,8 @@ export function serializeShape(shape: BoardShape): Record<string, unknown> {
     ...(shape.style && Object.keys(shape.style).length ? { style: shape.style } : {}),
     ...(shape.text ? { text: shape.text } : {}),
     ...(shape.bind && (shape.bind.start || shape.bind.end) ? { bind: shape.bind } : {}),
+    ...(shape.note ? { note: shape.note } : {}),
+    ...(shape.wrap ? { wrap: true } : {}),
   };
 }
 
@@ -301,6 +340,12 @@ export function hitShape(shape: BoardShape, p: Point, tolerance: number, lookup:
       if (pts.length === 1 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) <= reach) return "stroke";
       return null;
     }
+    case "sticky":
+    case "text": {
+      // Words on the canvas: anywhere in the box is the object (a sticky is a solid card).
+      const inside = p.x >= box.x - tolerance && p.x <= box.x + box.w + tolerance && p.y >= box.y - tolerance && p.y <= box.y + box.h + tolerance;
+      return inside ? "fill" : null;
+    }
     case "rect": {
       const inside = p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h;
       const edge = inside
@@ -368,8 +413,11 @@ export function resizeShapeTo(shape: BoardShape, to: Rect): BoardShape {
     x: to.x + (from.w > 0 ? (p.x - from.x) * sx : to.w / 2),
     y: to.y + (from.h > 0 ? (p.y - from.y) * sy : to.h / 2),
   }));
-  if (isBoxKind(shape.kind)) {
-    return { ...shape, points: [{ x: to.x, y: to.y }, { x: to.x + to.w, y: to.y + to.h }] };
+  if (isBoxed(shape.kind)) {
+    const next: BoardShape = { ...shape, points: [{ x: to.x, y: to.y }, { x: to.x + to.w, y: to.y + to.h }] };
+    // Plain text resized by hand keeps that width and wraps (tldraw); its height follows its words.
+    if (shape.kind === "text" && Math.abs(to.w - from.w) > 0.5) next.wrap = true;
+    return next;
   }
   return { ...shape, points };
 }

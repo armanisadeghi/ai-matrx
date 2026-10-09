@@ -53,6 +53,8 @@ export interface ShapeHost {
   hit: ShapeHitTester;
   /** The shape takes text (double-click / Enter edits it). */
   editable: (id: string) => boolean;
+  /** A click on this shape while it is already the one selected starts typing (a sticky, plain text — FigJam). */
+  clickEdits?: (id: string) => boolean;
 }
 
 export interface Insets {

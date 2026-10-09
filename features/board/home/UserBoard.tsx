@@ -9,7 +9,8 @@
  *
  * Ways in (one path each, all ending in `place()`):
  *   the Add menu and the Start panel  → start new / bring in any item type;
- *   the Note / Text tools             → a note or a label where you click;
+ *   the Sticky note / Text tools      → a sticky or plain text where you click
+ *                                       (a double-click on empty board too);
  *   drop                              → files upload; links and text land;
  *   paste                             → links become pages, text a Note;
  *   agents                            → the board_* tools (BoardSurface).
@@ -49,8 +50,13 @@ import { BoardEdgeLine } from "../components/BoardEdgeLine";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { selectionActionsSection, shapeStyleSection } from "../components/ShapeToolbarSections";
-import { hitShape, isBoxKind } from "../engine/shapes";
+import { hitShape, isBoxed } from "../engine/shapes";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
+import { stickyStyleSection, textStyleSection } from "../components/CanvasTextToolbarSections";
+import { createStickyOnBoard, createTextOnBoard } from "./canvas-text-create";
+import { startStickyNoteSync } from "../board/sticky-notes";
+import { stickyNoteStore } from "../persistence/sticky-note-store";
+import { useBoardOrganizationId } from "../items/board-organization";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
 import { LayersPanel } from "../components/LayersPanel";
@@ -158,6 +164,18 @@ export function UserBoard({
   const layout = useBoardLayout(board);
   // "On N boards": one read of every saved board's tiles (not for a meeting guest or an unsaved board).
   const reuseIndex = useReuseIndex(boardId, !guest);
+  // Sticky notes' words are Notes in the person's "Sticky notes" folder, filed in this board's
+  // organization (board/sticky-notes.ts). A meeting guest or an unsaved board keeps them on the board.
+  const boardOrganizationId = useBoardOrganizationId();
+  useEffect(() => {
+    if (!boardId || guest) return;
+    return startStickyNoteSync(board, stickyNoteStore(boardOrganizationId), {
+      onError: (e, what) =>
+        toast.error(what === "read" ? "Sticky notes: couldn't load their latest words" : "Sticky note not saved to Notes yet", {
+          description: e instanceof Error ? e.message : undefined,
+        }),
+    });
+  }, [board, boardId, guest, boardOrganizationId]);
   const reuseValue = useMemo(() => (reuseIndex ? { index: reuseIndex, boardId } : null), [reuseIndex, boardId]);
   const [store, setStore] = useState<BoardCameraStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
@@ -392,7 +410,7 @@ export function UserBoard({
   const boxShapeAtPoint = (p: { x: number; y: number }) => {
     const shapes = board.getShapes();
     for (let i = shapes.length - 1; i >= 0; i--) {
-      if (isBoxKind(shapes[i].kind) && hitShape(shapes[i], p, 0, board.targetOf)) return shapes[i];
+      if (isBoxed(shapes[i].kind) && hitShape(shapes[i], p, 0, board.targetOf)) return shapes[i];
     }
     return undefined;
   };
@@ -400,22 +418,14 @@ export function UserBoard({
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;
     switch (c.tool) {
-      case "note":
-        board.addTile({
-          id,
-          title: "Note",
-          source: { kind: "entity", entity: "note", id: null },
-          rect: { x: c.at.x - 280, y: c.at.y - 20, w: 560, h: 620 },
-        });
-        break;
+      // Words on the canvas (a sticky note, plain text): made, selected and typing at once.
+      // A full Note stays in the Add menu ("Note"); the sticky tool never makes a Note tile.
+      case "sticky":
+        if (store) createStickyOnBoard(board, store, c.at);
+        return;
       case "text":
-        board.addTile({
-          id,
-          title: "Label",
-          source: { kind: "label", text: "" },
-          rect: { x: c.at.x - 20, y: c.at.y - 20, w: 520, h: 120 },
-        });
-        break;
+        if (store) createTextOnBoard(board, store, c.at);
+        return;
       case "frame":
         board.addFrame({ id, rect: c.rect, title: "Frame" });
         break;
@@ -642,6 +652,8 @@ export function UserBoard({
     reorder: reorderSelected,
   });
   const toolbarSections = [
+    stickyStyleSection(board),
+    textStyleSection(board),
     shapeStyleSection(board),
     selectionActionsSection({ board, duplicate: duplicateSelected, remove: deleteSelected }),
   ];
@@ -739,6 +751,9 @@ export function UserBoard({
             insets={{ top: 72, bottom: 56 }}
             wheelMode={wheelMode}
             onStore={setStore}
+            onEmptyDoubleClick={(at) => {
+              if (store && !guest) createTextOnBoard(board, store, at);
+            }}
             overlay={
               <>
                 <CreationLayer onCreate={onCreate} />
@@ -1129,7 +1144,8 @@ function agentTile(
       if (!input.text) return { ok: false, error: "A markdown tile needs `text`." };
       return { id, rect, title: input.title ?? "Write-up", source: { kind: "text", markdown: input.text } };
     case "text":
-      return { id, rect, title: input.title ?? "Label", source: { kind: "label", text: input.text ?? input.title ?? "" } };
+      // Plain text is a canvas object, not a tile: board_add_tile makes it through the board's shapes.
+      return { ok: false, error: "Plain text is placed on the canvas itself; this board cannot hold it." };
     case "html":
       if (input.html) return { id, rect, title: input.title ?? "Page", source: { kind: "html", html: input.html } };
       if (input.url) return { id, rect, title: input.title ?? "Page", source: { kind: "html", url: input.url } };

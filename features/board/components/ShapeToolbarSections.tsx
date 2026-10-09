@@ -25,6 +25,7 @@ import {
   type ShapeStyle,
   FILL_ALPHA,
   isBoxKind,
+  isDrawing,
   shapeColorCss,
   styleOf,
   textCapable,
@@ -49,14 +50,18 @@ export function shapeStyleSection<T extends BoardTileBase>(board: BoardStore<T>)
   const b = board as unknown as AnyBoard;
   return {
     key: "shape-style",
-    applies: (ids) => ids.some((id) => b.getShape(id)),
+    // Drawings only: sticky notes and plain text have their own sections (CanvasTextToolbarSections).
+    applies: (ids) => ids.some((id) => {
+      const sh = b.getShape(id);
+      return !!sh && isDrawing(sh.kind);
+    }),
     render: (ids) => <ShapeStyleControls board={b} ids={ids} />,
   };
 }
 
 function ShapeStyleControls({ board, ids }: { board: AnyBoard; ids: readonly string[] }) {
   const all = useSyncExternalStore(board.subscribeShapes, board.getShapes, board.getShapes);
-  const picked = all.filter((s) => ids.includes(s.id));
+  const picked = all.filter((s) => ids.includes(s.id) && isDrawing(s.kind));
   if (picked.length === 0) return null;
   const set = (patch: Partial<ShapeStyle>) => board.restyleShapes(picked.map((s) => s.id), patch);
   const stroke = common(picked, "stroke");

@@ -84,6 +84,8 @@ interface BoardViewportProps {
   wheelMode?: WheelMode;
   /** Receives the store once, for hosts that drive the camera or focus. */
   onStore?: (store: BoardCameraStore) => void;
+  /** A double-click on empty board, at this WORLD point (the host places plain text there). */
+  onEmptyDoubleClick?: (at: { x: number; y: number }) => void;
   className?: string;
 }
 
@@ -95,9 +97,15 @@ export function BoardViewport({
   insets,
   wheelMode = "auto",
   onStore,
+  onEmptyDoubleClick,
   className,
 }: BoardViewportProps) {
   const [store] = useState(() => new BoardCameraStore(initialCamera));
+  // Read at the moment of the double-click (the listener is bound once per store).
+  const onEmptyDoubleClickRef = useRef(onEmptyDoubleClick);
+  useEffect(() => {
+    onEmptyDoubleClickRef.current = onEmptyDoubleClick;
+  });
   // A tile's content never navigates the board away (engine/tile-navigation.tsx).
   useTileNavigationGuard();
   const [focusHost, setFocusHost] = useState<HTMLElement | null>(null);
@@ -443,6 +451,8 @@ export function BoardViewport({
       }
       const additive = e.shiftKey || e.metaKey;
       const inGroup = store.isSelected(id) && store.getSelection().length > 1;
+      // A second click on the one selected sticky / text types in it (FigJam).
+      const soleBefore = store.getSelection().length === 1 && store.isSelected(id);
       if (additive) {
         store.toggleSelected(id);
         if (!store.isSelected(id)) return;
@@ -470,6 +480,7 @@ export function BoardViewport({
           snap?.end();
           if (how === "escape" && moved && mover) mover.dragMany(shiftMoves(set, 0, 0));
           else if (how === "up" && !moved && !additive && inGroup) store.select(id);
+          else if (how === "up" && !moved && !additive && soleBefore && store.getShapeHost()?.clickEdits?.(id)) store.setEditing(id);
         },
       });
     };
@@ -642,7 +653,18 @@ export function BoardViewport({
       if (store.getTool() !== "select" || (e.target as HTMLElement).closest(NOT_THROUGH_TO_SHAPES)) return;
       const onBackground = !(e.target as HTMLElement).closest("[data-board-tile], [data-board-frame-strip]");
       const hit = shapeAt(e, onBackground);
-      if (!hit || !store.getShapeHost()?.editable(hit)) return;
+      if (!hit) {
+        // Double-click on EMPTY board: plain text right there (tldraw / Figma).
+        const empty = onBackground && !(e.target as HTMLElement).closest("[data-board-chrome]");
+        const onEmpty = onEmptyDoubleClickRef.current;
+        if (!empty || !onEmpty) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const bounds = root.getBoundingClientRect();
+        onEmpty(screenToWorld(store.getCamera(), e.clientX - bounds.left, e.clientY - bounds.top));
+        return;
+      }
+      if (!store.getShapeHost()?.editable(hit)) return;
       e.preventDefault();
       e.stopPropagation();
       store.select(hit);

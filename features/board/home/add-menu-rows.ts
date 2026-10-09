@@ -49,8 +49,8 @@ export interface AddRow {
 
 /** The board's own tools as Add rows, in toolbar order. */
 const CANVAS_TOOLS: readonly { tool: BoardTool; label: string; icon: LucideIcon; words: string; searchOnly?: boolean }[] = [
-  { tool: "note", label: "Sticky note", icon: StickyNote, words: "sticky post-it" },
-  { tool: "text", label: "Text", icon: Type, words: "label heading" },
+  { tool: "sticky", label: "Sticky note", icon: StickyNote, words: "sticky post-it note" },
+  { tool: "text", label: "Text", icon: Type, words: "label heading caption" },
   { tool: "frame", label: "Frame", icon: Frame, words: "group section container" },
   { tool: "pen", label: "Draw", icon: Pencil, words: "pen sketch freehand" },
   // "Shapes" starts the rectangle (the shape tools' first); the four are found by typing.

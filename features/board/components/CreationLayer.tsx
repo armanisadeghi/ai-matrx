@@ -2,7 +2,7 @@
 
 /**
  * CreationLayer — while a creation tool is active, the board's left press
- * belongs to it. Click places (note, text); drag draws (frame, rectangle,
+ * belongs to it. Click places (sticky note, text); drag draws (frame, rectangle,
  * oval, arrow, line); the pen records a stroke. The layer shows a live
  * preview in screen space, converts the result to WORLD coordinates and hands
  * it to the host, then returns to Select (Figma) — except the pen and the
@@ -17,7 +17,7 @@ import { isCreationTool, type BoardTool } from "../engine/tools";
 import { startPointerGesture } from "../engine/pointer-gesture";
 
 export type Creation =
-  | { tool: "note" | "text"; at: { x: number; y: number } }
+  | { tool: "sticky" | "text"; at: { x: number; y: number } }
   | { tool: "frame" | "rect" | "oval"; rect: { x: number; y: number; w: number; h: number } }
   | { tool: "arrow" | "line"; from: { x: number; y: number }; to: { x: number; y: number } }
   | { tool: "pen"; points: { x: number; y: number }[] }
@@ -96,7 +96,7 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
     const wa = world(a);
     const wb = world(b);
     switch (tool) {
-      case "note":
+      case "sticky":
       case "text":
         onCreate({ tool, at: wa });
         break;

@@ -8,7 +8,7 @@ export type BoardTool =
   | "hand"
   | "text"
   | "frame"
-  | "note"
+  | "sticky"
   | "pen"
   | "eraser"
   | "rect"
@@ -25,7 +25,7 @@ export const TOOL_LABEL: Record<BoardTool, string> = {
   hand: "Hand",
   text: "Text",
   frame: "Frame",
-  note: "Note",
+  sticky: "Sticky note",
   pen: "Draw",
   eraser: "Eraser",
   rect: "Rectangle",
@@ -40,7 +40,7 @@ export const TOOL_KEY: Record<BoardTool, string> = {
   hand: "H",
   text: "T",
   frame: "F",
-  note: "N",
+  sticky: "S",
   pen: "P",
   eraser: "E",
   rect: "R",
@@ -62,8 +62,8 @@ export function toolForKey(e: { key: string; shiftKey: boolean }): BoardTool | n
       return "text";
     case "f":
       return "frame";
-    case "n":
-      return "note";
+    case "s":
+      return "sticky";
     case "p":
       return "pen";
     case "e":

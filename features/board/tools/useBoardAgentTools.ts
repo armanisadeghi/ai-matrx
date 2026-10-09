@@ -49,6 +49,8 @@ import {
   type BoardShape,
   type ShapeStyle,
   isBoxKind,
+  isBoxed,
+  STICKY_SIZE,
   isConnector,
   parseShapeStyle,
   resizeShapeTo,
@@ -65,6 +67,7 @@ import {
   type StoredBasics,
 } from "./item-surfaces";
 import { settleFrames } from "./settle-frames";
+import { makeText } from "../engine/canvas-text";
 import type { BoardItemType, PlacedItem } from "../items/types";
 import { findBoardRecords, resolveAddEntry } from "./board-records";
 import { BOARD_ADD_ITEMS_MAX } from "./board-tools";
@@ -324,6 +327,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
           rect: round(shapeBounds(sh, board.targetOf)),
           style: styleOf(sh),
           ...(sh.text ? { text: sh.text } : {}),
+          ...(sh.kind === "sticky" && sh.note ? { note_id: sh.note } : {}),
           ...(sh.bind?.start ? { from_id: sh.bind.start } : {}),
           ...(sh.bind?.end ? { to_id: sh.bind.end } : {}),
         })),
@@ -336,6 +340,20 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const a = record(input);
     const kind = str(a.kind) as BoardTileKindInput | undefined;
     if (!kind || !(kind in DEFAULT_SIZE)) return fail(`kind must be one of ${Object.keys(DEFAULT_SIZE).join(", ")}.`);
+    // Plain text sits on the canvas itself (no tile): a text object, like the Text tool makes.
+    if (kind === "text" && board.addShapes) {
+      const addShapes = board.addShapes;
+      const words = typeof a.text === "string" ? a.text : (str(a.title) ?? "");
+      if (!words.trim()) return fail("Plain text needs `text`.");
+      const beside = str(a.near_tile_id) ? find(a.near_tile_id) : undefined;
+      if (str(a.near_tile_id) && !beside) return missing(a.near_tile_id);
+      const x = num(a.x);
+      const y = num(a.y);
+      const at = x !== undefined && y !== undefined ? { x: x + 4, y } : beside ? { x: beside.rect.x + 4, y: beside.rect.y - 48 } : viewCentre();
+      const shape = makeText(at, { text: words, ...(num(a.width) !== undefined ? { width: num(a.width) } : {}) });
+      asAgent(() => addShapes([shape]));
+      return { ok: true, id: shape.id, kind: "text", rect: shapeBounds(shape) };
+    }
     const size = { w: num(a.width) ?? DEFAULT_SIZE[kind].w, h: num(a.height) ?? DEFAULT_SIZE[kind].h };
     const id = `${kind}:${crypto.randomUUID().slice(0, 8)}`;
     const made = host.createTile(
@@ -593,6 +611,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
             opacity: e.opacity,
             textSize: e.text_size,
             textAlign: e.text_align,
+            textWeight: e.text_weight,
+            sticky: e.color,
           }).filter(([, v]) => v !== undefined),
         ),
         warnings,
@@ -623,7 +643,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       const resolve = (v: unknown) => (typeof v === "string" ? (refs.get(v) ?? v) : undefined);
       const madeBox = (id: string): BindTarget | undefined => {
         const sh = made.find((m) => m.id === id);
-        return sh && isBoxKind(sh.kind) ? { rect: shapeBounds(sh), outline: sh.kind === "oval" ? "oval" : "rect" } : undefined;
+        return sh && isBoxed(sh.kind) ? { rect: shapeBounds(sh), outline: sh.kind === "oval" ? "oval" : "rect" } : undefined;
       };
       const rectOf = (id: string) => madeBox(id)?.rect ?? lookup(id)?.rect;
       for (const [i, e] of entries.entries()) {
@@ -660,7 +680,24 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
           const points = (Array.isArray(e.points) ? e.points : []).map(pointOf).filter((p): p is { x: number; y: number } => !!p);
           if (points.length < 2) return fail(`${label}: a pen stroke needs at least two points.`);
           made.push({ id, kind, points, ...extra });
-        } else return fail(`${label}: kind must be rect, oval, line, arrow or pen.`);
+        } else if (kind === "sticky") {
+          // A sticky note: its words become a Note in the person's Sticky notes folder (board/sticky-notes.ts).
+          const side = num(e.w) ?? STICKY_SIZE;
+          const h = num(e.h) ?? side;
+          const x = num(e.x) ?? centre.x - side / 2;
+          const y = num(e.y) ?? centre.y - h / 2;
+          made.push({ id, kind, points: [{ x, y }, { x: x + side, y: y + h }], ...extra, ...(str(e.text) ? { text: String(e.text) } : {}) });
+        } else if (kind === "text") {
+          if (!str(e.text)) return fail(`${label}: plain text needs \`text\`.`);
+          const x = num(e.x);
+          const y = num(e.y);
+          const base = makeText(x !== undefined && y !== undefined ? { x: x + 4, y } : centre, {
+            text: String(e.text),
+            style,
+            ...(num(e.w) !== undefined ? { width: num(e.w) } : {}),
+          });
+          made.push({ ...base, id });
+        } else return fail(`${label}: kind must be rect, oval, line, arrow, pen, sticky or text.`);
         if (typeof e.ref === "string") refs.set(e.ref, id);
       }
       const connections: string[] = [];
