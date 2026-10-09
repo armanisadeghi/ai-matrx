@@ -14,6 +14,7 @@ import { MarketingAddressUnavailable } from "@/features/marketing/components/sha
 import { redirect } from "next/navigation";
 
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 
 import { CanonicalBrandSegment } from "@/features/marketing/components/brand/CanonicalSegment";
 import { MarketingBrandCrumb } from "@/features/marketing/components/brand/MarketingBrandCrumb";
@@ -48,7 +49,9 @@ export default async function MarketingBrandLayout({
     );
   }
   if (!user) {
-    redirect(`/login?redirectTo=${encodeURIComponent(`/marketing/${brandId}`)}`);
+    // The FULL requested path + query, never just the brand root: a deep link
+    // (/marketing/<brand>/socials/studio) must survive the sign-in detour.
+    redirect(await currentRequestLoginHref(`/marketing/${brandId}`));
   }
   const brand = await resolveBrandParam(brandId);
   if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
