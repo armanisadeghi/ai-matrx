@@ -30,6 +30,11 @@ import {
   withAvailability,
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
+import {
+  currentWorkflowsBasePath,
+  workflowRunHref,
+  workflowRunPermalinkHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 /** The one thing every run surface can say about a right-clicked/current row. */
 export interface WorkflowRunMenuRow {
@@ -42,7 +47,8 @@ export interface WorkflowRunMenuRow {
 
 /** THE DOOR LAW: every run this row names opens, at its permalink. */
 export function runMenuHref(row: WorkflowRunMenuRow): string {
-  return `/workflows/runs/${row.runId}`;
+  // Read at menu-open time (client only): an admin page keeps the admin tree.
+  return workflowRunPermalinkHref(row.runId, currentWorkflowsBasePath());
 }
 
 /**
@@ -99,7 +105,7 @@ export function buildWorkflowRunMenuSection(opts: {
       icon: Workflow,
       href: (() => {
         const row = getRow();
-        return row?.definitionId ? `/workflows/${row.definitionId}` : "#";
+        return row?.definitionId ? workflowRunHref(row.definitionId, currentWorkflowsBasePath()) : "#";
       })(),
       disabled: !getRow()?.definitionId,
       description: getRow() && !getRow()?.definitionId

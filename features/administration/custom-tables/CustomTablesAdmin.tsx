@@ -22,6 +22,7 @@ import { Archive, ListChecks, Lock, X } from "lucide-react";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
+import type { AdminTable } from "@ai-matrx/records";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,17 +54,7 @@ const PROTECTION: Record<Exclude<ProtectionReason, null>, { label: string; tip: 
   "platform-example": { label: "Example", tip: "A platform example table" },
 };
 
-export interface AdminTableRow {
-  table_id: string;
-  table_name: string;
-  organization_id: string;
-  organization_name: string | null;
-  updated_at: string | null;
-  platform_owned: boolean;
-  system: boolean;
-}
-
-export function adminRowToTable(r: AdminTableRow): CustomTableRow {
+export function adminRowToTable(r: AdminTable): CustomTableRow {
   return {
     id: r.table_id,
     name: r.table_name,
@@ -91,11 +82,9 @@ function recordsIn(organizationId: string | null): RecordsClient {
  * platform admin. The signed-in person's browser client stamps the lane on /administration/**.
  */
 async function readAllTables(): Promise<CustomTableRow[]> {
-  const { data, error } = await (createClient() as unknown as SupabaseClient)
-    .schema("custom")
-    .rpc("admin_all_tables");
-  if (error) throw new Error(error.message);
-  return ((data ?? []) as AdminTableRow[]).map(adminRowToTable);
+  const answer = await recordsIn(null).adminAllTables();
+  if (!answer.ok) throw new Error(answer.error.message);
+  return answer.data.map(adminRowToTable);
 }
 
 const tableArchiveDoor: TableArchiveDoor = async (args) => {

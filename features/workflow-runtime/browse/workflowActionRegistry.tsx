@@ -93,6 +93,23 @@ export function workflowDesignHref(id: string, base: string = WORKFLOWS_BASE_PAT
 export function workflowRunPermalinkHref(runId: string, base: string = WORKFLOWS_BASE_PATH): string {
   return `${base}/runs/${runId}`;
 }
+export function workflowTriggersHref(id: string, base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/${id}/triggers`;
+}
+export function workflowRunsListHref(id: string, base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/${id}/runs`;
+}
+/** Every run the caller can see (`/workflows/runs`, or its admin mirror). */
+export function allWorkflowRunsHref(base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/runs`;
+}
+export function analyzeWorkflowRunsHref(base: string = WORKFLOWS_BASE_PATH): string {
+  return `${base}/runs/analyze`;
+}
+/** The workflows list: `/workflows/all` for a person, System Workflows on an admin page. */
+export function workflowsListHref(base: string = WORKFLOWS_BASE_PATH): string {
+  return base === ADMIN_WORKFLOWS_BASE_PATH ? ADMIN_WORKFLOWS_BASE_PATH : `${base}/all`;
+}
 
 export function buildWorkflowMenu(ctx: WorkflowMenuContext): ItemMenuConfig {
   const { workflow } = ctx;

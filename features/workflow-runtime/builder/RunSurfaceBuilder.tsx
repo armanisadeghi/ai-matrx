@@ -42,6 +42,11 @@ import { Segmented } from "./parts";
 import { normalize, type ScreenId } from "./layout-model";
 import { describeSteps } from "./vocabulary";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import {
+  useWorkflowsBasePath,
+  workflowRunHref,
+  workflowsListHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 interface LoadedWorkflow {
   name: string;
@@ -52,6 +57,8 @@ interface LoadedWorkflow {
 type MobileView = "build" | "preview";
 
 export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const isMobile = useIsMobile();
 
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
@@ -188,7 +195,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
       left={
         <>
           <ChevronLeftTapButton
-            href={`/workflows/${definitionId}`}
+            href={workflowRunHref(definitionId, workflowsBase)}
             ariaLabel="Back to this workflow"
           />
           <span className="ml-1 max-w-[130px] truncate text-sm font-medium text-foreground sm:max-w-[260px]">
@@ -234,7 +241,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
           id={definitionId}
           error={loadFailure.error}
           onRetry={() => setReloadNonce((n) => n + 1)}
-          fallbackHref="/workflows/all"
+          fallbackHref={workflowsListHref(workflowsBase)}
           fallbackLabel="Your workflows"
         />
       </div>

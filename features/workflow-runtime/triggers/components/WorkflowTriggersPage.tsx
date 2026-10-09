@@ -31,6 +31,12 @@ import { CopyableValue } from "./CopyableValue";
 import { NewTriggerForm } from "./NewTriggerForm";
 import { TriggerCard } from "./TriggerCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  useWorkflowsBasePath,
+  workflowRunHref,
+  workflowRunPermalinkHref,
+  workflowsListHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 interface LoadedWorkflow {
   id: string;
@@ -43,6 +49,8 @@ export function WorkflowTriggersPage({
 }: {
   definitionId: string;
 }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const router = useRouter();
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
   // Set when the workflow can't be shown; `error` is the failed read, if any.
@@ -115,7 +123,7 @@ export function WorkflowTriggersPage({
       left={
         <div className="flex min-w-0 items-center">
           <ChevronLeftTapButton
-            href={`/workflows/${definitionId}`}
+            href={workflowRunHref(definitionId, workflowsBase)}
             ariaLabel="Back to this workflow"
           />
           <span className="ml-1 min-w-0 truncate text-sm font-medium text-foreground">
@@ -144,7 +152,7 @@ export function WorkflowTriggersPage({
           setLoadFailure(null);
           setAttempt((n) => n + 1);
         }}
-        fallbackHref="/workflows/all"
+        fallbackHref={workflowsListHref(workflowsBase)}
         fallbackLabel="Your workflows"
       />
     );
@@ -247,7 +255,7 @@ export function WorkflowTriggersPage({
                   void fireNow(trigger.id).then((runId) => {
                     if (!runId) return;
                     toast.success("Off it goes.");
-                    router.push(`/workflows/runs/${runId}`);
+                    router.push(workflowRunPermalinkHref(runId, workflowsBase));
                   });
                 }}
                 loadFires={listFires}

@@ -33,6 +33,10 @@ import { triggerWebhookUrl } from "../useWorkflowTriggers";
 import { CopyableValue } from "./CopyableValue";
 import { formatInZone } from "./RecurrenceEditor";
 import { TriggerFireHistory } from "./TriggerFireHistory";
+import {
+  useWorkflowsBasePath,
+  workflowRunPermalinkHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 export function TriggerCard({
   trigger,
@@ -49,6 +53,8 @@ export function TriggerCard({
   onFireNow: () => void;
   loadFires: (triggerId: string) => Promise<TriggerFire[] | null>;
 }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const [open, setOpen] = useState(false);
   const isSchedule = trigger.kind === "cron";
   const isEvent = trigger.kind === "event";
@@ -158,7 +164,7 @@ export function TriggerCard({
         {/* THE DOOR LAW: the last run is a record with a permalink. */}
         {trigger.lastRunId ? (
           <Link
-            href={`/workflows/runs/${trigger.lastRunId}`}
+            href={workflowRunPermalinkHref(trigger.lastRunId, workflowsBase)}
             className="text-[11px] font-medium text-primary hover:underline"
           >
             Open the last run

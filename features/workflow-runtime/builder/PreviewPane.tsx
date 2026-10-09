@@ -35,6 +35,10 @@ import { panelsOfScreen, type ScreenId } from "./layout-model";
 import { momentAfterStep, runOrder, sampleMoments } from "./sample-run";
 import { useSamplePreviewRun } from "./useSamplePreviewRun";
 import { FieldLabel, Segmented, SelectField } from "./parts";
+import {
+  useWorkflowsBasePath,
+  workflowRunPermalinkHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 type PreviewSource = "sample" | "real";
 
@@ -123,6 +127,8 @@ export function PreviewPane({
   config: RunSurfaceConfig;
   screenId: ScreenId;
 }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const moments = sampleMoments(definition);
   const lastMoment = moments.length - 1;
 
@@ -256,7 +262,7 @@ export function PreviewPane({
               </div>
               {realRunId ? (
                 <a
-                  href={`/workflows/runs/${realRunId}`}
+                  href={workflowRunPermalinkHref(realRunId, workflowsBase)}
                   target="_blank"
                   rel="noreferrer"
                   className="flex h-9 shrink-0 items-center gap-1 rounded-lg border border-border px-2 text-xs font-medium text-foreground hover:border-primary/40"

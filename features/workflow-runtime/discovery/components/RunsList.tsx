@@ -38,7 +38,7 @@ import {
   buildWorkflowRunMenuSection,
   type WorkflowRunMenuRow,
 } from "../../run-actions";
-import { runDurationMs, runHref, type RunListRow } from "../runs";
+import { runDurationMs, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -47,6 +47,10 @@ import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
+import {
+  useWorkflowsBasePath,
+  workflowRunPermalinkHref,
+} from "@/features/workflow-runtime/browse/workflowActionRegistry";
 
 /** A row plus the workflow facts resolved for it. */
 interface RunRowView extends RunListRow {
@@ -77,6 +81,8 @@ function Muted({ children }: { children: React.ReactNode }) {
 }
 
 export function RunsList({ definitionId }: { definitionId?: string }) {
+  // THE ADMIN SEAT: on an admin page every link stays in the admin tree.
+  const workflowsBase = useWorkflowsBasePath();
   const router = useRouter();
   const [, startTransition] = useTransition();
   // The organization FILTER: a visible on-page control, `?org_filter=`, All organizations by
@@ -157,7 +163,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
       align: "right",
       // The run's door. A timestamp is what a person recognises a run by —
       // never the uuid — so the timestamp is what opens it.
-      href: (row) => runHref(row),
+      href: (row) => workflowRunPermalinkHref(row.runId, workflowsBase),
       cell: (row) =>
         row.startedAt ? (
           <span
@@ -285,7 +291,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
                 isLoading={loading}
                 urlState={{ id: definitionId ? "workflow-runs" : "runs" }}
                 onRowOpen={(row) => {
-                  startTransition(() => router.push(runHref(row)));
+                  startTransition(() => router.push(workflowRunPermalinkHref(row.runId, workflowsBase)));
                 }}
                 emptyState={{
                   icon: <ListX className="h-5 w-5" />,
