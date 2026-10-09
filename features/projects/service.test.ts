@@ -187,7 +187,17 @@ describe("getUserProjects", () => {
     forUser.mockReset();
     counts.mockReset();
     forUser.mockResolvedValue({ ok: true, data: { memberships: [] } });
-    counts.mockResolvedValue({ ok: true, data: { counts: [] } });
+    counts.mockResolvedValue({
+      ok: true,
+      data: {
+        counts: [
+          {
+            containerId: PROVIDER_ACCESS_LAUNCH.id,
+            memberCount: 7,
+          },
+        ],
+      },
+    });
   });
 
   it("includes an RLS-readable organization project when the viewer has no direct project membership", async () => {
@@ -204,11 +214,12 @@ describe("getUserProjects", () => {
         name: "Provider Access Launch",
         organizationId: PROVIDER_ACCESS_LAUNCH.organization_id,
         role: "member",
-        memberCount: 0,
+        memberCount: 7,
       }),
     ]);
 
     expect(forUser).toHaveBeenCalledWith("project");
+    expect(counts).toHaveBeenCalledWith("project", [PROVIDER_ACCESS_LAUNCH.id]);
     expect(query.is).toHaveBeenCalledWith("deleted_at", null);
     expect(query.order).toHaveBeenNthCalledWith(1, "updated_at", {
       ascending: false,

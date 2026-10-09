@@ -319,7 +319,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   for (const m of memberships) {
     roleById.set(m.containerId, m.role as ProjectRole);
   }
-  const projectIds = Array.from(roleById.keys());
+  const projectIds = projectRows.map((project) => project.id);
 
   const countById = new Map<string, number>();
   if (projectIds.length > 0) {
