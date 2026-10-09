@@ -105,7 +105,7 @@ export function ApprovalStatusSelect({
             />
             <div className="flex justify-end gap-1">
               <Button variant="quiet" onClick={() => close(false)}>Cancel</Button>
-              <Button variant={next === "rejected" ? "destructive" : "default"} onClick={confirm}>
+              <Button variant={next === "rejected" ? "danger" : "primary"} onClick={confirm}>
                 {CONFIRM_LABEL[next]}
               </Button>
             </div>
