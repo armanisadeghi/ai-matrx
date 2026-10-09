@@ -653,7 +653,7 @@ export default function HtmlPageEditor({
       contentSource={{ type: "raw" }}
     >
       <iframe
-        key={dirty ? `draft-${page.id}` : `live-${page.id}-${page.updated_at}`}
+        key={`${dirty ? `draft-${page.id}` : `live-${page.id}-${page.updated_at}`}-${previewSandbox}`}
         title="Page preview"
         {...(dirty || !page.url
           ? { srcDoc: htmlContent }

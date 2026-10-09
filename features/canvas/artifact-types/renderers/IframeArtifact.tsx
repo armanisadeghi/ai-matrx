@@ -2,41 +2,23 @@
 
 import type { ArtifactRendererProps } from "../types";
 
-/**
- * Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs.
- * Mirrors the helper in PublicCanvasRenderer.tsx.
- */
-function safeEmbedUrl(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  try {
-    const u = new URL(value, "https://invalid.local");
-    return u.protocol === "http:" || u.protocol === "https:" ? value : null;
-  } catch {
-    return null;
-  }
-}
+import { safeEmbedUrl } from "@/lib/iframe/embed-url";
+import { usePageSandbox } from "@/lib/iframe/use-page-sandbox";
 
 /**
  * Unified renderer for `iframe` artifacts — chat, canvas, and artifact-card surfaces.
  *
- * SECURITY notes:
- * - External URLs: `allow-scripts allow-same-origin allow-popups allow-forms
- *   allow-presentation`. `allow-same-origin` is SAFE here because the framed
- *   page is a different origin (the published page lives on the html site, not
- *   aimatrx.com): the flag only grants the page same-origin privileges relative
- *   to ITS OWN origin, so it cannot reach ours. It is REQUIRED for embedded
- *   players (YouTube/Vimeo) — without it the player initializes to a black
- *   frame. The `allow` attribute + allowFullScreen enable media playback.
- * - Inline HTML (srcDoc): `allow-scripts allow-forms` only — NO
- *   `allow-same-origin`, because a srcDoc document inherits the PARENT origin,
- *   so combining the two would let it script aimatrx.com (XSS).
- * - Only http/https URLs are permitted for `src`; javascript:/data: URIs are blocked.
+ * Drafts and app-relative addresses are opaque. A known separate initial
+ * HTTP(S) URL retains media-player capabilities after hydration. Redirect
+ * custody is separate; this rule never proves an entire navigation chain.
+ * Public inline HTML is non-executing, matching the renderer contract.
  */
 export default function IframeArtifact({
   mode,
   raw,
   data,
   metadata,
+  isPublic = false,
 }: ArtifactRendererProps) {
   const payload =
     typeof data === "string"
@@ -47,12 +29,17 @@ export default function IframeArtifact({
   const height = mode === "canvas" ? "100%" : "400px";
 
   const safeUrl = safeEmbedUrl(payload);
+  const sandbox = usePageSandbox(
+    safeUrl,
+    "allow-scripts allow-same-origin allow-popups allow-forms allow-presentation",
+  );
 
   if (safeUrl) {
     return (
       <iframe
+        key={sandbox}
         src={safeUrl}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+        sandbox={sandbox}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
         allowFullScreen
         className="w-full border-0"
@@ -65,8 +52,9 @@ export default function IframeArtifact({
   // Inline HTML payload (srcDoc) — no allow-same-origin.
   return (
     <iframe
+      key={isPublic ? "public-inline" : "private-inline"}
       srcDoc={payload}
-      sandbox="allow-scripts allow-forms"
+      sandbox={isPublic ? "" : "allow-scripts allow-forms"}
       className="w-full border-0"
       style={{ height, minHeight: "300px" }}
       title={title}

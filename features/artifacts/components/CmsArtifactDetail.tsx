@@ -584,7 +584,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
                     <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                   </a>
                 </div>
-                <iframe
+                <iframe key={previewSandbox}
                   src={artifact.externalUrl}
                   className="w-full h-[400px]"
                   title="Page preview"

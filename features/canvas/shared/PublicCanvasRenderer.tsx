@@ -10,16 +10,8 @@ import SandboxedHtml from "@ai-matrx/rich-content/display/blocks/common/Sandboxe
 import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
-/** Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs. */
-function safeEmbedUrl(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  try {
-    const u = new URL(value, "https://invalid.local");
-    return u.protocol === "http:" || u.protocol === "https:" ? value : null;
-  } catch {
-    return null;
-  }
-}
+import { safeEmbedUrl } from "@/lib/iframe/embed-url";
+import { usePageSandbox } from "@/lib/iframe/use-page-sandbox";
 
 interface PublicCanvasRendererProps {
   content: CanvasContent | any;
@@ -41,6 +33,10 @@ interface PublicCanvasRendererProps {
  * adapters that read preferences via useAppSelector work correctly.
  */
 export function PublicCanvasRenderer({ content }: PublicCanvasRendererProps) {
+  const sandbox = usePageSandbox(
+    safeEmbedUrl(content?.data),
+    "allow-scripts allow-same-origin allow-popups allow-forms allow-presentation",
+  );
   if (!content) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
@@ -50,11 +46,16 @@ export function PublicCanvasRenderer({ content }: PublicCanvasRendererProps) {
   }
 
   return (
-    <div className="h-full w-full overflow-auto">{renderContent(content)}</div>
+    <div className="h-full w-full overflow-auto">
+      {renderContent(content, sandbox)}
+    </div>
   );
 }
 
-function renderContent(content: CanvasContent | any): React.ReactNode {
+function renderContent(
+  content: CanvasContent | any,
+  sandbox: string,
+): React.ReactNode {
   const { type, data } = content;
 
   // Delegate to the unified artifact renderer for every registered type.
@@ -94,13 +95,11 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
   if (maybeUrl) {
     return (
       <iframe
+        key={sandbox}
         src={maybeUrl}
         className="w-full h-full border-0"
         title={content.metadata?.title || "Canvas Content"}
-        // allow-same-origin is safe for a cross-origin embed URL (it only
-        // grants the framed page its OWN origin) and is required for media
-        // players (YouTube/Vimeo) — without it they render a black frame.
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+        sandbox={sandbox}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
         allowFullScreen
       />

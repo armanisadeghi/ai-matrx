@@ -28,6 +28,7 @@ import { useSpaces } from "../state/SpacesProvider";
 import { LateSeedRecords } from "../page/space-seed-context";
 import { useSpacesKnob } from "../state/knobs";
 import { embedTarget } from "./embed-providers";
+import { SpaceEmbedFrame } from "./SpaceEmbedFrame";
 import { openMediaPicker, type MediaKind } from "./media-insert";
 
 const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m) => m.DatabaseBlock), {
@@ -379,16 +380,7 @@ function EmbedBlock({ p, edit }: { p: Record<string, unknown>; edit: MediaEdit |
   return (
     <MediaFrame kind="embed" p={p} edit={edit} tall={height}>
       {target ? (
-        <iframe
-          className="spaces-iframe spaces-iframe-embed"
-          data-provider={target.provider}
-          src={target.src}
-          srcDoc={target.srcDoc}
-          title={hostOf(url)}
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-        />
+        <SpaceEmbedFrame target={target} title={hostOf(url)} />
       ) : (
         <div className="spaces-media-empty">This link can’t be embedded</div>
       )}

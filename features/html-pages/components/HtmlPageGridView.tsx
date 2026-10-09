@@ -80,7 +80,7 @@ function LazyPreviewCard({
           </div>
         )}
         {visible && (
-          <iframe
+          <iframe key={previewSandbox}
             title={`Preview of ${page.meta_title}`}
             src={page.url}
             sandbox={previewSandbox}

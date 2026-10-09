@@ -448,6 +448,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     if (isComplete && analysis.previewable && user?.id && phase === "preview") {
       return (
         <HtmlAppFrame
+          key={appSandbox}
           src={url ?? undefined}
           title={title}
           className={className}
@@ -585,7 +586,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         className={cn("group relative my-3 mx-auto", className)}
         style={{ maxWidth }}
       >
-        <iframe
+        <iframe key={publishedSandbox}
           src={url ?? undefined}
           title={title}
           className="w-full rounded-lg bg-black"
@@ -631,7 +632,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
       ) : (
-        <iframe
+        <iframe key={publishedSandbox}
           ref={frameRef}
           src={cardFrameUrl(url)}
           title={title}

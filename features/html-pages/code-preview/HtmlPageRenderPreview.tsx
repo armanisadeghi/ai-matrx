@@ -92,7 +92,7 @@ export function HtmlPageRenderPreview({
     )}
     <iframe
       key={
-        useLiveUrl ? `live-${page!.id}-${page!.updated_at}` : `draft-${rowId}`
+        `${useLiveUrl ? `live-${page!.id}-${page!.updated_at}` : `draft-${rowId}`}-${previewSandbox}`
       }
       title={page?.meta_title || sourceTab?.name || "HTML preview"}
       {...(useLiveUrl

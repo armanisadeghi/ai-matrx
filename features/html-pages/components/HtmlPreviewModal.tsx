@@ -1190,7 +1190,7 @@ ${wordPressCSS}
                         Live Preview
                       </h5>
                       <div className="flex-1 border border-border rounded-lg overflow-hidden bg-white">
-                        <iframe
+                        <iframe key={previewSandbox}
                           src={savedPage.url}
                           className="w-full h-full min-h-[600px]"
                           title={savedPage.title}

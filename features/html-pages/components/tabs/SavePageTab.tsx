@@ -448,7 +448,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
         <div className="flex-1 border-border rounded-lg overflow-hidden bg-white">
           {previewUrl ? (
             <iframe
-              key={iframeKey}
+              key={`${iframeKey}-${previewSandbox}`}
               src={`${previewUrl}?t=${iframeKey}`}
               className="w-full h-full"
               title="Page Preview"
