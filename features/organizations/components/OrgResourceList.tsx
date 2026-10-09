@@ -44,6 +44,8 @@ import {
 } from "@/utils/permissions/registry";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 
 export interface ResourceCardData {
   id: string;
@@ -96,6 +98,34 @@ export interface OrgResourceListProps {
    * where a table lives and moving it (`WhereItLives`). Absent: nothing is added.
    */
   renderCardAside?: ((item: ResourceCardData) => React.ReactNode) | undefined;
+}
+
+const RESOURCE_LOCATION = "Organization — shared resources";
+
+/** One card as plain rows: what the card shows, nothing the card does not. */
+function resourceRow(item: ResourceCardData, resourceType: ResourceType) {
+  return {
+    id: item.id,
+    type: resourceType,
+    title: item.title || "Untitled",
+    subtitle: item.subtitle ?? null,
+    tags: item.tags ?? [],
+    source: item.source === "owned" ? "Org" : "Shared",
+    archived: Boolean(item.archived),
+    updated_at: item.updatedAt ?? null,
+  };
+}
+
+function resourceHuman(item: ResourceCardData): string {
+  return [
+    `Title: ${item.title || "Untitled"}`,
+    item.subtitle ? `Subtitle: ${item.subtitle}` : null,
+    item.tags && item.tags.length > 0 ? `Tags: ${item.tags.join(", ")}` : null,
+    `Source: ${item.source === "owned" ? "Org" : "Shared"}`,
+    item.updatedAt ? `Updated: ${item.updatedAt}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function OrgResourceList({
@@ -276,17 +306,37 @@ export function OrgResourceList({
         // The peek control is a SIBLING of the card link, never a child — an
         // interactive control inside an anchor is invalid HTML and makes the
         // click target ambiguous.
-        const peekControl = doors.canPeek ? (
-          <button
-            type="button"
-            aria-label={`Quick look at ${item.title || "record"}`}
-            title={`Quick look at ${item.title || "record"}`}
-            onClick={() => setPeekId(item.id)}
-            className="absolute bottom-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </button>
-        ) : null;
+        const peekControl = (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1">
+            {/* A sibling of the card link, never inside it; copy never opens the card. */}
+            <CopyButtons
+              size="xs"
+              label={item.title || "Untitled"}
+              className="lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+              human={() => resourceHuman(item)}
+              json={() => resourceRow(item, resourceType)}
+              agent={() => ({
+                kind: `org-${resourceType}`,
+                location: RESOURCE_LOCATION,
+                description: `One ${resourceType} card from the organization's shared resources.`,
+                data: resourceRow(item, resourceType),
+                summary: resourceHuman(item),
+                attributes: { id: item.id, organization_id: orgId },
+              })}
+            />
+            {doors.canPeek ? (
+              <button
+                type="button"
+                aria-label={`Quick look at ${item.title || "record"}`}
+                title={`Quick look at ${item.title || "record"}`}
+                onClick={() => setPeekId(item.id)}
+                className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+        );
 
         // A card with no route and no peek is NOT rendered as a button — a
         // clickable-looking tile that goes nowhere is the dead end this fixes.
@@ -310,9 +360,9 @@ export function OrgResourceList({
         );
 
         return (
-          <div key={item.id} className="relative">
+          <div key={item.id} className="group relative">
             {card}
-            {aside ? <div className="absolute bottom-2 left-4 max-w-[calc(100%-3.5rem)] truncate">{aside}</div> : null}
+            {aside ? <div className="absolute bottom-2 left-4 max-w-[calc(100%-6.5rem)] truncate">{aside}</div> : null}
             {peekControl}
           </div>
         );
@@ -320,6 +370,32 @@ export function OrgResourceList({
 
   return (
     <>
+      <div className="mb-2 flex justify-end">
+        {/* Copy/export cover EVERY card, archived included, never a slice. */}
+        <CopyButtons
+          size="icon"
+          label={`Org ${resourceType} list`}
+          human={() => items.map(resourceHuman).join("\n\n")}
+          json={() => items.map((item) => resourceRow(item, resourceType))}
+          agent={() => ({
+            kind: `org-${resourceType}-list`,
+            location: RESOURCE_LOCATION,
+            description: `Every ${resourceType} owned by or shared with the organization, as the cards show them.`,
+            data: { items: items.map((item) => resourceRow(item, resourceType)) },
+            summary: items.map(resourceHuman).join("\n\n"),
+            attributes: { rows: items.length, organization_id: orgId },
+          })}
+          export={{
+            items: [
+              jsonExportItem(() => items.map((item) => resourceRow(item, resourceType))),
+              csvExportItem(
+                () => items.map((item) => resourceRow(item, resourceType)),
+                "CSV (all cards)",
+              ),
+            ],
+          }}
+        />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {activeItems.map(renderCard)}
       </div>
