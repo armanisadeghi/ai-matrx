@@ -670,7 +670,7 @@ export function OfferingsWorkbench() {
                       {
                         kind: "item",
                         id: "offering-edit",
-                        label: "Edit name, kind or place…",
+                        label: "Edit details and price…",
                         icon: Pencil,
                         onSelect: () => runContextAction("onEdit"),
                       },
