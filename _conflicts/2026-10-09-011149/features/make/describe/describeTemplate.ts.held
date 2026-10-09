@@ -1,3 +1,77 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/make/describe/describeTemplate.ts
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/make/describe/describeTemplate.ts
+  Both grew from the same COMMON version: commit 4d2a19ce16, 2026-10-09 01:03.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-09 01:02  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-09 01:12  ede216c8ac  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-09 01:07  1dcb78466f  "make: describe box opens the agent's schema answer, says failures plainly, keeps a press until the organization loads"
+  GITHUB's latest change is 5m AFTER LOCAL's latest change.
+
+SIZE: common version 212 lines, LOCAL 249 lines, GITHUB 222 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 28 lines and removed 1 lines.
+  GITHUB added 8 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 8 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | parseDescribeTemplate,
+      | /** The mandate answered, but not in a shape the browser can use. Marks the failure so the box says it plainly. */
+      | export class AnswerRefused extends Error {
+      | constructor(message: string) {
+      | super(message);
+      | this.name = "AnswerRefused";
+      | // The agent's stored schema carries the deep parts as JSON text; the package's ONE deserializer opens them.
+      | return { template: parseDescribeTemplate(template as Record<string, unknown>), notes, reuses };
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | return { template: template as Record<string, unknown>, notes, reuses };
+  GITHUB has 0 of the 28 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | /** A JSON object or list the model wrote as a string ("{\"token\":…}") — parsed; anything else as it was. */
+      | function unwrapJsonText(value: unknown): unknown {
+      | if (typeof value !== "string") return value;
+      | const t = value.trim();
+      | if (!((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]")))) return value;
+      | return JSON.parse(t) as unknown;
+      | return value;
+      | * THE MODEL SOMETIMES WRITES EACH TABLE, FORM, VIEW AND RELATIONSHIP AS A JSON STRING (lane MAKE-WORKS,
+      | * 2026-10-09: "a content calendar for my 6 agency clients…" answered `tables: ["{\"token\":\"client\",…}"]`
+      | * for both test seats, and the check died on "t.fields is not iterable"). The meaning is intact, so the
+      | * box reads it: every top-level value of the template, and every entry of a top-level list, that is a JSON
+      | * object or list written as text is parsed. Said in the console, never silently.
+      | export function unwrapStringifiedParts(template: Record<string, unknown>): { template: Record<string, unknown>; unwrapped: string[] } {
+      | const unwrapped: string[] = [];
+      | const out: Record<string, unknown> = {};
+      | ... and 13 more
+    (some of those lines also appear in other changed files, which may be a coincidence: features/make/describe/__tests__/describe-reads-parts-written-as-json-text.test.ts)
+    Lines LOCAL deliberately REMOVED that GITHUB still has: 1
+      | const template = v.template;
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 1dcb78466f12:'features/make/describe/describeTemplate.ts') <(git show ede216c8aca9:'features/make/describe/describeTemplate.ts')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show ede216c8aca9:'features/make/describe/describeTemplate.ts'
+  GITHUB: git show 1dcb78466f12:'features/make/describe/describeTemplate.ts'
+
+---------------- LOCAL VERSION BELOW ----------------
 // features/make/describe/describeTemplate.ts — lane CHAIR-DESCRIBE (v7): the describe box's one pipe.
 //
 // ONE SENTENCE → ONE TEMPLATE SPEC → THE TEMPLATE FAMILY'S OWN INSTALL DOOR.
@@ -21,7 +95,6 @@ import {
   describeCheck,
   describeSpec,
   describeVocabulary,
-  parseDescribeTemplate,
   safeReuses,
   templateDeclaration,
   type ExistingTable as PackageExistingTable,
@@ -68,23 +141,51 @@ export interface DescribeAnswer {
   reuses: Array<{ token: string; existing_table_id: string }>;
 }
 
-/** The mandate answered, but not in a shape the browser can use. Marks the failure so the box says it plainly. */
-export class AnswerRefused extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AnswerRefused";
+/** A JSON object or list the model wrote as a string ("{\"token\":…}") — parsed; anything else as it was. */
+function unwrapJsonText(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const t = value.trim();
+  if (!((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]")))) return value;
+  try {
+    return JSON.parse(t) as unknown;
+  } catch {
+    return value;
   }
+}
+
+/**
+ * THE MODEL SOMETIMES WRITES EACH TABLE, FORM, VIEW AND RELATIONSHIP AS A JSON STRING (lane MAKE-WORKS,
+ * 2026-10-09: "a content calendar for my 6 agency clients…" answered `tables: ["{\"token\":\"client\",…}"]`
+ * for both test seats, and the check died on "t.fields is not iterable"). The meaning is intact, so the
+ * box reads it: every top-level value of the template, and every entry of a top-level list, that is a JSON
+ * object or list written as text is parsed. Said in the console, never silently.
+ */
+export function unwrapStringifiedParts(template: Record<string, unknown>): { template: Record<string, unknown>; unwrapped: string[] } {
+  const unwrapped: string[] = [];
+  const out: Record<string, unknown> = {};
+  for (const [key, raw] of Object.entries(template)) {
+    const top = unwrapJsonText(raw);
+    if (top !== raw) unwrapped.push(key);
+    if (Array.isArray(top)) {
+      const items = top.map(unwrapJsonText);
+      if (items.some((item, i) => item !== top[i]) && !unwrapped.includes(key)) unwrapped.push(key);
+      out[key] = items;
+    } else out[key] = top;
+  }
+  return { template: out, unwrapped };
 }
 
 /** Narrow the mandate's JSON; a missing spec throws in one line. */
 export function coerceDescribeAnswer(value: unknown): DescribeAnswer {
   const v = (value ?? {}) as Record<string, unknown>;
-  const template = v.template;
+  const raw = unwrapJsonText(v.template);
+  const read = raw && typeof raw === "object" && !Array.isArray(raw) ? unwrapStringifiedParts(raw as Record<string, unknown>) : null;
+  if (read?.unwrapped.length) console.warn("[make:describe] the answer wrote these parts as JSON text; read as JSON:", read.unwrapped);
+  const template = read?.template;
   if (!template || typeof template !== "object" || Array.isArray(template)) throw new Error("The answer held no template.");
   const notes = Array.isArray(v.notes) ? v.notes.filter((n): n is string => typeof n === "string") : [];
   const reuses = Array.isArray(v.reuses) ? (v.reuses as DescribeAnswer["reuses"]).filter((r) => r && typeof r.token === "string") : [];
-  // The agent's stored schema carries the deep parts as JSON text; the package's ONE deserializer opens them.
-  return { template: parseDescribeTemplate(template as Record<string, unknown>), notes, reuses };
+  return { template: template as Record<string, unknown>, notes, reuses };
 }
 
 /**

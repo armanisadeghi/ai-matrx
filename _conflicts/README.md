@@ -29,5 +29,9 @@ Its files stay as they are.
 ## Needs Arman
 
 ## Docs and comments — both versions kept
+- features/make/FEATURE.md — LOCAL latest 2026-10-09 00:39; GITHUB latest 2026-10-09 01:07; LOCAL lacks 14 of GITHUB's 14 new lines; GITHUB lacks 2 of LOCAL's 2 new lines; recover: git show ede216c8ac:'features/make/FEATURE.md' / 1dcb78466f:'features/make/FEATURE.md'
 
 ## Held files
+- _conflicts/2026-10-09-011149/features/make/describe/DescribeBox.tsx.held — LOCAL latest 2026-10-09 01:10; GITHUB latest 2026-10-09 01:07; LOCAL lacks 22 of GITHUB's 24 new lines; GITHUB lacks 170 of LOCAL's 171 new lines; recover: git show ede216c8ac:'features/make/describe/DescribeBox.tsx' / 1dcb78466f:'features/make/describe/DescribeBox.tsx'
+- _conflicts/2026-10-09-011149/features/make/describe/describeTemplate.ts.held — LOCAL latest 2026-10-09 01:02; GITHUB latest 2026-10-09 01:07; LOCAL lacks 8 of GITHUB's 8 new lines; GITHUB lacks 28 of LOCAL's 28 new lines; recover: git show ede216c8ac:'features/make/describe/describeTemplate.ts' / 1dcb78466f:'features/make/describe/describeTemplate.ts'
+- _conflicts/2026-10-09-011149/pnpm-lock.yaml.held — LOCAL latest 2026-10-09 01:09; GITHUB latest 2026-10-09 01:07; LOCAL lacks 28 of GITHUB's 108 new lines; GITHUB lacks 11 of LOCAL's 11 new lines; recover: git show ede216c8ac:'pnpm-lock.yaml' / 1dcb78466f:'pnpm-lock.yaml'
