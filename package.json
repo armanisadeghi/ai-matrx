@@ -818,6 +818,8 @@
     "check:unstable-selectors:self-test": "node scripts/check-unstable-selectors.mjs --self-test",
     "test:rule-row-squeeze": "playwright test -c config/playwright/playwright.rule-row-squeeze.config.ts",
     "test:library-table-reachable": "playwright test -c config/playwright/playwright.library-table-reachable.config.ts",
+    "test:html-card-reachable": "playwright test -c config/playwright/playwright.html-card-reachable.config.ts",
+    "check:print-no-blank-pages": "tsx scripts/print-blank-pages/check-print-no-blank-pages.mts",
     "check:kind-sandbox-gate": "tsx scripts/check-kind-sandbox-gate.ts",
     "check:kind-sandbox-gate:self-test": "tsx scripts/check-kind-sandbox-gate.ts --self-test",
     "check:kind-sandbox-protocol": "tsx scripts/check-kind-sandbox-protocol.ts",
