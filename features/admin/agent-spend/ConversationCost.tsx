@@ -82,7 +82,7 @@ export function ConversationSpendDialog({ agentId }: { agentId: string }) {
   const conversationId = useSearchParams().get("conversationId");
   const open = useSyncExternalStore(subscribe, () => dialogOpen, () => false);
   const { calls, error } = useConversationCalls(conversationId, open);
-  const { format } = useCostDisplay();
+  const { format, toPoints } = useCostDisplay();
 
   const columns = useMemo<MatrxColumnDef<ConversationSpendCall>[]>(
     () => [
@@ -105,7 +105,15 @@ export function ConversationSpendDialog({ agentId }: { agentId: string }) {
     <Dialog open={open} onOpenChange={setDialogOpen}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{total == null ? "Conversation cost" : `Conversation cost ${format(total)}`}</DialogTitle>
+          <DialogTitle className="flex items-baseline gap-4">
+            <span>Conversation cost</span>
+            {total != null && (
+              <>
+                <span className="text-sm font-normal tabular-nums">{`$${total.toFixed(2)}`}</span>
+                <span className="text-sm font-normal tabular-nums text-muted-foreground">{`${(toPoints(total) ?? 0).toLocaleString()} points`}</span>
+              </>
+            )}
+          </DialogTitle>
         </DialogHeader>
         {error ? (
           <div className="text-sm text-destructive">
