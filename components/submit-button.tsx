@@ -5,11 +5,23 @@
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { type ComponentProps } from "react";
+import { type ComponentProps, useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
+
+const subscribeNever = () => () => undefined;
+/** False in server HTML and until React has hydrated the page; true after. */
+function useHydrated(): boolean {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
 
 type Props = ComponentProps<typeof Button> & {
   pendingText?: string;
+  /**
+   * The form's action runs in the browser (a client function), so a press before the page's script has
+   * loaded would do nothing. The button says it is getting ready and stays disabled until then — never a
+   * silent no-op (lane F12).
+   */
+  needsScript?: boolean;
 };
 
 export function SubmitButton({
@@ -17,16 +29,20 @@ export function SubmitButton({
   pendingText = "Submitting...",
   className,
   disabled,
+  needsScript = false,
   ...props
 }: Props) {
   const { pending } = useFormStatus();
+  const hydrated = useHydrated();
+  const preparing = needsScript && !hydrated;
 
   return (
     <Button
       type="submit"
       className={cn("relative min-h-11", className)}
-      disabled={disabled || pending}
-      aria-busy={pending}
+      disabled={disabled || pending || preparing}
+      aria-busy={pending || preparing}
+      data-preparing={preparing || undefined}
       {...props}
     >
       <span
@@ -34,7 +50,7 @@ export function SubmitButton({
         className={cn("contents", pending && "invisible")}
         aria-hidden={pending || undefined}
       >
-        {children}
+        {preparing ? "Getting ready…" : children}
       </span>
       {pending && (
         <>
