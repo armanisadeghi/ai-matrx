@@ -130,10 +130,9 @@ export class Actor {
       actor.levers.push(`api: PRODUCTION ${PROD_API_ORIGIN} (nothing routed)`);
     }
     if (grant.length) actor.levers.push(`permission grant: ${grant.join(",")}`);
-    if (opts.faults && Object.keys(opts.faults).length) {
-      await context.addInitScript(mediaFaultsInit, opts.faults);
-      actor.levers.push(`init script: media faults ${JSON.stringify(opts.faults)}`);
-    }
+    // Always installed: without a fault it delegates to the real media APIs, and it is what the unplug lever lives in.
+    await context.addInitScript(mediaFaultsInit, opts.faults ?? {});
+    if (opts.faults && Object.keys(opts.faults).length) actor.levers.push(`init script: media faults ${JSON.stringify(opts.faults)}`);
     if (opts.noGesture) {
       // 🚨 THE UNKNOWN ACTIVATION (autoplay-blocked was UNPROVEN, 2026-10-09): when a page logs a
       // DOM element (`console.error("…", el)` — the design system's dev pill-guard does), Playwright

@@ -82,6 +82,6 @@ scenario("share-unsupported-mobile", async ({ cast }) => {
   await walkIn(phone, cast.meeting!, { until: ["knocking", "in-call"] });
   await admitWaiting(host, phone, "Daniel Okafor");
   expect(await hasButton(phone.page, /^Share screen$/), "no Share screen button on a phone").toBe(false);
-  await press(phone, "the more menu", phone.page.getByRole("button", { name: /^More\b/i }), 8000);
+  await press(phone, "the more menu", phone.page.getByRole("button", { name: /^More options$/ }), 8000);
   await seeUntil(phone, "a pointer to a computer", (o) => /from a (computer|desktop)|on a (computer|desktop)/i.test(o.text), TIMEOUTS.noticeMs);
 });
