@@ -20,6 +20,13 @@ export interface WorkDoor {
 
 const CONTINUE_DOORS: readonly WorkDoor[] = [
   {
+    title: "Live",
+    description:
+      "Every active coding session and agent room; message any of them.",
+    href: "/work/live",
+    iconName: "Radio",
+  },
+  {
     title: "Start work",
     description:
       "Compose and launch a new AI Matrx request with the available destinations.",

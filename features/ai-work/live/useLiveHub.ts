@@ -52,6 +52,8 @@ export interface LiveSession {
   lastSeenAt: string | null;
   presence: LivePresence;
   subagents: number;
+  /** Every coding_session row id bound to this address (member rows key by one of them). */
+  bindingIds: string[];
 }
 
 function metaString(metadata: Json | null, key: string): string | null {
@@ -68,12 +70,14 @@ function toLive(
   const subagents = new Map<string, number>();
   const main: CodingSessionView[] = [];
   const seen = new Set<string>();
+  const bindings = new Map<string, string[]>();
   for (const row of rows) {
     const parent = metaString(row.metadata, "parent_conversation_id");
     if (parent) {
       subagents.set(parent, (subagents.get(parent) ?? 0) + 1);
       continue;
     }
+    bindings.set(row.conversation_id, [...(bindings.get(row.conversation_id) ?? []), row.id]);
     // One row per address, newest binding first (the server's `who` does the same).
     if (seen.has(row.conversation_id)) continue;
     seen.add(row.conversation_id);
@@ -96,6 +100,7 @@ function toLive(
       lastSeenAt: row.last_seen_at,
       presence: effectivePresence(row.status, row.last_seen_at, nowMs, endedAfterMs),
       subagents: subagents.get(row.conversation_id) ?? 0,
+      bindingIds: bindings.get(row.conversation_id) ?? [row.id],
     };
   });
 }

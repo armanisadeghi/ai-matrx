@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   Plug,
+  Radio,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
@@ -16,6 +17,11 @@ const AI_WORK_NAV_ITEMS = [
     href: "/work",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    name: "Live",
+    href: "/work/live",
+    icon: Radio,
   },
   {
     name: "Start work",

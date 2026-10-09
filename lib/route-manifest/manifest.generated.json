@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1390,
+  "routeCount": 1391,
   "routes": [
     {
       "pattern": "/",
@@ -6829,6 +6829,11 @@
       "pattern": "/work/conversations/[conversationId]",
       "status": "live",
       "source": "app/(core)/work/conversations/[conversationId]/page.tsx"
+    },
+    {
+      "pattern": "/work/live",
+      "status": "live",
+      "source": "app/(core)/work/live/page.tsx"
     },
     {
       "pattern": "/work/new",

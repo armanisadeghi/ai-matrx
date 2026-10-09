@@ -55,10 +55,11 @@ import { useRouter } from "next/navigation";
 import {
   MessagingProvider,
   toMessagingArchiveFilter,
+  toMessagingKindFilter,
   useConversations,
   useMessagingHost,
 } from "@ai-matrx/messaging/react";
-import type { MessagingArchiveFilter } from "@ai-matrx/messaging/react";
+import type { MessagingArchiveFilter, MessagingKindFilter } from "@ai-matrx/messaging/react";
 import type { ActionHandler } from "@ai-matrx/messaging";
 // One entry point: `@ai-matrx/meet/react` re-exports the whole core, so a React
 // file needs exactly one import specifier. (Through 0.2.0 this was a REQUIREMENT
@@ -78,6 +79,11 @@ import { supabase } from "@/utils/supabase/client";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { useMessagingIntelligences } from "@/features/messaging/lib/useMessagingIntelligences";
+import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
+import {
+  MESSAGING_INBOX_DEFAULT_KIND_KEY,
+  MESSAGING_INBOX_KNOB_FEATURE,
+} from "@/features/messaging/lib/messagingMandates";
 import {
   MessagingAiDemandProvider,
   useMessagingAiDemandCounter,
@@ -138,6 +144,25 @@ export function MessagingHost({ children }: MessagingHostProps) {
   // `AgentCatalogHost` read, so every list in the app opens the same way.
   const archiveKnob = toMessagingArchiveFilter(
     useAppSelector(selectArchivedDefault),
+  );
+  // People | Agents | All (agent messaging Phase 1c): which conversations the
+  // list opens on is the ORGANIZATION's knob `messaging.inbox/default_kind`
+  // (person-overridable). Until it answers the engine starts on the knob's own
+  // default, `people`, so hundreds of agent rooms never flood the header badge
+  // for the moment before the answer lands; `<MessagingKindKnob>` applies it.
+  const inboxKnobs = useScopedKnobs({
+    organizationId,
+    featurePrefix: MESSAGING_INBOX_KNOB_FEATURE,
+    ...(settingsScopeUserId ? { userId: settingsScopeUserId } : {}),
+  });
+  const kindKnob = toMessagingKindFilter(
+    inboxKnobs.knobs.find(
+      (knob) =>
+        knob.feature === MESSAGING_INBOX_KNOB_FEATURE &&
+        knob.key === MESSAGING_INBOX_DEFAULT_KIND_KEY &&
+        knob.origin !== "missing",
+    )?.effective_value,
+    "people",
   );
   const notifyIncoming = useIncomingMessageNotifier();
   const store = useAppStore();
@@ -296,6 +321,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         // Seeds the engine at creation; `<MessagingArchiveKnob>` below owns
         // every later value of the same setting (see its comment).
         archiveFilter={archiveKnob}
+        kindFilter={kindKnob}
         observerRefresh={{ intervalMs: 5_000, active: browserAdminLaneOpen }}
         actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
@@ -319,6 +345,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         }}
       >
         <MessagingArchiveKnob knob={archiveKnob} />
+        <MessagingKindKnob knob={kindKnob} />
         {children}
       </MessagingProvider>
     </MessagingAiDemandProvider>
@@ -371,6 +398,41 @@ function MessagingArchiveKnob({ knob }: { knob: MessagingArchiveFilter }) {
     const untouched =
       appliedRef.current === null
         ? filterRef.current === knob || filterRef.current === "active"
+        : filterRef.current === appliedRef.current;
+    if (!untouched) return;
+    appliedRef.current = knob;
+    if (filterRef.current !== knob) setFilterRef.current(knob);
+  }, [host, knob]);
+
+  return null;
+}
+
+/**
+ * The same late-knob reconciler for the People | Agents | All axis: the
+ * organization's knob answers after the engine is built, so it is applied
+ * whenever it changes — until the person moves the control on the list, which
+ * then owns the axis for the session. The engine's seed is `people` (the knob's
+ * own default) until the answer lands.
+ */
+function MessagingKindKnob({ knob }: { knob: MessagingKindFilter }) {
+  const host = useMessagingHost();
+  const { kindFilter, setKindFilter } = useConversations();
+  const appliedRef = useRef<MessagingKindFilter | null>(null);
+  const hostRef = useRef(host);
+  const filterRef = useRef(kindFilter);
+  filterRef.current = kindFilter;
+  const setFilterRef = useRef(setKindFilter);
+  setFilterRef.current = setKindFilter;
+
+  useEffect(() => {
+    if (host === null) return;
+    if (hostRef.current !== host) {
+      hostRef.current = host;
+      appliedRef.current = null;
+    }
+    const untouched =
+      appliedRef.current === null
+        ? filterRef.current === knob || filterRef.current === "people"
         : filterRef.current === appliedRef.current;
     if (!untouched) return;
     appliedRef.current = knob;

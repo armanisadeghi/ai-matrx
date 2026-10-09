@@ -430,6 +430,11 @@ export const AI_WORK_NAV_GROUP: ShellNavGroupDef = {
       exact: true,
     },
     {
+      label: "Live",
+      href: "/work/live",
+      iconName: "Radio",
+    },
+    {
       label: "Provider Conversations",
       href: "/work/conversations",
       iconName: "MessageSquare",
