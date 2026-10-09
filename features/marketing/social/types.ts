@@ -240,3 +240,122 @@ export interface PostCardModel {
   outlierScore: number | null;
   percentile: number | null;
 }
+
+// ---------------------------------------------------------------------------
+// Outliers + KPIs (SI-07b1 / SI-08)
+// ---------------------------------------------------------------------------
+
+export type KpiGoalRow = SocialTables["kpi_goal"]["Row"];
+
+/** A post of one of the brand's tracked accounts, carrying that account's role. */
+export interface BrandPost extends PostCardModel {
+  role: TrackedRole;
+  trackedAccountId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Swipe file + Ads (SI-07b2)
+// ---------------------------------------------------------------------------
+
+/** The ad libraries the server searches (`POST /social/ads/search`). */
+export const AD_LIBRARIES = ["meta", "tiktok", "google", "linkedin"] as const;
+export type AdLibrary = (typeof AD_LIBRARIES)[number];
+export const AD_LIBRARY_LABELS: Record<AdLibrary, string> = {
+  meta: "Meta",
+  tiktok: "TikTok",
+  google: "Google",
+  linkedin: "LinkedIn",
+};
+export function isAdLibrary(value: string): value is AdLibrary {
+  return AD_LIBRARIES.some((l) => l === value);
+}
+
+/** What a swipe collection can hold that this screen shows. */
+export type SwipeItemType = "social_post" | "social_ad";
+
+/** Provider answer of `POST /social/ads/search`. */
+export interface AdsSearchResult {
+  items: Array<{ ad_id: string | null; library: string; platform_ad_id: string }>;
+  cursor: string | null;
+  has_more: boolean;
+  provider: string | null;
+  fallback_reason: string | null;
+  cost_credits: number | null;
+  /** Defaults the provider applied (e.g. `{country: "US"}`) — shown, never silent. */
+  effective_params: Record<string, string | number | boolean | null>;
+}
+
+/** `GET /social/capabilities`. */
+export interface SocialCapabilities {
+  providers: Record<string, string>;
+  platforms: Record<string, Record<string, string[] | string>>;
+}
+
+/** `GET /social/credits`. */
+export interface SocialCredits {
+  balances: Record<string, number | null>;
+}
+
+/** One ad as the cards render it (a `social.ad` row, normalised). */
+export interface AdCardModel {
+  adId: string;
+  library: string;
+  platformAdId: string;
+  advertiser: string;
+  advertiserPlatformId: string | null;
+  headline: string;
+  body: string;
+  cta: string;
+  landingUrl: string | null;
+  libraryUrl: string | null;
+  format: string;
+  status: "active" | "inactive" | "unknown";
+  startedAt: string | null;
+  endedAt: string | null;
+  placements: string[];
+  countries: string[];
+  thumbnailUrl: string | null;
+  firstSeenAt: string | null;
+  removed: boolean;
+}
+
+/** A membership edge of a collection (`platform.associations`), with its swipe document. */
+export interface SwipeEdge {
+  edgeId: string;
+  collectionId: string;
+  itemType: SwipeItemType;
+  itemId: string;
+  note: string;
+  tags: string[];
+  savedAt: string;
+}
+
+/** One saved thing, merged across every collection that holds it. */
+export interface SwipeItem {
+  key: string;
+  itemType: SwipeItemType;
+  itemId: string;
+  platform: string;
+  format: string;
+  title: string;
+  post: PostCardModel | null;
+  ad: AdCardModel | null;
+  edges: SwipeEdge[];
+}
+
+/** A tracked advertiser = a `platform.saved_view` on surface `social.advertisers`. */
+export interface AdvertiserDefinition {
+  version: 1;
+  library: AdLibrary;
+  /** What the library is asked for (`advertiser=`). */
+  advertiser: string;
+  advertiserPlatformId: string | null;
+  /** ISO time of the last look; ads first seen after it are "new". */
+  lastLookAt: string;
+}
+export interface TrackedAdvertiser {
+  viewId: string;
+  name: string;
+  version: number;
+  definition: AdvertiserDefinition;
+}
