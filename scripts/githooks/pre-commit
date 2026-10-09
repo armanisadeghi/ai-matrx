@@ -42,7 +42,13 @@ node "$ROOT/scripts/check-ledgered-files-unedited.mjs" --staged --root "$ROOT" \
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.jsx' '*.mjs' package.json pnpm-lock.yaml)
 if [ -n "$STAGED" ]; then
     # shellcheck disable=SC2086
-    if ! (cd "$ROOT" && printf '%s\n' "$STAGED" | xargs node scripts/check-matrx-imports.mjs); then
+    (cd "$ROOT" && printf '%s\n' "$STAGED" | xargs node scripts/check-matrx-imports.mjs --staged)
+    RC=$?
+    if [ "$RC" -eq 3 ]; then
+        echo "COMMIT REFUSED: a package install is incomplete (see above). Wait for the install to finish, then commit again." >&2
+        exit 1
+    fi
+    if [ "$RC" -ne 0 ]; then
         echo "COMMIT REFUSED: a staged file imports an @ai-matrx/* name the INSTALLED package does not ship." >&2
         echo "  The consumer must not land before the package. Publish the package (aidream npm train)," >&2
         echo "  then 'pnpm update \"@ai-matrx/<pkg>\" --latest', confirm 'pnpm check:matrx-imports', and commit again." >&2
