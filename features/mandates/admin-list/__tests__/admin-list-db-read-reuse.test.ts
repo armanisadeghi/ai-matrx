@@ -20,7 +20,9 @@ jest.mock("../rpc", () => ({ callMandateAdminList: jest.fn() }));
 jest.mock("@/features/mandates/admin/service", () => ({ fetchMandateConsoleData: jest.fn() }));
 jest.mock("@/features/mandates/provisions", () => ({ fetchProvisions: jest.fn() }));
 
-import { readDbOnce } from "../service";
+import { callMandateAdminList } from "../rpc";
+import { ensureMandateAdminReports } from "../store";
+import { createMandateAdminService, readDbOnce } from "../service";
 
 const PAGE = JSON.stringify({ p_mode: "page", p_scope: "system", p_sort: "name" });
 
@@ -72,5 +74,22 @@ describe("the admin mandate list's database half", () => {
     store.version += 1;
     await expect(readDbOnce(PAGE, read)).resolves.toEqual({ total: 469 });
     expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it("the shell's two identical facets asks share ONE database read (2026-10-09 timeouts)", async () => {
+    (ensureMandateAdminReports as jest.Mock).mockResolvedValue({
+      codeTruth: null,
+      coverage: null,
+      impact: null,
+      workflowImpact: null,
+    });
+    const call = callMandateAdminList as jest.Mock;
+    call.mockReset();
+    call.mockImplementation(async () => ({ status: [{ value: "Active", count: 1 }] }));
+    const service = createMandateAdminService((() => undefined) as never);
+    const query = { scope: { kind: "system" }, search: "", filters: {}, page: 1 } as never;
+    await Promise.all([service.fetchFacets!(query), service.fetchFacets!(query)]);
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(call.mock.calls[0][0]).toMatchObject({ p_mode: "facets", p_scope: "system" });
   });
 });

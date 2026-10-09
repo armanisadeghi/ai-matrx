@@ -400,13 +400,16 @@ export function createMandateAdminService(
     },
     fetchFacets: async (query) => {
       const reports = await reportsNow();
-      const answer = await callMandateAdminList<MandateAdminFacetsAnswer>(
-        {
-          p_mode: "facets",
-          ...scopeArgs(query, lane),
-          p_facts: buildFacts(reports, ALL_FACT_SECTIONS) as Json,
-        },
-        lane,
+      const args = {
+        p_mode: "facets",
+        ...scopeArgs(query, lane),
+        p_facts: buildFacts(reports, ALL_FACT_SECTIONS) as Json,
+      };
+      // Through readDbOnce like page and counts: the shell asks the same
+      // facets twice per load, and each ask is a whole-corpus row build
+      // (two at once tipped the page past the 8 s statement timeout).
+      const answer = await readDbOnce(`${lane}:${JSON.stringify(args)}`, () =>
+        callMandateAdminList<MandateAdminFacetsAnswer>(args, lane),
       );
       return { byKind: answer };
     },
