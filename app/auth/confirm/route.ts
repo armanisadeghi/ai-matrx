@@ -1,6 +1,7 @@
 // File: app/auth/confirm/route.ts
 
 import { type EmailOtpType } from "@supabase/supabase-js";
+import { handOverSession } from "@/lib/guest/session-handover";
 import { type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -53,10 +54,13 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const supabase = await createClient();
 
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
+    // A confirm or password-recovery link opened in a browser holding a guest brings its records along (G2).
+    const { error } = await handOverSession("email_otp", () =>
+      supabase.auth.verifyOtp({
+        type,
+        token_hash,
+      }),
+    );
 
     if (!error) {
       await clearPendingSignupEmail();

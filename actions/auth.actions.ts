@@ -7,8 +7,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
-import { promoteGuestToUser } from "@/lib/services/guest-promotion";
-import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
+import { finishPromotion, handOverSession, promoteGuest, rememberGuestVisitorId } from "@/lib/guest/session-handover";
 import {
   authDestinationOr,
   normalizeAuthDestination,
@@ -94,58 +93,30 @@ export async function signUpAction(
     );
   }
 
-  // Guest → user in-place promotion. If this visitor created files /
-  // conversations as a guest, their work is owned by a server-minted
-  // anonymous auth UUID (keyed off the browser fingerprint). Promoting that
-  // SAME UUID to a real account keeps every guest-owned row. A fresh signUp()
-  // would mint a new UUID and silently orphan all of it.
-  const guestFingerprint = formData.get("guestFingerprint")?.toString();
-  if (guestFingerprint) {
-    const promotion = await promoteGuestToUser({
-      fingerprint: guestFingerprint,
-      email,
-      password,
-    });
-
-    if (promotion.promoted) {
-      queueAcquisitionLink(visitorId, promotion.userId);
-      // Account is real + email already confirmed. Sign them in on the
-      // cookie-bound SSR client (same UUID → all their work is theirs) and
-      // skip the email-confirmation gate entirely.
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signInError) {
-        console.error(
-          "SignUpAction - promotion ok but auto sign-in failed:",
-          signInError.message,
-        );
-        return encodedRedirect(
-          "success",
-          "/login",
-          "Your account is ready. Please sign in to continue.",
-          formData,
-        );
-      }
-      if (process.env.NODE_ENV === "development") {
-        console.log("SignUpAction - guest promoted in place, signed in");
-      }
-      // Full-document landing (see HardRedirectForm) — a soft redirect() in a
-      // stale tab 404s on the destination's chunks.
-      return { hardRedirect: safeRedirectTo };
+  // GUEST → THE SAME ACCOUNT (G2 guest data, 2026-10-09). When this browser holds a guest (its guest
+  // session cookie, else its visitor id), that guest is promoted IN PLACE — same uid, same workspace, every
+  // record stays exactly where it is — and signed in. It NEVER falls through to a fresh signUp(): a new
+  // account would orphan the guest's work ("we BETTER NOT lose their data"). lib/guest/session-handover.ts.
+  const guestFingerprint = formData.get("guestFingerprint")?.toString() ?? null;
+  const promotion = await promoteGuest({ email, password, visitorId: guestFingerprint });
+  if (promotion.kind === "promoted") {
+    queueAcquisitionLink(visitorId, promotion.userId);
+    const { error: signInError } = await handOverSession("sign_up", () =>
+      supabase.auth.signInWithPassword({ email, password }),
+    );
+    if (signInError) {
+      console.error("SignUpAction - promotion ok but auto sign-in failed:", signInError.message);
+      return encodedRedirect("success", "/login", "Your account is ready. Please sign in to continue.", formData);
     }
-
-    if (promotion.promoted === false && promotion.reason === "email_in_use") {
-      return encodedRedirect(
-        "error",
-        "/sign-up",
-        "That email already has an account. Please sign in instead.",
-        formData,
-      );
-    }
-    // no_guest / already_converted / not_anonymous / error → fall through to
-    // the normal sign-up path below.
+    await finishPromotion();
+    // Full-document landing (see HardRedirectForm) — a soft redirect() in a stale tab 404s on the destination's chunks.
+    return { hardRedirect: safeRedirectTo };
+  }
+  if (promotion.kind === "email_in_use") {
+    return encodedRedirect("error", "/sign-up", "That email already has an account. Log in — your guest records come with you.", formData);
+  }
+  if (promotion.kind === "failed") {
+    return encodedRedirect("error", "/sign-up", "We couldn't create your account just now. Your guest records are safe — try again.", formData);
   }
 
   // Use the confirm URL for email verification (PKCE flow)
@@ -178,13 +149,15 @@ export async function signUpAction(
   // the audited `edu_set_age_band` RPC. Nothing age-related belongs on this
   // path — do not re-add a field, a metadata key, or a "just a default" here.
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: confirmUrl,
-    },
-  });
+  const { data, error } = await handOverSession("sign_up", () =>
+    supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: confirmUrl,
+      },
+    }),
+  );
 
   if (!error && data.user) queueAcquisitionLink(visitorId, data.user.id);
 
@@ -321,7 +294,7 @@ export async function signInWithGoogleAction(formData: FormData) {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -356,7 +329,7 @@ export async function signInWithGithubAction(formData: FormData) {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -500,7 +473,7 @@ export async function signUpWithGoogleAction(formData: FormData) {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -534,7 +507,7 @@ export const signUpWithGithubAction = async (formData: FormData) => {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -568,7 +541,7 @@ export async function signInWithAppleAction(formData: FormData) {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",
@@ -602,7 +575,7 @@ export const signUpWithAppleAction = async (formData: FormData) => {
   // D20: carry the guest fingerprint across the OAuth provider round-trip so
   // /auth/callback can transfer guest-owned data onto the account. Fail-open:
   // any failure just means a normal OAuth login with no transfer.
-  await stashGuestFingerprintForOAuth(formData);
+  await rememberGuestVisitorId(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",

@@ -176,7 +176,22 @@ scans every tracked and untracked source file and rejects raw internal login
 links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
+## Guest handover — every session replacement keeps a guest's records (G2, 2026-10-09)
+
+A signed-out visitor who saves in a published Applet holds a GUEST session in its own cookie
+(`lib/guest/guest-cookie.ts`, `sb-matrx-guest`; never the main auth cookie, so the proxy and every
+`isAuthenticated` reader still see a signed-out visitor). Every session replacement — password login, sign-up,
+the OAuth callback, `/auth/confirm` (`verifyOtp`: email confirm and password recovery), dev-login — runs inside
+`handOverSession(via, () => …)` (`lib/guest/session-handover.ts`): the guest (guest cookie claims, else the
+visitor id mapped through `users.guest_executions`) is read BEFORE the swap and, if the browser lands in another
+permanent account, `users.claim_guest_workspace` moves the guest's workspace to it by membership (all or nothing,
+retention-closed guests revived). Sign-up with email + password promotes the SAME guest in place
+(`promoteGuest`) and never falls back to a fresh account. A failed claim screams and keeps the guest cookie for
+the next replacement. Guard: `pnpm check:session-handover` (+ `:self-test`, CI).
+
 ## Change Log
+
+- 2026-10-09 — G2 guest data: the one session handover (`lib/guest/session-handover.ts`); the fail-open OAuth transfer (`lib/services/guest-oauth-transfer.ts`) and fingerprint-keyed `guest-promotion.ts` deleted; guard `check:session-handover`.
 
 - **2026-09-17 — three-day follow-up on the sign-out fix + auth-server report triage.** Fix confirmed live (both Vercel projects) and effective: Arman's 2026-09-14 session still alive, zero logouts of his account in 24h, `session_not_found` from ~50/10min to ~0. Chrome guard hook denied one real agent attempt on 2026-09-15. Triage of a browser-agent report on auth-server health: 43k `GET /user`/day vs 350 refreshes is real (≈45% from Arman's own network); the 504/500 bursts track auth-DB load, not call volume, and never end a session (a failed proxy check renders that request as a guest); the ~300/day `bad_jwt` rows are an external Azure-hosted scanner (3 malformed + 1 forged token per IP, nothing else), not our code; no retired-project token anywhere in the live bundles. Settings changed: passkey relying party `www.aimatrx.com` → `aimatrx.com` with all four app origins (0 passkeys enrolled). Left alone on purpose: access-token lifetime (7d), IP forwarding (spoofable header; no 429s observed), AAL1 limit (0 MFA factors). Architectural remedy filed as `common-docs/systems/platform/auth/proxy-identity/FEATURE.md`.
 - **2026-09-15 — removed the duplicate frontend admin OAuth redirect flow.**

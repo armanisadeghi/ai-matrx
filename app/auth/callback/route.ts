@@ -24,10 +24,7 @@ import {
   readAuthDestination,
   withAuthDestination,
 } from "@/utils/auth/auth-destination";
-import {
-  GUEST_OAUTH_FP_COOKIE,
-  transferGuestDataAfterOAuth,
-} from "@/lib/services/guest-oauth-transfer";
+import { handOverSession, takeGuestVisitorId } from "@/lib/guest/session-handover";
 import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
 // A TENTH `escapeHtml` copy the 2026-09-07 census missed under the name
@@ -282,7 +279,15 @@ export async function GET(request: Request) {
       console.log(
         `[${timestamp}] Auth callback - Client created, exchanging code...`,
       );
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      // THE ONE HANDOVER (G2 guest data): this browser's guest — its guest cookie, else the visitor id the
+      // OAuth action carried — is claimed into the account the code signs in to. A failed claim screams
+      // and keeps the guest cookie for the next sign-in; it never blocks the sign-in.
+      const carriedVisitorId = await takeGuestVisitorId();
+      const { data, error } = await handOverSession(
+        "oauth_callback",
+        () => supabase.auth.exchangeCodeForSession(code),
+        { visitorId: carriedVisitorId },
+      );
       console.log(
         `[${timestamp}] Auth callback - Exchange complete, error: ${!!error}`,
       );
@@ -436,38 +441,6 @@ export async function GET(request: Request) {
         }
       }
 
-      // D20: if the OAuth flow started with a guest fingerprint stashed by
-      // the OAuth server actions, transfer the guest's data (files,
-      // conversations, everything FK'd to the anon UUID) onto this account.
-      // FAIL-OPEN: any failure logs loudly and the login proceeds untouched.
-      let guestFpToClear = false;
-      try {
-        const guestFp = jar.get(GUEST_OAUTH_FP_COOKIE)?.value;
-        if (guestFp) {
-          guestFpToClear = true;
-          if (data.user && data.user.is_anonymous !== true) {
-            const transfer = await transferGuestDataAfterOAuth(
-              guestFp,
-              data.user.id,
-            );
-            if (transfer.transferred) {
-              console.log(
-                `[${timestamp}] Auth callback - guest data transferred onto ${data.user.id}: ${transfer.totalRows} rows (anon ${transfer.anonUserId})`,
-              );
-            } else if (transfer.reason !== "no_guest") {
-              console.error(
-                `[${timestamp}] Auth callback - LOUD: guest transfer did not run (${transfer.reason}): ${transfer.message ?? ""}`,
-              );
-            }
-          }
-        }
-      } catch (guestErr) {
-        console.error(
-          `[${timestamp}] Auth callback - LOUD: guest transfer threw — login proceeds, guest data stays orphaned:`,
-          guestErr instanceof Error ? guestErr.message : String(guestErr),
-        );
-      }
-
       const finalRedirectTo = redirectTo;
 
       const finalRedirectUrl = `${baseUrl}${finalRedirectTo}`;
@@ -475,10 +448,6 @@ export async function GET(request: Request) {
         `[${timestamp}] Auth callback - Final redirect URL: ${finalRedirectUrl}`,
       );
       const response = NextResponse.redirect(finalRedirectUrl);
-      if (guestFpToClear) {
-        // One-shot carrier: always clear after the callback consumed it.
-        response.cookies.delete(GUEST_OAUTH_FP_COOKIE);
-      }
       if (verifierAliasFrom) {
         // The shim carried this login — say so, and retire the historical
         // verifier so the next flow writes and reads only the current name.
