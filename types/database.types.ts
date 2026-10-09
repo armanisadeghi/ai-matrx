@@ -300,7 +300,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_top_tier_model_access: {
+        Args: { p_enabled: boolean; p_note?: string; p_user: string }
+        Returns: Json
+      }
+      top_tier_model_access_list: {
+        Args: never
+        Returns: {
+          changed_at: string
+          changed_by: string
+          changed_by_email: string
+          display_name: string
+          email: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -7845,6 +7859,13 @@ export type Database = {
         }[]
       }
       run_approval_note_blocked: { Args: { p_id: string }; Returns: undefined }
+      run_approval_origin: {
+        Args: { p_org_id?: string }
+        Returns: {
+          id: string
+          origin_class: string
+        }[]
+      }
       run_approval_status: {
         Args: { p_org_id?: string }
         Returns: {
@@ -33126,7 +33147,6 @@ export type Database = {
           icon: string | null
           id: string | null
           is_kernel: boolean | null
-          kept_by_the_app: boolean | null
           kept_for: string | null
           label_plural: string | null
           label_singular: string | null
@@ -33163,7 +33183,6 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          kept_by_the_app?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -33200,7 +33219,6 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          kept_by_the_app?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -35766,23 +35784,14 @@ export type Database = {
           version: number
         }[]
       }
-      data_home:
-        | {
-            Args: {
-              p_include_app_tables: string
-              p_organization_id?: string
-              p_search?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_include_platform_tables?: boolean
-              p_organization_id?: string
-              p_search?: string
-            }
-            Returns: Json
-          }
+      data_home: {
+        Args: {
+          p_include_platform_tables?: boolean
+          p_organization_id?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       data_home_changed_by: {
         Args: { p_asks: Json }
         Returns: {
@@ -35804,49 +35813,19 @@ export type Database = {
           table_name: string
         }[]
       }
-      data_home_slim:
-        | {
-            Args: {
-              p_include_app_tables: string
-              p_organization_id?: string
-              p_search?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_include_platform_tables?: boolean
-              p_organization_id?: string
-              p_search?: string
-            }
-            Returns: Json
-          }
+      data_home_slim: {
+        Args: {
+          p_include_platform_tables?: boolean
+          p_organization_id?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       data_home_tables:
         | {
             Args: { p_organization_id?: string }
             Returns: {
               created_by: string
-              kept_by_the_app: boolean
-              kind: string
-              member: boolean
-              mine: boolean
-              organization_id: string
-              organization_name: string
-              platform_owned: boolean
-              shared_with_me: boolean
-              system: boolean
-              table_id: string
-              table_name: string
-              team: boolean
-              updated_at: string
-              visibility: string
-            }[]
-          }
-        | {
-            Args: { p_include_app_tables: string; p_organization_id: string }
-            Returns: {
-              created_by: string
-              kept_by_the_app: boolean
               kind: string
               member: boolean
               mine: boolean
@@ -35869,7 +35848,6 @@ export type Database = {
             }
             Returns: {
               created_by: string
-              kept_by_the_app: boolean
               kind: string
               member: boolean
               mine: boolean
@@ -39116,43 +39094,24 @@ export type Database = {
         }
         Returns: string[]
       }
-      records_search:
-        | {
-            Args: {
-              p_include_app_tables: string
-              p_limit?: number
-              p_offset?: number
-              p_organization_ids?: string[]
-              p_search: string
-              p_table_ids?: string[]
-            }
-            Returns: {
-              name: string
-              organization_id: string
-              record_id: string
-              table_id: string
-              table_name: string
-              updated_at: string
-            }[]
-          }
-        | {
-            Args: {
-              p_include_platform_tables?: boolean
-              p_limit?: number
-              p_offset?: number
-              p_organization_ids?: string[]
-              p_search: string
-              p_table_ids?: string[]
-            }
-            Returns: {
-              name: string
-              organization_id: string
-              record_id: string
-              table_id: string
-              table_name: string
-              updated_at: string
-            }[]
-          }
+      records_search: {
+        Args: {
+          p_include_platform_tables?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_organization_ids?: string[]
+          p_search: string
+          p_table_ids?: string[]
+        }
+        Returns: {
+          name: string
+          organization_id: string
+          record_id: string
+          table_id: string
+          table_name: string
+          updated_at: string
+        }[]
+      }
       refusals_claiming_a_level_never_asked: {
         Args: never
         Returns: {
@@ -40070,7 +40029,6 @@ export type Database = {
           foundation: boolean
           keeper_group: string
           keeper_says: string
-          kept_by_the_app: boolean
           kept_for: string
           mine: boolean
           offered_as_context: boolean
@@ -40128,10 +40086,6 @@ export type Database = {
       table_kind_facts: { Args: { p_table_id: string }; Returns: Json }
       table_level_facts: { Args: { p_table_id: string }; Returns: Json }
       table_list_everywhere:
-        | {
-            Args: { p_include_app_tables: string; p_organization_id: string }
-            Returns: Json
-          }
         | { Args: { p_organization_id?: string }; Returns: Json }
         | {
             Args: {
@@ -76389,6 +76343,20 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id?: string }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      _memo_ask: {
+        Args: {
+          p_ids: string[]
+          p_kind: string
+          p_level: string
+          p_limit: number
+          p_offset: number
+          p_org: string
+          p_person: string
+          p_search: string
+          p_table: string
+        }
+        Returns: Json
+      }
       _memo_pair: {
         Args: {
           p_ids: string[]
@@ -85690,6 +85658,7 @@ export type Database = {
           route: string
           server_arrived_at: string
           server_task_id: string | null
+          stage: string
           status: string | null
           time_to_first_provider_s: number | null
           updated_at: string
@@ -85717,6 +85686,7 @@ export type Database = {
           route: string
           server_arrived_at: string
           server_task_id?: string | null
+          stage?: string
           status?: string | null
           time_to_first_provider_s?: number | null
           updated_at?: string
@@ -85744,6 +85714,7 @@ export type Database = {
           route?: string
           server_arrived_at?: string
           server_task_id?: string | null
+          stage?: string
           status?: string | null
           time_to_first_provider_s?: number | null
           updated_at?: string
@@ -94179,7 +94150,7 @@ export type Database = {
         }[]
       }
       ai_latency_filter_options: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_stage?: string; p_to: string }
         Returns: {
           kind: string
           n: number
@@ -94193,6 +94164,7 @@ export type Database = {
           p_organization_id?: string
           p_route?: string
           p_server_task_id?: string
+          p_stage?: string
           p_to: string
         }
         Returns: {

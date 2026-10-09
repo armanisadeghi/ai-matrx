@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T01:35:02.743Z",
+  "generated_at": "2026-10-09T02:03:18.546Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4826,6 +4826,12 @@
       "checksum": "d81adf21c75be19e2e51f4c53985d9e5cb9c5766d8c76cc8d9d24d1ec0eb2a24",
       "applied_at": "2026-10-09 00:42:59.366288+00"
     },
+    "migrations/campaign/memosweep_k_the_memo_comparison_asks_as_a_signed_in_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "memosweep_k_the_memo_comparison_asks_as_a_signed_in_person.sql",
+      "checksum": "d1a3c45c83ae4203bf98ac8686e23b5986576d963abdeb3284218edce534451b",
+      "applied_at": "2026-10-09 01:38:43.738044+00"
+    },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",
       "filename": "merge7_the_merged_grid_is_a_feature_knob.sql",
@@ -8251,6 +8257,30 @@
       "filename": "tablenames_f_the_register_opens_the_old_name_doors.sql",
       "checksum": "5e848a4768a9a5621e4a30d5abb3772a8d3eb7953ca1f798555d98b055115148",
       "applied_at": "2026-10-08 17:26:34.777498+00"
+    },
+    "migrations/campaign/tablenames_g_the_old_name_overloads_and_the_second_answer_key_are_removed.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_g_the_old_name_overloads_and_the_second_answer_key_are_removed.sql",
+      "checksum": "b5c559af6ce829354a3974e1ecf67c29346fcb3ea51a93ecbb041ce7c4e9f81e",
+      "applied_at": "2026-10-09 02:03:01.017433+00"
+    },
+    "migrations/campaign/tablenames_h_the_register_restores_the_doors_grants_after_the_cleanup.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_h_the_register_restores_the_doors_grants_after_the_cleanup.sql",
+      "checksum": "fab6ad72404631995e2f2e7181f687268202fe96b29c56a7f18af30757e04894",
+      "applied_at": "2026-10-09 02:00:43.596986+00"
+    },
+    "migrations/campaign/tablenames_i_the_homes_kept_by_the_app_are_named_platform_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_i_the_homes_kept_by_the_app_are_named_platform_tables.sql",
+      "checksum": "0d39eaba69ed62123d912d0125355ab6568ee8bdcdf26a193e188bf32482112b",
+      "applied_at": "2026-10-09 02:01:01.830939+00"
+    },
+    "migrations/campaign/tablenames_j_the_register_restores_the_doors_grants_after_tablenames_g.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_j_the_register_restores_the_doors_grants_after_tablenames_g.sql",
+      "checksum": "6a4b13ad9449aa1d00663f8f43c601b6ff253d7df3faf30c45235a813ca2360a",
+      "applied_at": "2026-10-09 02:03:17.199644+00"
     },
     "migrations/campaign/tableowner_a_door_row_renders_like_the_catalog.sql": {
       "source": "matrx-frontend",
