@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system/controls";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 
 import {
@@ -30,10 +32,12 @@ import {
   SAMPLE_KINDS,
   confirmVoice,
   fixVoice,
+  listBrandSpokespeople,
   listFingerprints,
   measureVoice,
   refreshLabel,
   searchSources,
+  setSpokespersonBrand,
   type ConfirmedVoice,
   type FingerprintRow,
   type SourceOption,
@@ -99,6 +103,14 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   const [sources, setSources] = useState<SourceOption[] | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const [picked, setPicked] = useState<Picked[]>([]);
+  const userId = useAppSelector(selectUserId);
+  // On a brand's page the picker starts on that brand's Sources; "All my sources" widens it.
+  const [allSources, setAllSources] = useState(false);
+  // "brand" measures the brand's voice; "me" measures the signed-in person's own voice as its spokesperson.
+  const [target, setTarget] = useState<"brand" | "me">("brand");
+  const [spokes, setSpokes] = useState<FingerprintRow[]>([]);
+  const [spokesNonce, setSpokesNonce] = useState(0);
+  const brandScoped = scope === "brand" && !allSources && target === "brand";
 
   const [measuring, setMeasuring] = useState(false);
   const [measured, setMeasured] = useState<VoiceMeasureResult | null>(null);
@@ -122,9 +134,24 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   }, [scope, ownerId, nonce]);
 
   useEffect(() => {
+    if (scope !== "brand" || !userId) return;
+    let cancelled = false;
+    listBrandSpokespeople(ownerId)
+      .then((data) => {
+        if (!cancelled) setSpokes(data.filter((r) => r.person_user_id === userId));
+      })
+      .catch(() => {
+        if (!cancelled) setSpokes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scope, ownerId, userId, spokesNonce]);
+
+  useEffect(() => {
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      searchSources(query)
+      searchSources(query, brandScoped ? ownerId : null)
         .then((data) => {
           if (!cancelled) {
             setSources(data);
@@ -139,7 +166,7 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, brandScoped, ownerId]);
 
   const org = async (): Promise<string> => {
     if (organizationId) return organizationId;
@@ -154,17 +181,26 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   // newer confirmed voice is history, not a pending question.
   const toConfirm = current?.status === "draft" ? current : null;
   const [saved, setSaved] = useState<ConfirmedVoice | null>(null);
+  const spokeToConfirm = spokes.find((r) => r.status === "draft") ?? null;
 
   const measure = async () => {
     setMeasuring(true);
     setMeasureError(null);
     try {
+      const asMe = scope === "brand" && target === "me";
+      if (asMe && !userId) throw new Error("Sign in to measure your own voice.");
+      // A person's voice is fingerprinted only by that person, so "me" is a person-scope
+      // measurement filed in this brand's organization, then linked to the brand.
       const result = await measureVoice(
         await org(),
-        scope,
-        ownerId,
+        asMe ? "person" : scope,
+        asMe ? (userId as string) : ownerId,
         picked.map((p) => ({ source_id: p.source.id, source: p.kind })),
       );
+      if (asMe && result.fingerprint_id) {
+        await setSpokespersonBrand(result.fingerprint_id, ownerId);
+        setSpokesNonce((n) => n + 1);
+      }
       setMeasured(result);
       setNonce((n) => n + 1);
     } catch (error) {
@@ -192,7 +228,18 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
           </p>
         </header>
 
-        {scope === "brand" ? <SpokespeoplePanel brandId={ownerId} brandName={ownerName} organizationId={organizationId} /> : null}
+        {scope === "brand" ? <SpokespeoplePanel
+            key={spokesNonce}
+            brandId={ownerId}
+            brandName={ownerName}
+            organizationId={organizationId}
+            onMeasureMine={() => {
+              setTarget("me");
+              setAllSources(true);
+              setPicked([]);
+              document.getElementById("voice-samples")?.scrollIntoView({ block: "start" });
+            }}
+          /> : null}
 
         <Card className="p-4" data-testid="voice-current">
           <h2 className="text-sm font-medium text-foreground">Current voice</h2>
@@ -232,8 +279,39 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
           ) : null}
         </Card>
 
-        <Card className="p-4">
-          <h2 className="text-sm font-medium text-foreground">Samples from Sources</h2>
+        <Card className="p-4" id="voice-samples">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-medium text-foreground">Samples from Sources</h2>
+            {scope === "brand" ? (
+              <div className="ml-auto flex flex-wrap gap-1" data-testid="voice-source-scope">
+                <Button
+                  variant={target === "brand" ? "primary" : "quiet"}
+                  onClick={() => {
+                    setTarget("brand");
+                    setAllSources(false);
+                    setPicked([]);
+                  }}
+                >
+                  Brand voice
+                </Button>
+                <Button
+                  variant={target === "me" ? "primary" : "quiet"}
+                  onClick={() => {
+                    setTarget("me");
+                    setAllSources(true);
+                    setPicked([]);
+                  }}
+                >
+                  My voice
+                </Button>
+                {target === "brand" ? (
+                  <Button variant="quiet" onClick={() => setAllSources((v) => !v)}>
+                    {allSources ? "This brand's sources" : "All my sources"}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Pick {MIN_SAMPLES} to {MAX_SAMPLES} pieces {scope === "brand" ? "the brand really published" : "you really wrote"}.
             Short, recent, unedited writing (emails, posts, Slack) measures best; a brand&apos;s website copy and a
@@ -255,7 +333,11 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Listing Sources
               </li>
             ) : sources.length === 0 ? (
-              <li className="p-2 text-sm text-muted-foreground">No Sources match. Add writing to Knowledge first.</li>
+              <li className="p-2 text-sm text-muted-foreground">
+                {brandScoped
+                  ? "No Sources for this brand yet. Try All my sources."
+                  : "No Sources match. Add writing to Knowledge first."}
+              </li>
             ) : (
               sources.map((source) => {
                 const chosen = picked.find((p) => p.source.id === source.id);
@@ -325,6 +407,18 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
             onSaved={(result) => {
               setSaved(result);
               setNonce((n) => n + 1);
+            }}
+          />
+        ) : null}
+
+        {spokeToConfirm ? (
+          <ConfirmCard
+            key={spokeToConfirm.id}
+            row={spokeToConfirm}
+            org={org}
+            onSaved={(result) => {
+              setSaved(result);
+              setSpokesNonce((n) => n + 1);
             }}
           />
         ) : null}

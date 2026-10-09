@@ -31,6 +31,7 @@ import {
   type BrandProperty,
   type PropertyKind,
 } from "@/features/marketing/types";
+import { propertyPlaceholders } from "@/features/marketing/components/shared/PropertyKindMark";
 import { extractErrorMessage } from "@/utils/errors";
 
 const STATUS_OPTIONS = [
@@ -95,6 +96,7 @@ function PropertyEditorDialogBody({
   const [displayName, setDisplayName] = useState(property?.display_name ?? "");
   const [status, setStatus] = useState(property?.status ?? "active");
   const busy = createMutation.isPending || updateMutation.isPending;
+  const placeholders = propertyPlaceholders(kind);
   const kindOptions = property
     ? PROPERTY_KINDS
     : PROPERTY_KINDS.filter((value) => value !== "website");
@@ -201,7 +203,7 @@ function PropertyEditorDialogBody({
               id="property-url"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://instagram.com/yourbrand"
+              placeholder={placeholders.url}
             />
           </div>
 
@@ -214,7 +216,7 @@ function PropertyEditorDialogBody({
                 id="property-handle"
                 value={handle}
                 onChange={(event) => setHandle(event.target.value)}
-                placeholder="@yourbrand"
+                placeholder={placeholders.handle}
               />
             </div>
             <div className="space-y-1">

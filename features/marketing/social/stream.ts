@@ -11,6 +11,8 @@ export class SocialStreamError extends Error {
   constructor(
     readonly code: string,
     readonly userMessage: string,
+    /** `{credits_charged, provider, attempts}` from the error event. */
+    readonly details?: Record<string, unknown>,
   ) {
     super(userMessage || code);
     this.name = "SocialStreamError";
@@ -55,6 +57,7 @@ export async function consumeSocialEvents<T>(
       refusal = new SocialStreamError(
         String(d.code ?? d.error_type ?? "social_provider_failed"),
         typeof d.user_message === "string" ? d.user_message : "The social call failed.",
+        d.details && typeof d.details === "object" ? (d.details as Record<string, unknown>) : undefined,
       );
     } else if (e.event === "data" && e.data?.type === "social_result") {
       result = e.data.result;

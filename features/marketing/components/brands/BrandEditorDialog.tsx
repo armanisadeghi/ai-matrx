@@ -209,6 +209,9 @@ function BrandEditorDialogBody({
   const [hasProfile] = useState(
     () => Object.keys(parseBrandProfile(brand?.profile)).length > 0,
   );
+  // A failure shows IN the dialog as well as in the toast: a toast can sit under
+  // the floating chrome, and a swallowed submit reads as a dead button.
+  const [failure, setFailure] = useState<string | null>(null);
   const busy = createMutation.isPending || updateMutation.isPending;
   const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
 
@@ -218,8 +221,10 @@ function BrandEditorDialogBody({
       setDraft((current) => ({ ...current, [key]: value }));
 
   const save = async () => {
+    setFailure(null);
     const name = draft.name.trim();
     if (!name) {
+      setFailure("Brand name is required.");
       toast.error("Brand name is required.");
       return;
     }
@@ -253,6 +258,7 @@ function BrandEditorDialogBody({
         toast.success("Brand saved");
       } else {
         if (!selectedOrgId) {
+          setFailure("Choose an owning organization for this brand.");
           toast.error("Choose an owning organization for this brand.");
           return;
         }
@@ -279,15 +285,21 @@ function BrandEditorDialogBody({
       }
       onOpenChange(false);
     } catch (error) {
+      const message = extractErrorMessage(error);
+      setFailure(
+        `${brand ? "Could not save brand" : "Could not create brand"}: ${message}`,
+      );
       toast.error(brand ? "Could not save brand" : "Could not create brand", {
-        description: extractErrorMessage(error),
+        description: message,
       });
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+      {/* The card ends above what floats at the bottom (assists dock): it is
+          centred, so twice the measured runway comes off its height. */}
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-h-[min(90dvh,calc(100dvh-2*var(--matrx-floating-clearance,0px)))] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{brand ? `Edit ${brand.name}` : "Add brand"}</DialogTitle>
           <DialogDescription>
@@ -719,6 +731,12 @@ function BrandEditorDialogBody({
             </CollapsibleContent>
           </Collapsible>
         </div>
+
+        {failure ? (
+          <p role="alert" className="text-sm text-destructive">
+            {failure}
+          </p>
+        ) : null}
 
         <DialogFooter>
           <Button

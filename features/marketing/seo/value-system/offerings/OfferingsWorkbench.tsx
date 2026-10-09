@@ -377,6 +377,14 @@ export function OfferingsWorkbench() {
           reason: choice.reason,
         });
       }
+      if (choice.price.priceAmount.trim() !== "") {
+        await setBrandOfferingPrice(id, {
+          amount: Number(choice.price.priceAmount),
+          currency: choice.price.priceCurrency.trim().toUpperCase() || "USD",
+          unit: choice.price.priceUnit || null,
+          note: choice.price.priceNote.trim() || null,
+        });
+      }
       return id;
     },
     onSuccess: (id, choice) => {
@@ -604,6 +612,7 @@ export function OfferingsWorkbench() {
         ) : (
           <OfferingCatalogTable
             tree={tree}
+            prices={prices.data ?? {}}
             metas={metas}
             collapsed={collapsed}
             selectedId={selectedId}

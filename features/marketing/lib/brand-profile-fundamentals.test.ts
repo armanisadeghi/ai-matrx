@@ -4,7 +4,7 @@
  * by an editor that does not own them.
  */
 
-import { brandProfileToJson, mergeBrandProfile, parseBrandProfile } from "@/features/marketing/types";
+import { brandProfileToJson, displayHashtag, mergeBrandProfile, parseBrandProfile } from "@/features/marketing/types";
 import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";
 import type { MarketingBrand } from "@/features/marketing/types";
 
@@ -71,5 +71,19 @@ describe("brand fundamentals in the profile", () => {
     for (const needle of ["<mission>", "<forbidden_claims>", "100% data-breach proof", "Certified destruction", "#ShredItRight", "ten_second", 'persona name="IT director"', "<objections>"]) {
       expect(xml).toContain(needle);
     }
+  });
+});
+
+describe("hashtags are stored without # and shown with it", () => {
+  it("displayHashtag adds exactly one # and leaves an empty draft empty", () => {
+    expect(displayHashtag("ShredItRight")).toBe("#ShredItRight");
+    expect(displayHashtag("#ShredItRight")).toBe("#ShredItRight");
+    expect(displayHashtag("##x")).toBe("#x");
+    expect(displayHashtag("")).toBe("");
+  });
+  it("survives a save and reload: stored normalized, displayed with #", () => {
+    const stored = brandProfileToJson(parseBrandProfile({ hashtags: [{ tag: "#ewasteweek", use: "campaign" }] }));
+    expect(stored).toEqual({ hashtags: [{ tag: "ewasteweek", use: "campaign" }] });
+    expect(displayHashtag(parseBrandProfile(stored).hashtags?.[0].tag ?? "")).toBe("#ewasteweek");
   });
 });

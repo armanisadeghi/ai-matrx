@@ -10,6 +10,7 @@ import {
   postMetricSeries,
   availableMetrics,
   postsPerWeek,
+  refreshSummary,
   relativeAge,
   toPostCardModel,
 } from "../mappers";
@@ -128,6 +129,23 @@ describe("account rows", () => {
   it("does not duplicate a property whose handle is already tracked", () => {
     expect(rows.find((r) => r.rowId === "property:prop1")).toBeUndefined();
   });
+  it("lists an own property that has only a URL, with the handle from the URL (Data Destruction: 8 of 9)", () => {
+    const r = buildAccountRows({
+      tracked: [tracked({ property_id: "prop-tracked" })],
+      profiles: [profile({})],
+      snapshots: [],
+      postStats: [],
+      properties: [
+        { id: "ig", kind: "instagram", handle: null, url: "https://www.instagram.com/datadestruction/", display_name: null },
+        { id: "fb", kind: "facebook", handle: null, url: "https://www.facebook.com/DataDestructioninc/", display_name: null },
+        { id: "yt", kind: "youtube", handle: null, url: "https://www.youtube.com/c/armansadeghi", display_name: null },
+        { id: "prop-tracked", kind: "youtube", handle: null, url: "https://www.youtube.com/channel/UCF4Ku_RBslqV3A36j6KddZQ", display_name: null },
+      ],
+      now: NOW,
+    });
+    const own = r.filter((x) => x.status === "not_tracked").map((x) => `${x.platform}:${x.handle}`);
+    expect(own).toEqual(["instagram:datadestruction", "facebook:DataDestructioninc", "youtube:armansadeghi"]);
+  });
   it("skips a tracked row whose profile cannot be read", () => {
     const r = buildAccountRows({ tracked: [tracked({ profile_id: "gone" })], profiles: [], snapshots: [], postStats: [], properties: [], now: NOW });
     expect(r).toHaveLength(0);
@@ -214,5 +232,25 @@ describe("relative age", () => {
     expect(relativeAge(iso(3), NOW)).toBe("3d");
     expect(relativeAge(iso(65), NOW)).toBe("2mo");
     expect(relativeAge(null, NOW)).toBe("—");
+  });
+});
+
+describe("refreshSummary", () => {
+  const base = {
+    profile_id: "p", platform: "tiktok", handle: "h", pages_walked: 1, posts_upserted: 30, post_ids: [], has_more: true,
+    trace: { provider: "scrapecreators", fallback_reason: null, cost_credits: 1, reused: false },
+    list_trace: [{ provider: "scrapecreators", fallback_reason: null, cost_credits: 1, reused: false }],
+    notes: [],
+  };
+  it("says new vs updated and the cost", () => {
+    expect(refreshSummary({ ...base, posts_new: 3, posts_updated: 27 })).toBe("3 new posts, 27 updated · 2 credits");
+    expect(refreshSummary({ ...base, posts_new: 1, posts_updated: 29 })).toBe("1 new post, 29 updated · 2 credits");
+  });
+  it("never answers a silent zero", () => {
+    expect(refreshSummary({ ...base, posts_upserted: 0, posts_new: 0, posts_updated: 0 })).toBe("No posts returned · 2 credits");
+  });
+  it("names the reuse window when nothing was fetched", () => {
+    const reused = { ...base, trace: { ...base.trace, reused: true, cost_credits: 0 }, list_trace: [], pages_walked: 0, posts_upserted: 0, notes: ["Refreshed within the last 12h; served from the shared cache."] };
+    expect(refreshSummary(reused)).toBe("Refreshed within the last 12h; served from the shared cache.");
   });
 });

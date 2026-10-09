@@ -54,9 +54,11 @@ import {
   LEAD_QUALITY_OPTIONS,
   OFFERING_KIND_META,
   OFFERING_MATCH_OPTIONS,
+  formatOfferingPrice,
   formatPoints,
   optionLabel,
 } from "./vocabulary";
+import type { OfferingPrice } from "./data";
 
 export const CATALOG_TABLE_ID = "offering-catalog";
 
@@ -73,6 +75,7 @@ export interface CatalogRowActions {
 
 export function OfferingCatalogTable({
   tree,
+  prices,
   metas,
   collapsed,
   selectedId,
@@ -87,6 +90,8 @@ export function OfferingCatalogTable({
   wrapTable,
 }: {
   tree: CatalogTree;
+  /** Published prices, keyed by offering id. */
+  prices: Record<string, OfferingPrice>;
   metas: BandMeta[];
   collapsed: ReadonlySet<string>;
   selectedId: string | null;
@@ -189,6 +194,25 @@ export function OfferingCatalogTable({
           {OFFERING_KIND_META.find((entry) => entry.value === row.kind)?.label ?? row.kind}
         </span>
       ),
+    },
+    {
+      id: "price",
+      header: "Price",
+      width: 150,
+      align: "right",
+      filter: "number",
+      accessorFn: (row) => prices[row.id]?.amount ?? null,
+      cell: (row) => {
+        const text = formatOfferingPrice(prices[row.id]);
+        return (
+          <span
+            className={cn("whitespace-nowrap text-xs tabular-nums", text ? "text-foreground" : "text-muted-foreground")}
+            title={prices[row.id]?.note ?? undefined}
+          >
+            {text ?? "No price"}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "worthPoints",
@@ -403,6 +427,7 @@ export function OfferingCatalogTable({
             ["Offering", row.name],
             ["Offered on this site", row.available ? "Yes" : "No"],
             ["Kind", row.kind],
+            ["Price", formatOfferingPrice(prices[row.id]) ?? "No price"],
             ["Worth here", row.worthPoints === null ? "No ruling" : formatPoints(row.worthPoints)],
             ["Worth used", row.worthSource],
             ["Keywords here", row.keywordsHere],

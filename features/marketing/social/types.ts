@@ -35,6 +35,21 @@ export const SOCIAL_PLATFORMS = [
 ] as const;
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
 
+/**
+ * Platforms whose profiles the server can fetch and track today (aidream
+ * matrx-social `_CAPS` GET_PROFILE + LIST_POSTS). Pinterest, Reddit and
+ * Snapchat are not wired; a row on them says so instead of failing on click.
+ */
+export const TRACKABLE_PLATFORMS: ReadonlySet<string> = new Set<SocialPlatform>([
+  "tiktok",
+  "instagram",
+  "youtube",
+  "linkedin",
+  "facebook",
+  "x",
+  "threads",
+]);
+
 export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
   tiktok: "TikTok",
   instagram: "Instagram",
@@ -131,6 +146,9 @@ export interface IngestProfileResult {
   list_trace: SocialProviderTrace[];
   notes: string[];
   cost_split_organizations?: unknown;
+  /** Refresh only: posts first seen in this refresh, and the rest re-observed. */
+  posts_new?: number;
+  posts_updated?: number;
 }
 
 export interface TrackAccountResult {
@@ -152,6 +170,8 @@ export interface TrackAccountInput {
   label?: string;
   notes?: string;
   pages?: number;
+  /** Track an account with no posts anyway (refused as `social_profile_empty` otherwise). */
+  allowEmpty?: boolean;
 }
 
 export interface AnalyzePostResult {
@@ -172,6 +192,8 @@ export type SocialErrorCode =
   | "social_forbidden"
   | "social_agent_not_built"
   | "social_provider_failed"
+  | "social_profile_empty"
+  | "social_profile_mismatch"
   | "organization_required";
 
 /** One progress line from a streamed door. */

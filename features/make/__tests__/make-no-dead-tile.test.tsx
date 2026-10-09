@@ -88,7 +88,7 @@ jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () 
 // The template gallery is its own unit (gallery/TemplateGallery.tsx, guard G3); here it is a stand-in.
 // The describe box is its own unit (features/make/describe); here it is a stand-in.
 jest.mock("../describe/DescribeBox", () => ({ DescribeBox: () => null }));
-jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" /> }));
+jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" />, InstalledOneOffs: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
@@ -189,8 +189,8 @@ it("every tile's secondary line fits its 60-character slot", () => {
   for (const tile of MAKE_TILES) expect(tile.what.length).toBeLessThanOrEqual(60);
 });
 
-it("wave 1 ships the seven store tiles and no platform tile", () => {
-  expect(MAKE_TILES.map((t) => t.id)).toEqual(["table", "form", "booking", "checklist", "dashboard", "portal", "list"]);
+it("the store tiles ship (wave 1's seven + VISION-REACH wave 3's synced database) and no platform tile", () => {
+  expect(MAKE_TILES.map((t) => t.id)).toEqual(["table", "form", "booking", "checklist", "dashboard", "portal", "list", "database"]);
   expect(MAKE_TILES.every((t) => t.source === "store")).toBe(true);
 });
 

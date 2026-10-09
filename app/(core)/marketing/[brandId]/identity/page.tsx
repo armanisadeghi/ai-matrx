@@ -12,6 +12,7 @@ import {
   Compass,
   PenLine,
   Telescope,
+  Swords,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -119,6 +120,13 @@ export default async function BrandIdentityPage({
         "Website, socials, top posts and speaking style.",
       href: researchHref,
       icon: Telescope,
+    },
+    {
+      name: "Competitors",
+      description:
+        "Rivals by website and social account, and how they compare.",
+      href: marketingRoutes.brandCompetitors(seg),
+      icon: Swords,
     },
     {
       name: "Audience",

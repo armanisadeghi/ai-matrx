@@ -70,6 +70,15 @@ export function handleFromInput(text: string): string {
   return raw.trim().replace(/^@/, "");
 }
 
+/**
+ * The ONE handle normalizer: a profile URL (query and trailing slash included), a `www.` address, an
+ * `@handle` or a bare handle all become the bare handle. Anything that is not an address passes
+ * through trimmed. Research intake, brand prefill and the tracking dialog all go through this.
+ */
+export function normalizeHandle(input: string | null | undefined): string {
+  return handleFromInput(input ?? "");
+}
+
 export interface SocialLink {
   kind: "post" | "profile";
   platform: SocialPlatform;

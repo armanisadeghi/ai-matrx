@@ -55,3 +55,34 @@ export function formatPoints(points: number | null): string {
   const rounded = Number.isInteger(points) ? String(points) : points.toFixed(1);
   return points > 0 ? `+${rounded}` : rounded;
 }
+
+/** How an offering's published price is quoted (`web.brand_offering.price_unit`). */
+export const PRICE_UNITS = [
+  { value: "", label: "No unit" },
+  { value: "one_time", label: "One time" },
+  { value: "per_month", label: "Per month" },
+  { value: "per_year", label: "Per year" },
+  { value: "per_hour", label: "Per hour" },
+  { value: "per_item", label: "Per item" },
+  { value: "starting_at", label: "Starting at" },
+] as const;
+
+/** A price draft's problems; both false = it can be saved. An empty amount = no price. */
+export function priceProblems(amount: string, currency: string): { amount: boolean; currency: boolean } {
+  const has = amount.trim() !== "";
+  return {
+    amount: has && !(Number.isFinite(Number(amount)) && Number(amount) >= 0),
+    currency: has && !/^[A-Za-z]{3}$/.test(currency.trim()),
+  };
+}
+
+/** "199 USD · Per month", or null when the offering has no published price. */
+export function formatOfferingPrice(
+  price: { amount: number | null; currency: string | null; unit: string | null } | undefined,
+): string | null {
+  if (!price || price.amount === null) return null;
+  const amount = Number.isInteger(price.amount) ? String(price.amount) : price.amount.toFixed(2);
+  const unit = PRICE_UNITS.find((entry) => entry.value === (price.unit ?? ""))?.label;
+  const head = `${amount} ${price.currency ?? "USD"}`;
+  return price.unit && unit ? `${head} · ${unit}` : head;
+}

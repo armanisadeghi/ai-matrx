@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { CmsSiteService } from '../../services/cmsService';
 import type { AgentWritePolicy, ClientSiteSummary } from '../../types';
 import { toClientSiteSummary } from '../../types';
@@ -33,7 +33,7 @@ interface Props {
 export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
     const [savingId, setSavingId] = useState<string | null>(null);
 
-    const handleChange = async (site: ClientSiteSummary, policy: AgentWritePolicy) => {
+    const handleChange = useCallback(async (site: ClientSiteSummary, policy: AgentWritePolicy) => {
         setSavingId(site.id);
         try {
             const updated = await CmsSiteService.adminUpdatePolicy(site.id, { agentWritePolicy: policy });
@@ -49,7 +49,7 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
         } finally {
             setSavingId(null);
         }
-    };
+    }, [onSiteUpdated]);
 
     const columns = useMemo((): MatrxColumnDef<ClientSiteSummary>[] => [
         { id: 'name', header: 'Site', accessorFn: (site) => site.name, width: 220, cell: (site) => <span className="font-medium">{site.name}</span> },
@@ -79,8 +79,7 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
                 </div>
             );
           } },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    ], [savingId]);
+    ], [savingId, handleChange]);
 
     return (
         <div className="flex flex-col h-full">

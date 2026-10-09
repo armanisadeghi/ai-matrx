@@ -1,6 +1,8 @@
 // app/(core)/marketing/[brandId]/intelligence/competitors/page.tsx
 //
-// One client's tracked rivals. `CompetitorAutopsyWorkspace` is the canonical
+// One client's tracked rivals; the default view is the brand-level competitor
+// list with social accounts ("All"), the SEO autopsy screens are its other
+// modes. `CompetitorAutopsyWorkspace` is the canonical
 // component the flat `/marketing/competitors` route uses, mounted here with
 // THIS BRAND'S scope — it reads the rest of its state from the URL on the
 // client, hence the Suspense boundary.
@@ -13,7 +15,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import CompetitorAutopsyWorkspace from "@/features/marketing/competitors/CompetitorAutopsyWorkspace";
 import { BrandScopedCompetitors } from "@/features/marketing/competitors/BrandScopedCompetitors";
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export default function BrandCompetitorsPage() {
   return (
     <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
-      <BrandScopedCompetitors />
+      <BrandScopedCompetitors view="all" />
     </Suspense>
   );
 }

@@ -6,8 +6,10 @@
  * (rendered "—", never 0).
  */
 
+import { handleFromInput } from "./link";
 import type {
   AccountRow,
+  IngestProfileResult,
   OutlierInput,
   PostCardModel,
   PostMetricSnapshotRow,
@@ -252,16 +254,19 @@ export function buildAccountRows(args: {
   }
 
   // Own properties that are not tracked yet still list, so "Own" is complete.
+  // Most properties carry only a URL (no handle): the handle comes from it.
+  const trackedPropertyIds = new Set(args.tracked.map((t) => t.property_id).filter(Boolean));
   for (const prop of args.properties) {
-    const handle = normalizeHandle(prop.handle);
-    if (!handle || trackedPlatformHandles.has(`${prop.kind}:${handle}`)) continue;
+    const shown = (prop.handle?.trim() || (prop.url ? handleFromInput(prop.url) : "")).replace(/^@/, "");
+    const handle = normalizeHandle(shown);
+    if (!handle || trackedPropertyIds.has(prop.id) || trackedPlatformHandles.has(`${prop.kind}:${handle}`)) continue;
     rows.push({
       rowId: `property:${prop.id}`,
       trackedAccountId: null,
       profileId: null,
       platform: prop.kind,
-      handle,
-      displayName: prop.display_name?.trim() || handle,
+      handle: shown,
+      displayName: prop.display_name?.trim() || shown,
       avatarUrl: null,
       role: "own",
       status: "not_tracked",
@@ -379,4 +384,31 @@ export function postsPerWeek(posts: readonly PostCardModel[], now = Date.now()):
   if (dated.length === 0) return null;
   const recent = dated.filter((p) => now - Date.parse(p.postedAt!) <= 30 * DAY_MS).length;
   return Math.round(((recent / 30) * 7) * 10) / 10;
+}
+
+// ---------------------------------------------------------------------------
+// Refresh result -> one line
+// ---------------------------------------------------------------------------
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/**
+ * What a profile refresh did, in one line: "3 new posts, 27 updated · 2 credits",
+ * the reuse-window answer, or "no posts returned". Never a silent zero.
+ */
+export function refreshSummary(r: IngestProfileResult): string {
+  if (r.trace?.reused) {
+    return r.notes?.[0] ?? "Refreshed recently; served from the shared cache, no new fetch";
+  }
+  const credits =
+    (r.trace?.cost_credits ?? 0) + (r.list_trace ?? []).reduce((sum, t) => sum + (t.cost_credits ?? 0), 0);
+  const cost = credits > 0 ? ` · ${plural(credits, "credit")}` : "";
+  if (r.pages_walked > 0 && r.posts_upserted === 0) return `No posts returned${cost}`;
+  if (typeof r.posts_new === "number") {
+    const updated = r.posts_updated ?? Math.max(0, r.posts_upserted - r.posts_new);
+    return `${plural(r.posts_new, "new post")}, ${updated} updated${cost}`;
+  }
+  return `${plural(r.posts_upserted, "post")} updated${cost}`;
 }

@@ -18,23 +18,37 @@ jest.mock("@/features/sources/api/sourcesApi", () => ({
   sourceHref: (id: string) => `/sources/${id}`,
 }));
 
-const listFingerprints = jest.fn();
+const listFingerprintsRaw = jest.fn();
+// The spokespeople panel also reads the person's own voices; only the brand reads are scripted here.
+const listFingerprints = Object.assign(
+  jest.fn((scope: string) => (scope === "person" ? Promise.resolve([]) : listFingerprintsRaw())),
+  {
+    mockResolvedValueOnce: (v: unknown) => (listFingerprintsRaw.mockResolvedValueOnce(v), listFingerprints),
+    mockResolvedValue: (v: unknown) => (listFingerprintsRaw.mockResolvedValue(v), listFingerprints),
+  },
+);
 const searchSources = jest.fn();
 const measureVoice = jest.fn();
 const confirmVoice = jest.fn();
 const fixVoice = jest.fn();
+const listBrandSpokespeople = jest.fn();
+const setSpokespersonBrand = jest.fn();
 
 jest.mock("../service", () => {
   const actual = jest.requireActual("../service");
   return {
     ...actual,
-    listFingerprints: (...a: unknown[]) => listFingerprints(...a),
+    listFingerprints: (scope: string) => listFingerprints(scope),
     searchSources: (...a: unknown[]) => searchSources(...a),
     measureVoice: (...a: unknown[]) => measureVoice(...a),
     confirmVoice: (...a: unknown[]) => confirmVoice(...a),
     fixVoice: (...a: unknown[]) => fixVoice(...a),
+    listBrandSpokespeople: () => listBrandSpokespeople(),
+    setSpokespersonBrand: () => setSpokespersonBrand(),
   };
 });
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/lib/api/typed-client", () => ({ apiPost: jest.fn(), buildPath: jest.fn() }));
 
@@ -117,7 +131,9 @@ function setValue(el: HTMLElement, value: string) {
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
+  listFingerprintsRaw.mockReset();
   searchSources.mockResolvedValue(SOURCES);
+  listBrandSpokespeople.mockResolvedValue([]);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);

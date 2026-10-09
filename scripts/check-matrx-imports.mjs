@@ -41,6 +41,7 @@
 //   node scripts/check-matrx-imports.mjs              # exit 1 on a missing export
 //   node scripts/check-matrx-imports.mjs --root DIR   # audit another tree
 //   node scripts/check-matrx-imports.mjs --self-test  # RED then GREEN, temp tree
+//   node scripts/check-matrx-imports.mjs --staged FILES...  # commit-hook mode: index blobs only
 //
 // A full (un-narrowed) run ALSO checks the installed package graph — every
 // `@ai-matrx/<dep>/<subpath>` one installed @ai-matrx package imports must be
@@ -54,7 +55,7 @@
 // package (aidream's npm train), then `pnpm update "@ai-matrx/<pkg>" --latest`
 // and commit the lockfile. Never pin; never delete the import to go green.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   lstatSync,
@@ -240,11 +241,60 @@ export function resetCaches() {
 
 // ── the run ──────────────────────────────────────────────────────────────────
 
-export function audit(root, { only = null } = {}) {
+/** Staged files (added/copied/modified/renamed), repo-relative. */
+function gitLines(root, args) {
+  const out = execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
+  return out.split("\0").filter(Boolean);
+}
+
+/** The blob in the index — what the commit will contain — or null when absent. */
+function indexText(root, rel) {
+  try {
+    return execFileSync("git", ["show", `:${rel}`], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
+  } catch {
+    return null;
+  }
+}
+
+/** Index blobs for many paths through ONE git process (a process per file takes minutes). */
+function indexBlobs(root, rels) {
+  const out = spawnSync("git", ["cat-file", "--batch"], { cwd: root, input: rels.map((r) => `:${r}\n`).join(""), maxBuffer: 1024 * 1024 * 1024 }).stdout;
+  const map = new Map();
+  let pos = 0;
+  for (const rel of rels) {
+    const nl = out.indexOf(10, pos);
+    if (nl === -1) break;
+    const head = out.toString("utf8", pos, nl);
+    pos = nl + 1;
+    if (head.endsWith(" missing")) continue;
+    const size = Number(head.split(" ")[2]);
+    map.set(rel, out.toString("utf8", pos, pos + size));
+    pos += size + 1;
+  }
+  return map;
+}
+
+/**
+ * COMMIT-HOOK MODE. The commit hook guards what the COMMIT contains, not what else sits in a
+ * shared working tree: another lane's untracked or unstaged file must never block an unrelated
+ * commit. Audited: the index blob of every staged code file; and, when package.json or
+ * pnpm-lock.yaml is staged (the installed versions change), the index blob of every tracked code
+ * file plus the installed package graph. Untracked files and unstaged edits are never read.
+ */
+export function stagedAudit(root, staged) {
+  root = resolve(root);
+  const widen = staged.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o));
+  const rels = widen ? gitLines(root, ["ls-files", "-z", "--cached"]) : staged;
+  const files = rels.filter((f) => SOURCE_EXT.test(f)).map((f) => join(root, f));
+  const blobs = indexBlobs(root, files.map((f) => relative(root, f).split(sep).join("/")));
+  return audit(root, { files, readText: (file) => blobs.get(relative(root, file).split(sep).join("/")) ?? null, graph: widen, narrowed: !widen });
+}
+
+export function audit(root, { only = null, files: given = null, readText = null, graph: wantGraph = null, narrowed = null } = {}) {
   root = resolve(root);
   // `only` narrows the scan to the given repo-relative files/directories (`pnpm findings <paths>`,
   // a changed-files run). A narrowed run never claims a full scan (no end-of-scan marker).
-  const files = listFiles(root).filter((f) => {
+  const files = (given ?? listFiles(root)).filter((f) => {
     if (!only) return true;
     const rel = relative(root, f).split(sep).join("/");
     return only.some((o) => o === "" || rel === o || rel.startsWith(`${o}/`));
@@ -256,11 +306,11 @@ export function audit(root, { only = null } = {}) {
   for (const file of files) {
     let text;
     try {
-      text = readFileSync(file, "utf8");
+      text = readText ? readText(file) : readFileSync(file, "utf8");
     } catch {
       continue;
     }
-    if (!text.includes(SCOPE)) continue;
+    if (text == null || !text.includes(SCOPE)) continue;
     for (const imp of collectImports(file, text)) {
       const { name: pkg, sub } = splitSpecifier(imp.specifier);
       const pkgDir = findInstalled(dirname(file), pkg, root);
@@ -378,7 +428,8 @@ export function audit(root, { only = null } = {}) {
   }
   skipped.runtimeOpen = runtimeOpen;
   // The package graph changes only with the lockfile, so a narrowed run leaves it alone.
-  const graph = only ? { packages: 0, specifiers: 0, findings: [] } : auditPackageGraph(root);
+  const doGraph = wantGraph ?? !only;
+  const graph = doGraph ? auditPackageGraph(root) : { packages: 0, specifiers: 0, findings: [] };
   findings.push(...graph.findings);
   return {
     files: files.length,
@@ -386,7 +437,7 @@ export function audit(root, { only = null } = {}) {
     runtimeChecked,
     findings,
     skipped,
-    narrowed: Boolean(only),
+    narrowed: narrowed ?? Boolean(only),
     graphPackages: graph.packages,
     graphSpecifiers: graph.specifiers,
   };
@@ -561,11 +612,12 @@ function report(result) {
   }
   if (!result.narrowed) endItems();
   const scope = result.narrowed ? ` (narrowed to ${result.files} file(s))` : "";
+  const graphDone = !result.narrowed || result.graphPackages > 0;
   if (findings.length === 0) {
     console.log(
       `[matrx-imports] OK — ${result.imports} @ai-matrx import name(s) exist in the installed packages` +
         ` (${result.runtimeChecked} value import(s) also found in the runtime JavaScript)` +
-        (result.narrowed ? "" : `; ${result.graphSpecifiers} cross-package import(s) across ${result.graphPackages} installed @ai-matrx package(s) resolve`) +
+        (!graphDone ? "" : `; ${result.graphSpecifiers} cross-package import(s) across ${result.graphPackages} installed @ai-matrx package(s) resolve`) +
         `${scope}.`,
     );
     return 0;
@@ -834,6 +886,46 @@ function selfTest() {
       r = audit(tmp, { only: ["features"] });
       if (r.findings.length) failures.push(`GREEN whole-module (${file}): a shipped file was reported: ${JSON.stringify(r.findings)}`);
     }
+
+    // ── COMMIT-HOOK MODE (--staged): audits the INDEX, never the rest of a shared working tree.
+    {
+      const repo = join(tmp, "staged-repo");
+      mkdirSync(join(repo, "lib"), { recursive: true });
+      const git = (...a) => execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", ...a], { cwd: repo, stdio: "ignore" });
+      git("init", "-q");
+      writeFileSync(join(repo, ".gitignore"), "node_modules\n");
+      writeFileSync(join(repo, "pnpm-lock.yaml"), "lock: 1\n");
+      writeFileSync(join(repo, "lib", "committed.ts"), `import { createKindValidator } from "@ai-matrx/content-ir/registry";\nexport { createKindValidator };\n`);
+      git("add", "-A");
+      git("commit", "-qm", "base");
+      const fresh = () => { clearPackageResolution(); runtimeCache.clear(); };
+      const staged = (...files) => { fresh(); return stagedAudit(repo, files).findings; };
+
+      // An untracked file from another lane is broken; only the lockfile is staged against a good install.
+      writePkg(repo, "0.19.0", true);
+      writeFileSync(join(repo, "lib", "other-lane.test.ts"), `import { x } from "@ai-matrx/content-ir/nope";\n`);
+      writeFileSync(join(repo, "pnpm-lock.yaml"), "lock: 2\n");
+      git("add", "pnpm-lock.yaml");
+      let f = staged("pnpm-lock.yaml");
+      if (f.length) failures.push(`STAGED GREEN: an untracked broken file blocked a lockfile-only commit: ${JSON.stringify(f)}`);
+      if (!audit(repo).findings.some((x) => x.why === "subpath")) failures.push("STAGED: full-tree mode no longer sees the untracked broken file");
+
+      // A staged file with a bad import is refused — by its INDEX blob, even when the working copy is fixed.
+      writeFileSync(join(repo, "lib", "new.ts"), `import { x } from "@ai-matrx/content-ir/nope";\n`);
+      git("add", "lib/new.ts");
+      writeFileSync(join(repo, "lib", "new.ts"), `export const x = 1;\n`);
+      f = staged("lib/new.ts");
+      if (!f.some((x) => x.why === "subpath" && x.file === join("lib", "new.ts"))) failures.push(`STAGED RED: a staged bad import was not refused: ${JSON.stringify(f)}`);
+      git("rm", "-qf", "--cached", "lib/new.ts");
+      f = staged("lib/new.ts");
+      if (f.length) failures.push(`STAGED GREEN: a file that is not staged was audited: ${JSON.stringify(f)}`);
+
+      // A lockfile bump to a version that no longer ships what a COMMITTED file imports is refused.
+      writePkg(repo, "0.18.6", false);
+      f = staged("pnpm-lock.yaml");
+      if (!f.some((x) => x.name === "createKindValidator" && x.file === join("lib", "committed.ts")))
+        failures.push(`STAGED RED: a lockfile bump that breaks a committed file was not refused: ${JSON.stringify(f)}`);
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -855,16 +947,25 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const i = argv.indexOf("--root");
       const root = i !== -1 ? argv[i + 1] : join(dirname(fileURLToPath(import.meta.url)), "..");
       // Narrowing: positional paths, else `pnpm findings <paths>` (MATRX_FINDINGS_PATHS).
+      const stagedMode = argv.includes("--staged");
       let only = argv.filter((a, j) => !a.startsWith("--") && argv[j - 1] !== "--root");
       if (!only.length && process.env.MATRX_FINDINGS_PATHS) only = JSON.parse(process.env.MATRX_FINDINGS_PATHS);
       only = only.map((o) => relative(resolve(root), resolve(o)).split(sep).join("/").replace(/\/+$/, ""));
       // A changed manifest or lockfile changes what EVERY import resolves to: scan everything.
-      if (only.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o))) only = [];
-      code = report(audit(root, { only: only.length ? only : null }));
+      if (!stagedMode && only.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o))) only = [];
+      code = stagedMode ? report(stagedAudit(root, only)) : report(audit(root, { only: only.length ? only : null }));
     }
   } catch (err) {
-    console.error(`[matrx-imports] could not run: ${err?.stack ?? err}`);
-    code = 2;
+    if (err?.code === "ENOENT" && /node_modules[\\/]@ai-matrx[\\/]/.test(String(err.path ?? err.message))) {
+      console.error(
+        `[matrx-imports] INSTALL INCOMPLETE — ${err.path ?? err.message} is missing: a package install is still running or was cut short.\n` +
+          `  This is not an import error. Wait for the install to finish (or re-run 'pnpm install'), then run this check again.`,
+      );
+      code = 3;
+    } else {
+      console.error(`[matrx-imports] could not run: ${err?.stack ?? err}`);
+      code = 2;
+    }
   }
   process.exitCode = code;
 }

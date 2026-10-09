@@ -114,24 +114,93 @@ export async function setSpokespersonBrand(fingerprintId: string, brandId: strin
   if (!data?.length) throw new Error("The spokesperson link was not saved: that voice is not yours to change.");
 }
 
-/** Sources (processed documents) the person can read, newest first, optionally by name. */
-export async function searchSources(query: string): Promise<SourceOption[]> {
-  let q = supabase
-    .schema("docproc")
-    .from("processed_documents")
-    .select("id, name, created_at")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(40);
-  const term = query.trim();
-  if (term) q = q.ilike("name", `%${term.replace(/[%_]/g, "")}%`);
-  const { data, error } = await q;
-  if (error) throw new Error(`Sources could not be listed: ${error.message}`);
-  return ((data ?? []) as { id: string; name: string | null; created_at: string }[]).map((row) => ({
-    id: row.id,
-    name: row.name || "Untitled source",
-    created_at: row.created_at,
-  }));
+/**
+ * The Source ids that belong to one brand: the processed documents behind its
+ * websites' pages (`web.page.processed_document_id` of every site with this
+ * `brand_id`) and behind its brand assets (`web.brand_asset.file_id` is a
+ * processed document's `original_file_id`). Social posts carry no Source
+ * (their text lives on `web.post`), so they are not listed here.
+ */
+export async function brandSourceIds(brandId: string): Promise<string[]> {
+  const [sites, assets] = await Promise.all([
+    supabase.schema("web").from("site").select("id").eq("brand_id", brandId).is("deleted_at", null).limit(50),
+    supabase
+      .schema("web")
+      .from("brand_asset")
+      .select("file_id")
+      .eq("brand_id", brandId)
+      .is("deleted_at", null)
+      .not("file_id", "is", null)
+      .limit(500),
+  ]);
+  if (sites.error) throw new Error(`The brand's websites could not be read: ${sites.error.message}`);
+  if (assets.error) throw new Error(`The brand's assets could not be read: ${assets.error.message}`);
+  const siteIds = ((sites.data ?? []) as { id: string }[]).map((r) => r.id);
+  const fileIds = ((assets.data ?? []) as { file_id: string | null }[])
+    .map((r) => r.file_id)
+    .filter((id): id is string => Boolean(id));
+
+  const ids = new Set<string>();
+  if (siteIds.length) {
+    const pages = await supabase
+      .schema("web")
+      .from("page")
+      .select("processed_document_id")
+      .in("site_id", siteIds)
+      .is("deleted_at", null)
+      .not("processed_document_id", "is", null)
+      .limit(1000);
+    if (pages.error) throw new Error(`The brand's pages could not be read: ${pages.error.message}`);
+    for (const r of (pages.data ?? []) as { processed_document_id: string | null }[]) {
+      if (r.processed_document_id) ids.add(r.processed_document_id);
+    }
+  }
+  if (fileIds.length) {
+    const docs = await supabase
+      .schema("docproc")
+      .from("processed_documents")
+      .select("id")
+      .in("original_file_id", fileIds)
+      .is("deleted_at", null)
+      .limit(1000);
+    if (docs.error) throw new Error(`The brand's documents could not be read: ${docs.error.message}`);
+    for (const r of (docs.data ?? []) as { id: string }[]) ids.add(r.id);
+  }
+  return [...ids];
+}
+
+/**
+ * Sources (processed documents) the person can read, newest first, optionally by name.
+ * With `brandId`, only that brand's Sources (see `brandSourceIds`); without it, all of theirs.
+ */
+export async function searchSources(query: string, brandId?: string | null): Promise<SourceOption[]> {
+  const term = query.trim().replace(/[%_]/g, "");
+  const run = async (ids: string[] | null): Promise<SourceOption[]> => {
+    let q = supabase
+      .schema("docproc")
+      .from("processed_documents")
+      .select("id, name, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(40);
+    if (ids) q = q.in("id", ids);
+    if (term) q = q.ilike("name", `%${term}%`);
+    const { data, error } = await q;
+    if (error) throw new Error(`Sources could not be listed: ${error.message}`);
+    return ((data ?? []) as { id: string; name: string | null; created_at: string }[]).map((row) => ({
+      id: row.id,
+      name: row.name || "Untitled source",
+      created_at: row.created_at,
+    }));
+  };
+  if (!brandId) return run(null);
+  const ids = await brandSourceIds(brandId);
+  if (ids.length === 0) return [];
+  // Chunked so a brand with many pages never overruns the request URL.
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+  const merged = (await Promise.all(chunks.map(run))).flat();
+  return merged.sort((x, y) => y.created_at.localeCompare(x.created_at)).slice(0, 40);
 }
 
 export async function measureVoice(

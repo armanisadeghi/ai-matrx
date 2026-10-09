@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1388,
+  "routeCount": 1389,
   "routes": [
     {
       "pattern": "/",
@@ -4243,6 +4243,11 @@
       "pattern": "/marketing/[brandId]/intelligence/competitors/review",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/intelligence/competitors/review/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/run",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/run/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/intelligence/monitoring",

@@ -45,6 +45,7 @@ import {
   median,
   postsPerWeek,
   profileFollowerSeries,
+  refreshSummary,
   relativeAge,
   type PostFilter,
   type PostSort,
@@ -278,6 +279,9 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const [tab, setTab] = useState<InnerTab>("posts");
   const [open, setOpen] = useState<PostCardModel | null>(null);
   const [busy, setBusy] = useState(false);
+  // The refresh's inline home: its live stage while running, then what it did
+  // (or why it failed), beside the button that started it.
+  const [refreshLine, setRefreshLine] = useState<{ text: string; failed: boolean; error?: unknown } | null>(null);
 
   async function refresh() {
     const ok = await confirm({
@@ -287,12 +291,17 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     });
     if (!ok) return;
     setBusy(true);
+    setRefreshLine({ text: "Starting…", failed: false });
     try {
-      const result = await refreshProfile(profileId, { pages: 1 }, { organizationId: brand.organizationId });
+      const result = await refreshProfile(profileId, { pages: 1 }, {
+        organizationId: brand.organizationId,
+        onProgress: (pr) =>
+          setRefreshLine({ text: pr.step && pr.total ? `${pr.message} · ${pr.step} of ${pr.total}` : pr.message, failed: false }),
+      });
       await invalidate();
-      toast.success(`${result.posts_upserted} posts updated`);
+      setRefreshLine({ text: refreshSummary(result), failed: false });
     } catch (err) {
-      toast.error(socialErrorMessage(err, "Refresh failed"));
+      setRefreshLine({ text: socialErrorMessage(err, "Refresh failed"), failed: true, error: err });
     } finally {
       setBusy(false);
     }
@@ -339,7 +348,18 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
           <PlatformMark platform={p.platform} size={20} />
         </span>
         {role ? <Badge>{TRACKED_ROLE_LABELS[role]}</Badge> : <Badge tone="warning">Not tracked</Badge>}
-        <span className="ml-auto flex items-center gap-1">
+        <span className="ml-auto flex min-w-0 items-center gap-1">
+          {refreshLine ? (
+            <span
+              role="status"
+              aria-live="polite"
+              title={refreshLine.text}
+              className={`flex min-w-0 max-w-[44ch] items-center truncate text-xs ${refreshLine.failed ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              <span className="truncate">{refreshLine.text}</span>
+              {refreshLine.failed ? <ErrorAlchemyMenu error={refreshLine.error} operation="refresh social account" /> : null}
+            </span>
+          ) : null}
           {tracked.data ? (
             <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title="Refresh · about 1 credit per page">
               {busy ? "Refreshing…" : "Refresh"}

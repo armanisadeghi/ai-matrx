@@ -14,21 +14,29 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
-import { Button, Select, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
-import { formatGrowth, relativeAge } from "../mappers";
+import { formatGrowth, refreshSummary, relativeAge } from "../mappers";
 import { formatCompact, formatPercentile, outlierBadgeModel } from "../outlier";
-import { refreshProfile, socialErrorMessage, untrackAccount } from "../server";
+import {
+  refreshProfile,
+  socialErrorCode,
+  socialErrorCredits,
+  socialErrorMessage,
+  trackAccount,
+  untrackAccount,
+} from "../server";
 import { setTrackedRole } from "../service";
 import {
   SOCIAL_PLATFORM_LABELS,
   TRACKED_ROLES,
   TRACKED_ROLE_LABELS,
+  TRACKABLE_PLATFORMS,
   isSocialPlatform,
   type AccountRow,
   type TrackedRole,
@@ -41,6 +49,14 @@ const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
   value: r,
   label: TRACKED_ROLE_LABELS[r],
 }));
+
+/** Own property rows the server can track now (its platform is wired). */
+function trackableOwn(row: AccountRow): boolean {
+  return !row.trackedAccountId && Boolean(row.propertyId) && TRACKABLE_PLATFORMS.has(row.platform);
+}
+
+/** One profile fetch + one page of posts. */
+const TRACK_CREDITS = 2;
 
 export function accountHref(brandSeg: string, row: Pick<AccountRow, "platform" | "profileId">): string | null {
   return row.profileId
@@ -66,12 +82,83 @@ export function AccountsTab() {
     try {
       const result = await refreshProfile(row.profileId, { pages: 1 }, { organizationId });
       await invalidate();
-      toast.success(`${result.posts_upserted} posts updated`);
+      toast.success(refreshSummary(result));
     } catch (err) {
       toast.error(socialErrorMessage(err, "Refresh failed"));
     } finally {
       setBusyRow(null);
     }
+  }
+
+  /** Track one own property as role Own; an empty account asks before tracking it anyway. */
+  async function trackOwnRow(row: AccountRow, allowEmpty = false): Promise<"ok" | "failed"> {
+    if (!row.profileUrl && !row.handle) return "failed";
+    try {
+      await trackAccount(
+        {
+          handleOrUrl: row.profileUrl ?? row.handle,
+          platform: isSocialPlatform(row.platform) ? row.platform : undefined,
+          role: "own",
+          brandId,
+          propertyId: row.propertyId ?? undefined,
+          pages: 1,
+          allowEmpty,
+        },
+        { organizationId },
+      );
+      return "ok";
+    } catch (err) {
+      if (!allowEmpty && socialErrorCode(err) === "social_profile_empty") {
+        const again = await confirm({
+          title: `Track @${row.handle} anyway?`,
+          description: `${socialErrorMessage(err, "This account has no posts.")} Tracking it fetches it again: about ${TRACK_CREDITS} credits.`,
+          confirmLabel: "Track anyway",
+        });
+        if (again) return trackOwnRow(row, true);
+        return "failed";
+      }
+      const credits = socialErrorCredits(err);
+      toast.error(`@${row.handle}: ${socialErrorMessage(err, "Couldn't track it")}${credits ? ` · ${credits} credit charged` : ""}`);
+      return "failed";
+    }
+  }
+
+  async function trackOwn(row: AccountRow) {
+    const ok = await confirm({
+      title: `Track @${row.handle} as Own?`,
+      description: `Fetches the account and its latest posts. About ${TRACK_CREDITS} credits, billed to this organization.`,
+      confirmLabel: "Track",
+    });
+    if (!ok) return;
+    setBusyRow(row.rowId);
+    try {
+      if ((await trackOwnRow(row)) === "ok") {
+        await invalidate();
+        toast.success(`Tracking @${row.handle}`);
+      }
+    } finally {
+      setBusyRow(null);
+    }
+  }
+
+  async function trackAllOwn(list: AccountRow[]) {
+    const ok = await confirm({
+      title: `Track ${list.length} own account${list.length === 1 ? "" : "s"}?`,
+      description: `${list.map((r) => `@${r.handle}`).join(", ")}. About ${list.length * TRACK_CREDITS} credits in total, billed to this organization.`,
+      confirmLabel: "Track all",
+    });
+    if (!ok) return;
+    setBusyRow("bulk");
+    let done = 0;
+    try {
+      for (const row of list) {
+        if ((await trackOwnRow(row)) === "ok") done += 1;
+      }
+    } finally {
+      await invalidate();
+      setBusyRow(null);
+    }
+    toast.success(`Tracked ${done} of ${list.length}`);
   }
 
   async function remove(row: AccountRow) {
@@ -195,7 +282,14 @@ export function AccountsTab() {
         accessorFn: (r) => r.postsTracked,
         align: "right",
         filter: "number",
-        cell: (r) => <span className="tabular-nums">{r.postsTracked}</span>,
+        cell: (r) =>
+          r.trackedAccountId && r.postsTracked === 0 ? (
+            <span title="No posts stored for this account. Check the handle, or Refresh.">
+              <Badge tone="warning">No posts</Badge>
+            </span>
+          ) : (
+            <span className="tabular-nums">{r.postsTracked}</span>
+          ),
       },
       {
         id: "median_views",
@@ -251,6 +345,7 @@ export function AccountsTab() {
   );
 
   const rows = accounts.data ?? [];
+  const untrackedOwn = rows.filter(trackableOwn);
 
   return (
     <MatrxDataTable<AccountRow>
@@ -266,7 +361,21 @@ export function AccountsTab() {
         error: accounts.error ?? undefined,
         onRetry: () => void accounts.refetch(),
       }}
-      toolbar={{ searchPlaceholder: "Search accounts…" }}
+      toolbar={{
+        searchPlaceholder: "Search accounts…",
+        actions:
+          untrackedOwn.length > 1 ? (
+            <Button
+              variant="outline"
+              icon={<UserPlus />}
+              disabled={busyRow !== null}
+              title={`Track every own account not tracked yet · about ${untrackedOwn.length * TRACK_CREDITS} credits`}
+              onClick={() => void trackAllOwn(untrackedOwn)}
+            >
+              {busyRow === "bulk" ? "Tracking…" : `Track all own (${untrackedOwn.length})`}
+            </Button>
+          ) : undefined,
+      }}
       defaultSort={{ id: "followers", direction: "desc" }}
       rowActions={(row) => [
         row.trackedAccountId
@@ -279,13 +388,24 @@ export function AccountsTab() {
               disabled: busyRow !== null,
               onClick: () => void refresh(row),
             }
-          : {
-              id: "track",
-              icon: UserPlus,
-              label: "Track",
-              tooltip: "Start tracking this account",
-              onClick: () => openTrack(),
-            },
+          : trackableOwn(row)
+            ? {
+                id: "track",
+                icon: UserPlus,
+                label: "Track",
+                tooltip: `Track as Own · about ${TRACK_CREDITS} credits`,
+                loading: busyRow === row.rowId,
+                disabled: busyRow !== null,
+                onClick: () => void trackOwn(row),
+              }
+            : {
+                id: "track",
+                icon: UserPlus,
+                label: "Track",
+                tooltip: `${isSocialPlatform(row.platform) ? SOCIAL_PLATFORM_LABELS[row.platform] : row.platform} is not supported yet`,
+                disabled: true,
+                onClick: () => openTrack(),
+              },
         ...(row.trackedAccountId
           ? [
               {

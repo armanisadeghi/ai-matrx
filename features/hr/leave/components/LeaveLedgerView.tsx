@@ -31,6 +31,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -234,9 +235,30 @@ export function LeaveLedgerView({
 
   /** The anchors the old table used (`#ledger-entry-<id>`): scroll the entry's row into view. */
   const goToEntry = (id: string) => {
-    document
-      .querySelector(`tr[data-row-id="${CSS.escape(id)}"]`)
-      ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const reveal = () => {
+      const row = document.querySelector(
+        `tr[data-row-id="${CSS.escape(id)}"]`,
+      );
+      row?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return row !== null;
+    };
+    if (reveal()) return;
+    // Not on screen: the current filter hides it, or the table's own search or page does.
+    const entry = ledger.entries.find((e) => e.id === id);
+    if (entry && filter !== "all" && onFilterChange) {
+      onFilterChange("all");
+      window.setTimeout(() => {
+        if (!reveal()) {
+          toast.info("That entry is hidden by the table's search or page.");
+        }
+      }, 150);
+      return;
+    }
+    toast.info(
+      entry
+        ? "That entry is hidden by the table's search or page."
+        : "That entry is not in this ledger.",
+    );
   };
 
   const columns: MatrxColumnDef<LeaveLedgerEntry>[] = [

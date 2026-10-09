@@ -61,6 +61,7 @@ jest.mock("../describeTemplate", () => ({
   coerceDescribeAnswer: (v: unknown) => v,
   declareDescribeSpec: async () => "tpl-1",
   describeVariables: () => ({}),
+  findBuiltSpace: async () => null,
   readExistingTables: async () => [],
   readOrganizationFacts: async () => ({ name: "Brightline", industry: null, time_zone: "UTC", working_hours: null }),
 }));
@@ -89,6 +90,7 @@ async function say(host: HTMLElement, words: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  localStorage.clear();
   document.body.innerHTML = "";
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 });
@@ -132,6 +134,55 @@ describe("the guided run on /make", () => {
     expect(writerRun).toHaveBeenCalledTimes(2);
     expect(host.querySelector("[data-make-describe]")?.getAttribute("data-make-describe")).toBe("installed");
     expect(host.textContent).toContain("2nd try");
+  });
+
+  it("a reload during the install reattaches to the same template and never designs or declares again", async () => {
+    const startedAt = Date.now() - 60_000;
+    localStorage.setItem(
+      `make.describe.run.v1:${ORG}`,
+      JSON.stringify({
+        key: "9f1c2d3e-0000-4000-8000-000000000001", sentence: "track my team's PTO", organizationId: ORG,
+        plan: { route: "data", steps: ["design", "check", "build", "open"] }, startedAt, endedAt: null,
+        step: { design: { state: "done", at: startedAt }, check: { state: "done", at: startedAt }, build: { state: "doing", at: startedAt + 30_000 } },
+        space: null, templateId: "tpl-9", install: null, notes: [], failed: null,
+      }),
+    );
+    runTemplateDoor.mockResolvedValue({ ok: true, answer: { made: [{ kind: "table", ref: "time_off", id: TABLE, title: "Time off" }] }, calls: 1 });
+    const host = await mount();
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+
+    expect(writerRun).not.toHaveBeenCalled();
+    expect(runTemplateDoor).toHaveBeenCalledTimes(1);
+    expect(runTemplateDoor.mock.calls[0]![3]).toBe("tpl-9");
+    expect(host.querySelector("[data-make-describe]")?.getAttribute("data-make-describe")).toBe("installed");
+  });
+
+  it("a workspace whose build was started before a pause is found and opened, never built a second time", async () => {
+    const mod = jest.requireMock("../describeTemplate") as { findBuiltSpace: (...a: unknown[]) => Promise<unknown> };
+    const real = mod.findBuiltSpace;
+    const looked: unknown[][] = [];
+    mod.findBuiltSpace = async (...a: unknown[]) => (looked.push(a), { id: "s9", title: "Agency OS" });
+    const startedAt = Date.now() - 90_000;
+    localStorage.setItem(
+      `make.describe.run.v1:${ORG}`,
+      JSON.stringify({
+        key: "9f1c2d3e-0000-4000-8000-000000000002", sentence: "an agency OS with clients, retainers, a dashboard and a 90-day plan", organizationId: ORG,
+        plan: { route: "page", steps: ["space", "open"] }, startedAt, endedAt: null,
+        step: { space: { state: "failed", at: startedAt } }, space: null, templateId: null, install: null, notes: [],
+        failed: { at: "space", why: "That stopped before it finished. Try again." },
+      }),
+    );
+    const host = await mount();
+    // A failed run is shown as it ended; Try again looks for the Space that build made before building again.
+    expect(host.querySelector("[data-make-describe-refusal]")).not.toBeNull();
+    await act(async () => (host.querySelector("[data-retry]") as HTMLButtonElement).click());
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    mod.findBuiltSpace = real;
+
+    expect(spaceBuild).not.toHaveBeenCalled();
+    expect(looked[0]![1]).toBe(ORG);
+    expect(looked[0]![2]).toBe(startedAt);
+    expect(push).toHaveBeenCalledWith("/spaces/s9");
   });
 
   it("sends a workspace to the Space Builder with the person's exact words and opens it", async () => {

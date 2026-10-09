@@ -1,26 +1,16 @@
-// app/(core)/marketing/[brandId]/intelligence/competitors/competitors/page.tsx
+// app/(core)/marketing/[brandId]/intelligence/competitors/all/page.tsx
 //
-// One competitor screen, one route — the agency-model tree gives every screen
-// that stands in for a different page its own URL. `view` fixes the screen
-// from the route; the bare `…/competitors` URL is still Run, and a
-// pre-restructure `?view=competitors` link still lands on this same screen.
+// "All" is the bare Competitors route now; this URL only forwards to it.
 
-import type { Metadata } from "next";
-import { Suspense } from "react";
+import { permanentRedirect } from "next/navigation";
 
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { BrandScopedCompetitors } from "@/features/marketing/competitors/BrandScopedCompetitors";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export const metadata: Metadata = {
-  title: "All competitors",
-  description:
-    "Every rival this brand tracks, by website and by social account.",
-};
-
-export default function BrandCompetitorsAllPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
-      <BrandScopedCompetitors view="all" />
-    </Suspense>
-  );
+export default async function BrandCompetitorsAllPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
+  permanentRedirect(marketingRoutes.brandCompetitors(brandId));
 }

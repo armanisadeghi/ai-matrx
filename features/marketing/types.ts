@@ -188,8 +188,15 @@ function asRecord(value: unknown): { [key: string]: Json } | null {
     : null;
 }
 
-function normalizeTag(value: string): string {
+/** Stored form of a hashtag: no leading "#", no whitespace. */
+export function normalizeTag(value: string): string {
   return value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+}
+
+/** Shown form of a hashtag: always with "#" (an empty draft stays empty). */
+export function displayHashtag(value: string): string {
+  const tag = value.trim().replace(/^#+/, "");
+  return tag ? `#${tag}` : value.trim() ? "#" : "";
 }
 
 function parseMessagingPillars(value: unknown): MessagingPillar[] {
