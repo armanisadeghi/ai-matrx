@@ -21,6 +21,10 @@ import {
   Shapes,
   Square,
   StickyNote,
+  Squircle,
+  Triangle,
+  Diamond,
+  Star,
   Type,
   type LucideIcon,
 } from "lucide-react";
@@ -45,7 +49,11 @@ const ICON: Record<BoardTool, LucideIcon> = {
   pen: Pencil,
   eraser: Eraser,
   rect: Square,
+  rounded: Squircle,
   oval: Circle,
+  triangle: Triangle,
+  diamond: Diamond,
+  star: Star,
   arrow: ArrowUpRight,
   line: Minus,
 };
@@ -118,7 +126,7 @@ export function ToolBar({
               <DropdownMenuItem key={tool} onSelect={() => store.setTool(tool)}>
                 <Icon className="mr-2 h-4 w-4" />
                 {TOOL_LABEL[tool]}
-                <DropdownMenuShortcut>{TOOL_KEY[tool]}</DropdownMenuShortcut>
+                {TOOL_KEY[tool] && <DropdownMenuShortcut>{TOOL_KEY[tool]}</DropdownMenuShortcut>}
               </DropdownMenuItem>
             );
           })}
@@ -144,11 +152,11 @@ export function ToolBar({
             const Icon = ICON[tool];
             return (
               <div key={tool}>
-                {i === 2 && <DropdownMenuSeparator />}
+                {tool === "arrow" && <DropdownMenuSeparator />}
                 <DropdownMenuItem onSelect={() => store.setTool(tool)}>
                   <Icon className="mr-2 h-4 w-4" />
                   {TOOL_LABEL[tool]}
-                  <DropdownMenuShortcut>{TOOL_KEY[tool]}</DropdownMenuShortcut>
+                  {TOOL_KEY[tool] && <DropdownMenuShortcut>{TOOL_KEY[tool]}</DropdownMenuShortcut>}
                 </DropdownMenuItem>
               </div>
             );
@@ -172,7 +180,7 @@ function ToolButton({
   active: boolean;
   onPick: () => void;
 }) {
-  const label = `${TOOL_LABEL[tool]} (${TOOL_KEY[tool]})`;
+  const label = TOOL_KEY[tool] ? `${TOOL_LABEL[tool]} (${TOOL_KEY[tool]})` : TOOL_LABEL[tool];
   return (
     <button
       type="button"

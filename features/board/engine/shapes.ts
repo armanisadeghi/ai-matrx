@@ -21,8 +21,8 @@
 
 import type { Rect } from "./camera";
 
-export type ShapeKind = "rect" | "oval" | "arrow" | "line" | "pen" | "sticky" | "text";
-export const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "oval", "arrow", "line", "pen", "sticky", "text"];
+export type ShapeKind = "rect" | "rounded" | "oval" | "triangle" | "diamond" | "star" | "arrow" | "line" | "pen" | "sticky" | "text";
+export const SHAPE_KINDS: readonly ShapeKind[] = ["rect", "rounded", "oval", "triangle", "diamond", "star", "arrow", "line", "pen", "sticky", "text"];
 
 export interface Point {
   x: number;
@@ -114,7 +114,37 @@ export interface BindTarget {
 export type TargetLookup = (id: string) => BindTarget | undefined;
 
 export const isConnector = (kind: ShapeKind): boolean => kind === "line" || kind === "arrow";
-export const isBoxKind = (kind: ShapeKind): boolean => kind === "rect" || kind === "oval";
+/** The closed shapes (box, rounded box, oval, triangle, diamond, star): select, resize, style, hold text, bindable. */
+export const isBoxKind = (kind: ShapeKind): boolean =>
+  kind === "rect" || kind === "rounded" || kind === "oval" || kind === "triangle" || kind === "diamond" || kind === "star";
+/** The kinds drawn as a polygon inside their box. */
+export const isPolygonKind = (kind: ShapeKind): boolean => kind === "triangle" || kind === "diamond" || kind === "star";
+
+/** A polygon shape's corners inside its box (a star is five points out of ten corners). */
+export function shapePolygon(kind: ShapeKind, box: Rect): Point[] | null {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  if (kind === "triangle") return [{ x: cx, y: box.y }, { x: box.x + box.w, y: box.y + box.h }, { x: box.x, y: box.y + box.h }];
+  if (kind === "diamond") return [{ x: cx, y: box.y }, { x: box.x + box.w, y: cy }, { x: cx, y: box.y + box.h }, { x: box.x, y: cy }];
+  if (kind === "star") {
+    return Array.from({ length: 10 }, (_, i) => {
+      const r = i % 2 === 0 ? 1 : 0.42;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      return { x: cx + (box.w / 2) * r * Math.cos(a), y: cy + (box.h / 2) * r * Math.sin(a) };
+    });
+  }
+  return null;
+}
+
+function pointInPolygon(p: Point, poly: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
 /** Sticky notes and plain canvas text: words ON the canvas, no chrome (FigJam / tldraw). */
 export const isCanvasText = (kind: ShapeKind): boolean => kind === "sticky" || kind === "text";
 /** A drawing (stroke / fill / line style apply), as opposed to canvas text. */
@@ -346,7 +376,16 @@ export function hitShape(shape: BoardShape, p: Point, tolerance: number, lookup:
       const inside = p.x >= box.x - tolerance && p.x <= box.x + box.w + tolerance && p.y >= box.y - tolerance && p.y <= box.y + box.h + tolerance;
       return inside ? "fill" : null;
     }
-    case "rect": {
+    case "triangle":
+    case "diamond":
+    case "star": {
+      const poly = shapePolygon(shape.kind, box);
+      if (!poly) return null;
+      for (let i = 0; i < poly.length; i++) if (distToSegment(p, poly[i], poly[(i + 1) % poly.length]) <= reach) return "stroke";
+      return pointInPolygon(p, poly) ? (filled ? "fill" : "interior") : null;
+    }
+    case "rect":
+    case "rounded": {
       const inside = p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h;
       const edge = inside
         ? Math.min(p.x - box.x, box.x + box.w - p.x, p.y - box.y, box.y + box.h - p.y)

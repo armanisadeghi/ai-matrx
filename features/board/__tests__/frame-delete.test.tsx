@@ -1,6 +1,6 @@
 /**
  * A person can delete a frame (2026-10-04: neither a person nor the agent saw a way). A selected
- * frame shows a trash button beside its label (Delete / Backspace go through the board's
+ * frame is deleted from the selection toolbar or with Delete / Backspace (the board's
  * `deleteSelected`); either removes the frame as one undoable step — its tiles stay.
  */
 import { act } from "react";
@@ -15,26 +15,21 @@ import { BoardStore } from "../board/board-store";
 const RECT = { x: 0, y: 0, w: 400, h: 300 };
 
 describe("deleting a frame", () => {
-  it("a selected frame offers Delete beside its label, which calls the board's remove", async () => {
+  it("a selected frame has ONE delete (the selection toolbar's), none beside its label", async () => {
     const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
-    const onRemove = jest.fn();
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
     await act(async () =>
       root.render(
         <BoardCameraStoreContext.Provider value={store}>
-          <BoardFrameView id="f1" rect={RECT} title="Move-Out Essentials" onRemove={onRemove} />
+          <BoardFrameView id="f1" rect={RECT} title="Move-Out Essentials" />
         </BoardCameraStoreContext.Provider>,
       ),
     );
-    expect(host.querySelector('[aria-label="Delete frame Move-Out Essentials"]')).toBeNull();
-    // Selecting (a click on the title strip that never moves — multi-select.test.ts) is the store's.
     await act(async () => store.select("f1"));
-    const del = host.querySelector('[aria-label="Delete frame Move-Out Essentials"]') as HTMLButtonElement | null;
-    expect(del).not.toBeNull();
-    await act(async () => del?.click());
-    expect(onRemove).toHaveBeenCalledWith("f1");
+    expect(host.querySelector('[aria-label^="Delete frame"]')).toBeNull();
+    expect(host.querySelector("[data-board-frame-strip] button")).toBeNull();
     act(() => root.unmount());
     host.remove();
   });

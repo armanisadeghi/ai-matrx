@@ -48,8 +48,11 @@ import { BoardTile } from "../components/BoardTile";
 import { BoardFrameView } from "../components/BoardFrameView";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { SelectionToolbar } from "../components/SelectionToolbar";
-import { selectionActionsSection, shapeStyleSection } from "../components/ShapeToolbarSections";
+import { frameToolbarSection } from "../components/FrameToolbarSection";
+import { selectionActionsSection, shapeStyleSection, sharedColorSection } from "../components/ShapeToolbarSections";
 import { hitShape, isBoxed } from "../engine/shapes";
+import { getPenStyle, PEN_DEFAULT } from "../engine/pen-style";
+import { PenStyleBar } from "../components/PenStyleBar";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
 import { stickyStyleSection, textStyleSection } from "../components/CanvasTextToolbarSections";
 import { copyTileContent } from "../items/tile-copy";
@@ -84,7 +87,8 @@ import { resolvePresetTypes, type BoardPreset } from "../presets/board-preset";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 import { createTileLinks, TileLinksProvider } from "../items/connected-sources";
 import { StatusChip } from "../components/TileFace";
-import { runArrange } from "../board/arrange-board";
+import { describeSelection } from "../board/selection-label";
+import { runArrange, SHAPE_ARRANGE_GROUPS, SHAPE_GROUP_LABEL } from "../board/arrange-board";
 import { groupMoveSet } from "../engine/selection";
 import type { ArrangeCommand } from "../engine/arrange";
 import type { ItemStatus, ItemStatusDoor } from "../items/types";
@@ -436,7 +440,11 @@ export function UserBoard({
         board.addFrame({ id, rect: c.rect, title: "Frame" });
         break;
       case "rect":
+      case "rounded":
       case "oval":
+      case "triangle":
+      case "diamond":
+      case "star":
         board.addShape({ id, kind: c.tool, points: [{ x: c.rect.x, y: c.rect.y }, { x: c.rect.x + c.rect.w, y: c.rect.y + c.rect.h }] });
         break;
       case "arrow":
@@ -463,7 +471,12 @@ export function UserBoard({
         break;
       }
       case "pen":
-        board.addShape({ id, kind: "pen", points: c.points });
+        {
+          // The pen's colour and weight (PenStyleBar); stored partial, like every style.
+          const pen = getPenStyle();
+          const style = { ...(pen.stroke !== PEN_DEFAULT.stroke ? { stroke: pen.stroke } : {}), ...(pen.size !== PEN_DEFAULT.size ? { size: pen.size } : {}) };
+          board.addShape({ id, kind: "pen", points: c.points, ...(Object.keys(style).length ? { style } : {}) });
+        }
         break;
       case "eraser":
         board.removeMany(c.ids);
@@ -626,16 +639,28 @@ export function UserBoard({
   };
   // Arrange (Board menu → Arrange, and its keys): 2+ selected → the selection, else the whole
   // board; frames move with their tiles, one undo step.
+  const arrangeOptions = () => ({
+    groupOf: (t: UserBoardTile) => itemTypeFor(t.source)?.key ?? "unavailable",
+    order: [...BOARD_ITEM_TYPES.map((t) => t.key), ...SHAPE_ARRANGE_GROUPS],
+    frameTitle: (group: string) =>
+      SHAPE_GROUP_LABEL[group as keyof typeof SHAPE_GROUP_LABEL] ??
+      typeFrameTitle(BOARD_ITEM_TYPES.find((t) => t.key === group)?.label),
+    root: rootRef.current,
+  });
   const arrangeBoard = (command: ArrangeCommand) => {
     const selection = store?.getSelection() ?? [];
     const moved = runArrange(board, command, {
-      groupOf: (t) => itemTypeFor(t.source)?.key ?? "unavailable",
-      order: BOARD_ITEM_TYPES.map((t) => t.key),
-      frameTitle: (group) => typeFrameTitle(BOARD_ITEM_TYPES.find((t) => t.key === group)?.label),
-      root: rootRef.current,
+      ...arrangeOptions(),
       ...(selection.length > 1 ? { only: selection } : {}),
     });
     if (moved === 0) toast("Already arranged that way");
+  };
+  // The frame toolbar's "Arrange inside": tidy what the frame holds (the frame itself stays put).
+  const arrangeInside = (ids: string[]) => {
+    if (ids.length < 2) return void toast("Nothing to arrange in this frame");
+    if (runArrange(board, { kind: "layout", layout: "tidy" }, { ...arrangeOptions(), only: ids }) === 0) {
+      toast("Already arranged that way");
+    }
   };
   // Group gestures (a multi-selection drag, a frame carrying its tiles, arrow nudges) move
   // through the board model as one undo step.
@@ -696,6 +721,8 @@ export function UserBoard({
     stickyStyleSection(board),
     textStyleSection(board),
     shapeStyleSection(board),
+    frameToolbarSection({ board, arrangeInside }),
+    sharedColorSection(board),
     selectionActionsSection({ board, duplicate: duplicateSelected, remove: deleteSelected }),
   ];
 
@@ -773,6 +800,21 @@ export function UserBoard({
         wheelMode={wheelMode}
         onWheelMode={setWheelMode}
         onArrange={arrangeBoard}
+        boardTitle={title}
+        describeSelection={(ids) =>
+          describeSelection(ids, (id) => {
+            const sh = board.getShape(id);
+            if (sh) return sh.kind;
+            if (board.frames.some((f) => f.id === id)) return "frame";
+            return board.getTile(id) ? "tile" : undefined;
+          })
+        }
+        objectActions={{
+          duplicate: () => void duplicateSelected(),
+          front: () => reorderSelected("front"),
+          back: () => reorderSelected("back"),
+          remove: deleteSelected,
+        }}
       >
         <div
           ref={rootRef}
@@ -847,6 +889,7 @@ export function UserBoard({
                     </span>
                   </div>
                 )}
+                <PenStyleBar />
                 <ZoomHud />
                 <Minimap />
               </>
@@ -856,7 +899,6 @@ export function UserBoard({
               <BoardFrameView
                 key={f.id}
                 {...f}
-                onRemove={deleteFrame}
                 onResize={board.resizeTile}
                 onRename={(id, next) => board.updateFrame(id, { title: next })}
               />

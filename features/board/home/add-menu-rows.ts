@@ -16,6 +16,10 @@ import {
   Shapes,
   Square,
   StickyNote,
+  Squircle,
+  Star,
+  Triangle,
+  Diamond,
   Type,
   type LucideIcon,
 } from "lucide-react";
@@ -56,7 +60,11 @@ const CANVAS_TOOLS: readonly { tool: BoardTool; label: string; icon: LucideIcon;
   // "Shapes" starts the rectangle (the shape tools' first); the four are found by typing.
   { tool: "rect", label: "Shapes", icon: Shapes, words: "shape rectangle box square" },
   { tool: "rect", label: "Rectangle", icon: Square, words: "shape box square", searchOnly: true },
+  { tool: "rounded", label: "Rounded rectangle", icon: Squircle, words: "shape box pill", searchOnly: true },
   { tool: "oval", label: "Oval", icon: Circle, words: "shape circle ellipse", searchOnly: true },
+  { tool: "triangle", label: "Triangle", icon: Triangle, words: "shape", searchOnly: true },
+  { tool: "diamond", label: "Diamond", icon: Diamond, words: "shape decision rhombus", searchOnly: true },
+  { tool: "star", label: "Star", icon: Star, words: "shape", searchOnly: true },
   { tool: "arrow", label: "Arrow", icon: ArrowUpRight, words: "shape connector", searchOnly: true },
   { tool: "line", label: "Line", icon: Minus, words: "shape divider", searchOnly: true },
 ];

@@ -40,6 +40,7 @@ import {
   type ShapeStyle,
   bakeBindings,
   boundsOfPoints,
+  type ShapeColor,
   isBoxKind,
   isBoxed,
   isConnector,
@@ -61,6 +62,8 @@ export interface BoardFrame {
   rect: Rect;
   title: string;
   note?: string;
+  /** A colour of the board palette; absent = the neutral frame. */
+  color?: ShapeColor;
 }
 
 /** A connection drawn between two tiles (a pipeline hand-off, a "see also"). */
@@ -508,6 +511,25 @@ export class BoardStore<T extends BoardTileBase> {
     return new Set(this.connectionsIn(s).filter((c) => tileIds.has(c.from) || tileIds.has(c.to)).map((c) => c.id));
   }
 
+  /**
+   * Everything a new object must not land on: tiles, frames and the canvas objects (stickies, text,
+   * rectangles, strokes; connectors follow what they bind to, so they never block). A new tile or
+   * sticky at the view centre used to land UNDER an older rectangle or stroke (the drawings layer
+   * paints over tiles) and hide its header.
+   */
+  occupiedRects = (opts: { exceptFrame?: string } = {}): Rect[] => {
+    const cur = this.read();
+    return [
+      ...cur.tiles.map((t) => t.rect),
+      ...cur.frames.filter((f) => f.id !== opts.exceptFrame).map((f) => f.rect),
+      ...this.h.now.shapes.filter((sh) => !isConnector(sh.kind)).map((sh) => boundsOfPoints(sh.points)),
+    ];
+  };
+
+  /** The nearest free place for a `size` object around `near` (world px), clear of everything on the board. */
+  freeSpot = (size: { w: number; h: number }, near: { x: number; y: number }, gap = 24): Rect =>
+    findFreeSpot(this.occupiedRects(), size, near, gap);
+
   /** Add a tile. With `near`, it lands in the nearest free space to that world
    * point, clear of tiles AND frames (a group is not free space) — except the
    * frame named by `within`, where it may land among that group's tiles. With
@@ -519,11 +541,7 @@ export class BoardStore<T extends BoardTileBase> {
     near?: { x: number; y: number },
     opts: { within?: string; flow?: PlacementFlow } = {},
   ): Rect => {
-    const cur = this.read();
-    const obstacles = [
-      ...cur.tiles.map((t) => t.rect),
-      ...cur.frames.filter((f) => f.id !== opts.within).map((f) => f.rect),
-    ];
+    const obstacles = this.occupiedRects({ exceptFrame: opts.within });
     const size = { w: tile.rect.w, h: tile.rect.h };
     const rect = opts.flow
       ? placeInFlow(obstacles, size, opts.flow, near)

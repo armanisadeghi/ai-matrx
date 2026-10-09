@@ -52,6 +52,7 @@ import { SnapGuidesLayer } from "./SnapGuidesLayer";
 import { SelectionBox } from "./SelectionBox";
 import { allSelectable, boundsOf, groupMoveSet, marqueeHits, rectFromCorners, shiftMoves } from "../engine/selection";
 import { startPointerGesture } from "../engine/pointer-gesture";
+import { claimLoadFocus } from "../engine/claim-load-focus";
 import { beginSnap } from "../engine/snap-gesture";
 import { GRID_SIZE } from "../engine/snapping";
 import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
@@ -480,6 +481,8 @@ export function BoardViewport({
       root.focus({ preventScroll: true });
     };
 
+    const stopClaim = claimLoadFocus(root);
+
     // A press on a drawn shape (tldraw / FigJam): select it — shift / ⌘ add or remove — and drag
     // the selection with smart guides, ONE undo step; a click in a group narrows to it.
     let shapeGesture: (() => void) | null = null;
@@ -722,6 +725,7 @@ export function BoardViewport({
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     return () => {
+      stopClaim();
       shapeGesture?.();
       root.removeEventListener("pointerdown", onDown, true);
       root.removeEventListener("dblclick", onDoubleClick, true);

@@ -62,6 +62,8 @@ export function stickyStyleSection<T extends BoardTileBase>(board: BoardStore<T>
   const b = board as unknown as AnyBoard;
   return {
     key: "sticky-style",
+    scope: "type",
+    label: "Sticky notes",
     applies: (ids) => ids.some((id) => b.getShape(id)?.kind === "sticky"),
     render: (ids) => <StickyControls board={b} ids={ids} />,
   };
@@ -103,6 +105,8 @@ export function textStyleSection<T extends BoardTileBase>(board: BoardStore<T>):
   const b = board as unknown as AnyBoard;
   return {
     key: "text-style",
+    scope: "type",
+    label: "Text",
     applies: (ids) => ids.some((id) => b.getShape(id)?.kind === "text"),
     render: (ids) => <TextControls board={b} ids={ids} />,
   };

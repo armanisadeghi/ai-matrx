@@ -287,7 +287,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
             properties: {
               id: { type: "string", description: "update: the shape to change." },
               ref: { type: "string", description: "create: a name later entries in this call can bind to." },
-              kind: { type: "string", enum: ["rect", "oval", "line", "arrow", "pen", "sticky", "text"] },
+              kind: { type: "string", enum: ["rect", "rounded", "oval", "triangle", "diamond", "star", "line", "arrow", "pen", "sticky", "text"] },
               color: { type: "string", enum: ["yellow", "orange", "pink", "violet", "blue", "green"], description: "A sticky note's colour." },
               text_weight: { type: "string", enum: ["normal", "bold"], description: "Plain text's weight." },
               x: { type: "number" },

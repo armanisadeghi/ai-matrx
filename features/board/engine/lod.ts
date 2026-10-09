@@ -30,8 +30,13 @@ export type PaceTier = DetailTier | "offscreen";
 export const BODY_FONT_PX = 14;
 /** On-screen body size at which text is legible. */
 export const READABLE_PX = 9.5;
-/** Below this zoom a tile body is abstracted away entirely. */
-export const OVERVIEW_ZOOM = 0.28;
+/**
+ * Below this zoom a tile body is abstracted away entirely: the body shows only while its text is
+ * LEGIBLE (the zoom where BODY_FONT_PX reaches READABLE_PX), the card shows below. It used to be
+ * 0.28, so a Note or Chat at 30% drew its whole body as unreadable specks while the same tile at
+ * 23% was a clean card.
+ */
+export const OVERVIEW_ZOOM = READABLE_PX / BODY_FONT_PX;
 
 export function detailTierForZoom(z: number): DetailTier {
   if (BODY_FONT_PX * z >= READABLE_PX) return "read";

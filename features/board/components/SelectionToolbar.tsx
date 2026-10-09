@@ -30,12 +30,13 @@
  */
 
 import { type ReactNode, useEffect, useRef } from "react";
-import type { LucideIcon } from "lucide-react";
+import { SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { worldToScreen, type Rect } from "../engine/camera";
 import { useActiveTool, useBoardCameraStore, useEditingTile, useFocusedTile, useSelection } from "../engine/react";
 import { boundsOf, frameBody, frameKey } from "../engine/selection";
+import { type Box, placeToolbar } from "../engine/toolbar-placement";
 import { SHAPE_COLORS, type ShapeColor, shapeColorCss } from "../engine/shapes";
 
 export interface SelectionToolbarSection {
@@ -44,6 +45,16 @@ export interface SelectionToolbarSection {
   /** Show this section for this selection (ids of tiles, frames and shapes). */
   applies: (selection: readonly string[]) => boolean;
   render: (selection: readonly string[]) => ReactNode;
+  /**
+   * `shared` (default) controls work on everything selected (order, duplicate, delete, a colour all
+   * support) and always show inline. `type` controls belong to one kind of object; when the selection
+   * mixes kinds they fold into one "By type" menu so the toolbar stays short (FigJam).
+   */
+  scope?: "shared" | "type";
+  /** Names a `type` section inside the "By type" menu ("Sticky notes"). */
+  label?: string;
+  /** Show only when the selection mixes kinds (a colour every kind in the mix supports). */
+  mixedOnly?: boolean;
 }
 
 /** Screen px between the selection and the toolbar. */
@@ -58,7 +69,13 @@ export function SelectionToolbar({ sections }: { sections: readonly SelectionToo
   const editing = useEditingTile();
   const focused = useFocusedTile();
   const ref = useRef<HTMLDivElement>(null);
-  const shown = sections.filter((s) => selection.length > 0 && s.applies(selection));
+  const applying = sections.filter((s) => selection.length > 0 && s.applies(selection));
+  const mixed = applying.filter((s) => s.scope === "type").length > 1;
+  const shown = applying.filter((s) => !s.mixedOnly || mixed);
+  // Inline: everything shared, plus the type sections when only one kind is selected. Mixed: one menu.
+  const folded = mixed ? shown.filter((s) => s.scope === "type") : [];
+  const foldAt = folded.length ? shown.indexOf(folded[0]) : -1;
+  const inline = shown.filter((s) => !folded.includes(s));
   // A tile being worked in owns the screen; a shape being typed in keeps its toolbar.
   const quiet = tool !== "select" || focused !== null || (editing !== null && !store.isMark(editing));
   const active = shown.length > 0 && !quiet;
@@ -91,9 +108,25 @@ export function SelectionToolbar({ sections }: { sections: readonly SelectionToo
       const br = worldToScreen(cam, box.x + box.w, box.y + box.h);
       const w = el.offsetWidth;
       const h = el.offsetHeight;
-      let top = tl.y - GAP_PX - h;
-      if (top < insets.top + EDGE_PX) top = Math.min(br.y + GAP_PX, size.h - insets.bottom - EDGE_PX - h);
-      const left = Math.max(EDGE_PX, Math.min(size.w - w - EDGE_PX, (tl.x + br.x) / 2 - w / 2));
+      const rootBox = root?.getBoundingClientRect();
+      const avoid: Box[] = [];
+      if (rootBox) {
+        for (const c of document.querySelectorAll<HTMLElement>("[data-board-minimap], [data-board-zoom-hud], [data-matrx-floating-bottom]")) {
+          if (el.contains(c)) continue;
+          const r = c.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          avoid.push({ l: r.left - rootBox.left, t: r.top - rootBox.top, r: r.right - rootBox.left, b: r.bottom - rootBox.top });
+        }
+      }
+      const { left, top } = placeToolbar({
+        selection: { l: tl.x, t: tl.y, r: br.x, b: br.y },
+        toolbar: { w, h },
+        area: size,
+        insets,
+        avoid,
+        gap: GAP_PX,
+        edge: EDGE_PX,
+      });
       el.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(Math.max(EDGE_PX, top))}px, 0)`;
       el.style.visibility = "visible";
     };
@@ -133,14 +166,30 @@ export function SelectionToolbar({ sections }: { sections: readonly SelectionToo
       data-board-selection-toolbar
       role="toolbar"
       aria-label="Selection"
-      className="absolute left-0 top-0 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
+      className="absolute left-0 top-0 z-30 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
       style={{ visibility: "hidden" }}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      {shown.map((s, i) => (
-        <div key={s.key} className="flex items-center gap-0.5">
+      {(foldAt >= 0
+        ? [...inline.slice(0, Math.min(foldAt, inline.length)), null, ...inline.slice(Math.min(foldAt, inline.length))]
+        : inline
+      ).map((s, i) => (
+        <div key={s ? s.key : "by-type"} className="flex items-center gap-0.5">
           {i > 0 && <SelectionToolbarDivider />}
-          {s.render(selection)}
+          {s ? (
+            s.render(selection)
+          ) : (
+            <SelectionToolbarMenu label="By type" trigger={<><SlidersHorizontal className="h-4 w-4" /><span className="text-xs">By type</span></>}>
+              <div className="flex flex-col gap-2">
+                {folded.map((f) => (
+                  <div key={f.key} className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">{f.label ?? f.key}</span>
+                    <div className="flex items-center gap-0.5">{f.render(selection)}</div>
+                  </div>
+                ))}
+              </div>
+            </SelectionToolbarMenu>
+          )}
         </div>
       ))}
     </div>

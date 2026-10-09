@@ -81,7 +81,9 @@ describe("Board camera", () => {
 describe("zoom-paced streaming", () => {
   it("maps zoom to detail tiers in order", () => {
     expect(detailTierForZoom(1)).toBe("read");
-    expect(detailTierForZoom(0.5)).toBe("glance");
+    // Content only while legible; a card below that (0.5 -> 7 px body text is a card).
+    expect(detailTierForZoom(0.5)).toBe("overview");
+    expect(detailTierForZoom(0.7)).toBe("read");
     expect(detailTierForZoom(OVERVIEW_ZOOM - 0.01)).toBe("overview");
   });
 

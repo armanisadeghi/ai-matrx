@@ -40,6 +40,7 @@ import {
   isCanvasText,
   isConnector,
   shapeColorCss,
+  shapePolygon,
   strokeWidthOf,
   styleOf,
   textCapable,
@@ -141,6 +142,14 @@ function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoar
   switch (shape.kind) {
     case "rect":
       body = <rect {...common} fill={fill} x={box.x} y={box.y} width={box.w} height={box.h} rx={Math.min(12, box.w / 4, box.h / 4)} />;
+      break;
+    case "rounded":
+      body = <rect {...common} fill={fill} x={box.x} y={box.y} width={box.w} height={box.h} rx={Math.min(box.w, box.h) * 0.3} />;
+      break;
+    case "triangle":
+    case "diamond":
+    case "star":
+      body = <polygon {...common} fill={fill} points={(shapePolygon(shape.kind, box) ?? []).map((p) => `${p.x},${p.y}`).join(" ")} />;
       break;
     case "oval":
       body = <ellipse {...common} fill={fill} cx={box.x + box.w / 2} cy={box.y + box.h / 2} rx={box.w / 2} ry={box.h / 2} />;

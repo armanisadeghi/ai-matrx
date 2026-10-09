@@ -630,7 +630,8 @@ export function BoardTile({
         top: rect.y,
         width: rect.w,
         height: rect.h,
-        zIndex: selected ? 5 : undefined,
+        // A selected tile rises above the drawings layer (z 6): the one you work in is never covered.
+        zIndex: selected ? 7 : undefined,
         ...(overview && !focused ? FACE_RADIUS : null),
         contentVisibility: culled && !focused ? "hidden" : "visible",
       }}

@@ -10,13 +10,56 @@ import { useEffect, useRef } from "react";
 import { Maximize, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { screenToWorld, unionRects, visibleWorldRect, zoomAt } from "../engine/camera";
-import { TIER_LABEL } from "../engine/lod";
 import { useDetailTier, useBoardCameraStore } from "../engine/react";
+
+/**
+ * Board chrome sits in its corner slot unless page-level floating chrome (the assists pill, a dock;
+ * anything carrying `data-matrx-floating-bottom` outside the board) would cover it: then it rests
+ * just above that chrome (the floating-clearance law, applied to a full-bleed canvas).
+ */
+const SLOT_PX = 16;
+const FLOAT_GAP_PX = 8;
+function useClearOfFloatingChrome(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    const root = el?.offsetParent as HTMLElement | null;
+    if (!el || !root) return;
+    let applied = 0;
+    const apply = () => {
+      const rootBox = root.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      if (box.width === 0) return;
+      const naturalBottom = rootBox.bottom - SLOT_PX;
+      const naturalTop = naturalBottom - box.height;
+      let lift = 0;
+      for (const f of document.querySelectorAll<HTMLElement>("[data-matrx-floating-bottom]")) {
+        if (root.contains(f) || f.contains(el)) continue;
+        const fb = f.getBoundingClientRect();
+        if (fb.width === 0 || fb.height === 0) continue;
+        if (fb.left < box.right && fb.right > box.left && fb.top < naturalBottom && fb.bottom > naturalTop) {
+          lift = Math.max(lift, naturalBottom - fb.top + FLOAT_GAP_PX);
+        }
+      }
+      if (lift !== applied) {
+        applied = lift;
+        el.style.bottom = `${SLOT_PX + lift}px`;
+      }
+    };
+    apply();
+    const timer = setInterval(apply, 500);
+    window.addEventListener("resize", apply);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("resize", apply);
+    };
+  }, [ref]);
+}
 
 export function ZoomHud({ className }: { className?: string }) {
   const store = useBoardCameraStore();
-  const tier = useDetailTier();
   const pctRef = useRef<HTMLButtonElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
+  useClearOfFloatingChrome(hudRef);
 
   useEffect(() => {
     const button = pctRef.current;
@@ -43,7 +86,9 @@ export function ZoomHud({ className }: { className?: string }) {
 
   return (
     <div
+      ref={hudRef}
       data-board-chrome
+      data-board-zoom-hud
       className={cn(
         "absolute bottom-4 left-4 flex items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur",
         className,
@@ -65,9 +110,6 @@ export function ZoomHud({ className }: { className?: string }) {
       <HudButton label="Fit everything (shift+1)" onClick={() => store.fitAll()}>
         <Maximize className="h-4 w-4" />
       </HudButton>
-      <span className="ml-1 hidden border-l border-border pl-2 pr-1 text-xs text-muted-foreground md:inline">
-        {TIER_LABEL[tier]}
-      </span>
     </div>
   );
 }
@@ -103,6 +145,7 @@ const MINIMAP_H = 132;
 export function Minimap({ className }: { className?: string }) {
   const store = useBoardCameraStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useClearOfFloatingChrome(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,6 +246,7 @@ export function Minimap({ className }: { className?: string }) {
     <canvas
       ref={canvasRef}
       data-board-chrome
+      data-board-minimap
       aria-label="Minimap — click to move the view"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);

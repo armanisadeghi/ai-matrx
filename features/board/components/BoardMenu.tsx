@@ -9,7 +9,7 @@
  * fed the tile's text.
  */
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import {
   AlignCenterHorizontal,
   AlignCenterVertical,
@@ -20,6 +20,9 @@ import {
   AlignStartVertical,
   AlignVerticalDistributeCenter,
   ArchiveRestore,
+  BringToFront,
+  Copy,
+  SendToBack,
   Columns3,
   Frame,
   Grid3x3,
@@ -37,8 +40,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { zoomAt } from "../engine/camera";
+import { CONTEXT_MENU_HEADING_KEY, type ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { screenToWorld, zoomAt } from "../engine/camera";
 import type { BoardCameraStore } from "../engine/camera-store";
 import { WHEEL_MODE_LABEL, type WheelMode } from "../engine/wheel-input";
 import type { ArrangeCommand } from "../engine/arrange";
@@ -86,8 +89,16 @@ export function BoardMenu({
   onArrange,
   frameActions,
   tilesOf,
+  describeSelection,
+  objectActions,
+  boardTitle,
   children,
 }: {
+  /** The selection in plain words ("12 stickies"): the menu's header names the selection, never page text. */
+  describeSelection?: (ids: string[]) => string;
+  /** Actions on selected canvas objects (stickies, text, shapes, strokes), for a right-click on one. */
+  objectActions?: { duplicate: () => void; front: () => void; back: () => void; remove: () => void };
+  boardTitle?: string;
   store: BoardCameraStore | null;
   actions: TileMenuActions;
   /** A frame's own actions (right-click on its title strip or border). */
@@ -102,7 +113,10 @@ export function BoardMenu({
   onArrange?: (command: ArrangeCommand) => void;
   children: ReactNode;
 }) {
-  const [target, setTarget] = useState<{ id: string; title: string; frame: boolean } | null>(null);
+  const [target, setTarget] = useState<{ id: string; title: string; frame: boolean; object?: boolean } | null>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  // Where the right-click landed: the menu opens from the DOM element, but drawings are hit-tested in JS.
+  const pressAt = useRef<{ x: number; y: number } | null>(null);
   // How many are selected when the menu opens: Arrange acts on 2+ selected, else the board.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selectedCount = selectedIds.length;
@@ -152,6 +166,21 @@ export function BoardMenu({
         onSelect: () => (removeMany ? removeMany(ids) : ids.forEach((id) => remove?.(id))),
       });
     sections.push({ id: "board-selection", label: `${n} tiles selected`, primary: true, anchor: "after-clipboard", items });
+  } else if (target?.object && objectActions) {
+    const n = selectedIds.length;
+    const label = (describeSelection?.(selectedIds) || target.title) + " selected";
+    sections.push({
+      id: "board-objects",
+      label,
+      primary: true,
+      anchor: "after-clipboard",
+      items: [
+        { kind: "item", id: "obj-front", label: "Bring to front", icon: BringToFront, hint: "⌥⌘]", onSelect: objectActions.front },
+        { kind: "item", id: "obj-back", label: "Send to back", icon: SendToBack, hint: "⌥⌘[", onSelect: objectActions.back },
+        { kind: "item", id: "obj-duplicate", label: n > 1 ? `Duplicate ${n}` : "Duplicate", icon: Copy, hint: "⌘D", onSelect: objectActions.duplicate },
+        { kind: "item", id: "obj-delete", label: n > 1 ? `Delete ${n}` : "Delete", icon: Trash2, hint: "⌫", destructive: true, onSelect: objectActions.remove },
+      ],
+    });
   } else if (target) {
     sections.push({
       id: "board-tile",
@@ -215,31 +244,66 @@ export function BoardMenu({
       resolveContextOnOpen={(el) => {
         const frame = el?.closest<HTMLElement>("[data-board-frame-strip], [data-board-frame-border]")?.closest<HTMLElement>("[data-board-frame]");
         const tile = el?.closest<HTMLElement>("[data-board-card], [data-board-tile]");
-        // Right-click inside the selection keeps it (Figma); elsewhere it selects what was clicked.
+        // The header names the SELECTION, never the page text around the pointer.
+        const heading = (fallbackLabel: string, fallbackText: string) => {
+          const ids = [...(store?.getSelection() ?? [])];
+          const said = ids.length > 1 ? describeSelection?.(ids) : "";
+          return { label: said ? "Selection" : fallbackLabel, text: said || fallbackText };
+        };
+        // Right-click selects what is under the pointer; inside the selection it keeps the selection (Figma).
         const pick = (id: string) => {
           if (!store?.isSelected(id)) store?.select(id);
           setSelectedIds([...(store?.getSelection() ?? [])]);
         };
+        // A drawing, sticky or text under the pointer wins over a tile below it (it paints above).
+        const at = pressAt.current;
+        const host = store?.getShapeHost();
+        const bounds = hostRef.current?.getBoundingClientRect();
+        if (store && host && at && bounds) {
+          const cam = store.getCamera();
+          const hit = host.hit(screenToWorld(cam, at.x - bounds.left, at.y - bounds.top), 6 / cam.z, { background: !tile });
+          if (hit) {
+            pick(hit);
+            const ids = [...store.getSelection()];
+            const said = describeSelection?.(ids) || "Object";
+            setTarget({ id: hit, title: said, frame: false, object: true });
+            return { content: "", title: said, [CONTEXT_MENU_HEADING_KEY]: { label: "Selection", text: said } };
+          }
+        }
         if (frame?.dataset.boardFrame) {
           const id = frame.dataset.boardFrame;
           setTarget({ id, title: frame.dataset.boardTitle ?? "Frame", frame: true });
           pick(id);
-          return { content: "", title: frame.dataset.boardTitle ?? "Frame" };
+          return { content: "", title: frame.dataset.boardTitle ?? "Frame", [CONTEXT_MENU_HEADING_KEY]: heading("Frame", frame.dataset.boardTitle ?? "Frame") };
         }
         const id = tile?.dataset.boardCard ?? tile?.dataset.boardTile ?? null;
         if (!tile || !id) {
           setTarget(null);
-          setSelectedIds([...(store?.getSelection() ?? [])]);
-          return null;
+          const ids = [...(store?.getSelection() ?? [])];
+          setSelectedIds(ids);
+          const said = ids.length ? describeSelection?.(ids) : "";
+          return {
+            content: "",
+            title: said || boardTitle || "Board",
+            [CONTEXT_MENU_HEADING_KEY]: said ? { label: "Selection", text: said } : { label: "Board", text: boardTitle || "Untitled board" },
+          };
         }
         const title = tile.dataset.boardTitle ?? "Tile";
         setTarget({ id, title, frame: false });
         pick(id);
         const body = tile.querySelector<HTMLElement>("[data-board-body]");
-        return { content: body?.innerText ?? "", title };
+        return { content: body?.innerText ?? "", title, [CONTEXT_MENU_HEADING_KEY]: heading("Tile", title) };
       }}
     >
-      <div className="h-full min-h-0">{children}</div>
+      <div
+        ref={hostRef}
+        className="h-full min-h-0"
+        onContextMenuCapture={(e) => {
+          pressAt.current = { x: e.clientX, y: e.clientY };
+        }}
+      >
+        {children}
+      </div>
     </NonEditableContextMenu>
   );
 }

@@ -11,6 +11,7 @@
 import { flushSync } from "react-dom";
 import type { Rect } from "../engine/camera";
 import { type ArrangeCommand, planArrange } from "../engine/arrange";
+import { boundsOfPoints, isConnector, type ShapeKind } from "../engine/shapes";
 import type { BoardFrame } from "./board-store";
 import type { BoardStore } from "./useBoard";
 
@@ -50,6 +51,23 @@ export function arrangeCommandForKey(e: {
   return edge ? { kind: "align", edge } : null;
 }
 
+/**
+ * Stickies, text, shapes and strokes are arranged with the tiles (FigJam: Arrange acts on every object).
+ * Their group is the kind of canvas object; connectors (line / arrow) are not objects, they follow
+ * what they are bound to.
+ */
+export const SHAPE_ARRANGE_GROUPS = ["sticky", "text", "shape", "drawing"] as const;
+export const SHAPE_GROUP_LABEL: Record<(typeof SHAPE_ARRANGE_GROUPS)[number], string> = {
+  sticky: "Sticky notes",
+  text: "Text",
+  shape: "Shapes",
+  drawing: "Drawings",
+};
+export function shapeArrangeGroup(kind: ShapeKind): (typeof SHAPE_ARRANGE_GROUPS)[number] {
+  if (kind === "sticky" || kind === "text") return kind;
+  return kind === "pen" ? "drawing" : "shape";
+}
+
 interface ArrangeTile {
   id: string;
   rect: Rect;
@@ -75,7 +93,13 @@ export function runArrange<T extends ArrangeTile>(
 ): number {
   const now = board.read();
   const scene = {
-    tiles: now.tiles.map((t) => ({ id: t.id, rect: t.rect, group: opts.groupOf(t) })),
+    tiles: [
+      ...now.tiles.map((t) => ({ id: t.id, rect: t.rect, group: opts.groupOf(t) })),
+      ...board
+        .getShapes()
+        .filter((sh) => !isConnector(sh.kind))
+        .map((sh) => ({ id: sh.id, rect: boundsOfPoints(sh.points), group: shapeArrangeGroup(sh.kind) as string })),
+    ],
     frames: now.frames.map((f) => ({ id: f.id, rect: f.rect })),
   };
   const plan = planArrange(scene, command, opts.order, opts.only);

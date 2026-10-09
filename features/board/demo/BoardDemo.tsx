@@ -524,7 +524,11 @@ export function BoardDemo({
         tiles.addFrame({ id, rect: c.rect, title: "Frame", note: "" });
         break;
       case "rect":
+      case "rounded":
       case "oval":
+      case "triangle":
+      case "diamond":
+      case "star":
         tiles.addShape({
           id,
           kind: c.tool,

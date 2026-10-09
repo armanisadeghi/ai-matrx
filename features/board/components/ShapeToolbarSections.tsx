@@ -50,6 +50,8 @@ export function shapeStyleSection<T extends BoardTileBase>(board: BoardStore<T>)
   const b = board as unknown as AnyBoard;
   return {
     key: "shape-style",
+    scope: "type",
+    label: "Shapes",
     // Drawings only: sticky notes and plain text have their own sections (CanvasTextToolbarSections).
     applies: (ids) => ids.some((id) => {
       const sh = b.getShape(id);
@@ -57,6 +59,42 @@ export function shapeStyleSection<T extends BoardTileBase>(board: BoardStore<T>)
     }),
     render: (ids) => <ShapeStyleControls board={b} ids={ids} />,
   };
+}
+
+/**
+ * One colour for a MIXED selection (shapes, strokes and text together): shown only when the toolbar
+ * folds the per-type controls, and only when every selected object takes a stroke colour.
+ */
+export function sharedColorSection<T extends BoardTileBase>(board: BoardStore<T>): SelectionToolbarSection {
+  const b = board as unknown as AnyBoard;
+  const strokeShapes = (ids: readonly string[]) => ids.map((id) => b.getShape(id)).filter((s): s is BoardShape => !!s && s.kind !== "sticky");
+  return {
+    key: "shared-color",
+    mixedOnly: true,
+    applies: (ids) => ids.length > 0 && strokeShapes(ids).length === ids.length,
+    render: (ids) => <SharedColor board={b} ids={ids} />,
+  };
+}
+
+function SharedColor({ board, ids }: { board: AnyBoard; ids: readonly string[] }) {
+  const all = useSyncExternalStore(board.subscribeShapes, board.getShapes, board.getShapes);
+  const picked = all.filter((s) => ids.includes(s.id));
+  if (picked.length === 0) return null;
+  const stroke = common(picked, "stroke");
+  return (
+    <SelectionToolbarMenu
+      label="Color"
+      trigger={
+        <span
+          aria-hidden
+          className="h-4 w-4 rounded-full border border-border"
+          style={{ background: stroke ? shapeColorCss(stroke) : "conic-gradient(hsl(var(--board-accent-rose)), hsl(var(--board-accent-blue)), hsl(var(--board-accent-emerald)), hsl(var(--board-accent-rose)))" }}
+        />
+      }
+    >
+      <ColorSwatches value={stroke} onPick={(c) => c !== "none" && board.restyleShapes(picked.map((s) => s.id), { stroke: c })} />
+    </SelectionToolbarMenu>
+  );
 }
 
 function ShapeStyleControls({ board, ids }: { board: AnyBoard; ids: readonly string[] }) {

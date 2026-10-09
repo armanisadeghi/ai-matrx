@@ -12,22 +12,29 @@
  *     shift / ⌘-click adds it to the selection; a click that never moves flies
  *     there and selects it;
  *   - a selected frame shows the eight resize handles; resizing moves no tile;
- *   - Delete / Backspace (the board's keys) or the label's trash button removes
+ *   - Delete / Backspace (the board's keys) or the selection toolbar's Delete removes
  *     the frame only — its tiles stay. "Delete with contents" is in its
  *     right-click menu (`BoardMenu`, `data-board-frame`).
  * The frame's body passes pointers through to the board, so a marquee that
  * starts inside a frame selects its tiles, never the frame.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { Rect } from "../engine/camera";
-import { useBoardCameraStore, useIsSelected, useIsSoleSelected } from "../engine/react";
+import { useBoardCameraStore, useEditingTile, useIsSelected, useIsSoleSelected } from "../engine/react";
+import { type ShapeColor, shapeColorCss } from "../engine/shapes";
 import { FRAME_TITLE_BAND, boundsOf, frameKey, groupMoveSet, shiftMoves } from "../engine/selection";
 import { beginSnap } from "../engine/snap-gesture";
 import { startPointerGesture } from "../engine/pointer-gesture";
 import { ResizeHandles } from "./BoardTile";
+
+/**
+ * A frame's label is a compact tag (FigJam): about 12 screen px at every zoom, so it counter-scales
+ * with the board (world px = 12 / zoom, capped for far zoom). It was 26px+ and bold.
+ */
+const FRAME_LABEL_PX = "clamp(6px, calc(12px / var(--board-z, 1)), 160px)";
+const FRAME_NOTE_PX = "clamp(5px, calc(10px / var(--board-z, 1)), 130px)";
 
 /** Screen px of a frame's border that grabs it. */
 const BORDER_GRAB_PX = 8;
@@ -40,17 +47,19 @@ interface BoardFrameViewProps {
   title: string;
   /** One-line note beside the title — what this region is for. */
   note?: string;
-  /** Removes the frame (never its tiles); absent = the host keeps its frames. */
-  onRemove?: (id: string) => void;
+  /** The frame's colour; absent = neutral. */
+  color?: ShapeColor;
   /** Resizes the frame (tiles stay where they are); absent = its size is the host's. */
   onResize?: (id: string, rect: Rect) => void;
   /** Renames the frame (double-click its title); absent = the title is the host's. */
   onRename?: (id: string, title: string) => void;
 }
 
-export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRename }: BoardFrameViewProps) {
-  const [renaming, setRenaming] = useState(false);
+export function BoardFrameView({ id, rect, title, note, color, onResize, onRename }: BoardFrameViewProps) {
   const store = useBoardCameraStore();
+  // The selection toolbar's Rename (and a double-click on the title) set the frame as the one being edited.
+  const renaming = useEditingTile() === id;
+  const setRenaming = (on: boolean) => store.setEditing(on ? id : null);
   const key = frameKey(id);
   const selected = useIsSelected(id);
   const sole = useIsSoleSelected(id);
@@ -140,9 +149,15 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRe
       data-board-title={title}
       className={cn(
         "pointer-events-none absolute max-w-none rounded-2xl border border-dashed bg-background/40",
-        selected ? "border-primary" : "border-border/80",
+        selected ? "border-primary" : color ? "" : "border-border/80",
       )}
-      style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, zIndex: selected ? 1 : undefined }}
+      style={{
+        left: rect.x,
+        top: rect.y,
+        width: rect.w,
+        height: rect.h,
+        ...(color ? { background: shapeColorCss(color, 0.08), ...(selected ? null : { borderColor: shapeColorCss(color, 0.7) }) } : null),
+      }}
     >
       {(["n", "s", "w", "e"] as const).map((edge) => (
         <div
@@ -152,7 +167,7 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRe
           onPointerDown={(e) => press(e, false)}
           onClick={clicked}
           className="pointer-events-auto absolute max-w-none cursor-grab touch-none active:cursor-grabbing"
-          style={border[edge]}
+          style={{ ...border[edge], zIndex: selected ? 1 : undefined }}
         />
       ))}
       <div
@@ -164,7 +179,9 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRe
           e.stopPropagation();
           setRenaming(true);
         }}
-        className="pointer-events-auto absolute bottom-full left-0 flex max-w-none cursor-grab touch-none items-center gap-2 pb-3 active:cursor-grabbing"
+        className="pointer-events-auto absolute bottom-full left-0 flex max-w-none cursor-grab touch-none items-center gap-2 pb-1 active:cursor-grabbing"
+        // Titles read above everything a frame holds, the drawings layer (z 6) and a selected tile (z 7) included.
+        style={{ zIndex: 8 }}
         title={`Drag to move ${title} with its tiles · click to fly there`}
       >
         {renaming && onRename ? (
@@ -188,13 +205,13 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRe
                 e.currentTarget.blur();
               }
             }}
-            className="min-w-0 rounded-md border border-primary bg-background px-1 font-semibold tracking-tight text-foreground outline-none"
-            style={{ fontSize: "max(26px, min(calc(13px / var(--board-z)), 160px))", width: `${Math.max(title.length, 6) + 2}ch` }}
+            className="min-w-0 rounded-md border border-primary bg-background px-1 font-medium text-foreground outline-none"
+            style={{ fontSize: FRAME_LABEL_PX, width: `${Math.max(title.length, 6) + 2}ch` }}
           />
         ) : (
           <span
-            className="whitespace-nowrap font-semibold tracking-tight text-foreground"
-            style={{ fontSize: "max(26px, min(calc(13px / var(--board-z)), 160px))" }}
+            className={cn("whitespace-nowrap font-medium", selected ? "text-foreground" : "text-muted-foreground")}
+            style={{ fontSize: FRAME_LABEL_PX }}
             title={onRename ? "Double-click to rename" : undefined}
           >
             {title}
@@ -203,26 +220,10 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize, onRe
         {note && (
           <span
             className="truncate text-muted-foreground"
-            style={{ fontSize: "max(15px, min(calc(9px / var(--board-z)), 90px))" }}
+            style={{ fontSize: FRAME_NOTE_PX }}
           >
             {note}
           </span>
-        )}
-        {onRemove && sole && (
-          <button
-            type="button"
-            data-board-frame-action
-            onClick={() => onRemove(id)}
-            aria-label={`Delete frame ${title}`}
-            title="Delete frame (its tiles stay)"
-            className="flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-destructive"
-            style={{
-              width: "max(32px, calc(14px / var(--board-z)))",
-              height: "max(32px, calc(14px / var(--board-z)))",
-            }}
-          >
-            <Trash2 style={{ width: "50%", height: "50%" }} />
-          </button>
         )}
       </div>
       {onResize && sole && (

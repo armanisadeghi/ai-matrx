@@ -15,10 +15,11 @@ import { screenToWorld } from "../engine/camera";
 import { useActiveTool, useBoardCameraStore } from "../engine/react";
 import { isCreationTool, type BoardTool } from "../engine/tools";
 import { startPointerGesture } from "../engine/pointer-gesture";
+import { shapePolygon } from "../engine/shapes";
 
 export type Creation =
   | { tool: "sticky" | "text"; at: { x: number; y: number } }
-  | { tool: "frame" | "rect" | "oval"; rect: { x: number; y: number; w: number; h: number } }
+  | { tool: "frame" | "rect" | "rounded" | "oval" | "triangle" | "diamond" | "star"; rect: { x: number; y: number; w: number; h: number } }
   | { tool: "arrow" | "line"; from: { x: number; y: number }; to: { x: number; y: number } }
   | { tool: "pen"; points: { x: number; y: number }[] }
   /** The eraser swept over these drawings: remove them as one step. */
@@ -32,7 +33,11 @@ const CLICK_SLOP = 6;
 const DEFAULT_SIZE: Partial<Record<BoardTool, { w: number; h: number }>> = {
   frame: { w: 960, h: 640 },
   rect: { w: 240, h: 160 },
+  rounded: { w: 240, h: 160 },
   oval: { w: 200, h: 200 },
+  triangle: { w: 200, h: 180 },
+  diamond: { w: 200, h: 200 },
+  star: { w: 200, h: 200 },
 };
 
 export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void }) {
@@ -102,7 +107,11 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
         break;
       case "frame":
       case "rect":
-      case "oval": {
+      case "rounded":
+      case "oval":
+      case "triangle":
+      case "diamond":
+      case "star": {
         const size = DEFAULT_SIZE[tool] ?? { w: 200, h: 200 };
         const rect = moved
           ? { x: Math.min(wa.x, wb.x), y: Math.min(wa.y, wb.y), w: Math.abs(wb.x - wa.x), h: Math.abs(wb.y - wa.y) }
@@ -166,13 +175,23 @@ function Preview({ tool, points }: { tool: BoardTool; points: { x: number; y: nu
   const box = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
   return (
     <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible text-primary">
-      {(tool === "frame" || tool === "rect") && (
+      {(tool === "triangle" || tool === "diamond" || tool === "star") && (
+        <polygon
+          points={(shapePolygon(tool, box) ?? []).map((p) => `${p.x},${p.y}`).join(" ")}
+          fill="currentColor"
+          fillOpacity={0.06}
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+      )}
+      {(tool === "frame" || tool === "rect" || tool === "rounded") && (
         <rect
           x={box.x}
           y={box.y}
           width={box.w}
           height={box.h}
-          rx={tool === "frame" ? 12 : 4}
+          rx={tool === "frame" ? 12 : tool === "rounded" ? Math.min(box.w, box.h) * 0.3 : 4}
           fill="currentColor"
           fillOpacity={0.06}
           stroke="currentColor"

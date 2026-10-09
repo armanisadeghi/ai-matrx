@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { File as FileIcon, FolderOpen, MessagesSquare, PanelLeftClose, PanelLeftOpen, Plus, StickyNote, Upload } from "lucide-react";
+import { File as FileIcon, FolderOpen, MessagesSquare, PanelLeftClose, PanelLeftOpen, NotebookText, Plus, Upload } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
@@ -201,10 +201,8 @@ function ChatBody({ tileId, source, title, tier, onSource }: ItemBodyProps) {
             <BoardChatList
               activeConversationId={conversationId}
               onSwitch={switchTo}
-              onNew={() => {
-                chat.startNew();
-                if (narrow) setOpen(false);
-              }}
+              // A new conversation keeps the list as the person left it (open stays open).
+              onNew={() => chat.startNew()}
               onClose={() => setOpen(false)}
             />
           </div>
@@ -573,7 +571,8 @@ export const WORK_ITEMS: BoardItemType[] = [
     surface: { name: "matrx-user/notes" },
     comments: entityComments("note"),
     label: "Note",
-    icon: StickyNote,
+    // The full Note; the board's sticky tool owns the sticky-note icon.
+    icon: NotebookText,
     group: "work",
     section: "notes",
     accent: "amber",

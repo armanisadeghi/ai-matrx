@@ -16,7 +16,7 @@
 
 import type { Camera, Rect } from "../engine/camera";
 import type { BoardShape } from "./useBoard";
-import { boundsOfPoints, isBoxed, parseShape, serializeShape } from "../engine/shapes";
+import { boundsOfPoints, isBoxed, parseShape, SHAPE_COLORS, serializeShape, type ShapeColor } from "../engine/shapes";
 import { connectionToArrow, connectionsOf } from "./connections";
 import { labelToText } from "../engine/canvas-text";
 
@@ -92,6 +92,8 @@ export interface BoardGroup {
   rect: Rect;
   title: string;
   note?: string;
+  /** The frame's colour (a key of the board palette); absent = the neutral frame. */
+  color?: ShapeColor;
 }
 
 export interface BoardEdge {
@@ -137,7 +139,13 @@ export function parseBoardDocument(raw: {
       continue;
     }
     if (n.group === true) {
-      groups.push({ id: n.id, rect: n.rect, title: n.title, note: typeof n.note === "string" ? n.note : undefined });
+      groups.push({
+        id: n.id,
+        rect: n.rect,
+        title: n.title,
+        note: typeof n.note === "string" ? n.note : undefined,
+        ...(typeof n.color === "string" && (SHAPE_COLORS as readonly string[]).includes(n.color) ? { color: n.color as ShapeColor } : {}),
+      });
       continue;
     }
     if (!isSource(n.source)) {
@@ -194,7 +202,7 @@ export function serializeBoardDocument(rawDoc: BoardDocument) {
   return {
     camera: doc.camera,
     nodes: [
-      ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, group: true })),
+      ...doc.groups.map((g) => ({ id: g.id, rect: g.rect, title: g.title, note: g.note, ...(g.color ? { color: g.color } : {}), group: true })),
       ...doc.shapes.map((sh) => ({ ...serializeShape(sh), shape: true })),
       ...doc.nodes,
     ],

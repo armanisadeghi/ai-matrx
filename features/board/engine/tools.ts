@@ -12,13 +12,17 @@ export type BoardTool =
   | "pen"
   | "eraser"
   | "rect"
+  | "rounded"
   | "oval"
+  | "triangle"
+  | "diamond"
+  | "star"
   | "arrow"
   | "line";
 
-export type ShapeTool = Extract<BoardTool, "rect" | "oval" | "arrow" | "line">;
+export type ShapeTool = Extract<BoardTool, "rect" | "rounded" | "oval" | "triangle" | "diamond" | "star" | "arrow" | "line">;
 
-export const SHAPE_TOOLS: readonly ShapeTool[] = ["rect", "oval", "arrow", "line"];
+export const SHAPE_TOOLS: readonly ShapeTool[] = ["rect", "rounded", "oval", "triangle", "diamond", "star", "arrow", "line"];
 
 export const TOOL_LABEL: Record<BoardTool, string> = {
   select: "Select",
@@ -29,7 +33,11 @@ export const TOOL_LABEL: Record<BoardTool, string> = {
   pen: "Draw",
   eraser: "Eraser",
   rect: "Rectangle",
+  rounded: "Rounded rectangle",
   oval: "Oval",
+  triangle: "Triangle",
+  diamond: "Diamond",
+  star: "Star",
   arrow: "Arrow",
   line: "Line",
 };
@@ -44,7 +52,11 @@ export const TOOL_KEY: Record<BoardTool, string> = {
   pen: "P",
   eraser: "E",
   rect: "R",
+  rounded: "",
   oval: "O",
+  triangle: "",
+  diamond: "",
+  star: "",
   arrow: "⇧L",
   line: "L",
 };

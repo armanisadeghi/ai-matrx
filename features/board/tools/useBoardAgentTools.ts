@@ -652,7 +652,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         const label = `shape ${i}`;
         const style = styleFrom(e, label);
         const extra = { ...(style ? { style } : {}) };
-        if (kind === "rect" || kind === "oval") {
+        if (kind === "rect" || kind === "rounded" || kind === "oval" || kind === "triangle" || kind === "diamond" || kind === "star") {
           const w = num(e.w) ?? 240;
           const h = num(e.h) ?? 160;
           const x = num(e.x) ?? centre.x - w / 2;
