@@ -8,7 +8,7 @@
 // and sends it every round (`build-references.ts`); an agent or workflow becomes the Applet's job here
 // (`applet-job.ts`). Nothing about the attach path is re-implemented.
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { FileText, Paperclip, Plus, Workflow, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -27,6 +27,11 @@ import { jobReference, resourceReference, type BuildReference } from "./build-re
 
 /** The attach sources a build takes: material she can point at. Chats, tools and skills belong to a chat. */
 export const BUILD_ATTACH_VIEWS = ["files", "notes", "documents", "workbooks", "tables", "tasks", "webpage", "youtube", "image_url", "file_url"] as const;
+
+// False on the server and the first client render, true once React has attached: a press before then reaches
+// no handler, so the "+" says it is getting ready instead of silently doing nothing.
+const noopSubscribe = () => () => {};
+const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
 
 async function holderNaming(holder: "agent" | "workflow", id: string): Promise<{ name: string; description: string | null }> {
   const { data, error } = await createClient().schema(holder).from("definition").select("name, description").eq("id", id).maybeSingle();
@@ -51,6 +56,7 @@ export function BuildAttachments({
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [making, setMaking] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   const addResource = async (resource: Resource) => {
     await onAdd(resourceReference(resource));
@@ -84,10 +90,11 @@ export function BuildAttachments({
         <PopoverTrigger asChild>
           <Button
             variant="quiet"
-            icon={making ? <Spinner /> : <Plus />}
-            disabled={disabled || making !== null}
+            icon={making || !hydrated ? <Spinner /> : <Plus />}
+            disabled={disabled || making !== null || !hydrated}
+            aria-busy={!hydrated || undefined}
             aria-label="Attach files, agents or workflows"
-            title="Attach files, agents or workflows"
+            title={hydrated ? "Attach files, agents or workflows" : "Getting ready"}
             data-applet-attach=""
           />
         </PopoverTrigger>

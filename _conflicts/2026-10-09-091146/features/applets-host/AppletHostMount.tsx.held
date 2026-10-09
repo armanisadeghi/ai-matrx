@@ -1,3 +1,61 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/applets-host/AppletHostMount.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/applets-host/AppletHostMount.tsx
+  Both grew from the same COMMON version: commit 32b6365ef5, 2026-10-09 08:46.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-09 08:55  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-09 09:12  8bb200607f  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-09 08:53  5fb4adb4de  "applets-host: preview seeds declared example rows; builder + shows Getting ready until hydrated; adopt applets 0.18.9 (lane F14)"
+  LOCAL's latest change is 1m AFTER GITHUB's latest change.
+
+SIZE: common version 502 lines, LOCAL 512 lines, GITHUB 513 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 10 lines and removed 2 lines.
+  GITHUB added 9 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 4 of the 9 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | isNewTableSource,
+      | // Her declared example rows (`new_table.rows`) seed a table that is not made yet, or the preview shows it empty;
+      | // they stay in memory with the held writes - nothing is saved until "Use it".
+      | const source = (await host.record()).sources.find((s) => s.alias === alias);
+      | return source && isNewTableSource(source) ? sampleRowsOf(source.new_table) : [];
+  GITHUB has 4 of the 10 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | const recordPromise = host.record();
+      | const record = await recordPromise;
+      | const source = record.sources.find((candidate) => candidate.alias === alias);
+      | return source && "new_table" in source
+      | ? sampleRowsOf(source.new_table)
+      | void recordPromise.then((record) => {
+    Lines LOCAL deliberately REMOVED that GITHUB still has: 1
+      | .then((record) => {
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 351d7f5a1120:'features/applets-host/AppletHostMount.tsx') <(git show 8bb200607f61:'features/applets-host/AppletHostMount.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 8bb200607f61:'features/applets-host/AppletHostMount.tsx'
+  GITHUB: git show 351d7f5a1120:'features/applets-host/AppletHostMount.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
 "use client";
 
 // features/applets-host/AppletHostMount.tsx — THE WEB HOST FOR ONE APPLET AT /applets/<slug>.
@@ -15,7 +73,6 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   createPlatformHost,
-  isNewTableSource,
   sampleRowsOf,
   type PlatformHost,
 } from "@ai-matrx/applets/platform";
@@ -313,13 +370,15 @@ export function AppletHostMount({
     });
     provideStoredComponentScopeModules();
     // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
-    // Her declared example rows (`new_table.rows`) seed a table that is not made yet, or the preview shows it empty;
-    // they stay in memory with the held writes - nothing is saved until "Use it".
+    const recordPromise = host.record();
     const held = isPreview
       ? holdWrites(host.data, {
           seed: async (alias) => {
-            const source = (await host.record()).sources.find((s) => s.alias === alias);
-            return source && isNewTableSource(source) ? sampleRowsOf(source.new_table) : [];
+            const record = await recordPromise;
+            const source = record.sources.find((candidate) => candidate.alias === alias);
+            return source && "new_table" in source
+              ? sampleRowsOf(source.new_table)
+              : [];
           },
         })
       : null;
@@ -327,9 +386,7 @@ export function AppletHostMount({
       ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes))
       : null;
     const channel: PlatformHost = held ? { ...host, data: held } : host;
-    void host
-      .record()
-      .then((record) => {
+    void recordPromise.then((record) => {
         // The Applet's fixed jobs, declared in the top Agents menu (agent-disclosure; never page chips).
         // A signed-out visitor is not described: /mandates/<key>/describe answers signed-in people
         // and guests who already hold an identity, never a first visit (that read was a 401 on every

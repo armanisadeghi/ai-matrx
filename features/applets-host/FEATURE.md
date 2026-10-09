@@ -130,6 +130,8 @@ The layout settles a pending claim on a signed-in load (`settlePendingGuestClaim
 
 ## Change Log
 
+- 2026-10-09 (lane F14): the draft preview seeds a not-yet-made table with its declared example rows (`holdWrites(host.data, { seed })` in `AppletHostMount`, `@ai-matrx/applets` 0.18.9) - in memory only, saved on "Use it". The builder's "+" shows "Getting ready" until React has attached (a press before then reached no handler and did nothing). The builder agent's `ask_person` `payload` reached Gemini as a keyless object and arrived as `{}`; aidream now offers a free-form object as a JSON string. Kit 0.42.1 adopted (`resolveShortLinkPath`).
+
 - 2026-10-09 (lane A1): the builder's "+" — files, notes, documents and pages reach the builder agent through THE attach path every round and persist on the build; her agents and workflows become the Applet's jobs (`applets.run_*`), listed in the catalogue with their real inputs. Tests: `builder/build-references.test.ts`; chat `a-turn-carries-what-the-person-attached.test.ts`; applets `src/catalogue/attached-jobs.test.ts`.
 
 - 2026-10-09 (lane F12): a returning guest's account line shows on open (`@ai-matrx/applets` 0.18.2 fires `onGuestSaved` once on open); at the ceiling the line is the package's one sentence, kept in view (sticky).
