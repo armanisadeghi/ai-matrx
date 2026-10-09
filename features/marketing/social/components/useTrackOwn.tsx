@@ -15,12 +15,9 @@ import { useInvalidateSocial } from "../hooks";
 import { useSocialSpend } from "../cost";
 import { socialErrorCode, socialErrorMessage, trackAccount } from "../server";
 import { platformLabel } from "./PlatformMark";
-import { TRACKABLE_PLATFORMS, isSocialPlatform, type AccountRow } from "../types";
+import { isSocialPlatform, type AccountRow } from "../types";
 
-/** Own property rows the server can track now (its platform is wired). */
-export function trackableOwn(row: AccountRow): boolean {
-  return !row.trackedAccountId && Boolean(row.propertyId) && row.trackable !== false && TRACKABLE_PLATFORMS.has(row.platform);
-}
+export { trackableOwn } from "../own-accounts";
 
 export function useTrackOwn(organizationId: string, brandId: string) {
   const invalidate = useInvalidateSocial();

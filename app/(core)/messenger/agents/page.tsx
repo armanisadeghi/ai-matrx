@@ -22,7 +22,7 @@ export default async function MessengerAgentsPage({
     <>
       <PageHeader>
         <RouteHeader
-          left={<span className="flex items-center px-1.5 text-sm font-medium text-foreground">{MESSENGER_AGENTS_LABEL}</span>}
+          left={<h1 className="truncate px-1.5 text-sm font-medium text-foreground">{MESSENGER_AGENTS_LABEL}</h1>}
         />
       </PageHeader>
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">

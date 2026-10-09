@@ -13,7 +13,7 @@
 
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { formatCount } from "@ai-matrx/kit/format";
+import { formatCompact } from "@/features/marketing/social/outlier";
 import { supabase } from "@/utils/supabase/client";
 import { useBrandSocialAccounts } from "@/features/marketing/social/hooks";
 import { profileAvatarDoor } from "@/features/marketing/social/server";
@@ -134,5 +134,5 @@ export function PersonBrandAvatar({
 export function PersonFollowerTotal({ brandId }: { brandId: string }) {
   const total = personFollowerTotal(usePersonFaces(brandId));
   if (total == null) return null;
-  return <span className="text-xs text-muted-foreground">{formatCount(total)} followers</span>;
+  return <span className="text-xs text-muted-foreground">{formatCompact(total)} followers</span>;
 }

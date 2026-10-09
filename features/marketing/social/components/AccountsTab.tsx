@@ -12,16 +12,18 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { Globe, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
 import { Badge, Button, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { useRefusedRead } from "../gated/RefusedReadOffer";
+import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
-import { formatGrowth, lastPostLabel, refreshSummary, relativeAge } from "../mappers";
+import { accountLabels, formatGrowth, lastPostLabel, refreshSummary, relativeAge } from "../mappers";
 import { formatCompact, formatPercentile, outlierBadgeModel } from "../outlier";
 import {
   refreshProfile,
@@ -64,6 +66,17 @@ export function AccountsTab() {
   const invalidate = useInvalidateSocial();
   const { busyRow, setBusyRow, trackOwn, trackAllOwn, costText, confirmSpend } = useTrackOwn(organizationId, brandId);
 
+  const { show: showRefused, open: openCapture, node: captureNode } = useRefusedRead(organizationId, () => void invalidate());
+  const [refusedRows, setRefusedRows] = useState<ReadonlySet<string>>(new Set());
+  const captureTarget = (row: AccountRow) => ({
+    platform: row.platform,
+    handleOrUrl: row.profileUrl || row.handle,
+    ...(row.profileId ? { profileId: row.profileId } : {}),
+    ...(row.trackedAccountId ? { trackedAccountId: row.trackedAccountId } : {}),
+    ...(row.propertyId ? { propertyId: row.propertyId } : {}),
+    brandId,
+  });
+
   async function refresh(row: AccountRow) {
     if (!row.profileId) return;
     const ok = await confirmSpend("profile_page", 1, { title: `Refresh @${row.handle}?`, confirmLabel: "Refresh" });
@@ -74,7 +87,8 @@ export function AccountsTab() {
       await invalidate();
       toast.success(refreshSummary(result));
     } catch (err) {
-      toast.error(socialErrorMessage(err, "Refresh failed"));
+      setRefusedRows((prev) => new Set(prev).add(row.rowId));
+      if (!showRefused(err, captureTarget(row))) toast.error(socialErrorMessage(err, "Refresh failed"));
     } finally {
       setBusyRow(null);
     }
@@ -123,15 +137,19 @@ export function AccountsTab() {
         minWidth: 220,
         cell: (r) => {
           const href = accountHref(brandSeg, r);
+          const labels = accountLabels(r.displayName, r.handle);
+          const platformName = isSocialPlatform(r.platform) ? SOCIAL_PLATFORM_LABELS[r.platform] : r.platform;
           const body = (
             <span className="flex min-w-0 items-center gap-2">
               <PlatformMark platform={r.platform} size={20} />
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                  <span className="truncate text-sm font-medium text-foreground">{labels.primary}</span>
                   {r.ownerKind === "person" ? <PersonOwnerChip propertyId={r.propertyId ?? null} ownerName={r.ownerName ?? null} organizationId={organizationId} brandId={brandId} /> : null}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {[platformName, labels.secondary ? formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) : null].filter(Boolean).join(" · ")}
+                </span>
               </span>
             </span>
           );
@@ -150,6 +168,7 @@ export function AccountsTab() {
         header: "Platform",
         accessorKey: "platform",
         copyValue: (r) => (isSocialPlatform(r.platform) ? SOCIAL_PLATFORM_LABELS[r.platform] : r.platform),
+        hidden: true, // the platform name already sits under the account name; the column stays for filtering
         filter: "select",
         filterOptions: Object.entries(SOCIAL_PLATFORM_LABELS).map(([value, label]) => ({ value, label })),
         cell: (r) => (isSocialPlatform(r.platform) ? SOCIAL_PLATFORM_LABELS[r.platform] : r.platform),
@@ -263,10 +282,16 @@ export function AccountsTab() {
     [brandSeg, organizationId, brandId],
   );
 
-  const rows = accounts.data ?? [];
+  // A fixed order that does not depend on anything tracking changes (followers, name): tracking an
+  // account never moves its row. Only the person's own column sort re-orders.
+  const rows = useMemo(
+    () => [...(accounts.data ?? [])].sort((a, b) => a.platform.localeCompare(b.platform) || a.handle.localeCompare(b.handle)),
+    [accounts.data],
+  );
   const untrackedOwn = rows.filter(trackableOwn);
 
   return (
+    <>
     <MatrxDataTable<AccountRow>
       tableId="marketing-social-accounts"
       urlState={{ id: "social-accounts" }}
@@ -295,7 +320,6 @@ export function AccountsTab() {
             </Button>
           ) : undefined,
       }}
-      defaultSort={{ id: "followers", direction: "desc" }}
       rowActions={(row) => [
         row.trackedAccountId
           ? {
@@ -325,6 +349,18 @@ export function AccountsTab() {
                 disabled: true,
                 onClick: () => openTrack(),
               },
+        ...(GUIDED_CAPTURE_PLATFORMS.has(row.platform) && (!row.profileId || refusedRows.has(row.rowId) || (row.status !== "active" && row.status !== "not_tracked"))
+          ? [
+              {
+                id: "capture",
+                icon: Globe,
+                label: "Capture with my browser",
+                tooltip: "Can't be read the usual way? Your own browser still can. Only your organization sees it.",
+                disabled: busyRow !== null,
+                onClick: () => openCapture(captureTarget(row)),
+              },
+            ]
+          : []),
         ...(row.trackedAccountId
           ? [
               {
@@ -348,6 +384,8 @@ export function AccountsTab() {
         ),
       }}
     />
+    {captureNode}
+    </>
   );
 }
 

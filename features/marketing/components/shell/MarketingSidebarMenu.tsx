@@ -46,6 +46,11 @@ import {
 } from "@/features/marketing/lib/route-sections";
 import { listMarketingBrandModeGroups } from "@/features/marketing/lib/brand-sections";
 import {
+  arrangeBrandNav,
+  brandKindOf,
+  brandNavLabel,
+} from "@/features/marketing/lib/brand-kind";
+import {
   MARKETING_SEO_SECTION_ICONS,
   MARKETING_WEBSITE_SECTION_ICONS,
 } from "@/features/marketing/lib/site-section-icons";
@@ -53,6 +58,7 @@ import {
   useBrandBySegment,
   useSiteBySegment,
 } from "@/features/marketing/data/keys-hooks";
+import { useBrandSites } from "@/features/marketing/data/hooks";
 import { cn } from "@/lib/utils";
 
 interface MarketingSidebarMenuProps {
@@ -260,9 +266,16 @@ function BrandMenu({
   // row reachable and the owning workspace surfaces its own read error.
   const brand = useBrandBySegment(brandSeg);
   const brandPath = `/marketing/${brandSeg}`;
-  const groups = listMarketingBrandModeGroups(brandPath);
+  const kind = brandKindOf(brand.data);
+  // A person brand answers "do they have a website" from its sites; the read is
+  // cheap and cached, and only a person brand waits on it.
+  const sites = useBrandSites(kind === "person" ? (brand.data?.id ?? "") : "");
+  const hasWebsite = kind !== "person" || (sites.data?.length ?? 0) > 0 || sites.isPending;
+  const allGroups = listMarketingBrandModeGroups(brandPath);
+  const groups = arrangeBrandNav(allGroups, kind, hasWebsite);
+  // Hidden rows (a person's Locations) still resolve as active on their own address.
   const active = resolveActiveRouteMode(
-    groups.flatMap((group) => group.modes),
+    allGroups.flatMap((group) => group.modes),
     pathname,
   );
   const activeRef = useScrollActiveIntoView(active?.href);
@@ -278,7 +291,9 @@ function BrandMenu({
           {group.modes.map((mode) => {
             const isActive = active?.href === mode.href;
             const label =
-              mode.slug === "" ? (brand.data?.name ?? "Overview") : mode.name;
+              mode.slug === ""
+                ? (brand.data?.name ?? "Overview")
+                : brandNavLabel(kind, mode);
             return (
               <NavRow
                 key={mode.href}

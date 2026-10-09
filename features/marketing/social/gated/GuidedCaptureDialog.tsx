@@ -109,7 +109,7 @@ export function GuidedCaptureDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Capture with your browser</DialogTitle>
+          <DialogTitle>Take me there</DialogTitle>
         </DialogHeader>
 
         {(stage.kind === "intro" ||

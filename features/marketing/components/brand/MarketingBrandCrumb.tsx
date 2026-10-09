@@ -51,6 +51,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { listMarketingBrandModes } from "@/features/marketing/lib/brand-sections";
+import { brandKindOf, brandNavLabel } from "@/features/marketing/lib/brand-kind";
 import {
   listMarketingSeoModes,
   listMarketingWebsiteModes,
@@ -149,6 +150,7 @@ function DesktopCrumb({ level }: { level: CrumbLevel }) {
   const text = level.href ? (
     <Link
       href={level.href}
+      title={level.label}
       aria-current={level.isCurrent ? "page" : undefined}
       className={cn(CRUMB_LINK, level.isCurrent && "font-medium text-foreground")}
     >
@@ -277,7 +279,7 @@ export function MarketingBrandCrumb() {
     sectionCandidates.find((mode) => mode.subPath === segments[3]) ??
     sectionCandidates[0];
   const sectionOptions: CrumbOption[] = brandModes.map((mode) => ({
-    label: mode.name,
+    label: brandNavLabel(brandKindOf(brand), mode),
     href: mode.href,
     active: mode === activeMode,
   }));
@@ -347,7 +349,7 @@ export function MarketingBrandCrumb() {
   if (activeMode && activeMode.slug) {
     levels.push({
       key: "section",
-      label: activeMode.name,
+      label: brandNavLabel(brandKindOf(brand), activeMode),
       href: activeMode.href,
       optionsLabel: "Sections",
       options: sectionOptions,
@@ -395,7 +397,16 @@ export function MarketingBrandCrumb() {
           className="flex w-full min-w-0 items-center gap-1 text-sm"
         >
           {levels.map((level, index) => (
-            <span key={level.key} className="flex min-w-0 items-center gap-1">
+            <span
+              key={level.key}
+              // The root crumb keeps its whole word ("Marketing"); the deeper levels give way first,
+              // and the current level never collapses below a readable stub.
+              className={cn(
+                "flex items-center gap-1",
+                index === 0 ? "shrink-0" : "min-w-0",
+                index === levels.length - 1 && "min-w-[4rem]",
+              )}
+            >
               {index > 0 ? (
                 <ChevronRight
                   className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50"

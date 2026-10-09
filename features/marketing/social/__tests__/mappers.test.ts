@@ -269,7 +269,7 @@ describe("brand social account rows (brand_social_accounts)", () => {
   };
   it("maps an untracked property to a Not tracked own row keyed by the property", () => {
     const r = brandSocialRowToAccountRow(base);
-    expect(r).toMatchObject({ rowId: "prop1", status: "not_tracked", role: "own", trackedAccountId: null, propertyId: "prop1", trackable: true, ownerKind: "company", postsTracked: 0, followers: null, growth: null });
+    expect(r).toMatchObject({ rowId: "property:prop1", status: "not_tracked", role: "own", trackedAccountId: null, propertyId: "prop1", trackable: true, ownerKind: "company", postsTracked: 0, followers: null, growth: null });
     expect(r.displayName).toBe("datadestruction");
   });
   it("maps a tracked account: coerces numeric strings, derives 30-day growth, keeps owner", () => {
@@ -279,7 +279,7 @@ describe("brand social account rows (brand_social_accounts)", () => {
       profile_handle: "armansadeghi", profile_display_name: "Arman", followers: "1100", followers_30d_ago: "1000",
       posts_tracked: "12", best_multiple_30d: "4.5", avatar_url: "https://x/a.jpg",
     });
-    expect(r).toMatchObject({ rowId: "t9", trackedAccountId: "t9", role: "client", status: "active", followers: 1100, postsTracked: 12, bestScore: 4.5, ownerKind: "person", ownerName: "Arman Sadeghi", displayName: "Arman" });
+    expect(r).toMatchObject({ rowId: "property:prop1", trackedAccountId: "t9", role: "client", status: "active", followers: 1100, postsTracked: 12, bestScore: 4.5, ownerKind: "person", ownerName: "Arman Sadeghi", displayName: "Arman" });
     expect(r.growth).toBeCloseTo(0.1, 5);
   });
   it("says there is not enough history when no 30-day-old snapshot exists", () => {
