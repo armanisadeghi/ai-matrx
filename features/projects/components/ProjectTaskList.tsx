@@ -30,17 +30,15 @@ import {
 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/official/SearchInput";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableEntryRow,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import {
@@ -139,11 +137,7 @@ export function ProjectTaskList({
     childrenOf(id).filter(matchesSearch);
   const matchesTaskTree = (task: DatabaseTask) =>
     matchesSearch(task) || visibleChildrenOf(task.id).length > 0;
-  const open = topLevel.filter((t) => !isDone(t) && matchesTaskTree(t));
   const done = topLevel.filter((t) => isDone(t) && matchesTaskTree(t));
-  const matchingTaskCount = normalizedSearch
-    ? tasks.filter(matchesSearch).length
-    : tasks.length;
 
   React.useEffect(() => {
     onCountsChange?.({
@@ -222,6 +216,31 @@ export function ProjectTaskList({
     }
   }
 
+  const columns = useProjectTaskColumns({
+    busyId,
+    onToggle: toggle,
+    onRename: renameTask,
+    onPriority: setPriority,
+    onDueDate: setDueDate,
+    onOpen: (id) => openTaskEditor({ taskId: id }),
+    onAddSubtask: (id) => {
+      setAddingSubFor(id);
+      setSubTitle("");
+    },
+  });
+  // Inline quick-add — set name + priority + due before adding. Appends
+  // optimistically (newest-first) so rapid-fire entry never blanks the table
+  // or steals focus from the title input.
+  const quickAdd = useQuickAddEntry({
+    projectId,
+    organizationId,
+    onAdded: (task) => setTasks((cur) => [task, ...cur]),
+  });
+  const withChildren = (list: DatabaseTask[]) =>
+    list.flatMap((t) => [t, ...childrenOf(t.id)]);
+  const openRows = withChildren(topLevel.filter((t) => !isDone(t)));
+  const doneRows = withChildren(topLevel.filter(isDone));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -234,148 +253,88 @@ export function ProjectTaskList({
     return <ReadFailure error={loadError} what="this project's tasks" onRetry={reload} />;
   }
 
-  const renderRows = (list: DatabaseTask[]) =>
-    list.flatMap((t) => {
-      const subs = normalizedSearch
-        ? visibleChildrenOf(t.id)
-        : childrenOf(t.id);
-      const rows: React.ReactNode[] = [
-        <TaskTableRow
-          key={t.id}
-          task={t}
-          busyId={busyId}
-          onToggle={toggle}
-          onRename={renameTask}
-          onPriority={setPriority}
-          onDueDate={setDueDate}
-          onOpen={(id) => openTaskEditor({ taskId: id })}
-          onAddSubtask={() => {
-            setAddingSubFor(t.id);
+  const subtaskRow = (parentId: string) => (
+    <div className="flex items-center gap-2 pl-7">
+      <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+      <ProInput
+        ref={subInputRef}
+        autoFocus
+        value={subTitle}
+        onChange={(e) => setSubTitle(e.target.value)}
+        onSubmit={() => void addSubtask(parentId)}
+        submitOnEnter
+        submitLabel="Add subtask"
+        submitDisabled={!subTitle.trim() || isAddingSub}
+        isSubmitting={isAddingSub}
+        showCopyButton={false}
+        onBlur={() => {
+          if (subTitle.trim()) void addSubtask(parentId);
+          else setAddingSubFor(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setAddingSubFor(null);
             setSubTitle("");
-          }}
-        />,
-      ];
-      for (const st of subs) {
-        rows.push(
-          <TaskTableRow
-            key={st.id}
-            task={st}
-            isSub
-            busyId={busyId}
-            onToggle={toggle}
-            onRename={renameTask}
-            onPriority={setPriority}
-            onDueDate={setDueDate}
-            onOpen={(id) => openTaskEditor({ taskId: id })}
-          />,
-        );
-      }
-      if (addingSubFor === t.id) {
-        rows.push(
-          <TableRow key={`${t.id}-add`} className="hover:bg-transparent">
-            <TableCell className="py-1.5" colSpan={4}>
-              <div className="flex items-center gap-2 pl-7">
-                <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                <ProInput
-                  ref={subInputRef}
-                  autoFocus
-                  value={subTitle}
-                  onChange={(e) => setSubTitle(e.target.value)}
-                  onSubmit={() => void addSubtask(t.id)}
-                  submitOnEnter
-                  submitLabel="Add subtask"
-                  submitDisabled={!subTitle.trim() || isAddingSub}
-                  isSubmitting={isAddingSub}
-                  showCopyButton={false}
-                  onBlur={() => {
-                    if (subTitle.trim()) void addSubtask(t.id);
-                    else setAddingSubFor(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setAddingSubFor(null);
-                      setSubTitle("");
-                    }
-                  }}
-                  placeholder="Subtask title, Enter for next…"
-                  disabled={isAddingSub}
-                  className="h-7 text-[13px] max-w-md"
-                  wrapperClassName="max-w-md flex-1"
-                />
-              </div>
-            </TableCell>
-          </TableRow>,
-        );
-      }
-      return rows;
-    });
+          }
+        }}
+        placeholder="Subtask title, Enter for next…"
+        disabled={isAddingSub}
+        className="h-7 text-[13px] max-w-md"
+        wrapperClassName="max-w-md flex-1"
+      />
+    </div>
+  );
+
+  const tableProps = {
+    columns,
+    getRowId: (t: DatabaseTask) => t.id,
+    searchText: (t: DatabaseTask) =>
+      [t.description, t.priority, t.due_date].filter(Boolean).join(" "),
+    processLocalRows: keepSubtasksUnderParents,
+    pageSize: 0,
+    viewTabs: false,
+    rowVersion: (t: DatabaseTask) => busyId === t.id,
+    detail: { enabled: false } as const,
+    window: {},
+    getRowHref: (t: DatabaseTask) => `/tasks/${t.id}`,
+    expandedDetail: {
+      expandedId: addingSubFor,
+      onExpandedIdChange: (id: string | null) => {
+        setAddingSubFor(id);
+        if (id) setSubTitle("");
+      },
+      canExpand: (t: DatabaseTask) => t.id === addingSubFor,
+      render: (t: DatabaseTask) => subtaskRow(t.id),
+      className: "bg-transparent",
+    },
+    toolbar: {
+      searchValue: searchQuery,
+      onSearchChange: setSearchQuery,
+      searchPlaceholder: "Search tasks…",
+    },
+    copy: {
+      label: "Task",
+      listLabel: "Project tasks",
+      location: "Projects — project task list",
+      rowKind: "task",
+      listKind: "project-tasks",
+      humanRow: (t: DatabaseTask) =>
+        `${t.parent_task_id ? "  ↳ " : ""}${t.title} — ${t.status}${t.priority ? `, ${t.priority} priority` : ""}${t.due_date ? `, due ${t.due_date}` : ""}`,
+    },
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <SearchInput
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-          placeholder="Search tasks…"
-          aria-label="Search project tasks"
-          showClearButton={false}
-          className="w-full sm:max-w-sm"
-          inputClassName="h-9 text-base sm:text-sm"
-        />
-        {normalizedSearch && (
-          <span className="self-end shrink-0 text-xs tabular-nums text-muted-foreground sm:self-auto">
-            {matchingTaskCount} found
-          </span>
-        )}
-      </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table className="table-fixed">
-          <colgroup>
-            <col />
-            <col className="w-16 sm:w-32" />
-            <col className="w-20 sm:w-28" />
-            <col className="w-16" />
-          </colgroup>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="h-9 max-w-0 overflow-hidden">
-                Task
-              </TableHead>
-              <TableHead className="h-9 w-16 sm:w-32">
-                <span className="sm:hidden">Pri.</span>
-                <span className="hidden sm:inline">Priority</span>
-              </TableHead>
-              <TableHead className="h-9 w-20 sm:w-28">Due</TableHead>
-              <TableHead className="h-9 w-16" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {open.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={4}
-                  className="text-sm text-muted-foreground italic py-3"
-                >
-                  {normalizedSearch
-                    ? "No matching open tasks."
-                    : "No open tasks."}
-                </TableCell>
-              </TableRow>
-            ) : (
-              renderRows(open)
-            )}
-
-            {/* Inline quick-add row — set name + priority + due before adding.
-                Appends optimistically (newest-first) so rapid-fire entry never
-                blanks the table or steals focus from the title input. */}
-            <QuickAddRow
-              projectId={projectId}
-              organizationId={organizationId}
-              onAdded={(task) => setTasks((cur) => [task, ...cur])}
-            />
-          </TableBody>
-        </Table>
-      </div>
+      <MatrxDataTable<DatabaseTask>
+        {...tableProps}
+        tableId="project-tasks-open"
+        data={openRows}
+        read={{ status: "ready" }}
+        emptyState={{
+          title: normalizedSearch ? "No matching open tasks." : "No open tasks.",
+        }}
+        entryRow={quickAdd}
+      />
 
       {/* Done section */}
       {done.length > 0 && (
@@ -393,17 +352,11 @@ export function ProjectTaskList({
             Done · {done.length}
           </button>
           {(showDone || Boolean(normalizedSearch)) && (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <Table className="table-fixed">
-                <colgroup>
-                  <col />
-                  <col className="w-16 sm:w-32" />
-                  <col className="w-20 sm:w-28" />
-                  <col className="w-16" />
-                </colgroup>
-                <TableBody>{renderRows(done)}</TableBody>
-              </Table>
-            </div>
+            <MatrxDataTable<DatabaseTask>
+              {...tableProps}
+              tableId="project-tasks-done"
+              data={doneRows}
+            />
           )}
         </div>
       )}
@@ -411,11 +364,76 @@ export function ProjectTaskList({
   );
 }
 
-/* ─── Task row ──────────────────────────────────────────────────────────── */
+/**
+ * THE TREE SURVIVES THE TABLE'S QUERY. The canonical filter and sort run over
+ * every task; a subtask then sits under its parent (in the sorted order), and a
+ * parent stays in view while any of its subtasks match.
+ */
+function keepSubtasksUnderParents(
+  rows: DatabaseTask[],
+  state: MatrxDataTableQueryState,
+): DatabaseTask[] {
+  const matched = filterAndSortRows(
+    rows,
+    PROJECT_TASK_QUERY_COLUMNS,
+    state.columnFilters,
+    state.sort,
+    state.search,
+    undefined,
+    state.layeredFilters,
+    state.searchMatchMode,
+    (t) => [t.description, t.priority, t.due_date].filter(Boolean).join(" "),
+  );
+  const byId = new Map(rows.map((t) => [t.id, t]));
+  const isTop = (t: DatabaseTask) =>
+    !t.parent_task_id || !byId.has(t.parent_task_id);
+  const parents: DatabaseTask[] = [];
+  const seen = new Set<string>();
+  const childrenOf = new Map<string, DatabaseTask[]>();
+  for (const t of matched) {
+    if (isTop(t)) {
+      if (!seen.has(t.id)) {
+        seen.add(t.id);
+        parents.push(t);
+      }
+      continue;
+    }
+    const pid = t.parent_task_id as string;
+    childrenOf.set(pid, [...(childrenOf.get(pid) ?? []), t]);
+  }
+  for (const pid of childrenOf.keys()) {
+    if (seen.has(pid)) continue;
+    const parent = byId.get(pid);
+    if (parent) {
+      seen.add(pid);
+      parents.push(parent);
+    }
+  }
+  return parents.flatMap((p) => [p, ...(childrenOf.get(p.id) ?? [])]);
+}
 
-function TaskTableRow({
-  task,
-  isSub,
+const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+/** The same columns' query fields, for the tree-preserving processor. */
+const PROJECT_TASK_QUERY_COLUMNS: MatrxColumnDef<DatabaseTask>[] = [
+  { id: "title", header: "Task", accessorKey: "title" },
+  {
+    id: "priority",
+    header: "Priority",
+    accessorFn: (t) => t.priority ?? "none",
+    sortValue: (t) => PRIORITY_RANK[t.priority ?? ""] ?? 3,
+  },
+  {
+    id: "due",
+    header: "Due",
+    accessorFn: (t) => t.due_date ?? null,
+    sortValue: (t) => t.due_date || "9999-12-31",
+  },
+];
+
+/* ─── Columns ───────────────────────────────────────────────────────────── */
+
+function useProjectTaskColumns({
   busyId,
   onToggle,
   onRename,
@@ -424,104 +442,136 @@ function TaskTableRow({
   onOpen,
   onAddSubtask,
 }: {
-  task: DatabaseTask;
-  isSub?: boolean;
   busyId: string | null;
   onToggle: (t: DatabaseTask) => void;
   onRename: (t: DatabaseTask, title: string) => void;
   onPriority: (t: DatabaseTask, p: TaskPriority) => void;
   onDueDate: (t: DatabaseTask, due: string | null) => void;
   onOpen: (id: string) => void;
-  onAddSubtask?: () => void;
-}) {
-  const done = task.status === "completed";
-  return (
-    <TableRow className="group">
-      <TableCell className="max-w-0 overflow-hidden py-1.5">
-        <div
-          className={cn(
-            "flex min-w-0 items-center gap-2 overflow-hidden",
-            isSub && "pl-7",
-          )}
-        >
-          {isSub && (
-            <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-          )}
-          <button
-            onClick={() => onToggle(task)}
-            disabled={busyId === task.id}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
-            title={done ? "Mark incomplete" : "Mark complete"}
-          >
-            {busyId === task.id ? (
-              <Loader2
-                className={cn(
-                  isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
-                  "animate-spin",
-                )}
-              />
-            ) : done ? (
-              <CircleCheck
-                className={cn(
-                  isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
-                  "text-emerald-500",
-                )}
-              />
-            ) : (
-              <Circle className={isSub ? "h-4 w-4" : "h-[18px] w-[18px]"} />
-            )}
-          </button>
-          <InlineTitle
-            value={task.title}
-            done={done}
-            isSub={isSub}
-            onCommit={(next) => onRename(task, next)}
-            onOpen={isSub ? () => onOpen(task.id) : undefined}
-            onOpenEditor={() => onOpen(task.id)}
-          />
-          {!isSub && onAddSubtask && (
-            <button
-              onClick={onAddSubtask}
-              className="hidden shrink-0 h-6 w-6 rounded-md items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all sm:flex"
-              title="Add subtask"
+  onAddSubtask: (parentId: string) => void;
+}): MatrxColumnDef<DatabaseTask>[] {
+  const latest = React.useRef({ busyId, onToggle, onRename, onPriority, onDueDate, onOpen, onAddSubtask });
+  latest.current = { busyId, onToggle, onRename, onPriority, onDueDate, onOpen, onAddSubtask };
+  return React.useMemo<MatrxColumnDef<DatabaseTask>[]>(
+    () => [
+      {
+        ...PROJECT_TASK_QUERY_COLUMNS[0],
+        filter: "text",
+        width: 420,
+        cell: (task) => {
+          const h = latest.current;
+          const isSub = Boolean(task.parent_task_id);
+          const done = task.status === "completed";
+          return (
+            <div
+              className={cn(
+                "group/task flex min-w-0 items-center gap-2 overflow-hidden",
+                isSub && "pl-7",
+              )}
             >
-              <CornerDownRight className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      </TableCell>
-      <TableCell className="w-16 shrink-0 py-1.5 sm:w-32">
-        <TaskPriorityPicker
-          value={task.priority}
-          onChange={(p) => onPriority(task, p)}
-        />
-      </TableCell>
-      <TableCell className="w-20 shrink-0 py-1.5 sm:w-28">
-        <TaskDueDatePicker
-          value={task.due_date}
-          overdue={isOverdue(task)}
-          onChange={(due) => onDueDate(task, due)}
-        />
-      </TableCell>
-      <TableCell className="w-16 shrink-0 py-1.5">
-        <div className="flex items-center justify-end gap-0.5">
-          <TaskCopyForAiButton
-            taskId={task.id}
-            taskTitle={task.title}
-            location="Projects — project task list"
-            size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              {isSub && (
+                <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+              )}
+              <button
+                onClick={() => h.onToggle(task)}
+                disabled={h.busyId === task.id}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                title={done ? "Mark incomplete" : "Mark complete"}
+              >
+                {h.busyId === task.id ? (
+                  <Loader2
+                    className={cn(
+                      isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
+                      "animate-spin",
+                    )}
+                  />
+                ) : done ? (
+                  <CircleCheck
+                    className={cn(
+                      isSub ? "h-4 w-4" : "h-[18px] w-[18px]",
+                      "text-emerald-500",
+                    )}
+                  />
+                ) : (
+                  <Circle className={isSub ? "h-4 w-4" : "h-[18px] w-[18px]"} />
+                )}
+              </button>
+              <InlineTitle
+                value={task.title}
+                done={done}
+                isSub={isSub}
+                onCommit={(next) => latest.current.onRename(task, next)}
+                onOpen={isSub ? () => latest.current.onOpen(task.id) : undefined}
+                onOpenEditor={() => latest.current.onOpen(task.id)}
+              />
+              {!isSub && (
+                <button
+                  onClick={() => latest.current.onAddSubtask(task.id)}
+                  className="hidden shrink-0 h-6 w-6 rounded-md items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all sm:flex"
+                  title="Add subtask"
+                >
+                  <CornerDownRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        ...PROJECT_TASK_QUERY_COLUMNS[1],
+        filterOptions: [
+          { value: "high", label: "High" },
+          { value: "medium", label: "Medium" },
+          { value: "low", label: "Low" },
+          { value: "none", label: "None" },
+        ],
+        width: 130,
+        cell: (task) => (
+          <TaskPriorityPicker
+            value={task.priority}
+            onChange={(p) => latest.current.onPriority(task, p)}
           />
-          <button
-            onClick={() => onOpen(task.id)}
-            className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
-            title="Open task"
-          >
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </TableCell>
-    </TableRow>
+        ),
+      },
+      {
+        ...PROJECT_TASK_QUERY_COLUMNS[2],
+        filter: "date",
+        width: 120,
+        cell: (task) => (
+          <TaskDueDatePicker
+            value={task.due_date}
+            overdue={isOverdue(task)}
+            onChange={(due) => latest.current.onDueDate(task, due)}
+          />
+        ),
+      },
+      {
+        id: "task-actions",
+        header: "",
+        label: "Open",
+        sortable: false,
+        filter: false,
+        customActions: (task) => (
+          <div className="flex items-center justify-end gap-0.5">
+            <TaskCopyForAiButton
+              taskId={task.id}
+              taskTitle={task.title}
+              location="Projects — project task list"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover/matrx-row:opacity-100 focus-visible:opacity-100"
+            />
+            <button
+              onClick={() => latest.current.onOpen(task.id)}
+              className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover/matrx-row:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
+              title="Open task"
+            >
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [],
   );
 }
 
@@ -616,7 +666,7 @@ interface QuickAddDraft {
   description: string;
 }
 
-function QuickAddRow({
+function useQuickAddEntry({
   projectId,
   organizationId,
   onAdded,
@@ -624,7 +674,7 @@ function QuickAddRow({
   projectId: string;
   organizationId: string | null;
   onAdded: (task: DatabaseTask) => void;
-}) {
+}): MatrxDataTableEntryRow {
   // The half-typed row is a DRAFT in the store, keyed by project — a remount
   // or a wake from sleep puts back exactly what was typed.
   const dispatch = useAppDispatch();
@@ -693,10 +743,11 @@ function QuickAddRow({
     focusTitle();
   }
 
-  return (
-    <>
-      <TableRow className="hover:bg-transparent">
-        <TableCell className="py-1.5">
+  return {
+    label: "New task",
+    cell: (columnId) => {
+      if (columnId === "title") {
+        return (
           <div className="flex items-center gap-2">
             <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
             <ProInput
@@ -722,8 +773,10 @@ function QuickAddRow({
               wrapperClassName="max-w-md"
             />
           </div>
-        </TableCell>
-        <TableCell className="py-1.5">
+        );
+      }
+      if (columnId === "priority") {
+        return (
           <TaskPriorityPicker
             value={priority}
             onChange={setPriority}
@@ -740,8 +793,10 @@ function QuickAddRow({
               }
             }}
           />
-        </TableCell>
-        <TableCell className="py-1.5">
+        );
+      }
+      if (columnId === "due") {
+        return (
           <TaskDueDatePicker
             value={due}
             overdue={false}
@@ -763,8 +818,10 @@ function QuickAddRow({
               }
             }}
           />
-        </TableCell>
-        <TableCell className="py-1.5">
+        );
+      }
+      if (columnId === "task-actions") {
+        return (
           <div className="flex items-center gap-1">
             <Button
               variant="primary"
@@ -778,56 +835,51 @@ function QuickAddRow({
               )}
             </Button>
           </div>
-        </TableCell>
-      </TableRow>
-
-      {/* Advanced disclosure — description (createTask supports it) */}
-      <TableRow className="hover:bg-transparent">
-        <TableCell colSpan={4} className="py-1.5">
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setAdvanced((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              {advanced ? (
-                <ChevronDown className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5" />
-              )}
-              Advanced
-              <span className="font-normal">description</span>
-            </button>
-            {advanced && (
-              <ProTextarea
-                ref={descriptionRef}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onSubmit={() => void submitAndContinue()}
-                submitOnEnter
-                submitOnCmdEnter
-                submitLabel="Add task"
-                submitDisabled={!title.trim()}
-                showCopyButton={false}
-                autoGrow
-                minHeight={72}
-                maxHeight={200}
-                placeholder="Description, Enter to add task…"
-                className="text-sm min-h-[72px] resize-y max-w-2xl"
-                wrapperClassName="max-w-2xl w-full"
-              />
-            )}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="quiet"
-                onClick={resetAll}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </TableCell>
-      </TableRow>
-    </>
-  );
+        );
+      }
+      return undefined;
+    },
+    // Advanced disclosure — description (createTask supports it)
+    below: (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setAdvanced((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {advanced ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+          Advanced
+          <span className="font-normal">description</span>
+        </button>
+        {advanced && (
+          <ProTextarea
+            ref={descriptionRef}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onSubmit={() => void submitAndContinue()}
+            submitOnEnter
+            submitOnCmdEnter
+            submitLabel="Add task"
+            submitDisabled={!title.trim()}
+            showCopyButton={false}
+            autoGrow
+            minHeight={72}
+            maxHeight={200}
+            placeholder="Description, Enter to add task…"
+            className="text-sm min-h-[72px] resize-y max-w-2xl"
+            wrapperClassName="max-w-2xl w-full"
+          />
+        )}
+        <div className="flex items-center gap-2">
+          <Button variant="quiet" onClick={resetAll}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ),
+  };
 }
