@@ -107,6 +107,11 @@ export interface ApprovalStatusRow {
   subject_id: string;
   status: ApprovalStatus;
   first_run_cost: number;
+  /** From run_approval_list (same permission check as the decide RPC); false when unknown. */
+  can_decide: boolean;
+  avg_cost_since: number | null;
+  est_monthly_cost: number | null;
+  subject_name: string | null;
 }
 
 const num = (v: unknown): number => {
@@ -252,16 +257,26 @@ function loadStatus(orgId: string | null): Promise<StatusIndex> {
   let p = statusCache.get(k);
   if (!p) {
     p = (async () => {
-      const { data, error } = await supabase.schema("billing").rpc("run_approval_status", { p_org_id: orgId ?? undefined });
+      const [{ data, error }, listed] = await Promise.all([
+        supabase.schema("billing").rpc("run_approval_status", { p_org_id: orgId ?? undefined }),
+        // The list carries can_decide + cost figures for the inline dropdown; a failure only makes cells read-only.
+        fetchSpendApprovals(orgId).catch(() => [] as SpendApprovalRow[]),
+      ]);
       if (error) throw pgErrorToError(error);
+      const detail = new Map(listed.map((l) => [l.id, l]));
       const idx: StatusIndex = new Map();
       for (const r of data ?? []) {
+        const d = detail.get(r.id);
         idx.set(statusKey(r.subject_kind, r.subject_id), {
           id: r.id,
           subject_kind: asKind(r.subject_kind),
           subject_id: r.subject_id,
           status: asStatus(r.status),
           first_run_cost: num(r.first_run_cost),
+          can_decide: d?.can_decide === true,
+          avg_cost_since: d?.avg_cost_since ?? null,
+          est_monthly_cost: d ? d.est_monthly_cost : null,
+          subject_name: d?.subject_name ?? null,
         });
       }
       statusResolved.set(k, idx);
@@ -276,6 +291,12 @@ function loadStatus(orgId: string | null): Promise<StatusIndex> {
 export function invalidateApprovalStatus(): void {
   statusCache.clear();
   statusResolved.clear();
+}
+
+/** Drop the cache and re-prime this seat so filters/sorts keep reading a real index. */
+export async function refreshApprovalStatus(orgId: string | null): Promise<StatusIndex> {
+  invalidateApprovalStatus();
+  return loadStatus(orgId);
 }
 
 /** The approval rows for one seat (null = every organization), loaded once and shared. */

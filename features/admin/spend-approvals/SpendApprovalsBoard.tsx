@@ -15,6 +15,7 @@ import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { ApprovalStatusText } from "./RunApprovalCell";
+import { ApprovalStatusSelect } from "./ApprovalStatusSelect";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -61,7 +62,7 @@ function useApprovals(orgId: string | null) {
       live = false;
     };
   }, [orgId, tick]);
-  return { rows, loading, error, reload: () => setTick((t) => t + 1) };
+  return { rows, setRows, loading, error, reload: () => setTick((t) => t + 1) };
 }
 
 function HistoryList({ id }: { id: string }) {
@@ -216,7 +217,7 @@ export function SpendApprovalsBoard({
   seat: ApprovalSeat;
   orgSlug?: string;
 }) {
-  const { rows, loading, error, reload } = useApprovals(orgId);
+  const { rows, setRows, loading, error, reload } = useApprovals(orgId);
   const { format } = useCostDisplay();
   const params = useSearchParams();
   const focusId = params.get("id");
@@ -226,6 +227,20 @@ export function SpendApprovalsBoard({
   const visible = rows.filter((r) => (focusId ? r.id === focusId : status === "all" || r.status === status));
   const waiting = rows.filter((r) => r.status === "waiting");
   const waitingMonthly = waiting.reduce((s, r) => s + r.est_monthly_cost, 0);
+
+  const setRowStatus = (id: string, st: ApprovalStatus) =>
+    setRows((rs) => rs.map((x) => (x.id === id ? { ...x, status: st } : x)));
+  const decideInline = async (r: SpendApprovalRow, decision: ApprovalDecision, next: ApprovalStatus, note: string) => {
+    const before = r.status;
+    setRowStatus(r.id, next);
+    try {
+      await decideSpendApproval(r.id, decision, { note });
+      toast.success(`${APPROVAL_STATUS_LABEL[next]}: ${r.subject_name ?? r.subject_id}`);
+    } catch (e: unknown) {
+      setRowStatus(r.id, before);
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   const columns: MatrxColumnDef<SpendApprovalRow>[] = [
     {
@@ -280,7 +295,18 @@ export function SpendApprovalsBoard({
         { value: "rejected", label: "Rejected" },
       ],
       width: 120,
-      cell: (r) => <ApprovalStatusText status={r.status} />,
+      cell: (r) =>
+        r.can_decide ? (
+          <ApprovalStatusSelect
+            status={r.status}
+            name={r.subject_name ?? r.subject_id}
+            costPerRun={r.avg_cost_since ?? r.first_run_cost}
+            estMonthly={r.est_monthly_cost}
+            onDecide={(decision, next, note) => decideInline(r, decision, next, note)}
+          />
+        ) : (
+          <ApprovalStatusText status={r.status} />
+        ),
     },
     {
       id: "seeded",
