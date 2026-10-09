@@ -130,6 +130,37 @@ export class Actor {
       actor.levers.push(`api: PRODUCTION ${PROD_API_ORIGIN} (nothing routed)`);
     }
     if (grant.length) actor.levers.push(`permission grant: ${grant.join(",")}`);
+    if (!process.env.MEET_NO_PROXY) {
+      // 🚨 UDP IS BLOCKED HERE, NOT BY THE LAUNCH FLAG (2026-10-09): `--force-webrtc-ip-handling-policy=
+      // disable_non_proxied_udp` does not see Playwright's PER-CONTEXT proxy, so media rode direct host UDP
+      // (stats: local candidate host/udp, 24 ms) — a "cut" kept the media and data channel flowing and a
+      // "throttle" touched only HTTP. Every peer connection is forced onto TURN over TCP/TLS, which dials
+      // through this person's NetGate like any other TCP socket — a corporate network that blocks UDP.
+      await context.addInitScript(() => {
+        const Native = window.RTCPeerConnection;
+        if (typeof Native !== "function") return;
+        const tcpOnly = (config?: RTCConfiguration): RTCConfiguration => {
+          const servers = (config?.iceServers ?? [])
+            .map((server) => {
+              const urls = (Array.isArray(server.urls) ? server.urls : [server.urls]).filter((u) => /^turns:/i.test(u) || /transport=tcp/i.test(u));
+              return { ...server, urls };
+            })
+            .filter((server) => server.urls.length > 0);
+          return { ...config, iceServers: servers, iceTransportPolicy: "relay" };
+        };
+        const Patched = function (this: unknown, config?: RTCConfiguration) {
+          return new Native(tcpOnly(config));
+        } as unknown as typeof RTCPeerConnection;
+        Patched.prototype = Native.prototype;
+        Object.defineProperty(Patched, "generateCertificate", { value: Native.generateCertificate.bind(Native) });
+        const setConfiguration = Native.prototype.setConfiguration;
+        Native.prototype.setConfiguration = function (this: RTCPeerConnection, config?: RTCConfiguration) {
+          return setConfiguration.call(this, tcpOnly(config));
+        };
+        window.RTCPeerConnection = Patched;
+      });
+      actor.levers.push("init script: WebRTC relay-only over TCP/TLS through the NetGate (UDP blocked)");
+    }
     // Always installed: without a fault it delegates to the real media APIs, and it is what the unplug lever lives in.
     await context.addInitScript(mediaFaultsInit, opts.faults ?? {});
     if (opts.faults && Object.keys(opts.faults).length) actor.levers.push(`init script: media faults ${JSON.stringify(opts.faults)}`);
