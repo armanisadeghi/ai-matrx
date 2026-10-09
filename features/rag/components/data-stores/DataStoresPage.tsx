@@ -50,11 +50,9 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_CELL,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import dynamic from "next/dynamic";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
 import {
@@ -1096,69 +1094,86 @@ function MemberTable({
   members: EnrichedMember[];
   onRemove: (m: EnrichedMember) => unknown;
 }) {
+  const columns: MatrxColumnDef<EnrichedMember>[] = [
+    {
+      id: "kind",
+      header: "Kind",
+      accessorFn: (m) => m.sourceKind,
+      cell: (m) => <span className="type-secondary">{m.sourceKind}</span>,
+      filter: "select",
+      width: 140,
+    },
+    {
+      id: "document",
+      header: "Document",
+      accessorFn: (m) => m.label ?? "",
+      cell: (m) => (
+        <div>
+          <div className="type-secondary">{m.label ?? "—"}</div>
+          <div className="font-mono type-meta text-muted-foreground select-all truncate">
+            {m.sourceId}
+          </div>
+        </div>
+      ),
+      copyValue: (m) => `${m.label ?? "—"} (${m.sourceId})`,
+      filter: "text",
+      width: 320,
+    },
+    {
+      id: "notes",
+      header: "Notes",
+      accessorFn: (m) => m.notes ?? "",
+      cell: (m) => (
+        <span className="type-secondary text-muted-foreground">
+          {m.notes ?? "—"}
+        </span>
+      ),
+      copyValue: (m) => m.notes ?? "—",
+      filter: "text",
+    },
+    {
+      id: "added",
+      header: "Added",
+      accessorFn: (m) => m.addedAt,
+      cell: (m) => (
+        <span className="type-meta text-muted-foreground tabular-nums">
+          {new Date(m.addedAt).toLocaleString()}
+        </span>
+      ),
+      copyValue: (m) => new Date(m.addedAt).toLocaleString(),
+      width: 180,
+    },
+  ];
+
   return (
-    <div className="overflow-hidden rounded-md border">
-      <table className={cn("type-body", MOBILE_TABLE)}>
-        <thead>
-          <tr className="border-b bg-muted/40">
-            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-              Kind
-            </th>
-            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
-              Document
-            </th>
-            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-              Notes
-            </th>
-            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
-              Added
-            </th>
-            <th className="w-10" />
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {members.map((m) => (
-            <tr
-              key={`${m.sourceKind}/${m.sourceId}`}
-              className="hover:bg-muted/20"
-            >
-              <td className={cn("px-3 py-1.5 type-secondary", MOBILE_TABLE_CELL)}>
-                {m.sourceKind}
-              </td>
-              <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
-                <div className="type-secondary">{m.label ?? "—"}</div>
-                <div className="font-mono type-meta text-muted-foreground select-all truncate">
-                  {m.sourceId}
-                </div>
-              </td>
-              <td className={cn("px-3 py-1.5 type-secondary text-muted-foreground", MOBILE_TABLE_CELL)}>
-                {m.notes ?? "—"}
-              </td>
-              <td className={cn("px-3 py-1.5 type-meta text-muted-foreground tabular-nums", MOBILE_TABLE_CELL)}>
-                {new Date(m.addedAt).toLocaleString()}
-              </td>
-              <td className="px-3 py-1.5 text-right">
-                <Button
-                  type="submit"
-                  variant="quiet"
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: "Remove member",
-                      description: `Remove ${m.sourceKind}/${m.sourceId.slice(0, 8)}… from this store?`,
-                      confirmLabel: "Remove",
-                      variant: "destructive",
-                    });
-                    if (ok) void onRemove(m);
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <MatrxDataTable<EnrichedMember>
+      tableId="rag/data-store-members"
+      data={members}
+      columns={columns}
+      getRowId={(m) => `${m.sourceKind}/${m.sourceId}`}
+      pageSize={0}
+      viewTabs={false}
+      detail={{ enabled: false }}
+      toolbar={{ searchPlaceholder: "Search members" }}
+      rowActions={(m) => [
+        {
+          id: "remove",
+          icon: Trash2,
+          label: "Remove member",
+          tone: "destructive",
+          onClick: async () => {
+            const ok = await confirm({
+              title: "Remove member",
+              description: `Remove ${m.sourceKind}/${m.sourceId.slice(0, 8)}… from this store?`,
+              confirmLabel: "Remove",
+              variant: "destructive",
+            });
+            if (ok) void onRemove(m);
+          },
+        },
+      ]}
+      emptyState={{ title: "No members yet" }}
+    />
   );
 }
 
