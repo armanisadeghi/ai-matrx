@@ -54,9 +54,9 @@ import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseli
 import { useSocialSpend } from "../cost";
 import { refreshProfile, socialErrorCode, socialErrorMessage, trackAccount } from "../server";
 import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
-import { CapturedFromBrowser } from "../gated/CapturedFromBrowser";
-import { useQueryClient } from "@tanstack/react-query";
-import { GuidedCaptureButton } from "../gated/GuidedCaptureButton";
+import { CapturedFromBrowser, browserCapturesKey } from "../gated/CapturedFromBrowser";
+import { enrichWithCaptures, fetchBrowserCaptures, knownPostKeys } from "../gated/capturedFromBrowser";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 import { TRACKED_ROLE_LABELS, isSocialPlatform, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
@@ -276,11 +276,6 @@ function GrowthPanel({ profileId }: { profileId: string }) {
   );
 }
 
-/** The shared posts' platform ids, read off their urls (the last path segment: shortcode, video id, urn). */
-function knownPostKeys(list: PostCardModel[]): ReadonlySet<string> {
-  return new Set(list.map((x) => x.url.replace(/\/+$/, "").split("/").pop() ?? "").filter(Boolean));
-}
-
 export function AccountDetail({ platform, profileId }: { platform: string; profileId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
@@ -290,6 +285,11 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const { costText, confirmSpend } = useSocialSpend(brand.organizationId);
   const handle = profile.data?.handle ?? null;
   const posts = useProfilePosts(profileId, handle);
+  const captureTargets = [
+    { type: "social_profile" as const, id: profileId },
+    { type: "social_tracked_account" as const, id: tracked.data?.id ?? null },
+  ];
+  const captures = useQuery({ queryKey: browserCapturesKey(captureTargets), queryFn: () => fetchBrowserCaptures(captureTargets) });
   const snapshots = useProfileSnapshots(profileId);
   const [tab, setTab] = useState<InnerTab>("posts");
   const openInPanel = useOpenPost();
@@ -357,7 +357,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   }
 
   const p = profile.data;
-  const list = posts.data ?? [];
+  const list = enrichWithCaptures(posts.data ?? [], captures.data ?? [], p.platform);
   const role = tracked.data && isTrackedRole(tracked.data.role) ? tracked.data.role : null;
   const growth = judgeFollowerGrowth(snapshots.data ?? []);
   const baseline = profileBaseline(list);
@@ -367,10 +367,6 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     null,
   );
   const perWeek = postsPerWeek(list);
-  const captureTargets = [
-    { type: "social_profile" as const, id: p.id },
-    { type: "social_tracked_account" as const, id: tracked.data?.id ?? null },
-  ];
 
   return (
     <div className="flex flex-col gap-3">
@@ -415,7 +411,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             </Button>
           )}
           {GUIDED_CAPTURE_PLATFORMS.has(p.platform) ? (
-            <GuidedCaptureButton
+            <GatedCaptureOffer
+              compact
               organizationId={brand.organizationId}
               platformLabel={platformLabel(platform)}
               target={{
@@ -424,7 +421,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
                 profileId: p.id,
                 brandId: brand.id,
               }}
-              onCaptured={() => void invalidate()}
+              onCaptured={() => void queryClient.invalidateQueries({ queryKey: ["social", "browser-captures"] })}
             />
           ) : null}
           {p.profile_url ? (
@@ -469,7 +466,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       ) : null}
       <CapturedFromBrowser
         targets={captureTargets}
-        knownPlatformPostIds={knownPostKeys(list)}
+        knownPlatformPostIds={knownPostKeys(p.platform, list)}
+        platform={p.platform}
       />
 
       <Tabs aria-label="Account sections" value={tab} onValueChange={setTab} data={INNER_TABS} />

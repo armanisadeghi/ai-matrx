@@ -18,7 +18,7 @@ export function GuidedCaptureButton({
   target,
   platformLabel,
   onCaptured,
-  label = "Capture with my browser",
+  label = "Take me there",
 }: {
   organizationId: string;
   target: GuidedCaptureTarget;
