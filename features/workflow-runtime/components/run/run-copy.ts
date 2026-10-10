@@ -6,7 +6,7 @@
  * payload cannot drift away from the sentence the person is looking at.
  */
 
-import { formatCost } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import {
   buildAgentPayload,

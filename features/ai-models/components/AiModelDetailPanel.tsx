@@ -203,11 +203,11 @@ function OfferingPricingReadOnly({
                         : "flat"}
                     </span>
                     <span className="text-foreground">
-                      in {fmt(t.input_price)}
+                      in {fmt(t.input_price, { price: true })}
                     </span>
                     <span className="text-muted-foreground">/</span>
                     <span className="text-foreground">
-                      out {fmt(t.output_price)}
+                      out {fmt(t.output_price, { price: true })}
                     </span>
                   </div>
                 ))}

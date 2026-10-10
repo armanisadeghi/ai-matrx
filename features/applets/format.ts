@@ -22,7 +22,8 @@ import {
   isKnownNumber,
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
-import { formatAbsoluteDate, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { formatAbsoluteDate, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**

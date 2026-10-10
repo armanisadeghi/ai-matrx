@@ -35,6 +35,8 @@ export const SEAT_GATED_ELSEWHERE: Record<string, string> = {
   "features/mandates/admin-list/MandateAdminListPage.tsx": "rendered only by the administration mandates list",
   "features/cx-dashboard/components/cx-row-actions.tsx": "copy text of the administration cx dashboard rows",
   "components/official/drill-explorer/measureFormat.ts": "dollars only when the admin-only switch chose them",
+  "features/cx-dashboard/explorer/ConversationExplorer.tsx": "rendered only by /administration/chat/cx-dashboard/conversations",
+  "features/hindsight/components/FindingEffectivenessPanel.tsx": "rendered only by /administration/agents/hindsight",
 };
 
 const SEAT_ASK = /\b(currentSeesDollars|useSeesDollars|UsdOnly)\b/;

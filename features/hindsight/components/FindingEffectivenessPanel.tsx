@@ -27,6 +27,7 @@ import type { FindingEffectiveness, UnitToken } from "../types";
 import { hasSignal } from "../types";
 import { KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 /** The endpoint supplies rows but no total or cap receipt. */
 export const FINDING_EFFECTIVENESS_COVERAGE = {
@@ -78,7 +79,7 @@ function CostDelta({ row }: { row: FindingEffectiveness }) {
       ) : (
         <TrendingUp className="h-3 w-3" />
       )}
-      {cheaper ? "-" : "+"}${Math.abs(delta).toFixed(4)}
+      {cheaper ? "-" : "+"}{formatAdminUsd(Math.abs(delta))}
     </span>
   );
 }

@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 import { deltaPercent, formatDelta, usd } from "./format";
 import { formatCount } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { AdminCost } from "@/components/cost/AdminCost";
 
 export interface SpendHeadlineProps {
   today: number;
@@ -39,7 +40,8 @@ export interface SpendHeadlineProps {
 
 interface TileProps {
   label: string;
-  value: string;
+  /** The USD figure; dollars lead, points ride along smaller. */
+  value: number;
   hint?: string;
   tone?: "normal" | "alarm";
   size?: "hero" | "normal";
@@ -84,7 +86,7 @@ function Tile({
           alarm ? "text-destructive" : "text-foreground",
         ].join(" ")}
       >
-        {value}
+        <AdminCost usd={value} unknown="not measured" />
       </div>
       <div
         className={[
@@ -134,7 +136,7 @@ export function SpendHeadline({
         >
           <Tile
             label="Spent so far today"
-            value={usd(today, rate)}
+            value={today}
             size="hero"
             tone={alarm ? "alarm" : "normal"}
             actions={headlineActions}
@@ -151,24 +153,24 @@ export function SpendHeadline({
         </div>
         <Tile
           label="Yesterday"
-          value={usd(yesterday, rate)}
+          value={yesterday}
           hint={formatDelta(delta)}
         />
         <Tile
           label="Last 7 days"
-          value={usd(last7d, rate)}
+          value={last7d}
           hint={`${usd(last7d / 7, rate)} daily average`}
         />
         {density === "full" && last30d !== undefined ? (
           <Tile
             label="Last 30 days"
-            value={usd(last30d, rate)}
+            value={last30d}
             hint={`${usd(last30d / 30, rate)} daily average`}
           />
         ) : null}
         <Tile
           label="This month"
-          value={usd(monthToDate, rate)}
+          value={monthToDate}
           // `null` means the month is too young to extrapolate; `undefined`
           // means this caller never carried a projection (the popover). They
           // are different facts and the tile must never claim the first when

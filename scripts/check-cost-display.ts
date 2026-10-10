@@ -96,7 +96,6 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/admin/limits/types.ts": "our subscription plan prices on the admin limits matrix",
   "app/(public)/templates/[slug]/social-image/route.tsx": "a currency-typed field value from a template's sample record, drawn into its share image",
   "features/make/gallery/TemplateShowcase.tsx": "a currency-typed field value in a template's sample rows",
-  "features/cx-dashboard/explorer/ConversationExplorer.tsx": "the admin-only conversation explorer (/administration/chat/cx-dashboard), where a system admin reads every conversation's cost in dollars",
   "features/scopes/components/reference/ContextValueDisplay.tsx": "a person's own currency-typed value",
   "features/ai-models/components/ModelPricingEditor.tsx": "the provider's USD price list an admin edits",
   "features/ai-models/components/ProviderPriceCell.tsx": "the provider's USD price list an admin syncs",

@@ -13,7 +13,7 @@
  */
 
 import { cn } from "@/lib/utils";
-import { formatCost } from "@ai-matrx/kit/format";
+import { formatAdminPoints, formatSpendUsd } from "./formatAdminCost";
 import { useCostDisplay } from "./useCostDisplay";
 
 export interface CostProps {
@@ -45,7 +45,9 @@ export function Cost({
   // still choose a single display unit from the header switch.
   const title =
     canToggle && known
-      ? formatCost(usd, { unit: unit === "usd" ? "points" : "usd", rate })
+      ? unit === "usd"
+        ? formatAdminPoints(usd, rate)
+        : formatSpendUsd(usd)
       : undefined;
   return (
     <span

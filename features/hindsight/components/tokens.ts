@@ -3,7 +3,8 @@
  * every colour here is declared for both themes.
  */
 import { Globe, Network, StepForward, Webhook, Workflow, Wrench } from "lucide-react";
-import { formatCost, formatDurationSeconds, type CostUnit } from "@ai-matrx/kit/format";
+import { formatDurationSeconds, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 
 import type { Lever, SubjectKind, Verdict } from "../types";
 import { currentCostUnit } from "@/components/cost/costUnit";

@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CalendarClock, Check, History, Loader2, RefreshCw, RotateCcw, TimerReset, X } from "lucide-react";
 import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
-import { formatUsd } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { ApprovalStatusText } from "./RunApprovalCell";
@@ -53,6 +52,7 @@ import {
 } from "./spendApprovals";
 
 import { readOf } from "@ai-matrx/design-system";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 type StatusFilter = ApprovalStatus | "all";
 type Tone = "danger" | "warning" | null;
 
@@ -64,7 +64,7 @@ const TONE_CLASS: Record<"danger" | "warning", string> = {
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 const whenDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
 /** Every dollar figure on this board: to the cent. */
-const cents = (usd: number | null | undefined) => (usd == null ? "—" : formatUsd(usd, { digits: 2 }));
+const cents = (usd: number | null | undefined) => formatAdminUsd(usd);
 
 const EVENT_LABEL: Record<string, string> = {
   created: "Opened",

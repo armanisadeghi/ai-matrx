@@ -12,7 +12,8 @@
 // Nothing about what AuditionProof already rendered changed when this moved:
 // the strings are byte-identical to the ones it built inline.
 
-import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The trial arm's cost, in the viewer's unit (points for everyone, dollars

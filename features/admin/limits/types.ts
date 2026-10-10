@@ -250,7 +250,7 @@ export function pointsToUsdLabel(
   const numeric = typeof points === "string" ? Number(points.trim()) : points;
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
-  const money = formatAdminCost(pointsToUsd(numeric, { rate }), { rate, usdDigits: "trim" });
+  const money = formatAdminCost(pointsToUsd(numeric, { rate }), { rate });
   const per = period && period !== "lifetime" ? ` / ${periodLabel(period).toLowerCase()}` : "";
   return `~${money}${per} of AI`;
 }

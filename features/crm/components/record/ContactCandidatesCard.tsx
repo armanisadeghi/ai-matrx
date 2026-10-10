@@ -34,7 +34,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { formatCost } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { extractErrorMessage } from "@/utils/errors";

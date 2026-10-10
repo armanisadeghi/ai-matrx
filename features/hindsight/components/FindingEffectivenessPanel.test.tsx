@@ -61,7 +61,7 @@ describe("FindingEffectivenessPanel canonical columns", () => {
     );
     expect(
       renderToStaticMarkup(<>{cost.cell?.(measuredZeroRow, 0)}</>),
-    ).toContain("+$0.0000");
+    ).toContain("+$0.00");
   });
 
   it("keeps long unit names inside their column and exposes the full name", () => {

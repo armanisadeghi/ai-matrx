@@ -12,10 +12,28 @@ import { usePointsRate } from "./pointsRate.client";
 import { useAdminCost } from "./useAdminCost";
 import { useSeesDollars } from "./useCostDisplay";
 
-/** "$0.0204 · 408 points". */
+/**
+ * "$0.02 · 408 points" — dollars at the surrounding size, the points half smaller and muted
+ * (Arman, 2026-10-10: "the text for the points needs to be smaller"). Admins read dollars; points
+ * ride along as the secondary figure. A viewer who does not see dollars gets the points alone, at
+ * full size, because points are then the only figure.
+ */
 export function AdminCost({ usd, unknown }: { usd: number | null | undefined; unknown?: string }) {
+  const sees = useSeesDollars();
+  const rate = usePointsRate();
   const format = useAdminCost();
-  return <>{format(usd, { unknown })}</>;
+  if (!sees || usd === null || usd === undefined || !Number.isFinite(usd)) {
+    return <>{format(usd, { unknown })}</>;
+  }
+  return (
+    <span>
+      <span className="whitespace-nowrap">{formatAdminUsd(usd)}</span>
+      {" "}
+      <span className="whitespace-nowrap text-[0.7em] font-normal text-muted-foreground">
+        · {formatAdminPoints(usd, rate)}
+      </span>
+    </span>
+  );
 }
 
 /** "408 points". */
