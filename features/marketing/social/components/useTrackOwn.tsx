@@ -12,6 +12,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
+import { accountName } from "../mappers";
 import { useSocialSpend } from "../cost";
 import { socialErrorCode, socialErrorMessage, trackAccount } from "../server";
 import { platformLabel } from "./PlatformMark";
@@ -24,7 +25,7 @@ export function useTrackOwn(organizationId: string, brandId: string) {
   const [busyRow, setBusyRow] = useState<string | null>(null);
   /** The server's live step line for the row being tracked ("Fetching posts · 2 of 3"). */
   const [progress, setProgress] = useState<string | null>(null);
-  const { costText, confirmSpend } = useSocialSpend(organizationId);
+  const { costText, pointsText, confirmSpend } = useSocialSpend(organizationId);
 
   /** Track one own property as role Own; an empty account asks before tracking it anyway. */
   async function trackOwnRow(row: AccountRow, allowEmpty = false): Promise<"ok" | "failed"> {
@@ -49,14 +50,14 @@ export function useTrackOwn(organizationId: string, brandId: string) {
     } catch (err) {
       if (!allowEmpty && socialErrorCode(err) === "social_profile_empty") {
         const again = await confirm({
-          title: `Track @${row.handle} anyway?`,
+          title: `Track ${accountName(row)} anyway?`,
           description: socialErrorMessage(err, "This account has no posts."),
           confirmLabel: "Track anyway",
         });
         if (again) return trackOwnRow(row, true);
         return "failed";
       }
-      toast.error(`@${row.handle}: ${socialErrorMessage(err, "Couldn't track it")}`);
+      toast.error(`${accountName(row)}: ${socialErrorMessage(err, "Couldn't track it")}`);
       return "failed";
     }
   }
@@ -66,11 +67,11 @@ export function useTrackOwn(organizationId: string, brandId: string) {
     setBusyRow(row.rowId);
     setProgress("Starting…");
     try {
-      const ok = await confirmSpend("track", 1, { title: `Track ${platformLabel(row.platform)} @${row.handle} as Own?`, confirmLabel: "Track" });
+      const ok = await confirmSpend("track", 1, { title: `Track ${platformLabel(row.platform)} ${accountName(row)} as Own?`, confirmLabel: "Track" });
       if (!ok) return;
       if ((await trackOwnRow(row)) === "ok") {
         await invalidate();
-        toast.success(`Tracking @${row.handle}`);
+        toast.success(`Tracking ${accountName(row)}`);
       }
     } finally {
       setBusyRow(null);
@@ -81,7 +82,7 @@ export function useTrackOwn(organizationId: string, brandId: string) {
   async function trackAllOwn(list: AccountRow[]) {
     const ok = await confirm({
       title: `Track ${list.length} own account${list.length === 1 ? "" : "s"}?`,
-      description: [list.map((r) => `${platformLabel(r.platform)} @${r.handle}`).join(", "), costText("track", list.length)].filter(Boolean).join(" · "),
+      description: [list.map((r) => accountName(r) === "YouTube channel" ? "YouTube channel" : `${platformLabel(r.platform)} ${accountName(r)}`).join(", "), pointsText("track", list.length) ?? "points (price not loaded yet)"].join(" · "),
       confirmLabel: "Track all",
     });
     if (!ok) return;
@@ -99,5 +100,5 @@ export function useTrackOwn(organizationId: string, brandId: string) {
     toast.success(`Tracked ${done} of ${list.length}`);
   }
 
-  return { busyRow, setBusyRow, progress, trackOwn, trackOwnRow, trackAllOwn, costText, confirmSpend };
+  return { busyRow, setBusyRow, progress, trackOwn, trackOwnRow, trackAllOwn, costText, pointsText, confirmSpend };
 }

@@ -13,6 +13,6 @@ export function useConnectionStates(organizationId: string) {
     staleTime: 60_000,
   });
   const of = (platform: string): PlatformConnection | null =>
-    query.data ? judgeConnection(platform, query.data.connections, query.data.configs) : null;
+    query.data ? judgeConnection(platform, query.data.connections, query.data.configs, query.data.xAvailable) : null;
   return { ...query, of };
 }

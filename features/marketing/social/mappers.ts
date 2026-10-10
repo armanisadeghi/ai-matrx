@@ -210,6 +210,11 @@ export function accountLabels(
   return { primary: name, secondary: at || null };
 }
 
+/** The account's name in a sentence (a confirm, a toast): its name or @handle, never a raw channel id. */
+export function accountName(row: { displayName: string; handle: string; platform: string }): string {
+  return accountLabels(row.displayName, row.handle, row.platform).primary;
+}
+
 /** The person-owner chip says whose account it is; on a person brand every such account is the brand's person, so it adds nothing. */
 export function showOwnerChip(row: { ownerKind?: "company" | "person" }, brandKind: "company" | "person"): boolean {
   return row.ownerKind === "person" && brandKind !== "person";

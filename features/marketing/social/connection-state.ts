@@ -8,6 +8,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";
+import { getXConfig } from "@/features/social-connections/service";
 import {
   CUSTOMER_SOCIAL_PROVIDERS,
   loadSocialConfigs,
@@ -25,7 +26,7 @@ export type ConnectionState =
 export const CONNECTION_STATE_LABELS: Record<ConnectionState, string> = {
   connected: "Connected",
   reconnect: "Needs reconnect",
-  testers_only: "Approved testers only",
+  testers_only: "Testers only",
   not_offered: "Not offered yet",
   not_connected: "Not connected",
 };
@@ -69,6 +70,8 @@ export function judgeConnection(
   platform: string,
   connections: readonly ConnectionFact[],
   configs: readonly SocialProviderConfig[],
+  /** Whether the X app is set up for this organization; null = not asked. */
+  xAvailable: boolean | null = null,
 ): PlatformConnection {
   const provider = providerOf(platform);
   const mine = connections.filter(
@@ -79,6 +82,8 @@ export function judgeConnection(
   if (live) return { platform, state: "connected", connectionId: live.id, canConnect: true, hubProvider };
   const stale = mine[0];
   if (stale) return { platform, state: "reconnect", connectionId: stale.id, canConnect: true, hubProvider };
+  if (platform === "x" && xAvailable === false)
+    return { platform, state: "not_offered", connectionId: null, canConnect: false, hubProvider };
   if (hubProvider) {
     const config = configs.find((c) => c.provider === hubProvider);
     if (!config || config.status === "unavailable" || config.accessMode === "unavailable")
@@ -92,6 +97,7 @@ export function judgeConnection(
 export interface ConnectionSnapshot {
   connections: ConnectionFact[];
   configs: SocialProviderConfig[];
+  xAvailable: boolean | null;
 }
 
 /** The hub providers that are social networks the module reads (one config read each; no chat or voice providers). */
@@ -107,8 +113,8 @@ export async function loadConnectionSnapshot(organizationId: string): Promise<Co
     error: userError,
   } = await getClientClaimsUserCached();
   if (userError) throw userError;
-  if (!user) return { connections: [], configs: [] };
-  const [rows, configs] = await Promise.all([
+  if (!user) return { connections: [], configs: [], xAvailable: null };
+  const [rows, configs, xAvailable] = await Promise.all([
     supabase
       .schema("users")
       .from("integration_connections")
@@ -119,10 +125,15 @@ export async function loadConnectionSnapshot(organizationId: string): Promise<Co
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
     loadSocialConfigs(organizationId, SOCIAL_PLATFORM_PROVIDERS),
+    getXConfig(organizationId).then(
+      (config) => config?.status === "available",
+      () => null,
+    ),
   ]);
   if (rows.error) throw rows.error;
   return {
     configs,
+    xAvailable,
     connections: (rows.data ?? []).map((r) => ({
       id: r.id,
       provider: r.provider,
@@ -133,3 +144,12 @@ export async function loadConnectionSnapshot(organizationId: string): Promise<Co
     })),
   };
 }
+
+/** What a network's row in the Connect menu says, in plain words. */
+export const CONNECT_MENU_STATUS: Record<ConnectionState, string> = {
+  connected: "Connected",
+  reconnect: "Reconnect",
+  testers_only: "Approved testers",
+  not_offered: "Coming soon",
+  not_connected: "Connect",
+};

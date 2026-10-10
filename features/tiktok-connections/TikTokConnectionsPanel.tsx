@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { ErrorNotice } from "@ai-matrx/design-system";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,7 +86,7 @@ function TikTokConnectionContents() {
       const started = await startTikTokAuthorization(userId, organizationId);
       window.location.assign(started.authorization_url);
     })}>Connect TikTok</Button>
-    {connections === null && !failure && <p className="text-sm text-muted-foreground">Loading accounts…</p>}
+    {connections === null && !failure && <RegionSkeleton shape="rows" count={1} aria-label="Loading your TikTok accounts" />}
     {connections?.map(connection => <div key={connection.id} className="rounded-md border p-3 space-y-2">
       <div className="flex justify-between gap-2"><span>{connection.account_name ?? "TikTok account"}</span><Badge variant="outline">{connection.status}</Badge></div>
       {connection.last_error && <ErrorNotice error={connection.last_error} size="compact" />}

@@ -32,6 +32,7 @@ import { useSocialSpend } from "../cost";
 import type { ParsedAccount } from "../link";
 import { profileAvatarDoor, socialErrorCode, socialErrorMessage } from "../server";
 import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABELS, type SocialPlatform } from "../types";
+import { isRawChannelId } from "../mappers";
 import { PlatformMark } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
 
@@ -205,6 +206,8 @@ function AccountPreview({
   let body: React.ReactNode = null;
   if (parsed.status === "ok") {
     const found = lookup.state === "found" ? lookup.account : null;
+    // A bare channel id is an address, never a name.
+    const rawId = isRawChannelId(parsed.handle);
     body = (
       <>
         <PlatformMark platform={parsed.platform} size={16} />
@@ -218,8 +221,8 @@ function AccountPreview({
             />
           </span>
         ) : null}
-        <span className="min-w-0 max-w-[45%] truncate font-medium text-foreground">{found?.displayName ?? parsed.label}</span>
-        {found ? <span className="shrink-0 text-muted-foreground">{parsed.label}</span> : null}
+        <span className="min-w-0 max-w-[45%] truncate font-medium text-foreground">{found?.displayName ?? (rawId ? "YouTube channel" : parsed.label)}</span>
+        {found && !rawId ? <span className="shrink-0 text-muted-foreground">{parsed.label}</span> : null}
         {found?.followers != null ? (
           <span className="shrink-0 text-muted-foreground">{formatCount(found.followers)} followers</span>
         ) : null}

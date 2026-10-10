@@ -7,7 +7,7 @@ import { AlertCircle, Link2, RefreshCw, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import {
   CUSTOMER_SOCIAL_PROVIDERS,
@@ -73,7 +73,7 @@ function loadAccounts({ organizationId, clearExisting, generationRef, setConfigs
 export function CustomerAccountsPanel({ organizationId, brandId, returnUrl = "/user-settings/integrations", providers = CUSTOMER_SOCIAL_PROVIDERS }: { organizationId: string; brandId?: string; returnUrl?: string; providers?: readonly CustomerSocialProvider[] }) {
   const [configs, setConfigs] = useState<SocialProviderConfig[]>([]);
   const [connections, setConnections] = useState<CustomerSocialConnection[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<{ connectionId: string; token: number } | null>(null);
   const [receipts, setReceipts] = useState<Record<string, {subject: SocialIdentity; resources: SocialResource[]}>>({});
   const [mastodonIssuer, setMastodonIssuer] = useState("");
@@ -140,6 +140,8 @@ export function CustomerAccountsPanel({ organizationId, brandId, returnUrl = "/u
       refresh();
     } finally { if (ownsOperation()) setAction(null); }
   };
+  // Until the provider configuration has loaded nothing is "unavailable" yet.
+  if (loading && configs.length === 0) return <RegionSkeleton shape="cards" count={3} aria-label="Loading social accounts" />;
   return <section className="space-y-3" aria-label="Social accounts">
     <div className="flex items-center justify-between gap-3"><h2 className="text-base font-semibold">Social accounts</h2><Button variant="quiet" onClick={() => void refresh()} disabled={loading} icon={<RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />}>Refresh</Button></div>
     <div className="grid gap-3 md:grid-cols-2">{providers.map((provider) => {
@@ -154,7 +156,7 @@ export function CustomerAccountsPanel({ organizationId, brandId, returnUrl = "/u
         {unavailable && <p className="text-sm text-muted-foreground">{config?.reason ?? "This provider is not available."}</p>}
         {provider === "pinterest" && <Badge variant="outline">Approved testers · Trial access</Badge>}
         {provider === "linkedin" && <Badge variant="outline">Profile insights unavailable</Badge>}
-        {["facebook", "instagram", "threads"].includes(provider) && config?.accessMode !== "approved" && <Badge variant="outline">App review required · Approved testers only</Badge>}
+        {["facebook", "instagram", "threads"].includes(provider) && config?.accessMode !== "approved" && <Badge variant="outline">Approved testers only</Badge>}
         {!unavailable && provider === "mastodon" && <Input aria-label="Mastodon server" placeholder="https://mastodon.social" value={issuer} onChange={(event) => setMastodonIssuer(event.target.value)} />}
         {!unavailable && provider === "bluesky" && <Input aria-label="Bluesky handle" placeholder="your-name.bsky.social" value={blueskyHandle} onChange={(event) => setBlueskyHandle(event.target.value)} />}
         {connected.map((connection) => <div className="space-y-2 text-sm" key={connection.id}>
