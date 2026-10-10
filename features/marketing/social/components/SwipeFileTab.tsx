@@ -120,7 +120,8 @@ export function SwipeFileTab() {
   const live = useMemo(() => visibleCollections(all, false), [all]);
   const archived = useMemo(() => visibleCollections(all, true), [all]);
   const liveIds = useMemo(() => live.map((c) => c.id), [live]);
-  const itemsQuery = useSwipeItems(liveIds, collections.isSuccess && liveIds.length > 0);
+  const itemsEnabled = collections.isSuccess && liveIds.length > 0;
+  const itemsQuery = useSwipeItems(liveIds, itemsEnabled);
   const items = useMemo(() => itemsQuery.data?.items ?? [], [itemsQuery.data]);
 
   const scope = filters.scope === ALL_SAVED || liveIds.includes(filters.scope) ? filters.scope : ALL_SAVED;
@@ -253,7 +254,9 @@ export function SwipeFileTab() {
               brand_id: brandId,
               brand_name: brandName,
             }
-          : collections.isPending || itemsQuery.isPending
+          : // A disabled query (no live collection) stays isPending forever: the brand has
+            // no items, which is loaded-and-empty, never "still loading" (2026-10-10).
+            collections.isPending || (itemsEnabled && itemsQuery.isPending)
             ? ({ swipe_loaded: false, brand_id: brandId, brand_name: brandName } as never)
             : {
                 swipe_loaded: true,
@@ -338,8 +341,7 @@ export function SwipeFileTab() {
   // Agent writes: Save link, Rename / Archive / Restore a collection, an item's note and tags — the
   // same saves the dialogs and the item sheet call. Each is approved on a card first.
   const collectionRefs = [...live, ...archived].map((c) => ({ id: c.id, name: c.name }));
-  const withCost = withCostOn(() => swipeWrites);
-  const swipeWrites: Record<string, SurfaceWriteHandlerEntry> = {
+  const swipeHandlers: Record<string, SurfaceWriteHandlerEntry> = {
     ...collectionWriteHandlers(
       {
         plural: "swipe_links",
@@ -356,8 +358,6 @@ export function SwipeFileTab() {
       },
       refuseSurfaceWrite,
     ),
-    // The approval card names the points, however small (one fetch per link).
-    ...withCost("create_swipe_links", (value) => agentCostText("save_link", countOf(value))),
     ...collectionWriteHandlers(
       {
         plural: "swipe_collections",
@@ -398,6 +398,13 @@ export function SwipeFileTab() {
       },
       refuseSurfaceWrite,
     ),
+  };
+  // The cost wraps the COMPLETE set: reading it from inside its own literal threw
+  // "Cannot access 'swipeWrites' before initialization" and took the whole tab down (2026-10-10).
+  const swipeWrites: Record<string, SurfaceWriteHandlerEntry> = {
+    ...swipeHandlers,
+    // The approval card names the points, however small (one fetch per link).
+    ...withCostOn(() => swipeHandlers)("create_swipe_links", (value) => agentCostText("save_link", countOf(value))),
   };
   useSurfaceWriteHandlers(SOCIAL_SWIPE_SURFACE_NAME, swipeWrites);
 
