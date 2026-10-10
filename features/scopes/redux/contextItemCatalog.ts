@@ -24,6 +24,7 @@
 //   select*                      → selectors over the tree's catalogs
 
 import { createAsyncThunk, createSelector, weakMapMemoize } from "@reduxjs/toolkit";
+import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { sameSlug, type ContextField, type ContextFieldSpec } from "@ai-matrx/records/scopes";
 import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
@@ -43,6 +44,16 @@ const EMPTY_CONTEXT_ITEMS: ContextField[] = [];
 
 /** Ensure a scope type's fields are in the catalog (chat's `listScopeTypeItems`). */
 export const listScopeTypeItems = (scopeTypeId: string) => ensureScopeTypeItems(scopeTypeId);
+
+/** Read the canonical catalog, preserving its refusal for imperative consumers. */
+export const readScopeTypeFields = (scopeTypeId: string): ThunkAction<Promise<ContextField[]>, RootState, unknown, UnknownAction> =>
+  async (dispatch, getState) => {
+    await dispatch(ensureScopeTypeItems(scopeTypeId));
+    const state = getState();
+    const error = selectItemsErrorForType(state, scopeTypeId);
+    if (error) throw new Error(error);
+    return selectItemsByType(state, scopeTypeId);
+  };
 
 /** Ensure the System Context items are in the catalog. */
 export const listSystemContextItems = () => ensureScopeTypeItems(SYSTEM_ITEMS_KEY);
