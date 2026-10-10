@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T16:01:26.880Z",
+  "generated_at": "2026-10-10T16:38:50.525Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -31,6 +31,36 @@
       "filename": "accesspersonal_the_tables_i_can_open_door_can_be_reached.sql",
       "checksum": "2f44387f39cd625f2dcc11a5e0dbff112bd34bc9de8fc4266ad0051d6db185ff",
       "applied_at": "2026-09-24 05:49:49.494882+00"
+    },
+    "migrations/campaign/accesssetup_a_records_declare_their_parts_and_seats.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_a_records_declare_their_parts_and_seats.sql",
+      "checksum": "48aaa832682ca94069be1dbd0a7a322bab963a0597f4a891536d021724e4e597",
+      "applied_at": "2026-10-10 16:29:53.727618+00"
+    },
+    "migrations/campaign/accesssetup_b2_the_check_names_its_own_aliases.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_b2_the_check_names_its_own_aliases.sql",
+      "checksum": "d5eff467b15cfea9a04f39ba269df19b4bcb543569ecea4dfc7a528f0060272b",
+      "applied_at": "2026-10-10 16:36:30.945423+00"
+    },
+    "migrations/campaign/accesssetup_b_the_seat_and_part_answers.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_b_the_seat_and_part_answers.sql",
+      "checksum": "2bbe49393848306394bcbd7e829e65ec65c9d788b36e68e92ef23feac9056015",
+      "applied_at": "2026-10-10 16:32:12.131212+00"
+    },
+    "migrations/campaign/accesssetup_c_the_standard_review_declares_its_setup.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_c_the_standard_review_declares_its_setup.sql",
+      "checksum": "ed7bd5daecc85f737bc63592b5760cd4428d269be8b0600f80839d19bf717538",
+      "applied_at": "2026-10-10 16:36:40.945969+00"
+    },
+    "migrations/campaign/accesssetup_d_the_review_doors_are_frozen_as_the_oracle.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_d_the_review_doors_are_frozen_as_the_oracle.sql",
+      "checksum": "8c4c482dc87acd691e047e95d24d3c23f466d885763942e6f3623d76b236ada2",
+      "applied_at": "2026-10-10 16:38:25.780543+00"
     },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",
@@ -1507,6 +1537,18 @@
       "filename": "datadefects4_a4_a_single_record_restore_counts_the_record_itself.sql",
       "checksum": "7096062b6742c151e6837c735bc4fbe564f5de3f08e47a26ff3bc51dd8f21031",
       "applied_at": "2026-10-10 15:50:41.048748+00"
+    },
+    "migrations/campaign/datadefects4_a5_an_archive_call_keeps_near_five_seconds.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_a5_an_archive_call_keeps_near_five_seconds.sql",
+      "checksum": "7e7ec5d7a14083e79bddb3d8382b854cb75a9fcec0095cd115daeb6927a27018",
+      "applied_at": "2026-10-10 16:18:02.890482+00"
+    },
+    "migrations/campaign/datadefects4_a6_a_restore_call_keeps_near_five_seconds.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_a6_a_restore_call_keeps_near_five_seconds.sql",
+      "checksum": "cc539e628bbfe6e84d8e47121fe95edcfa1d98bbf62f433a83d65dd7604b3e9a",
+      "applied_at": "2026-10-10 16:21:48.06664+00"
     },
     "migrations/campaign/datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql": {
       "source": "matrx-frontend",
