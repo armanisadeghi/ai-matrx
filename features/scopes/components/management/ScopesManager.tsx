@@ -195,11 +195,11 @@ export function ScopesManager({ organization, role, adminLane = false }: ScopesM
   if (adminLane && adminResult && (adminResult.status === "not_found" || adminResult.status === "error")) {
     return (
       <div className="rounded-lg border border-border bg-card p-6 text-sm">
-        <p className="font-medium text-foreground">
+        <p data-error-box className="font-medium text-foreground">
           {adminResult.status === "not_found"
             ? "This organization was not found."
             : "This organization's scopes could not be loaded."}
-        </p>
+        <ErrorAlchemyMenu /></p>
         <p className="mt-1 text-muted-foreground">
           {adminResult.status === "error" ? adminResult.message : "It may have been archived, or the link is wrong."}
           {adminResult.status === "error" ? <ErrorAlchemyMenu error={adminResult.message} /> : null}

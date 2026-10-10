@@ -29,6 +29,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenLinkRecordSheet } from "@/features/overlays/openers/linkRecordSheet";
 import { toast } from "@/components/ui/use-toast";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export const ANCHORED_TO = "anchored_to";
 const STORE_RECORD = "record";
 
@@ -151,7 +152,7 @@ export function LinkedRecordsSection({ token, id, title, className, backLinksSho
           </button>
         </div>
       )}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       {!backLinksShownElsewhere && !error && status !== "ready" && links.length === 0 ? (
         <p className="text-xs text-muted-foreground" aria-busy="true">Loading links…</p>
       ) : null}
