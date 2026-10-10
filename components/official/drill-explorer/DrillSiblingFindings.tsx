@@ -23,6 +23,7 @@ import type { DrillMoneyUnit } from "./measureFormat";
 import { findingQuestion, findingsOf, type DrillNameResolver } from "./types";
 import { doorWindow, drillRowOf, drillWindowKey } from "./useDrillExplorer";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const ROWS_SHOWN = 5;
 
 type Row = { groups: Record<string, string | null>; value: number | null };
@@ -112,7 +113,7 @@ export function DrillSiblingFindings({
             {answer.state === "reading" ? (
               <div className="mt-1 h-4 w-40 animate-pulse rounded bg-muted" />
             ) : answer.state === "failed" ? (
-              <p className="mt-1 type-secondary text-destructive">{answer.message}</p>
+              <p className="mt-1 type-secondary text-destructive">{answer.message}<ErrorAlchemyMenu error={answer.message} /></p>
             ) : answer.rows.length === 0 ? (
               <p className="mt-1 type-secondary text-muted-foreground" data-drill-explorer-finding-none>
                 none

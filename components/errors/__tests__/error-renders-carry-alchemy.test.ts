@@ -125,6 +125,8 @@ describe("the error-display detector (self-test — each RC-B12 verify hole, red
     // …but an ErrorNotice beside a raw box is not the box's menu (F9).
     expect(count('<div><ErrorNotice message="x" /><p role="alert">{error}</p></div>')).toBe(1);
     expect(count('<ErrorNotice title="Not saved" message={error} />')).toBe(0);
+    // The design-system StaleDataNotice draws its own menu (ErrorActions).
+    expect(count('<StaleDataNotice hasData={false} what="your tasks" detail={error} onRetry={retry} />')).toBe(0);
     expect(count('<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>')).toBe(0);
     expect(count('<ErrorNotice title="t"><p className="text-destructive">{error}</p></ErrorNotice>')).toBe(0);
   });

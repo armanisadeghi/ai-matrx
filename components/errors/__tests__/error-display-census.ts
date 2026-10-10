@@ -77,7 +77,9 @@ const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$|^reason$|Reason$|^detail$
 const ERROR_CONDITION = /[eE]rror|[fF]ail|[pP]roblem|[rR]efus|===?\s*["'`](?:error|failed|bad|danger|destructive)["'`]/;
 /** An inline style that paints text red. */
 const STYLE_RED = /color\s*:\s*["'`]?(?:red\b|#(?:f|e|d)[0-9a-f]{2,5}\b|rgb\(\s*2[0-5]\d|hsl\(\s*0\b|var\(--(?:destructive|red))/i;
-const CARRIER_NAMES = new Set(["ErrorAlchemyMenu", "ErrorNotice", "ErrorBox", "ErrorActions"]);
+// `StaleDataNotice` is the design-system banner: its own render draws `ErrorActions` (the Alchemy
+// menu) — verified in @ai-matrx/design-system dist — so a call site is a carrier, not an uncarried display.
+const CARRIER_NAMES = new Set(["ErrorAlchemyMenu", "ErrorNotice", "ErrorBox", "ErrorActions", "StaleDataNotice"]);
 const WRAPPER_NAMES = new Set(["ErrorNotice", "ErrorBox", "ErrorBoundaryView"]);
 const CONTROLS = /^(button|Button|option|input|textarea|select|label|Label|title|TooltipContent)$/;
 
