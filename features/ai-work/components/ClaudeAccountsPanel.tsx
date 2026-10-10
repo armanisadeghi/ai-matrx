@@ -18,7 +18,7 @@
  * send and read mail.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Copy, ExternalLink, KeyRound, LogOut, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@ai-matrx/design-system";
@@ -31,6 +31,8 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { isJsonObject } from "@/types/json";
+import { apiGet } from "@/lib/api/typed-client";
+import { runClaudeConnect } from "@/features/ai-work/lib/claudeConnectFlow";
 import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
 import {
   cancelOwnPlanSignIn,
@@ -45,6 +47,21 @@ import {
 } from "@/features/ai-work/lib/ownPlan";
 
 const PROVIDER = "claude_code" as const;
+const HOSTED_RUNTIME_PATH = "/coding-sessions/hosted/runtime" as const;
+
+function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const id = window.setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(id);
+        resolve();
+      },
+      { once: true },
+    );
+  });
+}
 const PRIMARY = "primary";
 const CLAUDE_CONNECTORS_URL = "https://claude.ai/settings/connectors";
 
@@ -98,6 +115,8 @@ export function ClaudeAccountsPanel() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<Busy>(null);
   const [copied, setCopied] = useState(false);
+  const [connectFailure, setConnectFailure] = useState<string | null>(null);
+  const connectAbort = useRef<AbortController | null>(null);
   const [capacity, setCapacity] = useState<SandboxCapacityRefusal | null>(null);
   const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const connectorUrl = `${resolveBaseUrl().replace(/\/$/, "")}/api/matrx-mcp`;
@@ -125,22 +144,39 @@ export function ClaudeAccountsPanel() {
     const slot = taken.has(PRIMARY) ? newClaudeAccountSlot() : PRIMARY;
     setBusy("starting");
     setCapacity(null);
+    setConnectFailure(null);
+    const controller = new AbortController();
+    connectAbort.current = controller;
     try {
-      const status = await startOwnPlanSignIn(PROVIDER, slot);
-      if (status.signed_in) {
+      const outcome = await runClaudeConnect({
+        start: () => startOwnPlanSignIn(PROVIDER, slot),
+        readiness: async () => (await apiGet(HOSTED_RUNTIME_PATH)).data,
+        isFatal: (cause) => capacityRefusalOf(cause) !== null,
+        describe: (cause) => getUserMessage(cause),
+        sleep: abortableSleep,
+        now: () => Date.now(),
+        signal: controller.signal,
+        onStarting: () => {},
+      });
+      if (outcome.kind === "signed_in") {
         toast.success("Claude account connected");
         reload();
-      } else {
-        setPending({ slot, status });
+      } else if (outcome.kind === "awaiting") {
+        setPending({ slot, status: outcome.status });
+      } else if (outcome.kind === "failed" || outcome.kind === "timeout") {
+        setConnectFailure(outcome.message);
       }
     } catch (cause) {
       const full = capacityRefusalOf(cause);
       if (full) setCapacity(full);
-      else toast.error(getUserMessage(cause));
+      else setConnectFailure(getUserMessage(cause));
     } finally {
+      if (connectAbort.current === controller) connectAbort.current = null;
       setBusy(null);
     }
   };
+
+  const cancelStarting = () => connectAbort.current?.abort();
 
   const finish = async () => {
     if (!pending || !code.trim()) return;
@@ -231,12 +267,36 @@ export function ClaudeAccountsPanel() {
             disabled={busy !== null || pending !== null}
           >
             {busy === "starting" ? <Spinner size="sm" /> : <Plus className="size-3.5" />}
-            {busy === "starting" ? "Starting sign-in…" : "Connect"}
+            {busy === "starting" ? "Starting…" : "Connect"}
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Delivers messages to your Claude cloud sessions.
         </p>
+
+        {busy === "starting" && (
+          <div
+            className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-border p-3"
+            role="status"
+          >
+            <span className="flex items-center gap-2 text-xs text-foreground">
+              <Spinner size="sm" />
+              Starting your sandbox…
+            </span>
+            <Button variant="quiet" size="sm" onClick={cancelStarting}>
+              Cancel
+            </Button>
+          </div>
+        )}
+
+        {connectFailure && busy !== "starting" && (
+          <div className="mt-3 space-y-2 rounded-lg border border-border p-3" role="alert">
+            <ErrorNotice message={connectFailure} size="inline" />
+            <Button variant="outline" size="sm" onClick={() => void connect()}>
+              Try again
+            </Button>
+          </div>
+        )}
 
         {capacity && (
           <div className="mt-3 space-y-2 rounded-lg border border-border p-3" role="alert">
