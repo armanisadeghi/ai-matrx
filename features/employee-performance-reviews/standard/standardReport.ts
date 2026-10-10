@@ -56,6 +56,14 @@ export function buildReportModel(detail: ReviewDetail): ReportModel {
   };
 }
 
+/** Escapes what Markdown would read as formatting, and keeps a person's line breaks inside one block. */
+export function mdEscape(text: string): string {
+  return text
+    .replace(/([\\`*_{}\[\]<>#|~])/g, "\\$1")
+    .replace(/^(\s*)([-+]|\d+[.)])(\s)/gm, "$1\\$2$3")
+    .replace(/\r?\n/g, "  \n");
+}
+
 const listOf = (a: ReviewAnswers, q: TemplateQuestion) => (a.lists[q.key] ?? []).filter((x) => x.trim() !== "");
 const textOf = (a: ReviewAnswers, q: TemplateQuestion) => (a.texts[q.key] ?? "").trim();
 
@@ -77,15 +85,15 @@ export function buildReportMarkdown(m: ReportModel): string {
           if (m.goals.length === 0) out.push("_No goals in this period_");
           for (const g of m.goals) {
             const note = (t.answers.texts[g.answerKey] ?? "").trim();
-            out.push(`- ${g.title}: ${t.answers.ratings[g.answerKey] ?? "not rated"}${note ? ` (${note})` : ""}`);
+            out.push(`- ${mdEscape(g.title)}: ${t.answers.ratings[g.answerKey] ?? "not rated"}${note ? ` (${mdEscape(note)})` : ""}`);
           }
           out.push("");
         } else if (q.type === "text") {
-          out.push(textOf(t.answers, q) || "_Nothing written_", "");
+          out.push(textOf(t.answers, q) ? mdEscape(textOf(t.answers, q)) : "_Nothing written_", "");
         } else {
           const items = listOf(t.answers, q);
           if (items.length === 0) out.push("_Nothing written_");
-          else items.forEach((x, i) => out.push(`${i + 1}. ${x}`));
+          else items.forEach((x, i) => out.push(`${i + 1}. ${mdEscape(x)}`));
           out.push("");
         }
       }
@@ -93,7 +101,7 @@ export function buildReportMarkdown(m: ReportModel): string {
   }
   if (m.acknowledgedOn) {
     out.push(`**Acknowledged:** ${m.acknowledgedOn}`);
-    if (m.acknowledgmentComment) out.push("", `> ${m.acknowledgmentComment}`);
+    if (m.acknowledgmentComment) out.push("", ...m.acknowledgmentComment.split(/\r?\n/).map((l) => `> ${mdEscape(l)}`));
   }
   return out.join("\n").trimEnd() + "\n";
 }

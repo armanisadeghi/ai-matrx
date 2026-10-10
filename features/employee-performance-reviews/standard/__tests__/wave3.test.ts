@@ -132,3 +132,19 @@ describe("report with peers and goals", () => {
     expect(md).toContain("Close in four days: 4 (Delivered early)");
   });
 });
+
+import { mdEscape } from "../standardReport";
+describe("markdown output", () => {
+  it("quotes every line of a multi-line acknowledgment and escapes formatting characters", () => {
+    const detail = parseReviewDetail({
+      ok: true,
+      review: { review_id: "r1", employee_name: "Elena", manager_name: "Daniel", acknowledged_at: "2026-11-02", acknowledgment_comment: "Thank you.\n# Not a heading\n- not a list" },
+      template: { sections: [{ key: "s", title: "Strengths", questions: [{ key: "s", type: "narrative_list", label: "Strengths" }] }] },
+      responses: [{ role: "self", status: "submitted", visible: true, is_mine: true, answers: { lists: { s: ["**bold** <b>x</b> [link](u)"] } } }],
+    })!;
+    const md = buildReportMarkdown(buildReportModel(detail));
+    expect(md).toContain("> Thank you.\n> \\# Not a heading\n> \\- not a list");
+    expect(md).toContain("1. \\*\\*bold\\*\\* \\<b\\>x\\</b\\> \\[link\\](u)");
+    expect(mdEscape("a\nb")).toBe("a  \nb");
+  });
+});
