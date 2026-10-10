@@ -313,6 +313,13 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Spend Alarms",
+        description: "Every spend alarm as one record: what was blocked, the rule, and what to do.",
+        iconName: "OctagonAlert",
+        link: "/administration/billing/alarms",
+        isNew: true,
+      },
+      {
         title: "Plans & Pricing",
         description:
           "Every plan's name, prices, tagline, badge and listing, plus its allowances — what the pricing page and upgrade dialogs show.",

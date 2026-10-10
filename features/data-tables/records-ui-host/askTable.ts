@@ -12,6 +12,7 @@
  * through `storedMandateKey` (types, never rejects; the server answers an unknown key with a 404).
  */
 
+import { usdToPoints } from "@ai-matrx/kit/format";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import type { TableAskAgentAnswer, TableAskOutcome, TableAskRequest } from "@ai-matrx/records-ui";
 import type { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
@@ -69,8 +70,12 @@ export async function askTableByMandate(args: {
   launchMandate: LaunchMandate;
   organizationId: string | null;
   ask: TableAskRequest;
+  /** The USD this run cost, read from the request's usage (null = not recorded). Converted to points here, never shown as dollars. */
+  readCostUsd?: ((requestId: string) => number | null) | undefined;
+  /** The viewer's points-per-dollar rate (null until the knob has answered: the cost is then not measured). */
+  pointsRate?: (() => number | null) | undefined;
 }): Promise<TableAskOutcome> {
-  const { launchMandate, organizationId, ask } = args;
+  const { launchMandate, organizationId, ask, readCostUsd, pointsRate } = args;
   try {
     const launched = await launchMandate(TABLE_ASK_MANDATE_KEY, {
       surfaceKey: `data:${ask.tableId}`,
@@ -83,7 +88,9 @@ export async function askTableByMandate(args: {
     });
     const text = launched.responseText?.trim() ?? "";
     if (text === "") return { ok: false, message: "No answer came back" };
-    return { ok: true, answer: tableAskAnswerFrom(text) };
+    const usd = launched.requestId && readCostUsd ? readCostUsd(launched.requestId) : null;
+    const costPoints = usdToPoints(usd, { rate: pointsRate?.() ?? null });
+    return { ok: true, answer: tableAskAnswerFrom(text), costPoints };
   } catch (thrown) {
     return { ok: false, message: thrown instanceof Error && thrown.message ? thrown.message : "The question could not be asked" };
   }

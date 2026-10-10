@@ -77,6 +77,8 @@ const PAGE_TEXT_FILE_IDS = new Set(["save-as-pdf"]);
 /** The object's own Open row, and the Link verb that sits right after it. */
 const OPEN_ROW = /^open( record)?$/i;
 const LINK_A_RECORD = /^link a record/i;
+// The record's other own verbs (Merge, Split, Extract parent) are top-level beside Open and Link, outside the own-row cap.
+const RECORD_VERBS = [/^merge with/i, /^split(…|\.\.\.)?$/i, /^extract parent/i];
 
 /** Own rows that fold into a strip verb instead of sitting beside it. */
 const FOLDS_INTO_SHARE = [/^copy link\b/i, /^share link\b/i];
@@ -207,14 +209,19 @@ export function proposedArrangement(
   };
   const openRow = lead(OPEN_ROW);
   const linkRow = lead(LINK_A_RECORD);
-  ownCandidates.unshift(...[openRow, linkRow].filter((r): r is ResolvedAction => r !== null));
+  const verbRows = RECORD_VERBS.map(lead).filter((r): r is ResolvedAction => r !== null);
+  const leading = [openRow, linkRow, ...verbRows].filter((r): r is ResolvedAction => r !== null);
+  const verbIds = new Set(verbRows.map((r) => r.action.id));
+  let counted = 0;
+  ownCandidates.unshift(...leading);
   const own: ResolvedAction[] = [];
   const more: Action[] = [];
   for (const r of ownCandidates) {
     used.add(r.action.id);
     const folds = hasShare && FOLDS_INTO_SHARE.some((re) => re.test(label(r)));
-    if (!folds && own.length < OWN_ROWS_MAX && !r.action.expand) {
+    if (!folds && (verbIds.has(r.action.id) || counted < OWN_ROWS_MAX) && !r.action.expand) {
       const destructive = SLOT.archive!.ownLabels!.some((re) => re.test(label(r)));
+      if (!verbIds.has(r.action.id)) counted += 1;
       own.push({ ...r, action: plain(r.action, { category: "edit", order: own.length, ...(destructive ? { destructive: true } : {}) }) });
     } else {
       more.push(plain(r.action));

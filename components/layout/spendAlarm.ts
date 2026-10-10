@@ -1,9 +1,11 @@
 import type { SystemAnnouncement } from "@/types/feedback.types";
+import { spendAlarmHref } from "@/features/admin/spend-alarms/spendAlarms";
 
 /**
  * Spend alarms ride the existing super-admin delivery rail: a targeted
- * `users.system_announcements` row written by aidream's
- * `services/billing/spend_alarm.py`. `metadata.alarm === true` marks the row.
+ * `users.system_announcements` row per super admin (their own "seen" state), written by aidream's
+ * `billing.spend_alarm_raise`. `metadata.alarm === true` marks the row and `metadata.record_id`
+ * names the ONE shared alarm record (`billing.spend_alarm`); every alarm opens that record's page.
  */
 /**
  * How serious an alarm is, graded per kind by the writer (aidream `ALARM_KINDS`, the one table):
@@ -15,6 +17,9 @@ export const ALARM_LEVELS: readonly AlarmLevel[] = ["critical", "warning", "info
 
 export type SpendAlarm = {
   id: string;
+  /** The shared alarm record (billing.spend_alarm) this delivery row points at. */
+  recordId: string | null;
+  kind: string | null;
   /** Acknowledgement key. A repeat of the same alarm changes `count`, so it asks again. */
   ackKey: string;
   /** The legacy two-step severity older rows carry; `level` is the grade the panel shows. */
@@ -24,6 +29,7 @@ export type SpendAlarm = {
   fix: string | null;
   title: string;
   detail: string;
+  /** Always the record page (`/administration/billing/alarms/<id>`), or null with no record. */
   link: string | null;
   count: number;
   lastAt: string;
@@ -41,18 +47,20 @@ export function toSpendAlarm(a: SystemAnnouncement): SpendAlarm | null {
   const meta = asRecord(a.metadata);
   if (!meta || meta.alarm !== true) return null;
   const count = typeof meta.count === "number" ? meta.count : 1;
-  const link = typeof meta.link === "string" && meta.link ? meta.link : null;
+  const recordId = typeof meta.record_id === "string" && meta.record_id ? meta.record_id : null;
   const severity = meta.severity === "error" ? "error" : "warning";
   const level: AlarmLevel = ALARM_LEVELS.find((l) => l === meta.level) ?? (severity === "error" ? "critical" : "warning");
   return {
     id: a.id,
+    recordId,
+    kind: typeof meta.kind === "string" ? meta.kind : null,
     ackKey: `${a.id}:${count}`,
     severity,
     level,
     fix: typeof meta.fix === "string" && meta.fix ? meta.fix : null,
     title: a.title,
-    detail: a.message.split("\n\nOpen: ")[0],
-    link,
+    detail: a.message.split("\n\nOpen: ")[0].split("\n\nHappened ")[0],
+    link: recordId ? spendAlarmHref(recordId) : null,
     count,
     lastAt: typeof meta.last_at === "string" ? meta.last_at : a.updated_at,
     subjectUserId:
@@ -74,13 +82,10 @@ export function countByLevel(alarms: SpendAlarm[]): Record<AlarmLevel, number> {
   return out;
 }
 
-const ACCOUNT_LINK_BASE = "https://manage.aimatrx.com/administration/users/usage?user=";
-
 /**
- * Rows written before the writer resolved names carry a raw user id in the title,
- * the detail and a generic link. Show the person instead: swap the id (and its
- * "Account " prefix) for the name, drop a title amount the detail already
- * states, and send Open to that person's usage page.
+ * Rows written before the writer resolved names carry a raw user id in the title
+ * and the detail. Show the person instead: swap the id (and its "Account " prefix)
+ * for the name, and drop a title amount the detail already states.
  */
 export function nameSpendAlarm(alarm: SpendAlarm, names: ReadonlyMap<string, string>): SpendAlarm {
   const id = alarm.subjectUserId;
@@ -94,7 +99,6 @@ export function nameSpendAlarm(alarm: SpendAlarm, names: ReadonlyMap<string, str
     ...alarm,
     title: amount && detail.includes(amount.trim()) ? title.slice(0, -amount.length) : title,
     detail,
-    link: alarm.link && alarm.link.endsWith("/administration/billing") ? ACCOUNT_LINK_BASE + id : alarm.link,
   };
 }
 

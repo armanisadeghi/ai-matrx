@@ -2,6 +2,18 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import SpendAlarmPanel from "./SpendAlarmPanel";
+
+const copied: unknown[] = [];
+jest.mock("@/components/agent-copy/CopyButtons", () => ({
+  CopyButtons: ({ label, agent }: { label: string; agent: () => unknown }) => (
+    <button type="button" title={`Copy ${label} for AI`} aria-label={`Copy for AI: ${label}`} onClick={() => copied.push(agent())} />
+  ),
+}));
+jest.mock("@/components/official/ProTextarea", () => ({
+  ProTextarea: (p: { value: string; onChange: (e: { target: { value: string } }) => void; placeholder?: string }) => (
+    <textarea data-testid="resolve-note" value={p.value} placeholder={p.placeholder} onChange={(e) => p.onChange({ target: { value: e.target.value } })} />
+  ),
+}));
 import type { SpendAlarm } from "./spendAlarm";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -24,13 +36,15 @@ const click = (el: Element | undefined) => {
 
 const mk = (over: Partial<SpendAlarm>): SpendAlarm => ({
   id: "x",
+  recordId: "rec-x",
   ackKey: "x:1",
   severity: "warning",
   level: "warning",
+  kind: "spend_approval_hold",
   fix: "Approve or reject this run",
   title: "Run held",
   detail: "A run was refused.",
-  link: "https://manage.aimatrx.com/administration/billing/approvals?id=ap-1",
+  link: "/administration/billing/alarms/rec-x",
   count: 1,
   lastAt: "2026-10-10T10:00:00Z",
   subjectUserId: null,
@@ -38,13 +52,13 @@ const mk = (over: Partial<SpendAlarm>): SpendAlarm => ({
 });
 
 const alarms = [
-  mk({ id: "c", ackKey: "c:1", level: "critical", severity: "error", title: "Spend spike", fix: "Stop what is driving it" }),
+  mk({ id: "c", recordId: "rec-c", link: "/administration/billing/alarms/rec-c", ackKey: "c:1", level: "critical", severity: "error", title: "Spend spike", fix: "Stop what is driving it" }),
   mk({ id: "w", ackKey: "w:1" }),
-  mk({ id: "i", ackKey: "i:1", level: "info", fix: "None needed", title: "Source skipped" }),
+  mk({ id: "i", recordId: "rec-i", link: "/administration/billing/alarms/rec-i", ackKey: "i:1", level: "info", fix: "None needed", title: "Source skipped" }),
 ];
 
 function renderPanel(over: Partial<React.ComponentProps<typeof SpendAlarmPanel>> = {}) {
-  const props = { alarms, onAcknowledge: jest.fn(), onAcknowledgeAll: jest.fn(), onClose: jest.fn(), ...over };
+  const props = { alarms, onOpen: jest.fn(), onResolve: jest.fn(), onSnooze: jest.fn(), onClose: jest.fn(), ...over };
   root = createRoot(document.body.appendChild(document.createElement("div")));
   act(() => root!.render(<SpendAlarmPanel {...props} />));
   return props;
@@ -63,27 +77,22 @@ describe("SpendAlarmPanel", () => {
     const critical = byTestId("alarm-c")!;
     const warning = byTestId("alarm-w")!;
     const info = byTestId("alarm-i")!;
-    expect(critical.getAttribute("data-level")).toBe("critical");
-    expect(warning.getAttribute("data-level")).toBe("warning");
-    expect(info.getAttribute("data-level")).toBe("info");
-    const classes = [critical, warning, info].map((n) => n.className);
-    expect(new Set(classes).size).toBe(3);
+    expect([critical, warning, info].map((n) => n.getAttribute("data-level"))).toEqual(["critical", "warning", "info"]);
+    expect(new Set([critical, warning, info].map((n) => n.className)).size).toBe(3);
     const icons = [critical, warning, info].map((n) => n.querySelector("svg")?.getAttribute("data-alarm-icon"));
     expect(new Set(icons).size).toBe(3);
   });
 
   it("lists critical first", () => {
     renderPanel({ alarms: [alarms[2]!, alarms[1]!, alarms[0]!] });
-    const order = allAlarms().map((n) => n.getAttribute("data-level"));
-    expect(order).toEqual(["critical", "warning", "info"]);
+    expect(allAlarms().map((n) => n.getAttribute("data-level"))).toEqual(["critical", "warning", "info"]);
   });
 
-  it("names the verbs with tooltips, and has no Acknowledge", () => {
+  it("has no Mark reviewed; Resolve says what it does", () => {
     renderPanel();
-    expect(document.body.textContent ?? "").not.toMatch(/acknowledge/i);
-    const reviewed = buttons().find((b) => b.textContent?.trim() === "Mark reviewed")!;
-    expect(reviewed.getAttribute("title")).toBe("Hide until it happens again");
-    expect(button("Remind me later")!.getAttribute("title")).toBeTruthy();
+    expect(document.body.textContent ?? "").not.toMatch(/mark (all )?reviewed|acknowledge/i);
+    const resolve = buttons().find((b) => b.textContent?.trim() === "Resolve")!;
+    expect(resolve.getAttribute("title")).toBe("Marks this alarm resolved for everyone; it reopens if it happens again");
     for (const b of buttons()) {
       if (b.getAttribute("aria-label") === "Close") continue;
       expect((b.getAttribute("title") ?? "").length).toBeGreaterThan(0);
@@ -91,32 +100,46 @@ describe("SpendAlarmPanel", () => {
     }
   });
 
-  it("marks one reviewed, and Remind me later closes without marking", () => {
-    const props = renderPanel();
-    click(buttons().find((b) => b.textContent?.trim() === "Mark reviewed"));
-    expect(props.onAcknowledge).toHaveBeenCalledWith("c:1");
+  it("Open goes to the alarm's own record page, never a list or person page", () => {
+    const props = renderPanel({ alarms: [alarms[0]!] });
+    click(button("Open"));
+    expect(props.onOpen).toHaveBeenCalledWith("/administration/billing/alarms/rec-c");
+  });
+
+  it("an alarm with no record has no Open at all", () => {
+    renderPanel({ alarms: [mk({ recordId: null, link: null })] });
+    expect(button("Open")).toBeUndefined();
+  });
+
+  it("Resolve takes an optional note, then resolves for everyone", () => {
+    const props = renderPanel({ alarms: [alarms[0]!] });
+    click(buttons().find((b) => b.textContent?.trim() === "Resolve"));
+    expect(props.onResolve).not.toHaveBeenCalled();
+    const note = byTestId("resolve-note") as HTMLTextAreaElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+      setter.call(note, "storm stopped by the skip");
+      note.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    click(button("Resolve for everyone"));
+    expect(props.onResolve).toHaveBeenCalledWith(alarms[0], "storm stopped by the skip");
+  });
+
+  it("Snooze 24h and Remind me later", () => {
+    const props = renderPanel({ alarms: [alarms[1]!] });
+    click(button("Snooze 24h"));
+    expect(props.onSnooze).toHaveBeenCalledWith(alarms[1]);
     click(button("Remind me later"));
     expect(props.onClose).toHaveBeenCalled();
-    expect(props.onAcknowledgeAll).not.toHaveBeenCalled();
+    expect(props.onResolve).not.toHaveBeenCalled();
   });
 
-  it("Mark all reviewed asks once, naming the count, before it acts", () => {
-    const props = renderPanel();
-    click(button("Mark all reviewed"));
-    expect(props.onAcknowledgeAll).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain("Mark all 3 reviewed?");
-    click(button("Yes, mark 3"));
-    expect(props.onAcknowledgeAll).toHaveBeenCalledTimes(1);
-  });
-
-  it("opens the exact record link", () => {
-    const open = jest.spyOn(window, "open").mockImplementation(() => null);
-    renderPanel({ alarms: [alarms[1]!] });
-    click(button("Open"));
-    expect(open).toHaveBeenCalledWith(
-      "https://manage.aimatrx.com/administration/billing/approvals?id=ap-1",
-      "_blank",
-      "noopener,noreferrer",
-    );
+  it("each alarm has Copy for AI carrying its record page and ids", () => {
+    copied.length = 0;
+    renderPanel({ alarms: [alarms[0]!] });
+    click(button("Copy for AI: Spend alarm"));
+    const payload = JSON.stringify(copied[0]);
+    expect(payload).toContain("/administration/billing/alarms/rec-c");
+    expect(payload).toContain("Stop what is driving it");
   });
 });

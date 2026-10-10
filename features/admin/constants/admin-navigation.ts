@@ -633,6 +633,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [destination("/administration/billing/approvals")],
       },
       {
+        name: "Alarms",
+        iconName: "OctagonAlert",
+        destinations: [destination("/administration/billing/alarms")],
+      },
+      {
         name: "Plans",
         iconName: "Tags",
         destinations: [destination("/administration/billing/plans")],

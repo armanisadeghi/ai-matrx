@@ -14,8 +14,7 @@
 
 import { type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Building2, Database } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { RecordsMount, TablesHome } from "@ai-matrx/records-ui";
 import { TEMPLATE_GALLERY_HREF } from "./gallery/galleryHref";
 
@@ -80,10 +79,13 @@ export function SavesTo() {
 export function NewTableBody({
   what,
   organization,
+  onClose,
 }: {
   what?: "create" | undefined;
   /** A record's own organization: the table is made there, the active organization untouched. */
   organization?: { id: string; name: string } | null;
+  /** The frame this body sits in closes (Cancel, or a table was opened). */
+  onClose?: (() => void) | undefined;
 }) {
   const router = useRouter();
   // org-filter: write-target a new table is made in the organization new things are saved to
@@ -98,11 +100,16 @@ export function NewTableBody({
     <MakeMount organizationId={targetId as string}>
       <TablesHome
         makingOnly
+        className="h-full"
         templatesHref={TEMPLATE_GALLERY_HREF}
+        describeHref="/make"
+        connectHref="/data/connect"
         {...(asked ? { askedBy: asked } : {})}
-        onOpenTable={(tableId: string, dashboardId?: string | null) =>
-          router.push(dashboardId ? `/data/${tableId}?dashboard=${dashboardId}` : `/data/${tableId}`)
-        }
+        {...(onClose ? { onCancel: onClose } : {})}
+        onOpenTable={(tableId: string, dashboardId?: string | null) => {
+          onClose?.();
+          router.push(dashboardId ? `/data/${tableId}?dashboard=${dashboardId}` : `/data/${tableId}`);
+        }}
       />
     </MakeMount>
   );
@@ -121,33 +128,24 @@ export function NewTableDialog({
 }) {
   return (
     <Dialog open={what !== null} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <DialogContent className="flex max-h-[90dvh] w-[min(44rem,calc(100vw-2rem))] max-w-none flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <DialogTitle className="text-base font-medium">
-            New table
-          </DialogTitle>
-          <div className="flex flex-wrap items-center gap-1">
-            {/* An outside Postgres table as a Synced table (lane VISION-REACH wave 3). */}
-            {what === "create" ? (
-              <Button asChild size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" data-connect-database-entry="">
-                <Link href="/data/connect" onClick={onClose}>
-                  <Database className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  Connect a database
-                </Link>
-              </Button>
-            ) : null}
-            {organization ? (
-              <span className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" data-make-saves-to="record">
-                <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="truncate">New things save to {organization.name}</span>
-              </span>
-            ) : (
+      {/* A real size, fixed (moving between Blank, Import and the column step never resizes it); on a
+          phone the same dialog is a full-height sheet. The close X has its own corner (pr-14). */}
+      <DialogContent className="flex h-[min(40rem,85dvh)] w-[min(38rem,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden p-0 max-md:h-[90dvh]">
+        <div className="flex shrink-0 flex-col gap-0.5 border-b py-3 pl-5 pr-14">
+          <DialogTitle className="text-base font-semibold">New table</DialogTitle>
+          {organization ? (
+            <span className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground" data-make-saves-to="record">
+              <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="truncate">Saves to {organization.name}</span>
+            </span>
+          ) : (
+            <div className="-ml-2 flex min-w-0">
               <SavesTo />
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto" data-new-table-dialog={what ?? ""}>
-          {what ? <NewTableBody what={what} organization={organization ?? null} /> : null}
+        <div className="min-h-0 flex-1" data-new-table-dialog={what ?? ""} data-connect-database-entry="">
+          {what ? <NewTableBody what={what} organization={organization ?? null} onClose={onClose} /> : null}
         </div>
       </DialogContent>
     </Dialog>

@@ -680,8 +680,10 @@ def main():
     strata['upper management holds the upper_management seat'] = one(
         "select count(*) from fx_review r where iam.seats_of(%s, 'hr_review', r.id) @> array['upper_management']",
         (P['upper']['uid'],))
+    # calibrate by HR who is the subject, on their own reviews, compared legacy vs live in every write configuration
     strata['HR who is the subject: calibrate on their own review'] = one(
-        "select count(*) from fx_out where caller = 'hr_subj' and door = 'hr_review_calibrate' and target in (select id::text from fx_review where subject = 'hr_subj')")
+        "select count(*) from fx_call c join fx_review r on r.id = c.review where c.door = 'hr_review_calibrate' and r.subject = 'hr_subj'"
+    ) * len(write_cfgs)
     strata['no-login employee reviews'] = sum(1 for m in REVIEWS.values() if m['subject'] == 'emp_nl')
     strata['no-login manager reviews'] = sum(1 for m in REVIEWS.values() if m['subject'] == 'emp_nm')
     for st in ('pending', 'approved', 'declined'):
@@ -779,6 +781,21 @@ def _seatless(obj, seen):
     return obj
 
 
+def _dead_subject_reopen(obj):
+    """Clear legacy can.reopen where the caller's seat is the subject's (my_seat 'employee'); True when one was set."""
+    hit = False
+    if isinstance(obj, dict):
+        if obj.get('my_seat') == 'employee' and isinstance(obj.get('can'), dict) and obj['can'].get('reopen') is True:
+            obj['can']['reopen'] = False
+            hit = True
+        for v in obj.values():
+            hit = _dead_subject_reopen(v) or hit
+    elif isinstance(obj, list):
+        for v in obj:
+            hit = _dead_subject_reopen(v) or hit
+    return hit
+
+
 def _parse(text):
     try:
         return json.loads(text)
@@ -805,6 +822,11 @@ def mode1_class(d, known, opening_pairs, upper_in, cycle_org):
             return None
     if L == N:
         return 'the seat list replaces my_seat (today\'s seat is in it)'
+    # legacy's reopen flag read hr._rev_can_manage alone, so HR who is the review's subject (my_seat 'employee') saw
+    # reopen = true while the legacy reopen door refused them (it needs seat 'hr' or the manager lane): a dead button
+    Ld = _parse(normalize(legacy, known))
+    if _dead_subject_reopen(Ld) and _seatless(Ld, []) == N:
+        return 'legacy offered reopen to HR who is the subject; its own door refused them'
     if _refused(L) and _refused(N):
         return 'both refuse (the reason is worded differently)'
     if _refused(N):

@@ -171,4 +171,22 @@ describe("Link a record… sits beside Open", () => {
     expect(ids).toContain("cm:x:row-open");
     expect(ids.indexOf("cm:x:row-link")).toBe(ids.indexOf("cm:x:row-open") + 1);
   });
+
+  it("keeps Merge, Split and Extract parent top-level on a record's row, not under More", () => {
+    const rows = [
+      ...universal(),
+      row("cm:x:cell-paste", "Paste", "edit"),
+      row("cm:x:cell-clear", "Clear cell", "edit"),
+      row("cm:x:cell-who", "Who changed this?", "edit"),
+      row("cm:x:row-open", "Open record", "edit"),
+      row("cm:x:row-history", "Row history", "edit"),
+      row("cm:x:row-copy", "Copy row", "edit"),
+      row("cm:x:row-merge", "Merge with…", "edit"),
+      row("cm:x:row-split", "Split…", "edit"),
+      row("cm:x:row-extract", "Extract parent…", "edit"),
+      row("cm:x:row-link", "Link a record…", "edit"),
+    ];
+    const top = proposedArrangement(thing, rows, { noun: "table" }).map((r) => r.action.id);
+    for (const id of ["cm:x:row-merge", "cm:x:row-split", "cm:x:row-extract"]) expect(top).toContain(id);
+  });
 });

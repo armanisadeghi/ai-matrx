@@ -59,7 +59,9 @@ import {
 } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { toast } from "@/lib/toast";
 import { organizationArchiveState, restoreArchivedOrganizationById } from "@/features/organizations/service/organizationArchive";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { currentPointsRate } from "@/components/cost/pointsRate";
+import { selectUserRequestResult } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { createRecordsRealtimePort } from "@ai-matrx/records/realtime";
@@ -261,6 +263,7 @@ export function useRecordsUiPorts({
 }): RecordsUiPorts {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
+  const store = useAppStore();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   const { launchMandate } = useAgentLauncher();
   const openLinkRecordSheet = useOpenLinkRecordSheet();
@@ -364,8 +367,15 @@ export function useRecordsUiPorts({
 
   /** THE TABLE'S ASK BOX: the `table.ask` mandate, run headless (`askTable.ts`). */
   const askTable = useCallback(
-    (ask: TableAskRequest) => askTableByMandate({ launchMandate, organizationId, ask }),
-    [launchMandate, organizationId],
+    (ask: TableAskRequest) =>
+      askTableByMandate({
+        launchMandate,
+        organizationId,
+        ask,
+        readCostUsd: (requestId) => selectUserRequestResult(requestId)(store.getState() as never)?.total_usage?.total?.total_cost ?? null,
+        pointsRate: currentPointsRate,
+      }),
+    [launchMandate, organizationId, store],
   );
 
   return { members, onAskForOne, openRecords, runAgentAction, askTable, organizationId, linkRecord };

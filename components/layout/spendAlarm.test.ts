@@ -25,7 +25,8 @@ describe("toSpendAlarm", () => {
     });
     expect(alarm?.level).toBe("critical");
     expect(alarm?.ackKey).toBe("a1:3");
-    expect(alarm?.link).toBe("https://manage.aimatrx.com/x");
+    // No record id: nothing to open (the writer always sends one; a row without is migrated).
+    expect(alarm?.link).toBeNull();
     expect(alarm?.detail).not.toContain("Open:");
   });
   it("sorts critical first, then warning, then info", () => {
@@ -69,11 +70,20 @@ describe("nameSpendAlarm", () => {
       link: "https://manage.aimatrx.com/administration/billing",
     },
   } as SystemAnnouncement;
-  it("shows the person, not the id, and opens that person's usage", () => {
-    const named = nameSpendAlarm(toSpendAlarm(row)!, new Map([["u9", "Dana Whitfield"]]));
+  it("shows the person, not the id, and still opens the alarm's own record", () => {
+    const named = nameSpendAlarm(toSpendAlarm({ ...row, metadata: { ...(row.metadata as object), record_id: "rec-9" } })!, new Map([["u9", "Dana Whitfield"]]));
     expect(named.title).toBe("Spend spike: Dana Whitfield spend, last 24 hours");
     expect(named.detail).not.toContain("u9");
-    expect(named.link).toBe("https://manage.aimatrx.com/administration/users/usage?user=u9");
+    expect(named.link).toBe("/administration/billing/alarms/rec-9");
+  });
+  it("opens the record page whatever link an old row carries", () => {
+    const alarm = toSpendAlarm({
+      ...base,
+      metadata: { alarm: true, record_id: "rec-1", kind: "protected_account_refusal", link: "https://manage.aimatrx.com/administration/users/usage?user=u1" },
+    })!;
+    expect(alarm.recordId).toBe("rec-1");
+    expect(alarm.link).toBe("/administration/billing/alarms/rec-1");
+    expect(alarm.kind).toBe("protected_account_refusal");
   });
   it("leaves the row alone when no name resolves", () => {
     const alarm = toSpendAlarm(row)!;
