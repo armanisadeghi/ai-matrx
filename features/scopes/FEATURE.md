@@ -12,10 +12,8 @@ this directory.
 
 0. **Every scope WRITE goes through `service/scopeStore.ts`** — types, scopes, context items,
    values, templates and tags, each one call to the record store's scope doors (`custom.context_*`,
-   lane SCOPES-WRITE-THROUGH, 2026-09-27). The doors decide by the organization's switch
-   (`custom.context_writer`, seam `scopes_screens`): where the record store writes the organization's
-   scopes the store is written in the same statement and its rules decide (a value is written in the
-   store first); elsewhere today's scope doors write and the store's copy follows. `scopesService.ts`
+   lane SCOPES-WRITE-THROUGH, 2026-09-27). Every organization's scopes are written in the record
+   store and its rules decide (the per-organization writer switch was retired 2026-10-09). `scopesService.ts`
    keeps the READS and is the legacy adapter until the final switch; its write methods are called by
    nothing (`service/scopeStore.test.ts` fails on any new call). Decoders + slug rule:
    `service/scopeRows.ts`. Design and census: `common-docs/systems/data/scopes-context/STATE.md`.

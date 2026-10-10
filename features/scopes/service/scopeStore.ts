@@ -4,13 +4,10 @@
 //
 // THE ONE WRITER OF SCOPES (lane SCOPES-WRITE-THROUGH, Data Doctrine: the scopes and context
 // transition). Every scope type, scope, context field, value, template and tag this app writes goes
-// through the record store's scope doors (`custom.context_*`), and nothing else. The doors decide
-// which system writes the organization's scopes (`custom.context_writer`, the seam
-// `scopes_screens`): in an organization whose record store is the writer, the store is written in
-// the same statement and its rules decide, and the old `context.*` rows are kept exact for every
-// reader that has not moved; in an older organization the old doors write and the store's copy
-// follows. This client never needs to know which: the doors answer the old row's image, so the
-// scopes tree and every screen decode the same shape either way, plus which system wrote it.
+// through the record store's scope doors (`custom.context_*`), and nothing else. Every
+// organization's scopes are written in the record store (the old writer switch was retired
+// 2026-10-09), and its rules decide. The doors answer the old row's image (with `writer: "store"`),
+// so the scopes tree and every screen decode one shape.
 //
 // `scopesService.ts` keeps the READS (tree, values, templates, archived lists, entity tags) and is the
 // legacy adapter until the final switch; its write methods are not called by anything but this file's
