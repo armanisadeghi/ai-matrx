@@ -60,6 +60,8 @@ export interface ContextTreeData {
   /** Per-scope-type context items, filled lazily via loadItems(). */
   itemsByType: Record<string, ContextField[]>;
   itemsLoading: Set<string>;
+  /** type id → the store's refusal of its field catalog (shown where the fields go). */
+  itemsError?: Record<string, string>;
   loadItems: (typeId: string) => void;
   /**
    * THE PAGED TREE (lane SCOPES-TREE-PAGED). Absent on a host that hands the tree in whole (the dense

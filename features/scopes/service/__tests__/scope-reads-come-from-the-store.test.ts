@@ -209,7 +209,7 @@ it("a suggestion's target, a name lookup, the archive and the System items read 
   if (!target.ok) throw new Error(target.error.message);
   expect(target.data.scope_type).toMatchObject({ id: MATTERS, slug: "matters", label_singular: "Matter" });
   expect(target.data.target_item?.field).toMatchObject({ id: ITEM_CLIENT, key: "client" });
-  expect(target.data.target_item?.current?.references[0]?.id).toBe(GOLDEN_STATE);
+  expect(target.data.target_item?.value?.references[0]?.id).toBe(GOLDEN_STATE);
 
   const named = await scopesService.findScopesByName(ORG, ["golden state indemnity co."]);
   if (!named.ok) throw new Error(named.error.message);
