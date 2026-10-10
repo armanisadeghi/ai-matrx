@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Archive, ClipboardCheck, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge, Button, EmptyState, Field, Select } from "@ai-matrx/design-system/controls";
-import { Switch } from "@ai-matrx/design-system";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Switch } from "@ai-matrx/design-system";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
 import { ProInput } from "@/components/official/ProInput";
@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { toast } from "@/lib/toast";
 
+import { useReloadOnReviewsChanged } from "./invalidation";
 import { templateProblemMessage } from "./messages";
 import { archiveTemplate, getTemplate, listTemplates, saveTemplate } from "./service";
 import { formatDay } from "./status";
@@ -46,10 +47,18 @@ export function TemplatesPanel() {
   const organizationId = hr.active?.organization_id ?? null;
   const [rows, setRows] = useState<TemplateRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<{ draft: TemplateDraft; metadataOnly: boolean } | null>(null);
+  // `editing` keeps the draft while the dialog fades out; only `editorOpen` closes it. Clearing the draft
+  // on close emptied the dialog before it left, and the shrinking card shifted the page.
+  const [editing, setEditingDraft] = useState<{ draft: TemplateDraft; metadataOnly: boolean; key: number } | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const openEditor = useCallback((next: { draft: TemplateDraft; metadataOnly: boolean }) => {
+    setEditingDraft((cur) => ({ ...next, key: (cur?.key ?? 0) + 1 }));
+    setEditorOpen(true);
+  }, []);
   const [archiving, setArchiving] = useState<TemplateRow | null>(null);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  useReloadOnReviewsChanged(reload);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -72,8 +81,8 @@ export function TemplatesPanel() {
       toast.error(r.message);
       return;
     }
-    setEditing({ metadataOnly: false, draft: draftFromSnapshot(r.data.snapshot, { templateId: t.templateId, name: t.name, description: t.description, isDefault: t.isDefault }) });
-  }, []);
+    openEditor({ metadataOnly: false, draft: draftFromSnapshot(r.data.snapshot, { templateId: t.templateId, name: t.name, description: t.description, isDefault: t.isDefault }) });
+  }, [openEditor]);
 
   const columns: MatrxColumnDef<TemplateRow>[] = useMemo(
     () => [
@@ -123,21 +132,6 @@ export function TemplatesPanel() {
   };
 
   if (!organizationId) return null;
-  if (editing) {
-    return (
-      <TemplateEditor
-        organizationId={organizationId}
-        initial={editing.draft}
-        metadataOnly={editing.metadataOnly}
-        onClose={() => setEditing(null)}
-        onSaved={() => {
-          setEditing(null);
-          reload();
-        }}
-      />
-    );
-  }
-
   return (
     <section aria-label="Review templates" className="space-y-3">
       {error ? (
@@ -154,7 +148,7 @@ export function TemplatesPanel() {
           pageSize={0}
           density="condensed"
           viewTabs={false}
-          toolbar={{ title: "Review templates", searchPlaceholder: "Search templates", add: { onAdd: () => setEditing({ draft: starterDraft(), metadataOnly: false }) } }}
+          toolbar={{ title: "Review templates", searchPlaceholder: "Search templates", add: { onAdd: () => openEditor({ draft: starterDraft(), metadataOnly: false }) } }}
           detail={{ enabled: false }}
           copy={copy}
           emptyState={{ title: "No templates yet" }}
@@ -165,12 +159,35 @@ export function TemplatesPanel() {
           title="No templates yet"
           line="The default template is made when you create your first cycle"
           action={
-            <Button icon={<Plus />} variant="primary" onClick={() => setEditing({ draft: starterDraft(), metadataOnly: false })}>
+            <Button icon={<Plus />} variant="primary" onClick={() => openEditor({ draft: starterDraft(), metadataOnly: false })}>
               New template
             </Button>
           }
         />
       ) : null}
+      {/* The editor opens over the list, never in its place: swapping it in pushed the settings below
+          the list down on open and pulled them back up on save (layout shift 0.117 / 0.136). */}
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing?.draft.templateId ? "Edit template" : "New template"}</DialogTitle>
+            <DialogDescription>Sections, questions and the rating scale</DialogDescription>
+          </DialogHeader>
+          {editing ? (
+            <TemplateEditor
+              key={editing.key}
+              organizationId={organizationId}
+              initial={editing.draft}
+              metadataOnly={editing.metadataOnly}
+              onClose={() => setEditorOpen(false)}
+              onSaved={() => {
+                setEditorOpen(false);
+                reload();
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog
         open={archiving !== null}
         onOpenChange={(o) => !o && setArchiving(null)}

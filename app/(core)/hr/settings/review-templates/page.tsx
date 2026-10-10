@@ -14,7 +14,7 @@ export const metadata = { title: "Review templates" };
 export default function Page() {
   return (
     <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
-      <HrLanePanel section="review-templates" prefixes={["standard_review_"]} title="Review templates">
+      <HrLanePanel section="review-templates" prefixes={["standard_review_"]} title="Review templates" childrenPlacement="after">
         <TemplatesPanel />
       </HrLanePanel>
     </Suspense>

@@ -90,7 +90,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
     <HrPageState loading={detail === null && error === null} error={error ? new Error(error) : null} onRetry={reload} operation="This review" variant="panel" requireEmployer={false}>
       {detail && review && template ? (
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
-          <div className="mx-auto max-w-4xl space-y-4 p-3">
+          <div className="mx-auto max-w-4xl space-y-4 px-3 pt-3">
             <header className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 {review.overallRating ? <Badge tone="primary">{ratingLabel(template.ratingPoints, review.overallRating)}</Badge> : null}

@@ -105,7 +105,7 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
     <HrPageState loading={cycle === null && error === null} error={error ? new Error(error) : null} onRetry={reload} operation="This review cycle" variant="panel">
       {c && cycle ? (
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
-          <div className="m-3 space-y-4">
+          <div className="mx-3 mt-3 space-y-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <Badge tone={closed ? "neutral" : "primary"}>{c.status}</Badge>
               <span>
@@ -153,20 +153,10 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
                 organizationId={c.organizationId}
                 onLaunched={(refusals) => {
                   setRefused(refusals);
+                  if (refusals.length > 0) toast.error(refusals.length === 1 ? "1 person was not added" : `${refusals.length} people were not added`);
                   reload();
                 }}
               />
-            ) : null}
-
-            {view === "reviews" && refused.length > 0 ? (
-              <div role="alert" className="space-y-1 rounded-md border border-border bg-card p-3 text-sm">
-                <p className="font-medium">Not added</p>
-                <ul className="list-disc pl-5">
-                  {refused.map((r) => (
-                    <li key={`${r.employmentId}-${r.reason}`}>{launchRefusalMessage(r.employeeName, r.reason)}</li>
-                  ))}
-                </ul>
-              </div>
             ) : null}
 
             {view !== "reviews" ? null : cycle.reviews.length > 0 ? (
@@ -186,6 +176,18 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
             ) : (
               <EmptyState icon={<ClipboardCheck />} title="Nobody is in this cycle yet" line="Add people above to start their reviews" />
             )}
+
+            {/* Below the list, never above it: a refusal arriving above pushed the whole list down. */}
+            {view === "reviews" && refused.length > 0 ? (
+              <div role="alert" className="space-y-1 rounded-md border border-border bg-card p-3 text-sm">
+                <p className="font-medium">Not added</p>
+                <ul className="list-disc pl-5">
+                  {refused.map((r) => (
+                    <li key={`${r.employmentId}-${r.reason}`}>{launchRefusalMessage(r.employeeName, r.reason)}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
           <ConfirmDialog
             open={closing}
@@ -251,9 +253,11 @@ function LaunchPanel({ cycleId, organizationId, onLaunched }: { cycleId: string;
           ]}
         />
       </div>
-      <div className="max-w-md space-y-2">
+      {/* One fixed height for all three modes (a control row plus one chip row): switching mode, adding the
+          first person and clearing them after "Start reviews" move nothing below this block. */}
+      <div className="max-w-md space-y-2 min-h-[5.625rem] sm:min-h-[4.625rem]">
         {mode === "manager" ? (
-          <EmploymentPicker key={`m-${pickerKey}`} value={manager} onChange={setManager} placeholder="Search for the manager" />
+          <EmploymentPicker key={`m-${pickerKey}`} value={manager} onChange={setManager} placeholder="Search for the manager" resultsPlacement="overlay" />
         ) : null}
         {mode === "department" ? (
           <Select
@@ -274,17 +278,16 @@ function LaunchPanel({ cycleId, organizationId, onLaunched }: { cycleId: string;
                 setPickerKey((k) => k + 1);
               }}
               placeholder="Search by name or employee number"
+              resultsPlacement="overlay"
             />
-            {people.length > 0 ? (
-              <ul className="flex flex-wrap gap-2">
-                {people.map((p) => (
-                  <li key={p.employmentId} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-sm">
-                    {p.name}
-                    <Button icon={<X />} variant="quiet" aria-label={`Remove ${p.name}`} onClick={() => setPeople((l) => l.filter((x) => x.employmentId !== p.employmentId))} />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            <ul className="flex flex-wrap gap-2" aria-label="People to add">
+              {people.map((p) => (
+                <li key={p.employmentId} className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-sm">
+                  {p.name}
+                  <Button icon={<X />} variant="quiet" aria-label={`Remove ${p.name}`} onClick={() => setPeople((l) => l.filter((x) => x.employmentId !== p.employmentId))} />
+                </li>
+              ))}
+            </ul>
           </>
         ) : null}
       </div>

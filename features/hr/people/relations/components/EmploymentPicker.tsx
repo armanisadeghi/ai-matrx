@@ -40,6 +40,7 @@ export function EmploymentPicker({
   onChosen,
   disabled,
   placeholder = "Search by name or employee number",
+  resultsPlacement = "inline",
 }: {
   id?: string;
   /** The chosen `employment_id`, or null. */
@@ -74,6 +75,12 @@ export function EmploymentPicker({
   onChosen?: (person: { employmentId: string; name: string }) => void;
   disabled?: boolean;
   placeholder?: string;
+  /**
+   * Where the matches appear. "inline" (default) pushes what is below down, which is right inside a
+   * dialog that scrolls. "overlay" floats them over what is below, so a page that has more under the
+   * picker does not shift each time matches arrive or clear.
+   */
+  resultsPlacement?: "inline" | "overlay";
 }) {
   const { active } = useHrWriteEmployer();
   const organizationId = active?.organization_id ?? null;
@@ -144,7 +151,7 @@ export function EmploymentPicker({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className={resultsPlacement === "overlay" ? "relative" : "space-y-1.5"}>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input adornment="start"
@@ -161,7 +168,13 @@ export function EmploymentPicker({
       </div>
 
       {rows.length > 0 ? (
-        <ul className="max-h-56 overflow-y-auto rounded-md border border-border bg-card">
+        <ul
+          className={
+            resultsPlacement === "overlay"
+              ? "absolute inset-x-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-md"
+              : "max-h-56 overflow-y-auto rounded-md border border-border bg-card"
+          }
+        >
           {rows.map((row) => (
             <li key={row.employee_id}>
               <button

@@ -10,6 +10,7 @@ import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
 import { refusalMessage } from "./messages";
+import { INVALIDATING_DOORS, notifyReviewsChanged } from "./invalidation";
 import { parseGoalHistory, parseGoals, parseTeam, type Goal, type GoalHistoryEntry, type TeamMember } from "./goals";
 import {
   isRec,
@@ -99,6 +100,7 @@ async function settle(
       currentVersion: typeof data.current_version === "number" ? data.current_version : null,
     });
   }
+  if (INVALIDATING_DOORS.has(door)) notifyReviewsChanged();
   return { ok: true, data };
 }
 

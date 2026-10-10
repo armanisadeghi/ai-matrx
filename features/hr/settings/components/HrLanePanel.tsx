@@ -49,6 +49,7 @@ export function HrLanePanel({
   promise,
   /** Anything this lane ships beyond the knobs — route 78's flow-type list, say. */
   children,
+  childrenPlacement = "before",
   title,
   description,
 }: {
@@ -61,6 +62,12 @@ export function HrLanePanel({
   /** Omit once the panel is finished: the "what this panel becomes" note is then not shown. */
   promise?: string;
   children?: React.ReactNode;
+  /**
+   * Where `children` sit relative to the knob panel. A panel whose children load late or change
+   * height (a list that gains a row) puts them "after": whatever sits below a growing block is
+   * pushed down when it grows, so the growing block goes last and nothing moves.
+   */
+  childrenPlacement?: "before" | "after";
   title?: string;
   description?: string;
 }) {
@@ -86,7 +93,7 @@ export function HrLanePanel({
       onRetry={refresh}
     >
       <div className="space-y-6 p-4 sm:p-6">
-        {children}
+        {childrenPlacement === "before" ? children : null}
 
         {organizationId ? (
           <KnobPanel
@@ -98,6 +105,8 @@ export function HrLanePanel({
             emptyLabel="This area has not registered any configuration keys yet. When it does, they appear here on their own — this panel reads the registry rather than listing keys by hand."
           />
         ) : null}
+
+        {childrenPlacement === "after" ? children : null}
 
         {promise ? (
         <section className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">

@@ -147,7 +147,7 @@ function ReviewList({ org }: { org: string }) {
   if (!rows) return <div className="m-4 h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading 360 reviews" />;
   if (rows.length === 0) return <EmptyState icon={<ClipboardCheck />} title="No 360 reviews yet" line="Start one from an employee profile" />;
   return (
-    <div className="m-3">
+    <div className="mx-3 mt-3">
       <MatrxDataTable<Review360ListRow>
         tableId="hr/performance/360-reviews"
         data={rows}
@@ -240,7 +240,7 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
     else toast.error(r.message);
   };
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-3 px-3 pt-3">
       <div className="flex items-center gap-2">
         <h1 className="text-base font-semibold">{String(doc.employee_name ?? "360 review")}</h1>
         <Badge>{doc.status === "shared" ? "shared" : both ? "ready" : "collecting"}</Badge>

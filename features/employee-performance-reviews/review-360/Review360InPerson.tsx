@@ -23,7 +23,7 @@ export function Review360InPersonPage({ reviewId }: { reviewId: string }) {
         <EmptyState icon={<ClipboardCheck />} title="Pick an employer first" />
       ) : (
         <Review360Host organizationId={org}>
-          <div className="mx-auto max-w-5xl p-3">
+          <div className="mx-auto max-w-5xl px-3 pt-3">
             <Review360SideBySide reviewId={reviewId} organizationId={org} section={section} onSection={setSection} />
           </div>
         </Review360Host>

@@ -6,14 +6,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck, Plus, Target } from "lucide-react";
+import { ClipboardCheck, Plus, Target, Users } from "lucide-react";
 import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import { hrPerformanceCycleHref, hrPerformanceGoalsHref, hrPerformanceReviewHref } from "@/features/hr/routes";
+import { hrPerformance360Href, hrPerformanceCycleHref, hrPerformanceGoalsHref, hrPerformanceReviewHref } from "@/features/hr/routes";
 
+import { useReloadOnReviewsChanged } from "./invalidation";
 import { NewCycleDialog } from "./NewCycleDialog";
 import { listCycles, listMyReviews, myPeerRequests, type PeerRequest } from "./service";
 import { dueOn, formatDay, nextStep, periodLabel, statusLabel, statusTone } from "./status";
@@ -33,6 +34,7 @@ function useReviewsData(organizationId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  useReloadOnReviewsChanged(reload);
 
   useEffect(() => {
     let live = true;
@@ -183,10 +185,15 @@ export function StandardHome() {
   return (
     <HrPageState loading={loading} error={error ? new Error(error) : null} onRetry={reload} operation="Performance reviews" employerScope="all" variant="table">
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
-        <div className="m-3 space-y-6">
-          <Button asChild variant="outline" icon={<Target />}>
-            <Link href={hrPerformanceGoalsHref(orgRef)}>Goals</Link>
-          </Button>
+        <div className="mx-3 mt-3 space-y-6">
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" icon={<Target />}>
+              <Link href={hrPerformanceGoalsHref(orgRef)}>Goals</Link>
+            </Button>
+            <Button asChild variant="outline" icon={<Users />}>
+              <Link href={hrPerformance360Href(orgRef)}>360 review (trial)</Link>
+            </Button>
+          </div>
           <section aria-label="My reviews">
             {reviews && reviews.length > 0 ? (
               <MatrxDataTable<ReviewSummary>
