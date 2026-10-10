@@ -6,7 +6,7 @@
     "check:session-handover": "node scripts/check-session-handover.mjs",
     "check:session-handover:self-test": "node scripts/check-session-handover.mjs --self-test",
     "dev": "bash scripts/agent-dev-server.sh start",
-    "build": "pnpm check:private-diagnostics && ts-node scripts/generate-manifest.ts && pnpm generate:surface-index && pnpm build:sw && pnpm build:kind-sandbox && pnpm build:pdfjs-worker && pnpm build:next",
+    "build": "pnpm check:private-diagnostics && ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:kind-sandbox && pnpm build:pdfjs-worker && pnpm build:next",
     "build:next": "pnpm check:private-diagnostics && next build && node scripts/check-turbopack-chunk-identities.mjs && node scripts/check-server-trace-scope.mjs",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:kind-sandbox": "tsx features/content-ir/sandbox/build-kind-sandbox.ts",
