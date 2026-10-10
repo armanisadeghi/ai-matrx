@@ -11,6 +11,7 @@ import { AgendaWidget } from "./bodies/AgendaWidget";
 import { FavoritesWidget } from "./bodies/FavoritesWidget";
 import { AgentsWidget } from "./bodies/AgentsWidget";
 import { PageWidget } from "./bodies/PageWidget";
+import { TableWidget } from "./bodies/TableWidget";
 
 const BODIES: Record<string, ComponentType<StartWidgetBodyProps>> = {
   kpis: KpisWidget,
@@ -21,6 +22,7 @@ const BODIES: Record<string, ComponentType<StartWidgetBodyProps>> = {
   favorites: FavoritesWidget,
   agents: AgentsWidget,
   page: PageWidget,
+  table: TableWidget,
 };
 
 export const START_WIDGETS: readonly StartWidgetType[] = START_WIDGET_CATALOG.flatMap((spec) => {

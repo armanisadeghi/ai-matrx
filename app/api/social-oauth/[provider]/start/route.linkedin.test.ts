@@ -53,3 +53,14 @@ test("connect another account starts unbound consent", async () => {
   const body = JSON.parse(String(transport.mock.calls[0][1]?.body));
   expect(body).not.toHaveProperty("connection_id");
 });
+
+test("a direct consent start registers the browser authority rather than the internal host", async () => {
+  const url = new URL(socialAuthorizeUrl("linkedin", organizationId));
+  url.searchParams.delete("frontend_origin");
+  const request = new NextRequest("http://localhost:3001" + url.pathname + url.search, {
+    headers: { host: "se09c5d54.localhost:3001", "x-forwarded-proto": "http" },
+  });
+  await GET(request, { params: Promise.resolve({ provider: "linkedin" }) });
+  const body = JSON.parse(String(transport.mock.calls[0][1]?.body));
+  expect(body.redirect_uri).toBe("http://se09c5d54.localhost:3001/api/social-oauth/linkedin/callback");
+});

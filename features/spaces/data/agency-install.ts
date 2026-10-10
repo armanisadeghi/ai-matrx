@@ -9,7 +9,7 @@
 // assistant", claims and notes it on the install, so the sample ends with the same assistant a
 // gallery install makes. A re-press resumes: a copy already noted is never made twice.
 
-import { supabaseDataSource } from "@ai-matrx/records/core";
+import { storeDoors, supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, templateDeclaration, templateUpgradeHint, upgradeTemplateInstall, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
 import { addInstalledAgent, hostStepsPending, type Claim } from "@/features/make/gallery/installAgent";
@@ -89,12 +89,12 @@ export function viewOnInstalledKeys<V extends { groupField?: string | null; date
  *  and maps the spec's keys onto them by title (an upgraded install's converted column carries a new key;
  *  the retired one keeps the old key off the table). */
 async function withInstalledKeys(tables: AgencyTables, organizationId: string): Promise<AgencyTables> {
-  const db = createClient().schema("custom");
+  const db = storeDoors(createClient());
   const entries = Object.entries(tables) as Array<[string, AgencyTable]>;
   const out = { ...tables } as AgencyTables;
   await Promise.all(
     entries.map(async ([token, table]) => {
-      const { data, error } = await db.rpc("applicable_fields", { p_organization_id: organizationId, p_table_id: table.tableId });
+      const { data, error } = await db.applicableFields(organizationId, table.tableId);
       if (error) throw new Error(`We couldn't read the sample's ${table.name} fields: ${error.message}`);
       const installed = ((data ?? []) as unknown as Array<{ data?: { key?: string; label?: string } }>).map((r) => r.data ?? {});
       const spec = AGENCY_SPEC.tables.find((t) => t.token === token);
@@ -122,16 +122,7 @@ async function runHostSteps(answer: TemplateDoorAnswer, orgId: string, dispatch:
     archiveWorkflow: (workflowId) => setWorkflowFlag(workflowId, { is_archived: true }),
     claim: async (installId, kind, label, sourceId) => {
       const lease = await templateKnob("run_lease_seconds");
-      const { data, error } = await supabase
-        .schema("custom")
-        .rpc("template_install_claim", {
-          p_organization_id: orgId,
-          p_install_id: installId,
-          p_kind: kind,
-          p_label: label,
-          ...(sourceId ? { p_source_id: sourceId } : {}),
-          p_lease_seconds: lease,
-        });
+      const { data, error } = await storeDoors(supabase).templateInstallClaim({ organizationId: orgId, installId, kind, label, sourceId, leaseSeconds: lease });
       if (error) throw new Error(error.message);
       const claim = (data as unknown as { claim: Claim & { claimed_at?: string } }).claim;
       if (claim.state !== "held") return claim;
@@ -139,9 +130,7 @@ async function runHostSteps(answer: TemplateDoorAnswer, orgId: string, dispatch:
       return { state: "held", retryAt: Number.isFinite(at) ? new Date(at).toISOString() : null };
     },
     note: async (installId, agentId, label, kind) => {
-      const { data, error } = await supabase
-        .schema("custom")
-        .rpc("template_install_note", { p_organization_id: orgId, p_install_id: installId, p_kind: kind ?? "agent", p_id: agentId, p_label: label });
+      const { data, error } = await storeDoors(supabase).templateInstallNote({ organizationId: orgId, installId, kind: kind ?? "agent", id: agentId, label });
       if (error) throw new Error(error.message);
       return data as TemplateDoorAnswer;
     },
@@ -178,9 +167,7 @@ export function upgradeCountsText(counts: Record<string, number> | undefined): s
 export async function installAgencySample(organizationId: string, dispatch: AppDispatch, onStage?: (stage: string) => void): Promise<AgencyTables> {
   const client = createClient();
   onStage?.("Planning…");
-  const declared = await client
-    .schema("custom")
-    .rpc("template_declare", { p_scope: "org", p_spec: templateDeclaration(AGENCY_SPEC as never, organizationId) as never });
+  const declared = await storeDoors(client).templateDeclare("org", templateDeclaration(AGENCY_SPEC as never, organizationId) as never);
   if (declared.error) throw new Error(`The sample's tables could not be planned: ${declared.error.message}`);
   const templateId = (declared.data as unknown as { template_id: string }).template_id;
   onStage?.("Making tables…");

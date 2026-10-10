@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Star,
+  Table2,
 } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
@@ -123,6 +124,16 @@ export const START_WIDGET_CATALOG: readonly StartWidgetSpec[] = [
     defaultConfig: {},
     fields: [{ key: "pageId", label: "Page", picker: "dataPage" }],
     describe: (c) => (c.pageId ? "One of your data pages" : "Data page (none chosen)"),
+  },
+  {
+    key: "table",
+    label: "Table",
+    icon: Table2,
+    section: "data",
+    sizes: ["s", "m", "l"],
+    defaultConfig: {},
+    fields: [{ key: "tableId", label: "Table", picker: "dataTable" }],
+    describe: (c) => (c.tableId ? "First rows of one of your tables" : "Table (none chosen)"),
   },
 ];
 

@@ -23,7 +23,7 @@ import "server-only";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { EntityColumn, SavedViewSpec } from "@ai-matrx/records-ui";
-import { asRecordsDataSource, createRecordsClient, recordingDataSource, type RecordsSeed } from "@ai-matrx/records/core";
+import { asRecordsDataSource, createRecordsClient, recordingDataSource, storeDoors, type RecordsSeed } from "@ai-matrx/records/core";
 import { askChartSeed, askEntityBlockSeed, askTablePageSeed, askTileSeed, mergeSeeds, serverRowsOf } from "@ai-matrx/records-ui/first-page";
 import { headers } from "next/headers";
 
@@ -89,15 +89,10 @@ interface TableWhere {
   organizationId: string | null;
 }
 
-async function askWhere(custom: Rpc, tableId: string): Promise<TableWhere> {
-  const raw = await custom.rpc("where_id_opens", { p_id: tableId });
-  const e = raw.error as { code?: unknown; message?: unknown } | null;
-  const where: SeededWhere = {
-    data: raw.data ?? null,
-    error: e ? { code: typeof e.code === "string" ? e.code : null, message: typeof e.message === "string" ? e.message : "The record store refused." } : null,
-  };
-  const row = raw.data as { organization_id?: unknown; kind?: unknown } | null;
-  const organizationId = !e && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string" ? row.organization_id : null;
+async function askWhere(supabase: Supabase, tableId: string): Promise<TableWhere> {
+  const where: SeededWhere = await storeDoors(supabase).whereIdOpens(tableId);
+  const row = where.data as { organization_id?: unknown; kind?: unknown } | null;
+  const organizationId = !where.error && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string" ? row.organization_id : null;
   return { where, organizationId };
 }
 
@@ -120,8 +115,7 @@ class PageReads {
   }
 
   where(tableId: string): Promise<TableWhere | null> {
-    const custom = this.supabase.schema("custom" as never) as unknown as Rpc;
-    return this.once(`where:${tableId}`, () => askWhere(custom, tableId).catch(() => null));
+    return this.once(`where:${tableId}`, () => askWhere(this.supabase, tableId).catch(() => null));
   }
 
   /** The table's page seed; its bundle carries the knob, and the rows are asked only when it is on. */

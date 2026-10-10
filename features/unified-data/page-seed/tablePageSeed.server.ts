@@ -17,7 +17,7 @@
 import "server-only";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import type { RecordsSeed } from "@ai-matrx/records/core";
+import { storeDoors, type RecordsSeed } from "@ai-matrx/records/core";
 import { askTablePageSeed, serverRowsOf } from "@ai-matrx/records-ui/first-page";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -81,23 +81,12 @@ export interface ServerRowsGate {
   capMs: number;
 }
 
-type CustomRpc = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
-
 function organizationOf(where: SeededDoorAnswer): string | null {
   const row = where.data as { organization_id?: unknown; kind?: unknown } | null;
   return !where.error && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string"
     ? row.organization_id
     : null;
 }
-
-const plainError = (error: unknown): SeededDoorAnswer["error"] => {
-  if (!error || typeof error !== "object") return null;
-  const e = error as { code?: unknown; message?: unknown };
-  return {
-    code: typeof e.code === "string" ? e.code : null,
-    message: typeof e.message === "string" ? e.message : "The record store refused.",
-  };
-};
 
 async function askSeed(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -108,13 +97,11 @@ async function askSeed(
   decided: (gate: ServerRowsGate) => void,
   opened: (opening: TablePageSeed | null) => void,
 ): Promise<TablePageSeed | null> {
-  const custom = supabase.schema("custom" as never) as unknown as CustomRpc;
   // PARALLEL AT THE START (lane SSR-ROWS-3): where the table lives and who is asking are asked at
   // once; the bundle (and the record's bundle) start the moment the organization is known — they
   // cannot start sooner, both doors take it — and the first page the moment the bundle names its sort.
   const claimsAsked = getClaimsUser(supabase).catch(() => ({ data: { user: null } }));
-  const whereRaw = await custom.rpc("where_id_opens", { p_id: tableId });
-  const where: SeededDoorAnswer = { data: whereRaw.data ?? null, error: plainError(whereRaw.error) };
+  const where: SeededDoorAnswer = await storeDoors(supabase).whereIdOpens(tableId);
   const organizationId = organizationOf(where);
   if (!organizationId) {
     decided(OFF);

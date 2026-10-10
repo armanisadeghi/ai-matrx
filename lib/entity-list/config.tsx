@@ -523,6 +523,8 @@ export interface EntityListConfig<TRow> {
    */
   grouping?: {
     groupableColumnIds: string[];
+    /** Opens grouped by this column (the data home: by what each thing is). "No groups" still wins. */
+    defaultColumnId?: string;
     /** Singular noun for a group's count ("table" → "12 tables"). */
     rowNoun?: string;
     /** The grouping value for a column, when its cell value is not it (a date → its bucket). */

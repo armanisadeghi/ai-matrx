@@ -20,6 +20,59 @@ export function dataPageChoices(rows: readonly DataHomeRow[]): { value: string; 
     .map((r) => ({ value: r.itemId, label: r.name || "Untitled page", ...(r.organizationName ? { meta: r.organizationName } : {}) }));
 }
 
+/** Tables only (no pick lists' plain tables twice: a kept list is a table too), the person's own first. */
+export function dataTableChoices(rows: readonly DataHomeRow[]): { value: string; label: string; meta?: string }[] {
+  return rows
+    .filter((r) => r.kind === "table")
+    .sort((a, b) => Number(b.mine) - Number(a.mine) || a.name.localeCompare(b.name))
+    .map((r) => ({ value: r.itemId, label: r.name || "Untitled table", ...(r.organizationName ? { meta: r.organizationName } : {}) }));
+}
+
+function useDataHomeRows() {
+  const client = useRecordsClient();
+  const dataSource = useRecordsDataSource();
+  const [state, setState] = useState<{ rows: DataHomeRow[] | null; error: string | null }>({ rows: null, error: null });
+  useEffect(() => {
+    let live = true;
+    createDataHomeCorpus(client, dataSource)
+      .load()
+      .then(
+        (rows) => live && setState({ rows, error: null }),
+        (e: unknown) => live && setState({ rows: [], error: e instanceof Error ? e.message : String(e) }),
+      );
+    return () => {
+      live = false;
+    };
+  }, [client, dataSource]);
+  return state;
+}
+
+export function DataTablePicker({ value, onChange }: { value: string; onChange: (tableId: string) => void }) {
+  const state = useDataHomeRows();
+  if (state.error) return <p className="text-xs text-destructive">{state.error}<ErrorAlchemyMenu error={state.error} /></p>;
+  const choices = dataTableChoices(state.rows ?? []);
+  if (state.rows && choices.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No tables yet ·{" "}
+        <Link href="/make" className="underline">
+          Make a table
+        </Link>
+      </p>
+    );
+  }
+  const options = value && !choices.some((c) => c.value === value) ? [{ value, label: "Current table" }, ...choices] : choices;
+  return (
+    <Select
+      aria-label="Table"
+      value={value}
+      disabled={!state.rows}
+      options={state.rows ? options : [{ value, label: "Loading tables" }]}
+      onValueChange={onChange}
+    />
+  );
+}
+
 export function DataPagePicker({ value, onChange }: { value: string; onChange: (pageId: string) => void }) {
   const client = useRecordsClient();
   const dataSource = useRecordsDataSource();

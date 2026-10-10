@@ -275,7 +275,7 @@ export function ShareWithUserTab({
 
         const userData = Array.isArray(lookupData) ? lookupData[0] : lookupData;
 
-        if (!userData || !userData.user_id) {
+        if ((!userData || !userData.user_id) && !grantEveryonePerson) {
           setStatus({
             type: "error",
             message: `No user found with email "${trimmedEmail}". They may need to create an account first.`,
@@ -283,7 +283,7 @@ export function ShareWithUserTab({
           return;
         }
 
-        targetUserId = userData.user_id;
+        targetUserId = userData?.user_id ?? null;
       }
 
       setStatus({ type: "loading", message: "Sharing with user..." });
@@ -291,7 +291,16 @@ export function ShareWithUserTab({
       // Delegate to the onShare prop — this calls shareWithUser() in the service,
       // which validates ownership via the share_resource_with_user RPC and sends
       // the notification email. Never call the RPC directly from the UI layer.
-      const result = await onShare(targetUserId, permissionLevel);
+      // A custom TABLE hands its outside door here (`grantEveryonePerson`): it grants an existing
+      // account outright, inside the organization or out, and invites an address with no account.
+      // So an address outside the organization is offered the outside share in this same box,
+      // never refused with "That person is not in this organization".
+      const result = grantEveryonePerson
+        ? await grantEveryonePerson(
+            { userId: targetUserId ?? "", email: trimmedEmail, name: trimmedEmail.split("@", 1)[0] ?? trimmedEmail },
+            permissionLevel,
+          )
+        : await onShare(targetUserId as string, permissionLevel);
       const errorMsg = result?.error;
 
       if (!errorMsg) {

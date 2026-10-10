@@ -342,15 +342,17 @@ export function dataHomeTables(
 }
 
 /** Every kind of row the data home lists beside its tables (`custom.data_home_items`, DATA-HOME-2). */
-export type DataHomeItemKind =
-  | "form"
-  | "booking"
-  | "portal"
-  | "dashboard"
-  | "digest"
-  | "checklist"
-  | "automation"
-  | "share";
+export const DATA_HOME_ITEM_KINDS = [
+  "form",
+  "booking",
+  "portal",
+  "dashboard",
+  "digest",
+  "checklist",
+  "automation",
+  "share",
+] as const;
+export type DataHomeItemKind = (typeof DATA_HOME_ITEM_KINDS)[number];
 
 /** One row the data home lists beside its tables. */
 export interface DataHomeItemRow {
@@ -377,6 +379,32 @@ export function dataHomeItems(
   return call<DataHomeItemRow[]>(
     dataSource,
     "data_home_items",
+    organizationId ? { p_organization_id: organizationId } : {},
+  );
+}
+
+/** One standard table an organization added custom fields to (`custom.data_home_custom_fields`). */
+export interface DataHomeCustomFieldsRow {
+  organization_id: string;
+  organization_name: string;
+  table_token: string;
+  table_label: string;
+  field_count: number;
+  updated_at: string | null;
+}
+
+/**
+ * THE "CUSTOM FIELDS ON <STANDARD TABLE>" ROWS OF THE DATA HOME (lane ALL-MY-DATA): one per
+ * (organization, standard table) where the person's organization added a custom field she may read,
+ * across every organization she belongs to, in one call. The door decides in its own name.
+ */
+export function dataHomeCustomFields(
+  dataSource: RecordsDataSource,
+  organizationId: string | null = null,
+): Promise<DoorAnswer<DataHomeCustomFieldsRow[]>> {
+  return call<DataHomeCustomFieldsRow[]>(
+    dataSource,
+    "data_home_custom_fields",
     organizationId ? { p_organization_id: organizationId } : {},
   );
 }

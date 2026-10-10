@@ -16,7 +16,8 @@ import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 import * as doors from "@/features/unified-data/hub/doors";
-import { buildDataHomeRows, type DataHomeRow } from "./dataHomeRows";
+import { buildDataHomeRows, customFieldsRow, type DataHomeRow } from "./dataHomeRows";
+import { kindIsListed } from "./dataHomeKindWords";
 import { DATA_HOME_ROW_CAP, type ServerMatches } from "./dataHomeService";
 
 
@@ -51,6 +52,7 @@ export function createDataHomeCorpus(
   deps: {
     dataHome?: typeof doors.dataHome;
     dataHomeSearch?: typeof doors.dataHomeSearch;
+    dataHomeCustomFields?: typeof doors.dataHomeCustomFields;
     debounceMs?: number;
     /**
      * "Show platform tables": also read the tables the app keeps for agents' outputs (the door's switch)
@@ -62,6 +64,7 @@ export function createDataHomeCorpus(
 ): DataHomeCorpus {
   const dataHome = deps.dataHome ?? doors.dataHome;
   const dataHomeSearch = deps.dataHomeSearch ?? doors.dataHomeSearch;
+  const dataHomeCustomFields = deps.dataHomeCustomFields ?? doors.dataHomeCustomFields;
   const debounceMs = deps.debounceMs ?? SERVER_SEARCH_DEBOUNCE_MS;
   const meta: DataHomeCorpus["meta"] = {
     kinds: [],
@@ -83,7 +86,15 @@ export function createDataHomeCorpus(
     meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: doors.doorFailureLine(r.error) }));
     // THE ONE RULE (`isKeptTable`, folded onto each row as `platformOwned`): the door answers a
     // choice column's Lists whether or not platform tables were asked for, so the home leaves them out here.
-    let rows = deps.includePlatformTables === true ? built.rows : built.rows.filter((row) => !row.platformOwned);
+    // WHAT EACH THING IS (dataHomeKindWords.ts): kinds with no plain word stay out of this view; the
+    // tables the app keeps come back under "Show platform tables" as "Platform table".
+    const showPlatform = deps.includePlatformTables === true;
+    let rows = built.rows.filter((row) => kindIsListed(row.kind, showPlatform) && (showPlatform || !row.platformOwned));
+    // CUSTOM FIELDS ON STANDARD TABLES are rows too (one door, every organization). A refusal is
+    // named in the notice, never an empty stand-in.
+    const customFields = await dataHomeCustomFields(dataSource, null);
+    if (customFields.ok) rows = [...rows, ...customFields.data.map(customFieldsRow)];
+    else meta.refusals.push({ listing: "Custom fields", message: doors.doorFailureLine(customFields.error) });
     // THE STATED BOUND: past it the newest rows are kept and the page says so.
     meta.capped = rows.length > DATA_HOME_ROW_CAP;
     if (meta.capped) {

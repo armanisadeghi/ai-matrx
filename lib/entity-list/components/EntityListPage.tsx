@@ -296,17 +296,22 @@ export function EntityListPage<TRow>({
     ? readSortFromParams(urlParams, prefsSort)
     : prefsSort;
 
-  // GROUP BY (config.grouping): the address only (`?group=`), never a preference or a default,
-  // so every visit starts flat. A column the surface does not offer reads as no grouping.
-  const [localGroup, setLocalGroup] = useState<string | null>(null);
-  const requestedGroup = urlState ? urlParams.get(GROUP_PARAM) : localGroup;
+  // GROUP BY (config.grouping): the address (`?group=`) or, when a surface declares one, its
+  // `defaultColumnId` (the data home opens grouped by what each thing is — Arman 2026-10-10).
+  // Choosing "No groups" writes `group=none`, so a default never springs back. A column the
+  // surface does not offer reads as no grouping.
+  const [localGroup, setLocalGroup] = useState<string | null | undefined>(undefined);
+  const groupDefault = config.grouping?.defaultColumnId ?? null;
+  const askedGroup = urlState ? urlParams.get(GROUP_PARAM) : localGroup;
+  const requestedGroup = askedGroup === undefined || askedGroup === null ? groupDefault : askedGroup;
   const groupColumnId =
     config.grouping && requestedGroup && config.grouping.groupableColumnIds.includes(requestedGroup)
       ? requestedGroup
       : null;
   const setGroupColumnId = (next: string | null) => {
-    if (urlState) commitUrlParams({ [GROUP_PARAM]: next, page: null }, "push");
-    else setLocalGroup(next);
+    const written = next === null && groupDefault ? "none" : next;
+    if (urlState) commitUrlParams({ [GROUP_PARAM]: written, page: null }, "push");
+    else setLocalGroup(written);
   };
   // While grouped the whole result is one page: the table counts what it holds.
   const pageSize = groupColumnId ? GROUPED_PAGE_SIZE : prefs.pageSize;

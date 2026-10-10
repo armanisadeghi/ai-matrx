@@ -7,6 +7,7 @@ jest.mock("../bodies/AgendaWidget", () => ({ AgendaWidget: () => null }));
 jest.mock("../bodies/FavoritesWidget", () => ({ FavoritesWidget: () => null }));
 jest.mock("../bodies/AgentsWidget", () => ({ AgentsWidget: () => null }));
 jest.mock("../bodies/PageWidget", () => ({ PageWidget: () => null }));
+jest.mock("../bodies/TableWidget", () => ({ TableWidget: () => null }));
 
 import { BOARD_SECTIONS } from "@/features/board/items/types";
 import { START_WIDGET_CATALOG, describeStartWidget } from "../catalog";
@@ -37,7 +38,7 @@ describe("Start widget registry", () => {
   it("has unique keys, and the Slice 1 + 2 widgets", () => {
     const keys = START_WIDGET_CATALOG.map((s) => s.key);
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(["kpis", "metric", "recent", "tasks", "agenda", "favorites", "agents", "page"]);
+    expect(keys).toEqual(["kpis", "metric", "recent", "tasks", "agenda", "favorites", "agents", "page", "table"]);
   });
 
   it("describes an unknown widget by name instead of dropping it", () => {

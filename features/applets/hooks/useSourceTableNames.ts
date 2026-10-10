@@ -9,6 +9,8 @@
 
 import { useEffect, useState } from "react";
 
+import { createRecordsClient, STORE_SCHEMA, supabaseDataSource } from "@ai-matrx/records/core";
+
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { createClient } from "@/utils/supabase/client";
 
@@ -42,45 +44,45 @@ export function useSourceTableNames(tableIds: readonly string[]): Record<string,
     const wanted = key.split(",");
     // A PostgREST error or a rejected call is captured by the browser client's capture proxy
     // (lib/diagnostics/supabaseErrorCapture.ts); this hook's part is never to hide it on screen.
-    void createClient()
-      .schema("custom")
-      .rpc("data_home_tables", {})
-      .then(
-        ({ data, error }) => {
-          if (cancelled) return;
-          if (error) {
-            setNames(allUnavailable(wanted));
-            return;
-          }
-          if (!Array.isArray(data)) {
-            captureError({
-              source: "runtime-exception",
-              operation: "rpc",
-              schema: "custom",
-              relation: "data_home_tables",
-              message: `custom.data_home_tables answered ${data === null ? "null" : typeof data}, not a list of tables`,
-              userMessage: "Couldn't read your table names.",
-              recoverable: true,
-              raw: data,
-            });
-            setNames(allUnavailable(wanted));
-            return;
-          }
-          const want = new Set(wanted);
-          const out: Record<string, SourceTableName> = {};
-          for (const row of data) {
-            if (!row.table_id || !want.has(row.table_id)) continue;
-            out[row.table_id] = { name: row.table_name || "Untitled table", organizationName: row.organization_name || null, organizationId: row.organization_id || null };
-          }
-          // A table she cannot see still answers once the read is done — `undefined` means only
-          // "still loading", so a screen shows a skeleton then words, never the code's alias.
-          for (const id of wanted) out[id] ??= UNAVAILABLE_TABLE_NAME;
-          setNames(out);
-        },
-        () => {
-          if (!cancelled) setNames(allUnavailable(wanted));
-        },
-      );
+    // The records client's own `dataHomeTables` door, asked for EVERY organization (null): a read is never narrowed to the active one.
+    const records = createRecordsClient({ dataSource: supabaseDataSource(createClient()), actor: { actor: "user" }, organizationId: null });
+    void records.dataHomeTables({ organization_id: null }).then(
+      (answer) => {
+        if (cancelled) return;
+        if (!answer.ok) {
+          setNames(allUnavailable(wanted));
+          return;
+        }
+        const data: unknown = answer.data;
+        if (!Array.isArray(data)) {
+          captureError({
+            source: "runtime-exception",
+            operation: "rpc",
+            schema: STORE_SCHEMA,
+            relation: "data_home_tables",
+            message: `the data home answered ${data === null ? "null" : typeof data}, not a list of tables`,
+            userMessage: "Couldn't read your table names.",
+            recoverable: true,
+            raw: data,
+          });
+          setNames(allUnavailable(wanted));
+          return;
+        }
+        const want = new Set(wanted);
+        const out: Record<string, SourceTableName> = {};
+        for (const row of data) {
+          if (!row.table_id || !want.has(row.table_id)) continue;
+          out[row.table_id] = { name: row.table_name || "Untitled table", organizationName: row.organization_name || null, organizationId: row.organization_id || null };
+        }
+        // A table she cannot see still answers once the read is done — `undefined` means only
+        // "still loading", so a screen shows a skeleton then words, never the code's alias.
+        for (const id of wanted) out[id] ??= UNAVAILABLE_TABLE_NAME;
+        setNames(out);
+      },
+      () => {
+        if (!cancelled) setNames(allUnavailable(wanted));
+      },
+    );
     return () => {
       cancelled = true;
     };

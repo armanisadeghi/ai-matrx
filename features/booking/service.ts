@@ -33,6 +33,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { storeDoors as storeDoorsOf } from "@ai-matrx/records/core";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -44,15 +45,9 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * declared in full so a door that changes its answer shows up as a type error
  * here rather than as a wrong screen.
  */
-type StoreCaller = {
-  rpc(fn: string, args: Record<string, unknown>): PromiseLike<{
-    data: unknown;
-    error: { message: string; hint?: string | null } | null;
-  }>;
-};
-
-function storeDoors(): StoreCaller {
-  return (createAdminClient() as unknown as { schema(name: string): StoreCaller }).schema("custom");
+function storeDoors() {
+  // The service-role client, bound to the store's doors by the package: a booker has no session.
+  return storeDoorsOf(createAdminClient());
 }
 
 /** One question, in the page's own words, pointing at one Field by key. */

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { requestOrigin } from "@/utils/auth/request-origin";
 import { applyOrganizationContextHeader, requireOrganizationContext } from "@/lib/api/organization-context";
 import { isSocialCallbackOrigin, isSocialProvider, socialBackendOrigin, socialCallbackPath, socialCookieName, SOCIAL_SETTINGS_RETURN, safeSocialReturn } from "../session";
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
   if (!isSocialProvider(rawProvider)) return NextResponse.json({ error: "Unknown social provider." }, { status: 404 });
   const provider = rawProvider;
   const requestedOrigin = request.nextUrl.searchParams.get("frontend_origin");
-  const origin = requestedOrigin ?? request.nextUrl.origin;
+  const origin = requestedOrigin ?? requestOrigin(request.headers) ?? request.nextUrl.origin;
   if (!isSocialCallbackOrigin(origin, provider)) return NextResponse.json({ error: "This address cannot start a social connection." }, { status: 400 });
   const returnUrl = safeSocialReturn(request.nextUrl.searchParams.get("return_url"));
   const finish = (status: string) => {

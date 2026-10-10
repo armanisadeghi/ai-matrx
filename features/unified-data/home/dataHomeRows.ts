@@ -23,7 +23,9 @@ import {
   type HubReadContext,
 } from "@/features/unified-data/hub/capabilities";
 import type { ArchivedEverywhereRow, ArchivedPortalEverywhereRow, DataHomeAnswer, DataHomeTableRow, DoorFailure } from "@/features/unified-data/hub/doors";
-import { isPublicVisibility, kindOne, type ScopeFacts } from "@/features/unified-data/hub/dataHomeScope";
+import { isPublicVisibility, type ScopeFacts } from "@/features/unified-data/hub/dataHomeScope";
+import type { DataHomeCustomFieldsRow } from "@/features/unified-data/hub/doors";
+import { plainKindWord } from "./dataHomeKindWords";
 
 /** Which lane put a row in front of the person — one word, the strongest reason first. */
 export type DataHomeAccess = "mine" | "team" | "org" | "shared" | "public" | "system";
@@ -155,20 +157,13 @@ export function archivedPortalRow(portal: ArchivedPortalEverywhereRow): DataHome
   };
 }
 
-/** Singular kind words the hub's KIND_ONE does not carry (the item kinds). */
-const ITEM_KIND_ONE: Record<string, string> = {
-  portal: "Portal",
-  digest: "Digest",
-  automation: "Automation",
-  share: "Outside share",
-};
-
+/** The row's kind in plain words (dataHomeKindWords.ts) — never an internal kind word. */
 export function dataHomeKindWord(kind: string): string {
-  return ITEM_KIND_ONE[kind] ?? kindOne(kind);
+  return plainKindWord(kind);
 }
 
 /** What each listing's rows are, in the store's kind words (the old hub's LISTING_KIND). */
-const LISTING_KIND: Record<string, string> = {
+export const LISTING_KIND: Record<string, string> = {
   forms: "form",
   bookings: "booking",
   portals: "portal",
@@ -252,7 +247,8 @@ function toRow(
     records: null,
     changedBy: item.changedBy ?? null,
     details: item.facts.filter(Boolean).join(" · "),
-    href: item.href,
+    // A PICK LIST OPENS AS A PICK LIST (its own page), never as a one-column table.
+    href: item.kind === "list" && fromTablesListing ? pickListHref(item.id, item.href) : item.href,
     publicHref: item.publicHref ?? null,
     publicLabel: item.publicLabel ?? null,
     trouble: item.trouble ?? null,
@@ -329,4 +325,50 @@ export async function buildDataHomeRows(
     }),
   );
   return { rows: answered.flat().map((item) => toRow(item, tables, item.fromTablesListing)), refusals };
+}
+
+/** A pick list's own page (`/pick-lists/<id>`, the canonical deep link); a list shared in keeps its organization. */
+export function pickListHref(id: string, tableHref: string): string {
+  const org = /[?&]org=([0-9a-f-]{36})/i.exec(tableHref)?.[1];
+  return org ? `/pick-lists/${id}?org=${org}` : `/pick-lists/${id}`;
+}
+
+/** Where a standard table's custom fields are managed (`/data/custom-fields/<token>`). */
+export function customFieldsHref(token: string, organizationId: string): string {
+  return `/data/custom-fields/${encodeURIComponent(token)}?org=${organizationId}`;
+}
+
+/** ONE "CUSTOM FIELDS ON <STANDARD TABLE>" ROW (door: custom.data_home_custom_fields). */
+export function customFieldsRow(entry: DataHomeCustomFieldsRow): DataHomeRow {
+  const label = entry.table_label.trim() || entry.table_token;
+  return {
+    id: `custom_fields:${entry.organization_id}:${entry.table_token}`,
+    itemId: `${entry.organization_id}:${entry.table_token}`,
+    name: `Custom fields on ${label}`,
+    kind: "custom_fields",
+    organizationId: entry.organization_id,
+    organizationName: entry.organization_name,
+    tableId: null,
+    parentName: null,
+    updatedAt: entry.updated_at,
+    createdBy: null,
+    createdByName: null,
+    mine: false,
+    team: false,
+    member: true,
+    sharedWithMe: false,
+    visibility: null,
+    system: false,
+    access: "org",
+    records: null,
+    changedBy: null,
+    details: `${entry.field_count} ${entry.field_count === 1 ? "field" : "fields"}`,
+    href: customFieldsHref(entry.table_token, entry.organization_id),
+    publicHref: null,
+    publicLabel: null,
+    trouble: null,
+    platformOwned: false,
+    foundation: false,
+    syncedFrom: null,
+  };
 }

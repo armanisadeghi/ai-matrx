@@ -27,6 +27,7 @@ import {
   type ExistingTable as PackageExistingTable,
   type TemplateSpec,
 } from "@ai-matrx/records/templates";
+import { storeDoors } from "@ai-matrx/records/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // The mandate's `vocabulary` value and the spec shape are the package's (describeVocabulary, describeSpec): one copy.
@@ -242,7 +243,7 @@ export async function readReusedRows(client: SupabaseClient, organizationId: str
   const out: Record<string, ReusedRows> = {};
   await Promise.all(
     tableIds.map(async (id) => {
-      const page = await client.schema("custom").rpc("read_records_page", { p_organization_id: organizationId, p_table_id: id, p_limit: 200, p_offset: 0 });
+      const page = await storeDoors(client).readRecordsPage({ p_organization_id: organizationId, p_table_id: id, p_limit: 200, p_offset: 0 });
       if (page.error || !page.data) return;
       const d = page.data as { rows?: Array<{ id: string; document?: Record<string, unknown> }>; total?: number };
       const words = (doc: Record<string, unknown> | undefined) => {
@@ -322,11 +323,11 @@ export async function readExistingTables(
 ): Promise<ExistingTable[]> {
   const pick = tables.slice(0, 25);
   if (!pick.length) return [];
-  const drafted = await client.schema("custom").rpc("template_from_tables", {
-    p_organization_id: organizationId,
-    p_table_ids: pick.map((t) => t.id),
-    p_include_rows: false,
-    p_rows_per_table: 0,
+  const drafted = await storeDoors(client).templateFromTables({
+    organizationId,
+    tableIds: pick.map((t) => t.id),
+    includeRows: false,
+    rowsPerTable: 0,
   });
   if (drafted.error) return pick.map((t) => ({ id: t.id, name: t.name, fields: [] }));
   const spec = ((drafted.data ?? {}) as { spec?: { tables?: Array<{ name: string; fields?: Array<Record<string, unknown>> }> } }).spec;
@@ -351,7 +352,7 @@ export async function declareDescribeSpec(client: SupabaseClient, organizationId
   } catch (err) {
     throw new Error(`The setup could not be planned: ${err instanceof Error ? err.message : String(err)}`);
   }
-  const declared = await client.schema("custom").rpc("template_declare", { p_scope: "org", p_spec: declaration as never });
+  const declared = await storeDoors(client).templateDeclare("org", declaration);
   if (declared.error) throw new Error(declared.error.message);
   return (declared.data as unknown as { template_id: string }).template_id;
 }

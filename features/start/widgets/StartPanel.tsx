@@ -10,7 +10,7 @@ import { cn } from "@ai-matrx/design-system";
 import type { RecordHistoryEntry } from "@ai-matrx/records/react";
 import { BOARD_SECTIONS } from "@/features/board/items/types";
 import { START_WIDGET_CATALOG } from "./catalog";
-import { DataPagePicker } from "./DataPagePicker";
+import { DataPagePicker, DataTablePicker } from "./DataPagePicker";
 import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
 import { Switch } from "@ai-matrx/design-system/controls";
 import { START_WIDGET_SIZE_LABEL, type StartWidget, type StartWidgetSize, type StartWidgetSpec } from "./types";
@@ -104,6 +104,8 @@ export function ConfigureWidgetPanel({
             {field.label}
             {field.picker === "metricKeys" ? (
               <MetricKeysPicker value={widget.config[field.key] ?? ""} onChange={(v) => onConfigure(field.key, v)} />
+            ) : field.picker === "dataTable" ? (
+              <DataTablePicker value={widget.config[field.key] ?? ""} onChange={(v) => onConfigure(field.key, v)} />
             ) : field.picker === "dataPage" ? (
               <DataPagePicker value={widget.config[field.key] ?? ""} onChange={(v) => onConfigure(field.key, v)} />
             ) : field.options ? (

@@ -238,6 +238,9 @@ const KIND_TITLE: Record<string, string> = {
   app: "Platform tables",
 };
 
+/** Every kind word the store's tables can carry (the filter's titles); the kind-words test classifies each. */
+export const STORE_KIND_WORDS: readonly string[] = Object.keys(KIND_TITLE);
+
 /** Singular, for the row. */
 const KIND_ONE: Record<string, string> = {
   table: "Table",

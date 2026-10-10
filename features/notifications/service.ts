@@ -30,6 +30,7 @@
 
 import { TRIAGE_DOORS_LIVE } from "./triage-live";
 import type { PostgrestError } from "@supabase/supabase-js";
+import { storeDoors } from "@ai-matrx/records/core";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { allowAbsentDoor, isAbsentDoorFailure } from "@/lib/diagnostics/supabaseErrorCapture";
@@ -375,9 +376,7 @@ function isWorkWaiting(value: unknown): value is WorkWaiting {
 export async function fetchMyWorkWaiting(): Promise<WorkWaiting[]> {
   // `custom` is the record store's schema, reached by its doors only and absent from the generated
   // `Database` type (the same untyped-door shape as the calls above; the answer is checked below).
-  const { data, error } = (await createClient()
-    .schema("custom" as never)
-    .rpc("inbox_counts" as never, {} as never)) as UntypedRpcResult;
+  const { data, error } = (await storeDoors(createClient()).rpc("inbox_counts", {})) as UntypedRpcResult;
   if (error) throw operationFailed("count what is waiting on you", error);
   if (!Array.isArray(data) || !data.every(isWorkWaiting)) {
     throw operationFailed(

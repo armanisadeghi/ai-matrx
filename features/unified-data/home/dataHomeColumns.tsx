@@ -25,6 +25,7 @@ import {
   Star,
   Table2,
   TriangleAlert,
+  SlidersHorizontal,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -50,6 +51,8 @@ const KIND_ICON: Record<string, LucideIcon> = {
   automation: Workflow,
   share: Send,
   view: BookOpen,
+  custom_fields: SlidersHorizontal,
+  page: FileText,
   action: ClipboardCheck,
 };
 
@@ -248,22 +251,22 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
         accessorKey: "name",
         header: "Name",
         filter: "text",
-        width: 320,
+        width: 420,
         frozen: true,
         cell: (row) => <DataHomeName row={row} />,
       },
     },
     {
       id: "kind",
-      priority: 4,
-      label: "Kind",
+      priority: 1,
+      label: "What it is",
       facet: "kind",
       phone: "primary",
       formatFacetValue: dataHomeKindWord,
       column: {
         id: "kind",
         accessorKey: "kind",
-        header: "Kind",
+        header: "What it is",
         filter: "select",
         width: 120,
         cell: (row) => <span className="text-muted-foreground">{dataHomeKindWord(row.kind)}</span>,
@@ -271,7 +274,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "organization",
-      priority: 2,
+      priority: 1,
       label: "Organization",
       facet: "organization",
       phone: "primary",
@@ -287,7 +290,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "records",
-      priority: 3,
+      priority: 2,
       label: "Records",
       facet: "records",
       phone: "rest",
@@ -304,7 +307,7 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "updated",
-      priority: 2,
+      priority: 3,
       label: "Updated",
       phone: "meta",
       sortWords: { asc: "oldest first", desc: "newest first" },
@@ -320,8 +323,9 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "owner",
-      priority: 1,
+      priority: 4,
       label: "Owner",
+      defaultHidden: true,
       facet: "owner",
       phone: "rest",
       column: {
@@ -335,8 +339,9 @@ export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<Da
     },
     {
       id: "access",
-      priority: 1,
+      priority: 5,
       label: "Access",
+      defaultHidden: true,
       facet: "access",
       phone: "rest",
       formatFacetValue: (v) => ACCESS_WORD[v as DataHomeAccess] ?? v,

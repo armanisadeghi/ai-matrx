@@ -28,6 +28,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { storeDoors as storeDoorsOf } from "@ai-matrx/records/core";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
 /**
@@ -37,15 +38,9 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
  * reason; the two result shapes below are declared in full, so a door that
  * changes its answer shows up as a type error here rather than as a wrong screen.
  */
-type StoreCaller = {
-  rpc(fn: string, args: Record<string, unknown>): PromiseLike<{
-    data: unknown;
-    error: { message: string; hint?: string | null } | null;
-  }>;
-};
-
-function storeDoors(): StoreCaller {
-  return createAdminClient().schema("custom");
+function storeDoors() {
+  // The service-role client, bound to the store's doors by the package: a signer has no session.
+  return storeDoorsOf(createAdminClient());
 }
 
 /** Every state a signature request can be in. The STORE derives it; nothing here does. */

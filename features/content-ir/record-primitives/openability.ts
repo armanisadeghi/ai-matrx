@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { storeDoors } from "@ai-matrx/records/core";
 import { createClient } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { pickListSourceRefusal } from "@/features/content-ir/kinds/record-primitives";
@@ -54,6 +55,7 @@ const keyOf = (r: RelationRef) => `${r.token}:${r.id}`;
 
 export function supabaseOpenabilityDoors(): OpenabilityDoors {
   const supabase = createClient();
+  const doors = storeDoors(supabase);
   const tableOrgs = new Map<string, Promise<string | null>>();
   const tableOrg = (tableId: string) => {
     let known = tableOrgs.get(tableId);
@@ -68,16 +70,14 @@ export function supabaseOpenabilityDoors(): OpenabilityDoors {
   };
   let kernel: Promise<string | null> | null = null;
   const tableKernel = () =>
-    (kernel ??= Promise.resolve(supabase.schema("custom").rpc("table_kernel_id")).then(({ data }) =>
+    (kernel ??= Promise.resolve(doors.tableKernelId()).then(({ data }) =>
       typeof data === "string" ? data : null,
     ));
   return {
     async tableDocument(tableId) {
       const [owner, kernelId] = await Promise.all([tableOrg(tableId), tableKernel()]);
       if (!owner || !kernelId) return null;
-      const { data, error } = await supabase
-        .schema("custom")
-        .rpc("read_records_by_ids", { p_organization_id: owner, p_table_id: kernelId, p_record_ids: [tableId] });
+      const { data, error } = await doors.readRecordsByIds(owner, kernelId, [tableId]);
       if (error) return null;
       const row = ((data ?? []) as Array<{ id: string; document: unknown }>).find((r) => r.id === tableId);
       return row && typeof row.document === "object" && row.document !== null
@@ -87,9 +87,7 @@ export function supabaseOpenabilityDoors(): OpenabilityDoors {
     async readRecords(organizationId, tableId, ids) {
       const owner = (await tableOrg(tableId)) ?? organizationId;
       if (!owner) return null;
-      const { data, error } = await supabase
-        .schema("custom")
-        .rpc("read_records_by_ids", { p_organization_id: owner, p_table_id: tableId, p_record_ids: ids });
+      const { data, error } = await doors.readRecordsByIds(owner, tableId, ids);
       if (error) return null;
       return new Set(((data ?? []) as Array<{ id: string }>).map((row) => row.id));
     },
@@ -101,10 +99,7 @@ export function supabaseOpenabilityDoors(): OpenabilityDoors {
       return { open: answer.state === "opens", says: answer.says ?? null };
     },
     async entityWords(organizationId, refs) {
-      const { data, error } = await supabase.schema("custom").rpc("entity_reference_words", {
-        p_organization_id: organizationId,
-        p_refs: refs.map((r) => ({ token: r.token, id: r.id })),
-      });
+      const { data, error } = await doors.entityReferenceWords(organizationId, refs);
       if (error) return null;
       const out = new Map<string, string | null>();
       for (const row of (data ?? []) as Array<{ token: string; id: string; label: string | null }>) {

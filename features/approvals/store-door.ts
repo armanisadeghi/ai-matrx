@@ -22,7 +22,7 @@
  * those rows plus assignments).
  */
 
-import { createRecordsClient, type WorkInboxItem } from "@ai-matrx/records/core";
+import { createRecordsClient, storeDoors, type WorkInboxItem } from "@ai-matrx/records/core";
 import { sharedInboxRead } from "./sharedInbox";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -116,11 +116,11 @@ async function readOne(item: WorkInboxItem): Promise<StoreApproval> {
     };
   }
   const organizationId = where.organizationId;
-  const read = (await source.rpc(
-    "work_approval_read",
-    { p_organization_id: organizationId, p_approval_id: item.item_id },
-    { schema: "custom" },
-  )) as { data?: unknown; error?: { message?: string | null } | null };
+  const doors = storeDoors(createClient());
+  const read = (await doors.rpc("work_approval_read", { p_organization_id: organizationId, p_approval_id: item.item_id })) as {
+    data?: unknown;
+    error?: { message?: string | null } | null;
+  };
   if (read.error || !read.data || typeof read.data !== "object") {
     return {
       ...base,
@@ -136,11 +136,10 @@ async function readOne(item: WorkInboxItem): Promise<StoreApproval> {
   let current: Record<string, unknown> | null = null;
   const subjectId = text(row["subject_id"]);
   if (change["kind"] === "record_patch" && subjectId) {
-    const doc = (await source.rpc(
-      "read_record",
-      { p_organization_id: organizationId, p_record_id: subjectId },
-      { schema: "custom" },
-    )) as { data?: unknown; error?: unknown };
+    const doc = (await doors.rpc("read_record", { p_organization_id: organizationId, p_record_id: subjectId })) as {
+      data?: unknown;
+      error?: unknown;
+    };
     if (!doc.error && doc.data && typeof doc.data === "object") {
       current = doc.data as Record<string, unknown>;
     }

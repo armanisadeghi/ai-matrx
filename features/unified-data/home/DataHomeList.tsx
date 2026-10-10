@@ -185,7 +185,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
     const columns = dataHomeColumns({ organizationName: (id) => corpus.meta.names.get(id) ?? id, recordCounts });
     return {
       surfaceKey: DATA_HOME_SURFACE_KEY,
-      entityLabel: { singular: "table", plural: "tables" },
+      entityLabel: { singular: "item", plural: "items" },
       sourceFeature: "udt",
       scopes: [...DATA_HOME_SHELL_LANES],
       // No person can reach the platform's own tables from the data home today (the door reads only
@@ -194,7 +194,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
       service,
       serviceKey: `${starredKey}|${serverVersion}|${showPlatformTables ? "app" : ""}|${corpusVersion}.${restoredVersion}|${[...hiddenIds].join(",")}`,
       columns,
-      prefsVersion: 1,
+      prefsVersion: 2,
       prefsDefaults: {
         view: defaultView,
         density: "compact",
@@ -221,7 +221,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
       // common-docs/policies/archived-items.md): archived tables and portals, each with Restore.
       supportsArchived: true,
       facetSections: [
-        { facet: "kind", filterId: "kind", label: "Kind", noneLabel: "None", countInLabel: false, formatValue: dataHomeKindWord },
+        { facet: "kind", filterId: "kind", label: "What it is", noneLabel: "None", countInLabel: false, formatValue: dataHomeKindWord },
         {
           facet: "organization",
           filterId: "organization",
@@ -250,7 +250,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
         },
       ],
       noneLabels: { owner: "—", records: "Not counted", organization: "None", access: "None" },
-      searchPlaceholder: "Search tables, forms, dashboards",
+      searchPlaceholder: "Search your data",
       // The rows are in hand: every keystroke repaints on that keystroke. Only the server's
       // full-text layer waits (its own 250 ms, dataHomeCorpus.ts).
       searchDebounceMs: 0,
@@ -262,6 +262,8 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
       filterChips: true,
       ...(defaultKind !== ALL_KINDS ? { defaultFilters: { kind: { kind: "select", values: [defaultKind] } } } : {}),
       grouping: {
+        // THE HOME OPENS GROUPED BY WHAT EACH THING IS (Arman, 2026-10-10); "No groups" still wins.
+        defaultColumnId: "kind",
         groupableColumnIds: ["kind", "organization", "access", "owner", "updated"],
         rowNoun: "item",
         readCell: (row, columnId) =>

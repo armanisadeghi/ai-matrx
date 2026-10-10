@@ -11,6 +11,7 @@
 //                 page, an unpublished page, and the helpers themselves answer nothing signed out
 //   media       → the CDN address of a public file, and nothing for a private file
 
+import { storeDoors } from "@ai-matrx/records/core";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { SupabaseSpacesStore } from "../store-db/supabase-store";
@@ -137,14 +138,14 @@ async function main() {
     const filled = (db?.rows ?? []).filter((r) => r.data[formulaKey] !== undefined && r.data[formulaKey] !== null && String(r.data[formulaKey]) !== "");
     check("formula: published rows carry a computed value", filled.length > 0, `${filled.length} of ${db?.rows.length ?? 0} rows`);
     // the signed-in table's own reader, for the same rows
-    const { data: signed, error: readErr } = await admin.schema("custom").rpc("read_records_page", {
+    const { data: signed, error: readErr } = await storeDoors(admin).readRecordsPage({
       p_organization_id: tableOrg,
       p_table_id: tableId,
       p_filter: {},
       p_sort: [],
       p_limit: 500,
       p_offset: 0,
-    } as never);
+    });
     if (readErr) console.log("signed-in read:", readErr.message);
     const rows = ((signed as { rows?: Array<Record<string, unknown>> } | null)?.rows ?? []) as Array<Record<string, unknown>>;
     const doc = (r: Record<string, unknown>) => ((r.data ?? r.document ?? r) as Record<string, unknown>);

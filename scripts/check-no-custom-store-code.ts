@@ -202,32 +202,18 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: doc_render_read → new records door docRenderRead",
   "app/(core)/organizations/[orgId]/tables/page.tsx":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere (the no-organization call needs the door's org argument exposed)",
-  "app/(core)/scopes/s/[scopeId]/page.tsx":
-    "move: context_scopes → new records door contextScopes (lane SCOPES-ON-THE-STORE)",
   "app/api/stripe/class-checkout/route.ts":
     "move: server-only context_class_for_checkout → new records door contextClassForCheckout (host passes the service-role data source)",
-  "features/booking/service.ts":
-    "move: public booking lane (booking_public/hold/confirm/manage/cancel/reschedule) → new records booking doors (server-only data source)",
   "features/data-tables/data-source/record-store-grid.ts":
     "move: migrate_retype → RecordsClient.migrateRetype (exists); view_keys → new door viewKeys",
   "features/data-tables/service.ts":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere",
-  "features/esign/service.ts":
-    "move: sign_request_public → new records door signRequestPublic (server-only data source)",
   "features/files/webhooks/service.ts":
     "ready to move: table_webhook_declare → RecordsClient.tableWebhookDeclare",
-  "features/forms/service.ts":
-    "move: public form lane (form_public/_asks/_submit/_draft_read/_draft_save) → new records form doors (server-only data source)",
   "features/matrx-envelope/referenceResolvers.ts":
     "move: where_id_opens → new records door whereIdOpens",
-  "features/notifications/service.ts":
-    "ready to move: inbox_counts → RecordsClient.inboxCounts",
   "features/organizations/service/organizationStoreContents.ts":
     "move: organization_contents/organization_clear → new records doors organizationContents/organizationClear",
-  "features/portals/portalInviteService.ts":
-    "move: portal_invite_accept/portal_share_peek → new records doors portalInviteAccept/portalSharePeek",
-  "features/portals/service.ts":
-    "move: portal lanes → RecordsClient readRecord(s)/recordUpdate/recordHistory/applicableFields/portalForm(Submit) (exist) + new portalPublic/portalInvitation/portalPrincipalBind/portalMe/ioComments/ioCommentWrite",
   "features/record-change-approvals/HeldWritesOnTable.tsx":
     "ready to move: work_inbox/work_approval_read → RecordsClient.workInbox/workApprovalRead",
   "features/record-change-approvals/applyRecordChange.ts":
@@ -236,12 +222,6 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "ready to move: work_approval_read → RecordsClient.workApprovalRead",
   "features/scheduling/hooks/useArchivedWatchTriggers.ts":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere",
-  "features/scopes/service/scopeStore.ts":
-    "move: scope writes (context_type/scope/item/value_write, archive/restore, template_apply) → new records scope doors (lane SCOPES-ON-THE-STORE)",
-  "features/scopes/service/scopesService.ts":
-    "ready to move: scope_table_provision → RecordsClient.scopeTableProvision",
-  "features/scopes/service/storeScopeReads.ts":
-    "move: context_tree_types/context_tree_type_scopes → new records scope read doors",
   "features/sharing/outside/outsideShareService.ts":
     "move: table_share_outside* / table_share_peek → new records share-outside doors",
   "features/sharing/service/sharedResourceDetails.ts":
@@ -250,8 +230,6 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: table_transfer_owner/member_personal_tables → new records doors tableTransferOwner/memberPersonalTables",
   "features/unified-data/hub/doors.ts":
     "move: data_home/_items/_tables/_changed_by, hub_changed_by, shares_outside → new records data-home doors",
-  "features/unified-data/objectOrganization.ts":
-    "move: where_id_opens → new records door whereIdOpens",
   "features/unified-data/record-chat/RecordScopedChat.tsx":
     "ready to move: conversation_scope_bind → RecordsClient.conversationScopeBind",
   "features/unified-data/whereThisTableLives.ts":

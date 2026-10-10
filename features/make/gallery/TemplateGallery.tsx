@@ -29,7 +29,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, CircleDashed, ExternalLink, Loader2 } from "lucide-react";
-import { supabaseDataSource } from "@ai-matrx/records/core";
+import { storeDoors, supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, templateUpgradeHint, upgradeTemplateInstall, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
 import { Button } from "@/components/ui/button";
@@ -79,12 +79,12 @@ type Read<T> = { phase: "reading" } | { phase: "failed"; why: string } | { phase
 
 /** Every card the filter matches: the door pages at 200, so a long catalogue is read to its end. */
 async function readCatalogue(filter: Record<string, unknown>): Promise<{ total: number; cards: GalleryCard[] }> {
-  const source = supabaseDataSource(createClient());
+  const doors = storeDoors(createClient());
   const cards: GalleryCard[] = [];
   let offset = 0;
   let total = 0;
   for (;;) {
-    const { data, error } = await source.rpc("templates", { p_filter: { ...filter, offset } }, { schema: "custom" });
+    const { data, error } = await doors.templates({ ...filter, offset });
     if (error) throw new Error(error.message);
     const answer = data as unknown as GalleryAnswer;
     total = answer.total;
@@ -384,16 +384,7 @@ export function TemplatePreview({
       archiveWorkflow: (workflowId) => setWorkflowFlag(workflowId, { is_archived: true }),
       claim: async (installId, kind, label, sourceId) => {
         const lease = await templateKnob("run_lease_seconds");
-        const { data, error } = await supabase
-          .schema("custom")
-          .rpc("template_install_claim", {
-            p_organization_id: orgId,
-            p_install_id: installId,
-            p_kind: kind,
-            p_label: label,
-            ...(sourceId ? { p_source_id: sourceId } : {}),
-            p_lease_seconds: lease,
-          });
+        const { data, error } = await storeDoors(supabase).templateInstallClaim({ organizationId: orgId, installId, kind, label, sourceId, leaseSeconds: lease });
         if (error) throw new Error(error.message);
         const claim = (data as unknown as { claim: Claim & { claimed_at?: string } }).claim;
         if (claim.state !== "held") return claim;
@@ -402,15 +393,7 @@ export function TemplatePreview({
         return { state: "held", retryAt: Number.isFinite(at) ? new Date(at).toISOString() : null };
       },
       note: async (installId, agentId, label, kind) => {
-        const { data, error } = await supabase
-          .schema("custom")
-          .rpc("template_install_note", {
-            p_organization_id: orgId,
-            p_install_id: installId,
-            p_kind: kind ?? "agent",
-            p_id: agentId,
-            p_label: label,
-          });
+        const { data, error } = await storeDoors(supabase).templateInstallNote({ organizationId: orgId, installId, kind: kind ?? "agent", id: agentId, label });
         if (error) throw new Error(error.message);
         return data as TemplateDoorAnswer;
       },
@@ -692,7 +675,7 @@ function KeepOneOff({ templateId, kept }: { templateId: string; kept: () => void
   const [busy, setBusy] = useState(false);
   const keep = async () => {
     setBusy(true);
-    const { error } = await createClient().schema("custom").rpc("template_keep", { p_template_id: templateId });
+    const { error } = await storeDoors(createClient()).templateKeep(templateId);
     setBusy(false);
     if (error) {
       setWhy(error.message);
@@ -717,7 +700,7 @@ function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: st
   const [why, setWhy] = useState<string | null>(null);
   const archive = async () => {
     setConfirm(false);
-    const { error } = await createClient().schema("custom").rpc("template_archive", { p_template_id: templateId });
+    const { error } = await storeDoors(createClient()).templateArchive(templateId);
     if (error) {
       setWhy(error.message);
       return;

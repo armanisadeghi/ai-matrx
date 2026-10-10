@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@ai-matrx/design-system/controls";
-import { supabaseDataSource } from "@ai-matrx/records/core";
+import { storeDoors, supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
 import { TemplatePreview } from "@/features/make/gallery/TemplateGallery";
@@ -76,9 +76,8 @@ export function AppletUseTemplate({
     if (!signedIn || !organizationId) return;
     let alive = true;
     // org-filter: write-target checks whether the destination organization already has the template
-    void createClient()
-      .schema("custom")
-      .rpc("templates", { p_filter: galleryFilter({}, { installedIn: organizationId, id: templateId }) })
+    void storeDoors(createClient())
+      .templates(galleryFilter({}, { installedIn: organizationId, id: templateId }) as Record<string, unknown>)
       .then(({ data, error }) => {
         if (!alive) return;
         if (error) {

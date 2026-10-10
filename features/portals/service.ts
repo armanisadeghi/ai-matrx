@@ -38,6 +38,7 @@ import "server-only";
 import { versionUnread } from "@/lib/records/record-versions";
 import { cache } from "react";
 
+import { storeDoors as storeDoorsOf, type StoreCaller as StoreDoorsBound } from "@ai-matrx/records/core";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -49,25 +50,17 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
  * and every result shape is declared below so a door that changes its answer
  * shows up as a type error rather than as a wrong screen.
  */
-type StoreCaller = {
-  rpc(
-    fn: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: unknown;
-    error: { message: string; hint?: string | null; code?: string | null } | null;
-  }>;
-};
+type StoreCaller = StoreDoorsBound;
 
+/** The service-role client: a portal visitor's first look and invitation checks have no session yet. */
 function adminDoors(): StoreCaller {
-  return (createAdminClient() as unknown as { schema(name: string): StoreCaller }).schema(
-    "custom",
-  );
+  return storeDoorsOf(createAdminClient());
 }
 
+/** The signed-in person's own session client: every call after the visitor is bound runs as that person. */
 async function myDoors(): Promise<StoreCaller> {
   const supabase = await createClient();
-  return (supabase as unknown as { schema(name: string): StoreCaller }).schema("custom");
+  return storeDoorsOf(supabase);
 }
 
 /** A door that refused said something; it is carried whole, never swallowed. */

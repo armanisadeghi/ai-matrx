@@ -25,6 +25,7 @@
 // share is the same primitive with a different target type, and these two files
 // are deliberately the same shape.
 
+import { storeDoors as storeDoorsOf } from "@ai-matrx/records/core";
 import { createClient } from "@/utils/supabase/client";
 
 /**
@@ -33,18 +34,8 @@ import { createClient } from "@/utils/supabase/client";
  * through its doors, so the cast happens here, once, named, with every answer
  * shape declared below.
  */
-type StoreCaller = {
-  rpc(
-    fn: string,
-    args: Record<string, unknown>,
-  ): PromiseLike<{
-    data: unknown;
-    error: { message: string; hint?: string | null; code?: string | null } | null;
-  }>;
-};
-
-function custom(): StoreCaller {
-  return (createClient() as unknown as { schema(name: string): StoreCaller }).schema("custom");
+function custom() {
+  return storeDoorsOf(createClient());
 }
 
 /**
@@ -105,10 +96,7 @@ export interface PortalShareAccepted {
 
 /** What is on offer, asked anonymously off the token. Grants nothing. */
 export async function peekPortalShare(token: string): Promise<PortalSharePeek> {
-  const { data, error } = await (createClient() as unknown as StoreCaller).rpc(
-    "portal_share_peek",
-    { p_token: token },
-  );
+  const { data, error } = await custom().rpc("portal_share_peek", { p_token: token });
   if (error) throw new Error(error.message);
   return data as unknown as PortalSharePeek;
 }

@@ -13,6 +13,7 @@
 //     declares the relation column (`custom.field_declare`, many records) and writes through it.
 // Nothing is refused in silence: every refusal the store gives comes back as its own sentence.
 
+import { storeDoors } from "@ai-matrx/records/core";
 import { createClient } from "@/utils/supabase/client";
 
 /** The table kernel's id: a constant of the store (records `KERNEL_TABLES`, "Table"). */
@@ -48,12 +49,8 @@ interface FieldRow {
   data: { key?: string; label?: string; type?: string; relation_target?: string; multi?: boolean; deleted_at?: string | null };
 }
 
-function custom() {
-  return createClient().schema("custom");
-}
-
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
-  const { data, error } = await custom().rpc(fn as never, args as never);
+  const { data, error } = await storeDoors(createClient()).rpc(fn, args);
   if (error) throw new Error(error.message);
   return data as T;
 }

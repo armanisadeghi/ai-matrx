@@ -11,6 +11,7 @@
 // Moved from the retired kits Save dialog (Kits → Template merge, 2026-10-05). Pure parts are
 // exported for the guard test; the doors take a client.
 
+import { storeDoors } from "@ai-matrx/records/core";
 import { templateDeclaration } from "@ai-matrx/records/templates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -179,11 +180,11 @@ export async function saveAsTemplate(
   organizationId: string,
   choices: SaveChoices & { tableIds: string[]; includeRows: boolean; rowsPerTable: number },
 ): Promise<SavedTemplate> {
-  const drafted = await client.schema("custom").rpc("template_from_tables", {
-    p_organization_id: organizationId,
-    p_table_ids: choices.tableIds,
-    p_include_rows: choices.includeRows,
-    p_rows_per_table: choices.rowsPerTable,
+  const drafted = await storeDoors(client).templateFromTables({
+    organizationId,
+    tableIds: choices.tableIds,
+    includeRows: choices.includeRows,
+    rowsPerTable: choices.rowsPerTable,
   });
   if (drafted.error) throw new Error(drafted.error.message);
   const stamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(8, 14);
@@ -194,7 +195,7 @@ export async function saveAsTemplate(
   } catch (err) {
     throw new Error(`The template could not be built: ${err instanceof Error ? err.message : String(err)}`);
   }
-  const declared = await client.schema("custom").rpc("template_declare", { p_scope: "org", p_spec: declaration as never });
+  const declared = await storeDoors(client).templateDeclare("org", declaration);
   if (declared.error) throw new Error(declared.error.message);
   const answer = declared.data as unknown as { template_id: string; catalogue_id: string };
   return { templateId: answer.template_id, catalogueId: answer.catalogue_id, left };
