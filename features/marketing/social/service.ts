@@ -248,7 +248,11 @@ export async function readAccountRows(args: {
     readTrackedAccounts(args),
   ]);
   const seen = new Set(brandRows.map((r) => r.trackedAccountId).filter(Boolean));
-  const others = tracked.filter((t) => !seen.has(t.id) && t.role !== "own" && t.role !== "client");
+  // Own accounts the organization tracks that the brand's property list does not carry yet: an account
+  // attached through a connected-account flow lands org-wide (no brand, no property) until it is added.
+  const others = tracked.filter(
+    (t) => !seen.has(t.id) && t.role !== "client" && (t.role !== "own" || !t.brand_id || !t.property_id),
+  );
   if (others.length === 0) return brandRows;
   const profileIds = [...new Set(others.map((t) => t.profile_id))];
   const since = new Date(Date.now() - 100 * 86_400_000).toISOString();
@@ -257,7 +261,11 @@ export async function readAccountRows(args: {
     readProfileSnapshots(profileIds, since),
     readAccountPostStats(profileIds),
   ]);
-  const competitors = buildAccountRows({ tracked: others, profiles, snapshots, postStats });
+  const built = buildAccountRows({ tracked: others, profiles, snapshots, postStats });
+  const unassigned = new Set(others.filter((t) => t.role === "own").map((t) => t.id));
+  const competitors = built.map((r) =>
+    r.trackedAccountId && unassigned.has(r.trackedAccountId) ? { ...r, unassigned: true } : r,
+  );
   return [...brandRows, ...competitors];
 }
 
@@ -673,8 +681,8 @@ export interface KpiGoalInput {
   trackedAccountId: string | null;
 }
 
-export async function createKpiGoal(input: KpiGoalInput): Promise<void> {
-  const { error } = await supabase
+export async function createKpiGoal(input: KpiGoalInput): Promise<string> {
+  const { data, error } = await supabase
     .schema("social")
     .from("kpi_goal")
     .insert({
@@ -689,8 +697,11 @@ export async function createKpiGoal(input: KpiGoalInput): Promise<void> {
       ends_on: input.endsOn,
       platform: input.platform,
       tracked_account_id: input.trackedAccountId,
-    });
-  if (error) fail("social.kpi_goal create", error.message);
+    })
+    .select("id")
+    .single();
+  if (error || !data) fail("social.kpi_goal create", error?.message ?? "The new goal could not be read back.");
+  return data.id;
 }
 
 /** Edit a goal's target, metric, period and scope (Layer B, RLS). Start date and history stay. */

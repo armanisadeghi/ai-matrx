@@ -13,6 +13,8 @@
 import Link from "next/link";
 import { SocialConnectionsPanel } from "@/features/social-connections/SocialConnectionsPanel";
 import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
+import { TikTokConnectionsPanel } from "@/features/tiktok-connections/TikTokConnectionsPanel";
+import { socialAuthorizeUrl } from "@/features/social-connections/customer-service";
 import { useRouter } from "next/navigation";
 import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
@@ -21,7 +23,7 @@ import { parseCreateAccounts, parseUpdateAccounts } from "../agent-writes";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import { createSocialAccountsScope, SOCIAL_ACCOUNTS_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-social-accounts.manifest";
 import { useMemo, useState } from "react";
-import { Globe, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { Globe, Link2, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
 import {
   Badge,
@@ -37,6 +39,8 @@ import { useRefusedRead } from "../gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
+import { CONNECTION_STATE_LABELS, CONNECTION_STATE_TONES, type PlatformConnection } from "../connection-state";
+import { useConnectionStates } from "../useConnectionStates";
 import {
   accountLabels,
   formatGrowth,
@@ -89,6 +93,7 @@ export function AccountsTab() {
   const [showXConnections, setShowXConnections] = useState(false);
   const [summaryRow, setSummaryRow] = useState<AccountRow | null>(null);
   const accounts = useAccountRows(organizationId, brandId);
+  const connections = useConnectionStates(organizationId);
   const invalidate = useInvalidateSocial();
   const {
     busyRow,
@@ -165,6 +170,46 @@ export function AccountsTab() {
     }
   }
 
+  /** An own account attached through a connection, not yet on this brand: link it (property + brand). */
+  async function addToBrand(row: AccountRow) {
+    if (!row.profileId) return;
+    setBusyRow(row.rowId);
+    try {
+      await trackAccount(
+        { profileId: row.profileId, role: "own", brandId, pages: 0, allowEmpty: true },
+        { organizationId },
+      );
+      await invalidate();
+      toast.success(`@${row.handle} added to ${brand.name}`);
+    } catch (err) {
+      toast.error(socialErrorMessage(err, "Couldn't add the account to this brand"));
+    } finally {
+      setBusyRow(null);
+    }
+  }
+
+  /** Connect / Reconnect: the hub's own OAuth start for its networks, else the hub panel itself. */
+  function startConnect(c: PlatformConnection) {
+    if (c.hubProvider) {
+      window.location.assign(
+        socialAuthorizeUrl(
+          c.hubProvider,
+          organizationId,
+          undefined,
+          undefined,
+          c.connectionId ?? undefined,
+          `/marketing/${brandSeg}/socials/accounts`,
+        ),
+      );
+      return;
+    }
+    if (c.platform === "youtube") {
+      router.push(`/marketing/${brandSeg}/socials/kpis`);
+      return;
+    }
+    setShowXConnections(true);
+  }
+
   async function changeRole(row: AccountRow, role: TrackedRole) {
     if (!row.trackedAccountId || role === row.role) return;
     try {
@@ -174,6 +219,13 @@ export function AccountsTab() {
       toast.error(socialErrorMessage(err, "Couldn't change the role"));
     }
   }
+
+  /** An own account's connection state (competitors and inspiration are read-only follows: no connection). */
+  const connectionOf = (r: AccountRow) => {
+    if (r.role !== "own") return null;
+    const c = connections.of(r.platform);
+    return c ? { ...c, label: CONNECTION_STATE_LABELS[c.state], tone: CONNECTION_STATE_TONES[c.state] } : null;
+  };
 
   const columns = useMemo<MatrxColumnDef<AccountRow>[]>(
     () => [
@@ -375,6 +427,18 @@ export function AccountsTab() {
         cell: (r) => relativeAge(r.lastRefreshedAt),
       },
       {
+        id: "connection",
+        label: "Connection",
+        header: "Connection",
+        accessorFn: (r) => connectionOf(r)?.label ?? "",
+        filter: "select",
+        filterOptions: Object.values(CONNECTION_STATE_LABELS).map((label) => ({ value: label, label })),
+        cell: (r) => {
+          const c = connectionOf(r);
+          return c ? <Badge tone={c.tone}>{c.label}</Badge> : null;
+        },
+      },
+      {
         id: "status",
         label: "Status",
         header: "Status",
@@ -393,7 +457,7 @@ export function AccountsTab() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandSeg, organizationId, brandId, brandKind, busyRow, progress],
+    [brandSeg, organizationId, brandId, brandKind, busyRow, progress, connections.data],
   );
 
   // A fixed order that does not depend on anything tracking changes (followers, name): tracking an
@@ -538,7 +602,8 @@ export function AccountsTab() {
             returnUrl={`/marketing/${brandSeg}/socials/accounts`}
             onChanged={() => void invalidate()}
           />
-          <CustomerAccountsPanel organizationId={organizationId} brandId={brandId} returnUrl={`/marketing/${brandSeg}/socials/accounts`} providers={["facebook", "instagram", "threads"]} />
+          <CustomerAccountsPanel organizationId={organizationId} brandId={brandId} returnUrl={`/marketing/${brandSeg}/socials/accounts`} providers={["pinterest", "facebook", "instagram", "threads", "linkedin", "snapchat", "reddit"]} />
+          <TikTokConnectionsPanel />
         </div>
       )}
       <MatrxDataTable<AccountRow>
@@ -644,6 +709,34 @@ export function AccountsTab() {
                 },
               ]
             : []),
+          ...(row.unassigned && row.profileId
+            ? [
+                {
+                  id: "add-to-brand",
+                  icon: Plus,
+                  label: "Add to brand",
+                  tooltip: `Show this account on ${brand.name}`,
+                  loading: busyRow === row.rowId,
+                  disabled: busyRow !== null,
+                  onClick: () => void addToBrand(row),
+                },
+              ]
+            : []),
+          ...(() => {
+            const c = row.role === "own" ? connections.of(row.platform) : null;
+            if (!c || !c.canConnect || c.state === "connected") return [];
+            const reconnect = c.state === "reconnect";
+            return [
+              {
+                id: reconnect ? "reconnect" : "connect",
+                icon: Link2,
+                label: reconnect ? "Reconnect" : "Connect",
+                tooltip: reconnect ? "Sign in again to restore private stats" : "Connect for private stats",
+                disabled: busyRow !== null,
+                onClick: () => startConnect(c),
+              },
+            ];
+          })(),
           ...(row.trackedAccountId
             ? [
                 {

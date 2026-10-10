@@ -258,6 +258,8 @@ export interface AccountRow {
   ownerName?: string | null;
   /** The server can track this platform (false: say so, no Track button). Absent = judge by platform. */
   trackable?: boolean;
+  /** An own account the organization tracks that this brand does not carry yet (attached through a connection). */
+  unassigned?: boolean;
   isVerified?: boolean;
   /** The account's public link (the property url), for the external-link icon. */
   externalUrl?: string | null;
