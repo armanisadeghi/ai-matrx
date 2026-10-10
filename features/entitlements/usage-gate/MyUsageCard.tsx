@@ -28,6 +28,7 @@ import {
 import { refreshUsageInBackground } from "./usageGate";
 import type { UsageGateLevel, UsageWindow } from "./usageState";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function windowLabel(period: string): string {
   switch (period) {
     case "day":
@@ -203,9 +204,9 @@ export function MyUsageCard({ className }: { className?: string }) {
           </div>
         ) : (
           <div className="mt-2 flex items-center gap-2">
-            <p className="type-body text-muted-foreground">
+            <p data-error-box className="type-body text-muted-foreground">
               We couldn&apos;t read your usage just now.
-            </p>
+            <ErrorAlchemyMenu /></p>
             <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={read}>
               Try again
             </Button>
