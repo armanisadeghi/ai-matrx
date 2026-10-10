@@ -11,8 +11,9 @@ import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { canvasRecord, canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
-export const QUICK_TASKS_KIND = "quick-tasks";
-const TITLE = "Quick Tasks";
+import { QUICK_TASKS_KIND, QUICK_TASKS_TITLE as TITLE } from "@/features/canvas/host/quickToolLaunchers";
+
+export { QUICK_TASKS_KIND };
 
 export interface QuickTaskPrefill {
   title?: string;

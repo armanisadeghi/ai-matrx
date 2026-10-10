@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useQuickToolToggle, type QuickToolKind } from "@/features/canvas/host/toolKinds";
+import { useQuickToolToggle, type QuickToolKind } from "@/features/canvas/host/quickToolLaunchers";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 import { MenuItemCloseLabel } from "./menuCheckboxId";

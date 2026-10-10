@@ -23,7 +23,8 @@ import type { OpenScratchpadPanelOptions } from "@ai-matrx/chat/host/window-open
 import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
 export { SCRATCHPAD_KIND };
-export const SCRATCHPAD_TITLE = "Scratchpad";
+import { SCRATCHPAD_TITLE } from "@/features/canvas/host/quickToolLaunchers";
+export { SCRATCHPAD_TITLE };
 
 /** The chat this tab was opened from, when a chat opened it. */
 export function readScratchpadGate(data: CanvasJson | undefined | null): string | undefined {

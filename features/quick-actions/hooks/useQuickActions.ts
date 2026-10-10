@@ -9,7 +9,7 @@ import {
   type OpenAgentRunWindowOptions,
 } from "@/features/overlays/openers/agentRunWindow";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
-import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
+import { useQuickToolToggle } from "@/features/canvas/host/quickToolLaunchers";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
 
 export type OpenChatWindowOptions = Pick<

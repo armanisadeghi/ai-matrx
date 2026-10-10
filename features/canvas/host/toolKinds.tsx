@@ -9,17 +9,15 @@
  */
 
 import { registerCanvasKinds, type AnyCanvasKind } from "@ai-matrx/canvas/react";
-import type { CanvasJson } from "@ai-matrx/canvas";
-import { freshQuickChatData, QUICK_CHAT_KIND, quickChatKind } from "@/features/quick-actions/canvas/quickChatKind";
-import { QUICK_DATA_KIND, quickDataKind } from "@/features/quick-actions/canvas/quickDataKind";
-import { SCRATCHPAD_KIND, scratchpadKind } from "@/features/quick-actions/canvas/scratchpadKind";
-import { QUICK_NOTES_KIND, quickNotesKind } from "@/features/notes/canvas/quickNotesKind";
+import { quickChatKind } from "@/features/quick-actions/canvas/quickChatKind";
+import { quickDataKind } from "@/features/quick-actions/canvas/quickDataKind";
+import { scratchpadKind } from "@/features/quick-actions/canvas/scratchpadKind";
+import { quickNotesKind } from "@/features/notes/canvas/quickNotesKind";
 import { noteKnowledgeKind } from "@/features/notes/canvas/noteKnowledgeKind";
-import { QUICK_TASKS_KIND, quickTasksKind } from "@/features/tasks/canvas/quickTasksKind";
-import { QUICK_SCRIBE_KIND, quickScribeKind } from "@/features/transcript-studio/canvas/quickScribeKind";
+import { quickTasksKind } from "@/features/tasks/canvas/quickTasksKind";
+import { quickScribeKind } from "@/features/transcript-studio/canvas/quickScribeKind";
 import { notificationsKind } from "@/features/notifications/canvas/notificationsKind";
 import { messagesKind } from "@/features/messaging/canvas/messagesKind";
-import { useToolToggle } from "./toolCanvas";
 import { withOutputDecisions } from "./kindOutputDecisions";
 import { documentsKind } from "./conversation/documentsKind";
 import { contextPreviewKind } from "./conversation/contextPreviewKind";
@@ -57,29 +55,4 @@ export function registerToolCanvasKinds(): () => void {
   return registerCanvasKinds(TOOL_CANVAS_KINDS);
 }
 
-/**
- * The Quick Access tools — each is a toolbar-style launcher on its everyday
- * ("default") tab. Live tools whose tab should survive a press (a running
- * conversation, a capture) put the canvas away instead of closing the tab.
- */
-const QUICK_TOOLS = {
-  [QUICK_CHAT_KIND]: { kind: quickChatKind, data: freshQuickChatData(null), whenVisible: "hide" },
-  [QUICK_NOTES_KIND]: { kind: quickNotesKind, data: null, whenVisible: "close" },
-  [QUICK_TASKS_KIND]: { kind: quickTasksKind, data: null, whenVisible: "close" },
-  [SCRATCHPAD_KIND]: { kind: scratchpadKind, data: null, whenVisible: "close" },
-  [QUICK_DATA_KIND]: { kind: quickDataKind, data: { tableId: null }, whenVisible: "close" },
-  [QUICK_SCRIBE_KIND]: { kind: quickScribeKind, data: { sessionId: null }, whenVisible: "hide" },
-} as const satisfies Record<string, { kind: AnyCanvasKind; data: CanvasJson; whenVisible: "close" | "hide" }>;
-
-export type QuickToolKind = keyof typeof QUICK_TOOLS;
-
-/** A Quick Access launcher: press toggles-or-focuses the tool's tab; `isVisible` drives its pressed state. */
-export function useQuickToolToggle(tool: QuickToolKind) {
-  return useToolToggle({
-    kind: tool,
-    key: "default",
-    title: QUICK_TOOLS[tool].kind.label,
-    data: QUICK_TOOLS[tool].data,
-    whenVisible: QUICK_TOOLS[tool].whenVisible,
-  });
-}
+export { useQuickToolToggle, type QuickToolKind } from "./quickToolLaunchers";

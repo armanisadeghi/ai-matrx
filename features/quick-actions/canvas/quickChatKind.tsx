@@ -16,8 +16,9 @@ import { defineCanvasKind, type CanvasKindProps, type CanvasMenuItem } from "@ai
 import type { CanvasController, CanvasItemId, CanvasJson } from "@ai-matrx/canvas";
 import { canvasRecord, canvasText, useToolOpener, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
 
-export const QUICK_CHAT_KIND = "quick-chat";
-const TITLE = "Quick Chat";
+import { QUICK_CHAT_KIND, QUICK_CHAT_TITLE as TITLE, freshQuickChatData } from "@/features/canvas/host/quickToolLaunchers";
+
+export { QUICK_CHAT_KIND, freshQuickChatData };
 
 export interface QuickChatTabData {
   conversationId: string | null;
@@ -37,10 +38,6 @@ export function readQuickChatData(data: CanvasJson | undefined | null): QuickCha
     history: record.history === true,
     newChat: typeof record.newChat === "number" ? record.newChat : 0,
   };
-}
-
-export function freshQuickChatData(conversationId: string | null): QuickChatTabData {
-  return { conversationId, agentId: null, history: false, newChat: 0 };
 }
 
 /** Writes the tab's data from its latest state, never a stale render's copy. */

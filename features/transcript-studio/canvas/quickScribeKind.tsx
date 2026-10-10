@@ -11,8 +11,9 @@ import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
-export const QUICK_SCRIBE_KIND = "quick-scribe";
-const TITLE = "Quick Scribe";
+import { QUICK_SCRIBE_KIND, QUICK_SCRIBE_TITLE as TITLE } from "@/features/canvas/host/quickToolLaunchers";
+
+export { QUICK_SCRIBE_KIND };
 
 export function readScribeSessionId(data: CanvasJson | undefined | null): string | undefined {
   return canvasText(data, "sessionId") ?? undefined;

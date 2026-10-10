@@ -11,8 +11,9 @@ import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { canvasText } from "@/features/canvas/host/toolCanvas";
 
-export const QUICK_DATA_KIND = "quick-data";
-const TITLE = "Quick Data";
+import { QUICK_DATA_KIND, QUICK_DATA_TITLE as TITLE } from "@/features/canvas/host/quickToolLaunchers";
+
+export { QUICK_DATA_KIND };
 
 export function readQuickDataTableId(data: CanvasJson | undefined | null): string | null {
   return canvasText(data, "tableId");

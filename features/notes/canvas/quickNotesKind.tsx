@@ -9,8 +9,9 @@ import { ExternalLink, StickyNote } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import { useToolOpener } from "@/features/canvas/host/toolCanvas";
 
-export const QUICK_NOTES_KIND = "quick-notes";
-const TITLE = "Quick Notes";
+import { QUICK_NOTES_KIND, QUICK_NOTES_TITLE as TITLE } from "@/features/canvas/host/quickToolLaunchers";
+
+export { QUICK_NOTES_KIND };
 
 export const quickNotesKind = defineCanvasKind<null>({
   id: QUICK_NOTES_KIND,

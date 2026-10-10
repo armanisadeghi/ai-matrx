@@ -1,5 +1,5 @@
 import type { OverlayId } from "@/features/overlays/catalogue";
-import type { QuickToolKind } from "@/features/canvas/host/toolKinds";
+import type { QuickToolKind } from "@/features/canvas/host/quickToolLaunchers";
 import type { MenuIconKey } from "./menuIconRegistry";
 
 interface MenuItemConfigBase {
