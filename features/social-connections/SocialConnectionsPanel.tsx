@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Badge } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -49,17 +49,22 @@ export function SocialConnectionsPanel({
   const [failure, setFailure] = useState<string | null>(null);
   const [appAvailable, setAppAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const loadGeneration = useRef(0);
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     try {
       const rows = await listSocialConnections();
       const config = organizationId ? await getXConfig(organizationId) : null;
+      if (generation !== loadGeneration.current) return;
       setConnections(rows);
       setAppAvailable(config?.status === "available");
     } catch (error) {
+      if (generation !== loadGeneration.current) return;
       setFailure(extractErrorMessage(error));
       setConnections(null);
+      setAppAvailable(false);
     }
-  }, [organizationId]);
+  }, [organizationId, backendOrigin]);
   useEffect(() => {
     let current = true;
     const reload = async () => {
@@ -88,6 +93,7 @@ export function SocialConnectionsPanel({
     void reload();
     return () => {
       current = false;
+      loadGeneration.current += 1;
     };
   }, [userId, params, load]);
   const act = async (action: (org: string) => Promise<unknown>) => {
@@ -174,9 +180,10 @@ export function SocialConnectionsPanel({
               ? new Date(connection.last_verified_at).toLocaleString()
               : "Never"}
           </p>
-          {connection.metadata &&
-            typeof connection.metadata === "object" &&
+          {typeof connection.metadata === "object" &&
+            connection.metadata !== null &&
             !Array.isArray(connection.metadata) &&
+            "token_expires_at" in connection.metadata &&
             typeof connection.metadata.token_expires_at === "string" && (
               <p className="text-sm text-muted-foreground">
                 Access expires:{" "}
