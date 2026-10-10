@@ -28,12 +28,15 @@ export function BrandTopicalMapCard({
   brandSeg,
   organizationId,
   title = "Topical map",
+  canEdit,
 }: {
   /** The card's name for this brand kind (`brand-kind.ts` overview.mapTitle). */
   title?: string;
   brandId: string;
   brandSeg: string;
   organizationId: string;
+  /** The viewer's access answer for this brand: starting a map is a write, so only an editor sees it. */
+  canEdit: boolean;
 }) {
   // access-errors: ok — the card renders the refusal verbatim below; these
   // seo.* functions write their refusals for the person reading them.
@@ -57,6 +60,7 @@ export function BrandTopicalMapCard({
         <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
           <p className="text-xs text-muted-foreground">No {title.toLowerCase()} yet.</p>
           {/* Placement §7 #4 — "Generate map" when there is none. */}
+          {canEdit ? (
           <Link
             href={startMapHref(brandSeg, { source: "data" })}
             className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1 text-sm hover:bg-muted"
@@ -64,6 +68,7 @@ export function BrandTopicalMapCard({
             <AGENT_ICON className="h-4 w-4" aria-hidden />
             Start a map from this brand&apos;s data
           </Link>
+          ) : null}
         </div>
       ) : (
         <ul className="divide-y divide-border">

@@ -26,7 +26,7 @@ export type ConnectionState =
 export const CONNECTION_STATE_LABELS: Record<ConnectionState, string> = {
   connected: "Connected",
   reconnect: "Needs reconnect",
-  testers_only: "Connect",
+  testers_only: "Not connected",
   not_offered: "Not offered yet",
   not_connected: "Not connected",
 };

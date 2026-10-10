@@ -25,6 +25,8 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { PageSurfaceMenu } from "@/features/context-menu-v3/PageSurfaceMenu";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { useAccess } from "@/utils/permissions/access";
+import { canEditAccess } from "@/utils/permissions/access-core";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { SOCIALS_TABS, type SocialsTabId } from "../types";
@@ -51,6 +53,8 @@ export function SocialsShell({ children }: { children: ReactNode }) {
   const trackParam = useSearchParams().get("track");
   const [trackOpen, setTrackOpen] = useState(() => Boolean(trackParam));
 
+  // What the viewer may DO is the record's own access answer; RLS stays the boundary.
+  const canEdit = canEditAccess(useAccess("web_brand", brand.id).level);
   const base = marketingRoutes.brandSocials(brand.seg);
   const modes = SOCIALS_TABS.map((tab) => ({ name: tab.label, href: `${base}/${tab.id}`, icon: TAB_ICONS[tab.id] }));
   // Account / post detail belong to the Accounts tab.
@@ -69,6 +73,7 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         brandSeg: brand.seg,
         organizationId: brand.organizationId,
         openTrack: () => setTrackOpen(true),
+        canEdit,
       }}
     >
       {fullBleed ? null : <RecordPageHeader
@@ -89,7 +94,7 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         modes={modes}
         activeModeHref={`${base}/${activeTab}`}
         actions={
-          onAccountPage
+          onAccountPage || !canEdit
             ? []
             : [{ label: "Track account", icon: Plus, primary: true, showLabel: true, pinnedOnPhone: true, onPress: () => setTrackOpen(true) }]
         }

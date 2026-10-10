@@ -16,6 +16,8 @@ import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker"
 import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
 import { SocialPostCard } from "@/features/marketing/social/components/SocialPostCard";
 import { formatCompact } from "@/features/marketing/social/outlier";
+import { findCachedAccount } from "@/features/marketing/social/account-lookup";
+import { isSocialPlatform } from "@/features/marketing/social/types";
 import { useRefusedRead } from "@/features/marketing/social/gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guidedJob";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -40,11 +42,14 @@ function Section({
   icon: Icon,
   title,
   count,
+  action,
   children,
 }: {
   icon: typeof UserRound;
   title: string;
   count?: number;
+  /** Sits with the section's title, on its right. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -55,6 +60,7 @@ function Section({
         {count !== undefined && (
           <span className="type-secondary tabular-nums text-muted-foreground">{count}</span>
         )}
+        {action ? <span className="ml-auto">{action}</span> : null}
       </header>
       <div className="p-2.5">{children}</div>
     </section>
@@ -120,6 +126,41 @@ function TrackInSocials({ brandId, url }: { brandId: string | null; url: string 
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * A profile's name opens the in-app account page when the profile is in our store and the topic has a
+ * brand to open it under; otherwise it opens the profile on its own platform. Never plain text.
+ */
+function ProfileName({ brandId, platform, handle, name, externalUrl }: { brandId: string | null; platform: string; handle: string; name: string; externalUrl: string }) {
+  const [profileId, setProfileId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!brandId || !isSocialPlatform(platform)) return;
+    let cancelled = false;
+    findCachedAccount({ platform, handle })
+      .then((found) => {
+        if (!cancelled) setProfileId(found?.profileId ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfileId(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [brandId, platform, handle]);
+  const className = "min-w-0 truncate type-title hover:underline";
+  if (brandId && profileId) {
+    return (
+      <Link href={`${marketingRoutes.brandSocials(brandId)}/${platform}/${profileId}`} className={className}>
+        {name}
+      </Link>
+    );
+  }
+  return (
+    <a href={externalUrl} target="_blank" rel="noopener noreferrer" className={className}>
+      {name}
+    </a>
   );
 }
 
@@ -207,7 +248,18 @@ export default function TopicSocial() {
     <PageSurfaceMenu sourceFeature="research">
     <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">
       <div className="mx-auto max-w-5xl space-y-4">
-        <Section icon={UserRound} title="Profiles" count={handles.length}>
+        <Section
+          icon={UserRound}
+          title="Profiles"
+          count={handles.length}
+          action={
+            brandId === null && handles.length > 0 ? (
+              <Button asChild variant="outline">
+                <Link href={marketingRoutes.brands()}>Choose a brand to track in</Link>
+              </Button>
+            ) : null
+          }
+        >
           {error != null && sources === null ? (
             <ReadFailure error={error} what="the captured social profiles" onRetry={() => void load()} className="m-0" />
           ) : sources === null ? (
@@ -225,7 +277,13 @@ export default function TopicSocial() {
                     <PlatformMark platform={h.platform} size={28} />
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate type-title">{readableName(found?.facts.displayName) ?? `@${h.handle}`}</span>
+                        <ProfileName
+                          brandId={brandId}
+                          platform={h.platform}
+                          handle={h.handle}
+                          name={readableName(found?.facts.displayName) ?? `@${h.handle}`}
+                          externalUrl={url}
+                        />
                         {found?.facts.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Verified" />}
                       </div>
                       <div className="type-meta text-muted-foreground">
@@ -320,13 +378,6 @@ export default function TopicSocial() {
           )}
         </Section>
 
-        {brandId === null && handles.length > 0 && (
-          <div className="flex justify-end">
-            <Button asChild variant="outline">
-              <Link href={marketingRoutes.brands()}>Choose a brand to track in</Link>
-            </Button>
-          </div>
-        )}
       </div>
       {captureNode}
     </div>

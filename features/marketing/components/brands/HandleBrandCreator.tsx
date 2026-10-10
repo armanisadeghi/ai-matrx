@@ -392,7 +392,7 @@ export function HandleBrandCreator({
           </Button>
           <Button
             variant="primary"
-            disabled={busy || parsed.status === "empty" || parsed.status === "invalid" || parsed.status === "post"}
+            disabled={busy || parsed.status === "empty" || parsed.status === "invalid" || parsed.status === "post" || parsed.status === "needs_platform"}
             icon={busy ? <Loader2 className="animate-spin" /> : <Search />}
             onClick={() => void lookUp()}
           >

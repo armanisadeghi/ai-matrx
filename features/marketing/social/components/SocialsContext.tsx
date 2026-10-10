@@ -13,6 +13,8 @@ export interface SocialsContextValue {
   brandSeg: string;
   organizationId: string;
   openTrack: () => void;
+  /** The viewer's access to this brand is editor or above: every write control (track, connect, link) shows only then. */
+  canEdit: boolean;
 }
 
 export const SocialsContext = createContext<SocialsContextValue | null>(null);

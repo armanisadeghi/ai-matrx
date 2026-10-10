@@ -91,11 +91,9 @@ export { accountHref };
 function AccountCard({
   row: r,
   controls,
-  connection,
 }: {
   row: AccountRow;
   controls: MatrxDataTableMobileCardControls;
-  connection: { label: string; tone: "success" | "warning" | "neutral" } | null;
 }) {
   const stat = (label: string, value: ReactNode) => (
     <span className="flex items-baseline gap-1">
@@ -114,9 +112,8 @@ function AccountCard({
         {stat("Last post", lastPostLabel(r.lastPostAt, r.postsTracked))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="neutral">{TRACKED_ROLE_LABELS[r.role]}</Badge>
-        {connection ? <Badge tone={connection.tone}>{connection.label}</Badge> : null}
-        {r.status === "not_tracked" ? <Badge tone="warning">Not tracked</Badge> : null}
+        {/* One chip, the table's own Status: tracking first, then a non-own role, then the connection. */}
+        <div className="min-w-0">{controls.renderCell("status")}</div>
         <div className="ml-auto shrink-0">{controls.actions}</div>
       </div>
     </div>
@@ -124,7 +121,7 @@ function AccountCard({
 }
 
 export function AccountsTab() {
-  const { brandId, brandSeg, organizationId, openTrack } = useSocials();
+  const { brandId, brandSeg, organizationId, openTrack, canEdit } = useSocials();
   const brand = useMarketingBrand();
   const brandKind = brand.kind;
   const router = useRouter();
@@ -277,6 +274,7 @@ export function AccountsTab() {
                   </span>
                   {showOwnerChip(r, brandKind) ? (
                     <PersonOwnerChip
+                      canEdit={canEdit}
                       propertyId={r.propertyId ?? null}
                       ownerName={r.ownerName ?? null}
                       organizationId={organizationId}
@@ -302,7 +300,7 @@ export function AccountsTab() {
             </span>
           );
           return href ? (
-            <Link href={href} className="block min-w-0" data-clickable="">
+            <Link href={href} className="block min-w-0 max-md:flex max-md:min-h-11 max-md:items-center" data-clickable="">
               {body}
             </Link>
           ) : (
@@ -362,7 +360,7 @@ export function AccountsTab() {
         header: "Connection",
         accessorFn: (r) => connectionOf(r)?.label ?? "",
         filter: "select",
-        filterOptions: Object.values(CONNECTION_STATE_LABELS).map((label) => ({ value: label, label })),
+        filterOptions: [...new Set(Object.values(CONNECTION_STATE_LABELS))].map((label) => ({ value: label, label })),
         cell: (r) => {
           const c = connectionOf(r);
           return c ? <Badge tone={c.tone}>{c.label}</Badge> : null;
@@ -488,7 +486,7 @@ export function AccountsTab() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandSeg, organizationId, brandId, brandKind, busyRow, progress, connections.data],
+    [brandSeg, organizationId, brandId, brandKind, busyRow, progress, connections.data, canEdit],
   );
 
   // A fixed order that does not depend on anything tracking changes (followers, name): tracking an
@@ -647,7 +645,7 @@ export function AccountsTab() {
           else setSummaryRow(r);
         })}
         mobileCardsBreakpoint="md"
-        mobileCards={(r, _i, controls) => <AccountCard row={r} controls={controls} connection={connectionOf(r)} />}
+        mobileCards={(r, _i, controls) => <AccountCard row={r} controls={controls} />}
         isLoading={accounts.isLoading}
         isFetching={accounts.isFetching}
         read={{
@@ -661,7 +659,7 @@ export function AccountsTab() {
         }}
         toolbar={{
           searchPlaceholder: "Search accounts…",
-          actions: (
+          actions: !canEdit ? undefined : (
             <div className="flex items-center gap-2">
               <ConnectAccountMenu
                 organizationId={organizationId}
@@ -689,7 +687,7 @@ export function AccountsTab() {
             </div>
           ),
         }}
-        rowActions={(row) => [
+        rowActions={(row) => !canEdit ? [] : [
           row.trackedAccountId
             ? {
                 id: "refresh",
@@ -782,11 +780,11 @@ export function AccountsTab() {
         emptyState={{
           title: "No accounts yet",
           description: "Paste a profile link",
-          action: (
+          action: canEdit ? (
             <Button variant="primary" icon={<Plus />} onClick={openTrack}>
               Track account
             </Button>
-          ),
+          ) : undefined,
         }}
       />
       {captureNode}

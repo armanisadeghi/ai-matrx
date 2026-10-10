@@ -452,6 +452,16 @@ try {
     report.routes.push(entry);
     for (const view of VIEWS) {
       await page.setViewportSize({ width: view.width, height: view.height });
+      // A phone has a coarse pointer: the design system grows a control's hit area
+      // (its ::after ring) only under `@media (pointer: coarse)`, so the phone view
+      // must report one or every ringed control reads as a false small target.
+      try {
+        const touch = (globalThis.__pageLookTouch ??= await context.newCDPSession(page));
+        await touch.send("Emulation.setTouchEmulationEnabled", { enabled: Boolean(view.mobile), maxTouchPoints: view.mobile ? 5 : 0 });
+        // The session stays open: detaching it would drop the emulation.
+      } catch {
+        /* without CDP the phone view keeps a fine pointer */
+      }
       for (const theme of ["light", "dark"]) {
         if (opts.views && !opts.views.includes(`${view.name}-${theme}`)) continue;
         consoleErrors.length = 0;

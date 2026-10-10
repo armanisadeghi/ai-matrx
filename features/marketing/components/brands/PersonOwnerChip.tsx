@@ -16,11 +16,14 @@ import type { PartyRef } from "@/features/crm/types";
 import { setPropertyOwnerParty } from "@/features/marketing/data/service";
 
 export function PersonOwnerChip({
+  canEdit,
   propertyId,
   ownerName,
   organizationId,
   brandId,
 }: {
+  /** Linking a person is a write: a viewer sees the linked name, never the picker. */
+  canEdit: boolean;
   propertyId: string | null;
   ownerName: string | null;
   organizationId: string;
@@ -50,6 +53,7 @@ export function PersonOwnerChip({
 
   if (ownerName) return <span className="shrink-0"><Badge>{ownerName}</Badge></span>;
   if (!propertyId) return <span className="shrink-0"><Badge>Person</Badge></span>;
+  if (!canEdit) return null;
 
   const link = async (partyId: string) => {
     try {

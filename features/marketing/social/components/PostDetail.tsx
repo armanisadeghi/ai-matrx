@@ -57,6 +57,8 @@ import {
   formatDuration,
   outlierInputFrom,
   postMetricSeries,
+  postedLabel,
+  postedTitle,
   relativeAge,
   type PostMetricKey,
 } from "../mappers";
@@ -218,22 +220,15 @@ function MetricsTab({
   // A line needs two readings. Until then the figures stand as tiles, not a chart of one dot.
   if (rows.length < 2) {
     const first = rows.length ? Math.min(...rows.map((r) => Date.parse(r.observed_at))) : null;
+    // The header already shows today's figures: until there is history, only what it does not show.
     return (
       <div className="flex flex-col gap-1.5">
-        <KpiGrid className="sm:grid-cols-3 lg:grid-cols-3">
-          {metrics.map((m) => {
-            const latest = postMetricSeries(rows, m).at(-1);
-            return (
-              <KpiTile key={m} label={POST_METRIC_LABELS[m]} value={latest ? latest.value.toLocaleString() : null} />
-            );
-          })}
-          <KpiTile
-            label="Velocity 24h"
-            value={velocity === null ? null : formatCompact(velocity)}
-            title="Views gained in the first 24 hours after posting."
-          />
-        </KpiGrid>
-        {first ? <p className="text-xs text-muted-foreground">{`Tracking since ${formatDay(first)}`}</p> : null}
+        {velocity === null ? null : (
+          <KpiGrid className="sm:grid-cols-3 lg:grid-cols-3">
+            <KpiTile label="Velocity 24h" value={formatCompact(velocity)} title="Views gained in the first 24 hours after posting." />
+          </KpiGrid>
+        )}
+        <p className="text-xs text-muted-foreground">{first ? `Tracking since ${formatDay(first)}` : "History starts with the next refresh"}</p>
       </div>
     );
   }
@@ -692,9 +687,9 @@ export function PostDetailBody({
             )}
             <span
               className="text-muted-foreground"
-              title={post.posted_at ? new Date(post.posted_at).toLocaleString() : undefined}
+              title={post.posted_at ? postedTitle(post.posted_at) : undefined}
             >
-              {[post.posted_at ? relativeAge(post.posted_at) : null, post.format, duration].filter(Boolean).join(" · ")}
+              {[post.posted_at ? postedLabel(post.posted_at) : null, post.format, duration].filter(Boolean).join(" · ")}
             </span>
             <span
               className="ml-auto inline-flex items-center gap-1.5"

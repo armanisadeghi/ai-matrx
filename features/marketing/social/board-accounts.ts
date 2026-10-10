@@ -6,6 +6,7 @@
  * tile is called, or what an account that is not stored yet needs.
  */
 
+import { accountName } from "./mappers";
 import type { AccountRow } from "./types";
 
 /** Roles that are the brand's own accounts (they come first and start checked). */
@@ -36,7 +37,7 @@ export function accountTileSeeds(rows: readonly AccountRow[]): AccountTileSeed[]
       followers: r.followers ?? 0,
       seed: {
         rowId: r.rowId,
-        title: `@${r.handle.replace(/^@/, "")}`,
+        title: accountName(r),
         platform: r.platform,
         profileId: r.profileId,
         handleOrUrl: r.profileUrl?.trim() || r.handle,

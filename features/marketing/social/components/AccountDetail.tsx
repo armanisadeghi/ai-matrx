@@ -58,6 +58,8 @@ import {
   postsPerWeek,
   profileFollowerSeries,
   refreshSummary,
+  postedLabel,
+  postedTitle,
   relativeAge,
   accountLabels,
   accountName,
@@ -123,15 +125,17 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     header: "Post",
     accessorFn: (r) => r.hookLine,
     filter: "text",
-    minWidth: 240,
-    cell: (r) => <span className="block max-w-[28rem] truncate">{r.hookLine || "No caption"}</span>,
+    width: 220,
+    minWidth: 160,
+    cell: (r) => <span className="block truncate">{r.hookLine || "No caption"}</span>,
   },
-  { id: "format", label: "Format", header: "Format", accessorKey: "format", filter: "select" },
+  { id: "format", label: "Format", header: "Format", accessorKey: "format", filter: "select", width: 84 },
   {
     id: "multiple",
     label: "Multiple",
     header: "Multiple",
     accessorFn: (r) => r.outlierScore,
+    width: 88,
     align: "right",
     filter: "number",
     cell: (r) => <OutlierBadge inTable input={r.outlier} />,
@@ -152,6 +156,7 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     label: "Views",
     header: "Views",
     accessorFn: (r) => r.views,
+    width: 76,
     align: "right",
     filter: "number",
     cell: (r) => <span className="tabular-nums">{formatCompact(r.views)}</span>,
@@ -161,6 +166,7 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     label: "Likes",
     header: "Likes",
     accessorFn: (r) => r.likes,
+    width: 72,
     align: "right",
     filter: "number",
     cell: (r) => <span className="tabular-nums">{formatCompact(r.likes)}</span>,
@@ -171,7 +177,8 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     header: "Posted",
     accessorFn: (r) => r.postedAt,
     filter: "date",
-    cell: (r) => relativeAge(r.postedAt),
+    width: 104,
+    cell: (r) => <span className="tabular-nums" title={postedTitle(r.postedAt)}>{postedLabel(r.postedAt)}</span>,
   },
 ];
 
@@ -493,14 +500,13 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         <KpiTile label="Followers" value={followers === null ? null : formatCompact(followers)} />
-        <KpiTile label="30d growth" value={growth.fraction === null ? null : formatGrowth(growth.fraction)} hint={growth.fraction === null ? growth.note : undefined} title="Follower change between snapshots about 30 days apart." />
-        <KpiTile label="Posts / week" value={perWeek === null ? null : String(perWeek)} title="Posts in the last 30 days, per week." />
-        <KpiTile label="Median views" value={baseline.medianViews === null ? null : formatCompact(baseline.medianViews)} title="Median views of this creator's latest 30 posts." />
-        <KpiTile
-          label="Best multiple"
-          value={best ? <OutlierBadge inTable input={best.outlier} /> : null}
-          title="Highest outlier multiple among this creator's posts."
-        />
+        {/* A tile with nothing to show is absent, never a row of dashes. */}
+        {growth.fraction === null ? null : <KpiTile label="30d growth" value={formatGrowth(growth.fraction)} title="Follower change between snapshots about 30 days apart." />}
+        {perWeek === null ? null : <KpiTile label="Posts / week" value={String(perWeek)} title="Posts in the last 30 days, per week." />}
+        {baseline.medianViews === null ? null : <KpiTile label="Median views" value={formatCompact(baseline.medianViews)} title="Median views of this creator's latest 30 posts." />}
+        {best ? (
+          <KpiTile label="Best multiple" value={<OutlierBadge inTable input={best.outlier} />} title="Highest outlier multiple among this creator's posts." />
+        ) : null}
         <KpiTile label="Posts tracked" value={posts.isLoading ? null : String(list.length)} loading={posts.isLoading} />
       </div>
 

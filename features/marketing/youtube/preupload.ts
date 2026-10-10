@@ -81,7 +81,7 @@ export const TAGS_MAX = 15;
 export const THUMBNAIL_TEXT_MAX_WORDS = 4;
 
 const NOT_MEASURED_WITHOUT_KEYWORD =
-  "Not measured: this check needs the keyword you want the video to rank for, and none was given.";
+  "Not measured: add a keyword to check this";
 
 function normalize(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -101,7 +101,7 @@ function titleLengthCheck(title: string): ScoredCheck {
       id: "title_length",
       label: "Title length",
       state: "fail",
-      detail: "There is no title yet. YouTube shows about the first 70 characters in search and in the mobile feed.",
+      detail: "No title yet",
       earned: 0,
       possible: 2,
       keywordDependent: false,
@@ -112,7 +112,7 @@ function titleLengthCheck(title: string): ScoredCheck {
       id: "title_length",
       label: "Title length",
       state: "fail",
-      detail: `${length} characters — YouTube cuts a title off at ${TITLE_MAX}, so the last ${length - TITLE_MAX} would never be seen by anyone.`,
+      detail: `${length} characters; YouTube cuts titles at ${TITLE_MAX}`,
       earned: 0,
       possible: 2,
       keywordDependent: false,
@@ -123,7 +123,7 @@ function titleLengthCheck(title: string): ScoredCheck {
       id: "title_length",
       label: "Title length",
       state: "warn",
-      detail: `${length} characters. Short titles leave room a viewer decides with — around ${TITLE_MIN}–${TITLE_CLIP} carries a keyword and a reason to watch.`,
+      detail: `${length} characters; aim for ${TITLE_MIN} to ${TITLE_CLIP}`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -134,7 +134,7 @@ function titleLengthCheck(title: string): ScoredCheck {
       id: "title_length",
       label: "Title length",
       state: "warn",
-      detail: `${length} characters. Everything past about ${TITLE_CLIP} is clipped in search and on phones — keep what matters in front of it.`,
+      detail: `${length} characters; past ${TITLE_CLIP} gets clipped`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -144,7 +144,7 @@ function titleLengthCheck(title: string): ScoredCheck {
     id: "title_length",
     label: "Title length",
     state: "pass",
-    detail: `${length} characters — inside the ${TITLE_CLIP} that survive clipping in search and on phones.`,
+    detail: `${length} characters, inside the ${TITLE_CLIP} that show`,
     earned: 2,
     possible: 2,
     keywordDependent: false,
@@ -166,7 +166,7 @@ function titleKeywordCheck(title: string, keyword: string): ScoredCheck {
     return {
       ...base,
       state: "fail",
-      detail: `"${keyword.trim()}" does not appear in the title at all. This is the single strongest signal of what the video is about.`,
+      detail: `"${keyword.trim()}" is not in the title`,
       earned: 0,
     };
   }
@@ -174,7 +174,7 @@ function titleKeywordCheck(title: string, keyword: string): ScoredCheck {
     return {
       ...base,
       state: "pass",
-      detail: `The title opens with "${keyword.trim()}" — the strongest position it can hold.`,
+      detail: `The title opens with "${keyword.trim()}"`,
       earned: 3,
     };
   }
@@ -182,14 +182,14 @@ function titleKeywordCheck(title: string, keyword: string): ScoredCheck {
     return {
       ...base,
       state: "pass",
-      detail: `"${keyword.trim()}" appears ${position} characters in, still inside the part every viewer reads.`,
+      detail: `"${keyword.trim()}" appears ${position} characters in`,
       earned: 2,
     };
   }
   return {
     ...base,
     state: "warn",
-    detail: `"${keyword.trim()}" appears ${position} characters in, past the point search results and phones clip. Move it forward.`,
+    detail: `"${keyword.trim()}" is ${position} characters in; move it up`,
     earned: 1,
   };
 }
@@ -209,7 +209,7 @@ function descriptionKeywordCheck(description: string, keyword: string): ScoredCh
     return {
       ...base,
       state: "pass",
-      detail: `"${keyword.trim()}" is in the part YouTube shows above "…more" — the only description most people ever read.`,
+      detail: `"${keyword.trim()}" is in the first ${DESCRIPTION_SNIPPET} characters`,
       earned: 2,
     };
   }
@@ -217,14 +217,14 @@ function descriptionKeywordCheck(description: string, keyword: string): ScoredCh
     return {
       ...base,
       state: "warn",
-      detail: `"${keyword.trim()}" is in the description but below the first ${DESCRIPTION_SNIPPET} characters, which is where the visible snippet ends.`,
+      detail: `"${keyword.trim()}" is past the first ${DESCRIPTION_SNIPPET} characters`,
       earned: 1,
     };
   }
   return {
     ...base,
     state: "fail",
-    detail: `"${keyword.trim()}" is nowhere in the description.`,
+    detail: `"${keyword.trim()}" is not in the description`,
     earned: 0,
   };
 }
@@ -236,7 +236,7 @@ function descriptionLengthCheck(description: string): ScoredCheck {
       id: "description_length",
       label: "Description",
       state: "fail",
-      detail: "There is no description. It is the one place to say what the video covers and where to go next.",
+      detail: "No description yet",
       earned: 0,
       possible: 2,
       keywordDependent: false,
@@ -247,7 +247,7 @@ function descriptionLengthCheck(description: string): ScoredCheck {
       id: "description_length",
       label: "Description",
       state: "warn",
-      detail: `${length} characters. Below about ${DESCRIPTION_MIN} there is not enough for a viewer or a ranking system to work with.`,
+      detail: `${length} characters; aim for ${DESCRIPTION_MIN} or more`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -257,7 +257,7 @@ function descriptionLengthCheck(description: string): ScoredCheck {
     id: "description_length",
     label: "Description",
     state: "pass",
-    detail: `${length} characters — enough to describe the video and carry its links.`,
+    detail: `${length} characters`,
     earned: 2,
     possible: 2,
     keywordDependent: false,
@@ -271,7 +271,7 @@ function tagCountCheck(tags: readonly string[]): ScoredCheck {
       id: "tag_count",
       label: "Tags",
       state: "fail",
-      detail: "No tags. They are how YouTube disambiguates a video whose title and description are ambiguous — most usefully for misspellings and synonyms.",
+      detail: "No tags yet",
       earned: 0,
       possible: 2,
       keywordDependent: false,
@@ -282,7 +282,7 @@ function tagCountCheck(tags: readonly string[]): ScoredCheck {
       id: "tag_count",
       label: "Tags",
       state: "warn",
-      detail: `${count} tag${count === 1 ? "" : "s"} — ${TAGS_MIN} to ${TAGS_MAX} is the range that covers a topic without turning into keyword stuffing.`,
+      detail: `${count} tag${count === 1 ? "" : "s"}; aim for ${TAGS_MIN} to ${TAGS_MAX}`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -293,7 +293,7 @@ function tagCountCheck(tags: readonly string[]): ScoredCheck {
       id: "tag_count",
       label: "Tags",
       state: "warn",
-      detail: `${count} tags. Past about ${TAGS_MAX} they dilute each other and start to read as stuffing.`,
+      detail: `${count} tags; past ${TAGS_MAX} they dilute each other`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -303,7 +303,7 @@ function tagCountCheck(tags: readonly string[]): ScoredCheck {
     id: "tag_count",
     label: "Tags",
     state: "pass",
-    detail: `${count} tags — inside the ${TAGS_MIN}–${TAGS_MAX} range.`,
+    detail: `${count} tags, inside ${TAGS_MIN} to ${TAGS_MAX}`,
     earned: 2,
     possible: 2,
     keywordDependent: false,
@@ -333,7 +333,7 @@ function tagCoverageCheck(tags: readonly string[], keyword: string): ScoredCheck
     return {
       ...base,
       state: "pass",
-      detail: `A tag contains "${keyword.trim()}" — an exact tag as well would be stronger.`,
+      detail: `A tag contains "${keyword.trim()}"`,
       earned: 1,
     };
   }
@@ -351,7 +351,7 @@ function thumbnailCheck(draft: PreUploadDraft): ScoredCheck {
       id: "thumbnail",
       label: "Custom thumbnail",
       state: "fail",
-      detail: "No thumbnail. An auto-picked frame is the single biggest avoidable loss of clicks on YouTube.",
+      detail: "No custom thumbnail yet",
       earned: 0,
       possible: 2,
       keywordDependent: false,
@@ -363,7 +363,7 @@ function thumbnailCheck(draft: PreUploadDraft): ScoredCheck {
       id: "thumbnail",
       label: "Custom thumbnail",
       state: "warn",
-      detail: `You said the thumbnail carries ${words} words. At the size it appears in the mobile feed, more than ${THUMBNAIL_TEXT_MAX_WORDS} cannot be read — the preview beside this list is that exact size, so judge it there.`,
+      detail: `${words} words on the thumbnail; ${THUMBNAIL_TEXT_MAX_WORDS} or fewer read well`,
       earned: 1,
       possible: 2,
       keywordDependent: false,
@@ -375,8 +375,8 @@ function thumbnailCheck(draft: PreUploadDraft): ScoredCheck {
     state: "pass",
     detail:
       words > 0
-        ? `A custom thumbnail with ${words} word${words === 1 ? "" : "s"} on it. We cannot read your image — the preview beside this list is rendered at mobile feed size so you can.`
-        : "A custom thumbnail is attached. We cannot read your image — the preview beside this list is rendered at mobile feed size so you can.",
+        ? `Custom thumbnail, ${words} word${words === 1 ? "" : "s"} on it`
+        : "Custom thumbnail attached",
     earned: 2,
     possible: 2,
     keywordDependent: false,
@@ -396,7 +396,7 @@ export function preUploadChecks(draft: PreUploadDraft): ScoredCheck[] {
   ];
 }
 
-export const NEEDS_KEYWORD_SENTENCE = "Add the keyword this video should rank for to get a score.";
+export const NEEDS_KEYWORD_SENTENCE = "Add a keyword to get a score";
 
 /**
  * Score a draft.

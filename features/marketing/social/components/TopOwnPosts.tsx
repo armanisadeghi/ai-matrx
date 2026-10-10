@@ -12,7 +12,8 @@ import { availablePostMetrics, insightText, POST_METRICS, topOwnPosts, type Post
 import { formatCompact } from "../outlier";
 import { useOwnPostFigures } from "../useOwnInsights";
 
-export function TopOwnPosts({ trackedAccountId, limit = 5 }: { trackedAccountId: string; limit?: number }) {
+/** `account` names whose posts these are when several accounts list theirs; it appears only with the list. */
+export function TopOwnPosts({ trackedAccountId, limit = 5, account }: { trackedAccountId: string; limit?: number; account?: string }) {
   const query = useOwnPostFigures([trackedAccountId]);
   const [picked, setPicked] = useState<PostMetricId | null>(null);
   const figures = query.data?.figures ?? [];
@@ -23,7 +24,7 @@ export function TopOwnPosts({ trackedAccountId, limit = 5 }: { trackedAccountId:
   return (
     <section aria-label="Top posts" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-medium text-foreground">Top posts</h2>
+        <h2 className="text-sm font-medium text-foreground">{account ? `Top posts · ${account}` : "Top posts"}</h2>
         <div className="flex flex-wrap gap-1">
           {metrics.map((m) => (
             <button

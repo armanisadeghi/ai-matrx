@@ -46,7 +46,7 @@ import {
 } from "@/features/surfaces/manifests/marketing-social-tabs.manifest";
 
 import { useBrandSocialData, useInvalidateSocial, useWatchlistHits, useWatchlists } from "../hooks";
-import { relativeAge } from "../mappers";
+import { postedLabel, postedTitle } from "../mappers";
 import { formatCompact, formatPercentile } from "../outlier";
 import {
   DEFAULT_OUTLIER_FILTER,
@@ -82,6 +82,7 @@ import { useOpenPost } from "../useOpenPost";
 import { SaveToCollectionDialog } from "./SwipeDialogs";
 import { SocialPostCard } from "./SocialPostCard";
 import { useSocials } from "./SocialsContext";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 interface FeedItem {
   post: BrandPost;
@@ -315,10 +316,10 @@ export function OutliersTab() {
         return r.post.handle ? (
           href ? (
             <Link href={href} className="hover:underline" data-clickable="">
-              @{r.post.handle}
+              {formatSocialHandle({ platform: r.post.platform, handle: r.post.handle })}
             </Link>
           ) : (
-            `@${r.post.handle}`
+            formatSocialHandle({ platform: r.post.platform, handle: r.post.handle })
           )
         ) : (
           "—"
@@ -392,7 +393,7 @@ export function OutliersTab() {
       header: "Posted",
       accessorFn: (r) => r.post.postedAt,
       filter: "date",
-      cell: (r) => relativeAge(r.post.postedAt),
+      cell: (r) => <span title={postedTitle(r.post.postedAt)}>{postedLabel(r.post.postedAt)}</span>,
     },
     ...(active
       ? [
@@ -451,7 +452,7 @@ export function OutliersTab() {
                       hook: i.post.hookLine,
                       views: i.post.views,
                       multiple: i.post.outlierScore,
-                      age: relativeAge(i.post.postedAt),
+                      age: postedLabel(i.post.postedAt),
                       state: stateOf(i),
                     }),
                   { maxRows: 25, attrs: { brand: brandName } },

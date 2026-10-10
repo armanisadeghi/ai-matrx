@@ -70,7 +70,7 @@ import {
   type KpiMetricId,
   type KpiStatus,
 } from "../kpi";
-import { accountLabels, formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
+import { accountLabels, accountName, formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
 import { formatCompact } from "../outlier";
 import { socialErrorMessage } from "../server";
 import { archiveKpiGoal, updateKpiGoalStatus } from "../service";
@@ -91,7 +91,6 @@ import { brandAccountHref } from "../property-account-href";
 import { useTrackOwn } from "./useTrackOwn";
 import { OwnInsightsTable } from "./OwnInsightsTable";
 import { ownTrackingState } from "../own-accounts";
-import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 type KpiView = "trend" | "benchmark" | "own";
 
@@ -478,7 +477,7 @@ function GoalTile({
   const scopeHref = scopeAccount ? brandAccountHref(brandSeg, scopeAccount) : null;
   const scope = goal.tracked_account_id
     ? scopeAccount
-      ? formatSocialHandle({ platform: scopeAccount.platform, handle: scopeAccount.handle, url: scopeAccount.profileUrl })
+      ? accountName(scopeAccount)
       : "Account"
     : goal.platform
       ? platformLabel(goal.platform)
@@ -531,7 +530,7 @@ function GoalTile({
         ) : null}
       </div>
       <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground">
-        <span className="truncate">
+        <span className="min-w-0 break-words">
           {KPI_PERIODS.find((p) => p.value === goal.period)?.label ?? "Custom"} · {measured.accounts}{" "}
           {measured.accounts === 1 ? "account" : "accounts"}
         </span>
@@ -582,7 +581,7 @@ function OwnTrend({
       <div className="flex items-center justify-between gap-2">
         <AccountNameLink href={brandAccountHref(brandSeg, account)}>
           <PlatformMark platform={account.platform} size={16} />
-          <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl }) || accountLabels(account.displayName, account.handle, account.platform).primary}</span>
+          <span className="truncate">{accountLabels(account.displayName, account.handle, account.platform).primary}</span>
         </AccountNameLink>
         {growth.fraction === null ? (
           <span className="text-xs text-muted-foreground">{growth.note || "Not enough history for growth"}</span>
@@ -662,7 +661,7 @@ function BenchmarkTable({
         const body = (
           <span className="flex min-w-0 items-center gap-2">
             <PlatformMark platform={r.platform} size={18} />
-            <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) || accountLabels(r.displayName, r.handle, r.platform).primary}</span>
+            <span className="truncate">{accountLabels(r.displayName, r.handle, r.platform).primary}</span>
           </span>
         );
         return href ? (
@@ -793,7 +792,7 @@ function goalScopeOptions(accounts: readonly AccountRow[]): SelectOption[] {
     })),
     ...accounts
       .filter((a) => a.trackedAccountId)
-      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} (${platformLabel(a.platform)})` })),
+      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `${accountName(a)} (${platformLabel(a.platform)})` })),
   ];
 }
 

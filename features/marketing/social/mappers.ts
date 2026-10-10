@@ -8,6 +8,7 @@
 
 import { median, outlierMetric, profileBaseline } from "./outlier";
 import { canonicalPostUrl } from "./link";
+import { linkedInAddress } from "../lib/social-handle";
 import type {
   AccountRow,
   IngestProfileResult,
@@ -201,11 +202,12 @@ export function accountLabels(
   platform?: string | null,
 ): { primary: string; secondary: string | null } {
   const norm = (v: string) => v.replace(/^@/, "").trim().toLowerCase();
-  const name = displayName.trim();
+  const name = (displayName ?? "").trim();
   if (isRawChannelId(handle) && (!platform || platform === "youtube")) {
     return { primary: !name || isRawChannelId(name) ? "YouTube channel" : name, secondary: null };
   }
-  const at = handle ? `@${handle.replace(/^@/, "")}` : "";
+  // A LinkedIn slug carries a generated id: its address stands in, never "@slug-8b176627".
+  const at = platform === "linkedin" ? linkedInAddress(handle) : handle ? `@${handle.replace(/^@/, "")}` : "";
   if (!name || norm(name) === norm(handle)) return { primary: at || name, secondary: null };
   return { primary: name, secondary: at || null };
 }
@@ -234,9 +236,28 @@ export function relativeAge(iso: string | null, now = Date.now()): string {
   return `${Math.floor(days / 365)}y`;
 }
 
+/** A post's date for a list: relative inside a year, a readable date after ("12y" tells nobody when). */
+export function postedLabel(iso: string | null, now = Date.now()): string {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(t)) return "—";
+  if (now - t < 365 * 86_400_000) return relativeAge(iso, now);
+  return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+/** The tooltip for `postedLabel`: the full date and how long ago, in words ("Mar 5, 2014 · 12 years ago"). */
+export function postedTitle(iso: string | null, now = Date.now()): string {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(t)) return "No post date stored";
+  const days = Math.max(0, Math.floor((now - t) / 86_400_000));
+  const [n, unit] = days >= 365 ? [Math.floor(days / 365), "year"] : days >= 30 ? [Math.floor(days / 30), "month"] : days >= 1 ? [days, "day"] : [0, ""];
+  const when = n === 0 ? "today" : `${n} ${unit}${n === 1 ? "" : "s"} ago`;
+  return `${new Date(t).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })} · ${when}`;
+}
+
 /** LAST POST cell text: how long ago the newest post went out; "No posts" when none are stored. Never the outlier no-baseline text. */
 export function lastPostLabel(lastPostAt: string | null, postsTracked: number, now = Date.now()): string {
   if (!lastPostAt || !Number.isFinite(Date.parse(lastPostAt))) return postsTracked > 0 ? "—" : "No posts";
+  if (now - Date.parse(lastPostAt) >= 365 * 86_400_000) return postedLabel(lastPostAt, now);
   const age = relativeAge(lastPostAt, now);
   return age === "now" ? "just now" : `${age} ago`;
 }

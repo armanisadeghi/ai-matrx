@@ -18,7 +18,7 @@ import { CONNECTION_STATE_LABELS, CONNECTION_STATE_TONES } from "../connection-s
 import { INSIGHT_METRICS, insightText, type InsightMetricId } from "../insights";
 import { brandAccountHref } from "../property-account-href";
 import { formatCompact } from "../outlier";
-import { relativeAge } from "../mappers";
+import { accountName, postedLabel, postedTitle } from "../mappers";
 import type { AccountRow } from "../types";
 import { useConnectionStates } from "../useConnectionStates";
 import { useOwnInsights } from "../useOwnInsights";
@@ -67,7 +67,7 @@ export function OwnInsightsTable({
             <span className="flex min-w-0 items-center gap-2">
               <PlatformMark platform={r.platform} size={20} />
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate text-sm font-medium text-foreground">{r.displayName}</span>
+                <span className="truncate text-sm font-medium text-foreground">{accountName(r)}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {platformLabel(r.platform)} · {formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}
                 </span>
@@ -92,7 +92,7 @@ export function OwnInsightsTable({
           return c ? CONNECTION_STATE_LABELS[c.state] : "";
         },
         filter: "select",
-        filterOptions: Object.values(CONNECTION_STATE_LABELS).map((label) => ({ value: label, label })),
+        filterOptions: [...new Set(Object.values(CONNECTION_STATE_LABELS))].map((label) => ({ value: label, label })),
         cell: (r) => {
           const c = connections.of(r.platform);
           return c ? <Badge tone={CONNECTION_STATE_TONES[c.state]}>{CONNECTION_STATE_LABELS[c.state]}</Badge> : null;
@@ -124,7 +124,7 @@ export function OwnInsightsTable({
         accessorFn: (r) => insights.summaries.get(r.trackedAccountId as string)?.latestDate ?? null,
         cell: (r) => {
           const d = insights.summaries.get(r.trackedAccountId as string)?.latestDate ?? null;
-          return d ? <span title={d}>{relativeAge(d)}</span> : <span className="text-muted-foreground">Not available</span>;
+          return d ? <span title={postedTitle(d)}>{postedLabel(d)}</span> : <span className="text-muted-foreground">Not available</span>;
         },
       },
     ],
@@ -153,10 +153,7 @@ export function OwnInsightsTable({
       emptyState={{ title: "No own accounts yet", description: "Connect one on Accounts" }}
     />
     {own.map((a) => (
-      <div key={a.rowId} className="flex flex-col gap-1">
-        {own.length > 1 ? <span className="text-xs text-muted-foreground">{a.displayName}</span> : null}
-        <TopOwnPosts trackedAccountId={a.trackedAccountId as string} />
-      </div>
+      <TopOwnPosts key={a.rowId} trackedAccountId={a.trackedAccountId as string} account={own.length > 1 ? accountName(a) : undefined} />
     ))}
     </div>
   );

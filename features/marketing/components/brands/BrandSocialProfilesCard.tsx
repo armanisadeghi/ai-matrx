@@ -250,7 +250,7 @@ function SocialRow({
             <span className="min-w-0 truncate">{name}</span>
           )}
           {showOwnerChip(row, brandKind) ? (
-            <PersonOwnerChip propertyId={row.propertyId} ownerName={row.ownerName ?? null} organizationId={organizationId} brandId={brandId} />
+            <PersonOwnerChip canEdit={canEdit} propertyId={row.propertyId} ownerName={row.ownerName ?? null} organizationId={organizationId} brandId={brandId} />
           ) : null}
           {tracked ? (
             <span className="shrink-0"><Badge tone="success">Tracked</Badge></span>

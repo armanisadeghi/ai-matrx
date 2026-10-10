@@ -870,6 +870,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             brandId={current.id}
             brandSeg={marketingSeg(current)}
             organizationId={current.organization_id}
+            canEdit={canEdit}
           />
 
           <SectionCard

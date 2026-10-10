@@ -79,6 +79,8 @@ export default function SocialPostWindow({
     <WindowPanel
       id={instanceId}
       title={title}
+      // One line with an ellipsis, even on a phone (the caption body keeps its two lines in the post itself).
+      titleNode={<span className="block min-w-0 truncate" title={title}>{title}</span>}
       onClose={onClose}
       overlayId="socialPostWindow"
       overlayInstanceId={instanceId}

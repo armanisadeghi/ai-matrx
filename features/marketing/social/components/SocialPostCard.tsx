@@ -32,7 +32,7 @@ import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-contex
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { formatDuration, openPostLabel, relativeAge } from "../mappers";
+import { formatDuration, openPostLabel, postedLabel, postedTitle } from "../mappers";
 import { NO_VIEWS_TEXT, countLabel, outlierBadgeModel } from "../outlier";
 import type { PostCardModel } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
@@ -40,6 +40,7 @@ import { PostCardMenuItems } from "./PostCardMenuItems";
 import { postThumbnailDoor } from "../server";
 import { PlatformMark } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
+import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 /**
  * ONE thumbnail box per platform, whatever the post's format, so every card in a grid is the same
@@ -83,7 +84,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
   // A post that reports no views (a carousel on some platforms) has no multiple to explain: no badge, no views stat.
   const hideBadge = hideOutlier || badge.text === NO_VIEWS_TEXT;
   const stats = [countLabel(post.views, "view"), compact ? null : countLabel(post.likes, "like")].filter(Boolean).join(" · ");
-  const absolute = post.postedAt ? new Date(post.postedAt).toLocaleString() : "";
+  const absolute = post.postedAt ? postedTitle(post.postedAt) : "";
 
   return (
     <div
@@ -157,13 +158,13 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
             {compact ? null : post.handle ? (
               accountHref ? (
                 <Link href={accountHref} className="text-foreground underline-offset-2 hover:underline" data-clickable="">
-                  @{post.handle}
+                  {formatSocialHandle({ platform: post.platform, handle: post.handle })}
                 </Link>
               ) : (
-                `@${post.handle}`
+                formatSocialHandle({ platform: post.platform, handle: post.handle })
               )
             ) : null}
-            {compact ? "" : `${post.handle ? " · " : ""}${relativeAge(post.postedAt)}`}
+            {compact ? "" : `${post.handle ? " · " : ""}${postedLabel(post.postedAt)}`}
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
