@@ -315,6 +315,8 @@ export interface BenchmarkRow {
   engagementRate: number | null;
   outlierRate: number | null;
   profileId: string | null;
+  /** The account's property, so an account with no stored profile still opens its route. */
+  propertyId?: string | null;
 }
 
 /**

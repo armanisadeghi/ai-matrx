@@ -96,6 +96,7 @@ import type {
   SerpLandscapeResult,
 } from "./types";
 import { ErrorNotice } from "@ai-matrx/design-system";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /** Wire value for one `track_keywords` entry (see the manifest's contract). */
 interface TrackKeywordsEntry {
@@ -509,7 +510,7 @@ function HistoryDialog({
           <div className="grid gap-4">
             <RankSparkline points={points} />
             <div className="rounded-md border border-border p-2">
-              <MatrxDataTable
+              <MatrxDataTable {...NO_RAW_ROW_WINDOW}
                 data={[...points].reverse()}
                 columns={historyColumns}
                 getRowId={(point) => point.observed_at}
@@ -530,7 +531,7 @@ function HistoryDialog({
                   </p>
                 </div>
                 <div className="rounded-md border border-border p-2">
-                  <MatrxDataTable
+                  <MatrxDataTable {...NO_RAW_ROW_WINDOW}
                     data={landscapeResults}
                     columns={[...(landscapeColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (result) => (
                       <CopyButtons
@@ -1006,7 +1007,7 @@ export function RanksWorkspace() {
           extraSections={[keywordSection]}
         >
           <div className="mt-3" data-surface-value="rank_portfolio">
-            <MatrxDataTable
+            <MatrxDataTable {...NO_RAW_ROW_WINDOW}
               urlState={{ id: "rank-portfolio" }}
               data={rows}
               columns={[...(portfolioColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (item) => {

@@ -55,6 +55,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 export function SitemapsWorkspace() {
   const { site, brandId } = useMarketingSite();
@@ -500,9 +501,9 @@ export function SitemapsWorkspace() {
                 />
               </div>
             ) : dismissed.isLoading ? (
-              <p className="p-3 text-xs text-muted-foreground">
-                Loading dismissed sitemaps…
-              </p>
+              <div className="p-3">
+                <RegionSkeleton shape="rows" count={2} aria-label="Loading dismissed sitemaps" />
+              </div>
             ) : (dismissed.data?.length ?? 0) === 0 ? (
               <p className="p-3 text-xs text-muted-foreground">
                 Nothing dismissed for this site.

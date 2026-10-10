@@ -66,6 +66,7 @@ import {
   type LocationKeywordRow,
   type LocationSummaryRow,
 } from "./types";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 const PAGE_SIZE = 25;
 
@@ -384,7 +385,7 @@ function LocationKeywords({
   ];
 
   const table = (
-    <MatrxDataTable<LocationKeywordRow>
+    <MatrxDataTable<LocationKeywordRow> {...NO_RAW_ROW_WINDOW}
       appearance="embedded"
       data={rows}
       columns={columns}

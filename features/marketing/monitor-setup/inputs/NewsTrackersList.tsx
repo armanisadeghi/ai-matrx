@@ -42,6 +42,7 @@ import {
   type TrackerReadiness,
   type TrackerStatus,
 } from "./data";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 export const newsTrackerHref = (trackerId: string) =>
   `/marketing/monitoring/${trackerId}`;
@@ -356,7 +357,7 @@ export function NewsTrackersList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 p-2">
-      <MatrxDataTable<NewsTrackerInputs>
+      <MatrxDataTable<NewsTrackerInputs> {...NO_RAW_ROW_WINDOW}
         tableId="marketing.news-trackers"
         data={rows}
         columns={buildColumns()}

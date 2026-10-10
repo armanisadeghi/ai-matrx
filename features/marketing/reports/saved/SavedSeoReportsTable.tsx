@@ -18,6 +18,7 @@ import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads"
 import { extractErrorMessage } from "@/utils/errors";
 import { useSeoReportVersions } from "./hooks";
 import type { SavedSeoReportSummary, SeoReportVersion } from "./types";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 export function artifactViewerHref(id: string): string {
   return `/artifacts/${id}`;
@@ -127,7 +128,7 @@ export function SavedSeoReportsTable({
   );
   if (isLoading) return <RegionSkeleton shape="rows" count={4} aria-label="Loading saved reports" />;
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       data={rows}
       columns={columns}
       getRowId={(row) => row.id}

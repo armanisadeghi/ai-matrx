@@ -102,6 +102,7 @@ import {
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -938,7 +939,7 @@ function TopicPlacementConsole({
                     }
                   >
                     <div className="h-full flex flex-col">
-                      <MatrxDataTable<BrandTableRow>
+                      <MatrxDataTable<BrandTableRow> {...NO_RAW_ROW_WINDOW}
                         data={brandRows}
                         columns={brandColumns}
                         getRowId={(r) => r.site.id}
@@ -1345,7 +1346,7 @@ function RunDecisions({
         extraSections={[keywordSection]}
       >
         <div className="h-full flex flex-col">
-          <MatrxDataTable<RunPlacementRow>
+          <MatrxDataTable<RunPlacementRow> {...NO_RAW_ROW_WINDOW}
             data={rows}
             columns={columns}
             getRowId={(row) => row.keywordId}

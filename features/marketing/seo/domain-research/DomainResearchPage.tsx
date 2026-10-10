@@ -57,6 +57,7 @@ import type {
   SerpCompetitorRow,
 } from "./types";
 import { useDomainSection } from "./useDomainSection";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 export type DomainTab = "keywords" | "competitors" | "gap";
 const TABS: { tab: DomainTab; name: string; description: string }[] = [
@@ -607,7 +608,7 @@ function KeywordsTable({ rows }: { rows: RankedKeywordRow[] }) {
     },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "domain-keywords" }}
       data={rows}
       columns={columns}
@@ -650,7 +651,7 @@ function CompetitorsTable({
     { accessorKey: "etv", header: "Traffic", filter: "number", align: "right", cell: (r) => num(r.etv == null ? null : Math.round(r.etv)) },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "domain-competitors" }}
       data={rows}
       columns={columns}
@@ -681,7 +682,7 @@ function GapTable({ rows, ours }: { rows: KeywordGapRow[]; ours: string }) {
     },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "domain-gap" }}
       data={rows}
       columns={columns}

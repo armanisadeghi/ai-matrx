@@ -75,6 +75,7 @@ import {
   type GridRequest,
   type GridSize,
 } from "./types";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 const SPACINGS = ["0.5", "1", "2", "3", "5"] as const;
 
@@ -296,7 +297,7 @@ function CandidatesTable({
     },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "rank-grid-candidates" }}
       data={rows}
       columns={columns}
@@ -586,7 +587,7 @@ function CompareTable({ rows }: { rows: CompareRow[] }) {
     },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "rank-grid-compare" }}
       data={rows}
       columns={columns}

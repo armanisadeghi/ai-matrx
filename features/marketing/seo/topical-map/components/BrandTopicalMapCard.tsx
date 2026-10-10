@@ -21,6 +21,7 @@ import { topicalMapErrorText } from "../errors";
 import { startMapHref } from "./TopicalMapHome";
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 export function BrandTopicalMapCard({
   brandId,
@@ -47,9 +48,9 @@ export function BrandTopicalMapCard({
       }}
     >
       {maps.isPending ? (
-        <p className="p-4 text-xs text-muted-foreground">
-          Loading this brand&apos;s {title.toLowerCase()}s…
-        </p>
+        <div className="p-4">
+          <RegionSkeleton shape="rows" count={2} aria-label={`Loading ${title.toLowerCase()}s`} />
+        </div>
       ) : maps.isError ? (
         <ErrorNotice size="inline" className="p-4 text-xs" message={topicalMapErrorText(maps.error)} />
       ) : maps.data.length === 0 ? (

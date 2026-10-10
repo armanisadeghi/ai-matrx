@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowRight,
   ChevronDown,
-  Loader2,
   Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +33,7 @@ import type { BackendFailureExplanation } from "@/lib/api/errors";
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { durationMsBetween, formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 export function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -267,14 +267,8 @@ export function InlineQueryError({
 
 export function LoadingSurface({ label = "Loading…" }: { label?: string }) {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="flex h-full min-h-40 items-center justify-center text-muted-foreground"
-    >
-      <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
-      <span className="text-sm">{label}</span>
+    <div role="status" aria-busy="true" className="min-h-40 p-4">
+      <RegionSkeleton shape="rows" count={4} aria-label={label} />
     </div>
   );
 }

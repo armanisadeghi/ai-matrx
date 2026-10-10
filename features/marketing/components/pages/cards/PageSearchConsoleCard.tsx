@@ -52,6 +52,7 @@ import {
   type KeywordMenuRow,
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import { useQueryClient } from "@tanstack/react-query";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 function formatCtr(ctr: number | null): string {
   return ctr === null ? "—" : `${(ctr * 100).toFixed(2)}%`;
@@ -353,7 +354,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
             }}
             extraSections={[keywordMenuSection]}
           >
-          <MatrxDataTable
+          <MatrxDataTable {...NO_RAW_ROW_WINDOW}
             urlState={{ id: "page-search-console" }}
             data={rows}
             columns={columns}

@@ -95,6 +95,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
   critical: "bg-primary/15 text-primary-ink",
@@ -1142,7 +1143,7 @@ function ListingsMatrix({
           resolveContextOnOpen={resolveRowContext}
           extraSections={clickedRow ? [listingSection] : []}
         >
-        <MatrxDataTable<ListingMatrixRow>
+        <MatrxDataTable<ListingMatrixRow> {...NO_RAW_ROW_WINDOW}
           data={matrix}
           columns={columns}
           getRowId={(row) => row.publisher.id}

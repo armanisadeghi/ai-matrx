@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   FindingStatusBadge,
   SeverityBadge,
@@ -16,6 +16,7 @@ import {
 import { usePageOpenFindings } from "@/features/marketing/data/analysis-hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 const LIST_LIMIT = 10;
 
@@ -83,9 +84,8 @@ export function PageFindingsCard({ page }: { page: MarketingPage }) {
       action={{ label: "View all in findings register", href: registerHref }}
     >
       {findings.isLoading ? (
-        <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Loading open findings…
+        <div className="p-3">
+          <RegionSkeleton shape="rows" count={2} aria-label="Loading open findings" />
         </div>
       ) : findings.isError ? (
         <QueryError

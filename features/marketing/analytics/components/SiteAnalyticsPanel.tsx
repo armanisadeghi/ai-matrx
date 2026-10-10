@@ -92,6 +92,7 @@ import {
 } from "@/lib/api/errors";
 import type { MarketingSite } from "@/features/marketing/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -599,7 +600,7 @@ export function SiteAnalyticsPanel({
             </p>
           ) : null}
 
-          <MatrxDataTable
+          <MatrxDataTable {...NO_RAW_ROW_WINDOW}
             urlState={{ id: "site-analytics-landing-pages" }}
             data={data.landingPages}
             columns={columns}

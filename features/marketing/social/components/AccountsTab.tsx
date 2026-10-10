@@ -71,6 +71,7 @@ import {
 import { PersonOwnerChip } from "../../components/brands/PersonOwnerChip";
 import { socialRowOpen } from "../row-open";
 import { accountHref } from "../account-href";
+import { brandAccountHref } from "../property-account-href";
 import { AccountSummary } from "./AccountSummary";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
@@ -240,7 +241,7 @@ export function AccountsTab() {
         filter: "text",
         minWidth: 220,
         cell: (r) => {
-          const href = accountHref(brandSeg, r);
+          const href = brandAccountHref(brandSeg, r);
           const labels = accountLabels(r.displayName, r.handle, r.platform);
           const platformName = isSocialPlatform(r.platform)
             ? SOCIAL_PLATFORM_LABELS[r.platform]
@@ -614,7 +615,7 @@ export function AccountsTab() {
         getRowId={(r) => r.rowId}
         {...socialRowOpen<AccountRow>((r) => {
           // A row opens what it is: its account page when it has one, else a designed summary (never raw fields).
-          const href = accountHref(brandSeg, r);
+          const href = brandAccountHref(brandSeg, r);
           if (href) router.push(href);
           else setSummaryRow(r);
         })}

@@ -56,6 +56,7 @@ import {
   type KeywordReportRow,
 } from "@/features/marketing/seo/keyword-research/data/report";
 import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 export interface KeywordResearchReportProps {
   artifact: KeywordResearchArtifact;
@@ -334,7 +335,7 @@ export default function KeywordResearchReport({
             }}
             extraSections={[keywordSection]}
           >
-            <MatrxDataTable<KeywordReportMetricRow>
+            <MatrxDataTable<KeywordReportMetricRow> {...NO_RAW_ROW_WINDOW}
               appearance="embedded"
               data={measuredRows}
               columns={marketColumns}

@@ -321,7 +321,7 @@ export function BrandCompetitorDirectory() {
               {accounts.map((a) => (
                 <Link
                   key={a.trackedAccountId}
-                  href={`/marketing/${brand.seg}/socials/${a.platform}/${a.trackedAccountId}`}
+                  href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`}
                   className="whitespace-nowrap hover:underline"
                   title={formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}
                 >
@@ -359,7 +359,7 @@ export function BrandCompetitorDirectory() {
           if (!best) return <span className="text-muted-foreground">—</span>;
           return (
             <Link
-              href={`/marketing/${brand.seg}/socials/${best.account.platform}/${best.account.trackedAccountId}`}
+              href={`/marketing/${brand.seg}/socials/${best.account.platform}/${best.account.profileId}`}
               className="whitespace-nowrap hover:underline"
             >
               {best.score.toFixed(1)}×
@@ -581,7 +581,7 @@ export function BrandCompetitorDirectory() {
                 {row.accounts.length ? (
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" onClick={(e) => e.stopPropagation()}>
                     {row.accounts.map((a) => (
-                      <Link key={a.trackedAccountId} href={`/marketing/${brand.seg}/socials/${a.platform}/${a.trackedAccountId}`} className="hover:underline">
+                      <Link key={a.trackedAccountId} href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`} className="hover:underline">
                         {PLATFORM_LABEL[a.platform] ?? a.platform}{" "}
                         <span className="text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>{" "}
                         {compact(a.followers)}

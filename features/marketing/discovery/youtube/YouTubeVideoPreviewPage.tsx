@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
 import { getYouTubeVideo } from "./service";
 import type { YouTubeVideoCandidate } from "./types";
 import { YouTubeVideoPreviewSurface } from "./YouTubeVideoPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
   const [video, setVideo] = useState<YouTubeVideoCandidate | null>(null);
@@ -44,9 +44,8 @@ export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
   if (!video) {
     return (
       <main className="grid min-h-dvh place-items-center bg-background text-muted-foreground dark:bg-[#07090d] dark:text-zinc-400">
-        <div className="flex items-center gap-3">
-          <LoaderCircle className="h-5 w-5 animate-spin" />
-          Loading video preview…
+        <div className="w-80">
+          <RegionSkeleton shape="cards" count={1} aria-label="Loading video preview" />
         </div>
       </main>
     );

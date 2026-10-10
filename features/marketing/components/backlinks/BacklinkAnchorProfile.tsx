@@ -33,6 +33,7 @@ import {
   type AnchorProfileRow,
   type AnchorProfileWarning,
 } from "@/features/marketing/components/backlinks/lib/anchors";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /** Chart-token swatch per class — topical (the risk class) gets chart-1. */
 const CLASS_BAR_CLASSES: Record<AnchorClassKey, string> = {
@@ -277,7 +278,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                 />
               ))}
           </div>
-          <MatrxDataTable
+          <MatrxDataTable {...NO_RAW_ROW_WINDOW}
             urlState={{ id: "backlink-anchor-profile", selectedRow: false }}
             data={profile.entries}
             columns={profileColumns}
@@ -295,7 +296,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
 
       {profile.concentrated.length > 0 ? (
         <SectionCard title="Phrases used on an unusually large share of links">
-          <MatrxDataTable
+          <MatrxDataTable {...NO_RAW_ROW_WINDOW}
             urlState={{ id: "backlink-concentrated-anchors" }}
             data={profile.concentrated}
             columns={concentratedColumns}
@@ -310,7 +311,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
           title={`Most-used wording: ${drillMeta.label.toLowerCase()}`}
           action={{ label: "Clear", onClick: () => setDrillClass(null) }}
         >
-          <MatrxDataTable
+          <MatrxDataTable {...NO_RAW_ROW_WINDOW}
             urlState={{ id: "backlink-anchor-details" }}
             data={drillRows}
             columns={drillColumns}

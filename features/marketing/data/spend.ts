@@ -64,6 +64,8 @@ export type SeoSpendSummary = Omit<
   | "global_provider_monthly_ceiling_usd"
   | "unpriced_run_assumed_cost_usd"
   | "recent_budget_rejections"
+  | "social_this_month_usd"
+  | "social_this_month_calls"
 > & {
   this_month: SeoProviderSpendRow[];
   last_month: SeoProviderSpendRow[];

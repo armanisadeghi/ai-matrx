@@ -67,7 +67,7 @@ export function competitorDetailModel(row: BrandCompetitor, brandSeg: string): C
     handle: formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl }),
     followers: compactCount(a.followers),
     posts: a.postsTracked.toLocaleString("en"),
-    href: route(a.platform, a.trackedAccountId),
+    href: route(a.platform, a.profileId),
     outlier: a.topOutlier ? `${a.topOutlier.score.toFixed(1)}×` : null,
   }));
   const outliers = row.accounts
@@ -79,7 +79,7 @@ export function competitorDetailModel(row: BrandCompetitor, brandSeg: string): C
       multiple: `${(a.topOutlier?.score ?? 0).toFixed(1)}×`,
       views: a.topOutlier?.views != null ? compactCount(a.topOutlier.views) : null,
       postUrl: a.topOutlier?.postUrl ?? null,
-      href: route(a.platform, a.trackedAccountId),
+      href: route(a.platform, a.profileId),
     }));
   return {
     name: row.name,

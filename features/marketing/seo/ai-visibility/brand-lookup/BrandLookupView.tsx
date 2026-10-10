@@ -63,6 +63,7 @@ import {
   type ShareOfVoiceData,
   type ShareOfVoiceEntry,
 } from "./types";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /** What this index read does not prove — on screen beside every number (≤140 chars). */
 export const INDEX_NOT_PROVEN =
@@ -212,7 +213,7 @@ function PromptsTable({ rows }: { rows: MentioningPrompt[] }) {
     },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "ai-brand-prompts" }}
       data={rows}
       columns={columns}
@@ -239,7 +240,7 @@ function PagesTable({ rows }: { rows: CitedPage[] }) {
     { accessorKey: "ai_search_volume", header: "AI volume", filter: "number", align: "right", cell: (r) => num(r.ai_search_volume) },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "ai-brand-pages" }}
       data={rows}
       columns={columns}
@@ -270,7 +271,7 @@ function DomainsTable({ byPlatform, siteId }: { byPlatform: Record<string, Cited
     { accessorKey: "mentions", header: "Mentions", filter: "number", align: "right", cell: (r) => num(r.mentions) },
   ];
   return (
-    <MatrxDataTable
+    <MatrxDataTable {...NO_RAW_ROW_WINDOW}
       urlState={{ id: "ai-brand-domains" }}
       data={rows}
       columns={columns}
@@ -342,7 +343,7 @@ function ShareOfVoiceBody({ data, siteId }: { data: ShareOfVoiceData; siteId: st
           {failed.map((p) => platformName(p.platform)).join(", ")} had no data
         </Badge>
       ) : null}
-      <MatrxDataTable
+      <MatrxDataTable {...NO_RAW_ROW_WINDOW}
         urlState={{ id: "ai-brand-share-of-voice" }}
         data={data.entries ?? []}
         columns={columns}

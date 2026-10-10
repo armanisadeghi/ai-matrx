@@ -47,6 +47,7 @@ import { syncPagespeed } from "@/features/marketing/pagespeed/data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 type ChangePage = NonNullable<SitePerformanceResponse["most_improved"]>[number];
 type SuggestedPage = NonNullable<SitePerformanceResponse["suggested_action"]>;
@@ -286,7 +287,7 @@ function ChangeList({
             : []
         }
       >
-      <MatrxDataTable
+      <MatrxDataTable {...NO_RAW_ROW_WINDOW}
         urlState={{ id: `performance-${direction}` }}
         data={rows}
         columns={columns}
@@ -644,7 +645,7 @@ export function SitePerformanceWorkspace() {
                     : []
                 }
               >
-              <MatrxDataTable
+              <MatrxDataTable {...NO_RAW_ROW_WINDOW}
                 urlState={{ id: "performance-suggested-pages" }}
                 data={suggestedPages}
                 columns={[...(suggestedColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (page) => (
@@ -851,7 +852,7 @@ export function SitePerformanceWorkspace() {
                       : []
                   }
                 >
-                <MatrxDataTable
+                <MatrxDataTable {...NO_RAW_ROW_WINDOW}
                   urlState={{ id: "performance-worst-pages" }}
                   data={worstPages}
                   columns={worstPageColumns}

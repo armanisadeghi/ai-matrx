@@ -6,7 +6,6 @@
  * lives in this header.
  */
 
-import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -14,6 +13,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useClipsGallery } from "./clips-data";
 import { ClipView } from "./ClipView";
 import { MakeClipDialog } from "./MakeClipDialog";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 
 export function ClipsGallery({
   siteIds,
@@ -52,9 +52,9 @@ export function ClipsGallery({
         </div>
       </div>
       {clips.isLoading ? (
-        <p className="flex items-center gap-2 px-3 py-4 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading clips…
-        </p>
+        <div className="px-3 py-4">
+          <RegionSkeleton shape="rows" count={3} aria-label="Loading clips" />
+        </div>
       ) : clips.isError ? (
         <div className="px-3 py-4 text-xs text-destructive">
           The clips could not be read ({clips.error instanceof Error ? clips.error.message : String(clips.error)}).{" "}

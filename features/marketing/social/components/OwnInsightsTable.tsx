@@ -23,6 +23,7 @@ import { useConnectionStates } from "../useConnectionStates";
 import { useOwnInsights } from "../useOwnInsights";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 export function OwnInsightsTable({
   accounts,
@@ -129,7 +130,7 @@ export function OwnInsightsTable({
   );
 
   return (
-    <MatrxDataTable<AccountRow>
+    <MatrxDataTable<AccountRow> {...NO_RAW_ROW_WINDOW}
       tableId="marketing-social-own-insights"
       data={own as AccountRow[]}
       columns={columns}

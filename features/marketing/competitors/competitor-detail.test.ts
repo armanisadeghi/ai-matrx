@@ -26,7 +26,7 @@ describe("competitorDetailModel", () => {
       "data-destruction",
     );
     expect(m.accounts[0]).toMatchObject({ platformLabel: "Instagram", handle: "@acme", followers: "12.4K", posts: "42", outlier: "6.3×" });
-    expect(m.accounts[0].href).toBe("/marketing/data-destruction/socials/instagram/t1");
+    expect(m.accounts[0].href).toBe("/marketing/data-destruction/socials/instagram/p1");
     expect(m.outliers.map((o) => o.platformLabel)).toEqual(["TikTok", "Instagram"]);
     expect(m.outliers[1].views).toBe("90K");
   });

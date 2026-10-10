@@ -13,7 +13,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  */
 
 import { useState } from "react";
-import { AlertTriangle, Gauge, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, Gauge, Copy } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,8 @@ import {
 } from "@/features/marketing/data/spend-categories";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /** Vendor names as their owners write them; anything else is humanized. */
 const PROVIDER_LABELS: Record<string, string> = {
@@ -164,8 +166,8 @@ export function SeoSpendPanel() {
     return (
       <div>
         {orgFilterControl}
-        <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading spend…
+        <div className="p-4">
+          <RegionSkeleton shape="rows" count={4} aria-label="Loading spend" />
         </div>
       </div>
     );

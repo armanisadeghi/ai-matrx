@@ -60,6 +60,7 @@ import type {
 import { formatRelativeTime } from "@/utils/datetime";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Chip } from "@ai-matrx/design-system/controls";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /** "3 hours ago" / "never" — an as-of only means something as an age. */
 function age(iso: string | null): string {
@@ -426,7 +427,7 @@ export function SituationalRefreshConsole({
                   }
                 >
                   <div className="h-full flex flex-col">
-                    <MatrxDataTable<SituationalRow>
+                    <MatrxDataTable<SituationalRow> {...NO_RAW_ROW_WINDOW}
                       data={rows}
                       columns={columns}
                       getRowId={(r) => r.site.id}

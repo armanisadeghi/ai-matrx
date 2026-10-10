@@ -95,6 +95,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 const STATUS_OPTIONS = [
   "planned",
@@ -1797,7 +1798,7 @@ function UntrackedTable({
         },
       ]}
     >
-      <MatrxDataTable
+      <MatrxDataTable {...NO_RAW_ROW_WINDOW}
         data={rows}
         columns={columns}
         getRowId={(row) => row.id}

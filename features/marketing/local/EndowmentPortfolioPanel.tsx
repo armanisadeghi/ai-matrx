@@ -57,6 +57,7 @@ import {
 } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 const VERDICT_CLASS: Record<EndowmentVerdict, string> = {
   strong: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -394,7 +395,7 @@ export function EndowmentPortfolioPanel({
             resolveContextOnOpen={resolvePlatformContext}
             extraSections={clickedMatch ? [platformSection] : []}
           >
-          <MatrxDataTable<RegistryMatch>
+          <MatrxDataTable<RegistryMatch> {...NO_RAW_ROW_WINDOW}
             data={matches}
             columns={[...(platformColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (match) => (
               <PlatformAction

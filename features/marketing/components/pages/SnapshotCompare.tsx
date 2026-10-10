@@ -28,6 +28,7 @@ import {
 import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 import type { PageSnapshot } from "@/features/marketing/types";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 interface CompareField {
   label: string;
@@ -318,7 +319,7 @@ export function SnapshotCompare({
       headerExtra={closeButton}
       anchor="snapshot_compare"
     >
-      <MatrxDataTable
+      <MatrxDataTable {...NO_RAW_ROW_WINDOW}
         urlState={{ id: "page-snapshot-comparison" }}
         data={fields}
         columns={columns}

@@ -57,6 +57,7 @@ import type {
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useAuthorityRouter } from "./useAuthorityRouter";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
 /**
  * `view` fixes the screen from the ROUTE — the agency-model tree gives each
@@ -708,7 +709,7 @@ function EvidenceTable({
             : []
         }
       >
-      <MatrxDataTable
+      <MatrxDataTable {...NO_RAW_ROW_WINDOW}
         urlState={{ id: "authority-routes" }}
         data={rows}
         columns={columns}

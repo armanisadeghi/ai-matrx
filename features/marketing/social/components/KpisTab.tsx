@@ -8,7 +8,7 @@
  * exist. Other platforms' private stats wait on platform approvals and say so.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Pause, Pencil, Play, Plus, Target, Trash2, UserPlus, Users } from "lucide-react";
@@ -87,6 +87,7 @@ import {
 import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
+import { brandAccountHref } from "../property-account-href";
 import { useTrackOwn } from "./useTrackOwn";
 import { OwnInsightsTable } from "./OwnInsightsTable";
 import { ownTrackingState } from "../own-accounts";
@@ -458,6 +459,7 @@ function GoalTile({
   onPause: () => void;
   onRemove: () => void;
 }) {
+  const { brandSeg } = useSocials();
   const metric = goalMetricId(goal);
   if (!metric) {
     return (
@@ -469,11 +471,14 @@ function GoalTile({
   const measured = measureGoal({ goal, metric, accounts, posts, now });
   const progress = goalProgress({ goal, metric, current: measured.value, now });
   const def = metricDefOf(metric);
+  const scopeAccount = goal.tracked_account_id
+    ? accountRows.find((x) => x.trackedAccountId === goal.tracked_account_id)
+    : undefined;
+  const scopeHref = scopeAccount ? brandAccountHref(brandSeg, scopeAccount) : null;
   const scope = goal.tracked_account_id
-    ? (() => {
-        const a = accountRows.find((x) => x.trackedAccountId === goal.tracked_account_id);
-        return a ? formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl }) : "Account";
-      })()
+    ? scopeAccount
+      ? formatSocialHandle({ platform: scopeAccount.platform, handle: scopeAccount.handle, url: scopeAccount.profileUrl })
+      : "Account"
     : goal.platform
       ? platformLabel(goal.platform)
       : "Own accounts";
@@ -485,7 +490,14 @@ function GoalTile({
         className="min-w-0 break-words type-meta font-medium uppercase tracking-wide text-muted-foreground"
         title={`${def.label} · ${scope}`}
       >
-        {def.label} · {scope}
+        {def.label} ·{" "}
+        {scopeHref ? (
+          <Link href={scopeHref} className="hover:underline" data-clickable="">
+            {scope}
+          </Link>
+        ) : (
+          scope
+        )}
       </span>
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 truncate text-lg font-semibold leading-tight tabular-nums text-foreground">
@@ -541,6 +553,18 @@ function GoalTile({
 // Trend
 // ---------------------------------------------------------------------------
 
+/** An account's avatar + name in a tile: opens the account's route whenever it has one. */
+function AccountNameLink({ href, children }: { href: string | null; children: ReactNode }) {
+  const className = "flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground";
+  return href ? (
+    <Link href={href} className={cn(className, "hover:underline")} data-clickable="">
+      {children}
+    </Link>
+  ) : (
+    <span className={className}>{children}</span>
+  );
+}
+
 function OwnTrend({
   account,
   snapshots,
@@ -548,16 +572,17 @@ function OwnTrend({
   account: AccountRow;
   snapshots: readonly import("../types").ProfileSnapshotRow[];
 }) {
+  const { brandSeg } = useSocials();
   const mine = snapshots.filter((s) => s.profile_id === account.profileId);
   const points = profileFollowerSeries(mine);
   const growth = judgeFollowerGrowth(mine, 30);
   return (
     <div className="flex min-w-0 flex-col gap-1.5 rounded-md border border-border bg-card p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
+        <AccountNameLink href={brandAccountHref(brandSeg, account)}>
           <PlatformMark platform={account.platform} size={16} />
           <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl }) || accountLabels(account.displayName, account.handle, account.platform).primary}</span>
-        </span>
+        </AccountNameLink>
         {growth.fraction === null ? (
           <span className="text-xs text-muted-foreground">{growth.note || "Not enough history for growth"}</span>
         ) : (
@@ -601,6 +626,7 @@ function buildBenchmarkRows(
           growth: growth.fraction,
           growthNote: growth.note,
           profileId: a.profileId,
+          propertyId: a.propertyId,
           ...activity,
         };
       }),
@@ -630,12 +656,22 @@ function BenchmarkTable({
       accessorFn: (r) => `${r.displayName} @${r.handle}`,
       filter: "text",
       minWidth: 200,
-      cell: (r) => (
-        <span className="flex min-w-0 items-center gap-2">
-          <PlatformMark platform={r.platform} size={18} />
-          <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) || accountLabels(r.displayName, r.handle, r.platform).primary}</span>
-        </span>
-      ),
+      cell: (r) => {
+        const href = brandAccountHref(brandSeg, r);
+        const body = (
+          <span className="flex min-w-0 items-center gap-2">
+            <PlatformMark platform={r.platform} size={18} />
+            <span className="truncate">{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl }) || accountLabels(r.displayName, r.handle, r.platform).primary}</span>
+          </span>
+        );
+        return href ? (
+          <Link href={href} className="block min-w-0" data-clickable="">
+            {body}
+          </Link>
+        ) : (
+          body
+        );
+      },
     },
     {
       id: "role",
