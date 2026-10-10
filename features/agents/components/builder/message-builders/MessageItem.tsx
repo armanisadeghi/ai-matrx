@@ -68,6 +68,8 @@ import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEdit
 import {
   PromptWriteBox,
   insertPromptText,
+  PromptFormatButtons,
+  goToBuilderSection,
   usePromptInsertSources,
 } from "@/features/agents/components/builder/message-builders/PromptAssist";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
@@ -772,8 +774,17 @@ export function MessageItem({
             onToggle={messageFlags.onToggle}
           />
         </div>
+        {(viewMode === "write" || viewMode === "edit" || viewMode === "split") && (
+          <PromptFormatButtons
+            mode={viewMode === "write" ? "write" : "textarea"}
+            writeRef={writeRef}
+            getTextarea={() => textareaRef.current}
+          />
+        )}
         <div className="flex items-center gap-1">
         <PromptInsertMenu
+          onAddVariable={() => goToBuilderSection("variables")}
+          onAddContextItem={() => goToBuilderSection("context")}
           variables={insertSources.variables}
           kinds={insertSources.kinds}
           kindSchema={insertSources.kindSchema}
@@ -833,7 +844,12 @@ export function MessageItem({
 
       {/* Content */}
       <div className="p-4">
-        <PromptFixReview text={currentText} onApply={handleTextChange} className="mb-2" />
+        <PromptFixReview
+          text={currentText}
+          onApply={handleTextChange}
+          dismissKey={`agent:${agentId}:message:${messageIndex}`}
+          className="mb-2"
+        />
         {viewMode === "write" ? (
           <PromptWriteBox
             value={currentText}

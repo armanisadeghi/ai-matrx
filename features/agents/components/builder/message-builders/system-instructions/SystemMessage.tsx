@@ -37,6 +37,8 @@ import type { PromptInsert } from "@ai-matrx/rich-editor/core/prompt-inserts";
 import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import {
   PromptWriteBox,
+  PromptFormatButtons,
+  goToBuilderSection,
   insertPromptText,
   usePromptInsertSources,
 } from "@/features/agents/components/builder/message-builders/PromptAssist";
@@ -729,6 +731,13 @@ export function SystemMessage({
               />
             )}
           </div>
+          {(viewMode === "write" || viewMode === "edit" || viewMode === "split") && (
+            <PromptFormatButtons
+              mode={viewMode === "write" ? "write" : "textarea"}
+              writeRef={writeRef}
+              getTextarea={() => textareaRefs.current[systemMessageIndex] ?? null}
+            />
+          )}
           <div className="flex items-center gap-1">
           <PromptInsertMenu
             variables={insertSources.variables}
@@ -737,6 +746,8 @@ export function SystemMessage({
             contextItems={insertSources.contextItems}
             onInsert={handlePromptInsert}
             onOpenChange={handleInsertMenuOpen}
+            onAddVariable={() => goToBuilderSection("variables")}
+            onAddContextItem={() => goToBuilderSection("context")}
           />
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
@@ -763,6 +774,7 @@ export function SystemMessage({
           <PromptFixReview
             text={developerMessage}
             onApply={handleTextChange}
+            dismissKey={`agent:${agentId}:system`}
             className="mb-2"
           />
           {viewMode === "write" ? (

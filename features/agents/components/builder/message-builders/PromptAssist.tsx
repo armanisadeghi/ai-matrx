@@ -19,6 +19,8 @@
 
 import { useRef, useState, type RefObject } from "react";
 import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { textareaFormatTarget } from "@ai-matrx/rich-editor/format/format-target";
 import { insertIntoText, type PromptInsert } from "@ai-matrx/rich-editor/core/prompt-inserts";
 import type { PromptInsertKind, PromptInsertContextItem } from "@ai-matrx/rich-editor/format/PromptInsertMenu";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
@@ -100,7 +102,8 @@ export function insertPromptText({
 }: InsertPromptTextArgs): number | null {
   if (writeController) {
     if (insert.placement === "block") {
-      if (!writeController.insertText(insert.text, "nearest")) writeController.replaceSelection(insert.text);
+      // Exactly at the caret, splitting its line there — what Plain does to the text.
+      if (!writeController.insertText(insert.text, "caret")) writeController.replaceSelection(insert.text);
     } else {
       writeController.replaceSelection(insert.text);
     }
@@ -163,4 +166,48 @@ export function PromptWriteBox({
       />
     </div>
   );
+}
+
+/**
+ * The shared format buttons in a prompt box's own toolbar row, for every editable mode:
+ * Write formats through the editor, Plain editing / Split through the textarea.
+ */
+export function PromptFormatButtons({
+  mode,
+  writeRef,
+  getTextarea,
+}: {
+  mode: "write" | "textarea";
+  writeRef: RefObject<RichEditorController | null>;
+  getTextarea: () => HTMLTextAreaElement | null;
+}) {
+  return (
+    <FormatButtons
+      size="xs"
+      className="min-w-0 flex-1"
+      resolve={() => {
+        if (mode === "write") return writeRef.current?.formatTarget?.() ?? null;
+        const textarea = getTextarea();
+        return textarea && textarea.isConnected ? textareaFormatTarget(textarea) : null;
+      }}
+    />
+  );
+}
+
+/**
+ * The Insert menu's empty Variable / Context rows link here: the builder section scrolls
+ * into view and its Add button takes focus (`data-agent-builder-section` on the left panel).
+ */
+export function goToBuilderSection(section: "variables" | "context") {
+  if (typeof document === "undefined") return;
+  const element = document.querySelector<HTMLElement>(`[data-agent-builder-section="${section}"]`);
+  if (!element) {
+    console.error(`[PromptAssist] builder section "${section}" is not on this page`);
+    return;
+  }
+  element.scrollIntoView({ block: "center", behavior: "smooth" });
+  const add = [...element.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+    /^add\b/i.test((button.getAttribute("aria-label") ?? button.textContent ?? "").trim()),
+  );
+  window.setTimeout(() => (add ?? element).focus({ preventScroll: true }), 250);
 }
