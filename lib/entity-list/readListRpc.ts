@@ -95,7 +95,7 @@ export async function readListRpc<Row>(
   args: object,
   options: ListRpcOptions<Row>,
 ): Promise<ListRpcResult<Row>> {
-  if (!options.client && ONCE_RPC_NAME.test(fn)) return readOnce<Row>(fn, args);
+  if (!options.client && ONCE_RPC_NAME.test(fn) && !hasArrayArg(args)) return readOnce<Row>(fn, args);
   const client: ListRpcClient = options.client ?? (supabase as unknown as ListRpcClient);
   const page = (from: number, to: number, ordered: boolean): PageBuilder<Row> => {
     let builder = client.rpc(fn, args, { count: "exact" }) as PageBuilder<Row>;
@@ -136,6 +136,15 @@ export async function readListRpc<Row>(
 
 /** The names `platform.list_rpc_once` accepts (the same pattern the function enforces). */
 const ONCE_RPC_NAME = /^[a-z][a-z0-9_]*(?:_scope_counts|_facets|_counts|_lane_facets)$/;
+
+/**
+ * `platform.list_rpc_once` casts every argument through its text form, which is malformed for a
+ * JSON array bound to a `text[]` parameter (22P02 "malformed array literal"). A call that
+ * carries an array argument keeps the paged read above, which sends the array as the API does.
+ */
+function hasArrayArg(args: object): boolean {
+  return Object.values(args).some((v) => Array.isArray(v));
+}
 
 /** One request, one execution, every row: the function's rows come back as a single jsonb array. */
 async function readOnce<Row>(fn: string, args: object): Promise<ListRpcResult<Row>> {

@@ -82,6 +82,19 @@ describe("readListRpc — the one reader of facet and count RPCs", () => {
     expect(platformRpc).toHaveBeenCalledWith("list_rpc_once", { p_fn: "agx_list_scope_counts", p_args: { p_archived: "active" } });
   });
 
+  it("an array argument (a text[] parameter) keeps the paged read: the one-call cast cannot bind it", async () => {
+    platformRpc.mockReset();
+    const { supabase } = jest.requireMock("@/utils/supabase/client") as { supabase: { rpc: jest.Mock } };
+    const { client, calls } = server(rowsOf(3, "org"));
+    supabase.rpc.mockImplementation((...a: unknown[]) => client.rpc(...(a as Parameters<typeof client.rpc>)));
+    const res = await readListRpc<Row>("admin_run_history_facets", { p_kinds: ["agent"] }, { order: ["kind", "value"] });
+    expect(res.error).toBeNull();
+    expect(res.data).toHaveLength(3);
+    expect(platformRpc).not.toHaveBeenCalled();
+    expect(calls.length).toBeGreaterThan(0);
+    supabase.rpc.mockReset();
+  });
+
   it("the one-call reader's error and a non-list answer both reach the caller", async () => {
     platformRpc.mockReset();
     platformRpc.mockResolvedValueOnce({ data: null, error: { message: "denied", code: "42501" } });
