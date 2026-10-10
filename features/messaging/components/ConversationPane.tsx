@@ -34,6 +34,7 @@ import {
   ConversationView,
   useConversation,
   useConversations,
+  type ConversationViewProps,
 } from "@ai-matrx/messaging/react";
 import { asConversationId, type Message } from "@ai-matrx/messaging";
 import { MessagesComposerInput } from "./MessagesComposerInput";
@@ -63,6 +64,8 @@ export interface ConversationPaneProps {
   showAi?: boolean;
   /** messaging's named look; "messenger" inside the /messenger shell. */
   appearance?: "default" | "messenger";
+  /** Per-recipient delivery ticks (agent rooms: session members). See ConversationView. */
+  deliveryStatusFor?: ConversationViewProps["deliveryStatusFor"];
 }
 
 export function ConversationPane({
@@ -75,6 +78,7 @@ export function ConversationPane({
   showHeader = true,
   showAi = true,
   appearance,
+  deliveryStatusFor,
 }: ConversationPaneProps) {
   const router = useRouter();
   // Declare that this surface renders the conversation AI bar, so the four
@@ -158,6 +162,7 @@ export function ConversationPane({
           showHeader={false}
           showAi={showAi}
           {...(appearance ? { appearance } : {})}
+          {...(deliveryStatusFor ? { deliveryStatusFor } : {})}
           renderComposerInput={(input) => (
             <MessagesComposerInput
               input={input}

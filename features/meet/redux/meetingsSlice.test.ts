@@ -10,7 +10,7 @@ const repo = {
   meetingOccurrences: jest.fn(),
 };
 
-jest.mock("@ai-matrx/meet/react", () => ({ createMeetRepository: () => repo }));
+jest.mock("@ai-matrx/meet/core", () => ({ createMeetRepository: () => repo }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/lib/scoped-config/service", () => ({ fetchKnobWriteDoor: jest.fn() }));
 jest.mock("@ai-matrx/realtime", () => ({

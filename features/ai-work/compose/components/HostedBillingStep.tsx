@@ -36,13 +36,15 @@ import {
   cancelOwnPlanSignIn,
   readOwnPlanStatus,
   signOutOwnPlan,
-  submitOwnPlanCode,
   type HostedBilling,
   type OwnPlanStatus,
 } from "@/features/ai-work/lib/ownPlan";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
-import { connectClaudeAccount } from "@/features/ai-work/lib/connectClaudeAccount";
+import {
+  connectClaudeAccount,
+  redeemClaudeCode,
+} from "@/features/ai-work/lib/connectClaudeAccount";
 const PROVIDER = "claude_code" as const;
 
 type Busy = "reading" | "starting" | "code" | "cancel" | "sign-out" | null;
@@ -99,7 +101,13 @@ export function HostedBillingStep({
     // Cleared before the request resolves: the code lives nowhere after submit.
     setCode("");
     if (!value.trim()) return;
-    await run("code", () => submitOwnPlanCode(PROVIDER, value));
+    // Bounded: Claude's answer within seconds, or "redeeming" polled to its end.
+    await run("code", async () => {
+      const outcome = await redeemClaudeCode(value, undefined, new AbortController().signal);
+      if (outcome.kind === "settled") return outcome.status;
+      if (outcome.kind === "cancelled") throw new Error("The sign-in was cancelled.");
+      throw new Error(outcome.message);
+    });
   };
 
   const state = status?.state ?? null;

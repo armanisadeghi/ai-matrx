@@ -15,7 +15,7 @@
 // tools — the editor, and the note's one bottom row. With no note yet, the
 // dropdown alone (it owns "+ New Note") above the empty state.
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Loader2, Plus, StickyNote } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
@@ -33,9 +33,14 @@ import { useThreadNoteSelectAdapter } from "@/features/war-room/hooks/useThreadE
 export function ThreadNotesTab({
   threadId,
   sessionId,
+  leadingSlot,
+  trailingSlot,
 }: {
   threadId: string;
   sessionId: string;
+  /** The host header's controls, folded into the note's one top row. */
+  leadingSlot?: ReactNode;
+  trailingSlot?: ReactNode;
   /** Kept for callers; the canonical frame fits both the full and the compact tile. */
   compact?: boolean;
 }) {
@@ -69,6 +74,8 @@ export function ThreadNotesTab({
         instanceId={`war-room-note:${threadId}`}
         noteId={noteId}
         titleSlot={noteSelect}
+        leadingSlot={leadingSlot}
+        trailingSlot={trailingSlot}
         className="bg-transparent"
       />
     );
@@ -77,7 +84,9 @@ export function ThreadNotesTab({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-7 shrink-0 items-center border-b border-border/60 pl-1.5 pr-1">
+        {leadingSlot}
         {noteSelect}
+        {trailingSlot}
       </div>
       <div className="min-h-0 flex-1">
         {loaded ? (

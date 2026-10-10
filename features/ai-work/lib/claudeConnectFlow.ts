@@ -166,3 +166,99 @@ export async function runClaudeConnect(deps: ConnectDeps): Promise<ConnectOutcom
   }
   return { kind: "cancelled" };
 }
+
+// ---------------------------------------------------------------------------
+// Finishing the sign-in: the pasted code
+// ---------------------------------------------------------------------------
+//
+// The server answers a pasted code within seconds: signed in, Claude's own
+// refusal (`awaiting_code` + detail; the same sign-in takes the next code), or
+// `redeeming` while Claude is still checking it. `redeeming` is polled on the
+// status door until it settles. The code is sent once and never resent.
+
+export type RedeemOutcome =
+  | { kind: "settled"; status: OwnPlanStatus }
+  | { kind: "failed"; message: string }
+  | { kind: "offline"; message: string }
+  | { kind: "timeout"; message: string }
+  | { kind: "cancelled" };
+
+export type RedeemDeps = {
+  /** Hand the code to the waiting sign-in (sent once, never retried). */
+  submit: () => Promise<OwnPlanStatus>;
+  /** The sign-in's current state; settles a code Claude is still checking. */
+  status: () => Promise<OwnPlanStatus>;
+  isNetwork: (cause: unknown) => boolean;
+  describe: (cause: unknown) => string;
+  sleep: (ms: number, signal: AbortSignal) => Promise<void>;
+  now: () => number;
+  signal: AbortSignal;
+  timeoutMs?: number;
+  callTimeoutMs?: number;
+};
+
+export const REDEEM_TIMEOUT_MS = 90_000;
+export const REDEEM_TIMEOUT_MESSAGE =
+  "Claude did not answer about that code in time. Start the sign-in again.";
+export const CODE_NOT_ACCEPTED_MESSAGE =
+  "Claude has not accepted that code. Check it and paste it again.";
+/** The server's "Claude is still checking the code" state. Compared as a
+ * string: the generated `OwnPlanState` union gains it on the next publish. */
+export const REDEEMING_STATE = "redeeming";
+
+export function isRedeeming(status: OwnPlanStatus): boolean {
+  return String(status.state) === REDEEMING_STATE;
+}
+
+export async function runClaudeCodeRedeem(deps: RedeemDeps): Promise<RedeemOutcome> {
+  const deadline = deps.now() + (deps.timeoutMs ?? REDEEM_TIMEOUT_MS);
+  const callMs = deps.callTimeoutMs ?? CONNECT_CALL_TIMEOUT_MS;
+  const budget = () => Math.min(callMs, deadline - deps.now());
+  let unreachable = 0;
+  let submitUnanswered = false;
+
+  const settle = (status: OwnPlanStatus): RedeemOutcome => {
+    // The code may never have reached Claude: say so rather than showing the
+    // same waiting screen as if nothing happened.
+    if (submitUnanswered && !status.signed_in && !status.detail) {
+      return { kind: "settled", status: { ...status, detail: CODE_NOT_ACCEPTED_MESSAGE } };
+    }
+    return { kind: "settled", status };
+  };
+
+  try {
+    const status = await bounded(deps.submit, budget(), deps.signal);
+    if (!isRedeeming(status)) return { kind: "settled", status };
+  } catch (cause) {
+    if (cause instanceof Cancelled || deps.signal.aborted) return { kind: "cancelled" };
+    if (!(cause instanceof CallTimedOut || deps.isNetwork(cause))) {
+      return { kind: "failed", message: deps.describe(cause) };
+    }
+    // No answer: the code may still be with Claude, so ask the status door.
+    submitUnanswered = true;
+    unreachable = 1;
+  }
+
+  let delay = 1_000;
+  while (!deps.signal.aborted) {
+    if (deps.now() >= deadline) return { kind: "timeout", message: REDEEM_TIMEOUT_MESSAGE };
+    await deps.sleep(Math.min(delay, Math.max(deadline - deps.now(), 0)), deps.signal);
+    if (deps.signal.aborted) break;
+    if (deps.now() >= deadline) continue;
+    delay = Math.min(Math.round(delay * 1.5), 3_000);
+    try {
+      const status = await bounded(deps.status, budget(), deps.signal);
+      unreachable = 0;
+      if (!isRedeeming(status)) return settle(status);
+    } catch (cause) {
+      if (cause instanceof Cancelled || deps.signal.aborted) return { kind: "cancelled" };
+      if (cause instanceof CallTimedOut || deps.isNetwork(cause)) {
+        unreachable += 1;
+        if (unreachable >= OFFLINE_AFTER) return { kind: "offline", message: OFFLINE_MESSAGE };
+        continue;
+      }
+      return { kind: "failed", message: deps.describe(cause) };
+    }
+  }
+  return { kind: "cancelled" };
+}

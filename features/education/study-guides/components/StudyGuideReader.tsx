@@ -142,7 +142,8 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
             </div>
           </PopoverContent>
         </Popover>
-        <Outline key={content} content={content} titleLabel={activeLabel || activeGuide?.label || "Untitled guide"} onJump={onJump} />
+        {/* The outline belongs to an OPEN guide. With none open it drew a phantom bold "Untitled guide" row that looked clickable and did nothing. */}
+        {activeId && <Outline key={content} content={content} titleLabel={activeLabel || activeGuide?.label || "Untitled guide"} onJump={onJump} />}
       </div>
     </aside>
   );

@@ -46,7 +46,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "create_accounts",
     label: "Track accounts",
     description:
-      'Tracks social accounts for this brand, exactly as the Track dialog does: each account\'s profile and latest posts are fetched (this SPENDS POINTS per account; when the cost is worth a warning the page names the points and asks again). Value is a JSON ARRAY of 1-10 objects { "handle_or_url": "<profile link, or a handle>", "platform"?: "instagram" | "tiktok" | "youtube" | "x" | "linkedin" | "facebook" | "threads" | "reddit" | ... (required with a bare handle), "role"?: "own" | "competitor" | "inspiration" | "client" (default competitor) }. A link to a single post is refused (save posts in the Swipe file). An account already tracked comes back "already tracked".',
+      'Tracks social accounts for this brand, exactly as the Track dialog does: each account\'s profile and latest posts are fetched (this SPENDS POINTS per account; the approval card names the points). Value is a JSON ARRAY of 1-10 objects { "handle_or_url": "<profile link, or a handle>", "platform"?: "instagram" | "tiktok" | "youtube" | "x" | "linkedin" | "facebook" | "threads" | "reddit" | ... (required with a bare handle), "role"?: "own" | "competitor" | "inspiration" | "client" (default competitor) }. A link to a single post is refused (save posts in the Swipe file). An account already tracked comes back "already tracked".',
     valueType: "array",
     updatesValue: "accounts",
     mode: "entity",

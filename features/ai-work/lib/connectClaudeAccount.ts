@@ -7,11 +7,18 @@
 
 import { apiGet } from "@/lib/api/typed-client";
 import { getUserMessage } from "@/lib/api/errors";
-import { runClaudeConnect, type ConnectOutcome } from "@/features/ai-work/lib/claudeConnectFlow";
+import {
+  runClaudeCodeRedeem,
+  runClaudeConnect,
+  type ConnectOutcome,
+  type RedeemOutcome,
+} from "@/features/ai-work/lib/claudeConnectFlow";
 import {
   capacityRefusalOf,
   HOSTED_RUNTIME_PATH,
+  readOwnPlanStatus,
   startOwnPlanSignIn,
+  submitOwnPlanCode,
   type OwnPlanAccount,
 } from "@/features/ai-work/lib/ownPlan";
 
@@ -50,6 +57,27 @@ export function connectClaudeAccount(
     start: () => startOwnPlanSignIn("claude_code", account),
     readiness: async () => (await apiGet(HOSTED_RUNTIME_PATH)).data,
     isFatal: (cause) => capacityRefusalOf(cause) !== null,
+    isNetwork: isUnreachable,
+    describe: (cause) => getUserMessage(cause),
+    sleep: abortableSleep,
+    now: () => Date.now(),
+    signal,
+  });
+}
+
+/**
+ * Hand the pasted code to the waiting Claude sign-in and wait (bounded) for
+ * Claude's answer: signed in, its own refusal, or an honest timeout/offline.
+ * The code is sent once; only the status door is polled.
+ */
+export function redeemClaudeCode(
+  code: string,
+  account: OwnPlanAccount,
+  signal: AbortSignal,
+): Promise<RedeemOutcome> {
+  return runClaudeCodeRedeem({
+    submit: () => submitOwnPlanCode("claude_code", code, account),
+    status: () => readOwnPlanStatus("claude_code", account),
     isNetwork: isUnreachable,
     describe: (cause) => getUserMessage(cause),
     sleep: abortableSleep,

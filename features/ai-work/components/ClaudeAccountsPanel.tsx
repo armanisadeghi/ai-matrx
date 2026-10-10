@@ -33,6 +33,7 @@ import { isJsonObject } from "@/types/json";
 import {
   abortableSleep,
   connectClaudeAccount,
+  redeemClaudeCode,
 } from "@/features/ai-work/lib/connectClaudeAccount";
 import { SandboxCapacityList } from "@/features/ai-work/components/SandboxCapacityList";
 import {
@@ -41,7 +42,6 @@ import {
   readHostedCapacity,
   newClaudeAccountSlot,
   signOutOwnPlan,
-  submitOwnPlanCode,
   type OwnPlanStatus,
   type SandboxCapacityRefusal,
   type SandboxOccupant,
@@ -176,20 +176,24 @@ export function ClaudeAccountsPanel() {
   const finish = async () => {
     if (!pending || !code.trim()) return;
     const typed = code;
+    const { slot, status: before } = pending;
     setCode("");
     setBusy("code");
+    const controller = new AbortController();
+    connectAbort.current = controller;
     try {
-      const status = await submitOwnPlanCode(PROVIDER, typed, pending.slot);
-      if (status.signed_in) {
+      const outcome = await redeemClaudeCode(typed, slot, controller.signal);
+      if (outcome.kind === "settled" && outcome.status.signed_in) {
         toast.success("Claude account connected");
         setPending(null);
         reload();
-      } else {
-        setPending({ slot: pending.slot, status });
+      } else if (outcome.kind === "settled") {
+        setPending({ slot, status: outcome.status });
+      } else if (outcome.kind !== "cancelled") {
+        setPending({ slot, status: { ...before, detail: outcome.message } });
       }
-    } catch (cause) {
-      toast.error(getUserMessage(cause));
     } finally {
+      if (connectAbort.current === controller) connectAbort.current = null;
       setBusy(null);
     }
   };

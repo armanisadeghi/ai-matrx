@@ -11,7 +11,7 @@
  * A presence change patches the row in place; an unknown session or any member
  * change triggers one debounced re-read, never a per-event fetch.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { useChannel } from "@ai-matrx/realtime/react";
 import type { Json } from "@/types/database.types";
@@ -62,6 +62,8 @@ export interface LiveSession {
   subagents: number;
   /** Every coding_session row id bound to this address (member rows key by one of them). */
   bindingIds: string[];
+  /** A Claude cloud session (registered by the cloud courier). */
+  remote: boolean;
 }
 
 function metaString(metadata: Json | null, key: string): string | null {
@@ -109,8 +111,29 @@ function toLive(
       presence: effectivePresence(row.status, row.last_seen_at, nowMs, endedAfterMs),
       subagents: subagents.get(row.conversation_id) ?? 0,
       bindingIds: bindings.get(row.conversation_id) ?? [row.id],
+      remote: metaString(row.metadata, "remote") === "claude_cloud",
     };
   });
+}
+
+const MEMBER_CURSOR_KEYS = [
+  "offered_through",
+  "offered_at",
+  "delivered_through",
+  "delivered_at",
+  "delivered_via",
+  "lookup_failures",
+  "expired_count",
+  "last_failure_reason",
+  "last_failure_at",
+  "muted",
+] as const;
+
+/** The cursor columns a change payload carries; absent keys keep the row's value. */
+function pickMember(row: Partial<SessionMemberRow>): Partial<SessionMemberRow> {
+  const out: Record<string, unknown> = {};
+  for (const key of MEMBER_CURSOR_KEYS) if (key in row) out[key] = row[key];
+  return out as Partial<SessionMemberRow>;
 }
 
 export interface LiveHubState {
@@ -144,10 +167,14 @@ export function useLiveHub(): LiveHubState {
   const [readTick, setReadTick] = useState(0);
   const debounce = useRef<number | null>(null);
   const knownIds = useRef<ReadonlySet<string>>(new Set());
+  const knownMemberIds = useRef<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     knownIds.current = new Set(rows.map((r) => r.id));
   }, [rows]);
+  useEffect(() => {
+    knownMemberIds.current = new Set(members.map((m) => m.id));
+  }, [members]);
 
   const scheduleRead = () => {
     if (debounce.current !== null) window.clearTimeout(debounce.current);
@@ -247,7 +274,16 @@ export function useLiveHub(): LiveHubState {
               table: "dm_session_members",
               filter: `created_by=eq.${userId}`,
               rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
-              onChange: () => scheduleRead(),
+              onChange: ({ row }) => {
+                // A cursor move patches the known row at once (the bubbles'
+                // delivery ticks read it); anything else re-reads, debounced.
+                const next = row as Partial<SessionMemberRow> & { left_at?: string | null; deleted_at?: string | null } | null;
+                if (next?.id && !next.left_at && !next.deleted_at && knownMemberIds.current.has(next.id)) {
+                  setMembers((cur) => cur.map((m) => (m.id === next.id ? { ...m, ...pickMember(next) } : m)));
+                  return;
+                }
+                scheduleRead();
+              },
             },
             {
               // RLS limits this to rooms the person is in; any new message
@@ -264,7 +300,8 @@ export function useLiveHub(): LiveHubState {
       : null,
   );
 
-  const sessions = toLive(rows, nowMs, endedAfterMin * 60_000);
+  // Stable between ticks: the thread's delivery ticks are memoized on it.
+  const sessions = useMemo(() => toLive(rows, nowMs, endedAfterMin * 60_000), [rows, nowMs, endedAfterMin]);
   return {
     sessions,
     members,

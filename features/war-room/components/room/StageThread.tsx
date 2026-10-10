@@ -9,6 +9,7 @@
 // projector (shows the projected tab without mutating the saved one).
 
 import { useEffect } from "react";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -39,6 +40,7 @@ export function StageThread({
   onBack?: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const actions = useThreadActions(threadId, sessionId);
   const { projectedTab } = useRoomView();
   const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
@@ -63,6 +65,53 @@ export function StageThread({
 
   const kind = dynamicTabKind(shownTab, anchorType);
 
+  // The thread's identity controls. On the Notes tab they fold into the
+  // note's ONE top row (a second header above it was duplicated chrome); on
+  // every other tab they are the row above the body.
+  const back = onBack ? (
+    <span>
+      <ChevronLeftTapButton
+        variant="transparent"
+        onClick={onBack}
+        ariaLabel="Back to threads"
+        tooltip={false}
+      />
+    </span>
+  ) : null;
+  const tabSelect = (
+    <div className="shrink-0">
+      <ThreadTabSelect
+        threadId={threadId}
+        active={shownTab}
+        anchorType={anchorType}
+        onChange={(tab) => dispatch(setThreadActiveTabPersisted(threadId, tab))}
+      />
+    </div>
+  );
+  const endControls = (
+    <div className="shrink-0 flex items-center gap-0">
+      <ThreadContextOverride threadId={threadId} />
+      <ThreadOptionsMenu
+        actions={actions}
+        threadId={threadId}
+        isStaged
+        size="md"
+      />
+    </div>
+  );
+  // A phone cannot hold the thread controls AND the note's modes in one row,
+  // so only there the thread header stays its own (compact) row.
+  const foldIntoNote = shownTab === "notes" && !isMobile;
+  const titleField = (
+    <EditableTitle
+      value={actions.title}
+      onSave={actions.rename}
+      placeholder="Untitled thread"
+      className={foldIntoNote ? "block max-w-full text-sm font-semibold" : "text-[15px] font-semibold"}
+      inputClassName={foldIntoNote ? "text-sm font-semibold" : "text-[15px] font-semibold"}
+    />
+  );
+
   return (
     <div
       className={cn(
@@ -72,67 +121,48 @@ export function StageThread({
           : cn("border-l-[3px]", kind.sectionBorder),
       )}
     >
-      {/* Identity row */}
-      <div className="shrink-0 flex h-11 items-center gap-0 pl-0 pr-1">
-        {onBack ? (
-          <span>
-            <ChevronLeftTapButton
-              variant="transparent"
-              onClick={onBack}
-              ariaLabel="Back to threads"
-              tooltip={false}
-            />
-          </span>
-        ) : null}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <EditableTitle
-              value={actions.title}
-              onSave={actions.rename}
-              placeholder="Untitled thread"
-              className="text-[15px] font-semibold"
-              inputClassName="text-[15px] font-semibold"
-            />
-            {flavor === "project" ? (
-              <ThreadProjectMarker
-                threadId={threadId}
-                size="md"
-                className="hidden @2xl:inline-flex"
-              />
-            ) : null}
+      {foldIntoNote ? null : (
+        <div className="shrink-0 flex h-11 items-center gap-0 pl-0 pr-1">
+          {back}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              {titleField}
+              {flavor === "project" ? (
+                <ThreadProjectMarker
+                  threadId={threadId}
+                  size="md"
+                  className="hidden @2xl:inline-flex"
+                />
+              ) : null}
+            </div>
           </div>
+          {tabSelect}
+          {endControls}
         </div>
-
-        <div className="shrink-0">
-          <ThreadTabSelect
-            threadId={threadId}
-            active={shownTab}
-            anchorType={anchorType}
-            onChange={(tab) =>
-              dispatch(setThreadActiveTabPersisted(threadId, tab))
-            }
-          />
-        </div>
-
-        <div className="shrink-0 flex items-center gap-0">
-          <ThreadContextOverride threadId={threadId} />
-          <ThreadOptionsMenu
-            actions={actions}
-            threadId={threadId}
-            isStaged
-            size="md"
-          />
-        </div>
-      </div>
+      )}
 
       {/* Body */}
-      <div className="flex-1 min-h-0 border-t border-border/60 bg-card">
+      <div
+        className={cn(
+          "flex-1 min-h-0 bg-card",
+          foldIntoNote ? "" : "border-t border-border/60",
+        )}
+      >
         <ThreadTabContent
           tab={shownTab}
           threadId={threadId}
           sessionId={sessionId}
           threadLayout="stage"
+          noteLeadingSlot={
+            !foldIntoNote ? undefined : <div className="flex shrink-0 items-center gap-0">
+              {back}
+              <div className="mx-1 hidden min-w-0 max-w-[8rem] shrink @[60rem]:block">
+                {titleField}
+              </div>
+              {tabSelect}
+            </div>
+          }
+          noteTrailingSlot={foldIntoNote ? endControls : undefined}
         />
       </div>
     </div>

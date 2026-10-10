@@ -71,10 +71,17 @@ export interface NoteWorkspaceProps {
    * dropdown: switch, rename, unlink, new). Wins over `title`.
    */
   titleSlot?: ReactNode;
+  /**
+   * Host controls at the very start / end of the SAME top row (the War Room
+   * thread's back, name and tab select; its context and options) so a host
+   * with its own header never stacks a second row above the note's.
+   */
+  leadingSlot?: ReactNode;
+  trailingSlot?: ReactNode;
   className?: string;
 }
 
-export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot, className }: NoteWorkspaceProps) {
+export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot, leadingSlot, trailingSlot, className }: NoteWorkspaceProps) {
   const dispatch = useAppDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
   const editorMode = useNoteEditorMode(noteId);
@@ -126,6 +133,7 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot,
         onKeyDown={onKeyDown}
       >
         <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border/40 px-1.5">
+          {leadingSlot}
           {titleSlot ? (
             <div className="min-w-0 max-w-[12rem] shrink">{titleSlot}</div>
           ) : null}
@@ -133,7 +141,7 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot,
           {/* The four modes never reach into the tools beside them: centred while
               they fit, start-aligned and scrollable below ~18rem (a narrow tile),
               so the capsule can not overlap the outline / versions group. */}
-          <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:justify-center [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:[justify-content:safe_center] [&::-webkit-scrollbar]:hidden">
             <NoteModeSwitch noteId={noteId} labels="container" />
             {editorMode !== "preview" && (
               <FormatButtons size="xs" className="ml-1 flex-1" resolve={() => formatTargetWithin(rootRef.current)} />
@@ -148,6 +156,7 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot,
           {/* Mic + "…" (share, move, duplicate, about, knowledge, export,
               delete…) — the note's own actions, no tab around them. */}
           <NoteTabItem noteId={noteId} instanceId={instanceId} standalone showTitle={false} />
+          {trailingSlot}
         </div>
         <NotePresenceBanner instanceId={instanceId} />
         <div className="flex min-h-0 flex-1 flex-col">

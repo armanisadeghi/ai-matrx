@@ -31,12 +31,17 @@ export function ThreadTabContent({
   threadId,
   sessionId,
   threadLayout = "stage",
+  noteLeadingSlot,
+  noteTrailingSlot,
 }: {
   tab: ThreadTab;
   threadId: string;
   sessionId: string;
   /** Grid gallery tiles are tight; stage is the hero pane. */
   threadLayout?: "grid" | "stage";
+  /** Notes tab only: the host header folded into the note's one top row. */
+  noteLeadingSlot?: React.ReactNode;
+  noteTrailingSlot?: React.ReactNode;
 }) {
   const compact = threadLayout === "grid";
 
@@ -70,7 +75,14 @@ export function ThreadTabContent({
     case "task":
       return <ThreadTaskTab threadId={threadId} compact={compact} />;
     case "notes":
-      return <ThreadNotesTab threadId={threadId} sessionId={sessionId} />;
+      return (
+        <ThreadNotesTab
+          threadId={threadId}
+          sessionId={sessionId}
+          leadingSlot={noteLeadingSlot}
+          trailingSlot={noteTrailingSlot}
+        />
+      );
     case "audio":
       return <ThreadAudioTab threadId={threadId} compact={compact} />;
     case "files":

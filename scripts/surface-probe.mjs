@@ -210,6 +210,30 @@ mkdirSync(profileDir, { recursive: true });
 if (opts.shots) mkdirSync(opts.shots, { recursive: true });
 
 // ── page helpers (functions passed to page.evaluate run in the browser) ───
+/**
+ * The shared preview's walk cap (utils/supabase/walkCap.ts) parks a host at
+ * /__dev-walk when its slot is needed — at load, or mid-run while the agent
+ * works. A parked tab has no app, so every later read answered "header button
+ * not found" / "could not reopen Surface Context" (2026-10-10). Press its
+ * Resume form, wait to land back on the route, and count it on the result so
+ * a park is never silent. Returns true when the tab is (back) on the app.
+ */
+async function resumeIfParked(page, result) {
+  for (let i = 0; i < 4; i += 1) {
+    if (!page.url().includes("/__dev-walk")) return true;
+    if (result) result.walkParked = (result.walkParked ?? 0) + 1;
+    console.error(`[surface-probe] preview walk cap parked this tab; resuming (${i + 1})`);
+    await page
+      .locator('form[action="/__dev-walk"] button[type=submit]')
+      .first()
+      .click({ timeout: 5000 })
+      .catch(() => {});
+    await page.waitForURL((u) => !u.href.includes("/__dev-walk"), { timeout: 120000 }).catch(() => {});
+    await page.waitForTimeout(opts.settle);
+  }
+  return !page.url().includes("/__dev-walk");
+}
+
 async function pointerClick(page, selector, textPrefix) {
   return page.evaluate(
     ([sel, prefix]) => {
@@ -419,6 +443,13 @@ async function runAgent(page, result) {
     let stable = 0;
     while ((Date.now() - t) / 1000 < opts.agentWait) {
       await page.waitForTimeout(5000);
+      if (page.url().includes("/__dev-walk")) {
+        // Parked mid-run: the agent's window is gone with the page. Say so
+        // instead of reading an empty reply.
+        agent.errors.push("the preview walk cap parked the tab while the agent ran (rerun when fewer previews are active)");
+        await resumeIfParked(page, result);
+        break;
+      }
       if (await pickWorkspaceIfAsked(page)) agent.workspaceAsked = true;
       const pressed = await approveOne(page);
       if (pressed) {
@@ -437,6 +468,7 @@ async function runAgent(page, result) {
   await shot(page, "agent-after");
   // Read the page's surface again, with the agent's writes in it. No Escape
   // first: it would close a dialog the agent just filled.
+  await resumeIfParked(page, result);
   if (await openSurfaceContext(page)) result.afterAgent = await readProbe(page);
   else agent.errors.push("could not reopen Surface Context after the agent run");
   result.agent = agent;
@@ -557,6 +589,7 @@ try {
     try {
       await page.goto(`${opts.base}${route}`, { timeout: 600000 });
       await page.waitForTimeout(opts.settle);
+      if (!(await resumeIfParked(page, result))) result.errors.push("the preview walk cap kept this tab parked at /__dev-walk");
       result.finalUrl = page.url().replace(/\?.*$/, "");
       result.signedIn = (await page.locator('input[type="email"]').count()) === 0;
       // --open: open a window/dialog BEFORE reading, so an overlay surface is
