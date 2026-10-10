@@ -66,6 +66,7 @@ import { QUESTION_TYPES, isDepth } from "../data/types";
 import type { AssessmentItemRow, AssessmentRow, QuestionType } from "../data/types";
 import { kindConfigFor } from "./kindConfig";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The top-up never offers "Just a topic": the questions come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 
@@ -458,7 +459,7 @@ function AddMoreQuestionsDialog({
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : redo && !busy ? (
         <p role="status" className="text-sm text-muted-foreground">
           {addMoreQuestionsStoppedLine(redo.request.count)}

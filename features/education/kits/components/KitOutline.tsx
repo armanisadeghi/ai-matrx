@@ -145,7 +145,7 @@ export function KitOutlineCard({
           <Button variant="quiet" onClick={outline.reload}>
             Try again
           </Button>
-        </p>
+        <ErrorAlchemyMenu error={outline.readError} /></p>
       ) : sections === null ? (
         <RegionSkeleton shape="rows" count={3} className="mt-3" aria-label="Reading the outline" />
       ) : has ? (

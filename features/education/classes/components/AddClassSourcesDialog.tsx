@@ -35,6 +35,7 @@ import {
 import type { SourceKindId } from "@ai-matrx/agents/sources/runtime";
 import { attachableSourceRef } from "../classParts";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** "Just a topic" is not a thing a class can hold. */
 const CLASS_SOURCE_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter(
   (k) => k !== "topic",
@@ -158,7 +159,7 @@ function AddClassSourcesBody({
               {issues.map((issue) => (
                 <li key={issue}>{issue}</li>
               ))}
-            </ul>
+            <ErrorAlchemyMenu /></ul>
           ) : null}
           <div className="flex flex-wrap items-center justify-end gap-2">
             {blocked ? (

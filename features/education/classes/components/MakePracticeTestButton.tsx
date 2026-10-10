@@ -60,6 +60,7 @@ import { PRACTICE_TEST_CONFIG } from "@/features/education/assessment/components
 import type { ClassContentItem } from "../types";
 import type { ClassTest } from "../classTests";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const config = PRACTICE_TEST_CONFIG;
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 const FOCUS_MAX = 2000;
@@ -386,7 +387,7 @@ function MakePracticeTestDialog({
           {error ? (
             <p role="alert" className="text-sm text-destructive">
               {error}
-            </p>
+            <ErrorAlchemyMenu error={error} /></p>
           ) : null}
           <div className="flex flex-wrap items-center justify-end gap-2">
             <coppa.Gate />
