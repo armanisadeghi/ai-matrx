@@ -67,3 +67,35 @@ describe("connection state", () => {
     expect(judgeConnection("youtube", [{ id: "g", provider: "google", status: "connected", resourceTypes: ["youtube_channel"] }], []).state).toBe("connected");
   });
 });
+
+import { availablePostMetrics, currentOwnPostFigures, topOwnPosts } from "../insights";
+
+const pm = {
+  tracked_account_id: "a", provider: "pinterest_v5", post_id: null, observed_at: "2026-10-09T00:00:00Z",
+  impressions: null, reach: null, saves: null, link_clicks: null, engagements: null, video_views: null, extras: {},
+};
+
+describe("per-post private figures", () => {
+  it("keeps the newest day per post", () => {
+    const f = currentOwnPostFigures([
+      { ...pm, provider_post_id: "p1", observed_on: "2026-10-01", impressions: 5 },
+      { ...pm, provider_post_id: "p1", observed_on: "2026-10-09", impressions: 9 },
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0].values.impressions).toBe(9);
+  });
+
+  it("ranks by the metric and never ranks a post without it as zero", () => {
+    const f = currentOwnPostFigures([
+      { ...pm, provider_post_id: "p1", observed_on: "2026-10-09", saves: 3, extras: { pin_clicks: 8 } },
+      { ...pm, provider_post_id: "p2", observed_on: "2026-10-09", saves: 10 },
+      { ...pm, provider_post_id: "p3", observed_on: "2026-10-09", impressions: 99 },
+      { ...pm, provider_post_id: "p4", observed_on: "2026-10-09", saves: 0 },
+    ]);
+    expect(topOwnPosts(f, "saves", 5).map((x) => x.providerPostId)).toEqual(["p2", "p1", "p4"]);
+    expect(topOwnPosts(f, "saves", 1)).toHaveLength(1);
+    expect(topOwnPosts(f, "pin_clicks").map((x) => x.providerPostId)).toEqual(["p1"]);
+    expect(topOwnPosts(f, "reach")).toEqual([]);
+    expect(availablePostMetrics(f).map((m) => m.id)).toEqual(["impressions", "saves", "pin_clicks"]);
+  });
+});

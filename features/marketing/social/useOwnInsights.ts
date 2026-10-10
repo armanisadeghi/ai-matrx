@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { readOwnInsightDays, summarizeInsights, type InsightDay, type InsightSummary } from "./insights";
+import { readOwnInsightDays, readOwnPostFigures, summarizeInsights, type InsightDay, type InsightSummary } from "./insights";
 
 /**
  * Private insights for a set of tracked accounts: the shared hook behind the KPI "Own channel" table
@@ -20,4 +20,15 @@ export function useOwnInsights(trackedAccountIds: readonly string[], days = 30) 
   const dayRows: InsightDay[] = query.data ?? [];
   for (const id of trackedAccountIds) byAccount.set(id, summarizeInsights(id, dayRows, days));
   return { ...query, summaries: byAccount, dayRows };
+}
+
+/** Per-post private figures for a set of tracked accounts (top posts on the account page and KPIs). */
+export function useOwnPostFigures(trackedAccountIds: readonly string[]) {
+  const key = [...trackedAccountIds].sort().join(",");
+  return useQuery({
+    queryKey: ["marketing", "social", "own-post-metrics", key],
+    queryFn: () => readOwnPostFigures(trackedAccountIds),
+    enabled: trackedAccountIds.length > 0,
+    staleTime: 60_000,
+  });
 }

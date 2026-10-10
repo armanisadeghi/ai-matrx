@@ -25,6 +25,7 @@ import { useOwnInsights } from "../useOwnInsights";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 import { socialRowOpen } from "../row-open";
+import { TopOwnPosts } from "./TopOwnPosts";
 
 export function OwnInsightsTable({
   accounts,
@@ -132,6 +133,7 @@ export function OwnInsightsTable({
   );
 
   return (
+    <div className="flex flex-col gap-4">
     <MatrxDataTable<AccountRow>
       {...socialRowOpen<AccountRow>((r) => {
         const href = brandAccountHref(brandSeg, r);
@@ -150,5 +152,12 @@ export function OwnInsightsTable({
       toolbar={{ searchPlaceholder: "Search accounts…" }}
       emptyState={{ title: "No own accounts yet", description: "Connect one on Accounts" }}
     />
+    {own.map((a) => (
+      <div key={a.rowId} className="flex flex-col gap-1">
+        {own.length > 1 ? <span className="text-xs text-muted-foreground">{a.displayName}</span> : null}
+        <TopOwnPosts trackedAccountId={a.trackedAccountId as string} />
+      </div>
+    ))}
+    </div>
   );
 }

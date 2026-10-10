@@ -11,6 +11,7 @@ import { KpiTile } from "@/components/official/kpi/KpiTile";
 import { INSIGHT_METRICS } from "../insights";
 import { formatCompact } from "../outlier";
 import { useOwnInsights } from "../useOwnInsights";
+import { TopOwnPosts } from "./TopOwnPosts";
 
 const HEADLINE = new Set(["followers", "impressions", "reach", "engagements"]);
 
@@ -20,6 +21,7 @@ export function AccountInsights({ trackedAccountId }: { trackedAccountId: string
   if (!summary) return null;
   const shown = INSIGHT_METRICS.filter((m) => HEADLINE.has(m.id) || summary.values[m.id] !== null);
   return (
+    <div className="flex flex-col gap-4">
     <section aria-label="Private insights" className="flex flex-col gap-2">
       <h2 className="text-sm font-medium text-foreground">Private insights</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
@@ -38,5 +40,7 @@ export function AccountInsights({ trackedAccountId }: { trackedAccountId: string
         })}
       </div>
     </section>
+    <TopOwnPosts trackedAccountId={trackedAccountId} />
+    </div>
   );
 }
