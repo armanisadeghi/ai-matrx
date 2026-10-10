@@ -33,25 +33,8 @@ import {
   readSiteAnalyticsWindow,
 } from "@/features/marketing/analytics/window";
 import { SiteAnalyticsPanel } from "@/features/marketing/analytics/components/SiteAnalyticsPanel";
-import { STAGE_LINE } from "@/lib/coming-soon/announce";
-import { getComingSoon } from "@/lib/coming-soon/registry";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
-
-/**
- * The remaining promise, printed where it belongs instead of hidden behind a
- * placeholder screen: the Google half is live above it.
- */
-function CrossChannelPromise() {
-  const entry = getComingSoon("marketing.analytics.cross-channel");
-  if (!entry) return null;
-  return (
-    <p className="rounded-md border border-dashed border-border px-2.5 py-1.5 text-[11px] leading-4 text-muted-foreground">
-      <span className="font-medium text-foreground">{entry.label}:</span>{" "}
-      {entry.promise} {STAGE_LINE[entry.stage] ?? ""}
-    </p>
-  );
-}
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -207,7 +190,6 @@ export function BrandAnalyticsWorkspace({ brandId }: { brandId: string }) {
     return (
       <div className="flex flex-col gap-2">
         <SiteAnalyticsPanel site={rows[0]} />
-        <CrossChannelPromise />
       </div>
     );
   }
@@ -219,7 +201,6 @@ export function BrandAnalyticsWorkspace({ brandId }: { brandId: string }) {
       {rows.map((site) => (
         <SiteHeadline key={site.id} site={site} />
       ))}
-      <CrossChannelPromise />
     </div>
   );
 }

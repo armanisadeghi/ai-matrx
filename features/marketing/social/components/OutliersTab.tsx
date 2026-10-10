@@ -15,7 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BellOff, Bookmark, CheckCheck, ExternalLink, Lightbulb, Plus, Trash2 } from "lucide-react";
+import { BellOff, Bookmark, CheckCheck, ExternalLink, Lightbulb, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 
 import {
   Button,
@@ -34,6 +34,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { parseUpdateOutliers } from "../agent-writes";
@@ -140,6 +141,9 @@ export function OutliersTab() {
   const [sort, setSort] = useState<OutlierSort>("multiple");
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showDismissed, setShowDismissed] = useState(false);
+  const isMobile = useIsMobile();
+  // Phone: the six filters fold behind one control so the posts own the screen.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const openInPanel = useOpenPost();
   const [naming, setNaming] = useState(false);
   const [savePost, setSavePost] = useState<PostCardModel | null>(null);
@@ -562,47 +566,61 @@ export function OutliersTab() {
   return (
     <div className="matrx-touch-targets flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          aria-label="Watchlist"
-          value={selected}
-          options={watchlistOptions}
-          onValueChange={pickWatchlist}
-        />
-        <Select
-          aria-label="Platform"
-          value={platformValue}
-          options={platformOptions}
-          onValueChange={(v) => setFilter({ ...filter, platforms: v === ALL || v === SEVERAL ? (v === SEVERAL ? filter.platforms : []) : [v] })}
-        />
-        <Select
-          aria-label="Role"
-          value={roleValue}
-          options={roleOptions}
-          onValueChange={(v) =>
-            setFilter({
-              ...filter,
-              roles: v === ALL ? [] : v === SEVERAL ? filter.roles : isTrackedRole(v) ? [v] : [],
-            })
-          }
-        />
-        <Select
-          aria-label="Window"
-          value={String(filter.windowDays)}
-          options={WINDOW_OPTIONS}
-          onValueChange={(v) => setFilter({ ...filter, windowDays: Number(v) as OutlierWindow })}
-        />
-        <Select
-          aria-label="Minimum multiple"
-          value={String(filter.minMultiple)}
-          options={MIN_OPTIONS}
-          onValueChange={(v) => setFilter({ ...filter, minMultiple: Number(v) })}
-        />
-        <Select
-          aria-label="Format"
-          value={filter.format}
-          options={formatOptions}
-          onValueChange={(v) => setFilter({ ...filter, format: v })}
-        />
+        {isMobile ? (
+          <Button
+            variant={filtersOpen ? "outline" : "quiet"}
+            icon={<SlidersHorizontal />}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            Filters
+          </Button>
+        ) : null}
+        {!isMobile || filtersOpen ? (
+          <>
+          <Select
+            aria-label="Watchlist"
+            value={selected}
+            options={watchlistOptions}
+            onValueChange={pickWatchlist}
+          />
+          <Select
+            aria-label="Platform"
+            value={platformValue}
+            options={platformOptions}
+            onValueChange={(v) => setFilter({ ...filter, platforms: v === ALL || v === SEVERAL ? (v === SEVERAL ? filter.platforms : []) : [v] })}
+          />
+          <Select
+            aria-label="Role"
+            value={roleValue}
+            options={roleOptions}
+            onValueChange={(v) =>
+              setFilter({
+                ...filter,
+                roles: v === ALL ? [] : v === SEVERAL ? filter.roles : isTrackedRole(v) ? [v] : [],
+              })
+            }
+          />
+          <Select
+            aria-label="Window"
+            value={String(filter.windowDays)}
+            options={WINDOW_OPTIONS}
+            onValueChange={(v) => setFilter({ ...filter, windowDays: Number(v) as OutlierWindow })}
+          />
+          <Select
+            aria-label="Minimum multiple"
+            value={String(filter.minMultiple)}
+            options={MIN_OPTIONS}
+            onValueChange={(v) => setFilter({ ...filter, minMultiple: Number(v) })}
+          />
+          <Select
+            aria-label="Format"
+            value={filter.format}
+            options={formatOptions}
+            onValueChange={(v) => setFilter({ ...filter, format: v })}
+          />
+          </>
+        ) : null}
         <SegmentedControl aria-label="Sort" value={sort} onValueChange={setSort} data={SORT_OPTIONS} />
         <SegmentedControl
           aria-label="View"

@@ -52,13 +52,15 @@ export interface OutlierBadgeProps {
   className?: string;
   /** Post panel: `2.4× usual views`, tooltip gives the percentile and median in words. */
   verbose?: boolean;
-  /** Tables: a state with no multiple reads `—` (its reason in the tooltip) instead of a badge. Cards keep the badge. */
+  /** Tables: a state with no multiple reads `—` (its reason in the tooltip). Cards and panels show no badge then. */
   inTable?: boolean;
 }
 
 export function OutlierBadge({ input, model, className, verbose, inTable }: OutlierBadgeProps) {
   const base = model ?? (input ? outlierBadgeModel(input) : null);
   if (!base) return null;
+  // No multiple (too few posts / no baseline) says nothing worth a badge on a card or panel.
+  if (base.tier === "none" && !inTable) return null;
   if (inTable && (base.tier === "none")) {
     return (
       <span className="text-muted-foreground" title={base.tooltip}>

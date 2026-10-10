@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PageSurfaceMenu } from "@/features/context-menu-v3/PageSurfaceMenu";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -43,6 +44,7 @@ const TAB_ICONS: Record<SocialsTabId, LucideIcon> = {
 
 export function SocialsShell({ children }: { children: ReactNode }) {
   const brand = useMarketingBrand();
+  const isMobile = useIsMobile();
   const pathname = usePathname();
   // `?track=<link or @handle>` — a deep link from another feature (a research topic's
   // Social tab) opens the Track dialog with the account already typed in.
@@ -74,13 +76,22 @@ export function SocialsShell({ children }: { children: ReactNode }) {
           { label: "Marketing", href: marketingRoutes.home() },
           { label: brand.name, href: `/marketing/${brand.seg}` },
         ]}
-        record={{ name: "Socials" }}
+        // Phone: the header row is back + name, so the name carries the PAGE ("Socials · Outliers") and
+        // is the compact switcher between the tabs; desktop keeps the tab strip in the center.
+        record={
+          isMobile
+            ? {
+                name: `Socials · ${SOCIALS_TABS.find((t) => t.id === activeTab)?.label ?? ""}`,
+                siblings: modes.map((m) => ({ label: m.name, href: m.href, active: m.href === `${base}/${activeTab}` })),
+              }
+            : { name: "Socials" }
+        }
         modes={modes}
         activeModeHref={`${base}/${activeTab}`}
         actions={
           onAccountPage
             ? []
-            : [{ label: "Track account", icon: Plus, primary: true, showLabel: true, onPress: () => setTrackOpen(true) }]
+            : [{ label: "Track account", icon: Plus, primary: true, showLabel: true, pinnedOnPhone: true, onPress: () => setTrackOpen(true) }]
         }
       />}
       {fullBleed ? (
