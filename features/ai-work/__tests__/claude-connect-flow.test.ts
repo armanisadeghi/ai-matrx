@@ -1,10 +1,13 @@
 /**
- * FORCING GUARD — Connect on a cold sandbox must stay visibly "starting" and
- * continue by itself to the sign-in link; it must never settle back to idle
- * with nothing shown. Only the injected effects are fake; the state machine is real.
+ * FORCING GUARD — Connect must always end. Arman, 2026-10-10: the sign-in POST
+ * died with "Failed to fetch" and the readiness GET timed out, and the panel
+ * spun on. Every wait here has an end: a call that never answers, a network
+ * failure, a Cancel mid-call, a sandbox that never comes up. Only the injected
+ * effects are fake; the state machine is real.
  */
 
 import {
+  OFFLINE_MESSAGE,
   runClaudeConnect,
   SANDBOX_TIMEOUT_MESSAGE,
   type ConnectDeps,
@@ -12,73 +15,68 @@ import {
 } from "@/features/ai-work/lib/claudeConnectFlow";
 import type { OwnPlanStatus } from "@/features/ai-work/lib/ownPlan";
 
-const cold: OwnPlanStatus = {
+/** The server's start-then-poll answer while the sandbox boots. */
+const starting = {
   provider: "claude_code",
-  state: "unavailable",
+  state: "starting",
   signed_in: false,
-  detail: "Your coding sandbox is not running. Connecting starts it.",
-};
+  detail: "Starting your coding sandbox. This usually takes about a minute.",
+} as unknown as OwnPlanStatus;
 const link: OwnPlanStatus = {
   provider: "claude_code",
   state: "awaiting_code",
   signed_in: false,
   sign_in_url: "https://claude.ai/oauth/x",
 };
+const NEVER = "never" as const;
+const offline = () => new TypeError("Failed to fetch");
+
+type Step<T> = T | Error | typeof NEVER;
 
 function harness(opts: {
-  starts: Array<OwnPlanStatus | Error>;
-  readiness?: Array<ConnectReadiness | Error>;
+  starts: Array<Step<OwnPlanStatus>>;
+  readiness?: Array<Step<ConnectReadiness>>;
   timeoutMs?: number;
 }) {
   const controller = new AbortController();
   let clock = 0;
   const starts = [...opts.starts];
   const reads = [...(opts.readiness ?? [])];
-  const onStarting = jest.fn();
+  const play = async <T,>(next: Step<T> | undefined, fallback: T): Promise<T> => {
+    const step = next === undefined ? fallback : next;
+    if (step === NEVER) return new Promise<T>(() => {});
+    if (step instanceof Error) throw step;
+    return step;
+  };
   const deps: ConnectDeps = {
-    start: jest.fn(async () => {
-      const next = starts.shift();
-      if (!next) throw new Error("unexpected start");
-      if (next instanceof Error) throw next;
-      return next;
+    start: jest.fn(() => {
+      if (starts.length === 0) throw new Error("unexpected start");
+      return play(starts.shift(), link);
     }),
-    readiness: jest.fn(async () => {
-      const next = reads.shift() ?? { state: "provisionable" as const };
-      if (next instanceof Error) throw next;
-      return next;
-    }),
+    readiness: jest.fn(() => play(reads.shift(), { state: "provisionable" as const })),
     isFatal: (c) => c instanceof Error && c.message === "capacity",
+    isNetwork: (c) => c instanceof TypeError,
     describe: (c) => (c instanceof Error ? c.message : "error"),
     sleep: jest.fn(async (ms: number) => {
       clock += ms;
     }),
     now: () => clock,
     signal: controller.signal,
-    onStarting,
     timeoutMs: opts.timeoutMs,
+    callTimeoutMs: 30,
   };
-  return { deps, controller, onStarting };
+  return { deps, controller };
 }
 
 describe("runClaudeConnect", () => {
-  it("cold box: shows starting, waits for ready, then returns the sign-in link", async () => {
+  it("cold box: the server says starting, the flow polls until ready, then gets the link", async () => {
     const h = harness({
-      starts: [cold, link],
+      starts: [starting, link],
       readiness: [{ state: "provisionable" }, { state: "ready" }],
     });
-    const out = await runClaudeConnect(h.deps);
-    expect(out).toEqual({ kind: "awaiting", status: link });
-    expect(h.onStarting).toHaveBeenCalledTimes(1);
+    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "awaiting", status: link });
     expect(h.deps.readiness).toHaveBeenCalledTimes(2);
     expect(h.deps.start).toHaveBeenCalledTimes(2);
-  });
-
-  it("a start that fails while the box boots keeps waiting instead of dropping to idle", async () => {
-    const h = harness({
-      starts: [new Error("boom"), link],
-      readiness: [{ state: "ready" }],
-    });
-    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "awaiting", status: link });
   });
 
   it("warm box: one call, no polling", async () => {
@@ -87,44 +85,75 @@ describe("runClaudeConnect", () => {
     expect(h.deps.readiness).not.toHaveBeenCalled();
   });
 
-  it("never-ready box ends in an honest timeout with the server's reason", async () => {
-    const h = harness({ starts: [cold], timeoutMs: 20_000 });
+  it("a start that never answers is bounded — never an endless spinner", async () => {
+    const h = harness({ starts: [NEVER, NEVER, NEVER], readiness: [NEVER, NEVER, NEVER] });
     const out = await runClaudeConnect(h.deps);
-    expect(out).toEqual({ kind: "timeout", message: cold.detail });
+    expect(out).toEqual({ kind: "offline", message: OFFLINE_MESSAGE });
   });
 
-  it("timeout with no server reason still says something", async () => {
-    const h = harness({ starts: [new Error("")], timeoutMs: 5_000 });
-    const out = await runClaudeConnect(h.deps);
-    expect(out.kind).toBe("timeout");
-    expect((out as { message: string }).message).toBe(SANDBOX_TIMEOUT_MESSAGE);
-  });
-
-  it("ready twice without a link is a failure with the reason, not an endless wait", async () => {
+  it("'Failed to fetch' is shown as unreachable, not waited on until the deadline", async () => {
     const h = harness({
-      starts: [cold, cold, cold],
+      starts: [offline()],
+      readiness: [offline(), offline()],
+    });
+    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "offline", message: OFFLINE_MESSAGE });
+  });
+
+  it("one network blip is ridden out", async () => {
+    const h = harness({
+      starts: [offline(), link],
+      readiness: [{ state: "ready" }],
+    });
+    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "awaiting", status: link });
+  });
+
+  it("Cancel ends the flow at once, even while a call is in flight", async () => {
+    const h = harness({ starts: [NEVER] });
+    const pending = runClaudeConnect(h.deps);
+    h.controller.abort();
+    expect(await pending).toEqual({ kind: "cancelled" });
+  });
+
+  it("cancel during the wait stops polling", async () => {
+    const h = harness({ starts: [starting] });
+    (h.deps.sleep as jest.Mock).mockImplementation(async () => h.controller.abort());
+    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "cancelled" });
+    expect(h.deps.readiness).not.toHaveBeenCalled();
+  });
+
+  it("a sandbox that never comes up ends in an honest timeout", async () => {
+    const h = harness({ starts: [starting], timeoutMs: 20_000 });
+    expect(await runClaudeConnect(h.deps)).toEqual({
+      kind: "timeout",
+      message: SANDBOX_TIMEOUT_MESSAGE,
+    });
+  });
+
+  it("a server refusal on start fails at once with its own sentence", async () => {
+    const h = harness({ starts: [new Error("Your sandbox would not start.")] });
+    expect(await runClaudeConnect(h.deps)).toEqual({
+      kind: "failed",
+      message: "Your sandbox would not start.",
+    });
+  });
+
+  it("ready twice without a link is a failure with the reason", async () => {
+    const h = harness({
+      starts: [starting, starting, starting],
       readiness: [{ state: "ready" }, { state: "ready" }],
     });
-    const out = await runClaudeConnect(h.deps);
-    expect(out).toEqual({ kind: "failed", message: cold.detail });
+    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "failed", message: starting.detail });
   });
 
   it("readiness 'unavailable' fails with its own reason", async () => {
     const h = harness({
-      starts: [cold],
+      starts: [starting],
       readiness: [{ state: "unavailable", reason: "No sandbox host is configured." }],
     });
     expect(await runClaudeConnect(h.deps)).toEqual({
       kind: "failed",
       message: "No sandbox host is configured.",
     });
-  });
-
-  it("cancel during the wait stops polling and reports cancelled", async () => {
-    const h = harness({ starts: [cold] });
-    (h.deps.sleep as jest.Mock).mockImplementation(async () => h.controller.abort());
-    expect(await runClaudeConnect(h.deps)).toEqual({ kind: "cancelled" });
-    expect(h.deps.readiness).not.toHaveBeenCalled();
   });
 
   it("fatal errors (capacity) propagate untouched", async () => {

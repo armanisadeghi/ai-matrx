@@ -36,13 +36,13 @@ import {
   cancelOwnPlanSignIn,
   readOwnPlanStatus,
   signOutOwnPlan,
-  startOwnPlanSignIn,
   submitOwnPlanCode,
   type HostedBilling,
   type OwnPlanStatus,
 } from "@/features/ai-work/lib/ownPlan";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { connectClaudeAccount } from "@/features/ai-work/lib/connectClaudeAccount";
 const PROVIDER = "claude_code" as const;
 
 type Busy = "reading" | "starting" | "code" | "cancel" | "sign-out" | null;
@@ -83,6 +83,15 @@ export function HostedBillingStep({
     } finally {
       if (id === latest.current) setBusy(null);
     }
+  };
+
+  // Start-then-poll with a bounded wait (the shared Connect flow): a cold
+  // sandbox answers "starting" at once and the flow waits for its link.
+  const connectUntilLink = async (): Promise<OwnPlanStatus> => {
+    const outcome = await connectClaudeAccount(undefined, new AbortController().signal);
+    if (outcome.kind === "signed_in" || outcome.kind === "awaiting") return outcome.status;
+    if (outcome.kind === "cancelled") throw new Error("Connect was cancelled.");
+    throw new Error(outcome.message);
   };
 
   const submitCode = async () => {
@@ -252,7 +261,7 @@ export function HostedBillingStep({
                 )}
                 type="button"
                 variant="outline"
-                onClick={() => run("starting", () => startOwnPlanSignIn(PROVIDER))}
+                onClick={() => run("starting", connectUntilLink)}
                 disabled={busy !== null}
               >
                 Connect your Claude account
