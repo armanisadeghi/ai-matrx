@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import type { ContextValueType } from "@/features/scopes/types";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 import { ReferenceValuePicker } from "@/features/scopes/components/reference/ReferenceValuePicker";
 import type { ReferenceItemConfig } from "@/features/scopes/utils/referenceCell";
 
@@ -59,15 +59,15 @@ export interface ContextValueInputProps {
   "aria-label"?: string;
   "aria-labelledby"?: string;
   "aria-describedby"?: string;
-  valueType: ContextValueType;
+  kind: ContextFieldKind;
   customComponent?: VariableCustomComponent | null;
   /** Current value: a string for primitive types, a structured object for a custom component. */
   value: unknown;
   onChange: (value: unknown) => void;
   onCommit?: (value: unknown) => void;
-  /** Required when `valueType === "reference"`. */
+  /** Required when `kind === "reference"`. */
   referenceConfig?: ReferenceItemConfig | null;
-  /** Required when `valueType === "reference"` (resolves the org for the `scope` picker). */
+  /** Required when `kind === "reference"` (resolves the org for the `scope` picker). */
   scopeId?: string;
   displayName?: string;
   disabled?: boolean;
@@ -94,7 +94,7 @@ export interface ContextValueInputProps {
  * `placeholder` prop straight to `ContextValueInput`, bypassing this.
  */
 export function placeholderForType(
-  t: ContextValueType,
+  t: ContextFieldKind,
   fallback = "Type a value",
 ): string {
   switch (t) {
@@ -122,7 +122,7 @@ export function placeholderForType(
 }
 
 /** value_types that render as a single native <input type=…> (like `date`). */
-const NATIVE_INPUT_TYPE: Partial<Record<ContextValueType, string>> = {
+const NATIVE_INPUT_TYPE: Partial<Record<ContextFieldKind, string>> = {
   datetime: "datetime-local",
   time: "time",
   email: "email",
@@ -135,7 +135,7 @@ export function ContextValueInput({
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
   "aria-describedby": ariaDescribedBy,
-  valueType,
+  kind,
   customComponent,
   value,
   onChange,
@@ -177,7 +177,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "reference") {
+  if (kind === "reference") {
     if (!referenceConfig || !scopeId) {
       return (
         <p className="text-xs text-muted-foreground">
@@ -205,7 +205,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "markdown") {
+  if (kind === "markdown") {
     const current = typeof value === "string" ? value : "";
     const preferredHeight = compact ? 200 : 320;
     const editorHeight = Math.min(
@@ -243,7 +243,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "boolean") {
+  if (kind === "boolean") {
     const current = typeof value === "string" && value ? value : "__unset__";
     return (
       <Select
@@ -273,7 +273,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "date") {
+  if (kind === "date") {
     const current = typeof value === "string" ? value : "";
     return (
       <Input
@@ -294,29 +294,29 @@ export function ContextValueInput({
 
   // datetime / time / email / url / phone — a single native input, like `date`.
   // datetime-local wants "YYYY-MM-DDTHH:mm"; a stored ISO timestamp is sliced to fit.
-  if (NATIVE_INPUT_TYPE[valueType]) {
+  if (NATIVE_INPUT_TYPE[kind]) {
     const raw = typeof value === "string" ? value : "";
     // A date stored before the item became Date & time reads as that day (datetimeLocalValue).
-    const current = valueType === "datetime" ? datetimeLocalValue(raw) : raw;
+    const current = kind === "datetime" ? datetimeLocalValue(raw) : raw;
     return (
       <Input
         id={id}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
-        type={NATIVE_INPUT_TYPE[valueType]}
+        type={NATIVE_INPUT_TYPE[kind]}
         value={current}
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => onCommit?.(e.target.value)}
         disabled={disabled}
-        placeholder={placeholder ?? placeholderForType(valueType)}
+        placeholder={placeholder ?? placeholderForType(kind)}
         style={{ fontSize: "16px" }}
         className={className}
       />
     );
   }
 
-  if (valueType === "percent") {
+  if (kind === "percent") {
     const current =
       typeof value === "number"
         ? String(value)
@@ -348,7 +348,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "color") {
+  if (kind === "color") {
     const current = typeof value === "string" ? value : "";
     return (
       <div
@@ -386,7 +386,7 @@ export function ContextValueInput({
     );
   }
 
-  if (valueType === "number") {
+  if (kind === "number") {
     const numCurrent =
       typeof value === "number"
         ? String(value)
@@ -405,14 +405,14 @@ export function ContextValueInput({
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => onCommit?.(e.target.value)}
         disabled={disabled}
-        placeholder={placeholder ?? placeholderForType(valueType)}
+        placeholder={placeholder ?? placeholderForType(kind)}
         style={{ fontSize: "16px" }}
         className={className}
       />
     );
   }
 
-  const isJsonType = valueType === "object" || valueType === "array";
+  const isJsonType = kind === "object" || kind === "array";
   const current = typeof value === "string" ? value : "";
 
   if (compact) {
@@ -427,7 +427,7 @@ export function ContextValueInput({
         value={current}
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => onCommit?.(e.target.value)}
-        placeholder={placeholder ?? placeholderForType(valueType)}
+        placeholder={placeholder ?? placeholderForType(kind)}
         minHeight={resolvedMinHeight}
         maxHeight={maxHeight}
         autoGrow
@@ -446,7 +446,7 @@ export function ContextValueInput({
       value={current}
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => onCommit?.(e.target.value)}
-      placeholder={placeholder ?? placeholderForType(valueType)}
+      placeholder={placeholder ?? placeholderForType(kind)}
       minHeight={resolvedMinHeight}
       maxHeight={maxHeight}
       className={

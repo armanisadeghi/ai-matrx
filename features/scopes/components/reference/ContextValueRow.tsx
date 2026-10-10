@@ -13,17 +13,16 @@
 
 import { cn } from "@/utils/cn";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
-import type { ContextItemValue } from "@/features/scopes/types";
-import type { ContextValueType } from "@/features/scopes/types";
+import type { ContextFieldKind, ContextValue } from "@ai-matrx/records/scopes";
 
 export interface ContextValueRowProps {
-  value: ContextItemValue;
+  value: ContextValue;
   label?: string;
   /**
    * The item's declared type — lets the display render email/url/phone/color/
    * markdown/datetime/etc. richly (they can't be told apart from the cell alone).
    */
-  valueType?: ContextValueType | null;
+  kind?: ContextFieldKind | null;
   /** Show the cell's version number at the row's trailing edge. */
   showVersion?: boolean;
   className?: string;
@@ -32,7 +31,7 @@ export interface ContextValueRowProps {
 export function ContextValueRow({
   value,
   label,
-  valueType,
+  kind,
   showVersion = false,
   className,
 }: ContextValueRowProps) {
@@ -44,10 +43,10 @@ export function ContextValueRow({
       )}
     >
       <div className="w-1/3 shrink-0 truncate text-muted-foreground">
-        {label ?? value.context_item_id.slice(0, 8)}
+        {label ?? (value.key || value.field_id.slice(0, 8))}
       </div>
       <div className="flex-1 break-words text-foreground">
-        <ContextValueDisplay value={value} valueType={valueType} />
+        <ContextValueDisplay value={value} kind={kind} />
       </div>
       {showVersion && (
         <div className="text-muted-foreground/60 shrink-0">

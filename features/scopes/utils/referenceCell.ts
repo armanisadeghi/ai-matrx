@@ -28,6 +28,13 @@ import {
   isEntityTypeToken,
 } from "@ai-matrx/associations";
 import { referenceFallbackLabel } from "@/features/matrx-envelope/referenceResolvers";
+import {
+  referenceFence,
+  type ContextField,
+  type ContextReference,
+  type ContextValue,
+  type ContextValueWrite,
+} from "@ai-matrx/records/scopes";
 
 /**
  * Human labels for reference types, shared by the item-settings type picker
@@ -150,44 +157,73 @@ export function referenceCellSummary(parsed: ParsedReferenceCell): string {
   return `${parsed.items.length} ${referenceTypeLabel(parsed.type)}${parsed.items.length === 1 ? "" : "s"}`;
 }
 
-/** Any shape carrying the `value_*` columns — `ContextItemValue`, `ScopeContextRow`, `ResolvedSuggestionValue`, … */
-export interface ContextCellLike {
-  value_text?: string | null;
-  value_number?: number | null;
-  value_boolean?: boolean | null;
-  value_date?: string | null;
-  value_json?: unknown;
-  value_document_url?: string | null;
+/** The cell a summary or display reads: a value's kind, its cell, and its decoded references. */
+export type ContextCellLike = Pick<ContextValue, "kind" | "value" | "references">;
+
+const isReferenceKind = (kind: string | null | undefined) => kind === "reference" || kind === "document";
+
+/**
+ * The text an editor works on for a cell: a reference/document cell is its canonical fence
+ * (`referenceFence(references)` — what `ReferenceValuePicker` edits), anything else its value.
+ */
+export function cellEditorValue(cell: ContextCellLike | null | undefined): unknown {
+  if (!cell) return null;
+  if (isReferenceKind(cell.kind)) return cell.references.length > 0 ? referenceFence(cell.references) : null;
+  return cell.value ?? null;
+}
+
+/** The things a reference fence points at, as `ContextReference`s (the inverse of `referenceFence`). */
+export function referencesFromFence(text: string | null | undefined): ContextReference[] {
+  const parsed = parseReferenceCellValue(text ?? null);
+  if (!parsed) return [];
+  return parsed.items.flatMap((raw): ContextReference[] => {
+    const item = raw as { id?: string; file_id?: string; label?: string; type?: string };
+    if (item.file_id) return [{ id: item.id ?? item.file_id, type: "file", file_id: item.file_id, ...(item.label ? { label: item.label } : {}) }];
+    if (!item.id) return [];
+    return [{ id: item.id, type: item.type ?? parsed.type, ...(item.label ? { label: item.label } : {}) }];
+  });
 }
 
 /**
- * THE ONE plain-text summary of a context item's cell for dense contexts
- * that can't render JSX (grid/table cells, tooltips, CSV-style exports).
- * `null` means genuinely unset — callers that need an empty-string fallback
- * (a table cell) coalesce it themselves; callers that distinguish "no
- * current value" from "current value is an empty string" (suggestion
- * accept/reject diffing) get that distinction for free.
- *
- * Always prefer `ContextValueDisplay` (live chips, type-appropriate render)
- * when the surface can render a component; reach for this only when it
- * genuinely can't.
+ * THE one write a person's edit becomes: the editor's value for this field as a `ContextValueWrite`
+ * (a reference/document field's fence becomes `references`; `null`/"" clears).
  */
-export function summarizeContextCell(cell: ContextCellLike): string | null {
-  const referenceCell = parseReferenceCellValue(cell.value_text ?? null);
-  if (referenceCell) return referenceCellSummary(referenceCell);
-  if (cell.value_text != null && cell.value_text !== "") return cell.value_text;
-  if (cell.value_number != null) return String(cell.value_number);
-  if (cell.value_boolean != null) return cell.value_boolean ? "Yes" : "No";
-  if (cell.value_date != null) return cell.value_date;
-  if (cell.value_document_url) return cell.value_document_url;
-  if (cell.value_json != null) {
-    try {
-      return JSON.stringify(cell.value_json);
-    } catch {
-      return String(cell.value_json);
-    }
+export function contextValueWrite(
+  field: Pick<ContextField, "id" | "kind">,
+  scopeId: string,
+  edited: unknown,
+): ContextValueWrite {
+  const base = { scope_id: scopeId, field_id: field.id, kind: field.kind, source_type: "manual" } as const;
+  if (isReferenceKind(field.kind)) {
+    return { ...base, references: typeof edited === "string" ? referencesFromFence(edited) : [] };
   }
-  return null;
+  return { ...base, value: edited === "" ? null : (edited ?? null) };
+}
+
+/**
+ * THE ONE plain-text summary of a context cell for dense contexts that can't render JSX
+ * (grid/table cells, tooltips, exports). `null` means genuinely unset. Prefer `ContextValueDisplay`
+ * when the surface can render a component.
+ */
+export function summarizeContextCell(cell: ContextCellLike | null | undefined): string | null {
+  if (!cell) return null;
+  if (isReferenceKind(cell.kind)) {
+    const parsed = cell.references.length > 0 ? parseReferenceCellValue(referenceFence(cell.references)) : null;
+    return parsed ? referenceCellSummary(parsed) || null : null;
+  }
+  const v = cell.value;
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "string") {
+    const fenced = parseReferenceCellValue(v);
+    return fenced ? referenceCellSummary(fenced) : v;
+  }
+  if (typeof v === "number") return cell.kind === "percent" ? `${v}%` : String(v);
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
 }
 
 export type ReferenceCellValidation =

@@ -15,7 +15,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Ban, FileText, Mail, Phone, ExternalLink } from "lucide-react";
+import { Ban, Mail, Phone, ExternalLink } from "lucide-react";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import {
   buildDirectiveSlug,
@@ -26,31 +26,19 @@ import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
-import type { ContextValueType } from "@/features/scopes/types";
-import type { Json } from "@/types/database.types";
+import { referenceFence, type ContextFieldKind } from "@ai-matrx/records/scopes";
+import type { ContextCellLike } from "@/features/scopes/utils/referenceCell";
 
-export interface ContextValueDisplayCell {
-  value_text?: string | null;
-  value_number?: number | null;
-  value_boolean?: boolean | null;
-  value_date?: string | null;
-  value_timestamp?: string | null;
-  value_time?: string | null;
-  value_json?: Json | null;
-  value_document_url?: string | null;
-  /** Legacy pre-fence column — read-only, zero current rows use it anymore. */
-  value_reference_id?: string | null;
-}
+/** What the display reads: a value's kind, its cell and its decoded references. */
+export type ContextValueDisplayCell = ContextCellLike;
 
 export interface ContextValueDisplayProps {
-  value: ContextValueDisplayCell;
+  value: ContextValueDisplayCell | null | undefined;
   /**
-   * The item's declared type. Several types share `value_text` as storage
-   * (email/url/phone/color/markdown), so the column alone can't tell them
-   * apart — pass this to render them richly (mailto/link/swatch/rendered MD).
-   * Optional: without it, display falls back to column-based rendering.
+   * The field's kind when the caller knows it better than the cell (else the cell's own): several
+   * kinds share a text cell (email/url/phone/color/markdown), so the kind renders them richly.
    */
-  valueType?: ContextValueType | null;
+  kind?: ContextFieldKind | null;
   emptyLabel?: string;
   className?: string;
 }
@@ -81,14 +69,15 @@ function EmptyState({
  * falls back to plain column-based rendering.
  */
 function renderTyped(
-  valueType: ContextValueType | null | undefined,
-  value: ContextValueDisplayCell,
+  kind: ContextFieldKind | null | undefined,
+  cell: unknown,
   className?: string,
 ): ReactNode | undefined {
-  if (!valueType) return undefined;
-  const text = value.value_text?.trim() || "";
+  if (!kind) return undefined;
+  const text = typeof cell === "string" ? cell.trim() : "";
+  const num = typeof cell === "number" ? cell : null;
 
-  switch (valueType) {
+  switch (kind) {
     case "email":
       if (!text) return undefined;
       return (
@@ -153,22 +142,22 @@ function renderTyped(
         </div>
       );
     case "percent":
-      if (value.value_number == null) return undefined;
-      return <span className={className}>{value.value_number}%</span>;
+      if (num == null) return undefined;
+      return <span className={className}>{num}%</span>;
     case "datetime": {
-      if (!value.value_timestamp) return undefined;
-      const d = new Date(value.value_timestamp);
+      if (!text) return undefined;
+      const d = new Date(text);
       return (
         <span className={className}>
-          {Number.isNaN(d.getTime()) ? value.value_timestamp : d.toLocaleString()}
+          {Number.isNaN(d.getTime()) ? text : d.toLocaleString()}
         </span>
       );
     }
     case "time":
-      if (!value.value_time) return undefined;
-      return <span className={className}>{value.value_time}</span>;
+      if (!text) return undefined;
+      return <span className={className}>{text}</span>;
     case "currency": {
-      const j = value.value_json as { amount?: number; currency?: string } | null;
+      const j = cell as { amount?: number; currency?: string } | null;
       if (!j || typeof j !== "object" || j.amount == null) return undefined;
       const currency = j.currency || "USD";
       let formatted: string;
@@ -190,50 +179,51 @@ function renderTyped(
 /** Renders one context item cell — reference cells as live chips, everything else type-appropriately. */
 export function ContextValueDisplay({
   value,
-  valueType,
+  kind,
   emptyLabel = "No value set",
   className,
 }: ContextValueDisplayProps) {
-  const parsed = parseReferenceCellValue(value.value_text ?? null);
-  if (parsed) {
-    if (parsed.items.length === 0) {
+  const k = kind ?? value?.kind ?? null;
+  const references = value?.references ?? [];
+  if (k === "reference" || k === "document" || references.length > 0) {
+    const parsed = references.length > 0 ? parseReferenceCellValue(referenceFence(references)) : null;
+    if (!parsed || parsed.items.length === 0) {
       return <EmptyState emptyLabel={emptyLabel} className={className} />;
     }
     return (
       <div className={className}>
-        <MatrxEnvelopeBlock
-          content={buildKindDirective(
-            buildDirectiveSlug("reference", parsed.type),
-            parsed.items,
-          )}
-        />
+        <MatrxEnvelopeBlock content={buildKindDirective(buildDirectiveSlug("reference", parsed.type), parsed.items)} />
       </div>
     );
   }
 
-  // Type-driven rendering — several of these share value_text as storage, so the
-  // declared valueType is what distinguishes them.
-  const rendered = renderTyped(valueType, value, className);
+  const cell = value?.value ?? null;
+  const rendered = renderTyped(k, cell, className);
   if (rendered !== undefined) return rendered;
 
-  if (value.value_text != null) {
-    if (hasKindKeyAnySpelling(value.value_text)) {
+  if (typeof cell === "string") {
+    if (cell === "") return <EmptyState emptyLabel={emptyLabel} className={className} />;
+    const fenced = parseReferenceCellValue(cell);
+    if (fenced && fenced.items.length > 0) {
       return (
         <div className={className}>
-          <AnswerValueView text={value.value_text} />
+          <MatrxEnvelopeBlock content={buildKindDirective(buildDirectiveSlug("reference", fenced.type), fenced.items)} />
         </div>
       );
     }
-    return (
-      <span className={cn("whitespace-pre-wrap break-words", className)}>
-        {value.value_text}
-      </span>
-    );
+    if (hasKindKeyAnySpelling(cell)) {
+      return (
+        <div className={className}>
+          <AnswerValueView text={cell} />
+        </div>
+      );
+    }
+    return <span className={cn("whitespace-pre-wrap break-words", className)}>{cell}</span>;
   }
-  if (value.value_number != null) {
-    return <span className={className}>{value.value_number}</span>;
+  if (typeof cell === "number") {
+    return <span className={className}>{cell}</span>;
   }
-  if (value.value_boolean != null) {
+  if (typeof cell === "boolean") {
     return (
       <span
         className={cn(
@@ -241,41 +231,14 @@ export function ContextValueDisplay({
           className,
         )}
       >
-        {value.value_boolean ? "Yes" : "No"}
+        {cell ? "Yes" : "No"}
       </span>
     );
   }
-  if (value.value_date != null) {
-    return <span className={className}>{value.value_date}</span>;
-  }
-  if (value.value_document_url) {
-    return (
-      <a
-        href={value.value_document_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "inline-flex items-center gap-1 text-primary hover:underline",
-          className,
-        )}
-      >
-        <FileText className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{value.value_document_url}</span>
-      </a>
-    );
-  }
-  // Legacy pre-fence column — kept defensively; every current row has been
-  // backfilled to a fence (see FEATURE.md "Legacy pre-fence values"), so this
-  // path should never actually render, but a restored old version could.
-  if (value.value_reference_id) {
-    return <span className={className}>→ {value.value_reference_id}</span>;
-  }
-  if (value.value_json != null) {
-    // The one value view: a kind (at any depth) as its kind, other JSON as
-    // the structured view — never a stringified dump (kind-never-raw O2).
+  if (cell !== null && cell !== undefined) {
     return (
       <div className={className}>
-        <AnswerValueView value={value.value_json} density="inline" />
+        <AnswerValueView value={cell} density="inline" />
       </div>
     );
   }
