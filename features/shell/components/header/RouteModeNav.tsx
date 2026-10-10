@@ -167,6 +167,7 @@ export function RouteModeNav({
   // overlap the title and then snap to icons once hydrated. It holds its place unseen until then:
   // the first look is the measured one (SSR ZERO LAYOUT SHIFT — no labelled-then-icons flip).
   const [measured, setMeasured] = useState(false);
+  const revealQueued = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -248,7 +249,14 @@ export function RouteModeNav({
       // Below the title's floor the title wins: a trigger that does not fit
       // is not drawn at all — a clipped one reads as garbage beside the title.
       else next = { variant: "none", inflow: false, iconTrigger: false };
-      setMeasured(true);
+      // THE FIRST MEASUREMENT IS NOT THE FINAL ONE: RouteHeader writes its flank geometry after this
+      // effect first runs, so a pill revealed on the first answer showed "full" (341px) for a frame
+      // and then collapsed to icons (208px) when the follow-up measurement landed (/meetings at
+      // 1440px). The reveal waits two frames; the observers above settle the variant meanwhile.
+      if (!revealQueued.current) {
+        revealQueued.current = true;
+        requestAnimationFrame(() => requestAnimationFrame(() => setMeasured(true)));
+      }
       setLayout((prev) =>
         prev.variant === next.variant &&
         prev.inflow === next.inflow &&

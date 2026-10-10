@@ -316,7 +316,15 @@ export function MeetingsHome() {
               onClick={() => void withOrganization("create")}
             />
           </>
-        ) : null
+        ) : (
+          // The two buttons' room, held until the viewer is known: the tab strip in the centre is
+          // measured against the header's right flank, and the buttons arriving narrowed the slot
+          // and collapsed the strip from 341px to 208px (CLS at 1440px). Invisible, inert, unread.
+          <div aria-hidden="true" inert className="invisible flex items-center gap-1.5">
+            <TapTargetButton icon={<Video className="h-4 w-4" />} label="Start now" ariaLabel="Start now" onClick={() => undefined} />
+            <TapTargetButtonSolid icon={<CalendarPlus className="h-4 w-4" />} label="New meeting" ariaLabel="New meeting" onClick={() => undefined} />
+          </div>
+        )
       }
     />
   );

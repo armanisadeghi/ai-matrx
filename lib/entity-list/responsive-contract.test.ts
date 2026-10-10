@@ -29,7 +29,15 @@ describe("Entity List responsive contract", () => {
     // The control row and the toolbar opt into the ring and out of the growth floor.
     expect(componentSource("EntityListPage.tsx")).toContain('"matrx-tap-ring flex min-w-0 flex-nowrap items-center');
     expect(componentSource("EntityListToolbar.tsx")).toContain('className="matrx-tap-ring flex min-w-0 flex-nowrap');
-    const css = readFileSync(join(__dirname, "..", "..", "app", "globals.css"), "utf8");
+    // The tap model's floor and ring rules moved out of app/globals.css into the design system's
+    // web-theme.css (tap-target -> design-system, 59a2f9afb84); the app imports both, so the
+    // contract reads both. The assertions below are unchanged.
+    const css =
+      readFileSync(join(__dirname, "..", "..", "app", "globals.css"), "utf8") +
+      readFileSync(
+        join(__dirname, "..", "..", "node_modules", "@ai-matrx", "design-system", "dist", "web-theme.css"),
+        "utf8",
+      );
     expect(css).toContain(":not(.matrx-tap-ring *):not(thead *) {\n      min-height: 2.75rem;");
     expect(css).toMatch(/:is\(\.matrx-tap-ring, \.matrx-touch-targets thead\)[\s\S]*?::before \{/);
     expect(css).toContain(".matrx-tap-ring [data-matrx-button][data-tap-floor]:not([data-touch-exempt])");
