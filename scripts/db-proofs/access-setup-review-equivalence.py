@@ -29,7 +29,8 @@ seat x upper management (the upper_management HR role).
 Exit 1 when mode 1 differs, a stratum is empty, or a plant is not caught. Mode 2's NOT list is reported, never "fixed" here.
 Run from aidream so its .env and the persona factory are found:
   cd aidream && uv run python ../matrx-frontend/scripts/db-proofs/access-setup-review-equivalence.py
-Options: WRITES=all (write doors in every knob configuration; default: first and last), QUICK=1 (one configuration).
+Options: WRITES=all (write doors in every knob configuration; default: first and last), QUICK=1 (one configuration),
+MODE1_ONLY=1 (debug: stop after the first configuration's mode 1 and print its differences by door). ~27 min in full.
 """
 import json, os, re, sys, time, uuid
 from collections import Counter, defaultdict
@@ -635,6 +636,7 @@ def main():
             for door, cnt in Counter(d[2] for d in m1_diffs).most_common():
                 ex = next(d for d in m1_diffs if d[2] == door)
                 print(f"  {cnt:6d} {door}\n      legacy {ex[4][:260]}\n      live   {ex[5][:260]}")
+            failures.append('MODE1_ONLY: stopped after mode 1 (debug run, not a proof)')
             return 1
         # strata for this configuration
         for k, v in vals.items():
