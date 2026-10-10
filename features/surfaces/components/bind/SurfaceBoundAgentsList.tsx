@@ -9,7 +9,7 @@
  * Compact single-line rows: Play · name · Settings · Detach (when bound here).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 
 import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
+import { getManifest as getSurfaceIndexEntry } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { useAgentNames } from "@ai-matrx/chat/surfaces/hooks/useAgentNames";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
@@ -58,6 +59,15 @@ export interface SurfaceBoundAgentsListProps {
   addLabel?: string;
 }
 
+/** The settled height of each surface's list, remembered for the session so a re-open reserves it exactly. */
+const settledHeights = new Map<string, number>();
+/** First open: room for a roles block plus one agent row (what a typical page settles at). */
+const DEFAULT_RESERVED_HEIGHT = 176;
+/** The roles block: its label line, then one 28px row per role with a 2px gap (see the markup below). */
+const ROLE_BLOCK_LABEL_HEIGHT = 18;
+const ROLE_ROW_PITCH = 30;
+const ROLE_ROW_GAP = 2;
+
 export function SurfaceBoundAgentsList({
   surfaceName,
   onRunAgent,
@@ -89,7 +99,7 @@ export function SurfaceBoundAgentsList({
 
   // Role-bound agents (ui.ui_surface_agent_role) — definition-tier agents with
   // no agent.card row or associations edge still surface here.
-  const { roles } = useSurfaceAgentRoles(surfaceName);
+  const { roles, status: rolesStatus } = useSurfaceAgentRoles(surfaceName);
   const roleRows = includeRoles
     ? Object.values(roles)
         .filter((v) => v.effectiveAgentId !== null)
@@ -107,6 +117,15 @@ export function SurfaceBoundAgentsList({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Both reads settled: the list has its final rows. Remember that height for the next open of this surface.
+  const rolesSettled = rolesStatus === "ready" || rolesStatus === "error";
+  const pendingRoleCount = getSurfaceIndexEntry(surfaceName)?.agentRoleCount ?? 0;
+  const ready = settled && !loading && (!includeRoles || rolesSettled);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (ready && rootRef.current) settledHeights.set(surfaceName, rootRef.current.offsetHeight);
+  });
 
   const handleAdd = () => {
     openBind({
@@ -136,7 +155,13 @@ export function SurfaceBoundAgentsList({
     .filter((section) => section.agents.length > 0);
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div
+      ref={rootRef}
+      className={cn("space-y-3", className)}
+      // Reserve the final size until BOTH reads (bound agents, surface roles) settle, so the sections
+      // below do not jump when the rows arrive.
+      style={ready ? undefined : { minHeight: settledHeights.get(surfaceName) ?? DEFAULT_RESERVED_HEIGHT }}
+    >
       {loading && !hasAgents && (
         <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -157,6 +182,11 @@ export function SurfaceBoundAgentsList({
         <p className="rounded-md border border-dashed border-border px-2.5 py-3 text-center text-[10px] text-muted-foreground">
           {emptyMessage}
         </p>
+      )}
+
+      {/* The index already says how many roles this surface declares: hold their space while the read lands. */}
+      {includeRoles && !hasRoleRows && !rolesSettled && pendingRoleCount > 0 && (
+        <div aria-hidden="true" style={{ height: ROLE_BLOCK_LABEL_HEIGHT + pendingRoleCount * ROLE_ROW_PITCH - ROLE_ROW_GAP }} />
       )}
 
       {hasRoleRows && (
