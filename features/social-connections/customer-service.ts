@@ -3,7 +3,7 @@ import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { createClient } from "@/utils/supabase/client";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { getClientClaimsUserCached } from "@/utils/supabase/clientClaimsCache";
 
 export const CUSTOMER_SOCIAL_PROVIDERS = [
   "facebook",
@@ -192,7 +192,7 @@ export async function loadCustomerSocialConnections(): Promise<
   const {
     data: { user },
     error,
-  } = await getClaimsUser(supabase);
+  } = await getClientClaimsUserCached();
   if (error) throw error;
   if (!user) return [];
   const result = await supabase
