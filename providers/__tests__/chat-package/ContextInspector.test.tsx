@@ -67,7 +67,8 @@ const TREE = [
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
 jest.mock("@ai-matrx/chat/store/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("@ai-matrx/chat/store/hooks"), useAppStore: () => store };
+  // The type columns read their fields through the holder thunk (`readScopeTypeFields`).
+  return { ...jest.requireActual("@ai-matrx/chat/store/hooks"), useAppDispatch: () => (a: unknown) => (typeof a === "function" ? (a as (d: unknown, g: unknown) => unknown)(() => undefined, () => ({})) : a), useAppStore: () => store };
 });
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));

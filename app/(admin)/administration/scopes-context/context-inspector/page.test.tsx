@@ -30,7 +30,8 @@ const MATRX_FRONTEND = "2ba5cb52-9530-4682-a12c-3ededff23c2c";
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
 jest.mock("@/lib/redux/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
+  // The type columns read their fields through the holder thunk (`readScopeTypeFields`).
+  return { ...jest.requireActual("@/lib/redux/hooks"), useAppDispatch: () => (a: unknown) => (typeof a === "function" ? (a as (d: unknown, g: unknown) => unknown)(() => undefined, () => ({})) : a), useAppStore: () => store };
 });
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
