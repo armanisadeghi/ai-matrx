@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 import { PreviewerActionBar } from "@/features/files/components/core/FilePreview/PreviewerActionBar/PreviewerActionBar";
+import { PreviewHostToolbarContext } from "@/features/files/components/core/FilePreview/PreviewHostToolbar";
 import { kindPreviewActions } from "@/features/files/components/core/FilePreview/preview-actions";
 import { usePreviewActions } from "@/features/files/components/core/FilePreview/usePreviewActions";
 import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
@@ -158,6 +159,13 @@ export interface FileTabsBodyProps {
   tabs?: "auto" | "strip" | "menu";
   /** The host's own controls, at the end of the tab row (a tile's file actions). */
   trailing?: React.ReactNode;
+  /**
+   * A PDF's Preview tab draws its own zoom / page toolbar: with this on, the
+   * tab menu, the kind's actions and `trailing` ride in THAT toolbar (its
+   * `toolbarStart` / `toolbarEnd`) instead of a second row above it. Other
+   * tabs and kinds keep the tab row. Forces the menu form (a small host).
+   */
+  hostInPdfToolbar?: boolean;
   className?: string;
 }
 
@@ -171,6 +179,7 @@ export function FileTabsBody({
   density = "compact",
   tabs = "auto",
   trailing,
+  hostInPdfToolbar = false,
   className,
 }: FileTabsBodyProps) {
   const searchParams = useSearchParams();
@@ -181,6 +190,14 @@ export function FileTabsBody({
   });
 
   const { rowRef, stripRef, endRef, menu } = useTabsFit(tabs);
+  const fileForKind = useAppSelector((s) => selectFileById(s, fileId));
+  const isPdf = fileForKind
+    ? getPreviewCapability(
+        fileForKind.fileName,
+        fileForKind.mimeType,
+        fileForKind.fileSize,
+      ).previewKind === "pdf"
+    : false;
 
   // Citation deep-links: a search hit or chat reference can route to
   // `/files/f/<id>?tab=document&page=12&chunk=<chunk_id>`. We read the
@@ -264,16 +281,39 @@ export function FileTabsBody({
       window.removeEventListener("cloud-files:open-preview-tab", handler);
   }, [fileId, isControlled, onTabChange]);
 
+  const inPdfToolbar = hostInPdfToolbar && isPdf && activeTab === "preview";
+  const endControls = (
+    <>
+      {kindActions.length > 0 ? (
+        // Icons only (named by their tooltips): labels would push the
+        // tabs out of a narrow row.
+        <PreviewerActionBar actions={kindActions} compact variant="inline" />
+      ) : null}
+      {trailing}
+    </>
+  );
+
   return (
+    <PreviewHostToolbarContext.Provider
+      value={
+        inPdfToolbar
+          ? {
+              start: <FileTabMenu activeTab={activeTab} onSelect={setActiveTab} />,
+              end: endControls,
+            }
+          : null
+      }
+    >
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Tab row — the tabs (a strip, or one menu in a small host), then the
        * kind's own actions (open in studio, extract text, …) and the host's
        * trailing controls, in ONE row: no action bar under the tabs. */}
+      {inPdfToolbar ? null : (
       <div
         ref={rowRef}
         className="flex shrink-0 items-center border-b border-border bg-card"
       >
-        {menu ? (
+        {menu || hostInPdfToolbar ? (
           <FileTabMenu activeTab={activeTab} onSelect={setActiveTab} />
         ) : (
           <div
@@ -296,14 +336,10 @@ export function FileTabsBody({
           </div>
         )}
         <div ref={endRef} className="ml-auto flex shrink-0 items-center">
-          {kindActions.length > 0 ? (
-            // Icons only (named by their tooltips): labels would push the
-            // tabs out of a narrow row.
-            <PreviewerActionBar actions={kindActions} compact variant="inline" />
-          ) : null}
-          {trailing}
+          {endControls}
         </div>
       </div>
+      )}
 
       {/* Body — a tab mounts on FIRST activation and then stays mounted
        * (only its visibility toggles thereafter). See the
@@ -410,6 +446,7 @@ export function FileTabsBody({
         </div>
       </div>
     </div>
+    </PreviewHostToolbarContext.Provider>
   );
 }
 

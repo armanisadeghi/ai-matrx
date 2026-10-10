@@ -30,6 +30,7 @@
  * `MediaFileViewer` in this graph renders.
  */
 
+import { usePreviewHostToolbar } from "./PreviewHostToolbar";
 import { createContext, lazy, Suspense, use } from "react";
 import {
   HtmlViewer,
@@ -155,6 +156,7 @@ function HostPdfViewer({
 }: MediaViewerProps) {
   const url = useHostOrResolvedUrl(source);
   const fileId = fileIdOf(source);
+  const hostToolbar = usePreviewHostToolbar();
   if (!fileId) {
     return (
       <BlobPdfPreview
@@ -172,6 +174,8 @@ function HostPdfViewer({
       remoteUrl={url}
       pageNumber={pageNumber}
       onPageChange={onPageChange}
+      toolbarStart={hostToolbar?.start}
+      toolbarEnd={hostToolbar?.end}
       className={className}
     />
   );

@@ -62,6 +62,7 @@ export function SingleFileWorkspace({
             onPageChange={setPageNumber}
             density="compact"
             tabs="menu"
+            hostInPdfToolbar
             trailing={
               <>
                 <FileViewerControlsButton
