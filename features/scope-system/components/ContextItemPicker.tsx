@@ -42,7 +42,6 @@
  * silent refusal.
  */
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
@@ -71,6 +70,7 @@ import {
   selectItemsErrorForType,
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
+  type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import {
@@ -87,7 +87,7 @@ import {
 import {
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
 const EMPTY_LIST: never[] = [];
@@ -103,7 +103,7 @@ export interface ContextItemSelection {
   contextItemId: string;
   itemKey: string;
   /** The full picked item — present only when `contextItemId` changed in this emit. */
-  item?: ContextField;
+  item?: ContextItem;
 }
 
 interface ContextItemPickerProps {
@@ -263,7 +263,7 @@ export function ContextItemPicker({
           label_plural: pluralize(typed),
           icon: "Folder",
         }),
-      ).then(unwrapWrite);
+      ).then(unwrapScopesRpc);
       toast.success(
         `Added scope type "${created.label_singular}" — fine-tune it any time from Scopes`,
       );
@@ -289,7 +289,7 @@ export function ContextItemPicker({
 
   const itemOptions: CreatableOption[] = items.map((i) => ({
     value: i.id,
-    label: i.label,
+    label: i.display_name,
     hint: i.system_item_class
       ? `${i.key} · ${CLASS_LABEL[i.system_item_class] ?? i.system_item_class}`
       : i.key,

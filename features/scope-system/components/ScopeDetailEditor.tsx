@@ -11,8 +11,12 @@ import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useScopeFieldRows } from "@/features/scope-system/hooks/useScopeFieldRows";
-import { hasCellValue } from "./scope-detail-values";
+import {
+  getScopeContext,
+  selectValuesByScope,
+  selectScopeValuesLoading,
+  selectScopeValuesReadError,
+} from "@/features/scopes/redux/scopeContextView";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ScopeFieldInput } from "./ScopeFieldInput";
@@ -46,8 +50,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
-
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopeDetailEditorProps {
   orgId: string;
@@ -85,13 +88,18 @@ export function ScopeDetailEditor({
       : false,
   );
   const scopeId = scope?.id;
-  const fieldRows = useScopeFieldRows(scopeId, resolvedTypeId);
-  const loading = fieldRows.loading;
-  const readError = fieldRows.error;
-  // Undefined until the first read answers (the empty state waits for it).
-  const rows = loading && fieldRows.rows.length === 0 ? undefined : fieldRows.rows;
+  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
+  const loading = useAppSelector((s) =>
+    selectScopeValuesLoading(s, scopeId ?? ""),
+  );
+  const readError = useAppSelector((s) =>
+    selectScopeValuesReadError(s, scopeId ?? ""),
+  );
   const retryRead = () => {
-    if (scopeId) void fieldRows.refresh();
+    if (scopeId)
+      void dispatch(
+        getScopeContext({ scope_id: scopeId, include_empty: true, refresh: true }),
+      );
   };
   const suggestions = useScopeSuggestions();
   const editNameButtonRef = useRef<HTMLButtonElement>(null);
@@ -129,6 +137,11 @@ export function ScopeDetailEditor({
     if (!resolvedTypeId) return;
     dispatch(ensureScopeTree());
   }, [dispatch, orgId, resolvedTypeId]);
+
+  useEffect(() => {
+    if (!scopeId) return;
+    dispatch(getScopeContext({ scope_id: scopeId, include_empty: true }));
+  }, [dispatch, scopeId]);
 
   useEffect(() => {
     if (scope) {
@@ -179,7 +192,7 @@ export function ScopeDetailEditor({
     }
     setSavingName(true);
     try {
-      await dispatch(updateScope({ scope_id: scope.id, name: next })).then(unwrapWrite);
+      await dispatch(updateScope({ scope_id: scope.id, name: next })).then(unwrapScopesRpc);
       toast.success("Renamed");
       closeNameEditor();
     } catch (err) {
@@ -200,7 +213,7 @@ export function ScopeDetailEditor({
     try {
       await dispatch(
         updateScope({ scope_id: scope.id, description: next }),
-      ).then(unwrapWrite);
+      ).then(unwrapScopesRpc);
       toast.success("Description updated");
       closeDescriptionEditor();
     } catch (err) {
@@ -212,7 +225,7 @@ export function ScopeDetailEditor({
     }
   }
 
-  const filled = rows?.filter((r) => hasCellValue(r.value)).length ?? 0;
+  const filled = rows?.filter((r) => r.has_value).length ?? 0;
   const total = rows?.length ?? 0;
   /** The scope's values read — the filled/total counts say "—" when it failed. */
   const valuesRead = readOf({ loading, error: readError });
@@ -429,21 +442,21 @@ export function ScopeDetailEditor({
           <div className="space-y-5">
             {rows.map((row) => (
               <ScopeFieldInput
-                key={row.field.id}
+                key={row.item_id}
                 scopeId={scope.id}
                 row={row}
                 itemHref={scopeItemHref(orgSlugOrId, scopeType, scope, {
-                  id: row.field.id,
-                  slug: row.field.key,
+                  id: row.item_id,
+                  slug: row.slug,
                 })}
                 headerSlot={
                   <KgSuggestionHint
                     variant="dot"
-                    rows={suggestions.forScopeItem(scope.id, row.field.id)}
+                    rows={suggestions.forScopeItem(scope.id, row.item_id)}
                     accept={suggestions.accept}
                     reject={suggestions.reject}
                     defer={suggestions.defer}
-                    label={row.field.label}
+                    label={row.display_name}
                   />
                 }
               />

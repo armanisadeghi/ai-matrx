@@ -17,14 +17,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
-import { toSlug } from "@ai-matrx/records/scopes";
+import { toSlug } from "@/features/scopes/utils/slugify";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 import {
   createScopeType,
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
@@ -131,7 +131,7 @@ export function ScopeTypeFormSheet({
               : undefined,
             slug: editingType.slug ?? toSlug(labelPlural),
           }),
-        ).then(unwrapWrite);
+        ).then(unwrapScopesRpc);
       } else {
         await dispatch(
           createScopeType({
@@ -149,7 +149,7 @@ export function ScopeTypeFormSheet({
             default_variable_keys: variableKeys,
             slug: toSlug(labelPlural),
           }),
-        ).then(unwrapWrite);
+        ).then(unwrapScopesRpc);
       }
       onOpenChange(false);
     } catch (e) {

@@ -16,7 +16,6 @@
  * `ContextItemAddForm` (create) — rather than forking a third editor.
  */
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import {
   useCallback,
   useEffect,
@@ -45,6 +44,7 @@ import {
   selectItemsLoadedForType,
   selectItemsErrorForType,
   updateContextItem,
+  type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import { ContextItemSettingsForm } from "@/features/scope-system/components/forms/ContextItemSettingsForm";
@@ -163,7 +163,7 @@ function SidebarRow({
   onSelect,
   onKeyDown,
 }: {
-  item: ContextField;
+  item: ContextItem;
   isOpenTab: boolean;
   isActive: boolean;
   tabIndex: number;
@@ -194,7 +194,7 @@ function SidebarRow({
               isActive ? "text-primary" : "text-foreground",
             )}
           >
-            {item.label}
+            {item.display_name}
           </span>
           {isOpenTab && !isActive && (
             <span className="h-1 w-1 shrink-0 rounded-full bg-primary/60" />
@@ -205,7 +205,7 @@ function SidebarRow({
             variant="secondary"
             className="h-3.5 shrink-0 px-1 text-[8px] leading-none"
           >
-            {VALUE_TYPE_CONFIG[item.kind]?.label ?? item.kind}
+            {VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
           </Badge>
           {item.category && (
             <span className="truncate text-[10px] text-muted-foreground">
@@ -227,7 +227,7 @@ function ContextItemsSidebar({
   onAdd,
   onReorder,
 }: {
-  items: ContextField[];
+  items: ContextItem[];
   loaded: boolean;
   openTabIds: TabId[];
   activeTabId: TabId | null;
@@ -239,7 +239,7 @@ function ContextItemsSidebar({
   const navRef = useRef<HTMLElement>(null);
   const filtered = query.trim()
     ? items.filter((i) =>
-        i.label.toLowerCase().includes(query.trim().toLowerCase()),
+        i.display_name.toLowerCase().includes(query.trim().toLowerCase()),
       )
     : items;
   const activeItemIsVisible = filtered.some((item) => item.id === activeTabId);
@@ -350,7 +350,7 @@ function TabBar({
 }: {
   openTabIds: TabId[];
   activeTabId: TabId | null;
-  itemById: Map<string, ContextField>;
+  itemById: Map<string, ContextItem>;
   onActivate: (id: TabId) => void;
   onClose: (id: TabId) => void;
 }) {
@@ -385,7 +385,7 @@ function TabBar({
       {openTabIds.map((id, index) => {
         const label = isNewTab(id)
           ? "New item"
-          : (itemById.get(id)?.label ?? "…");
+          : (itemById.get(id)?.display_name ?? "…");
         const isActive = id === activeTabId;
         return (
           <div
@@ -456,7 +456,7 @@ function ContextItemsBody({
   activeTabId: TabId | null;
   scopeTypeId: string;
   labelPlural: string;
-  onCreated: (tabId: TabId, item: ContextField) => void;
+  onCreated: (tabId: TabId, item: ContextItem) => void;
   onDeleted: (tabId: TabId) => void;
   onCancelNew: (tabId: TabId) => void;
 }) {
@@ -532,14 +532,14 @@ function ContextItemsWindowInner({
 
   const tabs = useContextItemTabs(initialItemId, openNewOnMount);
   const [reorderOpen, setReorderOpen] = useState(false);
-  const [clickedItem, setClickedItem] = useState<ContextField | null>(null);
+  const [clickedItem, setClickedItem] = useState<ContextItem | null>(null);
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
 
   const handleDeleteItem = useCallback(
     async (row: ContextItemMenuRow) => {
       const ok = await confirm({
-        title: `Delete "${row.label}"?`,
+        title: `Delete "${row.display_name}"?`,
         description:
           "This removes this context item from every scope of this type. Existing values stay in history but won't display anywhere.",
         confirmLabel: "Delete",
@@ -549,7 +549,7 @@ function ContextItemsWindowInner({
       try {
         await dispatch(deleteContextItem(row.id)).unwrap();
         tabs.closeTab(row.id);
-        toast.success(`Deleted "${row.label}"`);
+        toast.success(`Deleted "${row.display_name}"`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to delete");
       }
@@ -566,7 +566,7 @@ function ContextItemsWindowInner({
   });
 
   const handleCreated = useCallback(
-    (tabId: TabId, item: ContextField) => {
+    (tabId: TabId, item: ContextItem) => {
       tabs.replaceTab(tabId, item.id);
     },
     [tabs],
@@ -576,7 +576,7 @@ function ContextItemsWindowInner({
     async (orderedIds: string[]) => {
       await Promise.all(
         orderedIds.map((id, i) =>
-          dispatch(updateContextItem({ id, sort: i })).unwrap(),
+          dispatch(updateContextItem({ id, sort_order: i + 1 })).unwrap(),
         ),
       );
       toast.success("Order saved");
@@ -687,7 +687,7 @@ function ContextItemsWindowInner({
         description="Drag the handle or use the arrows, then save."
         items={items.map((i) => ({
           id: i.id,
-          label: i.label,
+          label: i.display_name,
           sublabel: i.category ?? undefined,
         }))}
         onSave={saveOrder}

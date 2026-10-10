@@ -4,8 +4,8 @@ import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
-import type { ContextField } from "@ai-matrx/records/scopes";
-import { cellWrite } from "@/features/scope-system/components/scope-detail-values";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 
 type Status = "idle" | "saving" | "saved" | "error";
 
@@ -27,9 +27,10 @@ function canonical(v: unknown): string {
  * inputs) or on change (custom-component inputs) and is a no-op when the value
  * hasn't changed since the last commit.
  *
- * `value` may be a string (textarea/date/number-as-text), a reference cell's things
- * (`ContextReference[]`), or a structured MediaRef object emitted by a custom Smart-Input
- * component. It becomes one `ContextValueWrite` (`cellWrite`) — the cell, never columns.
+ * `value` may be a string (textarea/date/number-as-text, or a ```matrx reference fence
+ * string for picklist selections) OR a structured MediaRef object emitted by a custom
+ * Smart-Input component — MediaRef objects are stored verbatim in `value_json`, strings
+ * route by `value_type` (picklist fences land in `value_text`).
  *
  * The hook manages its own baseline ref internally — callers MUST NOT receive
  * a setter back, because that setter would be a fresh closure on every render
@@ -38,7 +39,8 @@ function canonical(v: unknown): string {
  */
 export function useScopeAutoSave(
   scopeId: string,
-  field: Pick<ContextField, "id" | "kind">,
+  contextItemId: string,
+  valueType: ContextValueType,
   initialValue: unknown,
 ) {
   const dispatch = useAppDispatch();
@@ -57,8 +59,14 @@ export function useScopeAutoSave(
   async function commit(raw: unknown) {
     if (canonical(raw) === lastCommittedRef.current) return;
     setStatus("saving");
+    const payload: Parameters<typeof setScopeContextValue>[0] = {
+      scope_id: scopeId,
+      context_item_id: contextItemId,
+      ...buildScopeValuePayload(raw, valueType),
+    };
+
     try {
-      await dispatch(setScopeContextValue(cellWrite(scopeId, field, raw))).unwrap();
+      await dispatch(setScopeContextValue(payload)).unwrap();
       lastCommittedRef.current = canonical(raw);
       setLastSavedAt(Date.now());
       setStatus("saved");

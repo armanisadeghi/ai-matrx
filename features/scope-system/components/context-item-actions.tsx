@@ -36,8 +36,8 @@ import {
 /** The one thing every context-item surface can say about a right-clicked row. */
 export interface ContextItemMenuRow {
   id: string;
-  label: string;
-  kind: string;
+  display_name: string;
+  value_type: string;
   category?: string | null;
 }
 
@@ -49,14 +49,14 @@ export function contextItemEntityRef(
   return {
     type: "context_item",
     id: row.id,
-    title: row.label,
+    title: row.display_name,
   };
 }
 
 /** The row as readable text — a menu's `content` value. */
 export function contextItemMenuContent(row: ContextItemMenuRow | null): string {
   if (!row) return "";
-  return [row.label, row.category, row.kind]
+  return [row.display_name, row.category, row.value_type]
     .filter(Boolean)
     .join("\n");
 }

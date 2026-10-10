@@ -27,7 +27,6 @@
  * Renders nothing. Mount once inside the surface's `SurfaceRuntimeProvider`.
  */
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -42,11 +41,12 @@ import {
   selectItemsByType,
   selectItemsLoadedForType,
   updateContextItem,
-  type ContextFieldKind,
+  type ContextItem,
+  type ContextValueType,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { selectFullContextOrganizations } from "@/features/agent-context/redux/hierarchySlice";
 import { canManageSettings, type OrgRole } from "@/features/organizations/types";
-import { toFieldKey } from "@ai-matrx/records/scopes";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 import {
   selectScopeTypeById,
 } from "@/features/scopes/redux/selectors/admin";
@@ -80,7 +80,7 @@ export interface ContextItemStatusNoteWrite {
 export interface AddContextItemsWrite {
   scope_type_id: string;
   items: {
-    label: string;
+    display_name: string;
     description?: string;
     category?: string;
     value_type?: string;
@@ -156,7 +156,7 @@ export function ContextItemsWriteTargets() {
    * LIVE store (not a render snapshot) — a section that finished loading while
    * the agent was thinking must count as loaded.
    */
-  function resolveItem(itemId: string, target: string): ContextField {
+  function resolveItem(itemId: string, target: string): ContextItem {
     const state = store.getState() as RootState;
     const item = selectContextItemById(state, itemId);
     if (!item) {
@@ -202,9 +202,9 @@ export function ContextItemsWriteTargets() {
    * `.unwrap()`, but a silently-dropped column would not.
    */
   async function saveItemPatch(
-    item: ContextField,
+    item: ContextItem,
     patch: Parameters<typeof updateContextItem>[0],
-    expected: Partial<Record<keyof ContextField, unknown>>,
+    expected: Partial<Record<keyof ContextItem, unknown>>,
     target: string,
   ): Promise<void> {
     const updated = await dispatch(updateContextItem(patch)).unwrap();
@@ -250,11 +250,11 @@ export function ContextItemsWriteTargets() {
         item,
         {
           id: item.id,
-          ...(displayName !== undefined ? { label: displayName } : {}),
+          ...(displayName !== undefined ? { display_name: displayName } : {}),
           ...(description !== undefined ? { description } : {}),
         },
         {
-          ...(displayName !== undefined ? { label: displayName } : {}),
+          ...(displayName !== undefined ? { display_name: displayName } : {}),
           ...(description !== undefined ? { description } : {}),
         },
         target,
@@ -354,10 +354,10 @@ export function ContextItemsWriteTargets() {
         );
         if (!displayName) {
           throw new Error(
-            `${target}: items[${index}].label must be a non-empty string.`,
+            `${target}: items[${index}].display_name must be a non-empty string.`,
           );
         }
-        const rawType = record.kind;
+        const rawType = record.value_type;
         if (
           rawType !== undefined &&
           (typeof rawType !== "string" ||
@@ -366,12 +366,12 @@ export function ContextItemsWriteTargets() {
             ))
         ) {
           throw new Error(
-            `${target}: items[${index}].kind must be one of ${AGENT_WRITABLE_VALUE_TYPES.join(
+            `${target}: items[${index}].value_type must be one of ${AGENT_WRITABLE_VALUE_TYPES.join(
               " | ",
             )}, got ${JSON.stringify(rawType)}.`,
           );
         }
-        const key = toFieldKey(displayName) || displayName.toLowerCase();
+        const key = slugifyKey(displayName) || displayName.toLowerCase();
         if (existingKeys.has(key)) {
           throw new Error(
             `${target}: items[${index}] "${displayName}" resolves to key "${key}", which this scope type already defines. Rename it, or edit the existing field with context_item_copy.`,
@@ -380,7 +380,7 @@ export function ContextItemsWriteTargets() {
         existingKeys.add(key);
         return {
           key,
-          label: displayName,
+          display_name: displayName,
           description: optionalText(
             record,
             "description",
@@ -391,7 +391,7 @@ export function ContextItemsWriteTargets() {
             "category",
             `${target}: items[${index}]`,
           ),
-          kind: (rawType as ContextFieldKind | undefined) ?? "string",
+          value_type: (rawType as ContextValueType | undefined) ?? "string",
         };
       });
 
@@ -402,8 +402,8 @@ export function ContextItemsWriteTargets() {
           createContextItem({
             scope_type_id: scopeTypeId,
             key: entry.key,
-            label: entry.label,
-            kind: entry.kind,
+            display_name: entry.display_name,
+            value_type: entry.value_type,
             description: entry.description || undefined,
             category: entry.category || undefined,
           }),

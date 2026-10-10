@@ -36,7 +36,7 @@ import {
   createScope,
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -447,7 +447,7 @@ export function ScopeTemplateStarter({
             sort_order: 0,
             max_assignments: preset.max_assignments,
           }),
-        ).then(unwrapWrite);
+        ).then(unwrapScopesRpc);
 
         const typeId = (typeResult as { id: string }).id;
         if (typeId && preset.scopes.length > 0) {

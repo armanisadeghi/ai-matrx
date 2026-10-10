@@ -12,9 +12,10 @@ import {
   selectItemBySlugOrId,
   selectItemsLoadedForType,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
-import { useContextValues } from "@/features/scopes/hooks/useContextValues";
-import { selectContextItemById } from "@/features/scopes/redux/contextItemCatalog";
+import {
+  getScopeContext,
+  selectValuesByScope,
+} from "@/features/scopes/redux/scopeContextView";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
@@ -30,7 +31,7 @@ import {
   scopeItemHref,
 } from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import type { Scope as Scope } from "@ai-matrx/records/scopes";
+import type { ScopeNode as Scope } from "@/features/scopes/types";
 import {
   selectScopeTypeBySlugOrId,
   selectScopeTypesLoadedForOrg,
@@ -91,7 +92,7 @@ export function ContextItemHub({
 
   useEffect(() => {
     for (const scope of scopes) {
-      void dispatch(ensureContextValues(scope.id));
+      dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
     }
   }, [dispatch, scopes]);
 
@@ -140,11 +141,11 @@ export function ContextItemHub({
                 {scopeType.label_singular} field
               </p>
               <h1 className="text-2xl font-bold text-foreground leading-tight">
-                {item.label}
+                {item.display_name}
               </h1>
               <div className="flex items-center gap-1.5 flex-wrap mt-2">
                 <Badge variant="secondary" className="text-[10px]">
-                  {VALUE_TYPE_CONFIG[item.kind]?.label ?? item.kind}
+                  {VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
                 </Badge>
                 {item.category && (
                   <Badge variant="outline" className="text-[10px]">
@@ -176,7 +177,7 @@ export function ContextItemHub({
                 variant="quiet"
                 onClick={() => setEditing(true)}
                 title="Quick edit"
-                aria-label={`Quick edit ${item.label}`}
+                aria-label={`Quick edit ${item.display_name}`}
               />
             </div>
           )}
@@ -185,14 +186,14 @@ export function ContextItemHub({
         {/* Details */}
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mt-5 pt-4 border-t border-border">
           <PropRow label="Key" value={item.key} mono />
-          <PropRow label="URL slug" value={item.key || "—"} mono />
+          <PropRow label="URL slug" value={item.slug || "—"} mono />
           <PropRow label="Category" value={item.category || "—"} />
           <PropRow label="Sensitivity" value={item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={humanizeIdentifier(item.context_policy ?? "")}
+            value={humanizeIdentifier(item.fetch_hint ?? "")}
           />
-          <PropRow label="Sort order" value={String(item.sort)} />
+          <PropRow label="Sort order" value={String(item.sort_order ?? 0)} />
         </dl>
       </Card>
 
@@ -201,7 +202,7 @@ export function ContextItemHub({
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">
-            {item.label} across {scopeType.label_plural}
+            {item.display_name} across {scopeType.label_plural}
           </h2>
           <span className="text-sm text-muted-foreground">
             ({scopes.length})
@@ -249,10 +250,8 @@ function ItemScopeValueRow({
   scopeHubHref: string;
   valueHref: string;
 }) {
-  const { values, status } = useContextValues(scope.id);
-  const field = useAppSelector((s) => selectContextItemById(s, itemId));
-  const row =
-    field && status === "ready" ? { field, value: values[itemId] ?? null } : undefined;
+  const rows = useAppSelector((s) => selectValuesByScope(s, scope.id));
+  const row = (rows ?? []).find((r) => r.item_id === itemId);
 
   if (!row) {
     return (

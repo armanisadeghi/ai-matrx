@@ -30,10 +30,12 @@ import {
   deleteContextItem,
   selectContextItemById,
   listScopeTypeItems,
+  type ContextFetchHint,
+  type ContextSensitivity,
 } from "@/features/scopes/redux/contextItemCatalog";
-import type { ContextPolicy, ContextSensitivity } from "@ai-matrx/records/scopes";
 import {
-  CONTEXT_POLICY_CONFIG,
+  FETCH_HINT_CONFIG,
+  canonicalFetchHint,
   SENSITIVITY_CONFIG,
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
@@ -88,7 +90,7 @@ export function ContextItemSettingsForm({
   const [customComponent, setCustomComponent] = useState<
     VariableCustomComponent | undefined
   >(undefined);
-  const [fetchHint, setFetchHint] = useState<ContextPolicy>("on_request");
+  const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
   const [sensitivity, setSensitivity] =
     useState<ContextSensitivity>("internal");
   const [tagInput, setTagInput] = useState("");
@@ -126,11 +128,11 @@ export function ContextItemSettingsForm({
   useEffect(() => {
     if (!item) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- selecting a different item intentionally resets the controlled editor fields.
-    setDisplayName(item.label);
+    setDisplayName(item.display_name);
     setDescription(item.description ?? "");
     setCategory(item.category ?? "");
-    setCustomComponent((item.custom_component as VariableCustomComponent | null) ?? undefined);
-    setFetchHint(item.context_policy);
+    setCustomComponent(item.custom_component ?? undefined);
+    setFetchHint(canonicalFetchHint(item.fetch_hint));
     setSensitivity(item.sensitivity);
     setTags(item.tags ?? []);
     setTagInput("");
@@ -140,8 +142,8 @@ export function ContextItemSettingsForm({
         ? String(item.review_interval_days)
         : "",
     );
-    setSortOrder(String(item.sort));
-    setEntryMode(item.kind === "reference" ? "reference" : "direct");
+    setSortOrder(item.sort_order != null ? String(item.sort_order) : "");
+    setEntryMode(item.value_type === "reference" ? "reference" : "direct");
     setAllowedReferenceTypes(item.allowed_reference_types ?? []);
     setMaxItems(item.max_items != null ? String(item.max_items) : "1");
     setAllowedScopeTypeIds(item.allowed_scope_type_ids ?? []);
@@ -217,19 +219,19 @@ export function ContextItemSettingsForm({
       await dispatch(
         updateContextItem({
           id: item.id,
-          label: trimmedName,
+          display_name: trimmedName,
           description: description.trim(),
           category: category.trim() || null,
-          kind: derivedValueType,
+          value_type: derivedValueType,
           custom_component: isReference ? null : (customComponent ?? null),
-          context_policy: fetchHint,
+          fetch_hint: fetchHint,
           sensitivity,
           tags,
           status_note: statusNote.trim() || null,
           review_interval_days: reviewIntervalDays.trim()
             ? Number(reviewIntervalDays)
             : null,
-          sort: sortOrder.trim() ? Number(sortOrder) : undefined,
+          sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
           allowed_reference_types: isReference ? allowedReferenceTypes : null,
           max_items: isReference ? maxItemsNum : 1,
           allowed_scope_type_ids:
@@ -263,7 +265,7 @@ export function ContextItemSettingsForm({
   async function handleDelete() {
     if (!item) return;
     const ok = await confirm({
-      title: `Delete "${item.label}"?`,
+      title: `Delete "${item.display_name}"?`,
       description: `This removes this context item from every scope of this type. Existing values stay in history but won't display anywhere.`,
       confirmLabel: "Delete",
       variant: "destructive",
@@ -274,7 +276,7 @@ export function ContextItemSettingsForm({
       await dispatch(deleteContextItem(item.id)).unwrap();
       dismissRecordToasts({ type: "context_item", id: item.id });
       dispatch(listScopeTypeItems(item.scope_type_id));
-      toast.success(`Deleted "${item.label}"`);
+      toast.success(`Deleted "${item.display_name}"`);
       onDeleted?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
@@ -382,7 +384,7 @@ export function ContextItemSettingsForm({
               onChange={setCustomComponent}
               readonly={busy}
             />
-            {derivedValueType !== item.kind && (
+            {derivedValueType !== item.value_type && (
               <p className="text-[11px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
                 <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                 Storage type changes to {derivedValueType} on save — existing
@@ -435,22 +437,22 @@ export function ContextItemSettingsForm({
         </Label>
         <Select
           value={fetchHint}
-          onValueChange={(v) => setFetchHint(v as ContextPolicy)}
+          onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
           disabled={busy}
         >
           <SelectTrigger id={ids.fetchHint}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(CONTEXT_POLICY_CONFIG) as ContextPolicy[]).map((k) => (
+            {(Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]).map((k) => (
               <SelectItem key={k} value={k}>
-                {CONTEXT_POLICY_CONFIG[k].label}
+                {FETCH_HINT_CONFIG[k].label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <p className="text-[10px] text-muted-foreground">
-          {CONTEXT_POLICY_CONFIG[fetchHint].description}
+          {FETCH_HINT_CONFIG[fetchHint].description}
         </p>
       </div>
 

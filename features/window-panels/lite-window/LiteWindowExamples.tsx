@@ -266,7 +266,7 @@ function ContextItemPickerExample({
     () =>
       items.map((item) => ({
         value: item.id,
-        label: item.label,
+        label: item.display_name,
         hint: item.description ?? undefined,
       })),
     [items],
@@ -349,7 +349,7 @@ function ContextItemPickerExample({
             initialName={draft ?? ""}
             onAdded={(item) => {
               setSelected(item.id);
-              toast.success(`Created "${item.label}"`, {
+              toast.success(`Created "${item.display_name}"`, {
                 description: `It lives in ${scopeType.label} and is selected above.`,
               });
             }}

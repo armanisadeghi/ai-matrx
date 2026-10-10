@@ -1,6 +1,5 @@
 "use client";
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -21,11 +20,16 @@ import {
 import { Field } from "@/components/official/Field";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { createContextItem } from "@/features/scopes/redux/contextItemCatalog";
-import type { ContextFieldKind, ContextPolicy, ContextSensitivity } from "@ai-matrx/records/scopes";
+import {
+  createContextItem,
+  type ContextItem,
+  type ContextValueType,
+  type ContextFetchHint,
+  type ContextSensitivity,
+} from "@/features/scopes/redux/contextItemCatalog";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
-import { cellWrite } from "./scope-detail-values";
-import { toFieldKey } from "@ai-matrx/records/scopes";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import {
   EntryModeToggle,
@@ -40,7 +44,7 @@ import {
 import {
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
-  CONTEXT_POLICY_CONFIG,
+  FETCH_HINT_CONFIG,
   SENSITIVITY_CONFIG,
 } from "@/features/agent-context/constants";
 
@@ -48,7 +52,7 @@ const NO_CATEGORY = "__none__";
 
 /** Direct-entry primitive types — "Reference" is a separate first-class mode, never mixed into this list. */
 const PRIMITIVE_VALUE_TYPES = (
-  Object.keys(VALUE_TYPE_CONFIG) as ContextFieldKind[]
+  Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]
 ).filter((k) => k !== "reference");
 
 /** Dense form control height — matches `Button size="sm"` / `SelectTrigger size="sm"` / EntryModeToggle. */
@@ -60,10 +64,10 @@ interface ContextItemAddFormProps {
   /** When present, the optional "value for this one" field is shown and saved. */
   scopeId?: string;
   /** Called with the freshly-created item (e.g. to splice a cache placeholder). */
-  onAdded?: (item: ContextField) => void;
+  onAdded?: (item: ContextItem) => void;
   /** Called when the user cancels or finishes (plain "Add"). */
   onClose: () => void;
-  defaultValueType?: ContextFieldKind;
+  defaultValueType?: ContextValueType;
   /**
    * What the person already typed into a picker's type-ahead before choosing
    * `Create "…"` — P23: typed text is never retyped into a different box.
@@ -98,7 +102,7 @@ export function ContextItemAddForm({
   const [entryMode, setEntryMode] = useState<EntryMode>(
     defaultValueType === "reference" ? "reference" : "direct",
   );
-  const [primitiveType, setPrimitiveType] = useState<ContextFieldKind>(
+  const [primitiveType, setPrimitiveType] = useState<ContextValueType>(
     defaultValueType === "reference" ? "string" : defaultValueType,
   );
   const [description, setDescription] = useState("");
@@ -116,7 +120,7 @@ export function ContextItemAddForm({
   const [datasetTemplateId, setDatasetTemplateId] = useState<string | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [fetchHint, setFetchHint] = useState<ContextPolicy>("on_request");
+  const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
   const [sensitivity, setSensitivity] =
     useState<ContextSensitivity>("internal");
   const [sortOrder, setSortOrder] = useState("");
@@ -124,7 +128,7 @@ export function ContextItemAddForm({
   const [busy, setBusy] = useState(false);
 
   const isReference = entryMode === "reference";
-  const valueType: ContextFieldKind = isReference ? "reference" : primitiveType;
+  const valueType: ContextValueType = isReference ? "reference" : primitiveType;
 
   const ids = {
     name: `${uid}-name`,
@@ -195,7 +199,7 @@ export function ContextItemAddForm({
     setMaxItems("1");
     setAllowedScopeTypeIds([]);
     setDatasetTemplateId(null);
-    setFetchHint("on_request");
+    setFetchHint("on_demand");
     setSensitivity("internal");
     setSortOrder("");
   }
@@ -213,15 +217,15 @@ export function ContextItemAddForm({
       const item = await dispatch(
         createContextItem({
           scope_type_id: scopeTypeId,
-          key: toFieldKey(trimmed) || trimmed.toLowerCase(),
-          label: trimmed,
-          kind: valueType,
+          key: slugifyKey(trimmed) || trimmed.toLowerCase(),
+          display_name: trimmed,
+          value_type: valueType,
           description: description.trim() || undefined,
           category: category.trim() || undefined,
           tags: tags.length ? tags : undefined,
-          context_policy: fetchHint,
+          fetch_hint: fetchHint,
           sensitivity,
-          sort: sortOrder.trim() ? Number(sortOrder) : undefined,
+          sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
           allowed_reference_types: isReference
             ? allowedReferenceTypes
             : undefined,
@@ -244,18 +248,24 @@ export function ContextItemAddForm({
 
       onAdded?.(item);
 
-      // The first value, as one cell; the store checks a reference cell against the
-      // field's just-saved allowed_reference_types.
+      // A reference value is a `matrx` fence string; buildScopeValuePayload routes
+      // it to value_text and write_context_value validates it against the item's
+      // just-saved allowed_reference_types.
       const hasValue =
-        value != null &&
-        (Array.isArray(value) ? value.length > 0 : typeof value !== "string" || value.trim() !== "");
+        value != null && (typeof value !== "string" || value.trim() !== "");
       if (scopeId && hasValue) {
-        await dispatch(setScopeContextValue(cellWrite(scopeId, item, value))).unwrap();
+        await dispatch(
+          setScopeContextValue({
+            scope_id: scopeId,
+            context_item_id: item.id,
+            ...buildScopeValuePayload(value, valueType),
+          }),
+        ).unwrap();
       }
 
       recordToast.success(
-        { type: "context_item", id: item.id, title: item.label },
-        `Added "${item.label}" to all ${labelPlural}`,
+        { type: "context_item", id: item.id, title: item.display_name },
+        `Added "${item.display_name}" to all ${labelPlural}`,
       );
 
       if (keepOpen) {
@@ -317,7 +327,7 @@ export function ContextItemAddForm({
             {!isReference && (
               <Select
                 value={primitiveType}
-                onValueChange={(v) => setPrimitiveType(v as ContextFieldKind)}
+                onValueChange={(v) => setPrimitiveType(v as ContextValueType)}
                 disabled={busy}
               >
                 <SelectTrigger id={ids.primitive} className="w-40">
@@ -497,17 +507,17 @@ export function ContextItemAddForm({
           <Field label="Fetch hint" htmlFor={ids.fetch}>
             <Select
               value={fetchHint}
-              onValueChange={(v) => setFetchHint(v as ContextPolicy)}
+              onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
               disabled={busy}
             >
               <SelectTrigger id={ids.fetch}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(CONTEXT_POLICY_CONFIG) as ContextPolicy[]).map(
+                {(Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]).map(
                   (k) => (
                     <SelectItem key={k} value={k}>
-                      {CONTEXT_POLICY_CONFIG[k].label}
+                      {FETCH_HINT_CONFIG[k].label}
                     </SelectItem>
                   ),
                 )}

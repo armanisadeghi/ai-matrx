@@ -37,7 +37,7 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopeEditViewProps {
   orgId: string;
@@ -147,7 +147,7 @@ export function ScopeEditView({
           name: trimmed,
           description: description.trim(),
         }),
-      ).then(unwrapWrite);
+      ).then(unwrapScopesRpc);
       toast.success("Saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -167,7 +167,7 @@ export function ScopeEditView({
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapWrite);
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
       toast.success(`Moved “${scope.name}” to Trash`);
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {

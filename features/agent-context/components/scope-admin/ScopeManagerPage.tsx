@@ -6,7 +6,7 @@ import { ScopeTypeList } from "./ScopeTypeList";
 import { ScopeInstancePanel } from "./ScopeInstancePanel";
 import { ScopeTemplateStarter } from "./ScopeTemplateStarter";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
-import type { ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoading,

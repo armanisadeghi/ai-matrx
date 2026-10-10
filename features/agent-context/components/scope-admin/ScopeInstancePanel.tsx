@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeFormSheet } from "./ScopeFormSheet";
-import type { Scope as Scope, ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
+import type { ScopeNode as Scope, ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 import {
   deleteScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
@@ -35,7 +35,7 @@ import {
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { ReadFailure } from "@ai-matrx/design-system";
-import { isRecordsErr } from "@ai-matrx/records";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
 
 type LucideIcon = React.ComponentType<{
@@ -102,7 +102,7 @@ export function ScopeInstancePanel({
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     const res = await dispatch(deleteScope({ scope_id: deleteTarget.id }));
-    if (isRecordsErr(res)) toast.error(res.error.message);
+    if (isScopesRpcErr(res)) toast.error(res.error.message);
     setDeleteTarget(null);
   };
 

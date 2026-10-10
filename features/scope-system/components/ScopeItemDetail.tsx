@@ -20,7 +20,10 @@ import {
   selectItemBySlugOrId,
   selectItemsLoadedForType,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { useContextValues } from "@/features/scopes/hooks/useContextValues";
+import {
+  getScopeContext,
+  selectValuesByScope,
+} from "@/features/scopes/redux/scopeContextView";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";
@@ -92,7 +95,7 @@ export function ScopeItemDetail({
   const items = useAppSelector((s) =>
     selectItemsByType(s, resolvedTypeId ?? ""),
   );
-  const { values, status: valuesStatus } = useContextValues(scope?.id);
+  const rows = useAppSelector((s) => selectValuesByScope(s, scope?.id ?? ""));
 
   const [editingItem, setEditingItem] = useState(false);
 
@@ -101,6 +104,11 @@ export function ScopeItemDetail({
     dispatch(ensureScopeTree());
     dispatch(listScopeTypeItems(resolvedTypeId));
   }, [dispatch, orgId, resolvedTypeId]);
+
+  useEffect(() => {
+    if (!scope?.id) return;
+    dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
+  }, [dispatch, scope?.id]);
 
   if (!scopeType) {
     return typesLoaded ? (
@@ -144,9 +152,7 @@ export function ScopeItemDetail({
 
   const color = resolveColor(scopeType);
 
-  // The field with this scope's cell, once the scope's values have answered.
-  const valueRow =
-    valuesStatus === "ready" ? { field: item, value: values[item.id] ?? null } : undefined;
+  const valueRow = (rows ?? []).find((r) => r.item_id === item.id);
   const itemIndex = items.findIndex((i) => i.id === item.id);
   const prevItem = itemIndex > 0 ? items[itemIndex - 1] : null;
   const nextItem =
@@ -167,14 +173,14 @@ export function ScopeItemDetail({
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-foreground leading-tight">
-                {item.label}
+                {item.display_name}
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {scopeType.label_singular} · {scope.name}
               </p>
               <div className="flex items-center gap-1.5 flex-wrap mt-2">
                 <Badge variant="secondary" className="text-[10px]">
-                  {VALUE_TYPE_CONFIG[item.kind]?.label ?? item.kind}
+                  {VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
                 </Badge>
                 {item.category && (
                   <Badge variant="outline" className="text-[10px]">
@@ -230,7 +236,7 @@ export function ScopeItemDetail({
           <ScopeItemSuggestionsPanel
             scopeItemId={item.id}
             scopeId={scope.id}
-            slotName={item.label}
+            slotName={item.display_name}
             className="mt-4"
           />
         </div>
@@ -242,17 +248,17 @@ export function ScopeItemDetail({
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <PropRow
             label="Type"
-            value={VALUE_TYPE_CONFIG[item.kind]?.label ?? item.kind}
+            value={VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
           />
           <PropRow label="Category" value={item.category || "—"} />
-          <PropRow label="URL slug" value={item.key || "—"} mono />
+          <PropRow label="URL slug" value={item.slug || "—"} mono />
           <PropRow label="Key" value={item.key} mono />
           <PropRow label="Sensitivity" value={item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={humanizeIdentifier(item.context_policy ?? "")}
+            value={humanizeIdentifier(item.fetch_hint ?? "")}
           />
-          <PropRow label="Sort order" value={String(item.sort)} />
+          <PropRow label="Sort order" value={String(item.sort_order ?? 0)} />
           <PropRow
             label="Tags"
             value={
@@ -271,7 +277,7 @@ export function ScopeItemDetail({
               className="text-muted-foreground"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              {prevItem.label}
+              {prevItem.display_name}
             </Link>
           </Button>
         ) : (
@@ -283,7 +289,7 @@ export function ScopeItemDetail({
               href={scopeItemHref(orgSlugOrId, scopeType, scope, nextItem)}
               className="text-muted-foreground"
             >
-              {nextItem.label}
+              {nextItem.display_name}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>

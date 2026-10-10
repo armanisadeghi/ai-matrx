@@ -5,7 +5,7 @@
  * for as long as the scope is on screen — on `/organizations/[orgId]/scopes/[typeId]/[scopeId]`
  * and in a Scope tile on a Board (the board keeps every tile but the live one dormant).
  *
- * Reads: the scope, its type and every context field with its cell (the same rows the page
+ * Reads: the scope, its type and every context item with its value (the same rows the page
  * renders). Writes go through the page's own doors: `updateScope` (name, description) and
  * `setScopeContextValue` (a cell — what `useScopeAutoSave` commits through), so an agent write
  * and a person's are the same operation. Renders nothing.
@@ -14,31 +14,24 @@
 import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
-import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
+import { setScopeContextValue, type ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
 import { updateScope } from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 import {
   SCOPE_DETAIL_SURFACE_NAME,
   SCOPE_DETAIL_WRITE_TARGETS,
   createScopeDetailScope,
 } from "@/features/surfaces/manifests/scope-detail.manifest";
-import {
-  cellText,
-  cellWrite,
-  hasCellValue,
-  settableByText,
-  valueFor,
-  type ScopeFieldRow,
-} from "./scope-detail-values";
+import { scopeValueText, settableByText, valueFor } from "./scope-detail-values";
 
 export interface ScopeDetailSurfaceProps {
   scope: { id: string; name: string; description: string | null; organization_id?: string | null };
   scopeType: { id: string; label_singular: string; label_plural: string };
   orgId: string;
-  rows: ScopeFieldRow[] | undefined;
+  rows: ScopeContextRow[] | undefined;
   readError: string | null;
 }
-
 
 function plainString(target: string, value: unknown, allowEmpty: boolean): string {
   if (typeof value !== "string") {
@@ -54,7 +47,7 @@ export function ScopeDetailSurface({ scope, scopeType, orgId, rows, readError }:
   const dispatch = useAppDispatch();
 
   const getScope = () => {
-    const filled = rows?.filter((r) => hasCellValue(r.value)).length;
+    const filled = rows?.filter((r) => r.has_value).length;
     return createScopeDetailScope({
       scope_loaded: true,
       scope_id: scope.id,
@@ -67,12 +60,12 @@ export function ScopeDetailSurface({ scope, scopeType, orgId, rows, readError }:
             context_items_filled: filled,
             context_items_total: rows.length,
             context_item_values: rows.map((r) => ({
-              item_id: r.field.id,
-              slug: r.field.key,
-              name: r.field.label,
-              kind: r.field.kind,
-              has_value: hasCellValue(r.value),
-              value: cellText(r.value),
+              item_id: r.item_id,
+              slug: r.slug ?? null,
+              name: r.display_name,
+              value_type: r.value_type,
+              has_value: r.has_value,
+              value: scopeValueText(r),
             })),
           }
         : {}),
@@ -83,11 +76,11 @@ export function ScopeDetailSurface({ scope, scopeType, orgId, rows, readError }:
   const getWriteHandlers = (): SurfaceWriteHandlers => ({
     [SCOPE_DETAIL_WRITE_TARGETS.scopeName]: async (value: unknown) => {
       const name = plainString(SCOPE_DETAIL_WRITE_TARGETS.scopeName, value, false).trim();
-      await dispatch(updateScope({ scope_id: scope.id, name })).then(unwrapWrite);
+      await dispatch(updateScope({ scope_id: scope.id, name })).then(unwrapScopesRpc);
     },
     [SCOPE_DETAIL_WRITE_TARGETS.scopeDescription]: async (value: unknown) => {
       const description = plainString(SCOPE_DETAIL_WRITE_TARGETS.scopeDescription, value, true).trim();
-      await dispatch(updateScope({ scope_id: scope.id, description })).then(unwrapWrite);
+      await dispatch(updateScope({ scope_id: scope.id, description })).then(unwrapScopesRpc);
     },
     [SCOPE_DETAIL_WRITE_TARGETS.contextItemValues]: async (value: unknown) => {
       const target = SCOPE_DETAIL_WRITE_TARGETS.contextItemValues;
@@ -112,15 +105,21 @@ export function ScopeDetailSurface({ scope, scopeType, orgId, rows, readError }:
             `${target}[${index}] names no context item of this scope (item_id ${String(raw.item_id ?? "-")}, slug ${String(raw.slug ?? "-")}). Use an item_id or slug from context_item_values.`,
           );
         }
-        if (!settableByText(row.field)) {
+        if (!settableByText(row)) {
           throw new Error(
-            `${target}[${index}]: "${row.field.label}" is a structured item (${row.field.custom_component ? "a smart input" : row.field.kind}) that is set on the page by a person, not by text.`,
+            `${target}[${index}]: "${row.display_name}" is a structured item (${row.custom_component ? "a smart input" : row.value_type}) that is set on the page by a person, not by text.`,
           );
         }
         return { row, text: raw.value };
       });
       for (const { row, text } of plan) {
-        await dispatch(setScopeContextValue(cellWrite(scope.id, row.field, text))).unwrap();
+        await dispatch(
+          setScopeContextValue({
+            scope_id: scope.id,
+            context_item_id: row.item_id,
+            ...buildScopeValuePayload(text, row.value_type),
+          }),
+        ).unwrap();
       }
     },
   });

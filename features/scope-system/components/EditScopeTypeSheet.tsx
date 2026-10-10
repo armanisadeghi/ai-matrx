@@ -28,7 +28,7 @@ import {
   deleteContextItem,
   selectItemsByType,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { toFieldKey, toSlug } from "@ai-matrx/records/scopes";
+import { slugifyKey, toSlug } from "@/features/scopes/utils/slugify";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import {
@@ -39,7 +39,7 @@ import {
   deleteScopeType,
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface EditScopeTypeSheetProps {
@@ -54,7 +54,7 @@ type ItemDraft = {
   /** Existing item id, or `new:<rowId>` for an unsaved row. */
   id: string;
   rowId: string;
-  label: string;
+  display_name: string;
   initialDisplayName?: string;
   toDelete?: boolean;
 };
@@ -62,7 +62,7 @@ type ItemDraft = {
 const newRow = (): ItemDraft => ({
   id: `new:${Math.random().toString(36).slice(2)}`,
   rowId: Math.random().toString(36).slice(2),
-  label: "",
+  display_name: "",
 });
 
 export function EditScopeTypeSheet({
@@ -135,8 +135,8 @@ export function EditScopeTypeSheet({
       existingItems.map((i) => ({
         id: i.id,
         rowId: i.id,
-        label: i.label,
-        initialDisplayName: i.label,
+        display_name: i.display_name,
+        initialDisplayName: i.display_name,
       })),
     );
   }, [open, existingItems]);
@@ -240,11 +240,11 @@ export function EditScopeTypeSheet({
             color,
             slug: slugChanged ? trimmedSlug : undefined,
             sort_order: sortOrder,
-            max_assignments_per_entity: maxAssignments
+            max_assignments: maxAssignments
               ? parseInt(maxAssignments, 10)
               : undefined,
           }),
-        ).then(unwrapWrite);
+        ).then(unwrapScopesRpc);
       }
 
       // Context items: delete, rename, create
@@ -253,14 +253,14 @@ export function EditScopeTypeSheet({
           await dispatch(deleteContextItem(row.id)).unwrap();
           continue;
         }
-        const trimmedName = row.label.trim();
+        const trimmedName = row.display_name.trim();
         if (row.id.startsWith("new:")) {
           if (!trimmedName) continue;
           await dispatch(
             createContextItem({
               scope_type_id: scopeType.id,
-              key: toFieldKey(trimmedName) || trimmedName.toLowerCase(),
-              label: trimmedName,
+              key: slugifyKey(trimmedName) || trimmedName.toLowerCase(),
+              display_name: trimmedName,
             }),
           ).unwrap();
         } else if (trimmedName !== row.initialDisplayName) {
@@ -268,7 +268,7 @@ export function EditScopeTypeSheet({
           await dispatch(
             updateContextItem({
               id: row.id,
-              label: trimmedName,
+              display_name: trimmedName,
             }),
           ).unwrap();
         }
@@ -297,7 +297,7 @@ export function EditScopeTypeSheet({
     if (!ok) return;
     setBusy(true);
     try {
-      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapWrite);
+      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapScopesRpc);
       dispatch(ensureScopeTree());
       toast.success(`Deleted "${scopeType.label_plural}"`);
       onOpenChange(false);
@@ -416,10 +416,10 @@ export function EditScopeTypeSheet({
                       }}
                       placeholder="Context item name"
                       aria-label={`Context item ${idx + 1} name`}
-                      value={row.label}
+                      value={row.display_name}
                       onChange={(e) =>
                         patchItem(row.rowId, {
-                          label: e.target.value,
+                          display_name: e.target.value,
                         })
                       }
                       onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
@@ -433,7 +433,7 @@ export function EditScopeTypeSheet({
                         variant="quiet"
                         onClick={() => setEditingItemId(row.id)}
                         disabled={busy}
-                        aria-label={`Open full editor for ${row.label || `context item ${idx + 1}`}`}
+                        aria-label={`Open full editor for ${row.display_name || `context item ${idx + 1}`}`}
                         title="Full edit (type, sensitivity, tags, …)"
                         className="shrink-0"
                       />
@@ -448,7 +448,7 @@ export function EditScopeTypeSheet({
                       variant="quiet"
                       onClick={() => toggleDelete(row.rowId)}
                       disabled={busy}
-                      aria-label={`${removed ? "Restore" : "Remove"} ${row.label || `context item ${idx + 1}`}`}
+                      aria-label={`${removed ? "Restore" : "Remove"} ${row.display_name || `context item ${idx + 1}`}`}
                       title={removed ? "Restore" : "Remove"}
                       className={`shrink-0 ${
                         removed

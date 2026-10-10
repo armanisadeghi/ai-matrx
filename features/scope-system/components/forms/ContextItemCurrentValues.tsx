@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Layers, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
-import { useContextValues } from "@/features/scopes/hooks/useContextValues";
-import { hasCellValue } from "../scope-detail-values";
+import {
+  getScopeContext,
+  selectValuesByScope,
+  type ScopeContextRow,
+} from "@/features/scopes/redux/scopeContextView";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
+import type { Json } from "@/types/database.types";
 import {
   selectScopesByType,
   selectScopesLoadedForType,
@@ -48,11 +51,11 @@ export function ContextItemCurrentValues({
     dispatch(ensureScopeTree());
   }, [dispatch, orgId, scopeTypeId]);
 
-  // Warm each scope's values once. The loader caches (a scope already loaded
+  // Warm each scope's view once. Both loaders cache (a scope already loaded
   // costs nothing), so opening the drawer never bursts redundant reads.
   useEffect(() => {
     for (const scope of scopes) {
-      void dispatch(ensureContextValues(scope.id));
+      dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
     }
   }, [dispatch, scopes]);
 
@@ -104,8 +107,11 @@ function ScopeValuePreviewRow({
   itemId: string;
   scopeName: string;
 }) {
-  const { values, status } = useContextValues(scopeId);
-  const row = values[itemId];
+  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
+  const row = useMemo<ScopeContextRow | undefined>(
+    () => rows?.find((r) => r.item_id === itemId),
+    [rows, itemId],
+  );
 
   return (
     <div className="flex items-start justify-between gap-3 px-3 py-2">
@@ -113,14 +119,24 @@ function ScopeValuePreviewRow({
         {scopeName}
       </span>
       <div className="min-w-0 flex-1 text-right text-sm">
-        {status === "idle" || status === "loading" ? (
+        {rows == null ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground inline-block" />
-        ) : !hasCellValue(row) ? (
+        ) : !row || !row.has_value ? (
           <span className="text-xs text-muted-foreground">Empty</span>
         ) : (
           <ContextValueDisplay
-            kind={row.kind}
-            value={row}
+            valueType={row.value_type}
+            value={{
+              value_text: row.value_text,
+              value_number: row.value_number,
+              value_boolean: row.value_boolean,
+              value_date: row.value_date,
+              value_timestamp: row.value_timestamp,
+              value_time: row.value_time,
+              // RPC hands value_json back as `unknown`; it is Json by contract.
+              value_json: (row.value_json ?? null) as Json | null,
+              value_document_url: row.value_document_url,
+            }}
             className="inline-flex flex-wrap justify-end gap-1 text-sm text-foreground"
           />
         )}

@@ -116,7 +116,7 @@ export function ContextItemEditView({
               {scopeType.label_singular} field
             </p>
             <h1 className="text-2xl font-bold text-foreground leading-tight">
-              Edit {item.label}
+              Edit {item.display_name}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               These settings apply to{" "}

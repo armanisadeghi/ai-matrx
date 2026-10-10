@@ -2,7 +2,7 @@
 
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { ScopeForm } from "./ScopeForm";
-import type { Scope as Scope, ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
+import type { ScopeNode as Scope, ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 
 interface ScopeFormSheetProps {
   open: boolean;

@@ -1,6 +1,5 @@
 "use client";
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
@@ -59,12 +58,15 @@ import {
   selectItemsByType,
   selectItemsErrorForType,
   selectItemsLoadedForType,
+  type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
-import { useContextValues } from "@/features/scopes/hooks/useContextValues";
-import type { ContextValue } from "@ai-matrx/records/scopes";
-import { cellText, hasCellValue, isReferenceKind } from "./scope-detail-values";
+import {
+  getScopeContext,
+  selectValuesByScope,
+  type ScopeContextRow,
+} from "@/features/scopes/redux/scopeContextView";
 import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
 import {
   resolveColor,
@@ -80,6 +82,7 @@ import {
 import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { AssociationCardGrid } from "@ai-matrx/associations/react";
 import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 import type {
@@ -97,7 +100,7 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopesListProps {
   orgId: string;
@@ -181,6 +184,9 @@ export function ScopesList({
     // Every scope's values in ONE read first (STORE-READ-PERF-5), so each scope's view below reads
     // the values store instead of asking the values door once per scope.
     if (scopes.length > 0) void dispatch(ensureContextValuesForScopes(scopes.map((scope) => scope.id)));
+    for (const scope of scopes) {
+      dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
+    }
   }, [dispatch, scopes]);
 
   const sorted = useMemo(
@@ -197,16 +203,16 @@ export function ScopesList({
     const target = items[index];
     const neighbor = items[index + (dir === "up" ? -1 : 1)];
     if (!target || !neighbor || movingId) return;
-    const targetOrder = target.sort;
-    const neighborOrder = neighbor.sort;
+    const targetOrder = target.sort_order ?? index;
+    const neighborOrder = neighbor.sort_order ?? index;
     setMovingId(target.id);
     try {
       await Promise.all([
         dispatch(
-          updateContextItem({ id: target.id, sort: neighborOrder }),
+          updateContextItem({ id: target.id, sort_order: neighborOrder }),
         ).unwrap(),
         dispatch(
-          updateContextItem({ id: neighbor.id, sort: targetOrder }),
+          updateContextItem({ id: neighbor.id, sort_order: targetOrder }),
         ).unwrap(),
       ]);
     } catch (err) {
@@ -219,7 +225,7 @@ export function ScopesList({
   async function saveScopeOrder(orderedIds: string[]) {
     await Promise.all(
       orderedIds.map((id, i) =>
-        dispatch(updateScope({ scope_id: id, sort_order: i + 1 })).then(unwrapWrite),
+        dispatch(updateScope({ scope_id: id, sort_order: i + 1 })).then(unwrapScopesRpc),
       ),
     );
     toast.success("Order saved");
@@ -228,7 +234,7 @@ export function ScopesList({
   async function saveItemOrder(orderedIds: string[]) {
     await Promise.all(
       orderedIds.map((id, i) =>
-        dispatch(updateContextItem({ id, sort: i })).unwrap(),
+        dispatch(updateContextItem({ id, sort_order: i + 1 })).unwrap(),
       ),
     );
     toast.success("Order saved");
@@ -247,7 +253,7 @@ export function ScopesList({
       return;
     setDeletingScopeId(id);
     try {
-      await dispatch(deleteScope({ scope_id: id })).then(unwrapWrite);
+      await dispatch(deleteScope({ scope_id: id })).then(unwrapScopesRpc);
       toast.success(`${name} deleted`);
     } catch (err) {
       toastWriteFailure(err, { action: "archive it" });
@@ -464,9 +470,9 @@ export function ScopesList({
                       >
                         <span
                           className="block truncate"
-                          title={col.label}
+                          title={col.display_name}
                         >
-                          {col.label}
+                          {col.display_name}
                         </span>
                       </TableHead>
                     ))}
@@ -591,7 +597,7 @@ export function ScopesList({
           <Card className="overflow-hidden">
             <div className="divide-y divide-border">
               {items.map((item, index) => (
-                <ContextField
+                <ContextItemRow
                   key={item.id}
                   item={item}
                   href={contextItemHref(orgSlugOrId, scopeType, item)}
@@ -609,7 +615,7 @@ export function ScopesList({
                   onMoveUp={() => moveItem(index, "up")}
                   onMoveDown={() => moveItem(index, "down")}
                   deleting={deletingItemId === item.id}
-                  onDelete={() => handleDeleteItem(item.id, item.label)}
+                  onDelete={() => handleDeleteItem(item.id, item.display_name)}
                 />
               ))}
 
@@ -677,7 +683,7 @@ export function ScopesList({
         description="Drag the handle or use the arrows, then save."
         items={items.map((i) => ({
           id: i.id,
-          label: i.label,
+          label: i.display_name,
           sublabel: i.category ?? undefined,
         }))}
         onSave={saveItemOrder}
@@ -689,7 +695,7 @@ export function ScopesList({
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 interface ContextItemRowProps {
-  item: ContextField;
+  item: ContextItem;
   href: string;
   isFirst: boolean;
   isLast: boolean;
@@ -703,7 +709,7 @@ interface ContextItemRowProps {
   onDelete: () => void;
 }
 
-function ContextField({
+function ContextItemRow({
   item,
   href,
   isFirst,
@@ -725,7 +731,7 @@ function ContextField({
             href={href}
             className="group/name inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
           >
-            {item.label}
+            {item.display_name}
             <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity" />
           </Link>
           {item.category && (
@@ -769,7 +775,7 @@ function ContextField({
             icon={<Pencil />}
             variant="quiet"
             onClick={onEdit}
-            aria-label={`Edit ${item.label}`}
+            aria-label={`Edit ${item.display_name}`}
           />
           <Button
             icon={deleting ? (
@@ -780,7 +786,7 @@ function ContextField({
             variant="quiet"
             onClick={onDelete}
             disabled={deleting}
-            aria-label={`Delete ${item.label}`}
+            aria-label={`Delete ${item.display_name}`}
           />
         </div>
       )}
@@ -793,7 +799,7 @@ function ContextField({
             type="button"
             onClick={onMoveUp}
             disabled={isFirst || disabled}
-            aria-label={`Move ${item.label} up`}
+            aria-label={`Move ${item.display_name} up`}
             className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {moving ? (
@@ -806,7 +812,7 @@ function ContextField({
             type="button"
             onClick={onMoveDown}
             disabled={isLast || disabled}
-            aria-label={`Move ${item.label} down`}
+            aria-label={`Move ${item.display_name} down`}
             className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronDown className="h-3.5 w-3.5" />
@@ -820,7 +826,7 @@ function ContextField({
 interface ScopeTableRowProps {
   scopeId: string;
   scopeName: string;
-  columns: { id: string; label: string }[];
+  columns: { id: string; display_name: string }[];
   suggestionRows: KgSuggestionRow[];
   suggestionByItem: Map<string, KgSuggestionRow[]>;
   accept: (id: string) => Promise<KgAcceptResult>;
@@ -848,8 +854,9 @@ function ScopeTableRow({
   href,
   onClick,
 }: ScopeTableRowProps) {
-  const { values, status } = useContextValues(scopeId);
-  const rows = status === "ready" || status === "error" ? values : null;
+  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
+  const valueMap = new Map<string, ScopeContextRow>();
+  for (const r of rows ?? []) valueMap.set(r.item_id, r);
 
   return (
     <TableRow onClick={onClick} className="cursor-pointer group">
@@ -900,7 +907,7 @@ function ScopeTableRow({
         </span>
       </TableCell>
       {columns.map((col) => {
-        const row = rows?.[col.id];
+        const row = valueMap.get(col.id);
         const display = row ? renderValue(row) : "";
         const isEmpty = !display;
         const cellSuggestions =
@@ -911,7 +918,7 @@ function ScopeTableRow({
             <TableCell
               key={col.id}
               className="px-3 text-muted-foreground w-[200px] min-w-[200px] border-b border-border group-hover:bg-accent/40"
-              data-label={col.label}
+              data-label={col.display_name}
               data-phone="inline"
             >
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -923,7 +930,7 @@ function ScopeTableRow({
           <TableCell
             key={col.id}
             className={`px-3 w-[200px] min-w-[200px] max-w-[200px] border-b border-border group-hover:bg-accent/40 ${isEmpty ? "text-muted-foreground" : ""}`}
-            data-label={col.label}
+            data-label={col.display_name}
             data-phone="inline"
           >
             <span className="flex items-center gap-1.5 min-w-0">
@@ -965,9 +972,6 @@ function ScopeTableRow({
   );
 }
 
-/** A cell's one-line summary: a reference cell names what it points at; else its text. */
-function renderValue(value: ContextValue): string {
-  if (!hasCellValue(value)) return "";
-  if (isReferenceKind(value.kind)) return value.references.map((r) => r.label ?? r.id).join(", ");
-  return cellText(value) ?? "";
+function renderValue(row: ScopeContextRow): string {
+  return summarizeContextCell(row) ?? "";
 }
