@@ -1,3 +1,4 @@
+-- chair-step: custom.record_restore must change its return type (void -> jsonb, so restore can answer done/remaining/flagged like archive does), which needs DROP FUNCTION + CREATE with the same signature and the same single EXECUTE grant to authenticated; the door stays declared in platform.client_callable_door, the function comment is re-applied, and the inverse puts the void body back.
 -- lane: DATA-DEFECTS-4
 -- lock: custom,platform
 -- based-on: custom.table_restore(uuid, uuid, integer) a307285923ad73e353804cc519cc877f6ab91b66b99e861d79d2be81e1a21a8b
@@ -1320,7 +1321,32 @@ begin
 end
 $function$;
 
-revoke all on function custom.record_restore(uuid, uuid) from public, anon;
 grant execute on function custom.record_restore(uuid, uuid) to authenticated;
 
 comment on function custom.record_restore(uuid, uuid) is 'REC-23: the undo of custom.record_delete, while the record is still within its table''s retention. It reads its own row count (V1-STORE-FIXES finding 3) so the whole-schema census in scripts/campaign-tests/v1store_fixes_green.sql can see that it does. While custom/system_enabled resolves false it is reachable only by the role that owns the store, through custom.assert_store_door.';
+
+-- The four internal helpers are doors for the server's own lane only (DD-223): no client EXECUTE.
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+VALUES ('custom', '_restore_check', 'p_organization_id uuid, p_ids uuid[], p_ats timestamp with time zone[]', ARRAY['uuid'::regtype::oid, '_uuid'::regtype::oid, '_timestamptz'::regtype::oid]::oid[],
+  'Internal step of the restore doors: custom.record_restore / custom.table_restore (the restore doors) judge a step of rows they have already asked access for, row by row; no client ever calls this.',
+  'datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql', 'server_only: custom.record_restore / custom.table_restore (the restore doors) judge a step of rows they have already asked access for, row by row; no client ever calls this', false, false)
+on conflict do nothing;
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+VALUES ('custom', '_restore_guard_one', 'p_organization_id uuid, p_id uuid, p_at timestamp with time zone', ARRAY['uuid'::regtype::oid, 'uuid'::regtype::oid, 'timestamptz'::regtype::oid]::oid[],
+  'Internal step of the restore doors: custom._record_restore_one judges the one row it is bringing back, after its door asked access for it; no client ever calls this.',
+  'datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql', 'server_only: custom._record_restore_one judges the one row it is bringing back, after its door asked access for it; no client ever calls this', false, false)
+on conflict do nothing;
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+VALUES ('custom', '_restore_records_batch', 'p_organization_id uuid, p_ids uuid[], p_ats timestamp with time zone[]', ARRAY['uuid'::regtype::oid, '_uuid'::regtype::oid, '_timestamptz'::regtype::oid]::oid[],
+  'Internal step of the restore doors: custom.table_restore and custom._record_restore_one bring a step of rows back after their door asked access for each row; no client ever calls this.',
+  'datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql', 'server_only: custom.table_restore and custom._record_restore_one bring a step of rows back after their door asked access for each row; no client ever calls this', false, false)
+on conflict do nothing;
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+VALUES ('custom', '_record_restore_one', 'p_organization_id uuid, p_record_id uuid', ARRAY['uuid'::regtype::oid, 'uuid'::regtype::oid]::oid[],
+  'Internal step of the restore doors: custom.record_restore and custom.table_restore call it after asserting the store door and the callers rung on the record; it asserts both again; no client ever calls it directly.',
+  'datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql', 'server_only: custom.record_restore and custom.table_restore call it after asserting the store door and the callers rung on the record; it asserts both again; no client ever calls it directly', false, false)
+on conflict do nothing;

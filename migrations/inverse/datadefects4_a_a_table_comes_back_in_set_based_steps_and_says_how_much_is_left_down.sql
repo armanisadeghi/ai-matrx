@@ -424,7 +424,6 @@ begin
 end
 $function$
 ;
-revoke all on function custom.record_restore(uuid, uuid) from public, anon;
 grant execute on function custom.record_restore(uuid, uuid) to authenticated;
 comment on function custom.record_restore(uuid, uuid) is 'REC-23: the undo of custom.record_delete, while the record is still within its table''s retention. It reads its own row count (V1-STORE-FIXES finding 3) so the whole-schema census in scripts/campaign-tests/v1store_fixes_green.sql can see that it does. While custom/system_enabled resolves false it is reachable only by the role that owns the store, through custom.assert_store_door.';
 
