@@ -62,7 +62,7 @@ import {
 } from "@/features/scopes/redux/contextItemCatalog";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
-import { useContextValues } from "@/features/scopes/hooks/useContextValues";
+import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";
 import type { ContextValue } from "@ai-matrx/records/scopes";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
@@ -848,7 +848,10 @@ function ScopeTableRow({
   href,
   onClick,
 }: ScopeTableRowProps) {
-  const { values, status } = useContextValues(scopeId);
+  // Read-only: the page asks the values door ONCE for every scope it lists
+  // (`ensureContextValuesForScopes` above); a row never reads its own scope.
+  const selectValuesEntry = useMemo(() => makeSelectScopeValuesEntry(), []);
+  const { values, status } = useAppSelector((s) => selectValuesEntry(s, scopeId));
   const rows = status === "ready" || status === "error" ? values : null;
 
   return (
