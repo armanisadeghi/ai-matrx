@@ -15,6 +15,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { touchFloorRing } from "@/tests/helpers/touchFloorCss";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -48,9 +49,7 @@ describe("GovernedActionDialog responsive contract", () => {
     expect(dialog).toContain(
       '<DialogContent className="matrx-touch-targets sm:max-w-xl">',
     );
-    expect(globals).toContain("@media (pointer: coarse), (max-width: 1023px)");
-    expect(globals).toContain("min-height: 2.75rem; /* 44px */");
-    expect(globals).toContain("min-width: 2.75rem;");
+    expect(touchFloorRing()).toEqual({ found: true, belowLgOnly: true });
 
     act(() => {
       root.render(
