@@ -40,6 +40,7 @@ jest.mock("@ai-matrx/data/db", () => ({
   readAllRows: jest.fn(),
 }));
 jest.mock("@/utils/supabase/client", () => ({
+  ...(require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule(),
   createClient: () => ({ schema: () => ({ from: () => ({}) }) }),
 }));
 // TWO knobs are resolved on this path now: the review window (what this suite

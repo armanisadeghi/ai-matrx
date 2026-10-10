@@ -9,7 +9,7 @@
  */
 import type { ManifestPageEntities, ResourceItem, ResourceManifest } from "./types";
 
-jest.mock("@/utils/supabase/client", () => ({ __esModule: true, supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 
 import { CATALOG } from "./catalog";
 

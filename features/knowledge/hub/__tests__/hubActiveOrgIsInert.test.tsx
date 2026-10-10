@@ -138,7 +138,12 @@ jest.mock("@/utils/supabase/client", () => {
         : chain,
     apply: () => chain,
   });
-  return { supabase: chain };
+  // The client itself must NOT be thenable (the associations port refuses a thenable as "missing"),
+  // so only the builders it hands out are the answering chain.
+  const client = new Proxy({} as Record<string, unknown>, {
+    get: (_t, prop) => (prop === "then" ? undefined : () => chain),
+  });
+  return { supabase: client };
 });
 
 // Components that need the real store / backend session are not what this test is about.

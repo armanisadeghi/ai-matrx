@@ -100,7 +100,7 @@ jest.mock("next/navigation", () =>
 // The host's tree reads knobs from the one snapshot (SelectionToolbarRoot's highlight knob); the
 // register answers empty so every knob falls to its consumer's default.
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: {},
+  ...(require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule(),
   createClient: () => ({
     schema: () => ({ rpc: async () => ({ data: { resolved: {}, stamp: null }, error: null }) }),
   }),

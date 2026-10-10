@@ -129,7 +129,8 @@ jest.mock("@/lib/toast", () => ({
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => {
   const actual = jest.requireActual("@/lib/redux/slices/appContextSlice");
-  return { ...actual, selectOrganizationId: () => ORG_ID };
+  // `default` is the slice reducer: without it `appContext` drops out of every store built from the root reducer.
+  return { ...actual, __esModule: true, default: actual.default, selectOrganizationId: () => ORG_ID };
 });
 
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";

@@ -123,7 +123,7 @@ jest.mock("@ai-matrx/records/core", () => ({
   }),
 }));
 jest.mock("@ai-matrx/records-ui", () => ({ personActor: () => ({ actor: "user" }), recordsDataSource: () => ({}) }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}), supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 // Chrome around the list that is not under test.
 jest.mock("@/features/crm/components/saved-views/SavedViewBar", () => ({ SavedViewBar: () => null }));
 jest.mock("@/features/crm/components/dedup/CrmAssistStrip", () => ({ CrmAssistStrip: () => null }));

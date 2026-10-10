@@ -153,7 +153,7 @@ jest.mock("@/components/ui/select", () => {
 });
 jest.mock("../CustomDataBindingPreview", () => ({ CustomDataBindingPreview: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 // The shell's dropdown, as plain buttons: the menu mechanics are not what this suite is about.
 jest.mock("@/components/ui/dropdown-menu", () => {
   const Pass = ({ children }: { children?: unknown }) => <>{children as never}</>;

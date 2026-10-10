@@ -35,13 +35,14 @@ jest.mock("@/features/agents/redux/fetch-full-agent.thunk", () => ({ fetchFullAg
 jest.mock("@ai-matrx/chat/host/notify", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 import { AgentPeekDuplicateButton } from "../AgentPeekDuplicateButton";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   host = document.createElement("div");
   document.body.appendChild(host);
-  root = createRoot(host);
+  root = withAppStore(createRoot(host));
 });
 afterEach(() => {
   act(() => root.unmount());

@@ -1,7 +1,7 @@
 // The seam between a meeting's stored panel key and the host app's registry (Meet MD-15):
 // the key the 360 review schedules with must be a registered panel, or the call shows no panel.
 jest.mock("next/dynamic", () => () => function Panel() { return null; });
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 jest.mock("@ai-matrx/meet", () => ({ createMeetRepository: () => ({}), asOrganizationId: (v: string) => v, asUserId: (v: string) => v }));
 
 import { MEET_APP_PANELS } from "./registry";

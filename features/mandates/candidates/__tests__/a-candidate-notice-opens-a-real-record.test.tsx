@@ -91,7 +91,7 @@ jest.mock("@/lib/api/typed-client", () => ({
 jest.mock("@/features/organizations/awaitWorkspace", () => ({
   awaitOrganizationForRecordRead: async () => ({ status: "ready" }),
 }));
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 jest.mock("@/components/cost/Cost", () => ({
   Cost: ({ usd }: { usd: number | null }) => <span>{usd == null ? "—" : String(usd)}</span>,
 }));

@@ -5,6 +5,7 @@
  */
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 
@@ -17,5 +18,20 @@ export function makeStoreReadsStore() {
 
 export function WithStoreReads({ children }: { children: ReactNode }) {
   const store = makeStoreReadsStore();
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      <TooltipProvider>{children}</TooltipProvider>
+    </Provider>
+  );
+}
+
+/**
+ * Wrap a React root so everything rendered through it sits under the app store. For suites that
+ * render with `root.render(...)` at many sites: `const root = withAppStore(createRoot(container))`.
+ */
+export function withAppStore<R extends { render: (node: ReactNode) => void }>(root: R): R {
+  const store = makeStoreReadsStore();
+  const render = root.render.bind(root);
+  root.render = (node: ReactNode) => render(<Provider store={store}><TooltipProvider>{node}</TooltipProvider></Provider>);
+  return root;
 }

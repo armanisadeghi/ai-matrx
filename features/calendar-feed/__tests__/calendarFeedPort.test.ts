@@ -4,7 +4,7 @@
 import { googleCalendarUrl } from "@ai-matrx/records-ui";
 
 const rpc = jest.fn();
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({ schema: (s: string) => ({ rpc: (fn: string, a?: unknown) => rpc(s, fn, a) }) }) }));
+jest.mock("@/utils/supabase/client", () => ({ ...(require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule(), createClient: () => ({ schema: (s: string) => ({ rpc: (fn: string, a?: unknown) => rpc(s, fn, a) }) }) }));
 
 import { CALENDAR_FEED_PORT, calendarFeedUrl } from "../calendarFeedPort";
 import { settingsRegistry } from "@/features/settings/registry";

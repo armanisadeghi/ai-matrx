@@ -21,7 +21,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
   meetBaseUrl: () => "https://server.test",
 }));
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

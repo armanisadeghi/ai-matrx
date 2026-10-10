@@ -13,6 +13,7 @@ jest.mock("next/dynamic", () => ({
 
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { looksLikeMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 describe("ResultValue nested Markdown", () => {
   let container: HTMLDivElement;
@@ -20,7 +21,7 @@ describe("ResultValue nested Markdown", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
-    root = createRoot(container);
+    root = withAppStore(createRoot(container));
   });
   afterEach(() => {
     act(() => root.unmount());

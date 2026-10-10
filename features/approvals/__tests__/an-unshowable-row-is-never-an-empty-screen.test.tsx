@@ -48,6 +48,7 @@ jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
 }));
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => 50 }));
 jest.mock("@/utils/supabase/client", () => ({
+  ...(require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule(),
   createClient: () => ({ schema: () => ({ from: () => ({}) }) }),
 }));
 // The real registry pulls every kind (and their env-dependent services) into

@@ -16,6 +16,7 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { deriveSchemaFields, humanFormFields } from "@/features/directive-catalog/schemaFields";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 jest.mock("@/features/messaging/hooks/useUserConnections", () => ({
   useUserConnections: () => ({
@@ -66,7 +67,7 @@ const fields = humanFormFields(
 async function renderRows(mode: "create" | "update") {
   const container = document.createElement("div");
   document.body.appendChild(container);
-  const root = createRoot(container);
+  const root = withAppStore(createRoot(container));
   await act(async () => {
     root.render(
       <SchemaFieldsForm fields={fields} values={{}} mode={mode} moreOpenByDefault onChange={() => undefined} />,

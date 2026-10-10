@@ -21,7 +21,7 @@ jest.mock("@/lib/toast", () => {
   const toast = { warning: jest.fn(), error: jest.fn(), success: jest.fn(), info: jest.fn(), dismiss: jest.fn(), message: jest.fn() };
   return { toast: new Proxy(toast, { get: (target, key: string) => (target as Record<string, unknown>)[key] ?? fn() }) };
 });
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 jest.mock("@/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({ data: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } }, error: null }),
 }));

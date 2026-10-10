@@ -17,6 +17,7 @@ import {
   SCHEMA_PICKER_GEOMETRY,
   SchemaFieldsForm,
 } from "@/features/directive-catalog/components/SchemaFieldsForm";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 jest.mock("@/features/messaging/hooks/useUserConnections", () => ({
   useUserConnections: () => ({
@@ -81,7 +82,7 @@ describe("the write form is one control family (G17)", () => {
   it("every rendered control is a package control or sits on the package tokens", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
-    const root = createRoot(container);
+    const root = withAppStore(createRoot(container));
     for (const mode of ["create", "update"] as const) {
       await act(async () => {
         root.render(

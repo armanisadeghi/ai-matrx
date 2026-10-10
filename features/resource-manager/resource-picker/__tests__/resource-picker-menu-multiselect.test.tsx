@@ -65,6 +65,7 @@ jest.mock("../FilesResourcePicker", () => ({
 }));
 
 import { ResourcePickerMenu } from "../ResourcePickerMenu";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -72,7 +73,7 @@ let root: Root;
 beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
-  root = createRoot(container);
+  root = withAppStore(createRoot(container));
 });
 
 afterEach(() => {

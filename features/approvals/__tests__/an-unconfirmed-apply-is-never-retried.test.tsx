@@ -50,6 +50,7 @@ jest.mock("@ai-matrx/data/db", () => ({
   readAllRows: jest.fn(),
 }));
 jest.mock("@/utils/supabase/client", () => ({
+  ...(require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule(),
   createClient: () => ({ schema: () => ({ from: () => ({}) }) }),
 }));
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({

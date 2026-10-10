@@ -40,7 +40,7 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 jest.mock("@ai-matrx/agents/mandates", () => ({
   ...jest.requireActual("@ai-matrx/agents/mandates"),
   MANDATE_KEYS: { data__page_guidance: "data.page_guidance" },

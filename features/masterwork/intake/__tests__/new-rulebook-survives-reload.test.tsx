@@ -156,6 +156,8 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => {
   const actual = jest.requireActual("@/lib/redux/slices/appContextSlice");
   return {
     ...actual,
+    __esModule: true,
+    default: actual.default,
     selectOrganizationId: () => ORG_ID,
     selectShouldPromptForOrganization: () => false,
   };

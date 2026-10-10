@@ -47,6 +47,7 @@ jest.mock("@/features/notes/service/notesService", () => ({
 
 import { ResourcePickerMenu } from "../ResourcePickerMenu";
 import type { OpenKnowledgeCommandBarOptions } from "@/features/overlays/openers/knowledgeCommandBar";
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -55,7 +56,7 @@ beforeEach(() => {
   openBar.mockClear();
   container = document.createElement("div");
   document.body.appendChild(container);
-  root = createRoot(container);
+  root = withAppStore(createRoot(container));
 });
 
 afterEach(() => {

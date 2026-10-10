@@ -107,7 +107,7 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}), supabase: { auth: {} } }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 jest.mock("@/features/unified-data/hub/useSharedTable", () => ({ useSharedTable: () => ({ state: "none" }) }));
 jest.mock("@/features/unified-data/objectOrganization", () => ({
   useObjectOrganization: () => ({ state: "found", organizationId: ITS_ORG, retry: jest.fn() }),

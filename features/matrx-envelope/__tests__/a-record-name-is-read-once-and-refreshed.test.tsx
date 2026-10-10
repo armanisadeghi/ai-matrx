@@ -11,7 +11,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@/utils/supabase/client", () => (require("@/tests/helpers/emptySupabaseClient") as typeof import("@/tests/helpers/emptySupabaseClient")).emptySupabaseClientModule());
 
 import {
   getReferenceResolver,
