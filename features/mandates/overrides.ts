@@ -238,7 +238,7 @@ export async function fetchMandatePickerData(
       .eq("id", defaultAgentId)
       .maybeSingle();
     if (agentError) throw agentError;
-    defaultAgentName = agent?.name ?? "(unknown agent)";
+    defaultAgentName = agent?.name ?? "(agent not shared with you)";
   }
 
   const { data: binding, error: bindingError } = await mandateBindings(supabase)
