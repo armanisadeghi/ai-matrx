@@ -16,6 +16,7 @@
 // Values load per scope WHEN ITS ROW IS DRAWN (the card shows 10 rows, then "Show more"), never
 // for every scope up front — an org with 600 tags fired 600 reads to draw 10 rows.
 
+import type { ContextField, Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { withArticle } from "@/lib/text/withArticle";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -50,10 +51,9 @@ import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { contextItemsHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
-import type { ContextItemRow, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 
 interface OrgScopeTypeSectionProps {
-  scopeType: ScopeTypeNode;
+  scopeType: ScopeTypeWithScopes;
   orgId: string;
   orgSlugOrId: string;
   /** The viewer's organization role; with the type's creator it decides who edits the type's structure. */
@@ -92,9 +92,9 @@ export function OrgScopeTypeSection({
   const singular = scopeType.label_singular.toLowerCase();
   const plural = scopeType.label_plural.toLowerCase();
   const typeHref = `/organizations/${orgSlugOrId}/scopes/${scopeType.id}`;
-  const scopeHref = (scope: ScopeNode) => `${typeHref}/${scope.id}`;
+  const scopeHref = (scope: Scope) => `${typeHref}/${scope.id}`;
 
-  const tableColumns = useMemo<MatrxColumnDef<ScopeNode>[]>(
+  const tableColumns = useMemo<MatrxColumnDef<Scope>[]>(
     () => [
       {
         id: "name",
@@ -106,9 +106,9 @@ export function OrgScopeTypeSection({
         ),
       },
       ...columns.map(
-        (item): MatrxColumnDef<ScopeNode> => ({
+        (item): MatrxColumnDef<Scope> => ({
           id: item.id,
-          header: item.display_name,
+          header: item.label,
           // Values load per drawn row, so no loaded view can sort or filter by them honestly.
           accessorFn: () => "",
           width: 180,
@@ -127,7 +127,7 @@ export function OrgScopeTypeSection({
               sortable: false,
               filter: false,
               cell: () => <span className="text-muted-foreground">…</span>,
-            } satisfies MatrxColumnDef<ScopeNode>,
+            } satisfies MatrxColumnDef<Scope>,
           ]
         : []),
     ],
@@ -164,7 +164,7 @@ export function OrgScopeTypeSection({
         {...(adding ? { adding: inlineAdd } : {})}
       >
         {scopes.length > 0 ? (
-          <MatrxDataTable<ScopeNode>
+          <MatrxDataTable<Scope>
             urlState={{ id: `org-scopes-${scopeType.id}` }}
             tableId={`organizations/scopes/${scopeType.id}`}
             data={scopes}
@@ -206,7 +206,7 @@ export function OrgScopeTypeSection({
 }
 
 /** The scope's name, as a real link; drawing it loads this scope's values (once, deduped). */
-function ScopeNameCell({ scope, href, colorClass }: { scope: ScopeNode; href: string; colorClass: string }) {
+function ScopeNameCell({ scope, href, colorClass }: { scope: Scope; href: string; colorClass: string }) {
   const dispatch = useAppDispatch();
   useEffect(() => {
     void dispatch(ensureContextValues(scope.id));
@@ -241,9 +241,9 @@ function ScopeValueCell({ scopeId, itemId }: { scopeId: string; itemId: string }
 }
 
 interface ContextItemsReadyPreviewProps {
-  scopeType: ScopeTypeNode;
-  items: ContextItemRow[];
-  columns: ContextItemRow[];
+  scopeType: ScopeTypeWithScopes;
+  items: ContextField[];
+  columns: ContextField[];
   overflowCount: number;
   orgSlugOrId: string;
   nameColorClass: string;
@@ -293,8 +293,8 @@ export function ContextItemsReadyPreview({
                   key={col.id}
                   className="px-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-0"
                 >
-                  <span className="block truncate" title={col.display_name}>
-                    {col.display_name}
+                  <span className="block truncate" title={col.label}>
+                    {col.label}
                   </span>
                 </TableHead>
               ))}

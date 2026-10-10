@@ -13,6 +13,7 @@
 
 "use client";
 
+import type { ContextField, ContextValue, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import {
   cloneElement,
   isValidElement,
@@ -60,10 +61,7 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/utils/cn";
 import type {
-  ContextItemRow,
-  ContextItemValue,
   OrgNode,
-  ScopeTypeNode,
 } from "@/features/scopes/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -73,7 +71,7 @@ const MAX_ITEM_COLUMNS = 6;
 
 interface DimensionRow {
   org: OrgNode;
-  type: ScopeTypeNode;
+  type: ScopeTypeWithScopes;
 }
 
 export function ScopesHub() {
@@ -116,10 +114,10 @@ export function ScopesHub() {
           id: item.id,
           scope_type_id: item.scope_type_id,
           key: item.key,
-          display_name: item.display_name,
+          display_name: item.label,
           description: item.description,
-          value_type: item.value_type,
-          sort_order: item.sort_order,
+          value_type: item.kind,
+          sort_order: item.sort,
         });
       }
     }
@@ -314,11 +312,11 @@ function ScopeTypeTable({
   scopesPending = false,
 }: {
   org: OrgNode;
-  type: ScopeTypeNode;
+  type: ScopeTypeWithScopes;
   /** The whole tree is still loading: the type's scopes are not in yet. */
   scopesPending?: boolean;
-  items: ContextItemRow[];
-  valuesByScope: Record<string, Record<string, ContextItemValue>>;
+  items: ContextField[];
+  valuesByScope: Record<string, Record<string, ContextValue>>;
   cellsStatus: "idle" | "loading" | "ready" | "error";
   activeScopeIds: Set<string>;
   showOrg: boolean;
@@ -332,7 +330,7 @@ function ScopeTypeTable({
 
   const columns = items.slice(0, MAX_ITEM_COLUMNS);
   const hiddenCount = items.length - columns.length;
-  const tableColumns: MatrxColumnDef<ScopeTypeNode["scopes"][number]>[] = [
+  const tableColumns: MatrxColumnDef<ScopeTypeWithScopes["scopes"][number]>[] = [
     {
       id: "scope",
       header: type.label_singular,
@@ -351,14 +349,14 @@ function ScopeTypeTable({
         />
       ),
     },
-    ...columns.map((item): MatrxColumnDef<ScopeTypeNode["scopes"][number]> => ({
+    ...columns.map((item): MatrxColumnDef<ScopeTypeWithScopes["scopes"][number]> => ({
       id: item.id,
       header: (
-        <span title={item.description || item.display_name}>
-          {item.display_name}
+        <span title={item.description || item.label}>
+          {item.label}
         </span>
       ),
-      label: item.display_name,
+      label: item.label,
       accessorFn: (scope) => {
         const value = valuesByScope[scope.id]?.[item.id];
         return value ? (summarizeContextCell(value) ?? "") : "";
