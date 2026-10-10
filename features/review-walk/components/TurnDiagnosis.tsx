@@ -1338,7 +1338,7 @@ export function AnswerSection({
               {outcome === "failed" && part.outcome_detail ? (
                 <div className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
                   {part.outcome_detail}
-                </div>
+                <ErrorAlchemyMenu /></div>
               ) : null}
             </div>
           </DiagCard>
