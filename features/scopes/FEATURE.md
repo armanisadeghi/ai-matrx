@@ -104,7 +104,7 @@ this directory.
    platform-admin arm decides). The node sits in `organizations` with `admin_lane: true` and in
    `adminLaneOrganizationIds`, never in `organizationIds` (no picker lists it), is never persisted,
    survives a membership refresh, and is released on unmount (`adminLaneOrganizationReleased`).
-   `redux/selectors/admin.ts#selectAllScopeTypes` includes it; `ScopeManagerPage` takes `adminLane`, which
+   `redux/selectors/admin.ts#selectAllScopeTypes` includes it; `ScopesManager` takes `adminLane`, which
    ONLY the `/administration` route passes. The six structural write RPCs accept
    `public.is_platform_admin()` (true only on an admin-lane request) —
    `migrations/campaign/scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql`.
@@ -398,6 +398,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-10-09 (SCOPES-WEB-SCREENS phase 2): ONE management screen and ONE copy of each editor. `components/management/{AddScopeModal,EditScopeTypeSheet,NewScopeInline,ScopeOnboarding}` are the survivors (the `features/scope-system` copies are deleted); carried over: AddScopeModal `presentation` (docked/floating), the per-field edit pencil → `EditContextItemSheet` in EditScopeTypeSheet and NewScopeInline. The second screen `features/agent-context/components/scope-admin/**` is gone: `ScopesManager` takes `adminLane` (admin-arm load, release on unmount, not-found/error states — the `/administration/scopes-context/organizations/[orgId]` console renders it), shows `ScopeTemplateStarter` (moved here) for owners/admins, and renders a type whose scopes nest as `ScopeInstancePanel` (moved here, with `ScopeForm`/`ScopeFormSheet`; `ScopeEditWindow` uses `ScopeForm`). `/organizations/[orgId]/settings/scopes` redirects to `/organizations/[orgId]/scopes`. AddScopeModal's "Parent type" select is removed: the store keeps no parent type, so it saved nothing.
 
 - 2026-10-09 (SCOPES-WEB-CORE): the hand-rolled data layer is gone. ONE binding `service/scopeDoors.ts` (`scopeDoors()` = `@ai-matrx/records` `client.scopes`; `serverScopeDoors()` for server components). Deleted `storeScopeReads`, `scopeStore`, `storeScopeAdapter`, `scopeRows`, `utils/{canShapeScopeType,slugify,scopeValuePayload,incompleteValue}`; `rpcResult` speaks `RecordsResult`. The holder keeps its names and holds package shapes (`ScopeTypeWithScopes`, `Scope`, `ContextField`, `ContextValue` by field id); resolution = `resolveScopeContext`, field+value join = `joinFieldValues` (records 0.97.2). `setScopeContextValue`/`setContextValue` take a `ContextValueWrite`. Persisted tree policy v5. Guard: `pnpm check:scopes-data-layer` (+ `:self-test`).
 

@@ -41,6 +41,8 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
 
 ## Change Log
 
+- 2026-10-09 — **Scope shapes are the package's.** `types.ts` drops the rows bound to the deprecated `context_items` / `context_item_values` tables and the old `fetch_hint` / sensitivity words; `constants.ts` keys `CONTEXT_POLICY_CONFIG` (was `FETCH_HINT_CONFIG`) and `SENSITIVITY_CONFIG` by the store's words (`@ai-matrx/records/scopes`). The second scope management screen (`components/scope-admin/**`) is deleted — `features/scopes/components/management/ScopesManager` is the one screen.
+
 - 2026-10-01 — **A single-record read that misses is an answer, not an error.** `fetchTask`,
   `fetchProject` and `fetchOrg` read with `.maybeSingle()` (was `.single()`, which turned every
   deep link to a trashed / unseen / unknown row into a 406 PGRST116 red-tier capture — 3x live on
