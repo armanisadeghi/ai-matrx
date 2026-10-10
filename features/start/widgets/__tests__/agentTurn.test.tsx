@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 
 let handlers: Record<string, (input: unknown, call?: { conversationId: string }) => unknown> = {};
-const world = { executing: false };
+const world = { executing: false, awaitingTools: false };
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceClientTools: (_name: string, h: typeof handlers) => {
     handlers = h;
@@ -13,6 +13,7 @@ jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
 }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors", () => ({
   selectIsExecuting: () => () => world.executing,
+  selectIsAwaitingTools: () => () => world.awaitingTools,
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (fn: (s: unknown) => unknown) => fn({}) }));
 
@@ -73,6 +74,26 @@ it("an explicit flush (person pressed Edit) saves once even if the turn then end
   await act(async () => {
     await Promise.all([m.api().flush(), m.api().flush()]);
   });
+  world.executing = false;
+  await act(async () => m.rerender());
+  expect(save).toHaveBeenCalledTimes(1);
+});
+
+it("a conversation paused for its tools between two tool calls is mid-turn: ONE version, not one per tool call", async () => {
+  const save = jest.fn(async () => ({ ok: true as const }));
+  const m = mount(save);
+  world.executing = true;
+  act(() => void handlers.start_move_widget!({ id: "w_tasks", position: 0 }, call));
+  m.rerender();
+  // Between the tool calls the runtime is "paused" (awaiting tool results), no longer running.
+  world.executing = false;
+  world.awaitingTools = true;
+  await act(async () => m.rerender());
+  expect(save).not.toHaveBeenCalled();
+  world.awaitingTools = false;
+  world.executing = true;
+  act(() => void handlers.start_move_widget!({ id: "w_agenda", position: 1 }, call));
+  m.rerender();
   world.executing = false;
   await act(async () => m.rerender());
   expect(save).toHaveBeenCalledTimes(1);

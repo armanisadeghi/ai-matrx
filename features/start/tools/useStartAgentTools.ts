@@ -9,7 +9,7 @@
 // person pressing Edit, flushes at once — an agent change is never dropped.
 import { useEffect, useRef, useState } from "react";
 import { useSurfaceClientTools, type SurfaceToolCall } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectIsAwaitingTools, selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { summarizeStartEdit } from "../widgets/editNote";
 import type { StartDoc } from "../widgets/types";
@@ -56,9 +56,13 @@ export function useStartAgentTools(surfaceName: string, host: StartAgentHost) {
     return flushing.current;
   };
 
-  // THE TURN'S END: the conversation that made the pending changes stops executing.
+  // THE TURN'S END: the conversation that made the pending changes stops executing. A conversation waiting
+  // for its tools' answers ("paused") is NOT finished: between two tool calls of one turn it is paused, not
+  // running, and ending the turn there saved one version per tool call (seen live: v4 + v5 for one request).
   const executing = useAppSelector((state) =>
-    pending?.conversationId ? selectIsExecuting(pending.conversationId)(state as never) : false,
+    pending?.conversationId
+      ? selectIsExecuting(pending.conversationId)(state as never) || selectIsAwaitingTools(pending.conversationId)(state as never)
+      : false,
   );
   const wasExecuting = useRef(false);
   useEffect(() => {
