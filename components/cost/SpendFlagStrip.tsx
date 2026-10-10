@@ -26,6 +26,8 @@ import {
   Gem,
   Infinity as InfinityIcon,
   Layers,
+  OctagonAlert,
+  OctagonPause,
   Repeat,
   SaveOff,
   Scissors,
@@ -52,7 +54,9 @@ export type SpendFlagSlot =
   | "no_approval"
   | "unsaved_runs"
   | "unattributed"
-  | "not_ready";
+  | "not_ready"
+  | "paused_by_limit"
+  | "missing_limits";
 
 type Glyph = ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
 
@@ -72,6 +76,8 @@ const SLOT: Record<SpendFlagSlot, { icon: Glyph; label: string }> = {
   unsaved_runs: { icon: SaveOff, label: "Unsaved runs" },
   unattributed: { icon: Unlink, label: "No model or agent linked" },
   not_ready: { icon: ClipboardX, label: "Not ready: core inputs missing" },
+  paused_by_limit: { icon: OctagonPause, label: "Paused by a limit" },
+  missing_limits: { icon: OctagonAlert, label: "Missing required limits" },
 };
 
 /** Every slot, in THE order. A board's `set` is a subsequence of this. */
@@ -89,6 +95,8 @@ export const AUTOMATION_FLAG_SET: readonly SpendFlagSlot[] = [
   "runs_as_person",
   "unattributed",
   "not_ready",
+  "paused_by_limit",
+  "missing_limits",
 ];
 
 /** The triggers board adds its own two. */

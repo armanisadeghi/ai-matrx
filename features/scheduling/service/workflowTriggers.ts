@@ -15,6 +15,7 @@ import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import {
   fetchAutomationCosts,
+  withGuardrails,
   type AutomationCostRow,
 } from "@/features/scheduling/service/automationCosts";
 
@@ -68,7 +69,11 @@ export async function fetchManagedTriggers(orgId: string | null): Promise<Manage
     costs.filter((c) => c.automation_kind === "workflow_trigger").map((c) => [c.automation_id, c]),
   );
   const list = (overview.data ?? []) as WorkflowTriggerOverview[];
-  return list.map((o) => ({ overview: o, cost: byId.get(o.trigger_id) ?? emptyCost(o) }));
+  const merged = list.map((o) => ({ overview: o, cost: byId.get(o.trigger_id) ?? emptyCost(o) }));
+  // A never-run trigger has no rollup row, so its limits are read here (the rest already carry them).
+  const bare = await withGuardrails(merged.filter((m) => m.cost.guardrails === undefined).map((m) => m.cost));
+  const filled = new Map(bare.map((c) => [c.automation_id, c]));
+  return merged.map((m) => ({ ...m, cost: filled.get(m.cost.automation_id) ?? m.cost }));
 }
 
 /** A trigger that has never run has no rollup row: say so with zeros, not a gap. */

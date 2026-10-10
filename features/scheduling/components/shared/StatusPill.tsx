@@ -15,6 +15,7 @@ const STATUS_STYLES: Record<RunStatus, string> = {
   cancelled: "border border-border bg-muted text-muted-foreground",
   skipped: "border border-border bg-muted/60 text-muted-foreground",
   interrupted: "border border-info/40 bg-info/10 text-info-ink",
+  stopped: "border border-destructive/40 bg-destructive/10 text-destructive-ink",
 };
 
 const LABEL: Record<RunStatus, string> = {
@@ -26,6 +27,7 @@ const LABEL: Record<RunStatus, string> = {
   cancelled: "Cancelled",
   skipped: "Skipped",
   interrupted: "Interrupted, continuing",
+  stopped: "Stopped by limit",
 };
 
 interface Props {

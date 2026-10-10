@@ -30,6 +30,7 @@ import { cn } from "@/utils/cn";
 import { describeRecurrence, fromCron } from "../recurrence";
 import type { TriggerFire, WorkflowTrigger } from "../types";
 import { triggerWebhookUrl } from "../useWorkflowTriggers";
+import { AutomationLimitsSection } from "@/features/scheduling/components/limits/AutomationLimitsSection";
 import { CopyableValue } from "./CopyableValue";
 import { formatInZone } from "./RecurrenceEditor";
 import { TriggerFireHistory } from "./TriggerFireHistory";
@@ -222,6 +223,15 @@ export function TriggerCard({
           Remove
         </button>
       </div>
+
+      <details className="mt-2 border-t border-border pt-2">
+        <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+          Limits
+        </summary>
+        <div className="mt-2">
+          <AutomationLimitsSection kind="workflow_trigger" id={trigger.id} />
+        </div>
+      </details>
 
       {open ? (
         <div className="mt-2 border-t border-border pt-2">

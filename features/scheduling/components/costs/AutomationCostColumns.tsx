@@ -5,6 +5,11 @@
  * lists automations (Costs tab, System jobs tab, org admin) renders these, so a
  * flag, a link or a number can never disagree between two screens.
  */
+import {
+  guardrailBreachLabel,
+  missingRequired,
+  type LimitKey,
+} from "@/features/scheduling/service/automationGuardrails";
 import { notReadyHit } from "@/features/scheduling/service/automationReadiness";
 import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
 import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
@@ -32,6 +37,23 @@ import {
   type AutomationSeat,
 } from "@/features/scheduling/service/automationCosts";
 
+export const LIMIT_LABEL: Record<LimitKey, string> = {
+  max_turns: "Max turns",
+  max_cost_usd_per_run: "Max cost per run",
+  max_runtime_seconds: "Max time per run",
+  max_cost_usd_daily: "Daily cap",
+  max_cost_usd_weekly: "Weekly cap",
+  max_cost_usd_monthly: "Monthly cap",
+  max_failure_pct: "Max failure %",
+};
+
+/** Required limits missing on an automation that uses AI (a row whose limits are unread has none missing). */
+export function missingLimitKeys(row: AutomationCostRow): LimitKey[] {
+  if (!row.guardrails) return [];
+  const ai = row.guardrails.uses_ai === true || automationAiState(row) === "ai" || automationAiState(row) === "spend_unattributed";
+  return ai ? missingRequired(row.guardrails) : [];
+}
+
 /** The automation rules' flags as icon-strip hits (plus "no model linked" from the AI state). */
 export function automationFlagHits(row: AutomationCostRow | undefined): SpendFlagHit[] {
   if (!row) return [];
@@ -42,6 +64,21 @@ export function automationFlagHits(row: AutomationCostRow | undefined): SpendFla
   }));
   if (automationAiState(row) === "spend_unattributed") {
     hits.push({ slot: "unattributed", severity: "warning", detail: "Cost is recorded on its runs, but no model call is linked" });
+  }
+  if (row.guardrail_pause) {
+    hits.push({
+      slot: "paused_by_limit",
+      severity: "critical",
+      detail: row.guardrail_pause.reason ?? `Paused: ${guardrailBreachLabel(row.guardrail_pause.breach)}`,
+    });
+  }
+  const missing = missingLimitKeys(row);
+  if (missing.length > 0) {
+    hits.push({
+      slot: "missing_limits",
+      severity: "critical",
+      detail: `Missing: ${missing.map((k) => LIMIT_LABEL[k]).join(", ")}`,
+    });
   }
   const notReady = notReadyHit(row.mandates, row.organization_id);
   if (notReady) hits.push(notReady);
@@ -107,6 +144,12 @@ const text = (v: string | null | undefined) => (
     {v ?? "—"}
   </span>
 );
+
+/** Spend so far (the table's 30-day window) as a share of the monthly cap. */
+function capUsedPct(r: AutomationCostRow | undefined): number | null {
+  const cap = r?.guardrails?.max_cost_usd_monthly ?? 0;
+  return r && cap > 0 ? (r.cost / cap) * 100 : null;
+}
 
 const hide = <T,>(cols: MatrxColumnDef<T>[]) => cols.map((c) => ({ ...c, hidden: true }));
 
@@ -212,7 +255,8 @@ export function automationCostColumns<T>(
     },
     ...hide(money("cost_last_run", "Last run cost", (r) => r.last_run_cost)),
     ...money("cost_avg_run", "Avg cost/run", (r) => r.avg_run_cost),
-    ...money("cost_max_run", "Max cost/run", (r) => r.max_run_cost),
+    ...money("cost_max_run", "Costliest run", (r) => r.max_run_cost),
+    ...money("cost_limit_run", "Max cost/run", (r) => r.guardrails?.max_cost_usd_per_run ?? null),
     {
       id: "cost_avg_turns",
       header: "Avg turns",
@@ -223,8 +267,35 @@ export function automationCostColumns<T>(
       cell: (row) => <Num v={get(row)?.avg_turns} />,
     },
     {
-      id: "cost_max_turns",
+      id: "cost_limit_turns",
       header: "Max turns",
+      accessorFn: (row) => get(row)?.guardrails?.max_turns ?? null,
+      filter: "number",
+      align: "right",
+      width: 90,
+      cell: (row) => <Num v={get(row)?.guardrails?.max_turns} />,
+    },
+    ...money("cost_limit_month", "Month cap", (r) => r.guardrails?.max_cost_usd_monthly ?? null),
+    {
+      id: "cost_limit_used",
+      header: "Month cap used",
+      accessorFn: (row) => capUsedPct(get(row)),
+      filter: "number",
+      align: "right",
+      compact: true,
+      width: 100,
+      cell: (row) => {
+        const p = capUsedPct(get(row));
+        return (
+          <span className={`tabular-nums text-xs ${p != null && p >= 100 ? "font-semibold text-destructive" : ""}`}>
+            {p == null ? "—" : `${Math.round(p)}%`}
+          </span>
+        );
+      },
+    },
+    {
+      id: "cost_max_turns",
+      header: "Most turns",
       accessorFn: (row) => get(row)?.max_turns ?? null,
       filter: "number",
       align: "right",
@@ -295,6 +366,12 @@ export const AUTOMATION_COLUMN_ORDER = [
   "cost_est_month_points",
   "cost_max_run",
   "cost_max_run_points",
+  "cost_limit_run",
+  "cost_limit_run_points",
+  "cost_limit_turns",
+  "cost_limit_month",
+  "cost_limit_month_points",
+  "cost_limit_used",
   "cost_avg_turns",
   "cost_max_turns",
   "cost_models",
