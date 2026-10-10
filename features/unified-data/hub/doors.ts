@@ -500,16 +500,63 @@ export async function archivedPortalsEverywhere(
 }
 
 /** Bring one archived record back, in the organization it lives in (all-organizations archive). */
+/**
+ * What one call of `custom.record_restore` answers (DATA-DEFECTS-4). The door used to return nothing; it now
+ * answers like the archive door: `done` / `remaining` say whether to call again. A store still on the old
+ * door answers nothing (null), which is read as "done".
+ */
+export interface RecordRestorePass {
+  done?: boolean;
+  remaining?: number;
+  restored?: number;
+  /** Rows that came back but no longer meet what the table asks of a record: {id: why}. Never dropped. */
+  flagged_reasons?: Record<string, string>;
+  /** Rows refused on their own now, left archived: {id: why}. */
+  left_reasons?: Record<string, string>;
+  message?: string;
+}
+
+/** Passes in a row that bring nothing back and leave the same count behind before the run says it is stuck. */
+const RESTORE_STALL_PASSES = 3;
+/** No table, however big, takes more passes than this: past it the run stops and says so. */
+const RESTORE_MAX_PASSES = 500;
+
+/**
+ * Bring one archived record (or a whole archived table) back, carrying on until the door says `done`.
+ * The same contract as the archive loop (`archiveTableFromHome`): progress after every pass that did not
+ * finish, and a stall or a pass limit ends with the count still archived, never silently.
+ */
 export async function restoreRecordIn(
   dataSource: RecordsDataSource,
   organizationId: string,
   recordId: string,
-): Promise<DoorAnswer<null>> {
-  const answered = await call<unknown>(dataSource, "record_restore", {
-    p_organization_id: organizationId,
-    p_record_id: recordId,
-  });
-  return answered.ok ? { ok: true, data: null } : answered;
+  options: { onPass?: (pass: RecordRestorePass) => void } = {},
+): Promise<DoorAnswer<RecordRestorePass | null>> {
+  let stalled = 0;
+  let last: number | undefined;
+  for (let pass = 0; pass < RESTORE_MAX_PASSES; pass += 1) {
+    const answered = await call<RecordRestorePass | null>(dataSource, "record_restore", {
+      p_organization_id: organizationId,
+      p_record_id: recordId,
+    });
+    if (!answered.ok) return answered;
+    const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
+    if (!data || data.done !== false) return { ok: true, data };
+    options.onPass?.(data);
+    const remaining = data.remaining ?? 0;
+    stalled = (data.restored ?? 0) === 0 && last === remaining ? stalled + 1 : 0;
+    last = remaining;
+    if (stalled >= RESTORE_STALL_PASSES) {
+      return {
+        ok: false,
+        error: { message: `${remaining} ${remaining === 1 ? "record is" : "records are"} still archived. It stopped moving. Bring it back again to carry on.` },
+      };
+    }
+  }
+  return {
+    ok: false,
+    error: { message: `${last ?? 0} ${last === 1 ? "record is" : "records are"} still archived after ${RESTORE_MAX_PASSES} passes. Bring it back again to carry on.` },
+  };
 }
 
 /** One pass of `custom.table_restore` (lane TABLE-ACTIONS): what came back and what still waits. */
