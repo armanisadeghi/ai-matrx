@@ -134,6 +134,8 @@ export function ClaudeAccountsPanel() {
   useEffect(() => {
     void load();
   }, []);
+  // A Connect never outlives the panel: leaving the page ends its polling.
+  useEffect(() => () => connectAbort.current?.abort(), []);
 
   const connect = async (opts: { afterStop?: boolean } = {}) => {
     const taken = new Set((rows ?? []).filter((r) => r.status === "connected").map((r) => r.slot));
