@@ -55,13 +55,12 @@ export function CompetitorDetail({
   return (
     <div className="space-y-5 p-4 text-sm">
       <header className="space-y-1">
-        <h2 className="text-base font-semibold">{model.name}</h2>
         {model.website ? (
           <a
             href={model.website.href}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+            className="inline-flex items-center gap-1 text-foreground hover:underline"
           >
             {model.website.label}
             <ExternalLink className="h-3 w-3" />

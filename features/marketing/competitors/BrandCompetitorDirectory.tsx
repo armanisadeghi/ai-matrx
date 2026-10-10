@@ -13,7 +13,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search, Swords, UserPlus } from "lucide-react";
+import { ExternalLink, Loader2, Plus, Search, Swords, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,6 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   LoadingSurface,
   QueryError,
-  SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSites } from "@/features/marketing/data/hooks";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -136,6 +135,7 @@ export function BrandCompetitorDirectory() {
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [detailRow, setDetailRow] = useState<BrandCompetitor | null>(null);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const [searched, setSearched] = useState<ReadonlySet<string>>(new Set());
   const queryClient = useQueryClient();
@@ -285,7 +285,22 @@ export function BrandCompetitorDirectory() {
         id: "domain",
         header: "Website",
         accessorFn: (row) => row.domain ?? "",
-        cell: (row) => row.domain ?? <span className="text-muted-foreground">—</span>,
+        cell: (row) =>
+          row.domain ? (
+            <a
+              href={`https://${row.domain}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex min-w-0 items-center gap-1 hover:underline"
+              data-clickable=""
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="truncate">{row.domain}</span>
+              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Opens in a new tab" />
+            </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
         width: 170,
       },
     ];
@@ -447,11 +462,11 @@ export function BrandCompetitorDirectory() {
   if (sites.isError) return <QueryError error={sites.error} />;
 
   return (
-    <div className="space-y-3 p-3">
-      <SectionCard
-        title={rivals.title}
-        headerExtra={
-          <div className="flex items-center gap-2">
+    <div className="space-y-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+      <section className="min-w-0 rounded-lg border border-border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5">
+          <h2 className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground">{rivals.title}</h2>
+          <div className="flex flex-wrap items-center gap-2">
             {toSearch.length > 0 || bulk ? (
               <Button
                 variant="outline"
@@ -466,8 +481,7 @@ export function BrandCompetitorDirectory() {
               {rivals.add}
             </Button>
           </div>
-        }
-      >
+        </div>
         {list.isError && jobs.length === 0 ? (
           <QueryError error={list.error} onRetry={() => void list.refetch()} />
         ) : list.isPending && jobs.length === 0 ? (
@@ -480,6 +494,44 @@ export function BrandCompetitorDirectory() {
             isFetching={list.isFetching}
             pageSize={25}
             detail={{ enabled: false }}
+            mobileCardsBreakpoint="sm"
+            mobileCards={(row, _i, controls) => (
+              <div className="flex flex-col gap-2 p-3" data-clickable="" onClick={() => setDetailRow(row)}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{row.name}</p>
+                    {row.domain ? (
+                      <a
+                        href={`https://${row.domain}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="truncate">{row.domain}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0" aria-label="Opens in a new tab" />
+                      </a>
+                    ) : null}
+                  </div>
+                  <span onClick={(e) => e.stopPropagation()}>{controls.actions}</span>
+                </div>
+                {row.accounts.length ? (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                    {row.accounts.map((a) => (
+                      <Link key={a.trackedAccountId} href={`/marketing/${brand.seg}/socials/${a.platform}/${a.trackedAccountId}`} className="hover:underline">
+                        {PLATFORM_LABEL[a.platform] ?? a.platform}{" "}
+                        <span className="text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>{" "}
+                        {compact(a.followers)}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <RowSocialActions row={row} brand={{ id: brand.id, organizationId: brand.organizationId }} />
+                  </span>
+                )}
+              </div>
+            )}
             window={{
               title: (row) => row.name,
               renderView: (row) => <CompetitorDetail row={row} brand={brandRef} brandSeg={brand.seg} siteIds={siteIds} />,
@@ -518,7 +570,15 @@ export function BrandCompetitorDirectory() {
             }}
           />
         )}
-      </SectionCard>
+      </section>
+      <Dialog open={detailRow !== null} onOpenChange={(o) => !o && setDetailRow(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{detailRow?.name}</DialogTitle>
+          </DialogHeader>
+          {detailRow ? <CompetitorDetail row={detailRow} brand={brandRef} brandSeg={brand.seg} siteIds={siteIds} /> : null}
+        </DialogContent>
+      </Dialog>
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

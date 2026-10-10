@@ -84,7 +84,7 @@ export function SeoSpendChart({
           );
         })}
       </svg>
-      <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+      <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
         <span>{formatCompactDate(first.date)}</span>
         <span>
           {formatRuntimeCost(total, costRate, unit)} total over {points.length} day

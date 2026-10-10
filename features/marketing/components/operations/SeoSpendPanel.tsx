@@ -38,6 +38,17 @@ import {
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 
+/** Vendor names as their owners write them; anything else is humanized. */
+const PROVIDER_LABELS: Record<string, string> = {
+  dataforseo: "DataForSEO",
+  serpapi: "SerpApi",
+  gsc: "Search Console",
+  aidream: "AI Dream",
+  scrapecreators: "ScrapeCreators",
+};
+const providerLabel = (provider: string): string =>
+  PROVIDER_LABELS[provider.trim().toLowerCase()] ?? (humanizeIdentifier(provider) || provider);
+
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const { unit, rate: costRate } = useCostDisplay();
   const pct = Math.max(0, Math.min(100, row.pct_used));
@@ -45,8 +56,8 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const warn = row.pct_used >= 80 && !over;
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card p-2.5">
-      <span className="text-xs font-medium capitalize text-foreground">
-        {humanizeIdentifier(row.provider) || row.provider}
+      <span className="text-xs font-medium text-foreground">
+        {providerLabel(row.provider)}
       </span>
       <span className="text-right font-mono text-xs font-semibold tabular-nums">
         {formatRuntimeCost(row.effective_cost, costRate, unit)}{" "}
@@ -66,7 +77,7 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="col-span-2 text-[10px] text-muted-foreground">
+      <span className="col-span-2 text-xs text-muted-foreground">
         {row.run_count} paid run{row.run_count === 1 ? "" : "s"} ·{" "}
         {row.pct_used.toFixed(1)}% of monthly ceiling
       </span>
@@ -83,7 +94,7 @@ function SocialProviderRow({ usd, calls }: { usd: number | null; calls: number |
       <span className="text-right font-mono text-xs font-semibold tabular-nums">
         {usd == null ? "—" : formatRuntimeCost(usd, costRate, unit)}
       </span>
-      <span className="col-span-2 text-[10px] text-muted-foreground">
+      <span className="col-span-2 text-xs text-muted-foreground">
         {calls ?? 0} paid call{calls === 1 ? "" : "s"} · social data
       </span>
     </div>
@@ -108,7 +119,7 @@ function CategoryRow({ row }: { row: SpendCategoryRow }) {
           />
         </div>
       ) : null}
-      <span className="col-span-2 text-[10px] text-muted-foreground">
+      <span className="col-span-2 text-xs text-muted-foreground">
         {row.runs} paid call{row.runs === 1 ? "" : "s"}
         {row.unpricedRuns > 0 ? ` · ${row.unpricedRuns} not yet priced` : ""}
       </span>
@@ -179,7 +190,7 @@ export function SeoSpendPanel() {
       filter: "select",
       cell: (row) => (
         <span className="capitalize">
-          {isPlatformAdmin ? row.provider.replaceAll("_", " ") : spendCategory(row.provider)}
+          {isPlatformAdmin ? providerLabel(row.provider) : spendCategory(row.provider)}
         </span>
       ),
     },
@@ -319,14 +330,14 @@ export function SeoSpendPanel() {
           </div>
         ) : null}
         {data.unreadOrganizationIds.length > 0 ? (
-          <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-400">
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
             {data.unreadOrganizationIds.length} of your organizations could not
             be read, so their spend is not included below. Pick one
             organization above to see its own error.
           </p>
         ) : null}
         {isPlatformAdmin ? (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Monthly ceiling per provider:{" "}
           {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, costRate, unit)} for each
           organization, {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, costRate, unit)} across

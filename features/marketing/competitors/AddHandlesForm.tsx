@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Select } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { SocialAccountInput, useSocialAccountInput } from "@/features/marketing/social/components/SocialAccountInput";
 
@@ -50,18 +51,12 @@ export function AddHandlesForm({ row, brand }: { row: BrandCompetitor; brand: Br
 
   return (
     <form onSubmit={(e) => void submit(e)} className="flex items-start gap-2" aria-label="Add handles">
-      <select
+      <Select
         aria-label="Platform"
         value={platform}
-        onChange={(e) => setPlatform(e.target.value as CompetitorSocialPlatform)}
-        className="h-8 shrink-0 rounded-md border border-border bg-background px-2 text-base text-foreground"
-      >
-        {COMPETITOR_SOCIAL_PLATFORMS.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.label}
-          </option>
-        ))}
-      </select>
+        options={COMPETITOR_SOCIAL_PLATFORMS.map((p) => ({ value: p.id, label: p.label }))}
+        onValueChange={(v) => setPlatform(v as CompetitorSocialPlatform)}
+      />
       <SocialAccountInput input={input} className="min-w-0 flex-1" />
       <Button type="submit" variant="outline" disabled={!input.account || busy} icon={busy ? <Loader2 className="animate-spin" /> : <UserPlus />}>
         Add
