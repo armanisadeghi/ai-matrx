@@ -1,6 +1,5 @@
 "use client";
 
-import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -37,7 +36,11 @@ import {
   scopeItemHref,
   scopeTypeHref,
 } from "@/features/scopes/lib/scopeRoutes";
-import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
+import {
+  CONTEXT_POLICY_CONFIG,
+  SENSITIVITY_CONFIG,
+  VALUE_TYPE_CONFIG,
+} from "@/features/agent-context/constants";
 import {
   selectScopeBySlugOrId,
   selectScopeTypeBySlugOrId,
@@ -248,10 +251,10 @@ export function ScopeItemDetail({
           <PropRow label="Category" value={item.category || "—"} />
           <PropRow label="URL slug" value={item.key || "—"} mono />
           <PropRow label="Key" value={item.key} mono />
-          <PropRow label="Sensitivity" value={item.sensitivity} />
+          <PropRow label="Sensitivity" value={SENSITIVITY_CONFIG[item.sensitivity]?.label ?? item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={humanizeIdentifier(item.context_policy ?? "")}
+            value={CONTEXT_POLICY_CONFIG[item.context_policy]?.label ?? item.context_policy}
           />
           <PropRow label="Sort order" value={String(item.sort)} />
           <PropRow

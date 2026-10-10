@@ -1,6 +1,5 @@
 "use client";
 
-import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useState } from "react";
 import { Layers, Loader2, Pencil, Tag as TagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,11 @@ import {
   scopeHref,
   scopeItemHref,
 } from "@/features/scopes/lib/scopeRoutes";
-import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
+import {
+  CONTEXT_POLICY_CONFIG,
+  SENSITIVITY_CONFIG,
+  VALUE_TYPE_CONFIG,
+} from "@/features/agent-context/constants";
 import type { Scope as Scope } from "@ai-matrx/records/scopes";
 import {
   selectScopeTypeBySlugOrId,
@@ -188,10 +191,10 @@ export function ContextItemHub({
           <PropRow label="Key" value={item.key} mono />
           <PropRow label="URL slug" value={item.key || "—"} mono />
           <PropRow label="Category" value={item.category || "—"} />
-          <PropRow label="Sensitivity" value={item.sensitivity} />
+          <PropRow label="Sensitivity" value={SENSITIVITY_CONFIG[item.sensitivity]?.label ?? item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={humanizeIdentifier(item.context_policy ?? "")}
+            value={CONTEXT_POLICY_CONFIG[item.context_policy]?.label ?? item.context_policy}
           />
           <PropRow label="Sort order" value={String(item.sort)} />
         </dl>
