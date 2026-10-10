@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button, Badge } from "@ai-matrx/design-system/controls";
+import { Button, Badge, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -158,7 +158,7 @@ export function SocialConnectionsPanel({
         </p>
       )}
       {connections === null && !failure && (
-        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+        <RegionSkeleton shape="rows" count={1} aria-label="Loading your X accounts" />
       )}
       {!failure && connections?.length === 0 && (
         <p className="text-sm text-muted-foreground">No X accounts connected</p>

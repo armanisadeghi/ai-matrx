@@ -11,11 +11,7 @@
  */
 
 import Link from "next/link";
-import { SocialConnectionsPanel } from "@/features/social-connections/SocialConnectionsPanel";
-import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
-import { TikTokConnectionsPanel } from "@/features/tiktok-connections/TikTokConnectionsPanel";
-import { socialAuthorizeUrl } from "@/features/social-connections/customer-service";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
@@ -24,7 +20,7 @@ import { useSocialSpend } from "../cost";
 import { countOf, withCostOn } from "../social-actions";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import { createSocialAccountsScope, SOCIAL_ACCOUNTS_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-social-accounts.manifest";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Globe, Link2, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
 import {
@@ -34,17 +30,18 @@ import {
   type SelectOption,
 } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef, MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useRefusedRead } from "../gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
-import { CONNECTION_STATE_LABELS, CONNECTION_STATE_TONES, type PlatformConnection } from "../connection-state";
+import { CONNECTION_STATE_LABELS, CONNECTION_STATE_TONES } from "../connection-state";
 import { useConnectionStates } from "../useConnectionStates";
 import {
   accountLabels,
+  accountName,
   formatGrowth,
   lastPostLabel,
   refreshSummary,
@@ -77,6 +74,8 @@ import { brandAccountHref } from "../property-account-href";
 import { AccountSummary } from "./AccountSummary";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
+import { ConnectAccountMenu, useStartConnection } from "./ConnectAccountMenu";
+import { CONNECTION_RETURN_PARAMS, ManageConnectionsDialog } from "./ManageConnectionsDialog";
 import { useSocials } from "./SocialsContext";
 import { trackableOwn, useTrackOwn } from "./useTrackOwn";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
@@ -88,12 +87,50 @@ const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
 
 export { accountHref };
 
+/** A phone's row: who it is and the numbers that matter, with the table's own actions. */
+function AccountCard({
+  row: r,
+  controls,
+  connection,
+}: {
+  row: AccountRow;
+  controls: MatrxDataTableMobileCardControls;
+  connection: { label: string; tone: "success" | "warning" | "neutral" } | null;
+}) {
+  const stat = (label: string, value: ReactNode) => (
+    <span className="flex items-baseline gap-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm tabular-nums text-foreground">{value}</span>
+    </span>
+  );
+  return (
+    <div className="flex flex-col gap-2 p-3">
+      <div className="min-w-0">{controls.renderCell("account")}</div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {stat("Followers", formatCompact(r.followers))}
+        {stat("30d", formatGrowth(r.growth))}
+        {stat("Posts", r.postsTracked)}
+        {stat("Best", <OutlierBadge inTable input={{ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null, accountPosts: r.postsTracked }} />)}
+        {stat("Last post", lastPostLabel(r.lastPostAt, r.postsTracked))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="neutral">{TRACKED_ROLE_LABELS[r.role]}</Badge>
+        {connection ? <Badge tone={connection.tone}>{connection.label}</Badge> : null}
+        {r.status === "not_tracked" ? <Badge tone="warning">Not tracked</Badge> : null}
+        <div className="ml-auto shrink-0">{controls.actions}</div>
+      </div>
+    </div>
+  );
+}
+
 export function AccountsTab() {
   const { brandId, brandSeg, organizationId, openTrack } = useSocials();
   const brand = useMarketingBrand();
   const brandKind = brand.kind;
   const router = useRouter();
-  const [showXConnections, setShowXConnections] = useState(false);
+  const searchParams = useSearchParams();
+  // A provider's consent sends the person back here: its follow-up steps (pick the account) live in the hub.
+  const [manageOpen, setManageOpen] = useState(() => CONNECTION_RETURN_PARAMS.some((k) => searchParams?.has(k)));
   const [summaryRow, setSummaryRow] = useState<AccountRow | null>(null);
   const accounts = useAccountRows(organizationId, brandId);
   const connections = useConnectionStates(organizationId);
@@ -130,7 +167,7 @@ export function AccountsTab() {
   async function refresh(row: AccountRow) {
     if (!row.profileId) return;
     const ok = await confirmSpend("profile_page", 1, {
-      title: `Refresh @${row.handle}?`,
+      title: `Refresh ${accountName(row)}?`,
       confirmLabel: "Refresh",
     });
     if (!ok) return;
@@ -155,7 +192,7 @@ export function AccountsTab() {
   async function remove(row: AccountRow) {
     if (!row.trackedAccountId) return;
     const ok = await confirm({
-      title: `Stop tracking @${row.handle}?`,
+      title: `Stop tracking ${accountName(row)}?`,
       description:
         "Archives this tracked account for your organization. Saved posts and history stay in the shared cache.",
       confirmLabel: "Stop tracking",
@@ -184,7 +221,7 @@ export function AccountsTab() {
         { organizationId },
       );
       await invalidate();
-      toast.success(`@${row.handle} added to ${brand.name}`);
+      toast.success(`${accountName(row)} added to ${brand.name}`);
     } catch (err) {
       toast.error(socialErrorMessage(err, "Couldn't add the account to this brand"));
     } finally {
@@ -192,27 +229,7 @@ export function AccountsTab() {
     }
   }
 
-  /** Connect / Reconnect: the hub's own OAuth start for its networks, else the hub panel itself. */
-  function startConnect(c: PlatformConnection) {
-    if (c.hubProvider) {
-      window.location.assign(
-        socialAuthorizeUrl(
-          c.hubProvider,
-          organizationId,
-          undefined,
-          undefined,
-          c.connectionId ?? undefined,
-          `/marketing/${brandSeg}/socials/accounts`,
-        ),
-      );
-      return;
-    }
-    if (c.platform === "youtube") {
-      router.push(`/marketing/${brandSeg}/socials/kpis`);
-      return;
-    }
-    setShowXConnections(true);
-  }
+  const startConnect = useStartConnection(organizationId, brandSeg, () => setManageOpen(true));
 
   async function changeRole(row: AccountRow, role: TrackedRole) {
     if (!row.trackedAccountId || role === row.role) return;
@@ -235,6 +252,7 @@ export function AccountsTab() {
     () => [
       {
         id: "account",
+        width: 200,
         label: "Account",
         header: "Account",
         accessorFn: (r) =>
@@ -242,7 +260,7 @@ export function AccountsTab() {
         copyValue: (r) =>
           `${r.displayName} (${formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })})`,
         filter: "text",
-        minWidth: 220,
+        minWidth: 200,
         cell: (r) => {
           const href = brandAccountHref(brandSeg, r);
           const labels = accountLabels(r.displayName, r.handle, r.platform);
@@ -313,6 +331,8 @@ export function AccountsTab() {
       },
       {
         id: "role",
+        width: 124,
+        hidden: true, // the Status column names a non-own role; the column stays for filtering and editing
         label: "Role",
         header: "Role",
         accessorKey: "role",
@@ -325,7 +345,7 @@ export function AccountsTab() {
         cell: (r) =>
           r.trackedAccountId ? (
             <Select
-              aria-label={`Role for @${r.handle}`}
+              aria-label={`Role for ${accountName(r)}`}
               value={r.role}
               options={ROLE_OPTIONS}
               onValueChange={(v) => void changeRole(r, v)}
@@ -336,6 +356,8 @@ export function AccountsTab() {
       },
       {
         id: "connection",
+        width: 108,
+        hidden: true, // shown beside the account name; the column stays for filtering
         label: "Connection",
         header: "Connection",
         accessorFn: (r) => connectionOf(r)?.label ?? "",
@@ -348,6 +370,7 @@ export function AccountsTab() {
       },
       {
         id: "followers",
+        width: 72,
         label: "Followers",
         header: "Followers",
         accessorFn: (r) => r.followers,
@@ -358,21 +381,8 @@ export function AccountsTab() {
         ),
       },
       {
-        id: "growth",
-        label: "30d growth",
-        header: "30d growth",
-        accessorFn: (r) => r.growth,
-        copyValue: (r) => formatGrowth(r.growth),
-        align: "right",
-        filter: "number",
-        cell: (r) => (
-          <span className="tabular-nums" title={r.growthNote}>
-            {formatGrowth(r.growth)}
-          </span>
-        ),
-      },
-      {
         id: "posts",
+        width: 60,
         label: "Posts tracked",
         header: "Posts",
         accessorFn: (r) => r.postsTracked,
@@ -389,8 +399,9 @@ export function AccountsTab() {
       },
       {
         id: "best",
+        width: 72,
         label: "Best multiple",
-        header: "Best multiple",
+        header: "Best",
         accessorFn: (r) => r.bestScore,
         copyValue: (r) =>
           outlierBadgeModel({
@@ -419,6 +430,7 @@ export function AccountsTab() {
       },
       {
         id: "last_post",
+        width: 84,
         label: "Last post",
         header: "Last post",
         accessorFn: (r) => r.lastPostAt,
@@ -434,6 +446,38 @@ export function AccountsTab() {
         ),
       },
       {
+        id: "status",
+        width: 100,
+        label: "Status",
+        header: "Status",
+        accessorKey: "status",
+        filter: "select",
+        // One badge says what matters most: tracking first, then a non-own role, then where the connection stands.
+        cell: (r) => {
+          if (busyRow === r.rowId && !r.trackedAccountId) return <span className="text-primary">{progress ?? "Tracking…"}</span>;
+          if (r.status === "not_tracked") return <Badge tone="warning">Not tracked</Badge>;
+          if (r.status !== "active") return r.status;
+          if (r.role !== "own") return <Badge tone="neutral">{TRACKED_ROLE_LABELS[r.role]}</Badge>;
+          const c = connectionOf(r);
+          return c ? <Badge tone={c.tone}>{c.label}</Badge> : "Active";
+        },
+      },
+      {
+        id: "growth",
+        width: 64,
+        label: "30d growth",
+        header: "30d",
+        accessorFn: (r) => r.growth,
+        copyValue: (r) => formatGrowth(r.growth),
+        align: "right",
+        filter: "number",
+        cell: (r) => (
+          <span className="tabular-nums" title={r.growthNote}>
+            {formatGrowth(r.growth)}
+          </span>
+        ),
+      },
+      {
         id: "refreshed",
         label: "Last refreshed",
         header: "Refreshed",
@@ -441,23 +485,6 @@ export function AccountsTab() {
         filter: "date",
         hidden: true,
         cell: (r) => relativeAge(r.lastRefreshedAt),
-      },
-      {
-        id: "status",
-        label: "Status",
-        header: "Status",
-        accessorKey: "status",
-        filter: "select",
-        cell: (r) =>
-          busyRow === r.rowId && !r.trackedAccountId ? (
-            <span className="text-primary">{progress ?? "Tracking…"}</span>
-          ) : r.status === "not_tracked" ? (
-            "Not tracked"
-          ) : r.status === "active" ? (
-            "Active"
-          ) : (
-            r.status
-          ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -599,23 +626,14 @@ export function AccountsTab() {
 
   return (
     <>
-      {showXConnections && (
-        <div className="mb-4 rounded-lg border p-4">
-          <div className="mb-3 flex justify-end">
-            <Button variant="quiet" onClick={() => setShowXConnections(false)}>
-              Close
-            </Button>
-          </div>
-          <SocialConnectionsPanel
-            brandId={brandId}
-            organizationId={organizationId}
-            returnUrl={`/marketing/${brandSeg}/socials/accounts`}
-            onChanged={() => void invalidate()}
-          />
-          <CustomerAccountsPanel organizationId={organizationId} brandId={brandId} returnUrl={`/marketing/${brandSeg}/socials/accounts`} providers={["pinterest", "facebook", "instagram", "threads", "linkedin", "snapchat", "reddit"]} />
-          <TikTokConnectionsPanel />
-        </div>
-      )}
+      <ManageConnectionsDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        organizationId={organizationId}
+        brandId={brandId}
+        brandSeg={brandSeg}
+        onChanged={() => void invalidate()}
+      />
       <MatrxDataTable<AccountRow>
         tableId="marketing-social-accounts"
         urlState={{ id: "social-accounts" }}
@@ -628,6 +646,8 @@ export function AccountsTab() {
           if (href) router.push(href);
           else setSummaryRow(r);
         })}
+        mobileCardsBreakpoint="md"
+        mobileCards={(r, _i, controls) => <AccountCard row={r} controls={controls} connection={connectionOf(r)} />}
         isLoading={accounts.isLoading}
         isFetching={accounts.isFetching}
         read={{
@@ -643,12 +663,11 @@ export function AccountsTab() {
           searchPlaceholder: "Search accounts…",
           actions: (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowXConnections(true)}
-              >
-                Connect accounts
-              </Button>
+              <ConnectAccountMenu
+                organizationId={organizationId}
+                start={startConnect}
+                onManage={() => setManageOpen(true)}
+              />
               {untrackedOwn.length > 1 ? (
                 <Button
                   variant="outline"

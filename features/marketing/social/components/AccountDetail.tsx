@@ -60,6 +60,7 @@ import {
   refreshSummary,
   relativeAge,
   accountLabels,
+  accountName,
   type PostFilter,
   type PostSort,
 } from "../mappers";
@@ -342,7 +343,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const [refreshLine, setRefreshLine] = useState<{ text: string; failed: boolean; error?: unknown } | null>(null);
 
   async function refresh() {
-    const ok = await confirmSpend("profile_page", 1, { title: `Refresh @${handle ?? ""}?`, confirmLabel: "Refresh" });
+    const ok = await confirmSpend("profile_page", 1, { title: `Refresh ${profile.data ? accountName({ displayName: profile.data.display_name ?? "", handle: profile.data.handle ?? "", platform: profile.data.platform }) : "this account"}?`, confirmLabel: "Refresh" });
     if (!ok) return;
     setBusy(true);
     setRefreshLine({ text: "Starting…", failed: false });
@@ -364,7 +365,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   async function trackThis() {
     const p0 = profile.data;
     if (!p0) return;
-    const ok = await confirmSpend("track", 1, { title: `Track @${p0.handle}?`, confirmLabel: "Track" });
+    const ok = await confirmSpend("track", 1, { title: `Track ${accountName({ displayName: p0.display_name ?? "", handle: p0.handle ?? "", platform: p0.platform })}?`, confirmLabel: "Track" });
     if (!ok) return;
     setBusy(true);
     setRefreshLine({ text: "Starting…", failed: false });
@@ -375,7 +376,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       );
       await invalidate();
       setRefreshLine(null);
-      toast.success(`Tracking @${p0.handle}`);
+      toast.success(`Tracking ${accountName({ displayName: p0.display_name ?? "", handle: p0.handle ?? "", platform: p0.platform })}`);
     } catch (err) {
       setRefreshLine({ text: socialErrorMessage(err, "Couldn't track this account"), failed: true, error: err });
     } finally {
@@ -498,7 +499,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         <KpiTile label="Posts tracked" value={posts.isLoading ? null : String(list.length)} loading={posts.isLoading} />
       </div>
 
-      {role === "own" && tracked.data ? <AccountInsights trackedAccountId={tracked.data.id} /> : null}
+      {role === "own" && tracked.data ? <AccountInsights trackedAccountId={tracked.data.id} platform={p.platform} /> : null}
 
       {refreshLine?.failed &&
       (socialErrorCode(refreshLine.error) === "social_not_found" ||

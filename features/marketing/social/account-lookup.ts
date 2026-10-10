@@ -7,6 +7,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { FoundAccount } from "./account-input";
 import type { OkAccount } from "./account-input";
+import { isRawChannelId } from "./mappers";
 import { ingestProfile } from "./server";
 import { readProfile } from "./service";
 import { isSocialPlatform, type SocialPlatform, type SocialProfileRow } from "./types";
@@ -18,7 +19,7 @@ export function foundFromRow(row: SocialProfileRow, source: FoundAccount["source
     profileId: row.id,
     platform: row.platform as SocialPlatform,
     handle,
-    displayName: (row.display_name ?? "").trim() || handle,
+    displayName: (row.display_name ?? "").trim() || (isRawChannelId(handle) ? "YouTube channel" : handle),
     avatarUrl: row.avatar_url ?? null,
     hasStoredAvatar: Boolean(row.avatar_file_id),
     followers: row.follower_count ?? null,
