@@ -21,6 +21,7 @@ import { formatChars } from "@ai-matrx/kit/tokens";
 import { findParts, isWordQuery, type SourcePart } from "@ai-matrx/agents/sources/runtime";
 import { useSourcePartsSearch } from "../sourceSetApi";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface SourcePartsPickerProps {
   /** The Source whose parts these are — its text is read for a word search. */
   sourceRef: SourceRef;
@@ -66,7 +67,7 @@ export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: S
             (partsText.reading
               ? "Searching inside the text…"
               : "More parts hold these words than can be listed — add a word to narrow the search.")}
-        </p>
+        <ErrorAlchemyMenu error={partsText.error} /></p>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
