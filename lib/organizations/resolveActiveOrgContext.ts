@@ -26,6 +26,7 @@
 // (`accountOrganizationChoices.ts`); nothing else may read them to decide where
 // anything acts.
 
+import { resolveActiveOrganizationLazily } from "@ai-matrx/data/organizations";
 import { isRecordsErr } from "@ai-matrx/records";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -104,19 +105,19 @@ export async function resolveActiveOrgContext(
   // THE LADDER BELOW THE LINK, computed first. The link's decision needs to
   // know where the person WOULD be working, because "we moved you" (announce
   // it) and "you were already there" (say nothing) is exactly that comparison.
-  const member = (id: string | null | undefined) =>
-    id ? (orgs.find((o) => o.id === id) ?? null) : null;
-  const pick = (o: { id: string; name: string } | null) =>
-    o ? { id: o.id, name: o.name } : null;
-
-  let laddered = pick(member(options.heldOrganizationId));
-  if (!laddered) {
-    const account = await readAccountOrganizationChoices(userId);
-    laddered =
-      pick(member(account.lastActiveOrganizationId)) ??
-      pick(member(account.startupOrganizationId)) ??
-      pick(await firstOrganization(orgs));
-  }
+  // The rungs themselves are the platform's ONE ladder (@ai-matrx/data/organizations,
+  // shared with Matrx 2): held → last active → start-up → first, each kept only while
+  // it is a current membership. The account is read only when no held organization
+  // answers; the oldest membership only when nothing else does.
+  const resolved = await resolveActiveOrganizationLazily({
+    memberships: orgs,
+    held: options.heldOrganizationId ?? null,
+    readAccount: () => readAccountOrganizationChoices(userId),
+    first: () => firstOrganization(orgs),
+  });
+  const laddered = resolved
+    ? { id: resolved.organization.id, name: resolved.organization.name }
+    : null;
 
   // -1. THE LINK'S OWN ORGANIZATION. Decided in one pure place so every branch
   //     — honoured, already-current, offered, refused — is the same one the
@@ -186,9 +187,9 @@ export async function resolveActiveOrgContext(
  * Rung 4: the oldest ACTIVE membership among the organizations the person can
  * open (archived organizations are already left out of `orgs`).
  */
-async function firstOrganization(
-  orgs: ReadonlyArray<{ id: string; name: string }>,
-): Promise<{ id: string; name: string } | null> {
+async function firstOrganization<T extends { id: string; name: string }>(
+  orgs: ReadonlyArray<T>,
+): Promise<T | null> {
   const result = await membershipsService.forUser("organization");
   if (isRecordsErr(result)) throw new Error(result.error.message);
   const live = new Map(orgs.map((o) => [o.id, o]));

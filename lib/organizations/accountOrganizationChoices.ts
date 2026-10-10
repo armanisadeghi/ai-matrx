@@ -13,79 +13,46 @@
 // them to decide where something acts (STATE rules 11–14). A request carries the
 // active organization the person can see.
 
+import {
+  toAccountOrganizationChoices,
+  writeLastActiveOrganization as writeLastActiveDoor,
+  writeStartupOrganization as writeStartupDoor,
+  type AccountOrganizationChoices,
+} from "@ai-matrx/data/organizations";
 import { supabase } from "@/utils/supabase/client";
 import { forgetAccountPreferencesRow, readAccountPreferencesRow } from "@/lib/account/accountPreferencesRow";
 
-export interface AccountOrganizationChoices {
-  lastActiveOrganizationId: string | null;
-  startupOrganizationId: string | null;
-}
-
-const NONE: AccountOrganizationChoices = {
-  lastActiveOrganizationId: null,
-  startupOrganizationId: null,
-};
-
-// The two columns and RPCs are newer than the generated types; the shapes are
-// declared here and the client is narrowed once instead of casting per call.
-interface ChoicesRow {
-  last_active_organization_id: string | null;
-  startup_organization_id: string | null;
-}
-interface UntypedUsersSchema {
-  from(table: "user_preferences"): {
-    select(columns: string): {
-      eq(
-        column: "user_id",
-        value: string,
-      ): {
-        maybeSingle(): PromiseLike<{
-          data: ChoicesRow | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-  rpc(
-    fn: "set_last_active_organization" | "set_startup_organization",
-    args: { p_organization_id: string | null },
-  ): PromiseLike<{ error: { message: string } | null }>;
-}
-function usersSchema(): UntypedUsersSchema {
-  return supabase.schema("users") as unknown as UntypedUsersSchema;
-}
+export type { AccountOrganizationChoices };
 
 /**
  * Read the account's last active and start-up organizations. A person with no
  * preferences row has neither (null, null). Throws when the read fails — the
- * ladder then shows the honest "could not check" state, never a guess.
+ * ladder then shows the honest "could not check" state, never a guess. The
+ * row is the shell boot's one shared read; its columns become the ladder's
+ * input through the shared mapping (@ai-matrx/data/organizations).
  */
 export async function readAccountOrganizationChoices(
   userId: string,
 ): Promise<AccountOrganizationChoices> {
   const { data, error } = await readAccountPreferencesRow(userId);
   if (error) throw new Error(`the account's organization read failed: ${error.message}`);
-  if (!data) return NONE;
-  return {
-    lastActiveOrganizationId: data.last_active_organization_id ?? null,
-    startupOrganizationId: data.startup_organization_id ?? null,
-  };
+  return toAccountOrganizationChoices(data);
 }
 
 /** Save where the person now works, for their next load. Throws on refusal. */
 export async function writeLastActiveOrganization(organizationId: string): Promise<void> {
-  const { error } = await usersSchema().rpc("set_last_active_organization", {
-    p_organization_id: organizationId,
-  });
-  forgetAccountPreferencesRow();
-  if (error) throw new Error(error.message);
+  try {
+    await writeLastActiveDoor(supabase, organizationId);
+  } finally {
+    forgetAccountPreferencesRow();
+  }
 }
 
 /** Set (or clear, with null) the Start-up organization setting. Throws on refusal. */
 export async function writeStartupOrganization(organizationId: string | null): Promise<void> {
-  const { error } = await usersSchema().rpc("set_startup_organization", {
-    p_organization_id: organizationId,
-  });
-  forgetAccountPreferencesRow();
-  if (error) throw new Error(error.message);
+  try {
+    await writeStartupDoor(supabase, organizationId);
+  } finally {
+    forgetAccountPreferencesRow();
+  }
 }

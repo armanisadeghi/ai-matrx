@@ -21,12 +21,9 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { readOrganizationFavourites, setOrganizationFavourite } from "@ai-matrx/data/organizations";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
-
-const ENTITY_TYPE = "organization";
-
-type UesRow = { entity_type: string; entity_id: string; is_favorite: boolean };
 
 let favorites: readonly string[] = [];
 let loaded = false;
@@ -44,32 +41,31 @@ function subscribe(listener: () => void) {
 }
 
 async function writeFavorite(id: string, favorite: boolean): Promise<boolean> {
-  const { error } = await createClient().rpc("ues_set", {
-    p_entity_type: ENTITY_TYPE,
-    p_entity_id: id,
-    p_is_favorite: favorite,
-  });
-  if (error) {
+  try {
+    await setOrganizationFavourite(createClient(), id, favorite);
+    return true;
+  } catch (error) {
     console.error("[useOrganizationFavorites] ues_set failed", { id, favorite, error });
     return false;
   }
-  return true;
 }
 
 function load(): Promise<void> {
   if (loaded) return Promise.resolve();
   if (loading) return loading;
   loading = (async () => {
-    const { data, error } = await createClient().rpc("ues_list", { p_kind: "favorite" });
-    loading = null;
-    if (error) {
+    let ids: string[];
+    try {
+      ids = await readOrganizationFavourites(createClient());
+    } catch (error) {
+      loading = null;
       // Never silent: the picker still works; the stars just are not shown yet.
       console.error("[useOrganizationFavorites] ues_list failed", error);
       return;
     }
+    loading = null;
     loaded = true;
-    const rows = (Array.isArray(data) ? data : []) as UesRow[];
-    emit(rows.filter((row) => row.entity_type === ENTITY_TYPE && row.is_favorite).map((row) => row.entity_id));
+    emit(ids);
   })();
   return loading;
 }
