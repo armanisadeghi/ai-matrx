@@ -532,6 +532,7 @@ export function mapSystemAnnouncementRow(
     created_by: row.created_by,
     target_user_id: row.target_user_id,
     min_display_seconds: row.min_display_seconds ?? 0,
+    metadata: row.metadata,
   };
 }
 

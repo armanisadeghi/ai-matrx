@@ -5,20 +5,25 @@
  *
  * Calls the `getActiveAnnouncements` server action and renders the
  * `SystemAnnouncementBanner` when there's an unviewed active announcement.
- * Lazy-loaded by `AnnouncementProvider.tsx` ONLY after shell data has
- * loaded, so the server action's dep graph (supabase admin client +
- * feedback types + modal markup) never enters the static graph of any
- * route.
+ * Rows marked `metadata.alarm` are spend alarms: they render in the loud
+ * `SpendAlarmPanel` instead, errors first. Lazy-loaded by
+ * `AnnouncementProvider.tsx` ONLY after shell data has loaded, so the server
+ * action's dep graph (supabase admin client + feedback types + modal markup)
+ * never enters the static graph of any route.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getActiveAnnouncements } from "@/actions/feedback.actions";
 import { SystemAnnouncement } from "@/types/feedback.types";
 import SystemAnnouncementBanner from "./SystemAnnouncementBanner";
-import { useAppSelector } from "@/lib/redux/hooks";
+import SpendAlarmPanel from "./SpendAlarmPanel";
+import { sortSpendAlarms, toSpendAlarm, type SpendAlarm } from "./spendAlarm";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 
 export default function AnnouncementProviderImpl() {
-  const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
+  const dispatch = useAppDispatch();
+  const [fetched, setFetched] = useState<SystemAnnouncement[]>([]);
   const [currentAnnouncementIndex] = useState(0);
   const viewedAnnouncements = useAppSelector(
     (state) => state.userPreferences.system.viewedAnnouncements,
@@ -27,25 +32,50 @@ export default function AnnouncementProviderImpl() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       const result = await getActiveAnnouncements();
-      if (result.success && result.data) {
-        const unviewedAnnouncements = result.data.filter(
-          (announcement) => !viewedAnnouncements.includes(announcement.id),
-        );
-        setAnnouncements(unviewedAnnouncements);
-      }
+      if (result.success && result.data) setFetched(result.data);
     };
 
     fetchAnnouncements();
-  }, [viewedAnnouncements]);
+  }, []);
+
+  const { announcements, alarms } = useMemo(() => {
+    const plain: SystemAnnouncement[] = [];
+    const found: SpendAlarm[] = [];
+    for (const a of fetched) {
+      const alarm = toSpendAlarm(a);
+      if (alarm) {
+        if (!viewedAnnouncements.includes(alarm.ackKey)) found.push(alarm);
+      } else if (!viewedAnnouncements.includes(a.id)) {
+        plain.push(a);
+      }
+    }
+    return { announcements: plain, alarms: sortSpendAlarms(found) };
+  }, [fetched, viewedAnnouncements]);
+
+  const acknowledge = (keys: string[]) => {
+    dispatch(
+      setModulePreferences({
+        module: "system",
+        preferences: { viewedAnnouncements: [...viewedAnnouncements, ...keys] },
+      }),
+    );
+  };
 
   const currentAnnouncement = announcements[currentAnnouncementIndex];
 
-  if (!currentAnnouncement) return null;
-
   return (
-    <SystemAnnouncementBanner
-      key={currentAnnouncement.id}
-      announcement={currentAnnouncement}
-    />
+    <>
+      <SpendAlarmPanel
+        alarms={alarms}
+        onAcknowledge={(key) => acknowledge([key])}
+        onAcknowledgeAll={() => acknowledge(alarms.map((a) => a.ackKey))}
+      />
+      {currentAnnouncement ? (
+        <SystemAnnouncementBanner
+          key={currentAnnouncement.id}
+          announcement={currentAnnouncement}
+        />
+      ) : null}
+    </>
   );
 }
