@@ -320,9 +320,9 @@ export function ScopesManager({ organization, role, adminLane = false }: ScopesM
       >
         <>
           {orderedTypes.map((scopeType) =>
-            // A type whose scopes nest (a scope under a scope) shows as its tree, with
-            // add-child and edit in place; a flat type shows as its table.
-            scopeType.scopes.some((sc) => sc.parent_scope_id) ? (
+            // The admin console works each type as its instance tree (add child, edit in
+            // place — the old console's panel); the organization's own page shows its table.
+            adminLane ? (
               <Card key={scopeType.id} className="overflow-hidden p-0">
                 <ScopeInstancePanel organizationId={organization.id} scopeType={scopeType} />
               </Card>
