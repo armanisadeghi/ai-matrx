@@ -74,6 +74,8 @@ import {
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
 import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
+import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { FaceLine, plainExcerpt } from "./face-text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -524,6 +526,19 @@ function ChatKeep({ tileId, source }: { tileId: string; source: NodeSource }) {
   return null;
 }
 
+/** The chat's card at far zoom: its last message, or what a new one is for. Same store the body fills. */
+function ChatFace({ source }: { source: NodeSource }) {
+  const id = entityId(source);
+  const last = useAppSelector((s) => {
+    const m = id ? s.messages?.byConversationId?.[id] : undefined;
+    const lastId = m?.orderedIds?.[m.orderedIds.length - 1];
+    return lastId && m ? extractFlatText(m.byId[lastId]) : "";
+  });
+  if (!id) return <FaceLine icon={MessagesSquare} text="Ask about what is on this board" muted />;
+  const excerpt = plainExcerpt(last);
+  return <FaceLine icon={MessagesSquare} text={excerpt || "Open to read this chat"} muted={!excerpt} />;
+}
+
 export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "chat",
@@ -538,6 +553,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
+    Face: ChatFace,
     HeaderAction: ChatHeaderAction,
     usesTier: true,
     Keep: ChatKeep,
