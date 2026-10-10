@@ -276,7 +276,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Skipped surfaces (not in{" "}
                   <code className="font-mono">ui_surface</code>)
-                </div>
+                <ErrorAlchemyMenu /></div>
                 <div className="flex flex-wrap gap-1">
                   {result.skippedMissingSurface.map((s) => (
                     <Badge key={s} variant="outline" className="text-xs">
@@ -296,7 +296,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Recent rows skipped (touched too recently to be safely
                   stale)
-                </div>
+                <ErrorAlchemyMenu /></div>
                 <div className="space-y-1">
                   {result.skippedRecentRows.map((row, i) => (
                     <div
