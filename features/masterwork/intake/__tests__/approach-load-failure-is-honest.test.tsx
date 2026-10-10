@@ -174,6 +174,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => {
     ...actual,
     selectOrganizationId: () => ORG_ID,
     selectShouldPromptForOrganization: () => false,
+    selectOrganizationName: () => null,
   };
 });
 
