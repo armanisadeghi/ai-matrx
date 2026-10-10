@@ -7,7 +7,8 @@
 //   - typing saves after a 500ms pause (never an empty label mid-typing);
 //   - while the field is focused the typed buffer wins over any incoming
 //     label (auto-label, realtime) — the "system freaks out about naming" bug;
-//   - blur commits a non-empty entry at once, and an emptied field reverts;
+//   - blur commits a non-empty entry at once; an emptied field, or Escape
+//     (revert), keeps the saved name;
 //   - the note is flagged as being named while focused, so auto-label waits.
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
@@ -26,6 +27,11 @@ export function useNoteTitleEditing(noteId: string, onInteract?: () => void) {
   // readOnly through focus and opens only on a left click (or Enter).
   const [titleEditing, setTitleEditing] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set by revert(): the blur that follows keeps the saved name.
+  const revertingRef = useRef(false);
+  // The name when renaming began — what Escape goes back to (the debounce may
+  // already have saved part of what was typed).
+  const labelAtFocusRef = useRef(label);
 
   // Redux label → local, NEVER while the person is typing the title.
   const [lastSyncedLabel, setLastSyncedLabel] = useState(label);
@@ -55,10 +61,11 @@ export function useNoteTitleEditing(noteId: string, onInteract?: () => void) {
   useEffect(() => () => setNoteLabelEditing(noteId, false), [noteId]);
 
   const onFocus = useCallback(() => {
+    labelAtFocusRef.current = label;
     setTitleFocused(true);
     setNoteLabelEditing(noteId, true);
     onInteract?.();
-  }, [noteId, onInteract]);
+  }, [label, noteId, onInteract]);
 
   const onBlur = useCallback(() => {
     setTitleFocused(false);
@@ -67,6 +74,14 @@ export function useNoteTitleEditing(noteId: string, onInteract?: () => void) {
     if (labelTimerRef.current) {
       clearTimeout(labelTimerRef.current);
       labelTimerRef.current = null;
+    }
+    if (revertingRef.current) {
+      revertingRef.current = false;
+      const original = labelAtFocusRef.current;
+      setLastSyncedLabel(original);
+      setLocalLabel(original);
+      if (original !== label) dispatch(updateNoteLabel({ id: noteId, label: original }));
+      return;
     }
     const trimmed = localLabel.trim();
     if (trimmed) {
@@ -79,5 +94,14 @@ export function useNoteTitleEditing(noteId: string, onInteract?: () => void) {
     }
   }, [dispatch, noteId, localLabel, label]);
 
-  return { label, localLabel, titleFocused, titleEditing, setTitleEditing, onChange, onFocus, onBlur };
+  /** Escape: drop the typed name (call before blurring the field). */
+  const revert = useCallback(() => {
+    revertingRef.current = true;
+    if (labelTimerRef.current) {
+      clearTimeout(labelTimerRef.current);
+      labelTimerRef.current = null;
+    }
+  }, []);
+
+  return { label, localLabel, titleFocused, titleEditing, setTitleEditing, onChange, onFocus, onBlur, revert };
 }

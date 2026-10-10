@@ -242,6 +242,11 @@ export function NoteTileTitle({ source, title }: TitleFieldProps) {
   const noteId = plan && (plan.step === "open" || plan.step === "draft") ? plan.noteId : null;
   const loaded = useAppSelector((s) => (noteId ? selectNoteById(noteId)(s) !== undefined : false));
   if (!noteId || !loaded) return <p className="truncate text-sm font-medium text-foreground">{title}</p>;
-  return <NoteTitleField noteId={noteId} className="-ml-1" />;
+  // Clipped: in a narrow header the field shrinks, never paints over the chips beside it.
+  return (
+    <div className="flex min-w-0 overflow-hidden">
+      <NoteTitleField noteId={noteId} className="-ml-1" />
+    </div>
+  );
 }
 

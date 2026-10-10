@@ -246,7 +246,8 @@ export function NoteMetadataBar({
           type="button"
           onClick={() => setScopePickerOpen((v) => !v)}
           className={cn(
-            "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1.5 py-0 text-xs transition-colors",
+            // Shrinks (label truncates) before the save status ever would.
+            "flex min-w-0 shrink items-center gap-1 overflow-hidden whitespace-nowrap rounded-full px-1.5 py-0 text-xs transition-colors [&_svg]:shrink-0",
             noteOrgId || noteProjId || noteTaskId
               ? "bg-primary/10 text-primary-ink"
               : "border border-dashed border-border text-muted-foreground hover:text-primary",
@@ -329,7 +330,7 @@ export function NoteMetadataBar({
 
         {/* Save status + counts. Clipped: in a crowded row the counts step
             down (container query) and never paint over the copy pair. */}
-        <div className="ml-auto flex min-w-0 shrink items-center overflow-hidden">
+        <div className="ml-auto flex shrink-0 items-center">
           <NoteStatsFooter noteId={noteId} />
         </div>
 

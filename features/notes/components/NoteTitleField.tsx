@@ -21,7 +21,7 @@ export function NoteTitleField({ noteId, className }: NoteTitleFieldProps) {
   return (
     <input
       className={cn(
-        "field-sizing-content min-w-8 max-w-full truncate rounded-sm border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none",
+        "field-sizing-content min-w-0 max-w-full truncate rounded-sm border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none",
         title.titleEditing ? "cursor-text ring-1 ring-ring" : "hover:bg-accent/50",
         className,
       )}
@@ -34,7 +34,11 @@ export function NoteTitleField({ noteId, className }: NoteTitleFieldProps) {
           if (title.titleEditing) e.currentTarget.blur();
           else title.setTitleEditing(true);
         }
-        if (e.key === "Escape" && title.titleEditing) e.currentTarget.blur();
+        // Escape = changed my mind: back to the saved name.
+        if (e.key === "Escape" && title.titleEditing) {
+          title.revert();
+          e.currentTarget.blur();
+        }
       }}
       onFocus={title.onFocus}
       onBlur={title.onBlur}

@@ -5,8 +5,9 @@
 // row) — no host mounts it on its own.
 //
 // Quiet when all is well (Docs, Bear, iA Writer): "Saved" in muted ink with a
-// check; color only when something needs the writer (unsaved, failed). Counts:
-// words always; characters and read time only when the row has the room.
+// check; color only when something needs the writer (unsaved, failed). The
+// status never clips; counts step down with the row's width (words from 22rem,
+// characters and read time from 36rem).
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -80,7 +81,7 @@ export function NoteStatsFooter({ noteId, className }: NoteStatsFooterProps) {
         {saveError && <ErrorAlchemyMenu error={saveError} />}
       </span>
       <span
-        className="min-w-0 truncate text-xs tabular-nums text-muted-foreground"
+        className="hidden truncate text-xs tabular-nums text-muted-foreground @[22rem]/notemeta:inline"
         data-note-metrics=""
         title={`${words} · ${chars} · ${metrics.readingMinutes} min read`}
       >
