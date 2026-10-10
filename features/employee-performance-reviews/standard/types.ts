@@ -18,7 +18,17 @@ export type ReviewStatus =
   | "reopened"
   | "cancelled";
 
-export type ReviewSeat = "employee" | "manager" | "hr" | "skip_level" | string;
+/** A seat a person holds on one review (the review's access setup); a person may hold several. */
+export type ReviewSeat = "employee" | "manager" | "hr" | "skip_level" | "upper_management" | "peer" | string;
+
+/** Seats that never open a review by themselves (history reads them), so they never change what the page shows. */
+const NON_OPENING_SEATS: ReadonlySet<string> = new Set(["line_manager"]);
+
+/** The door answers with the peer view only when peer is the person's one opening seat. */
+export function isPeerOnly(seats: readonly ReviewSeat[]): boolean {
+  const opening = seats.filter((s) => !NON_OPENING_SEATS.has(s));
+  return opening.length > 0 && opening.every((s) => s === "peer");
+}
 export type ResponseRole = "self" | "manager" | "peer";
 
 export interface RatingPoint {
@@ -91,7 +101,7 @@ export interface ReviewSummary {
   employmentId: string;
   employeeName: string;
   managerName: string;
-  mySeat: ReviewSeat;
+  seats: ReviewSeat[];
   status: ReviewStatus;
   selfStatus: string;
   managerStatus: string;
@@ -321,7 +331,7 @@ export function parseReviewSummary(raw: unknown): ReviewSummary | null {
     employmentId: str(raw.employment_id) ?? "",
     employeeName: str(raw.employee_name) ?? "Employee",
     managerName: str(raw.manager_name) ?? "Manager",
-    mySeat: str(raw.my_seat) ?? "employee",
+    seats: Array.isArray(raw.seats) ? raw.seats.filter((s): s is string => typeof s === "string") : [],
     status: (str(raw.status) ?? "not_started") as ReviewStatus,
     selfStatus: str(raw.self_status) ?? "not_started",
     managerStatus: str(raw.manager_status) ?? "not_started",

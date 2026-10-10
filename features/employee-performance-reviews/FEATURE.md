@@ -51,7 +51,22 @@ writer.
   require confirmation. The future HR build will replace this interim storage
   contract rather than treating localStorage as persistent review data.
 
+## Access (standard review)
+
+Who sees and does what on a standard review is the review's **access setup**, not door code:
+`/Users/armanisadeghi/code/common-docs/systems/platform/access/projects/access-setup/PLAN.md` (declaration row
+`iam.access_setup` for `hr_review`; resolvers `hr.review_seat_*`). Every `hr.hr_review_*` door asks
+`iam.seats_of` / `seats_opening` / `part_level` / `may_act(_seat)` / `redact_by_parts` / `records_where_seated`;
+organization-level doors (cycles, templates) stay on `hr._rev_can_manage`.
+
+- A person may hold several seats: the review JSON carries `seats: string[]` (no `my_seat`). Branch with
+  `seats.includes(...)`; the peer view is `isPeerOnly(seats)` (`standard/types.ts`).
+- `line_manager` is a seat that never opens a review (history reads it); ignore it on screen.
+- Proof: `scripts/db-proofs/access-setup-review-equivalence.py` (legacy `hr._legacy_*` bodies vs the live doors).
+
 ## Change log
+
+- 2026-10-10 - Standard-review doors answer from the access setup; the client reads `seats[]` (lane access-setup).
 
 - 2026-08-26 - Added the first-class organization-workspace door, canonicalized
   navigation through the resolved organization slug, and clarified that the

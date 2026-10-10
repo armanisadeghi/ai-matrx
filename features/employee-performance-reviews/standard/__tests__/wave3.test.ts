@@ -63,13 +63,14 @@ describe("peer visibility rendering", () => {
   });
   it("offers peer requests to employee and manager only, only when on, open and not yet shared", () => {
     const open = { cycleStatus: "open", status: "in_progress" } as const;
-    expect(canNominatePeers({ seat: "employee", peersEnabled: true, review: open })).toBe(true);
-    expect(canNominatePeers({ seat: "manager", peersEnabled: true, review: open })).toBe(true);
-    expect(canNominatePeers({ seat: "hr", peersEnabled: true, review: open })).toBe(false);
-    expect(canNominatePeers({ seat: "peer", peersEnabled: true, review: open })).toBe(false);
-    expect(canNominatePeers({ seat: "employee", peersEnabled: false, review: open })).toBe(false);
-    expect(canNominatePeers({ seat: "employee", peersEnabled: true, review: { cycleStatus: "closed", status: "in_progress" } })).toBe(false);
-    expect(canNominatePeers({ seat: "manager", peersEnabled: true, review: { cycleStatus: "open", status: "shared" } })).toBe(false);
+    expect(canNominatePeers({ seats: ["employee"], peersEnabled: true, review: open })).toBe(true);
+    expect(canNominatePeers({ seats: ["manager"], peersEnabled: true, review: open })).toBe(true);
+    expect(canNominatePeers({ seats: ["hr"], peersEnabled: true, review: open })).toBe(false);
+    expect(canNominatePeers({ seats: ["manager", "hr"], peersEnabled: true, review: open })).toBe(true);
+    expect(canNominatePeers({ seats: ["peer"], peersEnabled: true, review: open })).toBe(false);
+    expect(canNominatePeers({ seats: ["employee"], peersEnabled: false, review: open })).toBe(false);
+    expect(canNominatePeers({ seats: ["employee"], peersEnabled: true, review: { cycleStatus: "closed", status: "in_progress" } })).toBe(false);
+    expect(canNominatePeers({ seats: ["manager"], peersEnabled: true, review: { cycleStatus: "open", status: "shared" } })).toBe(false);
   });
   it("finds the nominations awaiting the manager", () => {
     const n = [{ nominationId: "1", status: "pending" }, { nominationId: "2", status: "approved" }] as never;

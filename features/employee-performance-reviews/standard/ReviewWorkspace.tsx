@@ -25,7 +25,7 @@ import { PeersPanel } from "./PeersPanel";
 import { peerLabel, submittedPeerResponses } from "./peers";
 import { EmploymentPicker } from "@/features/hr/people/relations/components/EmploymentPicker";
 import { formatDay, nextStep, periodLabel, ratingLabel, statusLabel, statusTone } from "./status";
-import type { ResponseView, ReviewDetail } from "./types";
+import { isPeerOnly, type ResponseView, type ReviewDetail } from "./types";
 
 const NONE = "__none";
 type Dialog = "share" | "acknowledge" | "reopen" | "cancel" | "replace" | null;
@@ -72,7 +72,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const template = detail?.template;
   const selfR: ResponseView | undefined = detail?.responses.find((r) => r.role === "self");
   const mgrR: ResponseView | undefined = detail?.responses.find((r) => r.role === "manager");
-  const isPeer = review?.mySeat === "peer";
+  const isPeer = review ? isPeerOnly(review.seats) : false;
   const myPeer = detail?.responses.find((r) => r.role === "peer" && r.isMine);
   const peers = detail ? submittedPeerResponses(detail.responses).filter((r) => !r.isMine) : [];
 
