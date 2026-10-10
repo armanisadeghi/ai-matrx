@@ -25,6 +25,7 @@ import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import FloatingClearanceSync from "@/features/shell/components/FloatingClearanceSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import ShellChatWidthInstant from "@/features/shell/components/ShellChatWidthInstant";
 import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
 import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
@@ -176,6 +177,7 @@ export default async function AppShell({
       <VisualViewportSync />
       <FloatingClearanceSync />
       <ShellSidebarCookieSync />
+      <ShellChatWidthInstant />
       <ShellChromeRouteSync />
       {/* Active-organization hydration is owned by the sync engine
           (`appContextPolicy`, registered in lib/sync/registry) — it rehydrates

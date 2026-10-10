@@ -1,7 +1,8 @@
 // scripts/cls-routes-walk.mjs — cold-load layout shift for /data, /messages, /meetings as admin and member (headless).
 //   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--chat=default|open|closed] [--max=0.01] [--verbose]
 // --chat=open|closed seeds the shell chat dock's remembered state (cookies) per route family, as a returning person has it;
-// "default" is a first visit with no cookie.
+// "default" is a first visit with no cookie. Client navigation (e.g. /chat/new to /notes with a real click) is covered by the chat-dock
+// instant-on-navigation rule, checked by hand with a real mouse click: the walk itself only cold-loads.
 // Signs in through `pnpm dev-login` (never types a password). Prints each shift entry's nodes
 // (selector, previousRect, currentRect). Exits 1 when any route/seat run exceeds --max (default 0.01).
 import { chromium } from "playwright";
@@ -10,7 +11,7 @@ import { execSync } from "node:child_process";
 const args = process.argv.slice(2);
 const opt = (k, d) => args.find((a) => a.startsWith(`--${k}=`))?.split("=")[1] ?? d;
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 2);
-const routes = opt("routes", "/data,/messages,/meetings,/agents,/marketing").split(",");
+const routes = opt("routes", "/data,/messages,/meetings,/agents,/marketing,/notes").split(",");
 const seats = opt("seats", "admin,member").split(",");
 const widths = opt("widths", "390,1024,1440").split(",").map(Number);
 const chatMode = opt("chat", "default");
