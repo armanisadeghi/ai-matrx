@@ -646,7 +646,6 @@ export function AccountsTab() {
           if (href) router.push(href);
           else setSummaryRow(r);
         })}
-        frameHeight="fill"
         mobileCardsBreakpoint="md"
         mobileCards={(r, _i, controls) => <AccountCard row={r} controls={controls} connection={connectionOf(r)} />}
         isLoading={accounts.isLoading}
