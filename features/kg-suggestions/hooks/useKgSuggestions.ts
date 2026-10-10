@@ -151,7 +151,7 @@ export function useKgSuggestions(
       dispatch(setRowMutation({ id, mutation: "accepting" }));
       try {
         if (row.stage === "value") {
-          await acceptValueSuggestion(row);
+          await acceptValueSuggestion(row, dispatch);
           // The write went straight to the DB via scopesService; patch the
           // scope-values cache so any open scope/value surface reflects it
           // immediately instead of showing the stale cell until a reload.
@@ -166,7 +166,7 @@ export function useKgSuggestions(
             );
           }
         } else {
-          await acceptAssociationSuggestion(row);
+          await acceptAssociationSuggestion(row, dispatch);
         }
         dispatch(removeFromLists({ id }));
       } catch (err) {

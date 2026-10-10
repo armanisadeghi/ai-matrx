@@ -65,9 +65,9 @@ import { useOpenSourcePreview } from "@/features/kg-suggestions/components/sourc
 import { sourceLinkFor } from "@/features/kg-suggestions/service/sourcePreviewService";
 import type {
   ResolvedSuggestionItem,
-  ResolvedSuggestionValue,
   ResolvedSuggestionTarget,
 } from "@/features/scopes/types";
+import type { ContextValue } from "@ai-matrx/records/scopes";
 import {
   isAssociationLink,
   isHeavyHitter,
@@ -459,7 +459,7 @@ export function KgSuggestionRowItem({
   const currentDisplay = formatCurrentValue(currentValue);
   const suggestedDisplay = row.suggested_value ?? "—";
   const slotLabel =
-    targetItem?.display_name ?? row.target.slot_name ?? "scope field";
+    targetItem?.field.label ?? row.target.slot_name ?? "scope field";
   const hasExistingValue = currentDisplay !== null;
   const isOverwrite = hasExistingValue && currentDisplay !== suggestedDisplay;
   const isNoOp = hasExistingValue && currentDisplay === suggestedDisplay;
@@ -476,7 +476,7 @@ export function KgSuggestionRowItem({
           target.org.slug,
           target.scope_type,
           target.scope,
-          targetItem,
+          targetItem.field,
         )
       : null;
 
@@ -707,9 +707,9 @@ export function KgSuggestionRowItem({
                 <div className="border-t border-border/60 divide-y divide-border/40">
                   {target.items.map((it) => (
                     <FieldRow
-                      key={it.id}
+                      key={it.field.id}
                       item={it}
-                      isTarget={it.id === targetItem?.id}
+                      isTarget={it.field.id === targetItem?.field.id}
                     />
                   ))}
                 </div>
@@ -866,7 +866,7 @@ function FieldRow({
           isTarget ? "font-semibold text-primary" : "text-muted-foreground",
         )}
       >
-        {item.display_name}
+        {item.field.label}
       </span>
       <span
         className={cn(
@@ -1139,7 +1139,7 @@ function capitalize(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-function formatCurrentValue(v: ResolvedSuggestionValue | null): string | null {
+function formatCurrentValue(v: ContextValue | null): string | null {
   if (!v) return null;
   return summarizeContextCell(v);
 }

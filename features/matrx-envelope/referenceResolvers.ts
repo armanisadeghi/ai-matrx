@@ -506,12 +506,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
           : (scopeName ?? itemName ?? stringify(ref.label));
       const row = res.data.value;
       if (!row) return heading;
-      const cell =
-        stringify(row.value_text) ??
-        stringify(row.value_number) ??
-        stringify(row.value_boolean) ??
-        stringify(row.value_date) ??
-        (row.value_json != null ? stringify(row.value_json) : undefined);
+      // A reference / document cell reads as the names it points at; any other cell as its value.
+      const cell = row.references.length
+        ? row.references.map((r) => r.label ?? `${r.type} ${r.id}`).join(", ")
+        : stringify(row.value);
       if (heading && cell) return `${heading}\n${cell}`;
       return cell ?? heading;
     },

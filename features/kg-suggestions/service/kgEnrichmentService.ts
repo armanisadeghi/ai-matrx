@@ -16,8 +16,8 @@
 
 "use client";
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { resolveSourceTitle } from "@/features/kg-suggestions/service/sourcePreviewService";
 import type { ResolvedSuggestionTarget } from "@/features/scopes/types";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
@@ -77,6 +77,6 @@ async function resolveTarget(
     scopeId,
     contextItemId: row.target.scope_item_id,
   });
-  if (isScopesRpcErr(res)) return null;
+  if (isRecordsErr(res)) return null;
   return res.data;
 }

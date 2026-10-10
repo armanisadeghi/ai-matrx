@@ -30,21 +30,20 @@ import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
 import {
   assertKgSuggestionOwned,
   markKgSuggestionAccepted,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
 import type { EntityType } from "@/features/scopes/types";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { isRecordsErr } from "@ai-matrx/records";
+import type { AppDispatch } from "@/lib/redux/store";
 import {
   kgSourceKindToEntityType,
   type KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
-import {
-  createScope,
-} from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { createScope } from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 export interface PromoteHeavyHitterArgs {
   /** The heavy-hitter row to promote. */
@@ -81,19 +80,18 @@ function errMessage(err: unknown): string {
 
 /** Tag one source to the scope additively (preserve its existing scopes). */
 async function tagSourceToScope(
+  dispatch: AppDispatch,
   entityType: EntityType,
   sourceId: string,
   scopeId: string,
 ): Promise<boolean> {
   const current = await scopesService.getEntityScopes(entityType, sourceId);
-  if (isScopesRpcErr(current)) return false;
+  if (isRecordsErr(current)) return false;
   const next = Array.from(new Set([...current.data.scope_ids, scopeId]));
-  const written = await scopeStore.setEntityScopes(
-    entityType,
-    sourceId,
-    next,
+  const written = await dispatch(
+    setEntityScopes({ entityType, entityId: sourceId, scopeIds: next }),
   );
-  return !isScopesRpcErr(written);
+  return written.ok;
 }
 
 export function useHeavyHitterAccept() {
@@ -115,14 +113,14 @@ export function useHeavyHitterAccept() {
         assertKgSuggestionOwned(row);
         const scope = await dispatch(
           createScope({
-            org_id: organizationId,
-            type_id: scopeTypeId,
+            organization_id: organizationId,
+            scope_type_id: scopeTypeId,
             name: finalName,
             description: `Created from recurring entity "${
               row.entity.name ?? finalName
             }"`,
           }),
-        ).then(unwrapScopesRpc);
+        ).then(unwrapRecords);
         scopeId = scope.id;
         createdName = scope.name;
       } catch (err) {
@@ -143,6 +141,7 @@ export function useHeavyHitterAccept() {
         skippedCount = 1;
       } else {
         const tagged = await tagSourceToScope(
+          dispatch,
           entityType as EntityType,
           row.source_id,
           scopeId,

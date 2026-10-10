@@ -353,7 +353,7 @@ export function useSuggestionsQuery(
           );
         }
         if (row.stage === "value") {
-          await acceptValueSuggestion(row);
+          await acceptValueSuggestion(row, dispatch);
           // Patch the scope-values cache so an open scope surface updates now
           // (the write bypassed Redux — went straight through scopesService).
           if (row.target.scope_id) {
@@ -366,7 +366,7 @@ export function useSuggestionsQuery(
               }),
             );
           }
-        } else await acceptAssociationSuggestion(row);
+        } else await acceptAssociationSuggestion(row, dispatch);
       }),
     [runDecision, dispatch],
   );

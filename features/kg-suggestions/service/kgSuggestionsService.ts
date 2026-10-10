@@ -28,8 +28,12 @@ import { operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
-import { isScopesRpcErr, type EntityType } from "@/features/scopes/types";
+import { setContextValue } from "@/features/scopes/redux/thunks/setContextValue";
+import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import type { EntityType } from "@/features/scopes/types";
+import type { AppDispatch } from "@/lib/redux/store";
+import { isRecordsErr } from "@ai-matrx/records";
+import type { ContextFieldKind, ContextValueWrite } from "@ai-matrx/records/scopes";
 import type { Database } from "@/types/database.types";
 import {
   kgSourceKindToEntityType,
@@ -399,12 +403,43 @@ export async function markKgSuggestionsViewed(
 
 // ── Decide: accept ─────────────────────────────────────────────────────────
 
+/** A suggestion is proposed as text; the field's kind decides what the cell holds. */
+function suggestionCell(
+  kind: ContextFieldKind,
+  text: string,
+): Pick<ContextValueWrite, "value"> {
+  switch (kind) {
+    case "number":
+    case "percent":
+    case "currency": {
+      const n = Number(text.replace(/[,%$\s]/g, ""));
+      if (!Number.isFinite(n)) throw new Error(`"${text}" is not a number.`);
+      return { value: n };
+    }
+    case "boolean":
+      return { value: /^(true|yes|y|1)$/i.test(text.trim()) };
+    case "object":
+    case "array":
+      try {
+        return { value: JSON.parse(text) as unknown };
+      } catch {
+        throw new Error("The suggested value is not valid JSON for this field.");
+      }
+    case "reference":
+    case "document":
+      throw new Error("This field holds references; accept it by picking the record.");
+    default:
+      return { value: text };
+  }
+}
+
 /**
- * Accept a Stage-B value suggestion: write the cell through the sanctioned
- * `set_context_value` RPC (scopes chokepoint), then mark the row accepted.
+ * Accept a Stage-B value suggestion: write the cell through the holder's value
+ * write (`setContextValue`), then mark the row accepted.
  */
 export async function acceptValueSuggestion(
   row: KgSuggestionRow,
+  dispatch: AppDispatch,
 ): Promise<void> {
   assertKgSuggestionOwned(row);
   if (!row.target.scope_id || !row.target.scope_item_id) {
@@ -413,24 +448,35 @@ export async function acceptValueSuggestion(
   if (row.suggested_value == null) {
     throw new Error("Suggestion has no value to write.");
   }
-  const res = await scopeStore.setContextValue({
-    context_item_id: row.target.scope_item_id,
-    scope_id: row.target.scope_id,
-    value_text: row.suggested_value,
-    source_type: "ai_enriched",
-    change_summary: `Accepted suggestion ${row.id}`,
+  const resolved = await scopesService.resolveSuggestionTarget({
+    scopeId: row.target.scope_id,
+    contextItemId: row.target.scope_item_id,
   });
-  if (isScopesRpcErr(res)) throw new Error(res.error.message);
+  if (isRecordsErr(resolved)) throw new Error(resolved.error.message);
+  const field = resolved.data.target_item?.field;
+  if (!field) throw new Error("That field is no longer on this scope.");
+  const res = await dispatch(
+    setContextValue({
+      scope_id: row.target.scope_id,
+      field_id: field.id,
+      kind: field.kind,
+      ...suggestionCell(field.kind, row.suggested_value),
+      source_type: "ai_enriched",
+      change_summary: `Accepted suggestion ${row.id}`,
+    }),
+  );
+  if (isRecordsErr(res)) throw new Error(res.error.message);
   await markKgSuggestionAccepted(row);
 }
 
 /**
  * Accept a Stage-A link suggestion: tag the source document to the target
- * scope (additively, via the ctx_scope_assignments chokepoint), then mark the
+ * scope (additively, through the holder's `setEntityScopes`), then mark the
  * row accepted. The source is never re-tagged off its existing scopes.
  */
 export async function acceptAssociationSuggestion(
   row: KgSuggestionRow,
+  dispatch: AppDispatch,
 ): Promise<void> {
   assertKgSuggestionOwned(row);
   const scopeId = row.target.scope_id;
@@ -445,14 +491,16 @@ export async function acceptAssociationSuggestion(
     entityType as EntityType,
     row.source_id,
   );
-  if (isScopesRpcErr(current)) throw new Error(current.error.message);
+  if (isRecordsErr(current)) throw new Error(current.error.message);
   const next = Array.from(new Set([...current.data.scope_ids, scopeId]));
-  const written = await scopeStore.setEntityScopes(
-    entityType as EntityType,
-    row.source_id,
-    next,
+  const written = await dispatch(
+    setEntityScopes({
+      entityType: entityType as EntityType,
+      entityId: row.source_id,
+      scopeIds: next,
+    }),
   );
-  if (isScopesRpcErr(written)) throw new Error(written.error.message);
+  if (!written.ok) throw new Error(written.error ?? "Could not tag the source to that scope.");
   await markKgSuggestionAccepted(row);
 }
 
