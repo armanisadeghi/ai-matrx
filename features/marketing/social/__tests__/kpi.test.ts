@@ -114,10 +114,19 @@ describe("goalProgress (current vs target)", () => {
     expect(slow.fraction).toBeCloseTo(0.1, 2);
     expect(slow.status).toBe("behind");
   });
-  it("a goal set today is not Behind on day one", () => {
+  it("a goal with under two days of history is Not enough history, never On track", () => {
     const fresh = goalProgress({ goal: g({ starts_on: "2026-10-09" }), metric: "followers", current: 10000, now: NOW });
     expect(fresh.fraction).toBe(0);
-    expect(fresh.status).toBe("on_track");
+    expect(fresh.status).toBe("no_history");
+  });
+  it("zero growth after the first days is Behind, not On track", () => {
+    const flat = goalProgress({ goal: g({ target_value: 100, baseline_value: 57 }), metric: "followers", current: 57, now: NOW });
+    expect(flat.status).toBe("behind");
+  });
+  it("on track only when the pace reaches the target by the deadline", () => {
+    // 15.5 of 30 days: +2900 projects to ~15.6K by the end; +2000 projects to ~13.9K
+    expect(goalProgress({ goal: g(), metric: "followers", current: 12900, now: NOW }).status).toBe("on_track");
+    expect(goalProgress({ goal: g(), metric: "followers", current: 12000, now: NOW }).status).toBe("behind");
   });
   it("level metric: on track from 80% of target, else behind", () => {
     const base = { baseline_value: null, target_value: 5000 };

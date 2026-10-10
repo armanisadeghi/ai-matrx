@@ -130,24 +130,24 @@ function DeltaPill({
   });
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm font-semibold text-foreground">{format(current)}</dd>
       {delta.percent !== null ? (
         <p
           className={cn(
-            "text-[11px] leading-4",
+            "text-xs leading-4",
             delta.percent >= 0 ? "text-success" : "text-warning",
           )}
         >
           {`${delta.percent >= 0 ? "+" : ""}${delta.percent.toFixed(1)}% vs the ${CHANNEL_WINDOW_DAYS} days before`}
         </p>
       ) : (
-        <p className="text-[11px] leading-4 text-muted-foreground">
+        <p className="text-xs leading-4 text-muted-foreground">
           {gscDeltaRefusalLabel(delta)}
         </p>
       )}
       {delta.caveat ? (
-        <p className="text-[11px] leading-4 text-muted-foreground">{delta.caveat}</p>
+        <p className="text-xs leading-4 text-muted-foreground">{delta.caveat}</p>
       ) : null}
     </div>
   );
@@ -177,13 +177,13 @@ function VideoRow({ video }: { video: YouTubeVideoRow }) {
       )}
       <div className="min-w-0 flex-1">
         <EntityRef token="web_youtube_video" id={video.id} name={video.title} />
-        <p className="text-[11px] leading-4 text-muted-foreground">
+        <p className="text-xs leading-4 text-muted-foreground">
           {publishedText(video.published_at)} · {durationText(video.duration_seconds)}
           {video.sync_status !== "available"
             ? ` · ${video.sync_status_reason?.trim() || "YouTube would not give us this video the last time we asked."}`
             : ""}
         </p>
-        <p className="text-[11px] leading-4 text-muted-foreground">
+        <p className="text-xs leading-4 text-muted-foreground">
           {stats.views === null
             ? "YouTube did not report views for this video"
             : `${integer(stats.views)} views`}
@@ -257,19 +257,7 @@ function ChannelBindControl({
     const ok = await confirm({
       title: `Bind ${candidate.title} to this client`,
       description:
-        `Every refresh for this client will then read ${candidate.title} ` +
-        `(${candidateIdentity(candidate)}) through ${candidate.account}, spending a call on that ` +
-        `account, and will overwrite the stored analytics for the last ${MAX_REFRESH_WINDOW_DAYS} days ` +
-        "plus the channel's most recent uploads (up to 50) with what YouTube reports then. " +
-        "Nothing is published, changed or removed on YouTube — our permission there is read-only. " +
-        "You can bind a different channel later; the numbers already stored stay under this client." +
-        (candidate.alsoDiscoveredThrough.length > 0
-          ? ` This channel was also discovered through ${candidate.alsoDiscoveredThrough.join(", ")}; ` +
-            `binding uses ${candidate.account}, the account that discovered it first.`
-          : "") +
-        (boundTo.length > 0
-          ? ` It is already bound to ${boundTo.join(", ")}; binding it here too means both clients read the same channel.`
-          : ""),
+        "Refreshes for this client will read this channel and replace its stored numbers. Nothing is changed on YouTube.",
       confirmLabel: `Bind ${candidate.title}`,
     });
     if (!ok) return;
@@ -301,8 +289,7 @@ function ChannelBindControl({
   return (
     <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border px-2.5 py-2">
       <p className="text-xs leading-5 text-muted-foreground">
-        No YouTube channel is bound to this client yet, so there is nothing to
-        show and nothing to refresh.
+        No YouTube channel is bound to this client yet.
       </p>
       {inventory.isLoading || elsewhere.isLoading ? (
         <div className="h-6 w-40 animate-pulse rounded bg-muted/40" />
@@ -321,9 +308,7 @@ function ChannelBindControl({
       ) : rows.length === 0 ? (
         <>
           <p className="text-xs leading-5 text-muted-foreground">
-            None of your connected Google accounts owns a YouTube channel we can
-            see. A channel is discovered at the moment you connect the account
-            that owns it.
+            No connected Google account owns a YouTube channel.
           </p>
           <div>
             <Button
@@ -349,23 +334,14 @@ function ChannelBindControl({
                 <p className="truncate text-xs font-medium text-foreground">
                   {candidate.title}
                 </p>
-                <p className="text-[11px] leading-4 text-muted-foreground">
-                  {candidateIdentity(candidate)} · discovered through{" "}
-                  {candidate.account}
+                <p className="text-xs text-muted-foreground">
+                  {candidateIdentity(candidate)}
                 </p>
                 {boundTo.length > 0 ? (
                   // Held by another client: say so on the row, so the press
                   // is never read as adding this channel to this brand.
-                  <p className="text-[11px] leading-4 text-foreground">
+                  <p className="text-xs text-foreground">
                     {`Bound to ${boundTo.join(", ")}`}
-                  </p>
-                ) : null}
-                {candidate.alsoDiscoveredThrough.length > 0 ? (
-                  // The same channel id seen through more than one connected
-                  // account is ONE channel, and the row says which account the
-                  // binding will actually use rather than hiding the choice.
-                  <p className="text-[11px] leading-4 text-muted-foreground">
-                    {`The same channel is also visible through ${candidate.alsoDiscoveredThrough.join(", ")} — binding uses ${candidate.account}, which discovered it first.`}
                   </p>
                 ) : null}
               </div>
@@ -373,7 +349,7 @@ function ChannelBindControl({
                 variant="outline"
                 className="shrink-0"
                 disabled={saving !== null}
-                aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)}) through ${candidate.account}${boundTo.length > 0 ? `, already bound to ${boundTo.join(", ")}` : ""}`}
+                aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)})${boundTo.length > 0 ? `, already bound to ${boundTo.join(", ")}` : ""}`}
                 onClick={() => void bind(candidate, boundTo)}
               >
                 {saving === candidate.resourceId ? "Binding…" : "Bind"}
@@ -499,11 +475,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
     const ok = await confirm({
       title: "Refresh this channel from YouTube",
       description:
-        `This spends a call on your connected Google account and re-reads the last ${MAX_REFRESH_WINDOW_DAYS} days of ` +
-        "channel analytics plus this channel's most recent uploads (up to 50). Every day already stored in that " +
-        "window is OVERWRITTEN with what YouTube reports now, and each video's stored title, description, " +
-        `thumbnail and counts are replaced with today's. Nothing is published, changed or removed on YouTube — ` +
-        "our permission there is read-only.",
+        "Re-reads this channel's recent analytics and uploads and replaces the stored numbers. Nothing is changed on YouTube.",
       confirmLabel: "Refresh from YouTube",
     });
     if (!ok) return;
@@ -573,12 +545,12 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
         />
       ) : bound && !channelResourceId && !inventory.isLoading ? (
         <p className="rounded-md border border-dashed border-warning/50 bg-warning/5 px-2.5 py-2 text-xs leading-5 text-foreground">
-          {`This client is bound to channel ${bound.channelId}, but no connected Google account here has discovered that channel as one it owns. Reconnect YouTube on that account so the channel is discovered again, then refresh.`}
+          {"Reconnect YouTube to refresh this channel."}
         </p>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Analytics for:</span>
+            <span className="text-xs text-muted-foreground">Analytics for:</span>
             {(["channel", "video"] as const).map((option) => (
               <Button
                 key={option}
@@ -597,19 +569,15 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
             <p className="rounded-md border border-dashed border-warning/50 bg-warning/5 px-2.5 py-2 text-xs leading-5 text-foreground">
               {analyticsCapability?.admission_error?.trim() ||
                 analyticsCapability?.limitation?.trim() ||
-                "YouTube Analytics is still in internal testing here, so these numbers are only available to a reviewer."}{" "}
-              {analyticsCapability?.remedy?.trim() ?? ""} The videos below do not
-              depend on it and are shown either way.
+                "YouTube Analytics isn't available to your account yet."}{" "}
+              {analyticsCapability?.remedy?.trim() ?? ""}
               <ErrorAlchemyMenu />
             </p>
           ) : null}
 
           {lane === "video" ? (
             <p className="rounded-md border border-dashed border-border px-2.5 py-2 text-xs leading-5 text-muted-foreground">
-              Per-video days are not collected yet. The refresh writes one row
-              per day for the whole channel; the per-video lane exists in the
-              table and nothing has ever written to it, so there is no per-video
-              history to show — not zero views.
+              Per-video analytics are not available yet.
             </p>
           ) : analytics.isLoading ? (
             <div className="h-12 animate-pulse rounded-md border border-border bg-muted/40" />
@@ -621,8 +589,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
             />
           ) : days.length === 0 ? (
             <p className="text-xs leading-5 text-muted-foreground">
-              Nothing has been synced for this channel yet. A refresh is the only
-              thing that fills these numbers — there is no schedule behind them.
+              No analytics yet. Refresh to load them.
             </p>
           ) : (
             <>
@@ -652,17 +619,12 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
                   format={integer}
                 />
                 <div className="min-w-0">
-                  <dt className="text-[11px] text-muted-foreground">
+                  <dt className="text-xs text-muted-foreground">
                     Average view duration
                   </dt>
                   <dd className="text-sm font-semibold text-foreground">
                     {durationWords(current.avgViewDurationSeconds)}
                   </dd>
-                  <p className="text-[11px] leading-4 text-muted-foreground">
-                    Watch time ÷ views over the window — never an average of each
-                    day&apos;s average, which would weight a four-view day like a
-                    busy one.
-                  </p>
                 </div>
               </dl>
               <DataFreshnessLine
@@ -685,8 +647,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
               />
             ) : (videos.data ?? []).length === 0 ? (
               <p className="text-xs leading-5 text-muted-foreground">
-                No videos have been mirrored from this channel yet. Refresh to
-                bring in its most recent uploads.
+                No videos yet. Refresh to load them.
               </p>
             ) : (
               <ul className="flex flex-col gap-1.5">

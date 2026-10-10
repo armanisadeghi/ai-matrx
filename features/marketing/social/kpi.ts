@@ -88,15 +88,16 @@ export function periodDays(
 /** Share of the target at which a level metric still reads "On track". */
 export const KPI_ON_TRACK_SHARE = 0.8;
 
-/** How far behind the clock a cumulative goal may run and still read "On track" (a fresh goal is not Behind on day one). */
-export const KPI_PACE_TOLERANCE = 0.1;
+/** Days of a goal's life before its pace means anything; sooner than this it reads "Not enough history". */
+export const KPI_MIN_PACE_DAYS = 2;
 
-export type KpiStatus = "achieved" | "on_track" | "behind" | "no_data" | "paused";
+export type KpiStatus = "achieved" | "on_track" | "behind" | "no_history" | "no_data" | "paused";
 
 export const KPI_STATUS_LABELS: Record<KpiStatus, string> = {
   achieved: "Achieved",
   on_track: "On track",
   behind: "Behind",
+  no_history: "Not enough history",
   no_data: "No data",
   paused: "Paused",
 };
@@ -264,13 +265,18 @@ export function goalProgress(args: {
       : Number(goal.baseline_value);
   if (def.cumulative && baseline !== null && target > baseline) {
     const fraction = Math.min(1, Math.max(0, (current - baseline) / (target - baseline)));
-    return {
-      current,
-      target,
-      fraction,
-      elapsed,
-      status: fraction >= elapsed - KPI_PACE_TOLERANCE ? "on_track" : "behind",
-    };
+    // On track only when the pace so far reaches the target by the deadline; too early to project says so.
+    const elapsedDays = elapsed * periodDays(goal);
+    const growth = current - baseline;
+    let status: KpiStatus;
+    if (elapsedDays < KPI_MIN_PACE_DAYS) status = "no_history";
+    else if (growth <= 0) status = "behind";
+    else status = baseline + (growth / elapsedDays) * periodDays(goal) >= target ? "on_track" : "behind";
+    return { current, target, fraction, elapsed, status };
+  }
+  if (def.cumulative) {
+    // A running count with no starting point has no pace to project.
+    return { current, target, fraction: Math.min(1, Math.max(0, current / target)), elapsed, status: "no_history" };
   }
   const fraction = Math.min(1, Math.max(0, current / target));
   return {

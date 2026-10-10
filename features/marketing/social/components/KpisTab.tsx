@@ -105,6 +105,7 @@ const STATUS_TONE: Record<KpiStatus, "success" | "warning" | "neutral"> = {
   achieved: "success",
   on_track: "success",
   behind: "warning",
+  no_history: "neutral",
   no_data: "neutral",
   paused: "neutral",
 };
@@ -518,7 +519,7 @@ function GoalTile({
         className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted"
       >
         <div
-          className={cn("h-full rounded-full", progress.status === "behind" ? "bg-amber-500" : "bg-emerald-500")}
+          className={cn("h-full rounded-full", progress.status === "behind" ? "bg-amber-500" : progress.status === "no_history" ? "bg-muted-foreground/50" : "bg-emerald-500")}
           style={{ width: `${pct}%` }}
         />
         {def.cumulative && progress.status !== "paused" ? (

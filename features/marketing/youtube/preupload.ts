@@ -396,9 +396,7 @@ export function preUploadChecks(draft: PreUploadDraft): ScoredCheck[] {
   ];
 }
 
-export const NEEDS_KEYWORD_SENTENCE =
-  "No score yet: your organization asks for the keyword you want this video to rank for before it is graded. " +
-  "Three of the seven checks — where the keyword sits in the title, whether it survives into the visible part of the description, and whether a tag carries it — have nothing to measure without one, and a score that quietly leaves them out would still read as a verdict on the whole video.";
+export const NEEDS_KEYWORD_SENTENCE = "Add the keyword this video should rank for to get a score.";
 
 /**
  * Score a draft.

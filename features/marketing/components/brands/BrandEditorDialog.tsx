@@ -221,6 +221,8 @@ function BrandEditorDialogBody({
   const [startFrom, setStartFrom] = useState<"website" | "handle">("website");
   const fromHandle = !brand && (kind === "person" || startFrom === "handle");
   const [kindLocked, setKindLocked] = useState(false);
+  // Logo, favicon and social image fill themselves from the website; a new brand tucks them away.
+  const [moreOptions, setMoreOptions] = useState(false);
 
   const set =
     <K extends keyof BrandDraft>(key: K) =>
@@ -446,40 +448,51 @@ function BrandEditorDialogBody({
                 placeholder="https://example.com"
               />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="brand-logo" className="text-xs">
-                Logo URL
-              </Label>
-              <Input
-                id="brand-logo"
-                value={draft.logoUrl}
-                onChange={(event) => set("logoUrl")(event.target.value)}
-                placeholder="https://…/logo.png"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="brand-favicon" className="text-xs">
-                Favicon URL
-              </Label>
-              <Input
-                id="brand-favicon"
-                value={draft.faviconUrl}
-                onChange={(event) => set("faviconUrl")(event.target.value)}
-                placeholder="https://…/favicon.ico"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="brand-og" className="text-xs">
-                Social image URL
-              </Label>
-              <Input
-                id="brand-og"
-                value={draft.ogImageUrl}
-                onChange={(event) => set("ogImageUrl")(event.target.value)}
-                placeholder="https://…/social-card.jpg"
-              />
-            </div>
+            {brand || moreOptions ? (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-logo" className="text-xs">
+                    Logo URL
+                  </Label>
+                  <Input
+                    id="brand-logo"
+                    value={draft.logoUrl}
+                    onChange={(event) => set("logoUrl")(event.target.value)}
+                    placeholder="https://…/logo.png"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-favicon" className="text-xs">
+                    Favicon URL
+                  </Label>
+                  <Input
+                    id="brand-favicon"
+                    value={draft.faviconUrl}
+                    onChange={(event) => set("faviconUrl")(event.target.value)}
+                    placeholder="https://…/favicon.ico"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-og" className="text-xs">
+                    Social image URL
+                  </Label>
+                  <Input
+                    id="brand-og"
+                    value={draft.ogImageUrl}
+                    onChange={(event) => set("ogImageUrl")(event.target.value)}
+                    placeholder="https://…/social-card.jpg"
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
+          {!brand ? (
+            <div>
+              <Button variant="quiet" aria-expanded={moreOptions} onClick={() => setMoreOptions((v) => !v)}>
+                {moreOptions ? "Fewer options" : "More options"}
+              </Button>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">

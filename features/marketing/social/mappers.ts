@@ -419,6 +419,11 @@ export const POST_METRIC_LABELS: Record<PostMetricKey, string> = {
   saves: "Saves",
 };
 
+/** A calendar day in the reader's own locale, never an ambiguous 10/9/2026: "Oct 9, 2026". */
+export function formatDay(value: string | number | Date): string {
+  return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 export interface SeriesPoint {
   /** Epoch ms. */
   t: number;

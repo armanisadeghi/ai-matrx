@@ -441,7 +441,7 @@ export function BrandsPortfolio({
       ) : null}
       <main
         className={cn(
-          "flex min-h-0 flex-col gap-3 bg-textured",
+          "matrx-touch-targets flex min-h-0 flex-col gap-3 bg-textured",
           presentation === "route"
             ? "h-full overflow-hidden px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4"
             : "px-0 pb-1",
