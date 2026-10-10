@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T08:20:20.031Z",
+  "generated_at": "2026-10-10T08:25:11.386Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4081,6 +4081,12 @@
       "filename": "hr_open_02_the_hr_schema_is_reachable_by_a_client.sql",
       "checksum": "d87d1191594879353bc3c05a92e9e3d05b6ea88c85cb5832d782639e7fd36da9",
       "applied_at": "2026-10-10 08:15:14.223437+00"
+    },
+    "migrations/campaign/hr_open_03_review_records_are_reached_only_through_their_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_open_03_review_records_are_reached_only_through_their_doors.sql",
+      "checksum": "7b19e07c23196eea057e70250d883ce8072ca2ebb3564cc65ac7de4a50c86227",
+      "applied_at": "2026-10-10 08:25:10.08586+00"
     },
     "migrations/campaign/hr_rev_01_standard_review_records_and_flow.sql": {
       "source": "matrx-frontend",
