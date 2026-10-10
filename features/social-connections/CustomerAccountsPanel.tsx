@@ -74,7 +74,13 @@ export function CustomerAccountsPanel({ organizationId, brandId, returnUrl = "/u
         }
         toast.success("Account checked.");
       }
-      if (operation === "disconnect") { await disconnectCustomerSocialAccount(connection.provider, organizationId, connection.id); setReceipts((current) => { const next = {...current}; delete next[connection.id]; return next; }); toast.success("Account disconnected."); }
+      if (operation === "disconnect") {
+        const receipt = await disconnectCustomerSocialAccount(connection.provider, organizationId, connection.id);
+        setReceipts((current) => { const next = {...current}; delete next[connection.id]; return next; });
+        if (receipt.providerRevocation === "retained") toast.success("Disconnected from AI Matrx; Meta authorization remains.");
+        else if (receipt.providerRevocation === "failed") toast.warning("Disconnected from AI Matrx; provider access could not be revoked.");
+        else toast.success("Account disconnected.");
+      }
       await refresh();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Account request failed."); await refresh(); }
     finally { setAction(null); }

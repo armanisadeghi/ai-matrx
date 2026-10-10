@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ClaudeAccountsPanel } from "./ClaudeAccountsPanel";
+import { SandboxCapacityList } from "./SandboxCapacityList";
+import { readHostedCapacity, type SandboxCapacityRefusal } from "@/features/ai-work/lib/ownPlan";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -168,6 +170,29 @@ export function AiWorkConnections() {
     "claude-code-hosted",
     capability,
   );
+
+  // When the per-person sandbox cap is what refuses, the readiness read names
+  // the boxes holding the slots; list them with Stop instead of a bare sentence.
+  const [capacityFull, setCapacityFull] = useState<SandboxCapacityRefusal | null>(null);
+  useEffect(() => {
+    if (capability.state === "loading" || hostedStart.selectable) {
+      setCapacityFull(null);
+      return;
+    }
+    let cancelled = false;
+    void readHostedCapacity().then(
+      (next) => {
+        if (!cancelled) setCapacityFull(next);
+      },
+      () => {
+        if (!cancelled) setCapacityFull(null);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capability.state, hostedStart.selectable, organizationId]);
 
   const refreshHostedCapability = () => {
     setCapability(INITIAL_BRIDGE_CAPABILITY);
@@ -442,11 +467,19 @@ export function AiWorkConnections() {
                     </Button>
                   </>
                 ) : (
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Starting a hosted Claude Code session is not available:{" "}
-                    {hostedStart.reason} No launch control is shown until the
-                    live capability verdict says otherwise.
-                  </p>
+                  <>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Starting a hosted Claude Code session is not available:{" "}
+                      {hostedStart.reason} No launch control is shown until the
+                      live capability verdict says otherwise.
+                    </p>
+                    {capacityFull && (
+                      <SandboxCapacityList
+                        capacity={capacityFull}
+                        onStopped={() => refreshHostedCapability()}
+                      />
+                    )}
+                  </>
                 )}
               </div>
               <button

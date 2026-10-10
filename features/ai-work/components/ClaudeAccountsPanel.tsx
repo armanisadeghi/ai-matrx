@@ -33,10 +33,12 @@ import { operationFailed } from "@/utils/errors";
 import { isJsonObject } from "@/types/json";
 import { apiGet } from "@/lib/api/typed-client";
 import { runClaudeConnect } from "@/features/ai-work/lib/claudeConnectFlow";
-import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { SandboxCapacityList } from "@/features/ai-work/components/SandboxCapacityList";
 import {
   cancelOwnPlanSignIn,
   capacityRefusalOf,
+  HOSTED_RUNTIME_PATH,
+  readHostedCapacity,
   newClaudeAccountSlot,
   signOutOwnPlan,
   startOwnPlanSignIn,
@@ -47,7 +49,6 @@ import {
 } from "@/features/ai-work/lib/ownPlan";
 
 const PROVIDER = "claude_code" as const;
-const HOSTED_RUNTIME_PATH = "/coding-sessions/hosted/runtime" as const;
 
 function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
@@ -61,6 +62,20 @@ function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
       { once: true },
     );
   });
+}
+const SLOT_WAIT_MS = 90_000;
+
+/** After a Stop: wait until the cap no longer refuses (the box has really stopped). */
+async function waitForFreeSlot(signal: AbortSignal): Promise<void> {
+  const deadline = Date.now() + SLOT_WAIT_MS;
+  while (!signal.aborted && Date.now() < deadline) {
+    try {
+      if ((await readHostedCapacity()) === null) return;
+    } catch {
+      return; // not a verdict; let Connect itself give the honest answer
+    }
+    await abortableSleep(2_000, signal);
+  }
 }
 const PRIMARY = "primary";
 const CLAUDE_CONNECTORS_URL = "https://claude.ai/settings/connectors";
@@ -101,12 +116,7 @@ async function readClaudeAccounts(): Promise<ClaudeAccountRow[]> {
   });
 }
 
-type Busy = "starting" | "code" | "cancel" | `out:${string}` | `stop:${string}` | null;
-
-function occupantLabel(o: SandboxOccupant): string {
-  const kind = o.template === "aidream" ? "Coding sandbox" : (o.name ?? `${o.template ?? "Sandbox"} sandbox`);
-  return `${kind} · ${o.sandbox_id}`;
-}
+type Busy = "starting" | "code" | "cancel" | `out:${string}` | null;
 
 export function ClaudeAccountsPanel() {
   const [rows, setRows] = useState<ClaudeAccountRow[] | null>(null);
@@ -118,7 +128,6 @@ export function ClaudeAccountsPanel() {
   const [connectFailure, setConnectFailure] = useState<string | null>(null);
   const connectAbort = useRef<AbortController | null>(null);
   const [capacity, setCapacity] = useState<SandboxCapacityRefusal | null>(null);
-  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const connectorUrl = `${resolveBaseUrl().replace(/\/$/, "")}/api/matrx-mcp`;
 
   const load = () =>
@@ -139,7 +148,7 @@ export function ClaudeAccountsPanel() {
     void load();
   }, []);
 
-  const connect = async () => {
+  const connect = async (opts: { afterStop?: boolean } = {}) => {
     const taken = new Set((rows ?? []).filter((r) => r.status === "connected").map((r) => r.slot));
     const slot = taken.has(PRIMARY) ? newClaudeAccountSlot() : PRIMARY;
     setBusy("starting");
@@ -148,6 +157,8 @@ export function ClaudeAccountsPanel() {
     const controller = new AbortController();
     connectAbort.current = controller;
     try {
+      if (opts.afterStop) await waitForFreeSlot(controller.signal);
+      if (controller.signal.aborted) return;
       const outcome = await runClaudeConnect({
         start: () => startOwnPlanSignIn(PROVIDER, slot),
         readiness: async () => (await apiGet(HOSTED_RUNTIME_PATH)).data,
@@ -226,29 +237,6 @@ export function ClaudeAccountsPanel() {
     }
   };
 
-  const stopOccupant = async (o: SandboxOccupant) => {
-    setBusy(`stop:${o.row_id}`);
-    try {
-      const result = await submitLifecycle({ rowId: o.row_id, sandboxId: o.sandbox_id, kind: "stop" });
-      if (!result.admitted) {
-        toast.error(
-          result.reason === "already_pending"
-            ? "That sandbox already has an operation in progress."
-            : "Sandbox controls are still connecting. Try again in a moment.",
-        );
-        return;
-      }
-      setCapacity((current) =>
-        current ? { ...current, occupants: current.occupants.filter((x) => x.row_id !== o.row_id) } : current,
-      );
-      toast.success(`Stopping ${o.sandbox_id}. Connect again when it has stopped.`);
-    } catch (cause) {
-      toast.error(getUserMessage(cause));
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const copyUrl = async () => {
     await navigator.clipboard.writeText(connectorUrl);
     setCopied(true);
@@ -298,34 +286,19 @@ export function ClaudeAccountsPanel() {
           </div>
         )}
 
-        {capacity && (
-          <div className="mt-3 space-y-2 rounded-lg border border-border p-3" role="alert">
-            <p className="text-xs text-foreground">{capacity.message}</p>
-            <ul className="divide-y divide-border">
-              {capacity.occupants.map((o) => (
-                <li key={o.row_id} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className="min-w-0 truncate text-xs text-muted-foreground">
-                    {occupantLabel(o)}
-                    {o.status ? ` · ${o.status}` : ""}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void stopOccupant(o)}
-                    disabled={busy !== null}
-                  >
-                    {busy === `stop:${o.row_id}` ? <Spinner size="sm" /> : null}
-                    Stop
-                  </Button>
-                </li>
-              ))}
-              {capacity.occupants.length === 0 && (
-                <li className="py-1.5 text-xs text-muted-foreground">
-                  A slot is free now. Connect again.
-                </li>
-              )}
-            </ul>
-          </div>
+        {capacity && busy !== "starting" && (
+          <SandboxCapacityList
+            capacity={capacity}
+            disabled={busy !== null}
+            onStopped={(o) => {
+              setCapacity((current) =>
+                current
+                  ? { ...current, occupants: current.occupants.filter((x) => x.row_id !== o.row_id) }
+                  : current,
+              );
+              return connect({ afterStop: true });
+            }}
+          />
         )}
 
         {pending && (

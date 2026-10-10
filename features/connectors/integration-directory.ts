@@ -125,6 +125,7 @@ export function savedAccountSummary(
 export function directoryDetailFromParams(
   params: Pick<URLSearchParams, "get">,
 ): string | null {
+  if (params.get("social_oauth_provider")) return "native:social-accounts";
   if (params.get("microsoft_status")) return "native:microsoft";
   const provider = params.get("provider");
   if (

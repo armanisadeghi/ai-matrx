@@ -1,3 +1,4 @@
+import { LINK_ORGANIZATION_QUERY_KEY } from "@/lib/organizations/linkOrganization";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
@@ -303,14 +304,30 @@ export function refreshCustomerSocialAccount(
   });
 }
 
-export function disconnectCustomerSocialAccount(
+export interface SocialDisconnectReceipt {
+  connectionId: string;
+  providerRevocation: "unsupported" | "revoked" | "failed" | "retained" | null;
+}
+
+export async function disconnectCustomerSocialAccount(
   provider: CustomerSocialProvider,
   organizationId: string,
   connectionId: string,
-): Promise<unknown> {
-  return socialRequest(provider, "disconnect", organizationId, {
+): Promise<SocialDisconnectReceipt> {
+  const receipt = await socialRequest(provider, "disconnect", organizationId, {
     connection_id: connectionId,
   });
+  if (!receipt || typeof receipt !== "object" ||
+      !("connection_id" in receipt) || receipt.connection_id !== connectionId ||
+      !("status" in receipt) || receipt.status !== "disconnected" ||
+      !("provider_revocation" in receipt)) {
+    throw new Error("Disconnect could not be confirmed. Refresh the account.");
+  }
+  const revocation = receipt.provider_revocation;
+  if (revocation !== null && revocation !== "unsupported" && revocation !== "revoked" && revocation !== "failed" && revocation !== "retained") {
+    throw new Error("Disconnect could not be confirmed. Refresh the account.");
+  }
+  return { connectionId, providerRevocation: revocation };
 }
 
 export function socialAuthorizeUrl(
@@ -326,7 +343,9 @@ export function socialAuthorizeUrl(
     window.location.origin,
   );
   target.searchParams.set("organization_id", organizationId);
-  target.searchParams.set("return_url", returnUrl);
+  const returnTarget = new URL(returnUrl, window.location.origin);
+  returnTarget.searchParams.set(LINK_ORGANIZATION_QUERY_KEY, organizationId);
+  target.searchParams.set("return_url", returnTarget.pathname + returnTarget.search + returnTarget.hash);
   target.searchParams.set("backend_origin", resolveServiceBaseUrl("aidream"));
   target.searchParams.set("frontend_origin", window.location.origin);
   if (["linkedin", "bluesky", "facebook", "instagram", "threads"].includes(provider) && reconnectConnectionId) target.searchParams.set("connection_id", reconnectConnectionId);

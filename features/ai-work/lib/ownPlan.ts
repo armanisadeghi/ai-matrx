@@ -157,7 +157,10 @@ export function capacityRefusalOf(cause: unknown): SandboxCapacityRefusal | null
     if (depth > 5 || typeof value !== "object" || value === null || seen.has(value)) return null;
     seen.add(value);
     const record = value as Record<string, unknown>;
-    if (record.code === "sandbox_capacity_full" && Array.isArray(record.occupants)) {
+    if (
+      (record.code === "sandbox_capacity_full" || record.error === "sandbox_capacity_full") &&
+      Array.isArray(record.occupants)
+    ) {
       const message =
         typeof record.user_message === "string"
           ? record.user_message
@@ -177,4 +180,34 @@ export function capacityRefusalOf(cause: unknown): SandboxCapacityRefusal | null
     return null;
   };
   return visit(cause, 0);
+}
+
+/** The hosted-runtime readiness path (never boots anything). */
+export const HOSTED_RUNTIME_PATH = "/coding-sessions/hosted/runtime" as const;
+
+/**
+ * The cap refusal as the readiness read reports it: `occupants` and
+ * `capacity_ceiling` ride beside the verdict when the per-person cap is what
+ * refuses. Null when the cap is not the reason (or nobody holds a slot).
+ */
+export function capacityFromReadiness(readiness: unknown): SandboxCapacityRefusal | null {
+  if (typeof readiness !== "object" || readiness === null) return null;
+  const r = readiness as Record<string, unknown>;
+  if (!Array.isArray(r.occupants) || typeof r.capacity_ceiling !== "number") return null;
+  const occupants = r.occupants.filter(isOccupant);
+  if (occupants.length === 0) return null;
+  return {
+    message:
+      typeof r.reason === "string" && r.reason
+        ? r.reason
+        : "All of your sandbox slots are in use. Stop one to continue.",
+    ceiling: r.capacity_ceiling,
+    occupants,
+  };
+}
+
+/** Read the hosted runtime's readiness and report the cap refusal, if any. */
+export async function readHostedCapacity(): Promise<SandboxCapacityRefusal | null> {
+  const { data } = await apiGet(HOSTED_RUNTIME_PATH);
+  return capacityFromReadiness(data);
 }

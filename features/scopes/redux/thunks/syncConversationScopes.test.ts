@@ -11,6 +11,7 @@ jest.mock(
 );
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({ topic: "scope-1" }),
+  selectOrganizationId: () => "org-1",
 }));
 jest.mock("./ensureEntityScopes", () => ({
   ensureEntityScopes: jest.fn(() => async () => undefined),

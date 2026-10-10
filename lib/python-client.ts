@@ -26,7 +26,7 @@
 
 import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import {
-  parseHttpError,
+  parseHttpError as parseHttpErrorBase,
   parseHttpErrorBody,
   BackendApiError,
 } from "@/lib/api/errors";
@@ -35,6 +35,47 @@ import {
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+
+/**
+ * The package parser reads `details` only from the envelope's own `details`
+ * key, but the server hoists a structured refusal's extra keys (for example
+ * `occupants` and `ceiling` on `sandbox_capacity_full`) to the ROOT of the
+ * body. Those were dropped, so the UI could say "stop one of your sandboxes"
+ * without being able to list them. When the envelope carried no `details`,
+ * keep the whole body there so no structured refusal loses its payload.
+ */
+async function readMatrxJsonResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) throw await parseHttpError(response);
+  if (response.status === 204) return null as T;
+  return (await response.json()) as T;
+}
+
+async function parseHttpError(response: Response): Promise<BackendApiError> {
+  let rawBody: unknown = null;
+  try {
+    rawBody = await response.clone().json();
+  } catch {
+    rawBody = null;
+  }
+  const error = await parseHttpErrorBase(response);
+  if (
+    error.details == null &&
+    typeof rawBody === "object" &&
+    rawBody !== null &&
+    !Array.isArray(rawBody)
+  ) {
+    return new BackendApiError({
+      code: error.code,
+      detail: error.detail,
+      userMessage: error.userMessage,
+      details: rawBody,
+      requestId: error.requestId || undefined,
+      status: error.status ?? undefined,
+    });
+  }
+  return error;
+}
+
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
 import { noticeUsageRefusal } from "@/features/entitlements/usage-gate/usageGate";
@@ -60,7 +101,6 @@ import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events"
 import {
   buildMatrxRequestUrl,
   parseMatrxNdjsonResponse,
-  readMatrxJsonResponse,
   sendMatrxRequest as sendMatrxRequestRaw,
 } from "@ai-matrx/agents/matrx";
 import { formatDurationMs } from "@ai-matrx/kit/format";
