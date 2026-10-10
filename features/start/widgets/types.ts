@@ -17,6 +17,8 @@ export interface StartWidget {
   type: string;
   size: StartWidgetSize;
   config: StartWidgetConfig;
+  /** Config entries that are not text (a newer widget's lists or objects): kept as stored, written back untouched. */
+  keep?: Record<string, unknown>;
 }
 
 export interface StartDoc {

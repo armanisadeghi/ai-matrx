@@ -36,6 +36,8 @@ jest.mock("@/features/meet/hooks/useMeetingsDirectory", () => ({
 }));
 jest.mock("@/components/favorites/usePinned", () => ({
   usePinned: () => ({
+    isPinned: () => false,
+    toggle: () => true,
     favorites: [
       { id: "/notes", kind: "nav", label: "Notes", href: "/notes", pinnedAt: "2026-10-01" },
       { id: "agent:a1", kind: "agent", label: "Writer", href: "/agents/a1", pinnedAt: "2026-10-01" },
@@ -97,6 +99,36 @@ async function cleanup() {
 
 const slotOf = (host: HTMLElement) => host.querySelector<HTMLElement>("[data-start-slot]")!;
 
+/** What a person sees as a slot's size: the frame, its header, and the rows its body stacks. */
+function measure(slot: HTMLElement) {
+  const px = (el: Element | null) => (el instanceof HTMLElement ? parseFloat(el.style.height || "0") : 0);
+  const header = px(slot.querySelector("[data-start-slot-header]"));
+  const list = slot.querySelector("ul");
+  const rows = list ? [...list.children].filter((c) => !list.className.includes("grid-flow-col")).reduce((n, li) => n + px(li), 0) : 0;
+  return { frame: px(slot), header, rows };
+}
+
+/** Every way the loaded slot differs from the loading one, or overflows its frame. [] = no shift. */
+function slotShift(loading: HTMLElement, loaded: HTMLElement): string[] {
+  const a = measure(loading);
+  const b = measure(loaded);
+  const out: string[] = [];
+  if (a.frame !== b.frame) out.push(`frame ${a.frame} -> ${b.frame}`);
+  if (a.header !== b.header) out.push(`header ${a.header} -> ${b.header}`);
+  for (const [name, m] of [["loading", a], ["loaded", b]] as const) {
+    if (m.header + m.rows > m.frame) out.push(`${name} rows overflow: ${m.header + m.rows} > ${m.frame}`);
+  }
+  return out;
+}
+
+/** The designed slot heights (px), pinned here so a change is a decision, not a drift. */
+const DESIGNED_PX: Record<string, Partial<Record<StartWidgetSize, number>>> = {
+  kpis: { l: 112 },
+  metric: { s: 112, m: 112 },
+  page: { m: 520, l: 520 },
+};
+const designed = (type: string, size: StartWidgetSize) => DESIGNED_PX[type]?.[size] ?? 256;
+
 const cases = START_WIDGET_CATALOG.flatMap((spec) =>
   spec.sizes.map((size) => [spec.key, size, { ...spec.defaultConfig, ...(spec.key === "page" ? { pageId: "p1" } : {}) }] as const),
 );
@@ -104,21 +136,32 @@ const cases = START_WIDGET_CATALOG.flatMap((spec) =>
 afterEach(cleanup);
 
 describe("Start widget slots hold their height", () => {
-  it.each(cases)("%s at %s: loading height = loaded height", async (type, size, config) => {
+  it("the guard itself fails on a planted shift (a loaded slot taller, or rows that outgrow it)", () => {
+    const slot = (frame: number, rows: number[]) => {
+      const el = document.createElement("section");
+      el.style.height = `${frame}px`;
+      el.innerHTML = `<header data-start-slot-header style="height:36px"></header><ul>${rows.map((h) => `<li style="height:${h}px"></li>`).join("")}</ul>`;
+      return el;
+    };
+    expect(slotShift(slot(256, [32, 32]), slot(256, [32, 32, 32]))).toEqual([]);
+    expect(slotShift(slot(256, [32]), slot(300, [32]))).toEqual(["frame 256 -> 300"]);
+    expect(slotShift(slot(256, [32]), slot(256, Array(8).fill(32)))).toEqual(["loaded rows overflow: 292 > 256"]);
+  });
+
+  it.each(cases)("%s at %s: no shift from loading to loaded", async (type, size, config) => {
     world.loading = true;
-    const loadingSlot = slotOf(await renderOne(type, size, config));
-    const loadingHeight = loadingSlot.style.height;
-    const busy = loadingSlot.querySelector('ul[aria-busy="true"]');
+    const loadingHost = await renderOne(type, size, config);
+    const loadingSlot = slotOf(loadingHost).cloneNode(true) as HTMLElement;
+    const busy = slotOf(loadingHost).querySelector('ul[aria-busy="true"]');
     if (busy) expect(busy.querySelectorAll("li")).toHaveLength(slotRows(type, size));
     await cleanup();
 
     world.loading = false;
     const loadedSlot = slotOf(await renderOne(type, size, config));
     expect(loadedSlot.querySelector('[aria-busy="true"]')).toBeNull();
-    expect(loadedSlot.style.height).toBe(loadingHeight);
-    expect(loadedSlot.style.height).toBe(`${slotHeightPx(type, size)}px`);
-    // The counts strip lays its tiles out across the row, not down it.
-    if (type !== "kpis") expect(loadedSlot.querySelectorAll("li").length).toBeLessThanOrEqual(slotRows(type, size));
+    expect(slotShift(loadingSlot, loadedSlot)).toEqual([]);
+    expect(measure(loadedSlot).frame).toBe(designed(type, size));
+    expect(slotHeightPx(type, size)).toBe(designed(type, size));
   });
 
   it("the counts strip shows each configured count, and a zero shows its nudge", async () => {
@@ -130,12 +173,12 @@ describe("Start widget slots hold their height", () => {
     expect(host.querySelector('a[href="/agents/all"]')).not.toBeNull();
   });
 
-  it("a pinned agent that was deleted says Removed and offers no Run", async () => {
+  it("a pinned agent that was deleted says Removed and offers no Chat", async () => {
     world.loading = false;
     const host = await renderOne("agents", "m", {});
     expect(host.textContent).toContain("Removed");
-    expect(host.querySelector('[aria-label="Run Gone agent"]')).toBeNull();
-    expect(host.querySelector('[aria-label="Run Writer"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Chat with Gone agent"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Chat with Writer"]')).not.toBeNull();
   });
 
   it("an unknown widget type renders a named unavailable slot", async () => {

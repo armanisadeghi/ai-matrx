@@ -11,24 +11,27 @@ export interface SeedOnceDeps {
   lock: (name: string, fn: () => Promise<void>) => Promise<void>;
   /** Fresh read: does this person already have a layout row? */
   hasRow: () => Promise<boolean>;
-  write: () => Promise<unknown>;
+  /** Write the first layout; `{ ok: false }` is a failed write (retried on the next visit, never marked done). */
+  write: () => Promise<{ ok: boolean }>;
 }
 
-const IN_FLIGHT = new Map<string, Promise<"wrote" | "skipped">>();
+export type SeedOutcome = "wrote" | "skipped" | "failed";
+
+const IN_FLIGHT = new Map<string, Promise<SeedOutcome>>();
 const DONE = new Set<string>();
 
-export function seedStartLayoutOnce(deps: SeedOnceDeps): Promise<"wrote" | "skipped"> {
+export function seedStartLayoutOnce(deps: SeedOnceDeps): Promise<SeedOutcome> {
   if (DONE.has(deps.userId)) return Promise.resolve("skipped");
   const running = IN_FLIGHT.get(deps.userId);
   if (running) return running.then(() => "skipped" as const);
   const run = (async () => {
-    let outcome: "wrote" | "skipped" = "skipped";
+    let outcome: SeedOutcome = "skipped";
     await deps.lock(`matrx-start-seed:${deps.userId}`, async () => {
       if (await deps.hasRow()) return;
-      await deps.write();
-      outcome = "wrote";
+      outcome = (await deps.write()).ok ? "wrote" : "failed";
     });
-    DONE.add(deps.userId);
+    // A failed write is NOT done: the next mount (or visit) tries again.
+    if (outcome !== "failed") DONE.add(deps.userId);
     return outcome;
   })();
   IN_FLIGHT.set(deps.userId, run);

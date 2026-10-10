@@ -11,7 +11,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, History, MessageCircle, Pencil, Plus, X } from "lucide-react";
-import { isMandateKey } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { RecordsMount } from "@ai-matrx/records-ui";
 
@@ -35,11 +36,8 @@ import { useStartAgentTools } from "./tools/useStartAgentTools";
 import { START_PAGE_SURFACE_NAME } from "@/features/surfaces/manifests/start-page.manifest";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
-/**
- * The Start page maintainer's mandate key — PROPOSED (lane START-PAGE, slice 2); the chair takes it through
- * the Agent Factory. Until it is declared, the Chat door says the assistant is not set up yet.
- */
-const START_MAINTAINER_KEY = "start_page.maintainer";
+/** The Start page maintainer (declared in aidream services/start_page/mandates.py). */
+const START_MAINTAINER_KEY = MANDATE_KEYS.start_page__maintainer;
 
 export function StartPage() {
   const userId = useAppSelector(selectUserId);
@@ -75,28 +73,38 @@ function StartBody() {
   });
   const shown: StartDoc | null = draft ?? preview?.doc ?? agent.agentDoc ?? layout.doc;
 
-  const openChat = () => {
-    if (!isMandateKey(START_MAINTAINER_KEY)) {
-      toast.info("The Start page assistant is not set up yet");
-      return;
+  // The Chat door opens the maintainer in place; it says the assistant is not set up ONLY when the
+  // mandate truly fails to resolve here (no holder in reach), never as a silent stand-in.
+  const openChat = async () => {
+    try {
+      const resolved = await resolveMandate(START_MAINTAINER_KEY, { optional: true });
+      if (!resolved) return void toast.info("The Start page assistant is not set up yet");
+      openMandateWindow({ initialMandateKey: START_MAINTAINER_KEY, mandateKeys: [START_MAINTAINER_KEY], surfaceName: START_PAGE_SURFACE_NAME });
+    } catch (failure) {
+      toast.error(`The Start page assistant could not open: ${failure instanceof Error ? failure.message : String(failure)}`);
     }
-    openMandateWindow({ initialMandateKey: START_MAINTAINER_KEY, mandateKeys: [START_MAINTAINER_KEY], surfaceName: START_PAGE_SURFACE_NAME });
   };
 
-  const startEdit = () => {
-    if (!layout.doc) return;
+  // An agent turn still pending is saved FIRST and the person edits on top of it — never two saves
+  // racing, never one overwriting the other.
+  const startEdit = async () => {
+    const pendingAgentDoc = agent.agentDoc;
+    if (pendingAgentDoc) await agent.flush();
+    const base = pendingAgentDoc ?? layout.doc;
+    if (!base) return;
     setPreview(null);
     setPanel(null);
-    setDraft(layout.doc);
+    setDraft(base);
   };
   const cancelEdit = () => {
     setDraft(null);
     setPanel(null);
   };
   const finishEdit = async () => {
-    if (!draft || !layout.doc) return;
-    if (sameStartDoc(draft, layout.doc)) return cancelEdit();
-    const result = await layout.save(draft, summarizeStartEdit(layout.doc, draft));
+    const before = layout.doc;
+    if (!draft || !before) return;
+    if (sameStartDoc(draft, before)) return cancelEdit();
+    const result = await layout.save(draft, summarizeStartEdit(before, draft));
     if (!result.ok) return void toast.error(result.error);
     setDraft(null);
     setPanel(null);
@@ -125,9 +133,9 @@ function StartBody() {
         { label: "Done", icon: Check, primary: true, disabled: layout.saving, onPress: () => void finishEdit() },
       ]
     : [
-        { label: "Chat", icon: MessageCircle, onPress: openChat },
+        { label: "Chat", icon: MessageCircle, onPress: () => void openChat() },
         { label: "History", icon: History, showLabel: true, disabled: !layout.recordId, onPress: () => setPanel(panel?.kind === "history" ? null : { kind: "history" }) },
-        { label: "Edit", icon: Pencil, showLabel: true, disabled: !layout.doc || layout.loading, onPress: startEdit },
+        { label: "Edit", icon: Pencil, showLabel: true, disabled: !layout.doc || layout.loading, onPress: () => void startEdit() },
       ];
 
   const configuring = panel?.kind === "configure" && draft ? draft.widgets.find((w) => w.id === panel.id) : undefined;

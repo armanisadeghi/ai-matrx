@@ -4,8 +4,10 @@
  * The person's own home: a document of widgets (counts, tasks, today's meetings, recents, favorites,
  * pinned agents, their data pages). Its job for agents is the EDIT vocabulary — the start_* tools
  * (`features/start/tools/start-tools.ts`) — so the Start page maintainer (mandate key
- * `start_page.maintainer`, proposed; the chair takes it through the Agent Factory) can keep the page the
+ * `start_page.maintainer`) can keep the page the
  * way the person asks. Every agent turn saves as ONE version the person can undo from History.
+ * The mandate is declared in aidream (`aidream/services/start_page/mandates.py`), held by the Agent
+ * Factory's "Start Page Maintainer" agent.
  *
  * Runtime emitter: `features/start/StartPage.tsx`.
  */
@@ -13,6 +15,7 @@
 import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { START_CLIENT_TOOLS } from "@/features/start/tools/start-tools";
 
 export const START_PAGE_SURFACE_NAME = "matrx-user/start-page";
@@ -54,7 +57,7 @@ export const startPageManifest: SurfaceManifest = {
   executionMode: "python-stream",
   readiness: "partial",
   readinessNote:
-    "Tools live on /start; the maintainer mandate (start_page.maintainer) is proposed, not created — the Chat door says so until it exists.",
+    "Tools live on /start; the maintainer mandate start_page.maintainer is declared and held (Agent Factory). Full readiness waits on the first proven UI run.",
   urlPattern: "/start",
   intro: `<surface_intro>
 The person is on their Start page: a grid of widgets (s = one column, m = two, l = the whole row on a 4-column grid).
@@ -66,5 +69,16 @@ Everything you change in this turn is saved together as ONE version the person c
 </surface_intro>`,
   groups,
   values: mergeBaselineValues([], values),
+  agentRoles: [
+    {
+      name: "start_page_maintainer",
+      label: "Start page maintainer",
+      description: "Keeps the person's Start page the way they ask in chat: adds, removes, moves, resizes and sets up widgets; one undoable version per turn.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.start_page__maintainer,
+      sortOrder: 100,
+    },
+  ],
   clientTools: START_CLIENT_TOOLS,
 };

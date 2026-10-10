@@ -78,6 +78,22 @@ describe("parseStartDoc", () => {
     expect(parsed.doc.widgets[1]!.id).not.toBe("a");
   });
 
+  it("keeps a newer widget's non-text config values and writes them back untouched", () => {
+    const raw = { schema: 1, widgets: [{ id: "x", type: "weather_from_the_future", size: "l", config: { city: "Irvine", days: [1, 2], opts: { unit: "F" } } }] };
+    const parsed = parseStartDoc(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(JSON.parse(serializeStartDoc(parsed.doc))).toEqual(raw);
+  });
+
+  it("gives an id-less widget the same id on every read", () => {
+    const raw = JSON.stringify({ schema: 1, widgets: [{ type: "tasks", size: "m" }, { type: "tasks", size: "m" }] });
+    const a = parseStartDoc(raw);
+    const b = parseStartDoc(raw);
+    expect(a.ok && a.doc.widgets.map((w) => w.id)).toEqual(b.ok && b.doc.widgets.map((w) => w.id));
+    expect(a.ok && new Set(a.doc.widgets.map((w) => w.id)).size).toBe(2);
+  });
+
   it("refuses unreadable text and other schemas by name", () => {
     expect(parseStartDoc("{nope").ok).toBe(false);
     expect(parseStartDoc({ schema: 2, widgets: [] })).toEqual({ ok: false, error: "The saved layout is schema 2, not 1." });

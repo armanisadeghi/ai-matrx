@@ -12,6 +12,7 @@ import { useStartPage } from "./useStartPage";
 import { parseStartDoc, serializeStartDoc } from "./widgets/doc";
 import { defaultStartDoc } from "./widgets/defaultDoc";
 import { browserLock, seedStartLayoutOnce } from "./widgets/seedOnce";
+import { toast } from "@/lib/toast";
 import type { StartDoc } from "./widgets/types";
 
 export type SaveResult = { ok: true } | { ok: false; error: string };
@@ -64,6 +65,10 @@ export function useStartLayout() {
       },
       write: () => save(defaultStartDoc(choice.pageId), "Starting layout"),
     }).then((outcome) => {
+      if (outcome === "failed") {
+        toast.error("Your start page could not be saved; showing the starting layout");
+        return;
+      }
       // Another tab (or an earlier mount) wrote it: read once more so this tab shows that row.
       if (outcome === "skipped" && !reloadedAfterSkip.current) {
         reloadedAfterSkip.current = true;

@@ -19,6 +19,7 @@ function world() {
       await new Promise((r) => setTimeout(r, 5));
       writes += 1;
       rows += 1;
+      return { ok: true };
     },
   });
   return { deps, writes: () => writes };
@@ -48,4 +49,20 @@ it("a second tab (no shared memo, shared lock) re-reads inside the lock and writ
   expect(await first).toBe("wrote");
   expect(await second).toBe("skipped");
   expect(w.writes()).toBe(1);
+});
+
+it("a failed write is reported and retried on the next mount, never marked done", async () => {
+  let attempts = 0;
+  const deps = (ok: boolean): SeedOnceDeps => ({
+    userId: "u2",
+    lock: (_n, fn) => fn(),
+    hasRow: async () => false,
+    write: async () => {
+      attempts += 1;
+      return { ok };
+    },
+  });
+  expect(await seedStartLayoutOnce(deps(false))).toBe("failed");
+  expect(await seedStartLayoutOnce(deps(true))).toBe("wrote");
+  expect(attempts).toBe(2);
 });

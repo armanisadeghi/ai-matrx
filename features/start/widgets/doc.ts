@@ -25,14 +25,16 @@ export function newStartWidgetId(taken: readonly StartWidget[] = []): string {
 const isSize = (v: unknown): v is StartWidgetSize =>
   typeof v === "string" && (START_WIDGET_SIZES as readonly string[]).includes(v);
 
-function parseConfig(v: unknown): StartWidgetConfig {
-  if (typeof v !== "object" || v === null || Array.isArray(v)) return {};
-  const out: StartWidgetConfig = {};
+function parseConfig(v: unknown): { config: StartWidgetConfig; keep: Record<string, unknown> | null } {
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return { config: {}, keep: null };
+  const config: StartWidgetConfig = {};
+  let keep: Record<string, unknown> | null = null;
   for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-    if (typeof val === "string") out[k] = val;
-    else if (typeof val === "number" || typeof val === "boolean") out[k] = String(val);
+    if (typeof val === "string") config[k] = val;
+    else if (typeof val === "number" || typeof val === "boolean") config[k] = String(val);
+    else if (val !== undefined) (keep ??= {})[k] = val; // never dropped: a newer widget's list or object
   }
-  return out;
+  return { config, keep };
 }
 
 export type StartDocParse = { ok: true; doc: StartDoc } | { ok: false; error: string };
@@ -59,14 +61,20 @@ export function parseStartDoc(raw: unknown): StartDocParse {
     if (typeof w !== "object" || w === null) continue;
     const r = w as Record<string, unknown>;
     if (typeof r.type !== "string" || !r.type) continue;
-    const id = typeof r.id === "string" && r.id && !widgets.some((x) => x.id === r.id) ? r.id : newStartWidgetId(widgets);
-    widgets.push({ id, type: r.type, size: isSize(r.size) ? r.size : "m", config: parseConfig(r.config) });
+    // A widget saved without an id gets one from its place and type — the SAME id on every read.
+    let id = typeof r.id === "string" && r.id ? r.id : `w_${widgets.length}_${r.type}`;
+    for (let n = 2; widgets.some((x) => x.id === id); n++) id = `${typeof r.id === "string" && r.id ? r.id : `w_${widgets.length}_${r.type}`}_${n}`;
+    const { config, keep } = parseConfig(r.config);
+    widgets.push({ id, type: r.type, size: isSize(r.size) ? r.size : "m", config, ...(keep ? { keep } : {}) });
   }
   return { ok: true, doc: { schema: 1, widgets } };
 }
 
 export function serializeStartDoc(doc: StartDoc): string {
-  return JSON.stringify(doc);
+  return JSON.stringify({
+    schema: doc.schema,
+    widgets: doc.widgets.map(({ keep, ...w }) => (keep ? { ...w, config: { ...keep, ...w.config } } : w)),
+  });
 }
 
 /** Add a widget at `index` (default: the end). */
