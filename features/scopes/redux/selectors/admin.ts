@@ -16,6 +16,7 @@
 // same render pass, and a size-1 cache would hand back a fresh array each call.
 
 import type { Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
+import { sameSlug } from "@ai-matrx/records/scopes";
 import { createSelector, weakMapMemoize } from "@reduxjs/toolkit";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { RootState } from "@/lib/redux/rootReducer";
@@ -96,7 +97,7 @@ export const selectScopeTypeBySlugOrId = createSelector(
     if (!slugOrId) return undefined;
     return isUuidShape(slugOrId)
       ? types.find((t) => t.id === slugOrId)
-      : types.find((t) => t.organization_id === orgId && t.slug === slugOrId);
+      : types.find((t) => t.organization_id === orgId && sameSlug(t.slug, slugOrId));
   },
   { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
 );
@@ -160,7 +161,7 @@ export const selectScopeBySlugOrId = createSelector(
     if (!slugOrId) return undefined;
     return isUuidShape(slugOrId)
       ? scopes.find((s) => s.id === slugOrId)
-      : scopes.find((s) => s.scope_type_id === typeId && s.slug === slugOrId);
+      : scopes.find((s) => s.scope_type_id === typeId && sameSlug(s.slug, slugOrId));
   },
   { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
 );
