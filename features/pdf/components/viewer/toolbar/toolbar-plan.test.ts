@@ -31,6 +31,54 @@ function cases(): PdfToolbarPlanInput[] {
   return out;
 }
 
+/**
+ * Docked HOST chrome (a Board PDF tile's tab menu + kind actions + tile
+ * actions) is measured and folds too. Review 2026-10-10: on a 390px phone the
+ * row was 560px wide and "Extract text" sat at x=534, clipped and unreachable.
+ */
+describe("wide docked host controls fold, never clip", () => {
+  const HOST = [
+    // [startWidth, endWidth]: the real focused-tile row (tab menu 111; two
+    // 44px kind actions + three 38px tile actions = 202) and heavier ones.
+    [111, 202],
+    [111, 330],
+    [160, 202],
+    [111, 0],
+    [0, 202],
+  ] as const;
+  const W = [209, 306, 372, 390, 480, 640];
+  const rows = HOST.flatMap(([startWidth, endWidth]) =>
+    W.flatMap((width) =>
+      [true, false].flatMap((coarse) =>
+        [1, 12, 248].map((pages) => ({ width, coarse, pages, pageNav: true, startWidth, endWidth })),
+      ),
+    ),
+  );
+
+  it.each(rows.map((r) => [JSON.stringify(r), r]))("the row fits: %s", (_l, input) => {
+    const i = input as PdfToolbarPlanInput;
+    const plan = planPdfToolbar(i);
+    expect(plan.rowWidth).toBeLessThanOrEqual(i.width);
+  });
+
+  it("the focused phone tile (372px, 111 + 202) folds the host end and keeps the tabs", () => {
+    const plan = planPdfToolbar({ width: 372, coarse: true, pages: 6, pageNav: true, startWidth: 111, endWidth: 202 });
+    expect(plan.host).toBe("end-folded");
+    expect(plan.showMore).toBe(true);
+  });
+
+  it("at 209px the whole host folds behind one trigger", () => {
+    const plan = planPdfToolbar({ width: 209, coarse: true, pages: 6, pageNav: true, startWidth: 111, endWidth: 202 });
+    expect(plan.host).toBe("all-folded");
+  });
+
+  it("with room, the host stays inline", () => {
+    const plan = planPdfToolbar({ width: 1236, coarse: false, pages: 6, pageNav: true, startWidth: 111, endWidth: 202 });
+    expect(plan.host).toBe("inline");
+    expect(plan.menu).toEqual([]);
+  });
+});
+
 describe("PDF toolbar fold plan", () => {
   it.each(cases().map((c) => [JSON.stringify(c), c]))(
     "the row fits its container: %s",

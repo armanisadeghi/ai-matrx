@@ -34,7 +34,7 @@ import { WidgetNotice } from "./widgets/frame";
 import { describeStartWidget } from "./widgets/catalog";
 import { useStartAgentTools } from "./tools/useStartAgentTools";
 import { START_PAGE_SURFACE_NAME } from "@/features/surfaces/manifests/start-page.manifest";
-import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 
 /** The Start page maintainer (declared in aidream services/start_page/mandates.py). */
 const START_MAINTAINER_KEY = MANDATE_KEYS.start_page__maintainer;
@@ -64,7 +64,7 @@ function StartBody() {
   const [preview, setPreview] = useState<{ version: number; doc: StartDoc; seenVersion: number | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const history = useStartHistory(layout.recordId, panel?.kind === "history", (doc, note) => layout.save(doc, note));
-  const openMandateWindow = useOpenMandateWindow();
+  const openRun = useOpenAgentRunWindow();
   const editing = draft !== null;
   const agent = useStartAgentTools(START_PAGE_SURFACE_NAME, {
     doc: layout.doc,
@@ -79,7 +79,15 @@ function StartBody() {
     try {
       const resolved = await resolveMandate(START_MAINTAINER_KEY, { optional: true });
       if (!resolved) return void toast.info("The Start page assistant is not set up yet");
-      openMandateWindow({ initialMandateKey: START_MAINTAINER_KEY, mandateKeys: [START_MAINTAINER_KEY], surfaceName: START_PAGE_SURFACE_NAME });
+      // The mandate door: the server resolves the holder; the id only paints the window. The window
+      // adopts the mounted start_page surface so start_read_page / start_add_widget ... are offered.
+      openRun({
+        instanceId: `mandate:${START_MAINTAINER_KEY}`,
+        initialAgentId: resolved.agentId,
+        initialAgentName: "Start Page Maintainer",
+        mandateKey: START_MAINTAINER_KEY,
+        surfaceName: START_PAGE_SURFACE_NAME,
+      });
     } catch (failure) {
       toast.error(`The Start page assistant could not open: ${failure instanceof Error ? failure.message : String(failure)}`);
     }

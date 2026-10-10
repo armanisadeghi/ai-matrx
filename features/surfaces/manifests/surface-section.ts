@@ -4,7 +4,9 @@
  * one the sidebar and header light up, never a second map. Handed to
  * `@ai-matrx/chat` through the manifest seam (`getSurfaceSection`).
  */
-import { getManifest } from "./registry";
+// The INDEX lookup (urlPattern is an index field) — never the full registry,
+// which would put every manifest body in the first load.
+import { getManifest } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { primaryNavItems } from "@/features/shell/constants/nav-data";
 import { findOwningNavItem } from "@/features/shell/utils/is-nav-group-active";
 

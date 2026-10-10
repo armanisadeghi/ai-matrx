@@ -44,6 +44,7 @@ import {
   Maximize2,
   Minus,
   MoreHorizontal,
+  MoreVertical,
   Plus,
   RotateCw,
   Scaling,
@@ -56,6 +57,7 @@ import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingStat
 import { resolvePageSwipe } from "./page-swipe";
 import { planPdfToolbar, TOOLBAR_METRICS } from "./toolbar/toolbar-plan";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   DropdownMenu,
@@ -76,6 +78,42 @@ const SEPARATOR_STYLE = {
   height: 16,
   marginInline: (TOOLBAR_METRICS.separator - 1) / 2,
 } as const;
+
+/**
+ * The host's docked chrome folded behind ONE trigger (`plan.host`): the same
+ * nodes the host handed in, in a small popover, so nothing is ever clipped
+ * off the row. Sizes come from the plan (the trigger is one target).
+ */
+function HostFold({
+  nodes,
+  label,
+  className,
+  style,
+}: {
+  nodes: React.ReactNode;
+  label: string;
+  className: string;
+  style: React.CSSProperties;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" aria-label={label} className={className} style={style}>
+          <MoreVertical className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        style={{ width: "auto", maxWidth: "calc(100vw - 16px)", padding: 4 }}
+      >
+        <div className="flex items-center" style={{ ...ITEM_GROUP_STYLE, flexWrap: "wrap" }}>
+          {nodes}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 /** Every toolbar icon button shares this; its square size comes from the plan. */
 const TOOL_BUTTON_BASE =
@@ -322,10 +360,12 @@ function useBoxWidth(): [number, (node: HTMLDivElement | null) => void] {
     roRef.current?.disconnect();
     roRef.current = null;
     if (!node) return;
-    setWidth(Math.ceil(node.getBoundingClientRect().width));
-    const ro = new ResizeObserver(() =>
-      setWidth(Math.ceil(node.getBoundingClientRect().width)),
-    );
+    // offsetWidth is the LAYOUT width — getBoundingClientRect() is scaled by
+    // any ancestor transform (a Board tile animating into focus measured the
+    // host's controls at 70% and the plan kept that number for good).
+    const measure = () => setWidth(node.offsetWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(node);
     roRef.current = ro;
   }, []);
@@ -417,10 +457,19 @@ export default function PdfDocumentRenderer({
   const [startWidth, startRef] = useBoxWidth();
   const [endWidth, endRef] = useBoxWidth();
 
+  // The viewport node can appear AFTER the first mount (the loading state
+  // returns a different tree), so the observer attaches to the node itself —
+  // a mount-time `[]` effect found no node and never observed it, leaving the
+  // toolbar plan on the first-measured width (a Board tile measured 798px
+  // inline, then drew its toolbar for 798px inside a 372px focused tile).
+  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(null);
+  const setContainer = useCallback((node: HTMLDivElement | null) => {
+    containerRef.current = node;
+    setContainerNode(node);
+  }, []);
   // Layout-effect — runs synchronously after DOM mutation, before paint.
-  // Catches the initial measurement on the same frame as mount.
   useLayoutEffect(() => {
-    const node = containerRef.current;
+    const node = containerNode;
     if (!node) return undefined;
     const w = node.clientWidth;
     const h = node.clientHeight;
@@ -441,7 +490,7 @@ export default function PdfDocumentRenderer({
     });
     ro.observe(node);
     return () => ro.disconnect();
-  }, []);
+  }, [containerNode]);
 
   // Re-measure on every render UNTIL we have non-zero dims. Once
   // measured, this becomes a no-op. Cheap insurance for the "parent
@@ -947,7 +996,22 @@ export default function PdfDocumentRenderer({
           }}
         >
           <div className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
-            {toolbarStart ? (
+            {plan.host === "all-folded" && (toolbarStart || toolbarEnd) ? (
+              <>
+                <HostFold
+                  label="File controls"
+                  nodes={
+                    <>
+                      {toolbarStart}
+                      {toolbarEnd}
+                    </>
+                  }
+                  className={toolButton}
+                  style={buttonStyle}
+                />
+                <span aria-hidden className="shrink-0 bg-border" style={SEPARATOR_STYLE} />
+              </>
+            ) : toolbarStart ? (
               <>
                 <div ref={startRef} className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
                   {toolbarStart}
@@ -1164,14 +1228,23 @@ export default function PdfDocumentRenderer({
                 ) : null}
               </div>
             ) : null}
-            {toolbarEnd ? (
+            {toolbarEnd && plan.host !== "all-folded" ? (
               <>
                 {plan.pager !== "none" ? (
                   <span aria-hidden className="shrink-0 bg-border" style={SEPARATOR_STYLE} />
                 ) : null}
-                <div ref={endRef} className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
-                  {toolbarEnd}
-                </div>
+                {plan.host === "end-folded" ? (
+                  <HostFold
+                    label="File actions"
+                    nodes={toolbarEnd}
+                    className={toolButton}
+                    style={buttonStyle}
+                  />
+                ) : (
+                  <div ref={endRef} className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
+                    {toolbarEnd}
+                  </div>
+                )}
               </>
             ) : null}
           </div>
@@ -1182,7 +1255,7 @@ export default function PdfDocumentRenderer({
        * canvas scrolls independently at high zoom. */}
       <div className="relative min-h-0 flex-1">
         <div
-          ref={containerRef}
+          ref={setContainer}
           tabIndex={0}
           role="region"
           aria-label={`${pageLabelTitle} viewer. Swipe horizontally or use the arrow keys to navigate.`}

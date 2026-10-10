@@ -26,6 +26,7 @@ import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCloudFileEditor } from "@/features/files/canvas/cloudFileEditorKind";
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
 import { buildPreviewActions } from "./preview-actions";
+import { editHandoffFor, requestEditTab } from "./edit-handoff";
 import type { PreviewerAction } from "./PreviewerActionBar/PreviewerActionBar";
 
 /** Every preview action for the file, or `[]` while it is not in the store. */
@@ -105,10 +106,25 @@ export function usePreviewActions(fileId: string): PreviewerAction[] {
     onOpenFullView: () => router.push(`/files/f/${fileId}`),
     onRename: () => requestRename("file", fileId),
     onDelete: () => void actions.delete(),
-    onEdit:
-      capability.previewKind === "pdf"
-        ? () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`)
-        : () => void openCloudFileEditor(canvas, fileId, file.fileName),
+    // Edit goes to the editor that fits the KIND (editHandoffFor): text-shaped
+    // kinds open the code editor; an image opens the image editor (the file
+    // page's Edit tab, else the Image Studio route); a PDF opens its studio.
+    // A binary kind NEVER reaches the code editor — it would show raw bytes.
+    onEdit: (() => {
+      switch (editHandoffFor(capability.previewKind)) {
+        case "text-editor":
+          return () => void openCloudFileEditor(canvas, fileId, file.fileName);
+        case "pdf-studio":
+          return () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`);
+        case "image-editor":
+          return () => {
+            if (!requestEditTab(fileId))
+              router.push(`/images/edit/${encodeURIComponent(fileId)}`);
+          };
+        default:
+          return undefined;
+      }
+    })(),
     openInRoute,
     onExtractText:
       capability.previewKind === "pdf" && file.source.kind !== "virtual"

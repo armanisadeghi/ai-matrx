@@ -81,9 +81,16 @@ it("Edit opens the file's editor tab with the inline editor; again focuses the s
 
 it("the preview's Edit opens the canvas tab; the Sheet editor and its host are gone", () => {
   const files = join(__dirname, "..");
-  const preview = readFileSync(join(files, "components/core/FilePreview/FilePreview.tsx"), "utf8");
+  // The action builder (usePreviewActions) owns the Edit hand-off; FilePreview only renders it.
+  const preview = readFileSync(join(files, "components/core/FilePreview/usePreviewActions.ts"), "utf8");
   expect(preview).toContain("openCloudFileEditor(canvas, fileId");
-  expect(preview).not.toContain("requestEdit");
+  expect(preview).not.toContain("requestEdit(");
+  // Monaco draws on a <canvas>: the kind must not claim a plain-DOM surface
+  // (the canvas package logs an error for a "dom" kind whose body has a <canvas>).
+  const kind = readFileSync(join(files, "canvas/cloudFileEditorKind.ts"), "utf8");
+  expect(kind).toContain('surface: "frame"');
+  expect(kind).toContain("print: printFileText");
+  expect(kind).toContain("capture: captureVisibleEditor");
   expect(existsSync(join(files, "components/core/FileEditor/CloudFileEditor.tsx"))).toBe(false);
   expect(existsSync(join(files, "components/core/FileEditor/CloudFileEditorHost.tsx"))).toBe(false);
 });

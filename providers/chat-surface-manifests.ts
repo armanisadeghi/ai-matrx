@@ -1,38 +1,40 @@
 // providers/chat-surface-manifests.ts
 //
 // THE ONE place this app hands its surface manifests to `@ai-matrx/chat`
-// (CPM-009a, P19). The package reads manifests only through
-// `@ai-matrx/chat/surfaces/runtime/registry`; this module registers the app
-// registry (`features/surfaces/manifests/registry.ts`, every manifest in
-// `features/surfaces/manifests/**`) there.
+// (CPM-009a, P19; index + body since BUNDLE-3). The package answers every
+// synchronous read from the generated INDEX (`SURFACE_INDEX`, delivery fields
+// of every surface); a surface's BODY (descriptions, groups, write targets,
+// client tools, roles) loads lazily through `loadSurfaceBodyRecord`.
 //
 // Side-effect module, isomorphic (no "use client"): `app/Providers.tsx`
 // imports it for the server layer and mounts `ChatSurfaceRegistrations` for
-// the browser, so server components (surface labels) and client code read the
-// same manifests. Jest registers the same registry lazily in `jest.setup.ts`.
+// the browser, so server and client run the SAME index + body API. Jest
+// registers the full registry through the same seam in `jest.setup.ts`.
 import {
-  createSurfaceSourceFromRegistry,
+  createIndexedSurfaceSource,
+  getManifest,
   registerSurfaceManifests,
 } from "@ai-matrx/chat/surfaces/runtime/registry";
 import {
-  getAllManifests,
-  getManifest,
-  getRawManifest,
-  getSurfaceAncestry,
-  getSurfaceChildren,
-} from "@/features/surfaces/manifests/registry";
+  registerLoadedValueDeclarations,
+  type LoadedValueDeclarationLookup,
+} from "@ai-matrx/chat/surfaces/runtime/loaded-value-check";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { SURFACE_INDEX } from "@/features/surfaces/manifests/generated/surface-index.generated";
+import { loadSurfaceBodyRecord } from "@/features/surfaces/manifests/surface-body-loader";
 import { getSurfaceSection } from "@/features/surfaces/manifests/surface-section";
 
-// INTERIM (BUNDLE-3): the package's index + body seam over the FULL registry
-// (every body answers synchronously). The generated-index source that keeps
-// manifest bodies out of the first load replaces this once its encoding ships.
 registerSurfaceManifests(
-  createSurfaceSourceFromRegistry({
-    getManifest,
-    getAllManifests,
-    getRawManifest,
-    getSurfaceAncestry,
-    getSurfaceChildren,
+  createIndexedSurfaceSource({
+    encoded: SURFACE_INDEX,
+    baselineValues: Object.values(BASELINE_VALUES),
+    loadBody: loadSurfaceBodyRecord,
     getSurfaceSection,
   }),
+);
+
+// The runtime's loaded-value check (ALC-14) reads declared value NAMES — the
+// index carries them, so the check works before any body loads.
+registerLoadedValueDeclarations(
+  (surfaceName) => getManifest(surfaceName) as unknown as ReturnType<LoadedValueDeclarationLookup>,
 );

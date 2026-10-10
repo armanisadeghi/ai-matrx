@@ -268,10 +268,12 @@ export function FileTabsBody({
   // the hint is transient — once handled it's gone; no flag to clear.
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ fileId?: string; tab?: FileTab }>)
-        .detail;
+      const detail = (
+        e as CustomEvent<{ fileId?: string; tab?: FileTab; handled?: boolean }>
+      ).detail;
       if (!detail || detail.fileId !== fileId) return;
       if (isFileTab(detail.tab ?? null)) {
+        detail.handled = true;
         if (!isControlled) setInternalTab(detail.tab as FileTab);
         onTabChange?.(detail.tab as FileTab);
       }

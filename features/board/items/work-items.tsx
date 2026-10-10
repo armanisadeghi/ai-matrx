@@ -70,10 +70,14 @@ import {
   noteItem,
   isEntity,
   isNoteDraft,
+  noteSeed,
   withChatList,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
 import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
+import { selectNoteById } from "@/features/notes/redux/selectors";
+import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { FaceLine, faceCopy } from "./face-text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -524,6 +528,26 @@ function ChatKeep({ tileId, source }: { tileId: string; source: NodeSource }) {
   return null;
 }
 
+/** The chat's card at far zoom: its last message, or what a new one is for. Same store the body fills. */
+function ChatFace({ source }: { source: NodeSource }) {
+  const id = entityId(source);
+  const last = useAppSelector((s) => {
+    const m = id ? s.messages?.byConversationId?.[id] : undefined;
+    const lastId = m?.orderedIds?.[m.orderedIds.length - 1];
+    return lastId && m ? extractFlatText(m.byId[lastId]) : "";
+  });
+  const { text, muted } = faceCopy("chat", last, !!id);
+  return <FaceLine icon={MessagesSquare} text={text} muted={muted} />;
+}
+
+/** The note's card at far zoom: the words waiting to become a note, or the note's own text. Same store the body fills. */
+function NoteFace({ source }: { source: NodeSource }) {
+  const id = entityId(source);
+  const stored = useAppSelector((s) => (id ? (selectNoteById(id)(s)?.content ?? "") : ""));
+  const { text, muted } = faceCopy("note", noteSeed(source) ?? stored, !!id);
+  return <FaceLine icon={NotebookText} text={text} muted={muted} />;
+}
+
 export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "chat",
@@ -538,6 +562,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
+    Face: ChatFace,
     HeaderAction: ChatHeaderAction,
     usesTier: true,
     Keep: ChatKeep,
@@ -601,6 +626,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 560, h: 620 },
     matches: (s) => isEntity(s, "note"),
     Body: NoteItemBody,
+    Face: NoteFace,
     TitleField: NoteTileTitle,
     startNew: {
       label: "Note",

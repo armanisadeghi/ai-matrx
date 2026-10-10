@@ -12,6 +12,14 @@
  * fit page → zoom − / % / + → the pager shrinks to a compact "3 / 12"
  * (previous / next move into the menu; swipe, arrow keys and wheel still
  * page). The `···` trigger never shrinks.
+ *
+ * Docked HOST chrome (a file tile's tab menu, kind actions, tile actions) is
+ * measured into the row and folds too — it must never be clipped off-screen
+ * (a focused Board PDF tile on a 390px phone drew "Extract text" at x=534).
+ * `host` says how: "inline" (as drawn), "end-folded" (the end controls sit
+ * behind one host trigger), "all-folded" (start + end behind one trigger).
+ * Host folds sit between the view controls: the host's end folds before the
+ * zoom steppers go, the whole host folds last.
  */
 
 export const TOOLBAR_CONTROLS = [
@@ -33,10 +41,13 @@ export interface PdfToolbarPlanInput {
   pages: number;
   /** Host wants the pager in the row at all (`pageNav`). */
   pageNav: boolean;
-  /** Measured widths of host chrome docked at the row's ends. */
+  /** Measured widths of host chrome docked at the row's ends (as drawn inline). */
   startWidth?: number;
   endWidth?: number;
 }
+
+/** How the host's docked chrome is drawn: inline, end behind one trigger, or both. */
+export type PdfToolbarHostFold = "inline" | "end-folded" | "all-folded";
 
 export interface PdfToolbarPlan {
   /** Square size of every icon button, px. */
@@ -46,6 +57,7 @@ export interface PdfToolbarPlan {
   /** Controls reachable from the `···` menu. */
   menu: PdfToolbarControl[];
   pager: "full" | "compact" | "none";
+  host: PdfToolbarHostFold;
   showMore: boolean;
   /** Width of the page counter text box, px. */
   counterWidth: number;
@@ -68,7 +80,17 @@ export const TOOLBAR_METRICS = {
   targetFine: 28, // mouse / trackpad
 } as const;
 
-const FOLD_ORDER: PdfToolbarControl[] = ["rotate", "actual", "fitWidth", "fitPage", "zoom"];
+type FoldStep = PdfToolbarControl | "host-end" | "pager-compact" | "host-all";
+const FOLD_ORDER: FoldStep[] = [
+  "rotate",
+  "actual",
+  "fitWidth",
+  "fitPage",
+  "host-end",
+  "zoom",
+  "pager-compact",
+  "host-all",
+];
 
 function groupWidth(parts: number[]): number {
   if (parts.length === 0) return 0;
@@ -81,11 +103,14 @@ export function measurePdfToolbar(
   menuCount: number,
   pager: PdfToolbarPlan["pager"],
   counterWidth: number,
+  host: PdfToolbarHostFold = "inline",
 ): number {
   const t = input.coarse ? TOOLBAR_METRICS.targetCoarse : TOOLBAR_METRICS.targetFine;
   const m = TOOLBAR_METRICS;
   const left: number[] = [];
-  if (input.startWidth) left.push(input.startWidth, m.separator);
+  if (host === "all-folded") {
+    if (input.startWidth || input.endWidth) left.push(t, m.separator);
+  } else if (input.startWidth) left.push(input.startWidth, m.separator);
   if (row.includes("zoom")) {
     left.push(t, m.zoomLabel, t);
     if (row.some((c) => c !== "zoom") || menuCount > 0) left.push(m.separator);
@@ -97,9 +122,9 @@ export function measurePdfToolbar(
   const right: number[] = [];
   if (pager === "full") right.push(t, counterWidth, t);
   if (pager === "compact") right.push(counterWidth);
-  if (input.endWidth) {
+  if (input.endWidth && host !== "all-folded") {
     if (right.length) right.push(m.separator);
-    right.push(input.endWidth);
+    right.push(host === "end-folded" ? t : input.endWidth);
   }
   const l = groupWidth(left);
   const r = groupWidth(right);
@@ -114,16 +139,26 @@ export function planPdfToolbar(input: PdfToolbarPlanInput): PdfToolbarPlan {
   const menu: PdfToolbarControl[] = [];
   let pager: PdfToolbarPlan["pager"] = hasPager ? "full" : "none";
 
-  const width = () => measurePdfToolbar(input, row, menu.length, pager, counterWidth);
+  let host: PdfToolbarHostFold = "inline";
+
+  const width = () =>
+    measurePdfToolbar(input, row, menu.length, pager, counterWidth, host);
   if (input.width > 0) {
-    for (const c of FOLD_ORDER) {
+    for (const step of FOLD_ORDER) {
       if (width() <= input.width) break;
-      row = row.filter((x) => x !== c);
-      menu.unshift(c);
-    }
-    if (width() > input.width && pager === "full") {
-      pager = "compact";
-      menu.push("pager");
+      if (step === "host-end") {
+        if ((input.endWidth ?? 0) > target) host = "end-folded";
+      } else if (step === "pager-compact") {
+        if (pager === "full") {
+          pager = "compact";
+          menu.push("pager");
+        }
+      } else if (step === "host-all") {
+        if ((input.startWidth ?? 0) + (input.endWidth ?? 0) > target) host = "all-folded";
+      } else if (row.includes(step)) {
+        row = row.filter((x) => x !== step);
+        menu.unshift(step);
+      }
     }
   }
   return {
@@ -131,6 +166,7 @@ export function planPdfToolbar(input: PdfToolbarPlanInput): PdfToolbarPlan {
     row,
     menu,
     pager,
+    host,
     showMore: menu.length > 0,
     counterWidth,
     rowWidth: width(),

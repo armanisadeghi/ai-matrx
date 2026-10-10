@@ -65,7 +65,9 @@ async function captureVisibleEditor(request: CanvasOutputRequest): Promise<Blob>
 
 export const CLOUD_FILE_EDITOR_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: CLOUD_FILE_EDITOR_KIND,
-  surface: "dom",
+  // Monaco draws its minimap / overview ruler on a <canvas>, so the body is
+  // not plain DOM: it declares "frame" and owns print + capture (below).
+  surface: "frame",
   label: "Edit file",
   print: printFileText,
   capture: captureVisibleEditor,
