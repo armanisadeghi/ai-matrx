@@ -14,7 +14,7 @@
  *     (`get_user_full_context` read beside the service)
  *
  * Catalogs live on `scopesTree.contextItemsByTypeId` (contextItemCatalog.ts),
- * values on `contextValues` (scopeContextView.ts), no templates slice, and the full-context read is `scopesService.fetchUserFullContext`.
+ * values on `contextValues` (scopeContextView.ts), no templates slice, and the full-context read is `hierarchyService.fetchUserFullContext`.
  * This fails if any of it comes back: a deleted module, an import of one, a
  * reducer key, an allowlist entry, or a scope RPC / context table called by
  * name outside the one service.

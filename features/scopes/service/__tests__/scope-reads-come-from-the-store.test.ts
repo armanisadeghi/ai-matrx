@@ -147,6 +147,8 @@ jest.mock("@/utils/supabase/projectsDb", () => ({
 
 // eslint-disable-next-line import/first
 import { scopesService } from "@/features/scopes/service/scopesService";
+// eslint-disable-next-line import/first
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 
 // THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
 // doors' contract; the switch is OFF in the app until member-seat parity holds.
@@ -219,7 +221,7 @@ it("a suggestion's target, a name lookup, the archive and the System items read 
     expect.objectContaining({ label_plural: "Referral Sources", archived_scope_count: 1, archived_at: "2026-09-20T12:00:00Z" }),
   ]);
 
-  const system = await scopesService.listSystemContextItems();
+  const system = await scopeDoors().systemItems();
   if (!system.ok) throw new Error(system.error.message);
-  expect(system.data.items.map((i) => i.key)).toEqual(["company_name"]);
+  expect(system.data.map((i) => [i.key, i.label, i.item_class])).toEqual([["company_name", "Company Name", "curated"]]);
 });

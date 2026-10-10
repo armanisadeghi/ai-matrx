@@ -12,7 +12,7 @@
 
 import { isRecordsErr, type RecordsResult } from "@ai-matrx/records";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { fromAssociations } from "@/features/agents/orchestras/service/associationResult";
+import { fromAssociations } from "@/features/scopes/service/associationResult";
 import { err, ok } from "@/features/scopes/service/rpcResult";
 import { MEMBER_ROLE } from "@/features/agents/orchestras/constants";
 import {

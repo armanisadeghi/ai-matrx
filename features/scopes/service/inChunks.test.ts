@@ -44,9 +44,9 @@ describe("readInChunks", () => {
   });
 });
 
-describe("scopesService.getScopeTree", () => {
-  it("reads organizations and projects through readInChunks, never one whole id list", () => {
-    const src = readFileSync(join(__dirname, "scopesService.ts"), "utf8");
+describe("the scope tree's projects read (projects service)", () => {
+  it("reads her organizations' projects through readInChunks, never one whole id list", () => {
+    const src = readFileSync(join(__dirname, "..", "..", "projects", "service.ts"), "utf8");
     expect(src).toContain("readInChunks(");
     expect(src).not.toMatch(/\.in\(\s*"id",\s*orgIds\s*\)/);
     expect(src).not.toMatch(/\.in\(\s*"organization_id",\s*orgIds\s*\)/);

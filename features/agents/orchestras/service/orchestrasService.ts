@@ -21,7 +21,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ok, err, mapPgError, mapPgErrorPair } from "@/features/scopes/service/rpcResult";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { fromAssociations } from "@/features/agents/orchestras/service/associationResult";
+import { fromAssociations } from "@/features/scopes/service/associationResult";
 import type { Json } from "@/types/database.types";
 import {
   AGENT_TOKEN,

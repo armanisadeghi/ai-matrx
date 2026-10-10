@@ -42,7 +42,7 @@
  * silent refusal.
  */
 
-import type { ContextField } from "@ai-matrx/records/scopes";
+import type { ContextField, SystemContextField } from "@ai-matrx/records/scopes";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
@@ -139,9 +139,9 @@ const CLASS_LABEL: Record<string, string> = {
   dataset: "Dataset",
 };
 
-/** A System Context item's class (ambient / curated / dataset), carried in its field config. */
-function systemItemClassOf(item: ContextField): string | null {
-  const cls = (item.config as { item_class?: unknown } | null)?.item_class;
+/** A System Context item's class (ambient / curated / dataset), as the package answers it. */
+function systemItemClassOf(item: ContextField | SystemContextField): string | null {
+  const cls = "item_class" in item ? item.item_class : null;
   return typeof cls === "string" && cls ? cls : null;
 }
 

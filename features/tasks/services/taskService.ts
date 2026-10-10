@@ -1053,3 +1053,58 @@ export async function getTaskComments(taskId: string): Promise<Comment[]> {
 // the task owner-notification now fires from the host dataSource's
 // cmt_add tap (features/scopes/host/associationsStore.ts) via
 // features/tasks/services/taskCommentNotification.ts.
+
+/** A task's identity and state as scope lists show it. */
+export interface TaskSummary {
+  id: string;
+  title: string;
+  status: string;
+  project_id: string | null;
+  organization_id: string | null;
+  updated_at: string | null;
+}
+
+/** The ids of a project's live tasks. A failed read throws. */
+export async function listProjectTaskIds(projectId: string): Promise<string[]> {
+  const { data, error } = await projectsDb(supabase)
+    .from("tasks")
+    .select("id")
+    .is("deleted_at", null)
+    .eq("project_id", projectId);
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).map((row) => row.id);
+}
+
+/** These live tasks (id, title, status, project, organization, updated). A failed read throws. */
+export async function listTaskSummaries(taskIds: readonly string[]): Promise<TaskSummary[]> {
+  if (taskIds.length === 0) return [];
+  const { data, error } = await projectsDb(supabase)
+    .from("tasks")
+    .select("id, title, status, project_id, organization_id, updated_at")
+    .is("deleted_at", null)
+    .in("id", [...taskIds]);
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    status: row.status as string,
+    project_id: row.project_id ?? null,
+    organization_id: row.organization_id ?? null,
+    updated_at: row.updated_at ?? null,
+  }));
+}
+
+/**
+ * Give a task an organization ONLY when it has none (zero rows change otherwise). Answers whether
+ * it changed. A failed write throws.
+ */
+export async function adoptTaskOrganization(taskId: string, organizationId: string): Promise<boolean> {
+  const { data, error } = await projectsDb(supabase)
+    .from("tasks")
+    .update({ organization_id: organizationId })
+    .eq("id", taskId)
+    .is("organization_id", null)
+    .select("id");
+  if (error) throw pgErrorToError(error);
+  return Array.isArray(data) && data.length > 0;
+}

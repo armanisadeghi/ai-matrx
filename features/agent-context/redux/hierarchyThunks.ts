@@ -14,7 +14,7 @@
 //   dispatch(fetchFullContext())              — app boot / sidebar mount
 //   dispatch(invalidateAndRefetchFullContext()) — after any CRUD mutation
 
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { hierarchyService } from "@/features/agent-context/service/hierarchyService";
 import {
   fullContextFetchStarted,
   fullContextFetchSucceeded,
@@ -47,8 +47,7 @@ async function doFetchFullContext(dispatch: AppDispatch) {
   }, FULL_CONTEXT_REQUEST_TIMEOUT_MS);
 
   try {
-    // `get_user_full_context` reaches context.*: through the scopes chokepoint.
-    const { data, error } = await scopesService.fetchUserFullContext(
+    const { data, error } = await hierarchyService.fetchUserFullContext(
       controller.signal,
     );
 

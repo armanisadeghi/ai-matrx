@@ -578,11 +578,16 @@ export const hierarchyService = {
     return outcome.sentence;
   },
 
-  // The full-context read (`get_user_full_context`) reaches `context.*`, so it
-  // lives behind the scopes chokepoint: `scopesService.fetchUserFullContext`,
-  // called by `agent-context/redux/hierarchyThunks`. (Its twin here and the
-  // consumerless `get_user_nav_tree` reader were deleted 2026-09-25, lane
-  // SCOPE-ADMIN-2.)
+  /**
+   * The full workspace hierarchy (`get_user_full_context`: organizations, projects, tasks, scope
+   * tags) for `agent-context/redux/hierarchyThunks`. Its scope tags come from the record store inside
+   * the function's own body. Returns the raw PostgREST answer because the caller owns an
+   * abort-on-timeout and an empty-state reading of specific error codes. (Moved here from the
+   * scopes service 2026-10-09, lane SCOPES-CLEANUP: the hierarchy is this service's domain.)
+   */
+  async fetchUserFullContext(signal: AbortSignal) {
+    return supabase.rpc("get_user_full_context").abortSignal(signal);
+  },
 
   // ─── Move / reparent ──────────────────────────────────────────────
   async moveProject(

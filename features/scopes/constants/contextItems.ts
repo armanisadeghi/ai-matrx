@@ -11,4 +11,4 @@
  * unchanged. A binding to one of these carries `scope_type_id: null` — never
  * this sentinel, which is a client-side cache key only.
  */
-export const SYSTEM_ITEMS_KEY = "__system__";
+export { SYSTEM_CONTEXT_TYPE_ID as SYSTEM_ITEMS_KEY } from "@ai-matrx/records/scopes";

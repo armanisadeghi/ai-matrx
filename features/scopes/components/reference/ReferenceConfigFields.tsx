@@ -12,10 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  scopesService,
-  type TableTemplate,
-} from "@/features/scopes/service/scopesService";
+import type { TableTemplate } from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import {
   CONTEXT_REFERENCE_TYPE_OPTIONS,
   referenceTypeLabel,
@@ -208,7 +206,7 @@ export function ReferenceConfigFields({
       return;
     }
     let cancelled = false;
-    void scopesService.listTableTemplates(organizationId).then((result) => {
+    void scopeDoors().tableTemplates(organizationId).then((result) => {
       if (cancelled) return;
       setTemplates(result.ok ? result.data : []);
     });

@@ -26,7 +26,6 @@ const CHOKEPOINT_DIRS = ["features/scopes/", "app/(core)/scopes/"];
 const CHOKEPOINT_ALLOW = new Map([
   ["features/scopes/service/scopeDoors.ts", "THE binding of the scope doors"],
   ["features/scopes/service/scopeDoors.server.ts", "the binding for server components"],
-  ["features/scopes/service/scopesService.ts", "projects/tasks/iam.organizations reads, table_templates, get_user_full_context (no canonical service yet)"],
   ["app/(core)/scopes/s/[scopeId]/page.tsx", "the organization's slug for the canonical URL (iam.organizations)"],
   ["features/scopes/service/kindInventory.ts", "entity kind counts and reference candidates (not scope data)"],
   ["features/scopes/service/recordFacts.ts", "per-entity facts (not scope data)"],

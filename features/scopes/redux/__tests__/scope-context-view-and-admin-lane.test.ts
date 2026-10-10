@@ -40,6 +40,7 @@ import {
 } from "@/features/scopes/redux/selectors/admin";
 import type { OrgNode } from "@/features/scopes/types";
 import type { ContextField, ContextValue, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
+import { systemContextFieldFromStore } from "@ai-matrx/records/scopes";
 import { scopesService } from "@/features/scopes/service/scopesService";
 
 jest.mock("@/utils/auth/getUserId", () => ({
@@ -188,12 +189,16 @@ describe("1. the catalog is the tree's", () => {
     expect((st(store) as unknown as Record<string, unknown>).contextItems).toBeUndefined();
   });
 
-  it("loads System Context through the same loader, as fields of the system pseudo-type", async () => {
+  it("loads System Context through the same loader, storing the package's fields as answered", async () => {
     const store = await bootedStore();
+    // The door's answer is the package's decode (records/src/scopes/codec.ts); the host stores it as-is.
     doors.systemItems.mockResolvedValue({
       ok: true,
       data: [
-        { id: "11111111-2222-4333-8444-555555555555", key: "current_date", display_name: "Today's date", description: null, item_class: "ambient", value_type: "date", sensitivity: "public", sort_order: 1 },
+        systemContextFieldFromStore(
+          { id: "11111111-2222-4333-8444-555555555555", key: "current_date", display_name: "Today's date", description: null, item_class: "ambient", value_type: "date", sensitivity: "public", sort_order: 1 },
+          0,
+        ),
       ],
     });
 
@@ -201,7 +206,7 @@ describe("1. the catalog is the tree's", () => {
 
     const sys = selectItemsByType(st(store), SYSTEM_ITEMS_KEY);
     expect(sys).toHaveLength(1);
-    expect(sys[0]).toMatchObject({ scope_type_id: SYSTEM_ITEMS_KEY, label: "Today's date", kind: "date", description: "", config: { item_class: "ambient" } });
+    expect(sys[0]).toMatchObject({ scope_type_id: SYSTEM_ITEMS_KEY, label: "Today's date", kind: "date", description: "", item_class: "ambient" });
   });
 });
 

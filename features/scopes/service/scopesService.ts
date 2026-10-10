@@ -21,27 +21,25 @@
 // round-trip for N entities, target-filtered to 'scope' in the DB) — see
 // `bulkEntityScopeIds`. Reverse (scope→members) reads use `assoc_for_targets`.
 //
-// Spec of record: /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md — when the Python team ships
-// the proposed RPC family (get_user_scope_tree_with_projects, resolve_*,
-// apply_template, etc.), the implementation of each method below swaps to
-// a single supabase.rpc(...) call. Method signatures and return shapes
-// stay constant — that's the whole point of the chokepoint.
+// Spec of record: /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/HANDOFF.md. This file
+// opens no database client: scope data goes through `scopeDoors()` (@ai-matrx/records/scopes), and
+// projects, tasks and organizations through their own services (lane SCOPES-CLEANUP, 2026-10-09).
 //
 // Mutation methods that have no safe path return a structured `internal`
 // error until the corresponding door ships.
 
 "use client";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabase } from "@/utils/supabase/client";
-import { projectsDb } from "@/utils/supabase/projectsDb";
-import { readInChunks } from "@/features/scopes/service/inChunks";
+import { getOrganization } from "@/features/organizations/service";
+import { adoptProjectOrganization, listProjectSummariesInOrganizations } from "@/features/projects/service";
+import { adoptTaskOrganization, listProjectTaskIds, listTaskSummaries } from "@/features/tasks/services/taskService";
 import { readScopeFileText, scopeDoors, scopeRecordsClient } from "@/features/scopes/service/scopeDoors";
 import { placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { associationRefusal } from "@/features/scopes/service/associationResult";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { forgetMemberOrganizationRows, readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
 import {
@@ -60,7 +58,7 @@ import type {
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
-import type { RecordsError, RecordsResult } from "@ai-matrx/records";
+import type { RecordsResult } from "@ai-matrx/records";
 import type {
   ArchivedScopeType,
   ContextField,
@@ -68,12 +66,9 @@ import type {
   Scope,
   ScopeTypeWithScopes,
   ScopeWithType,
-  SystemContextItem,
 } from "@ai-matrx/records/scopes";
-import type { AssociationsRpcError } from "@ai-matrx/associations";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
-type PostgrestErrorLike = { message: string; code?: string; details?: string; hint?: string };
 
 
 
@@ -84,24 +79,6 @@ export interface EntityScopeTag {
   scope_id: string;
   scope_name: string;
   scope_type: string;
-}
-
-export interface TableTemplateField {
-  id: string;
-  field_name: string;
-  display_name: string;
-  data_type: string;
-  field_order: number;
-  is_required: boolean;
-}
-
-export interface TableTemplate {
-  id: string;
-  organization_id: string;
-  name: string;
-  description: string;
-  version: number;
-  fields: TableTemplateField[];
 }
 
 // ─── helpers ────────────────────────────────────────────────────────
@@ -166,39 +143,7 @@ async function provisionScopeTableInTheStore(
   return made;
 }
 
-/** An associations answer's refusal in the records vocabulary (one error vocabulary on the web). */
-function fromAssociations(e: AssociationsRpcError): RecordsError {
-  const code: RecordsError["code"] =
-    e.code === "not_found" || e.code === "invalid_argument"
-      ? e.code
-      : e.code === "unauthorized" || e.code === "forbidden_org" || e.code === "forbidden_role"
-        ? "door"
-        : e.code === "demanded_schema_violation"
-          ? "door_absent"
-          : e.code === "version_conflict"
-            ? "stale_write"
-            : "internal";
-  return { code, message: e.message, hint: e.hint, detail: e.detail };
-}
-
 export const scopesService = {
-  /** Organization-scoped immutable schemas available for per-scope table values. */
-  async listTableTemplates(
-    organizationId: string,
-  ): Promise<RecordsResult<TableTemplate[]>> {
-    try {
-      requireUserId();
-      // Table templates are templates (custom.template, templateKind table) since 2026-10-07.
-      const { data, error } = await supabase.schema("custom").rpc("table_templates" as never, {
-        p_org_id: organizationId,
-      } as never);
-      if (error) return err(...mapPgErrorPair(error));
-      return ok((Array.isArray(data) ? data : []) as TableTemplate[]);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
   /**
    * THIS SCOPE'S COPY OF A TEMPLATE-BACKED TABLE — the table id, creating it on first ask, in the
    * record store (`custom.scope_table_provision`, GRID-PRIMITIVES G11), which is idempotent and
@@ -275,26 +220,14 @@ export const scopesService = {
           created_by: string | null;
           archived_at: string | null;
         };
-        const orgsP = Promise.resolve({ data: member.rows as unknown as OrgRow[], error: null as PostgrestErrorLike | null });
-
-        // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
-        const projectsP = readInChunks(orgIds, (chunk) =>
-          projectsDb(supabase)
-            .from("projects")
-            .select("id, organization_id, name, slug")
-            .in("organization_id", chunk)
-            .is("deleted_at", null) as unknown as PromiseLike<{
-            data: Array<{ id: string; organization_id: string; name: string; slug: string }> | null;
-            error: PostgrestErrorLike | null;
-          }>,
-        ).then((res) => ({
-          ...res,
-          data: res.data ? [...res.data].sort((a, b) => a.name.localeCompare(b.name)) : res.data,
-        }));
-
-        const [orgsRes, projectsRes] = await Promise.all([orgsP, projectsP]);
-        if (orgsRes.error) return { read: false as const, failed: err(...mapPgErrorPair(orgsRes.error)) };
-        if (projectsRes.error) return { read: false as const, failed: err(...mapPgErrorPair(projectsRes.error)) };
+        const orgsRes = { data: member.rows as unknown as OrgRow[] };
+        // Her organizations' projects, through the projects service (chunked by organization).
+        let projectsRes: { data: Awaited<ReturnType<typeof listProjectSummariesInOrganizations>> };
+        try {
+          projectsRes = { data: await listProjectSummariesInOrganizations(orgIds) };
+        } catch (e) {
+          return { read: false as const, failed: { ok: false as const, error: mapPgError(e) } };
+        }
         return { read: true as const, roleByOrgId, orgsRes, projectsRes };
       });
       if (!boot.read) return boot.failed;
@@ -423,12 +356,8 @@ export const scopesService = {
           "This organization's scopes open from Administration only.",
         );
       }
-      const orgP = supabase
-        .schema("iam")
-        .from("organizations")
-        .select("id, name, abbreviation, slug, settings, created_by, archived_at")
-        .eq("id", organizationId)
-        .maybeSingle();
+      // The organization, through the organizations service (a failed read throws → mapped below).
+      const orgP = getOrganization(organizationId);
       // VIEW LAW: org-scoped — the ONE organization the admin console names. The
       // store's tree door decides: its admin-lane arm (public.is_platform_admin(),
       // true only on a request carrying the admin-lane header) reads a non-member
@@ -438,9 +367,8 @@ export const scopesService = {
         orgP,
         scopeDoors().tree([organizationId]),
       ]);
-      if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
       if (!treeRes.ok) return treeRes;
-      const row = orgRes.data;
+      const row = orgRes;
       if (!row) return ok({ organization: null });
 
       const viewerId = requireUserId();
@@ -453,8 +381,8 @@ export const scopesService = {
           !!row.settings &&
           typeof row.settings === "object" &&
           "test_fixture" in (row.settings as Record<string, unknown>),
-        created_by: row.created_by ?? null,
-        is_own: !!row.created_by && row.created_by === viewerId,
+        created_by: row.createdBy ?? null,
+        is_own: !!row.createdBy && row.createdBy === viewerId,
         // The console acts with the platform-admin arm, not a membership role.
         role: "admin",
         admin_lane: true,
@@ -466,24 +394,6 @@ export const scopesService = {
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
-  },
-
-  /**
-   * The full workspace hierarchy (`get_user_full_context`: organizations,
-   * projects, tasks, scope tags) for `agent-context/redux/hierarchyThunks`.
-   * It reads the scope system inside its body (the record store, since the
-   * flip), so it is reached only through this door. Returns the raw PostgREST answer because the caller owns an
-   * abort-on-timeout and an empty-state reading of specific error codes.
-   */
-  async fetchUserFullContext(signal: AbortSignal) {
-    return supabase.rpc("get_user_full_context").abortSignal(signal);
-  },
-
-  /** Every active System Context Item — the platform's global public facts. */
-  async listSystemContextItems(): Promise<RecordsResult<{ items: SystemContextItem[] }>> {
-    requireUserId();
-    const res = await scopeDoors().systemItems();
-    return res.ok ? ok({ items: res.data }) : res;
   },
 
   // ──────────────────────────────────────────────────────────────────
@@ -499,18 +409,12 @@ export const scopesService = {
 
       let taskIds: string[];
       if (level === "project") {
-        const { data, error } = await projectsDb(supabase)
-          .from("tasks")
-          .select("id")
-          .is("deleted_at", null)
-          .eq("project_id", id);
-        if (error) return err(...mapPgErrorPair(error));
-        taskIds = (data ?? []).map((row) => row.id);
+        taskIds = await listProjectTaskIds(id);
       } else if (level === "scope") {
         // Tasks tagged with this scope = edges INCOMING to ('scope', id)
         // whose source is a task.
         const res = await associationsService.listForTargets("scope", [id]);
-        if (!res.ok) return { ok: false, error: fromAssociations(res.error) };
+        if (!res.ok) return { ok: false, error: associationRefusal(res.error) };
         taskIds = res.data.edges
           .filter((e) => e.sourceType === "task")
           .map((e) => e.sourceId);
@@ -522,12 +426,7 @@ export const scopesService = {
 
       if (taskIds.length === 0) return ok({ tasks: [] });
 
-      const { data: taskRows, error: taskErr } = await projectsDb(supabase)
-        .from("tasks")
-        .select("id, title, status, project_id, organization_id, updated_at")
-        .is("deleted_at", null)
-        .in("id", taskIds);
-      if (taskErr) return err(...mapPgErrorPair(taskErr));
+      const taskRows = await listTaskSummaries(taskIds);
 
       const tagsRes = await bulkEntityScopeIds("task", taskIds);
       if (!tagsRes.ok) return tagsRes;
@@ -536,12 +435,12 @@ export const scopesService = {
         Object.entries(tagsRes.data),
       );
 
-      const tasks: TaskNode[] = (taskRows ?? []).map((row) => ({
+      const tasks: TaskNode[] = taskRows.map((row) => ({
         id: row.id,
         title: row.title,
-        status: row.status as string,
-        project_id: row.project_id ?? null,
-        organization_id: row.organization_id ?? null,
+        status: row.status,
+        project_id: row.project_id,
+        organization_id: row.organization_id,
         scope_ids: tagsByEntity.get(row.id) ?? [],
         updated_at: row.updated_at ?? new Date().toISOString(),
       }));
@@ -558,12 +457,7 @@ export const scopesService = {
     try {
       requireUserId();
 
-      const { data: projectRows, error: projErr } = await projectsDb(supabase)
-        .from("projects")
-        .select("id, organization_id, name, slug")
-        .is("deleted_at", null)
-        .eq("organization_id", orgId);
-      if (projErr) return err(...mapPgErrorPair(projErr));
+      const projectRows = await listProjectSummariesInOrganizations([orgId]);
 
       const ids = (projectRows ?? []).map((r) => r.id);
       if (ids.length === 0) return ok({ projects: [] });
@@ -690,12 +584,7 @@ export const scopesService = {
           }).message,
         );
 
-      const orgP = supabase
-        .schema("iam")
-        .from("organizations")
-        .select("id, name, slug")
-        .eq("id", scope.organization_id)
-        .single();
+      const orgP = getOrganization(scope.organization_id);
 
       const [orgRes, itemsStore, valuesStore] = await Promise.all([
         orgP,
@@ -703,7 +592,7 @@ export const scopesService = {
         scopeDoors().values([args.scopeId], { readFileText: readScopeFileText }),
       ]);
 
-      if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
+      if (!orgRes) return err("not_found", "That scope's organization could not be read.");
       if (!itemsStore.ok) return itemsStore;
       if (!valuesStore.ok) return valuesStore;
       const scopeType = scope.scope_type;
@@ -719,9 +608,9 @@ export const scopesService = {
 
       return ok({
         org: {
-          id: orgRes.data.id,
-          name: orgRes.data.name,
-          slug: orgRes.data.slug,
+          id: orgRes.id,
+          name: orgRes.name,
+          slug: orgRes.slug,
         },
         scope_type: {
           id: scopeType.id,
@@ -783,7 +672,7 @@ export const scopesService = {
         "scope",
         args.scope_ids,
       );
-      if (!res.ok) return { ok: false, error: fromAssociations(res.error) };
+      if (!res.ok) return { ok: false, error: associationRefusal(res.error) };
 
       // Fold edges into a map: { [entityKey]: Set<scope_id> }.
       const matches = new Map<
@@ -874,7 +763,7 @@ export const scopesService = {
       requireUserId();
       // A scope tag is an OUTGOING edge entity → ('scope', scopeId).
       const res = await associationsService.listForEntity(entityType, entityId);
-      if (!res.ok) return { ok: false, error: fromAssociations(res.error) };
+      if (!res.ok) return { ok: false, error: associationRefusal(res.error) };
       const scope_ids = res.data.edges
         .filter((e) => e.direction === "outgoing" && e.otherType === "scope")
         .map((e) => e.otherId);
@@ -922,7 +811,7 @@ export const scopesService = {
         entityType,
         entityId,
       );
-      if (!assoc.ok) return { ok: false, error: fromAssociations(assoc.error) };
+      if (!assoc.ok) return { ok: false, error: associationRefusal(assoc.error) };
       const ids = assoc.data.edges
         .filter((e) => e.direction === "outgoing" && e.otherType === "scope")
         .map((e) => e.otherId);
@@ -1013,15 +902,14 @@ export const scopesService = {
     entityId: string,
     scopeIds: string[],
   ): Promise<RecordsResult<{ organization_id: string | null }>> {
-    // Projects-schema table names (project/task live in `projects`). Consumed
-    // below via `projectsDb(supabase).from(table)`.
-    const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> = {
-      project: "projects",
-      task: "tasks",
+    // The container's own service gives it an organization (project → projects, task → tasks).
+    const ADOPT: Partial<Record<EntityType, (id: string, orgId: string) => Promise<boolean>>> = {
+      project: adoptProjectOrganization,
+      task: adoptTaskOrganization,
     };
     try {
-      const table = ENTITY_ORG_TABLE[entityType];
-      if (!table || scopeIds.length === 0) return ok({ organization_id: null });
+      const adopt = ADOPT[entityType];
+      if (!adopt || scopeIds.length === 0) return ok({ organization_id: null });
 
       // The org of the first assigned scope (scopes carry organization_id), from the store's door.
       const scopeRes = await scopeDoors().scopes([scopeIds[0]!]);
@@ -1030,16 +918,7 @@ export const scopesService = {
       if (!orgId) return ok({ organization_id: null });
 
       // Adopt ONLY when the container currently has no org (DB-enforced).
-      // project/task live in the `projects` schema — reach them via projectsDb.
-      const { data: updated, error: uErr } = await projectsDb(supabase)
-        .from(table as never)
-        .update({ organization_id: orgId } as never)
-        .eq("id", entityId)
-        .is("organization_id", null)
-        .select("id");
-      if (uErr) return err(...mapPgErrorPair(uErr));
-
-      const didUpdate = Array.isArray(updated) && updated.length > 0;
+      const didUpdate = await adopt(entityId, orgId);
       return ok({ organization_id: didUpdate ? orgId : null });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
@@ -1108,7 +987,7 @@ async function bulkEntityScopeIds(
     ids,
     "scope",
   );
-  if (!res.ok) return { ok: false, error: fromAssociations(res.error) };
+  if (!res.ok) return { ok: false, error: associationRefusal(res.error) };
 
   const byEntity: Record<string, string[]> = {};
   for (const id of ids) byEntity[id] = [];

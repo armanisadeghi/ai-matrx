@@ -18,6 +18,7 @@ import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { readAllRows } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { readInChunks } from "@/features/scopes/service/inChunks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -903,4 +904,49 @@ function invitationToProjectInvitation(inv: Invitation): ProjectInvitation {
     invitedBy: inv.createdBy,
     expiresAt: inv.expiresAt,
   };
+}
+
+/** A project's identity as lists and trees show it. */
+export interface ProjectSummary {
+  id: string;
+  organization_id: string;
+  name: string;
+  slug: string;
+}
+
+/**
+ * The live projects of these organizations (id, organization, name, slug), sorted by name. The id
+ * list is read in url-sized chunks (a person may belong to ~1000 organizations). A failed read throws.
+ */
+export async function listProjectSummariesInOrganizations(
+  organizationIds: readonly string[],
+): Promise<ProjectSummary[]> {
+  // VIEW LAW: org-scoped — restricted to the organizations named.
+  const res = await readInChunks(organizationIds, (chunk) =>
+    projectsDb(supabase)
+      .from("projects")
+      .select("id, organization_id, name, slug")
+      .in("organization_id", chunk)
+      .is("deleted_at", null) as unknown as PromiseLike<{
+      data: ProjectSummary[] | null;
+      error: { message: string; code?: string; details?: string; hint?: string } | null;
+    }>,
+  );
+  if (res.error) throw pgErrorToError(res.error as never);
+  return [...(res.data ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Give a project an organization ONLY when it has none (zero rows change otherwise). Answers
+ * whether it changed. A failed write throws.
+ */
+export async function adoptProjectOrganization(projectId: string, organizationId: string): Promise<boolean> {
+  const { data, error } = await projectsDb(supabase)
+    .from("projects")
+    .update({ organization_id: organizationId })
+    .eq("id", projectId)
+    .is("organization_id", null)
+    .select("id");
+  if (error) throw pgErrorToError(error);
+  return Array.isArray(data) && data.length > 0;
 }

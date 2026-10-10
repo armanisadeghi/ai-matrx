@@ -75,8 +75,8 @@ this directory.
    - `scope-system/redux/contextItemsSlice.ts` (+ the `contextItems` key) → **`redux/contextItemCatalog.ts`**:
      the same names over `scopesTree.contextItemsByTypeId`; `listScopeTypeItems` = `ensureScopeTypeItems`
      (no refetch — every write door folds its row into the catalog); the System Context catalog is the
-     same loader under `SYSTEM_ITEMS_KEY` (`constants/contextItems.ts`) via
-     `scopesService.listSystemContextItems`; create/update/delete keep their `.unwrap()` contract and call
+     same loader under `SYSTEM_ITEMS_KEY` (`constants/contextItems.ts`, = the package's `SYSTEM_CONTEXT_TYPE_ID`) via
+     `scopeDoors().systemItems` (package-decoded `SystemContextField`s, stored as answered); create/update/delete keep their `.unwrap()` contract and call
      the `thunks/contextItemMutations` doors.
    - `scope-system/redux/scopeValuesSlice.ts` (+ `scopeValues`) → **`redux/scopeContextView.ts`**: a scope's
      rows are DERIVED (`selectValuesByScope`) from its type's catalog plus the `contextValues` store —
@@ -398,6 +398,19 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-10-09 (SCOPES-CLEANUP): `@ai-matrx/records` 0.97.6 — `client.scopes.systemItems()` answers
+  `SystemContextField[]` (a `ContextField` of `SYSTEM_CONTEXT_TYPE_ID` + `item_class`, decoded in the package's
+  codec) and `client.scopes.tableTemplates(orgId)` answers `TableTemplate[]`; `ensureScopeTypeItems` stores
+  the package answer as-is and the picker's class hint reads `item_class`. One association-refusal mapper:
+  `service/associationResult.ts` (`fromAssociations` / `associationRefusal`, moved from agents/orchestras;
+  scopesService's private copy deleted). `scopesService` opens no database client: projects/tasks through
+  `features/projects/service` (`listProjectSummariesInOrganizations`, `adoptProjectOrganization`) and
+  `features/tasks/services/taskService` (`listProjectTaskIds`, `listTaskSummaries`, `adoptTaskOrganization`),
+  organizations through `features/organizations/service.getOrganization`, table templates through
+  `scopeDoors().tableTemplates`, `get_user_full_context` moved to `hierarchyService.fetchUserFullContext`;
+  `listSystemContextItems` (service) and `listTableTemplates` deleted; its `check:scopes-data-layer`
+  allow-list row removed.
 
 - 2026-10-09 (SCOPES-WEB-SCREENS phase 3): `features/scope-system/` is retired (9,640 LOC moved, not copied) into `components/pages/` — the type / scope / scope-edit / context-items / field pages, the `/context-items` hubs, `EditContextItemSheet`, the value editors (`ScopeFieldInput`, `EditScopeValueSheet`, `useScopeAutoSave`, `scope-detail-values`), hooks and utils; every importer repoints. The type page's rows read the values the page loads in ONE `scopeDoors().values` call. The scope-detail / context-items / scopes surface manifests and their emitters speak `label` / `kind`. The picker's System Context class hint reads the field's `config.item_class`.
 

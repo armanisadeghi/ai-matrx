@@ -292,6 +292,11 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     rlsUsesHasPermission: true,
   },
   context_item: {
+    // Mirrors the live platform.shareable_resource_registry row, which still names the retired
+    // context.context_items: a context field lives in the record store now, and
+    // public.resolve_shareable_resource REFUSES this token BY NAME ("share the record itself") —
+    // the same decision the generic registry readers take (platform.record_store_kind,
+    // SCOPES-CLEANUP 2026-10-09). Not a table any share path may read.
     resourceType: "context_item",
     tableName: "context_items",
     schemaName: "context",
@@ -726,6 +731,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   // snapshot regen during the structured-list rename. Mirrored here so the
   // TS↔DB guard stays green.
   scope: {
+    // Mirrors the live registry row (the retired context.scopes). A scope is a record-store Record:
+    // public.resolve_shareable_resource REFUSES this token BY NAME, as for context_item above.
     resourceType: "scope",
     tableName: "scopes",
     schemaName: "context",
