@@ -15,6 +15,8 @@ import { proposedArrangement } from "@/features/context-menu-v3/proposed/propose
 import { NotesDemoPanel } from "../context-menu/_components/NotesDemoPanel";
 import { QuizListPanel } from "../context-menu-regroup/_components/QuizListPanel";
 import { TableRowsPanel } from "./_components/TableRowsPanel";
+import { ChatAnswerMenuProposal } from "./_components/answer-menu/ChatAnswerMenuProposal";
+import { ContentMenuIdeas } from "./_components/answer-menu/ContentMenuIdeas";
 
 type SurfaceKey = "table" | "quiz" | "note";
 
@@ -242,6 +244,8 @@ export default function ContextMenuDesignsPage() {
               </div>
             </section>
           ))}
+          <ChatAnswerMenuProposal />
+          <ContentMenuIdeas />
         </div>
       </div>
     </div>
