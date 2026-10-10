@@ -2,6 +2,7 @@ import {
   mergeFieldLabel,
   mergeFieldsIn,
   mergeFieldToken,
+  mergeFieldExampleToken,
   previewParts,
 } from "./merge-fields";
 
@@ -37,5 +38,18 @@ describe("merge fields in plain words", () => {
 
   it("builds the token", () => {
     expect(mergeFieldToken("party.first_name")).toBe("{{party.first_name}}");
+  });
+
+  it("never treats an escaped example as a field, and shows it as literal text", () => {
+    const text = "Use {{party.first_name}} to greet. Example text: \\{{party.first_name}}";
+    expect(mergeFieldsIn("\\{{reply.body}}")).toEqual([]);
+    const parts = previewParts(text);
+    expect(parts.filter((p) => p.kind === "field")).toHaveLength(1);
+    const last = parts[parts.length - 1];
+    expect(last).toEqual({ kind: "text", text: " to greet. Example text: {{party.first_name}}" });
+  });
+
+  it("writes the example token with the escape", () => {
+    expect(mergeFieldExampleToken("party.first_name")).toBe("\\{{party.first_name}}");
   });
 });

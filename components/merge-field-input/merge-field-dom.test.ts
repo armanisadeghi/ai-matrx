@@ -135,4 +135,22 @@ describe("a newline typed at the end gets its line", () => {
     root.append(document.createElement("br"));
     expect(needsTrailingLine(root)).toBe(false);
   });
+
+  describe("escaped example placeholders", () => {
+    it("draws \\{{name}} as plain text, never a chip, and round-trips it", () => {
+      const text = "Use {{a.b}}. Example: \\{{a.b}}";
+      const root = drawn(text);
+      expect(root.querySelectorAll(`[${CHIP_ATTR}]`)).toHaveLength(1);
+      expect(root.textContent).toContain("\\{{a.b}}");
+      expect(serializeFrom(root)).toBe(text);
+    });
+
+    it("tokenizes an escaped placeholder as text only", () => {
+      expect(tokenizeMergeText("\\{{a.b}}")).toEqual([{ kind: "text", text: "\\{{a.b}}" }]);
+    });
+
+    it("leaves a typed \\{{ literal", () => {
+      expect(tokenizeMergeText("\\{{")).toEqual([{ kind: "text", text: "\\{{" }]);
+    });
+  });
 });

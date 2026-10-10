@@ -87,14 +87,24 @@ export function previewParts(text: string): PreviewPart[] {
   let last = 0;
   for (const m of text.matchAll(mergeFieldRegex())) {
     const at = m.index ?? 0;
-    if (at > last) parts.push({ kind: "text", text: text.slice(last, at) });
+    if (at > last) parts.push({ kind: "text", text: unescapeExamples(text.slice(last, at)) });
     parts.push({ kind: "field", field: mergeFieldInfo(m[1]) });
     last = at + m[0].length;
   }
-  if (last < text.length) parts.push({ kind: "text", text: text.slice(last) });
+  if (last < text.length) parts.push({ kind: "text", text: unescapeExamples(text.slice(last)) });
   return parts;
 }
 
 export function mergeFieldToken(path: string): string {
   return `{{${path}}}`;
+}
+
+/** An example placeholder: shown as literal `{{path}}`, never filled in. */
+export function mergeFieldExampleToken(path: string): string {
+  return `\\{{${path}}}`;
+}
+
+/** Plain text for display: `\{{x}}` reads as the literal `{{x}}`. */
+function unescapeExamples(text: string): string {
+  return text.replace(/\\\{\{/g, "{{");
 }

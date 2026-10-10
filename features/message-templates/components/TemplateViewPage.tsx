@@ -51,6 +51,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
@@ -232,7 +235,7 @@ function InsertFieldMenu({
   target,
 }: {
   used: MergeFieldInfo[];
-  onInsert: (path: string) => void;
+  onInsert: (path: string, asExample?: boolean) => void;
   target: string;
 }) {
   return (
@@ -272,6 +275,19 @@ function InsertFieldMenu({
               </DropdownMenuItem>
             ),
           )}
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>Insert as example (not filled)</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="max-h-[60dvh] w-64 overflow-y-auto">
+              {[...used, ...COMMON_MERGE_FIELDS.filter((f) => !used.some((u) => u.path === f.path))].map(
+                (f) => (
+                  <DropdownMenuItem key={`ex-${f.path}`} onSelect={() => onInsert(f.path, true)}>
+                    {f.label}
+                  </DropdownMenuItem>
+                ),
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -879,7 +895,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                     <InsertFieldMenu
                       target="email subject"
                       used={usedFields}
-                      onInsert={(path) => subjectRef.current?.insertField(path)}
+                      onInsert={(path, ex) => subjectRef.current?.insertField(path, ex)}
                     />
                   </div>
                   <MergeFieldTextarea
@@ -910,7 +926,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                     <InsertFieldMenu
                       target="message"
                       used={usedFields}
-                      onInsert={(path) => bodyRef.current?.insertField(path)}
+                      onInsert={(path, ex) => bodyRef.current?.insertField(path, ex)}
                     />
                   </div>
                   <MergeFieldTextarea

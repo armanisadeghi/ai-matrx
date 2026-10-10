@@ -54,9 +54,10 @@ export interface MergeFieldInputHandle extends ProTextareaEditorHandle {
   /**
    * Insert `{{path}}` at the caret (or where the caret last was), as a chip —
    * with a space before it when it would touch a word — and put the caret
-   * right after it, in the field.
+   * right after it, in the field. `asExample` writes `\{{path}}` instead: plain
+   * text that is never filled in.
    */
-  insertField: (path: string) => void;
+  insertField: (path: string, asExample?: boolean) => void;
   /** True while the page selection is inside this field. */
   hasSelection: () => boolean;
   /** Select stored-text offsets [start, end] and focus the field (a formatting edit keeps its selection). */
@@ -290,12 +291,12 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
         const sel = window.getSelection();
         return Boolean(root && sel && sel.rangeCount > 0 && root.contains(sel.getRangeAt(0).startContainer));
       },
-      insertField: (path: string) => {
+      insertField: (path: string, asExample = false) => {
         const current = shownRef.current ?? value;
         const at = Math.min(caretRef.current ?? current.length, current.length);
         const before = current.slice(0, at);
         // A chip never glues onto a word: "Hi{{name}}" reads as one blob.
-        const token = `${before && !/\s$/.test(before) ? " " : ""}{{${path}}}`;
+        const token = `${before && !/\s$/.test(before) ? " " : ""}${asExample ? "\\" : ""}{{${path}}}`;
         const next = before + token + current.slice(at);
         const caret = at + token.length;
         rootRef.current?.focus();
