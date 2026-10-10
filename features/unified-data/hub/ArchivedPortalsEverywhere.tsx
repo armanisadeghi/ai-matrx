@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 import { archivedPortalsEverywhere, type ArchivedPortalEverywhereRow } from "./doors";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function ArchivedPortalsEverywhere({ dataSource }: { dataSource: RecordsDataSource }) {
   const [state, setState] = useState<
     { phase: "reading" } | { phase: "read"; rows: ArchivedPortalEverywhereRow[] } | { phase: "failed"; why: string }
@@ -32,7 +33,7 @@ export function ArchivedPortalsEverywhere({ dataSource }: { dataSource: RecordsD
     return (
       <p className="py-2 text-xs text-destructive" data-archive-read-trouble="">
         The archived portals did not answer, so nothing was read — this is not an empty archive. {state.why}
-      </p>
+      <ErrorAlchemyMenu error={state.why} /></p>
     );
   }
   if (state.rows.length === 0) return <p className="py-2 text-xs text-muted-foreground">No portals have been archived.</p>;

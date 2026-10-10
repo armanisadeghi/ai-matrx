@@ -30,6 +30,8 @@ import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/reco
 import { useKeptEntityBackLinks } from "@/features/unified-data/components/useKeptEntityBackLinks";
 import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@ai-matrx/design-system";
 export interface EntityBackLinksProps {
   entityToken: string;
   recordId: string;
@@ -77,11 +79,11 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
     return (
       <section data-section="back-links" data-state="error" className={className}>
         <h3 className="text-sm font-medium">Linked records</h3>
-        <EmptyState
-          icon={<Link2 className="h-5 w-5" />}
+        <ErrorNotice
+         
           title="Couldn't read linked records"
-          line={links.error.message}
-          action={
+           message={links.error.message}
+          actions={
             <Button variant="quiet" onClick={() => links.reload()}>
               Retry
             </Button>
@@ -119,7 +121,7 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
           ))}
         </div>
       )}
-      {links.moreError ? <span className="text-xs text-muted-foreground">{links.moreError.message}</span> : null}
+      {links.moreError ? <span className="text-xs text-muted-foreground">{links.moreError.message}<ErrorAlchemyMenu error={links.moreError.message} /></span> : null}
       {links.hasMore ? (
         <Button variant="quiet" disabled={links.loadingMore} onClick={() => void links.loadMore()}>
           {links.moreError ? "Retry" : "Load more"}

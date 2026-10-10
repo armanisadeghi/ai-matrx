@@ -26,6 +26,7 @@ import { useObjectOrganization } from "@/features/unified-data/objectOrganizatio
 import { MakeMount } from "@/features/make/MakeMount";
 import { useStartPage } from "@/features/start/useStartPage";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const PAGES_HOME = "/data/pages";
 
 export function PageRoute({ pageId }: { pageId: string }) {
@@ -86,7 +87,7 @@ export function PageRoute({ pageId }: { pageId: string }) {
       />
     );
   } else if (where.state === "unavailable") {
-    body = <p className="text-sm text-destructive">{where.why}</p>;
+    body = <p className="text-sm text-destructive">{where.why}<ErrorAlchemyMenu error={where.why} /></p>;
   } else {
     body = (
       <MakeMount organizationId={where.organizationId}>

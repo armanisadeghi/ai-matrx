@@ -25,6 +25,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { connectTable, inspectDatabase, type InspectAnswer, type OutsideTable } from "./service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Step =
   | { phase: "paste" }
   | { phase: "testing" }
@@ -132,7 +133,7 @@ export function ConnectDatabasePage() {
               {error ? (
                 <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink" data-connect-database-error="">
                   {error}
-                </p>
+                <ErrorAlchemyMenu error={error} /></p>
               ) : null}
 
               {answer ? (

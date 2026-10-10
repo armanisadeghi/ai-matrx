@@ -65,6 +65,7 @@ import {
 import { getManifest } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */
   entityToken: string;
@@ -277,7 +278,7 @@ function EntityCustomFieldsSection({
   if (home.state === "error") {
     return (
       <SectionLine state="error" title={title} className={className}>
-        <span className="text-muted-foreground">Couldn&apos;t read this record</span>
+        <span data-error-box className="text-muted-foreground">Couldn&apos;t read this record<ErrorAlchemyMenu /></span>
         <Button size="sm" variant="ghost" className="ml-auto" onClick={retryHome}>
           Retry
         </Button>
@@ -298,7 +299,7 @@ function EntityCustomFieldsSection({
   if (readable === "error") {
     return (
       <SectionLine state="error" title={title} className={className}>
-        <span className="text-muted-foreground">Couldn&apos;t read this record</span>
+        <span data-error-box className="text-muted-foreground">Couldn&apos;t read this record<ErrorAlchemyMenu /></span>
         <Button size="sm" variant="ghost" className="ml-auto" onClick={retryRead}>
           Retry
         </Button>
