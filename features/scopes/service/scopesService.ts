@@ -326,25 +326,29 @@ export const scopesService = {
       const row = orgRes;
       if (!row) return ok({ organization: null });
 
-      const viewerId = requireUserId();
-      const organization: OrgNode = {
-        id: row.id,
-        name: row.name,
-        abbreviation: row.abbreviation,
-        slug: row.slug,
-        is_test_fixture:
-          !!row.settings &&
-          typeof row.settings === "object" &&
-          "test_fixture" in (row.settings as Record<string, unknown>),
-        created_by: row.createdBy ?? null,
-        is_own: !!row.createdBy && row.createdBy === viewerId,
-        // The console acts with the platform-admin arm, not a membership role.
-        role: "admin",
-        admin_lane: true,
-        scope_types: treeRes.data,
-        // The scope console does not show projects; an admin-lane org carries none.
+      // The same host join as the person's tree; the console acts with the platform-admin arm
+      // (role "admin", `admin_lane`) and does not show projects.
+      const [assembled] = assembleOrganizations({
+        orgRows: [
+          {
+            id: row.id,
+            name: row.name,
+            abbreviation: row.abbreviation,
+            logo_url: row.logoUrl ?? null,
+            slug: row.slug,
+            settings: row.settings,
+            created_by: row.createdBy ?? null,
+            archived_at: null,
+          },
+        ],
+        roleByOrgId: new Map([[row.id, "admin"]]),
+        viewerId: requireUserId(),
+        scopeTypes: treeRes.data,
         projects: [],
-      };
+        projectScopes: new Map(),
+      });
+      if (!assembled) return ok({ organization: null });
+      const organization: OrgNode = { ...assembled, admin_lane: true };
       return ok({ organization });
     } catch (e) {
       return { ok: false, error: mapThrownError(e, "scopesService") };
