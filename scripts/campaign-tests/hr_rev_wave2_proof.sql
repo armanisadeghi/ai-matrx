@@ -16,7 +16,7 @@ declare
 begin
   -- ---- RED
   foreach d in array array['hr.hr_review_template_list(uuid)','hr.hr_review_template_save(jsonb)',
-      'hr.hr_review_template_archive(uuid)','hr.hr_review_calibration(uuid,jsonb)',
+      'hr.hr_review_template_archive(uuid)','hr.hr_review_template_get(uuid)','hr.hr_review_calibration(uuid,jsonb)',
       'hr.hr_review_calibrate(uuid,text,text)'] loop
     if to_regprocedure(d) is null then v_fail := array_append(v_fail, 'door missing: ' || d); end if;
   end loop;
@@ -61,6 +61,11 @@ begin
            'description', 'Support team: responsibilities, wins, ratings.', 'sections', v_secs, 'rating_scale', v_scale));
   v_tpl := (v_j ->> 'template_id')::uuid;
   if v_tpl is null then v_fail := array_append(v_fail, 'template: valid save failed: ' || v_j::text); end if;
+  v_j := hr.hr_review_template_get(v_tpl);
+  if (v_j #>> '{template,name}') is distinct from 'Customer support review' or jsonb_typeof(v_j #> '{template,sections}') <> 'array'
+     or (v_j #> '{template,rating_scale}') is null or (v_j #>> '{template,cycle_count}') is null then
+    v_fail := array_append(v_fail, 'template_get: ' || coalesce((v_j - 'template')::text || ' keys ' || (select string_agg(k, ',') from jsonb_object_keys(v_j -> 'template') k), 'null'));
+  end if;
   v_j := hr.hr_review_template_list(c_org);
   if not exists (select 1 from jsonb_array_elements(v_j -> 'templates') x where (x ->> 'template_id')::uuid = v_tpl) then
     v_fail := array_append(v_fail, 'template: list does not show the saved template');
@@ -159,6 +164,7 @@ begin
   set local role authenticated;
   if (hr.hr_review_calibration(v_cycle, '{}'::jsonb) ->> 'reason') is distinct from 'not_reachable'
      or (hr.hr_review_template_list(c_org) ->> 'reason') is distinct from 'not_permitted'
+     or (hr.hr_review_template_get(v_tpl) ->> 'reason') is distinct from 'not_reachable'
      or (hr.hr_review_calibrate(v_rev, 'outstanding', null) ->> 'reason') is distinct from 'not_reachable' then
     v_fail := array_append(v_fail, 'an employee reached an HR-only door');
   end if;

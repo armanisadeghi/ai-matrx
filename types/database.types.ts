@@ -74404,6 +74404,7 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: Json
       }
+      hr_review_template_get: { Args: { p_template_id: string }; Returns: Json }
       hr_review_template_list: {
         Args: { p_organization_id: string }
         Returns: Json

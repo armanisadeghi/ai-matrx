@@ -129,6 +129,10 @@ begin
                    and n.event_key = 'hr.performance.peer_feedback_requested' and n.deep_link like '%/hr/performance/reviews/' || v_rev::text || '%') then
     v_fail := array_append(v_fail, 'peers: no notice with the review deep link reached the peer: ' || coalesce(v_j #>> '{decided,0,notice}', 'null'));
   end if;
+  if (select config ->> 'deep_link_template' from communication.notification_event_type
+       where event_key = 'hr.performance.peer_feedback_requested' and deleted_at is null) not like '/hr/performance/reviews/{{review.id}}%' then
+    v_fail := array_append(v_fail, 'peers: the event''s link template does not open the standard review');
+  end if;
   select jsonb_build_object('state', i.state, 'digest', i.target_digest, 'version', i.version) into v_inst_before
     from hr.workflow_instance i join hr.review r on r.workflow_instance_id = i.id where r.id = v_rev;
   select status into v_status from hr.review where id = v_rev;
