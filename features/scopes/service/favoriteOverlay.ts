@@ -13,7 +13,6 @@
 // render unset. A failed star WRITE is a refusal in words, thrown as an Error.
 
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
 
 /** Entity tokens whose stars live in user_entity_state. */
@@ -29,7 +28,7 @@ export async function readFavoriteIds(
 ): Promise<Set<string> | null> {
   if (ids.length === 0) return new Set();
   const result = await favoritesService.getBulk(entityType, [...ids]);
-  if (isScopesRpcErr(result)) {
+  if (!result.ok) {
     console.error(
       `[favorites] ${entityType} favorites bulk read failed — rendering stars unset`,
       result.error,
@@ -72,7 +71,7 @@ export async function writeFavorite(
     entityId,
     isFavorite,
   );
-  if (isScopesRpcErr(result)) {
+  if (!result.ok) {
     const w = describeWriteFailure(result.error, {
       action: isFavorite
         ? `add this ${entityType} to your favorites`

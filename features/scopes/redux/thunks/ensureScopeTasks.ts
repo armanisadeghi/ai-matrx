@@ -7,9 +7,10 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { TaskBucketLevel } from "@/features/scopes/types";
+import type {
+  TaskBucketLevel,
+} from "@/features/scopes/types";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
@@ -42,7 +43,7 @@ export function ensureScopeTasks(
     const promise = (async () => {
       try {
         const res = await scopesService.listScopeTasks(level, id);
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           dispatch(
             scopesActions.tasksFetchRejected({ key, error: res.error.message }),
           );

@@ -1,41 +1,19 @@
 // features/scopes/redux/selectors/resolved-context.ts
 //
-// THE local-vs-global resolution algorithm, in pure-selector form.
-//
-// Inputs (all from Redux — no async, no thunk):
-//   - appContext: active org, scope selections, project, task
-//   - scopesTree: organization → scope_type → scope structure
-//   - contextValues: per-scope context-item values (must be pre-fetched
-//     by the caller before reading the bundle).
-//
-// Output (ResolvedContext):
-//   - values: keyed by context_item_id (NOT by key — keys can collide
-//     across scope types and the caller is the one responsible for
-//     deciding what to label things)
-//   - sourcePerKey: which contributing scope/project/task won each
-//   - contradictions: same scope_type_id with different global vs local ids
-//   - activeScopes: ordered list of contributing scopes (priority asc)
-//
-// Resolution rule (see features/scopes/FEATURE.md §"Resolution"):
-//   For each scope_type contributing values:
-//     - local wins on a per-type collision (warning is surfaced, never blocks)
-//     - if no local entry for that type, global wins
-//     - higher specificity (task > project > scope_type chain depth) wins
-//       within a single origin.
-//
-// IMPORTANT: this selector does NOT touch contextValuesSlice's drafts —
-// drafts are UI-only and never resolve into the agent payload.
+// The resolved context of the active selection (+ an entity's own scope tags), as a thin selector
+// over `resolveScopeContext` from `@ai-matrx/records/scopes` (the rule lives there, with its tests):
+// closer sources win each field, local before global; a same-type global/local mismatch is named,
+// never blocking. Values must already be read (`ensureContextValues`); this never fetches.
 
 import { createSelector } from "@reduxjs/toolkit";
+import {
+  resolveScopeContext,
+  type ContextField,
+  type ContextValue,
+  type ResolvedScopeContext,
+  type Scope,
+} from "@ai-matrx/records/scopes";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type {
-  ContextItemValue,
-  ContextSource,
-  ResolvedContext,
-  ResolvedValue,
-  ScopeContradiction,
-  ScopeNode,
-} from "@/features/scopes/types";
 import {
   selectActiveOrganizationId,
   selectActiveProjectId,
@@ -43,7 +21,20 @@ import {
   selectActiveTaskId,
 } from "./active-context";
 
-const emptyContext: ResolvedContext = {
+export interface ResolvedContext extends ResolvedScopeContext {
+  organizationId: string | null;
+  userId: string;
+}
+
+interface ResolveArgs {
+  /** Scope ids the entity is tagged with locally. Empty = pure global. */
+  localScopeIds?: string[];
+  localProjectId?: string | null;
+  localTaskId?: string | null;
+  userId: string;
+}
+
+export const emptyContext: ResolvedContext = {
   values: {},
   sourcePerKey: {},
   contradictions: [],
@@ -52,243 +43,60 @@ const emptyContext: ResolvedContext = {
   userId: "",
 };
 
-interface ResolveArgs {
-  /** Scope ids the entity is tagged with locally. Empty = pure global. */
-  localScopeIds?: string[];
-  /** Optional project id local to the entity (note's project, etc.). */
-  localProjectId?: string | null;
-  /** Optional task id local to the entity. */
-  localTaskId?: string | null;
-  /** Required for the userId field on the bundle. */
-  userId: string;
-}
-
 const selectScopeIndex = createSelector(
   (state: RootState) => state.scopesTree.organizations,
-  (orgs): Map<string, ScopeNode> => {
-    const map = new Map<string, ScopeNode>();
-    for (const orgId of Object.keys(orgs)) {
-      for (const type of orgs[orgId].scope_types) {
-        for (const scope of type.scopes) {
-          map.set(scope.id, scope);
-        }
-      }
+  (orgs): Map<string, Scope> => {
+    const map = new Map<string, Scope>();
+    for (const org of Object.values(orgs)) {
+      for (const type of org.scope_types) for (const scope of type.scopes) map.set(scope.id, scope);
     }
     return map;
   },
 );
 
-/**
- * Produce a ResolvedContext given local scope tags + the user id.
- *
- * Caller must ensure contextValues for every contributing scope are already
- * fetched. This selector does not trigger fetches — that's the job of
- * `ensureResolvedContext` (a thunk that walks the active scopes + local
- * scopes and dispatches ensureContextValues for each, then resolves).
- */
+const selectFieldIndex = createSelector(
+  (state: RootState) => state.scopesTree.contextItemsByTypeId,
+  (catalogs): Map<string, ContextField> => {
+    const map = new Map<string, ContextField>();
+    for (const entry of Object.values(catalogs)) for (const f of entry.items) map.set(f.id, f);
+    return map;
+  },
+);
+
+const selectReadyValues = createSelector(
+  (state: RootState) => state.contextValues.byScope,
+  (byScope): Record<string, Record<string, ContextValue>> => {
+    const out: Record<string, Record<string, ContextValue>> = {};
+    for (const [scopeId, entry] of Object.entries(byScope)) if (entry.status === "ready") out[scopeId] = entry.values;
+    return out;
+  },
+);
+
+/** Produce a ResolvedContext for the active selection plus an entity's local tags. */
 export function makeSelectResolvedContext() {
   return createSelector(
     selectScopeIndex,
+    selectFieldIndex,
     selectActiveOrganizationId,
     selectActiveScopeSelections,
     selectActiveProjectId,
     selectActiveTaskId,
-    (state: RootState) => state.contextValues.byScope,
+    selectReadyValues,
     (_: RootState, args: ResolveArgs) => args,
-    (
-      scopeIndex,
-      activeOrgId,
-      activeScopeSelections,
-      activeProjectId,
-      activeTaskId,
-      contextValuesByScope,
-      args,
-    ): ResolvedContext => {
-      const localScopeIds = args.localScopeIds ?? [];
-      const userId = args.userId;
-
-      // ─── Build active-scope list (priority asc = closer first) ──────
-      //
-      // Order (asc priority, lowest number wins on ties):
-      //   1000 — local task
-      //   1100 — local project
-      //   1200 — local scopes (in insertion order)
-      //   2000 — global task
-      //   2100 — global project
-      //   2200 — global scopes (in insertion order)
-
-      const sources: ContextSource[] = [];
-
-      if (args.localTaskId) {
-        sources.push({
-          kind: "task",
-          id: args.localTaskId,
-          origin: "local",
-          priority: 1000,
-        });
-      }
-      if (args.localProjectId) {
-        sources.push({
-          kind: "project",
-          id: args.localProjectId,
-          origin: "local",
-          priority: 1100,
-        });
-      }
-      let localPri = 1200;
-      const localScopeTypeIds = new Set<string>();
-      for (const sid of localScopeIds) {
-        const scope = scopeIndex.get(sid);
-        if (!scope) continue;
-        localScopeTypeIds.add(scope.scope_type_id);
-        sources.push({
-          kind: "scope",
-          id: sid,
-          origin: "local",
-          priority: localPri++,
-        });
-      }
-
-      if (activeTaskId) {
-        sources.push({
-          kind: "task",
-          id: activeTaskId,
-          origin: "global",
-          priority: 2000,
-        });
-      }
-      if (activeProjectId) {
-        sources.push({
-          kind: "project",
-          id: activeProjectId,
-          origin: "global",
-          priority: 2100,
-        });
-      }
-      let globalPri = 2200;
-      const contradictions: ScopeContradiction[] = [];
-      // scope_selections is keyed by SCOPE id (multi-scope, 2026-06-12) with
-      // legacy type-keyed entries tolerated — resolve each scope's type from
-      // the tree; never interpret the map key as a scope_type_id.
-      for (const scopeId of Object.values(activeScopeSelections)) {
-        if (!scopeId) continue;
-        const scopeTypeId = scopeIndex.get(scopeId)?.scope_type_id ?? null;
-        // ─── Contradiction check ─────────────────────────────────
-        // A contradiction is: SAME scope_type_id selected globally AND
-        // present locally, but with a DIFFERENT scope_id. Same id is
-        // not a contradiction, it's redundancy. (Multi-scope: a type can
-        // legitimately have several active scopes — only a global-vs-local
-        // mismatch on the same type is flagged, and it stays informational.)
-        if (scopeTypeId && localScopeTypeIds.has(scopeTypeId)) {
-          const localId = localScopeIds.find((sid) => {
-            const s = scopeIndex.get(sid);
-            return s?.scope_type_id === scopeTypeId;
-          });
-          if (localId && localId !== scopeId) {
-            contradictions.push({
-              scope_type_id: scopeTypeId,
-              global_scope_id: scopeId,
-              local_scope_id: localId,
-            });
-          }
-        }
-        sources.push({
-          kind: "scope",
-          id: scopeId,
-          origin: "global",
-          priority: globalPri++,
-        });
-      }
-
-      // ─── Walk sources, fill values by context_item_id ───────────────
-      //
-      // Lower priority wins (insertion order asc). The first source to
-      // contribute a value for a context_item_id "owns" it.
-
-      const values: Record<string, ResolvedValue> = {};
-      const sourcePerKey: Record<string, ContextSource> = {};
-
-      const sorted = sources.slice().sort((a, b) => a.priority - b.priority);
-
-      for (const source of sorted) {
-        if (source.kind !== "scope") continue;
-        const entry = contextValuesByScope[source.id];
-        if (!entry || entry.status !== "ready") continue;
-        for (const itemId of Object.keys(entry.values)) {
-          if (values[itemId]) continue; // higher-priority source already won
-          const v = entry.values[itemId];
-          const resolved = toResolvedValue(itemId, v);
-          if (resolved) {
-            values[itemId] = resolved;
-            sourcePerKey[itemId] = source;
-          }
-        }
-      }
-
-      return {
-        values,
-        sourcePerKey,
-        contradictions,
-        activeScopes: sorted,
-        organizationId: activeOrgId,
-        userId,
-      };
-    },
+    (scopeIndex, fieldIndex, activeOrgId, selections, projectId, taskId, valuesByScope, args): ResolvedContext => ({
+      ...resolveScopeContext({
+        scopeById: (id) => scopeIndex.get(id),
+        fieldById: (id) => fieldIndex.get(id),
+        local: { taskId: args.localTaskId, projectId: args.localProjectId, scopeIds: args.localScopeIds ?? [] },
+        global: {
+          taskId,
+          projectId,
+          scopeIds: Object.values(selections).filter((id): id is string => !!id),
+        },
+        valuesByScope,
+      }),
+      organizationId: activeOrgId,
+      userId: args.userId,
+    }),
   );
 }
-
-function toResolvedValue(
-  contextItemId: string,
-  v: ContextItemValue,
-): ResolvedValue | null {
-  // The shape we hand back is intentionally untyped on the actual value —
-  // callers expecting a specific value type look at `value_type` and the
-  // matching property. Labels mirror the DB `context_value_type` enum.
-  // Drafts are never folded in here.
-  let value: string | number | boolean | ReturnType<typeof JSON.parse> | null =
-    null;
-  let value_type: ResolvedValue["value_type"] = "string";
-
-  if (v.value_text !== null) {
-    value = v.value_text;
-    value_type = "string";
-  } else if (v.value_number !== null) {
-    value = v.value_number;
-    value_type = "number";
-  } else if (v.value_boolean !== null) {
-    value = v.value_boolean;
-    value_type = "boolean";
-  } else if (v.value_date !== null) {
-    value = v.value_date;
-    value_type = "date";
-  } else if (v.value_json !== null) {
-    value = v.value_json as ReturnType<typeof JSON.parse>;
-    value_type = Array.isArray(v.value_json) ? "array" : "object";
-  } else if (v.value_document_url !== null) {
-    value = v.value_document_url;
-    value_type = "document";
-  } else if (v.value_reference_id !== null) {
-    value = v.value_reference_id;
-    value_type = "reference";
-  } else {
-    return null;
-  }
-
-  return {
-    context_item_id: contextItemId,
-    // key + display_name are NOT on ContextItemValue — they live on the
-    // ContextItemRow. Callers needing labels should join against the item
-    // catalog (loaded separately via listContextItems). Until the catalog
-    // arrives, we leave these blank so the consumer doesn't get fed a lie.
-    key: "",
-    display_name: "",
-    value_type,
-    value,
-    document_url: v.value_document_url,
-    reference_id: v.value_reference_id,
-    reference_type: v.value_reference_type,
-    version: v.version,
-  };
-}
-
-export { emptyContext };

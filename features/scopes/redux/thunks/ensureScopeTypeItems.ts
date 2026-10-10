@@ -1,101 +1,89 @@
 // features/scopes/redux/thunks/ensureScopeTypeItems.ts
 //
-// Per-scope-type context-item CATALOG fetch (the item definitions, not
-// per-scope values — those are `ensureContextValues`). Lazy: only when a
-// consumer asks (the quick-assign target picker, etc.). No-refetch unless
-// `refresh: true`. Stored sorted by sort_order then display_name, matching
-// how item catalogs render everywhere.
+// A scope type's context fields into the holder's catalog, through `scopeDoors().fields`. The
+// System Context items ride the same catalog under `SYSTEM_ITEMS_KEY` (read through
+// `scopeDoors().systemItems`), shown as fields of that pseudo-type.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import type { RecordsResult } from "@ai-matrx/records";
+import type { ContextField, ContextFieldKind, ContextSensitivity, SystemContextItem } from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ContextItemRow, ScopesRpcResult } from "@/features/scopes/types";
 import { SYSTEM_ITEMS_KEY } from "@/features/scopes/constants/contextItems";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
+/** Status bookkeeping only: one read per type while it is loading. */
 const inFlight = new Map<string, Promise<void>>();
 
-export function ensureScopeTypeItems(
-  scopeTypeId: string,
-  opts: { refresh?: boolean } = {},
-): AppThunk<Promise<void>> {
+export function ensureScopeTypeItems(scopeTypeId: string, opts: { refresh?: boolean } = {}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const { refresh = false } = opts;
     const entry = getState().scopesTree.contextItemsByTypeId[scopeTypeId];
-
-    if (!refresh) {
+    if (!opts.refresh) {
       if (entry?.status === "ready") return;
-      if (entry?.status === "loading") {
-        const p = inFlight.get(scopeTypeId);
-        if (p) return p;
-      }
+      const p = entry?.status === "loading" ? inFlight.get(scopeTypeId) : undefined;
+      if (p) return p;
     }
-
     dispatch(scopesActions.contextItemsFetchPending({ scopeTypeId }));
-
     const promise = (async () => {
       try {
-        const res =
-          scopeTypeId === SYSTEM_ITEMS_KEY
-            ? await listSystemItemsAsCatalog()
-            : await scopesService.listContextItems(scopeTypeId);
-        if (isScopesRpcErr(res)) {
-          dispatch(
-            scopesActions.contextItemsFetchRejected({
-              scopeTypeId,
-              error: res.error.message,
-            }),
-          );
-        } else {
-          const items = [...res.data.items].sort(
-            (a, b) =>
-              (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
-              a.display_name.localeCompare(b.display_name),
-          );
-          dispatch(
-            scopesActions.contextItemsFetchFulfilled({ scopeTypeId, items }),
-          );
+        const res = scopeTypeId === SYSTEM_ITEMS_KEY ? await systemItemsAsFields() : await scopeDoors().fields([scopeTypeId]);
+        if (!res.ok) {
+          dispatch(scopesActions.contextItemsFetchRejected({ scopeTypeId, error: res.error.message }));
+          return;
         }
+        const items = [...res.data].sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label));
+        dispatch(scopesActions.contextItemsFetchFulfilled({ scopeTypeId, items }));
       } finally {
         inFlight.delete(scopeTypeId);
       }
     })();
-
     inFlight.set(scopeTypeId, promise);
     return promise;
   };
 }
 
-/**
- * The System Context catalog (`SYSTEM_ITEMS_KEY`) in the catalog row shape:
- * global public facts with no scope type, each stamped with the sentinel and
- * its `system_item_class`. Same loader, same cache, same selectors.
- */
-async function listSystemItemsAsCatalog(): Promise<
-  ScopesRpcResult<{ items: ContextItemRow[] }>
-> {
-  const res = await scopesService.listSystemContextItems();
-  if (isScopesRpcErr(res)) return res;
-  const items = res.data.items.map(
-    (r) =>
-      ({
-        id: r.id,
-        scope_type_id: SYSTEM_ITEMS_KEY,
-        key: r.key,
-        display_name: r.display_name,
-        description: r.description ?? "",
-        category: null,
-        value_type: r.value_type,
-        fetch_hint: "always",
-        sensitivity: r.sensitivity,
-        status: "active",
-        tags: [],
-        sort_order: r.sort_order ?? 0,
-        system_item_class: r.item_class,
-      }) as unknown as ContextItemRow,
-  );
-  return { ok: true, data: { items } };
+const str = (v: unknown, d = ""): string => (typeof v === "string" ? v : d);
+
+/** A System Context item shown as a field of the `SYSTEM_ITEMS_KEY` pseudo-type. */
+function systemItemAsField(r: SystemContextItem, index: number): ContextField {
+  return {
+    id: str(r.id),
+    scope_type_id: SYSTEM_ITEMS_KEY,
+    organization_id: "",
+    key: str(r.key),
+    label: str(r.display_name, str(r.key)),
+    description: str(r.description),
+    kind: str(r.value_type, "string") as ContextFieldKind,
+    type: "system",
+    multi: false,
+    format: null,
+    config: { item_class: r.item_class ?? null },
+    relation_target: null,
+    sort: typeof r.sort_order === "number" ? r.sort_order : index,
+    context_policy: "include",
+    sensitivity: str(r.sensitivity, "public") as ContextSensitivity,
+    source: "system",
+    status: "active",
+    status_note: null,
+    category: null,
+    tags: [],
+    max_items: 0,
+    custom_component: null,
+    reference_source: null,
+    allowed_scope_type_ids: null,
+    allowed_reference_types: null,
+    review_interval_days: null,
+    depends_on: [],
+    version: 0,
+    created_by: null,
+    created_at: "",
+    updated_at: "",
+  };
+}
+
+async function systemItemsAsFields(): Promise<RecordsResult<ContextField[]>> {
+  const res = await scopeDoors().systemItems();
+  return res.ok ? { ok: true, data: res.data.map(systemItemAsField) } : res;
 }

@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { oldTypeSlug, type StoreScopeRow } from "@/features/scopes/service/storeScopeAdapter";
+import { serverScopeDoors } from "@/features/scopes/service/scopeDoors.server";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
@@ -50,14 +49,12 @@ export default async function ScopeShortLink({
   }
   if (!user) redirect(`/login?next=/scopes/s/${scopeId}`);
 
-  // The scope, read from the record store where it lives (lane SCOPES-READS-WEB): the store's
-  // `custom.context_scopes` door finds its organization from the object itself and decides on the
-  // one ladder — a scope this person may not open is absent, which is a 404 here, as before.
-  const { data: rows, error } = await (supabase as unknown as SupabaseClient)
-    .schema("custom")
-    .rpc("context_scopes", { p_scope_ids: [scopeId] });
-  if (error) throw error;
-  const data = (Array.isArray(rows) ? (rows as StoreScopeRow[]) : [])[0];
+  // The scope, through the store's scope doors (`@ai-matrx/records/scopes`): the door finds its
+  // organization from the object itself and decides on the one ladder — a scope this person may not
+  // open is absent, which is a 404 here.
+  const read = await (await serverScopeDoors()).scopes([scopeId]);
+  if (!read.ok) throw new Error(read.error.message);
+  const data = read.data[0];
   if (!data) notFound();
 
   // Land on the CANONICAL address, not an id one. A short link that redirected
@@ -74,7 +71,8 @@ export default async function ScopeShortLink({
     .select("id, slug")
     .eq("id", data.organization_id)
     .maybeSingle();
-  const typeSlug = oldTypeSlug(data.scope_type?.slug ?? null);
+  // Route builders print a type slug with hyphens (`practice-areas`); the routes resolve it with `sameSlug`.
+  const typeSlug = data.scope_type?.slug ? data.scope_type.slug.replace(/_/g, "-") : null;
   const scopeType = typeSlug ? { id: data.scope_type_id, slug: typeSlug } : { id: data.scope_type_id };
 
   redirect(

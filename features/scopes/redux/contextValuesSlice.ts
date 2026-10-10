@@ -12,10 +12,8 @@
 //   where ScopeValuesEntry = { status, fetchedAt, values, drafts, error }
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-  ContextItemValue,
-  ScopeValuesEntry,
-} from "@/features/scopes/types";
+import type { ContextValue } from "@ai-matrx/records/scopes";
+import type { ScopeValuesEntry } from "@/features/scopes/types";
 
 export interface ContextValuesState {
   byScope: Record<string, ScopeValuesEntry>;
@@ -43,7 +41,6 @@ function ensureEntry(
       status: "idle",
       fetchedAt: null,
       values: {},
-      drafts: {},
       error: null,
     };
   }
@@ -64,7 +61,7 @@ const contextValuesSlice = createSlice({
       state,
       action: PayloadAction<{
         scopeId: string;
-        values: ContextItemValue[];
+        values: ContextValue[];
       }>,
     ) {
       const entry = ensureEntry(state, action.payload.scopeId);
@@ -72,12 +69,9 @@ const contextValuesSlice = createSlice({
       entry.fetchedAt = Date.now();
       entry.values = {};
       for (const v of action.payload.values) {
-        entry.values[v.context_item_id] = v;
+        entry.values[v.field_id] = v;
       }
       // Drop drafts that match the new persisted value.
-      for (const key of Object.keys(entry.drafts)) {
-        if (entry.values[key]) delete entry.drafts[key];
-      }
     },
     valuesFetchRejected(
       state,
@@ -91,11 +85,10 @@ const contextValuesSlice = createSlice({
     // ─── Persisted value patches ────────────────────────────────
     valueUpserted(
       state,
-      action: PayloadAction<{ scopeId: string; value: ContextItemValue }>,
+      action: PayloadAction<{ scopeId: string; value: ContextValue }>,
     ) {
       const entry = ensureEntry(state, action.payload.scopeId);
-      entry.values[action.payload.value.context_item_id] = action.payload.value;
-      delete entry.drafts[action.payload.value.context_item_id];
+      entry.values[action.payload.value.field_id] = action.payload.value;
     },
     valueRemoved(
       state,
@@ -104,7 +97,6 @@ const contextValuesSlice = createSlice({
       const entry = state.byScope[action.payload.scopeId];
       if (!entry) return;
       delete entry.values[action.payload.contextItemId];
-      delete entry.drafts[action.payload.contextItemId];
     },
 
     // ─── Cell write lifecycle (the scope-context view's save state) ─
@@ -140,34 +132,6 @@ const contextValuesSlice = createSlice({
       ensureEntry(state, action.payload.scopeId).scopeTypeId =
         action.payload.scopeTypeId;
     },
-
-    // ─── Drafts (unsaved edits) ─────────────────────────────────
-    draftSet(
-      state,
-      action: PayloadAction<{
-        scopeId: string;
-        contextItemId: string;
-        draft: Partial<ContextItemValue>;
-      }>,
-    ) {
-      const entry = ensureEntry(state, action.payload.scopeId);
-      entry.drafts[action.payload.contextItemId] = action.payload.draft;
-    },
-    draftCleared(
-      state,
-      action: PayloadAction<{ scopeId: string; contextItemId: string }>,
-    ) {
-      const entry = state.byScope[action.payload.scopeId];
-      if (!entry) return;
-      delete entry.drafts[action.payload.contextItemId];
-    },
-    draftsClearedForScope(state, action: PayloadAction<{ scopeId: string }>) {
-      const entry = state.byScope[action.payload.scopeId];
-      if (!entry) return;
-      entry.drafts = {};
-    },
-
-    // ─── Reset ───────────────────────────────────────────────────
     contextValuesReset: () => initialState,
   },
 });

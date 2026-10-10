@@ -22,7 +22,8 @@ import type {
   AssociationsDataSource,
   ErrorSink,
 } from "@ai-matrx/associations";
-import type { ScopesRpcResult, UserEntityState } from "@/features/scopes/types";
+import type { AssociationsRpcResult } from "@ai-matrx/associations";
+import type { UserEntityState } from "@/features/scopes/types";
 
 /** The supabase client (either singleton) — @ai-matrx/associations reaches it through data's doors. */
 export type UesGetBulkClient = AssociationsDataSource;
@@ -42,7 +43,7 @@ export async function uesGetBulk(
   client: UesGetBulkClient,
   entityType: string,
   entityIds: string[],
-): Promise<ScopesRpcResult<{ items: UserEntityState[] }>> {
+): Promise<AssociationsRpcResult<{ items: UserEntityState[] }>> {
   const favorites = createFavoritesService({
     dataSource: client,
     // Vacuous by design — see the header. The RPC's auth.uid() is the gate.

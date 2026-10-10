@@ -1,73 +1,45 @@
 // features/scopes/redux/thunks/setContextValue.ts
 //
-// Value WRITE for one scope cell, through the ONE sanctioned mutation path:
-// `scopeStore.setContextValue` → the store's value door
-// `custom.context_value_write`. On success the written cell is folded back into the contextValues
-// sidecar (`valueUpserted`) so every reader reflects it without a refetch.
-//
-// Never throws — returns the service's ScopesRpcResult envelope; callers
-// branch with `isScopesRpcErr` and surface errors through their own
-// toast/error path.
+// THE value write: a `ContextValueWrite` through `scopeDoors().writeValue`. A cell that was read only
+// in part (a long text kept as a file) is never saved back over the whole (`incompleteSaveRefusal`).
+// On success the holder's cell takes the written value and the store's version.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
+import type { RecordsResult } from "@ai-matrx/records";
+import {
+  incompleteSaveRefusal,
+  type ContextValue,
+  type ContextValueWrite,
+  type ContextValueWritten,
+} from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type {
-  ContextItemValue,
-  ScopesRpcResult,
-  SetContextValuePayload,
-  SetContextValueResult,
-} from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { incompleteSaveRefusal } from "@/features/scopes/utils/incompleteValue";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
-export function setContextValue(
-  payload: SetContextValuePayload,
-): AppThunk<Promise<ScopesRpcResult<SetContextValueResult>>> {
+export function setContextValue(write: ContextValueWrite): AppThunk<Promise<RecordsResult<ContextValueWritten>>> {
   return async (dispatch, getState) => {
-    // A cell that holds only the start of a value kept as a file (the file could not be read or
-    // checked) is never written back as if it were the value: every editor seeds its draft from
-    // that text, so saving it — or an edit of its first words — would cut the real value
-    // (lane 9, D1 follow-up; utils/incompleteValue.ts).
-    const current = getState()?.contextValues?.byScope?.[payload.scope_id]?.values?.[payload.context_item_id];
-    const refusal = incompleteSaveRefusal(current, payload.value_text);
+    const current = getState()?.contextValues?.byScope?.[write.scope_id]?.values?.[write.field_id];
+    const refusal = incompleteSaveRefusal(current, write.value);
     if (refusal) return { ok: false, error: { code: "invalid_argument", message: refusal } };
-    const res = await scopeStore.setContextValue(payload);
-    if (!isScopesRpcErr(res)) {
-      // Echo the persisted write into the sidecar. The RPC result carries the
-      // authoritative id/version/value_text/source_type; the remaining cell
-      // fields come from what we just sent (a new version REPLACES the cell,
-      // so unsent value columns are null on the new current row).
-      const value: ContextItemValue = {
-        id: res.data.id,
-        context_item_id: res.data.context_item_id,
+    const res = await scopeDoors().writeValue(write);
+    if (res.ok) {
+      const value: ContextValue = {
+        scope_id: write.scope_id,
+        field_id: write.field_id,
+        key: current?.key ?? "",
+        kind: write.kind,
+        value: write.references ? write.references.map((r) => r.id) : (write.value ?? null),
+        references: write.references ?? [],
         version: res.data.version,
-        is_current: true,
-        value_text: res.data.value_text,
-        value_number: payload.value_number ?? null,
-        value_boolean: payload.value_boolean ?? null,
-        value_date: res.data.value_date ?? payload.value_date ?? null,
-        value_timestamp:
-          res.data.value_timestamp ?? payload.value_timestamp ?? null,
-        value_time: res.data.value_time ?? payload.value_time ?? null,
-        value_json: payload.value_json ?? null,
-        value_document_url: payload.value_document_url ?? null,
-        value_document_size_bytes: null,
-        value_reference_id: payload.value_reference_id ?? null,
-        value_reference_type: null,
+        set_at: new Date().toISOString(),
         source_type: res.data.source_type,
         authored_by: null,
-        created_at: new Date().toISOString(),
+        whole_value: null,
+        incomplete: null,
       };
-      dispatch(
-        contextValuesActions.valueUpserted({
-          scopeId: res.data.scope_id,
-          value,
-        }),
-      );
+      dispatch(contextValuesActions.valueUpserted({ scopeId: write.scope_id, value }));
     }
     return res;
   };

@@ -15,7 +15,6 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { forgetSharedScopeBootRead, scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { getUserId } from "@/utils/auth/getUserId";
 import type { RootState } from "@/lib/redux/rootReducer";
 
@@ -71,7 +70,7 @@ export function ensureAdminOrganizationTree(
       try {
         const res =
           await scopesService.getOrganizationTreeForAdmin(organizationId);
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           return { status: "error", message: res.error.message };
         }
         if (!res.data.organization) return { status: "not_found" };
@@ -120,7 +119,7 @@ export function ensureScopeTree(
     const promise = (async () => {
       try {
         const res = await scopesService.getScopeTree();
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           dispatch(scopesActions.treeFetchRejected(res.error.message));
         } else {
           dispatch(scopesActions.treeFetchFulfilled(res.data));

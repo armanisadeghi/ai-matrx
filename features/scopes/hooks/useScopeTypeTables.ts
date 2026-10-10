@@ -8,16 +8,15 @@
 
 "use client";
 
+import type { ContextField, ContextValue } from "@ai-matrx/records/scopes";
 import { useEffect, useRef, useState } from "react";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ContextItemRow, ContextItemValue } from "@/features/scopes/types";
 
 export interface UseScopeTypeTablesReturn {
-  /** Active items per scope type, sorted by sort_order. */
-  itemsByType: Record<string, ContextItemRow[]>;
-  /** Current cell per scope, keyed scopeId → context_item_id. */
-  valuesByScope: Record<string, Record<string, ContextItemValue>>;
+  /** Active items per scope type, sorted by sort. */
+  itemsByType: Record<string, ContextField[]>;
+  /** Current cell per scope, keyed scopeId → field id. */
+  valuesByScope: Record<string, Record<string, ContextValue>>;
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
 }
@@ -27,10 +26,10 @@ export function useScopeTypeTables(
   scopeIds: string[],
 ): UseScopeTypeTablesReturn {
   const [itemsByType, setItemsByType] = useState<
-    Record<string, ContextItemRow[]>
+    Record<string, ContextField[]>
   >({});
   const [valuesByScope, setValuesByScope] = useState<
-    Record<string, Record<string, ContextItemValue>>
+    Record<string, Record<string, ContextValue>>
   >({});
   const [status, setStatus] = useState<UseScopeTypeTablesReturn["status"]>(
     "idle",
@@ -67,10 +66,10 @@ export function useScopeTypeTables(
       ]);
       if (cancelled) return;
 
-      if (isScopesRpcErr(itemsRes) || isScopesRpcErr(valuesRes)) {
-        const message = isScopesRpcErr(itemsRes)
+      if (!itemsRes.ok || !valuesRes.ok) {
+        const message = !itemsRes.ok
           ? itemsRes.error.message
-          : isScopesRpcErr(valuesRes)
+          : !valuesRes.ok
             ? valuesRes.error.message
             : "Unknown error";
         // Loud recovery: a silent empty table looks like "no context items
@@ -84,17 +83,17 @@ export function useScopeTypeTables(
         return;
       }
 
-      const byType: Record<string, ContextItemRow[]> = {};
+      const byType: Record<string, ContextField[]> = {};
       for (const item of itemsRes.data.items) {
         (byType[item.scope_type_id] ??= []).push(item);
       }
       for (const list of Object.values(byType)) {
-        list.sort((a, b) => a.sort_order - b.sort_order);
+        list.sort((a, b) => a.sort - b.sort);
       }
 
-      const byScope: Record<string, Record<string, ContextItemValue>> = {};
+      const byScope: Record<string, Record<string, ContextValue>> = {};
       for (const value of valuesRes.data.values) {
-        (byScope[value.scope_id] ??= {})[value.context_item_id] = value;
+        (byScope[value.scope_id] ??= {})[value.field_id] = value;
       }
 
       setItemsByType(byType);

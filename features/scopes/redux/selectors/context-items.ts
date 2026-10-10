@@ -5,9 +5,12 @@
 // definitions only — per-scope cell values live in ./context-values.ts.
 // Consumers pass the scopeTypeId.
 
+import type { ContextField } from "@ai-matrx/records/scopes";
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { ContextItemRow, ContextItemsEntry } from "@/features/scopes/types";
+import type {
+  ContextItemsEntry,
+} from "@/features/scopes/types";
 
 const emptyEntry: ContextItemsEntry = {
   status: "idle",
@@ -22,7 +25,7 @@ export const makeSelectItemsForType = () =>
   createSelector(
     selectScopesSlice,
     (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
-    (slice, scopeTypeId): ContextItemRow[] =>
+    (slice, scopeTypeId): ContextField[] =>
       (scopeTypeId && slice.contextItemsByTypeId[scopeTypeId]?.items) ||
       emptyEntry.items,
   );

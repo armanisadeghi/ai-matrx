@@ -13,12 +13,8 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { forgetSharedScopeBootRead, scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import {
-  TYPE_SCOPES_PAGE,
-  readTypeScopesPage,
-  searchScopesInStore,
-} from "@/features/scopes/service/storeScopeReads";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { TYPE_SCOPES_PAGE } from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { getUserId } from "@/utils/auth/getUserId";
 import type { RootState } from "@/lib/redux/rootReducer";
 
@@ -40,7 +36,7 @@ export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<
     const promise = (async () => {
       try {
         const res = await scopesService.getScopeTree({ shape: "skeleton" });
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           dispatch(scopesActions.skeletonFetchRejected(res.error.message));
           return;
         }
@@ -85,8 +81,8 @@ export function ensureTypeScopes(
     dispatch(scopesActions.typeScopesPending({ scopeTypeId }));
     const promise = (async () => {
       try {
-        const res = await readTypeScopesPage(scopeTypeId, offset, TYPE_SCOPES_PAGE);
-        if (isScopesRpcErr(res)) {
+        const res = await scopeDoors().typeScopesPage(scopeTypeId, offset, TYPE_SCOPES_PAGE);
+        if (!res.ok) {
           dispatch(scopesActions.typeScopesRejected({ scopeTypeId, error: res.error.message }));
           return;
         }
@@ -98,7 +94,7 @@ export function ensureTypeScopes(
             offset,
             scopes: res.data.scopes,
             total: res.data.total,
-            nextOffset: res.data.nextOffset,
+            nextOffset: res.data.next_offset,
           }),
         );
       } finally {
@@ -130,8 +126,8 @@ export function searchScopes(query: string, limit = 100): AppThunk<Promise<void>
       try {
         const st = getState().scopesTree;
         const orgIds = st.treeStatus === "ready" ? st.organizationIds : st.skeletonOrganizationIds;
-        const res = await searchScopesInStore(orgIds, query, limit);
-        if (isScopesRpcErr(res)) {
+        const res = await scopeDoors().search(orgIds, query, limit);
+        if (!res.ok) {
           dispatch(scopesActions.scopeSearchRejected({ key, error: res.error.message }));
           return;
         }

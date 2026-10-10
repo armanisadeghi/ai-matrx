@@ -7,7 +7,6 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -35,7 +34,7 @@ export function ensureOrphanProjects(
     const promise = (async () => {
       try {
         const res = await scopesService.listOrphanProjects(organizationId);
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           dispatch(
             scopesActions.orphanProjectsFetchRejected({
               organizationId,

@@ -1,67 +1,53 @@
 // features/scopes/redux/thunks/contextItemMutations.ts
 //
-// Definition WRITES for context items (the catalog columns of a scope type)
-// through the sanctioned SECURITY DEFINER RPC family: `create_context_item`,
-// `update_context_item`, `delete_context_item` (org resolved from the row's
-// scope type and org-admin checked inside each function). On success the
-// authoritative row is folded into `scopesSlice.contextItemsByTypeId` via the
-// contextItem patch reducers — no refetch.
-//
-// Never throws — returns the service's ScopesRpcResult envelope; callers
-// branch with `isScopesRpcErr` (matching setContextValue.ts).
+// Context-field writes (a field is a column of the scope type's Table) through `scopeDoors()`; on
+// success the holder's catalog for that type takes the store's answer.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
+import type { RecordsResult } from "@ai-matrx/records";
+import type { ContextField, ContextFieldSpec } from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type {
-  ContextItemRow,
-  CreateContextItemParams,
-  ScopesRpcResult,
-  UpdateContextItemParams,
-} from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 export function createContextItem(
-  params: CreateContextItemParams,
-): AppThunk<Promise<ScopesRpcResult<ContextItemRow>>> {
+  params: { scope_type_id: string } & ContextFieldSpec,
+): AppThunk<Promise<RecordsResult<ContextField>>> {
   return async (dispatch) => {
-    const res = await scopeStore.createContextItem(params);
-    if (!isScopesRpcErr(res)) {
-      dispatch(scopesActions.contextItemUpserted(res.data));
-    }
+    const { scope_type_id, ...spec } = params;
+    const res = await scopeDoors().createField(scope_type_id, spec);
+    if (res.ok) dispatch(scopesActions.contextItemUpserted(res.data));
     return res;
   };
 }
 
 export function updateContextItem(
-  params: UpdateContextItemParams,
-): AppThunk<Promise<ScopesRpcResult<ContextItemRow>>> {
+  params: { item_id: string; scope_type_id: string } & ContextFieldSpec,
+): AppThunk<Promise<RecordsResult<ContextField>>> {
   return async (dispatch) => {
-    const res = await scopeStore.updateContextItem(params);
-    if (!isScopesRpcErr(res)) {
-      dispatch(scopesActions.contextItemUpserted(res.data));
+    const { item_id, scope_type_id, ...spec } = params;
+    const res = await scopeDoors().updateField(item_id, scope_type_id, spec);
+    if (res.ok) dispatch(scopesActions.contextItemUpserted(res.data));
+    return res;
+  };
+}
+
+/** Archive a context field (restorable). */
+export function deleteContextItem(params: {
+  item_id: string;
+  scope_type_id: string;
+}): AppThunk<Promise<RecordsResult<{ id: string }>>> {
+  return async (dispatch) => {
+    const res = await scopeDoors().archiveField(params.item_id);
+    if (res.ok) {
+      dispatch(scopesActions.contextItemRemoved({ scopeTypeId: params.scope_type_id, itemId: params.item_id }));
     }
     return res;
   };
 }
 
-export function deleteContextItem(params: {
-  item_id: string;
-  scope_type_id: string;
-}): AppThunk<Promise<ScopesRpcResult<{ id: string }>>> {
-  return async (dispatch) => {
-    const res = await scopeStore.deleteContextItem(params.item_id);
-    if (!isScopesRpcErr(res)) {
-      dispatch(
-        scopesActions.contextItemRemoved({
-          scopeTypeId: params.scope_type_id,
-          itemId: params.item_id,
-        }),
-      );
-    }
-    return res;
-  };
+export function restoreContextItem(itemId: string): AppThunk<Promise<RecordsResult<{ id: string }>>> {
+  return async () => scopeDoors().restoreField(itemId);
 }

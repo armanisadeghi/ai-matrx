@@ -936,6 +936,10 @@ if $STRICT; then
         # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
         "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
         "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
+        # THE SCOPES DATA LAYER IS THE PACKAGE — scope data only through scopeDoors()
+        # (@ai-matrx/records/scopes); no custom.context_* door string, no archived context.* reader.
+        "Scope data outside scopeDoors() / archived scope-table readers|pnpm check:scopes-data-layer"
+        "Scopes data layer guard self-test|pnpm check:scopes-data-layer:self-test"
         # COPIED STATE FOLLOWS A COPY THAT LANDED — copyText/copyImage/copyLink resolve a boolean; a copied
         # flag or success toast after a discarded result is a lie. Zero baseline.
         "Copied state set after a discarded copy result (copy-result-gated)|pnpm check:copy-result-gated"
@@ -1661,6 +1665,10 @@ else
         # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
         "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
         "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
+        # THE SCOPES DATA LAYER IS THE PACKAGE — scope data only through scopeDoors()
+        # (@ai-matrx/records/scopes); no custom.context_* door string, no archived context.* reader.
+        "Scope data outside scopeDoors() / archived scope-table readers|pnpm check:scopes-data-layer"
+        "Scopes data layer guard self-test|pnpm check:scopes-data-layer:self-test"
         # COPIED STATE FOLLOWS A COPY THAT LANDED — copyText/copyImage/copyLink resolve a boolean; a copied
         # flag or success toast after a discarded result is a lie. Zero baseline.
         "Copied state set after a discarded copy result (copy-result-gated)|pnpm check:copy-result-gated"

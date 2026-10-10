@@ -23,11 +23,10 @@
 "use client";
 
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
-import { readScopeTypes, readScopesById, readTypeScopesPage } from "@/features/scopes/service/storeScopeReads";
+import { sameSlug } from "@ai-matrx/records/scopes";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { organizationsIAmIn } from "@/features/organizations/organizationsIAmIn";
 import { personSentence } from "@/lib/errors/writeFailure";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import { keepSource } from "@/features/sources/api/sourcesApi";
 import type { Json } from "@/types/database.types";
@@ -86,13 +85,12 @@ export function edgeKitId(metadata: Json | undefined): string | null {
 }
 
 async function ensureKitScopeType(orgId: string): Promise<string> {
-  const types = await readScopeTypes([orgId], false);
+  const types = await scopeDoors().types([orgId]);
   if (!types.ok) throw new Error("Could not read your study kit settings. Try again.");
   // Only this organization's own type: a kit never attaches to another org's scope type.
-  const found = types.data.types.find((t) => t.slug === KIT_SCOPE_TYPE_SLUG && t.organization_id === orgId);
+  const found = types.data.types.find((t) => sameSlug(t.slug, KIT_SCOPE_TYPE_SLUG) && t.organization_id === orgId);
   if (found) return found.id;
-  const made = await scopeStore.createScopeType({
-    org_id: orgId,
+  const made = await scopeDoors().createType(orgId, {
     label_singular: KIT_SCOPE_TYPE_SEED.labelSingular,
     label_plural: KIT_SCOPE_TYPE_SEED.labelPlural,
     icon: KIT_SCOPE_TYPE_SEED.icon,
@@ -100,7 +98,7 @@ async function ensureKitScopeType(orgId: string): Promise<string> {
     description: KIT_SCOPE_TYPE_SEED.description,
     slug: KIT_SCOPE_TYPE_SLUG,
   });
-  if (isScopesRpcErr(made)) throw new Error("Could not set up study kits in this workspace. Try again.");
+  if (!made.ok) throw new Error("Could not set up study kits in this workspace. Try again.");
   return made.data.id;
 }
 
@@ -108,14 +106,12 @@ async function ensureKitScopeType(orgId: string): Promise<string> {
 export async function createKitScope(orgId: string, name: string): Promise<KitScopeRow> {
   const typeId = await ensureKitScopeType(orgId);
   const clean = name.trim() || "Study kit";
-  const made = await scopeStore.createScope({
-    org_id: orgId,
-    type_id: typeId,
+  const made = await scopeDoors().createScope(orgId, typeId, {
     name: clean,
     // Kit names repeat ("Chapter 3"); the slug only has to be unique.
     slug: `kit-${crypto.randomUUID().slice(0, 12)}`,
   });
-  if (isScopesRpcErr(made)) {
+  if (!made.ok) {
     // The door's own sentence when it gave one (a taken name, a refused grant), else the plain line.
     const reason = personSentence(made.error.message);
     throw new Error(reason ? `Could not create the study kit. ${reason}` : "Could not create the study kit. Try again.");
@@ -132,32 +128,32 @@ export async function listKitScopes(): Promise<KitScopeRow[]> {
   // it fall back to one organization at a time, where a refusal ("you are not a
   // member there") is that organization's kits not being hers, not a failure of
   // the rest.
-  const all = await readScopeTypes([...orgs], false);
+  const all = await scopeDoors().types([...orgs]);
   const perOrg =
-    all.ok || all.error.code !== "forbidden_org"
+    all.ok || all.error.code !== "door"
       ? [all]
-      : await Promise.all([...orgs].map((orgId) => readScopeTypes([orgId], false)));
+      : await Promise.all([...orgs].map((orgId) => scopeDoors().types([orgId])));
   const kitTypes = perOrg.flatMap((types) => {
-    if (types.ok) return types.data.types.filter((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
-    if (types.error.code === "forbidden_org") return [];
+    if (types.ok) return types.data.types.filter((t) => sameSlug(t.slug, KIT_SCOPE_TYPE_SLUG));
+    if (types.error.code === "door") return [];
     throw new Error("Could not read your study kits. Try again.");
   });
   const rows: KitScopeRow[] = [];
   for (const type of kitTypes) {
     for (let offset: number | null = 0; offset !== null; ) {
-      const page = await readTypeScopesPage(type.id, offset);
+      const page = await scopeDoors().typeScopesPage(type.id, offset);
       if (!page.ok) throw new Error("Could not read your study kits. Try again.");
       for (const s of page.data.scopes) {
         rows.push({ id: s.id, name: s.name?.trim() || "Study kit", organizationId: s.organization_id });
       }
-      offset = page.data.nextOffset;
+      offset = page.data.next_offset;
     }
   }
   return rows;
 }
 
 export async function readKitScope(kitId: string): Promise<KitScopeRow | null> {
-  const res = await readScopesById([kitId]);
+  const res = await scopeDoors().scopes([kitId]);
   if (!res.ok) throw new Error("Could not read this study kit.");
   const row = res.data.find((r) => r.id === kitId);
   if (!row) return null;
@@ -165,20 +161,20 @@ export async function readKitScope(kitId: string): Promise<KitScopeRow | null> {
 }
 
 export async function renameKitScope(kitId: string, name: string): Promise<void> {
-  const res = await scopeStore.updateScope({ scope_id: kitId, name });
-  if (isScopesRpcErr(res)) throw new Error("Could not rename this study kit.");
+  const res = await scopeDoors().updateScope(kitId, { name });
+  if (!res.ok) throw new Error("Could not rename this study kit.");
 }
 
 /** Archive the kit itself (restorable); its Sources and aids stay saved. */
 export async function archiveKitScope(kitId: string): Promise<void> {
-  const res = await scopeStore.deleteScope(kitId);
-  if (isScopesRpcErr(res)) throw new Error("Could not archive this study kit.");
+  const res = await scopeDoors().archiveScope(kitId);
+  if (!res.ok) throw new Error("Could not archive this study kit.");
 }
 
 /** Bring an archived kit back with all its Sources and aids. */
 export async function restoreKitScope(kitId: string): Promise<void> {
-  const res = await scopeStore.restoreScope(kitId);
-  if (isScopesRpcErr(res)) throw new Error("Could not put this study kit back.");
+  const res = await scopeDoors().restoreScope(kitId);
+  if (!res.ok) throw new Error("Could not put this study kit back.");
 }
 
 /**

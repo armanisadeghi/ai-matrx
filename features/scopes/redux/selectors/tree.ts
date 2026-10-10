@@ -3,6 +3,7 @@
 // Selectors over the canonical scope tree slice. Every selector is
 // memoized via createSelector. No derivation lives in a component.
 
+import type { Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type {
@@ -10,8 +11,6 @@ import type {
   OrgNode,
   OrphanBucket,
   ProjectNode,
-  ScopeNode,
-  ScopeTypeNode,
   TaskBucketEntry,
   TaskBucketLevel,
   TaskNode,
@@ -73,7 +72,7 @@ export const makeSelectOrganization = () =>
  */
 export const selectAllScopeTypesFlat = createSelector(
   selectOrganizationsList,
-  (orgs): ScopeTypeNode[] => orgs.flatMap((o) => o.scope_types),
+  (orgs): ScopeTypeWithScopes[] => orgs.flatMap((o) => o.scope_types),
 );
 
 /**
@@ -82,14 +81,14 @@ export const selectAllScopeTypesFlat = createSelector(
  */
 export const selectAllScopesFlat = createSelector(
   selectAllScopeTypesFlat,
-  (types): ScopeNode[] => types.flatMap((t) => t.scopes),
+  (types): Scope[] => types.flatMap((t) => t.scopes),
 );
 
 export const makeSelectScopeTypesForOrg = () =>
   createSelector(
     selectOrganizations,
     (_: RootState, orgId: string | null | undefined) => orgId,
-    (byId, orgId): ScopeTypeNode[] =>
+    (byId, orgId): ScopeTypeWithScopes[] =>
       (orgId && byId[orgId]?.scope_types) || empty,
   );
 
@@ -97,7 +96,7 @@ export const makeSelectScopeType = () =>
   createSelector(
     selectOrganizations,
     (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
-    (byId, scopeTypeId): ScopeTypeNode | null => {
+    (byId, scopeTypeId): ScopeTypeWithScopes | null => {
       if (!scopeTypeId) return null;
       for (const orgId of Object.keys(byId)) {
         const t = byId[orgId].scope_types.find((x) => x.id === scopeTypeId);
@@ -133,7 +132,7 @@ export const makeSelectScopesForType = () =>
   createSelector(
     selectOrganizations,
     (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
-    (byId, scopeTypeId): ScopeNode[] => {
+    (byId, scopeTypeId): Scope[] => {
       if (!scopeTypeId) return empty;
       for (const orgId of Object.keys(byId)) {
         const t = byId[orgId].scope_types.find((x) => x.id === scopeTypeId);
@@ -148,7 +147,7 @@ export const makeSelectScope = () =>
   createSelector(
     selectOrganizations,
     (_: RootState, scopeId: string | null | undefined) => scopeId,
-    (byId, scopeId): ScopeNode | null => {
+    (byId, scopeId): Scope | null => {
       if (!scopeId) return null;
       for (const orgId of Object.keys(byId)) {
         for (const t of byId[orgId].scope_types) {

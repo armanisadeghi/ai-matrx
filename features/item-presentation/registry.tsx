@@ -216,7 +216,11 @@ async function fetchRow(
     .select(cols)
     .eq("id", id)
     .maybeSingle();
-  if (error) return {}; // soft-fail — keep the agent-provided fields
+  if (error) {
+    // Never silent: the card shows its own "could not load" state (EnrichmentStatus "error").
+    console.error(`[item-presentation] ${schema ? `${schema}.` : ""}${table} ${id} could not be read`, error);
+    throw new Error(error.message || `This ${table} row could not be read.`);
+  }
   if (!data) return { notFound: true };
   return map(data as unknown as Record<string, unknown>);
 }
@@ -500,23 +504,16 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-fuchsia-500/20",
     },
     open: { kind: "scope_type" },
-    detailSource: {
-      table: "scope_types",
-      schemaName: "context",
-      titleField: "label_singular",
+    enrich: async (_s, id) => {
+      const { scopeRecordsClient } = await import("@/features/scopes/service/scopeDoors");
+      const res = await scopeRecordsClient().tableRead({ table_id: id });
+      if (!res.ok) throw new Error(res.error.message);
+      if (!res.data) return { notFound: true };
+      return {
+        name: clip(res.data.label_singular, 80) ?? clip(res.data.name, 80),
+        about: clip((res.data as { description?: unknown }).description),
+      };
     },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "scope_types",
-        id,
-        "label_singular, label_plural, description",
-        (r) => ({
-          name: clip(r.label_singular, 80) ?? clip(r.label_plural, 80),
-          about: clip(r.description),
-        }),
-        "context",
-      ),
   },
   scope: {
     type: "scope",
@@ -528,23 +525,18 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-pink-500/20",
     },
     open: { kind: "scope" },
-    detailSource: {
-      table: "scopes",
-      schemaName: "context",
-      titleField: "name",
+    enrich: async (_s, id) => {
+      const { scopeDoors } = await import("@/features/scopes/service/scopeDoors");
+      const res = await scopeDoors().scopes([id]);
+      if (!res.ok) throw new Error(res.error.message);
+      const scope = res.data[0];
+      if (!scope) return { notFound: true };
+      return {
+        name: clip(scope.name, 80),
+        about: clip(scope.description),
+        details: scope.scope_type ? [{ label: "Type", value: scope.scope_type.label_singular }] : undefined,
+      };
     },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "scopes",
-        id,
-        "name, description",
-        (r) => ({
-          name: clip(r.name, 80),
-          about: clip(r.description),
-        }),
-        "context",
-      ),
   },
   context_item: {
     type: "context_item",
@@ -556,28 +548,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-indigo-500/20",
     },
     open: { kind: "context_item" },
-    detailSource: {
-      table: "context_items",
-      schemaName: "context",
-      titleField: "display_name",
+    // A context field is a column of its scope type's Table; the records package has no
+    // read-by-field-id door yet, so the card says it could not load rather than guessing.
+    enrich: async () => {
+      throw new Error("A context field cannot be looked up by id yet.");
     },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "context_items",
-        id,
-        "display_name, description, value_type",
-        (r) => ({
-          name: clip(r.display_name, 80),
-          about: clip(r.description),
-          details: [
-            r.value_type
-              ? { label: "Value Type", value: titleCase(r.value_type)! }
-              : null,
-          ].filter(Boolean) as EnrichedItem["details"],
-        }),
-        "context",
-      ),
   },
   image: {
     type: "image",

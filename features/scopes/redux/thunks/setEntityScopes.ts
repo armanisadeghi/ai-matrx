@@ -10,10 +10,9 @@
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { entityScopesKey } from "@/features/scopes/redux/thunks/ensureEntityScopes";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
@@ -39,13 +38,15 @@ export function setEntityScopes(
   args: SetEntityScopesArgs,
 ): AppThunk<Promise<SetEntityScopesResult>> {
   return async (dispatch) => {
-    const res = await scopeStore.setEntityScopes(
-      args.entityType,
-      args.entityId,
-      args.scopeIds,
-    );
+    const scopeIds = Array.from(new Set(args.scopeIds));
+    const res = await associationsService.setTargets({
+      sourceType: args.entityType,
+      sourceId: args.entityId,
+      targetType: "scope",
+      targetIds: scopeIds,
+    });
 
-    if (isScopesRpcErr(res)) {
+    if (!res.ok) {
       return { ok: false, scope_ids: [], error: res.error.message };
     }
 
@@ -54,7 +55,7 @@ export function setEntityScopes(
     dispatch(
       scopesActions.entityScopesUpdated({
         key: entityScopesKey(args.entityType, args.entityId),
-        scope_ids: res.data.scope_ids,
+        scope_ids: scopeIds,
       }),
     );
 
@@ -65,7 +66,7 @@ export function setEntityScopes(
         scopesActions.projectScopesUpdated({
           organizationId: args.organizationId,
           projectId: args.entityId,
-          scopeIds: res.data.scope_ids,
+          scopeIds: scopeIds,
         }),
       );
     }
@@ -78,14 +79,14 @@ export function setEntityScopes(
     if (
       (args.entityType === "project" || args.entityType === "task") &&
       !args.organizationId &&
-      res.data.scope_ids.length > 0
+      scopeIds.length > 0
     ) {
       const adopt = await scopesService.adoptEntityOrgFromScopes(
         args.entityType,
         args.entityId,
-        res.data.scope_ids,
+        scopeIds,
       );
-      if (isScopesRpcErr(adopt)) {
+      if (!adopt.ok) {
         // Loud, not fatal: the tags landed; only the org adoption failed.
         // The entity stays org-less and will retry on its next tag write.
         console.error("[scopes] adoptEntityOrgFromScopes failed", {
@@ -98,6 +99,6 @@ export function setEntityScopes(
       }
     }
 
-    return { ok: true, scope_ids: res.data.scope_ids, adoptedOrganizationId };
+    return { ok: true, scope_ids: scopeIds, adoptedOrganizationId };
   };
 }

@@ -14,6 +14,7 @@
 // Per-feature patches plumb through `treeReceived`, `scopeUpserted`, etc.
 // No selectors live here — selectors are in ./selectors/.
 
+import type { ContextField, Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
@@ -21,15 +22,12 @@ import {
   type RehydrateAction,
 } from "@/lib/sync/engine/rehydrate";
 import type {
-  ContextItemRow,
   ContextItemsEntry,
   EntityScopesEntry,
   OrgNode,
   OrphanBucket,
   ProjectNode,
-  ScopeNode,
   ScopeTreeResponse,
-  ScopeTypeNode,
   TaskBucketEntry,
   TaskNode,
 } from "@/features/scopes/types";
@@ -108,7 +106,7 @@ export interface TypeScopesEntry {
 
 export interface ScopeSearchEntry {
   status: "loading" | "ready" | "error";
-  scopes: ScopeNode[];
+  scopes: Scope[];
   total: number;
   error: string | null;
 }
@@ -197,7 +195,7 @@ const scopesSlice = createSlice({
       state.skeletonError = null;
       // The whole tree already landed (or a warm cache restored it): it is the better answer.
       if (state.treeStatus === "ready") return;
-      const kept = new Map<string, ScopeNode[]>();
+      const kept = new Map<string, Scope[]>();
       for (const id of state.skeletonOrganizationIds) {
         for (const t of state.skeletonOrganizations[id]?.scope_types ?? []) kept.set(t.id, t.scopes);
       }
@@ -239,7 +237,7 @@ const scopesSlice = createSlice({
         organizationId: string;
         scopeTypeId: string;
         offset: number;
-        scopes: ScopeNode[];
+        scopes: Scope[];
         total: number;
         nextOffset: number | null;
       }>,
@@ -283,7 +281,7 @@ const scopesSlice = createSlice({
     },
     scopeSearchFulfilled(
       state,
-      action: PayloadAction<{ key: string; scopes: ScopeNode[]; total: number }>,
+      action: PayloadAction<{ key: string; scopes: Scope[]; total: number }>,
     ) {
       state.scopeSearch[action.payload.key] = {
         status: "ready",
@@ -326,7 +324,7 @@ const scopesSlice = createSlice({
     },
 
     // ─── Per-row patches (mutation results plumb through here) ────
-    scopeTypeUpserted(state, action: PayloadAction<ScopeTypeNode>) {
+    scopeTypeUpserted(state, action: PayloadAction<ScopeTypeWithScopes>) {
       const t = action.payload;
       const org = state.organizations[t.organization_id];
       if (!org) return;
@@ -344,7 +342,7 @@ const scopesSlice = createSlice({
         (t) => t.id !== action.payload.scopeTypeId,
       );
     },
-    scopeUpserted(state, action: PayloadAction<ScopeNode>) {
+    scopeUpserted(state, action: PayloadAction<Scope>) {
       const s = action.payload;
       const org = state.organizations[s.organization_id];
       if (!org) return;
@@ -532,7 +530,7 @@ const scopesSlice = createSlice({
     },
     contextItemsFetchFulfilled(
       state,
-      action: PayloadAction<{ scopeTypeId: string; items: ContextItemRow[] }>,
+      action: PayloadAction<{ scopeTypeId: string; items: ContextField[] }>,
     ) {
       state.contextItemsByTypeId[action.payload.scopeTypeId] = {
         status: "ready",
@@ -542,15 +540,15 @@ const scopesSlice = createSlice({
       };
     },
     /** Echoed single-item write (create/update) — folds the authoritative row
-     *  into the type's catalog, keeping sort_order/display_name ordering. */
-    contextItemUpserted(state, action: PayloadAction<ContextItemRow>) {
+     *  into the type's catalog, keeping sort/label ordering. */
+    contextItemUpserted(state, action: PayloadAction<ContextField>) {
       const item = action.payload;
       const prev = state.contextItemsByTypeId[item.scope_type_id];
       // A catalog never loaded stays unloaded: folding one row into it would
       // mark a one-item list "ready" and hide every other item of the type.
       if (!prev || prev.status !== "ready") return;
       // An archived item leaves the ACTIVE catalog (the same rule as archive).
-      if ((item as { is_active?: boolean }).is_active === false) {
+      if (item.status === "archived") {
         prev.items = prev.items.filter((i) => i.id !== item.id);
         return;
       }
@@ -558,8 +556,7 @@ const scopesSlice = createSlice({
       items.push(item);
       items.sort(
         (a, b) =>
-          (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
-          a.display_name.localeCompare(b.display_name),
+          a.sort - b.sort || a.label.localeCompare(b.label),
       );
       prev.items = items;
     },
@@ -663,7 +660,7 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
   // console's fields (scope type slug / description / timestamps; scope slug /
   // sort_order / created_by / timestamps — lane SCOPE-ADMIN-CANONICAL). An
   // older cache lacks them, so it is discarded rather than shown slug-less.
-  version: 4,
+  version: 5, // 5: the tree holds @ai-matrx/records/scopes shapes (ScopeTypeWithScopes); an older persisted shape is discarded
   broadcast: {
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },

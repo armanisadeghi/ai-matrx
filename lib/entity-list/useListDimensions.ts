@@ -10,7 +10,7 @@
 //   custom.context_tree_type_scopes  → one Dimension's Values, a page at a time, when it is opened
 //   custom.context_tree_search       → Values by name across every organization, for the search box
 //   custom.context_scopes            → a Value named by the URL, to label the control
-// They are called through lane 9's own door module (features/scopes/service/storeScopeReads.ts) —
+// They are called through the scope doors (`scopeDoors()` — `@ai-matrx/records/scopes`) —
 // never a second `.schema("custom")` here. @ai-matrx/records 0.60.9 lists these doors in its
 // generated catalogue but exposes no method for them; when it does, swap the four imports below.
 //
@@ -24,13 +24,7 @@
 
 import { useEffect, useState } from "react";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import {
-  readScopeTypes,
-  readScopesById,
-  readTypeScopesPage,
-  searchScopesInStore,
-} from "@/features/scopes/service/storeScopeReads";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
 
 export interface ListDimensionValue {
   id: string;
@@ -90,9 +84,9 @@ export function useListDimensions(
     const key = ids.join(",");
     if (!wantTypes || ids.length === 0 || state?.key === key) return;
     let live = true;
-    void readScopeTypes(ids, false).then((res) => {
+    void scopeDoors().types(ids).then((res) => {
       if (!live) return;
-      if (isScopesRpcErr(res)) {
+      if (!res.ok) {
         setState({ key, dimensions: [], error: res.error.message || "Dimensions could not load." });
         return;
       }
@@ -116,9 +110,9 @@ export function useListDimensions(
       return;
     }
     let live = true;
-    void readScopesById([selectedValueId]).then((res) => {
+    void scopeDoors().scopes([selectedValueId]).then((res) => {
       if (!live) return;
-      const row = isScopesRpcErr(res) ? undefined : res.data[0];
+      const row = !res.ok ? undefined : res.data[0];
       setSelectedRow(row ? { id: row.id, typeId: row.scope_type_id, name: row.name || "Unnamed" } : "missing");
     });
     return () => {
@@ -132,9 +126,9 @@ export function useListDimensions(
     if (!q) return;
     let live = true;
     const t = setTimeout(() => {
-      void searchScopesInStore(organizations.map((o) => o.id), q, 50).then((res) => {
+      void scopeDoors().search(organizations.map((o) => o.id), q, 50).then((res) => {
         if (!live) return;
-        const rows = isScopesRpcErr(res)
+        const rows = !res.ok
           ? []
           : res.data.scopes.map((s) => ({ id: s.id, typeId: s.scope_type_id, name: s.name || "Unnamed" }));
         setFound({ q, rows });
@@ -151,8 +145,8 @@ export function useListDimensions(
 
   const loadValues = (dimensionId: string) => {
     if (values[dimensionId]) return;
-    void readTypeScopesPage(dimensionId).then((res) => {
-      const list = !isScopesRpcErr(res) ? res.data.scopes.map((s) => ({ id: s.id, name: s.name || "Unnamed" })) : [];
+    void scopeDoors().typeScopesPage(dimensionId).then((res) => {
+      const list = res.ok ? res.data.scopes.map((s) => ({ id: s.id, name: s.name || "Unnamed" })) : [];
       setValues((prev) => ({ ...prev, [dimensionId]: list.sort((a, b) => a.name.localeCompare(b.name)) }));
     });
   };

@@ -1,45 +1,25 @@
-// features/scopes/service/rpcResult.ts
+// features/scopes/service/rpcResult.ts — a supabase-js error as a `RecordsResult` error.
 //
-// Shared result helpers for the scopes-module service chokepoints.
-//
-// `scopesService.ts` grew its own private copies of `ok`/`err`/`mapPgError`/
-// `mapPgErrorPair`; this file extracts them and exports them so every sibling
-// chokepoint — `scopesService.ts` and `associationsService.ts` — consumes ONE
-// implementation. The private copies are gone; this file is the only one.
-//
-// Every method that returns a `ScopesRpcResult` builds it through `ok`/`err`
-// here and NEVER throws to its caller.
-//
-// 🚨 A POSTGREST ERROR IS NOT AN `Error`. supabase-js resolves a failed
-// request with a PLAIN OBJECT (`{ code, message, details, hint }`) parsed
-// straight from the response body — `PostgrestError` is only ever *thrown*,
-// and only when `shouldThrowOnError` is set, which we never set. So an
-// `e instanceof Error ? e.message : <generic>` ternary discards the real
-// message on EVERY genuine database failure and reports the generic string
-// instead. That is exactly what happened on the CRM record page (2026-08-14):
-// a real `57014 canceling statement due to statement timeout` reached the UI
-// as `{code: "internal", message: "Unexpected error talking to Supabase"}`,
-// which reads like a gateway fault and sent debugging after a PostgREST
-// outage that was never happening. Read the fields off the OBJECT, not off
-// `Error`, and keep the Postgres/PostgREST code in `detail` so the next
-// failure is attributable instead of anonymous.
+// Scope data no longer comes through here: it is `scopeDoors()` (`@ai-matrx/records/scopes`), which
+// answers `RecordsResult` with the store's own words. What remains is the small helper a few host
+// services (organizations, purpose, orchestras) use for their own direct reads, speaking the SAME
+// vocabulary — `RecordsResult` / `RecordsError` from `@ai-matrx/records` — so there is one error
+// vocabulary on the web, not three.
 
 import { isTransportFailure } from "@ai-matrx/data/net";
 
 import { personSentence } from "@/lib/errors/writeFailure";
 
-import type { ScopesRpcError, ScopesRpcResult } from "@/features/scopes/types";
+import type { RecordsError, RecordsErrorCode, RecordsResult } from "@ai-matrx/records";
 
-// Re-exported for convenience so a service file imports its envelope and its
-// builders from one place.
-export type { ScopesRpcError, ScopesRpcResult } from "@/features/scopes/types";
+export type { RecordsError, RecordsResult } from "@ai-matrx/records";
 
 export function err(
-  code: ScopesRpcError["code"],
+  code: RecordsErrorCode,
   message: string,
   detail?: unknown,
   hint?: string,
-): { ok: false; error: ScopesRpcError } {
+): RecordsResult<never> {
   return { ok: false, error: { code, message, detail, hint } };
 }
 
@@ -47,7 +27,7 @@ export function ok<T>(data: T): { ok: true; data: T } {
   return { ok: true, data };
 }
 
-export function mapPgError(e: unknown): ScopesRpcError {
+export function mapPgError(e: unknown): RecordsError {
   // Loud before lossy: the friendly mapping below discards the PG error
   // code / constraint / hint that production debugging needs. Log the raw
   // error with full context HERE — the single funnel every failure passes
@@ -76,11 +56,11 @@ export function mapPgError(e: unknown): ScopesRpcError {
     // access-errors: ok — maps Postgres 42501 (insufficient_privilege), the server's own explicit verdict, not a zero-row guess
     // The door's own sentence when it said one ("…is not yours to change."), never a bare
     // "Permission denied" over it (lane HANDOVER, 2026-09-27).
-    return { code: "forbidden_org", message: personSentence(pgMessage) ?? "You do not have permission to do this." };
+    return { code: "door", message: personSentence(pgMessage) ?? "You do not have permission to do this." };
   // The session's JWT is gone or expired — the user is signed out, not broken.
   if (pgCode === "PGRST301" || pgCode === "PGRST303")
     // access-errors: ok — PGRST301/303 is PostgREST's own expired-JWT verdict, verified by code, not a guess
-    return { code: "unauthorized", message: "Your session expired" };
+    return { code: "door", message: "Your session expired" };
   // Postgres killed the statement at the role's `statement_timeout` (8s for
   // `authenticated`). The database is up and the query is valid; it ran out of
   // time — usually because something else was saturating the instance. Say so,
@@ -139,7 +119,7 @@ function readPgFields(e: unknown): {
 /** Paired return so `err(...mapPgErrorPair(e))` satisfies TS tuple unpacking. */
 export function mapPgErrorPair(
   e: unknown,
-): [ScopesRpcError["code"], string, unknown, string | undefined] {
+): [RecordsErrorCode, string, unknown, string | undefined] {
   const mapped = mapPgError(e);
   return [mapped.code, mapped.message, mapped.detail, mapped.hint];
 }

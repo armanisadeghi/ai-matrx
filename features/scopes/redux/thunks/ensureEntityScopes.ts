@@ -11,7 +11,6 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
@@ -46,7 +45,7 @@ export function ensureEntityScopes(
     const promise = (async () => {
       try {
         const res = await scopesService.getEntityScopes(entityType, entityId);
-        if (isScopesRpcErr(res)) {
+        if (!res.ok) {
           dispatch(
             scopesActions.entityScopesFetchRejected({
               key,

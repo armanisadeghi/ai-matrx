@@ -5,9 +5,9 @@
 // unless `refresh: true`.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import type { ContextValue } from "@ai-matrx/records/scopes";
+import { readScopeFileText, scopeDoors } from "@/features/scopes/service/scopeDoors";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
-import { isScopesRpcErr, type ContextItemValue } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -36,8 +36,8 @@ export function ensureContextValues(
     // assigned before the first await resumes.
     const run = async (): Promise<void> => {
       try {
-        const res = await scopesService.listContextValues(scopeId);
-        if (isScopesRpcErr(res)) {
+        const res = await scopeDoors().values([scopeId], { readFileText: readScopeFileText });
+        if (!res.ok) {
           dispatch(
             contextValuesActions.valuesFetchRejected({
               scopeId,
@@ -48,7 +48,7 @@ export function ensureContextValues(
           dispatch(
             contextValuesActions.valuesFetchFulfilled({
               scopeId,
-              values: res.data.values,
+              values: res.data,
             }),
           );
         }
@@ -99,17 +99,15 @@ export function ensureContextValuesForScopes(
     // assigned before the first await resumes.
     const run = async (): Promise<void> => {
       try {
-        const res = await scopesService.listContextValuesForScopes(wanted);
-        if (isScopesRpcErr(res)) {
+        const res = await scopeDoors().values(wanted, { readFileText: readScopeFileText });
+        if (!res.ok) {
           for (const scopeId of wanted) {
             dispatch(contextValuesActions.valuesFetchRejected({ scopeId, error: res.error.message }));
           }
           return;
         }
-        const grouped = new Map<string, ContextItemValue[]>(wanted.map((id) => [id, []]));
-        for (const { scope_id, ...value } of res.data.values) {
-          grouped.get(scope_id)?.push(value as ContextItemValue);
-        }
+        const grouped = new Map<string, ContextValue[]>(wanted.map((id) => [id, []]));
+        for (const value of res.data) grouped.get(value.scope_id)?.push(value);
         for (const [scopeId, values] of grouped) {
           dispatch(contextValuesActions.valuesFetchFulfilled({ scopeId, values }));
         }

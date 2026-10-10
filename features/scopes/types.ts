@@ -1,14 +1,22 @@
 // features/scopes/types.ts
 //
-// Canonical types for the scopes module. Every other file under
-// features/scopes/ imports from here. Consumer features import these
-// types via the public hook/selector surface, not from this file directly.
-//
-// Aligned with the data model in features/scopes/FEATURE.md.
+// The scopes module's HOST types. Scope DATA shapes come from `@ai-matrx/records/scopes` (a scope type
+// is a Table kept for context, a scope a Record, a context field a Field, a value its cell) — import
+// `Scope`, `ScopeTypeWithScopes`, `ContextField`, `ContextValue`, `ContextValueWrite` … from there.
+// What lives here is what only this app holds: the org/project/task tree around the scope types, the
+// Redux entry shapes, the entity vocabulary re-exports, and the suggestion-target view.
 
-import type { Database, Json } from "@/types/database.types";
-import type { EntityTypeToken } from "@ai-matrx/associations";
-import type { IncompleteValue } from "@/features/scopes/utils/incompleteValue";
+import type {
+  ContextField,
+  ContextValue,
+  Scope,
+  ScopeTypeWithScopes,
+} from "@ai-matrx/records/scopes";
+
+// Host callers still import this historical name while their result envelopes
+// have moved to the record store. Keep the import edge stable by exposing the
+// record store's discriminant guard, not a second scopes-shaped result type.
+export { isRecordsErr as isScopesRpcErr } from "@ai-matrx/records";
 
 // Re-export the GENERATED entity-token vocabulary so consumers import the
 // canonical, type-safe token set from the scopes types module (the single
@@ -21,42 +29,6 @@ export {
   ENTITY_TYPE_TOKENS,
   isEntityTypeToken,
 } from "@ai-matrx/associations";
-
-// ─── Database row aliases ───────────────────────────────────────────
-//
-// We never re-declare table shapes. The Supabase-generated types are
-// the source of truth. Aliases here are for ergonomic imports.
-//
-// SCOPES-W3 (applied 2026-10-07) moved the four old scope tables from
-// `context` into `deprecated` (ALTER TABLE … SET SCHEMA — columns unchanged).
-// Scopes now live in the record store; `service/storeScopeAdapter.ts` maps
-// store rows onto these legacy row shapes, which the generator now emits
-// under `deprecated`. These four aliases go when the module reads store
-// shapes natively.
-
-export type ScopeTypeRow =
-  Database["deprecated"]["Tables"]["scope_types"]["Row"];
-export type ScopeRow = Database["deprecated"]["Tables"]["scopes"]["Row"];
-export type ContextItemRow =
-  Database["deprecated"]["Tables"]["context_items"]["Row"];
-export type ContextItemValueRow =
-  Database["deprecated"]["Tables"]["context_item_values"]["Row"];
-// `ctx_scope_assignments` is DEPRECATED — scope tags now live in
-// `platform.associations` (reached via scopesService / associationsService).
-// The table is slated for drop, so its row vanishes from the generated types
-// on the next `pnpm db-types`. We hand-write the shape (identical to the old
-// generated row) so the build doesn't break when the table disappears.
-export interface ScopeAssignmentRow {
-  id: string;
-  scope_id: string;
-  entity_id: string;
-  entity_type: string;
-  created_by: string | null;
-  created_at: string;
-}
-export type TemplateRow = Database["context"]["Tables"]["templates"]["Row"];
-export type ContextAccessLogRow =
-  Database["context"]["Tables"]["context_access_log"]["Row"];
 
 // ─── Canonical entity vocabulary — `EntityType` ─────────────────────
 //
@@ -118,6 +90,7 @@ export type EntityType =
 // `platform.entity_types` (then `EntityType`), never invented here.
 export type FavoriteKind = EntityType | "nav";
 
+
 // ─── Association / category / per-user-state types — PACKAGE-OWNED ─────
 //
 // W5 swap (2026-08-29): these shapes ship in `@ai-matrx/associations`
@@ -142,130 +115,32 @@ export type {
   CategoriesEntry,
 } from "@ai-matrx/associations";
 
-// ─── Denormalized scope display (scope + its type) ────────────────────
-//
-// A scope joined to its scope-type's presentation fields. Returned by
-// `scopesService.getEntityScopeDetails` / `listEntityScopeTags` so display
-// surfaces (AssignedScopesDisplay, the notes scope sidebar) never join
-// ctx_scopes / ctx_scope_types themselves — the chokepoint owns those tables.
-
-export interface ScopeTypeDisplay {
-  id: string;
-  label_singular: string;
-  label_plural: string;
-  icon: string | null;
-  color: string | null;
-}
-
-export interface ScopeWithType {
-  id: string;
-  name: string;
-  scope_type: ScopeTypeDisplay | null;
-}
-
-// ─── Tree shape (returned by the boot RPC and stored in scopesSlice) ───
-
-export interface ScopeNode {
-  id: string;
-  scope_type_id: string;
-  organization_id: string;
-  name: string;
-  description: string;
-  parent_scope_id: string | null;
-  settings: Json;
-  /** Kebab URL segment, unique per scope type (the admin console's routes use it). */
-  slug: string | null;
-  sort_order: number;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ScopeTypeNode {
-  id: string;
-  organization_id: string;
-  label_singular: string;
-  label_plural: string;
-  icon: string;
-  color: string;
-  max_assignments_per_entity: number | null;
-  sort_order: number;
-  parent_type_id: string | null;
-  default_variable_keys: string[];
-  /** Kebab URL segment, unique per organization (the admin console's routes use it). */
-  slug: string | null;
-  description: string;
-  /** Who made the type: they shape it (fields, rename, archive) as org admins do. */
-  created_by?: string | null;
-  created_at: string;
-  updated_at: string;
-  scopes: ScopeNode[];
-}
-
-/**
- * A REMOVED scope type, as the scopes page's archive disclosure shows it.
- * Never part of `ScopeTypeNode` / the boot tree: the tree is the live working
- * set (F6, 2026-09-21) and archived rows are read on demand.
- */
-export interface ArchivedScopeTypeRow {
-  id: string;
-  organization_id: string;
-  label_singular: string;
-  label_plural: string;
-  icon: string;
-  color: string;
-  deleted_at: string;
-  /** Who made the type: they may restore it, as org admins may. */
-  created_by?: string | null;
-  /** Scopes that went with this removal and come back with a restore. */
-  archived_scope_count: number;
-}
+// ─── The tree the holder keeps ─────────────────────────────────────────
 
 export interface ProjectNode {
   id: string;
   organization_id: string | null;
   name: string;
   slug: string | null;
-  /** scope_ids associated with this project via ctx_scope_assignments. */
   scope_ids: string[];
 }
 
-/** Mirrors the `public.org_role` enum exactly — there is no read-only role. */
 export type OrgRole = "owner" | "admin" | "member";
 
+/** An organization the person can see, with its scope types (each with its scopes) and projects. */
 export interface OrgNode {
   id: string;
   name: string;
   abbreviation: string;
-  /** The organization's own icon — the sidebar's organization slot draws it over the abbreviation. */
   logo_url?: string | null;
   slug: string;
-  /**
-   * Classified as a lane's scratch organization in
-   * `iam.organizations.settings.test_fixture`. The org picker hides these
-   * behind the archived-items disclosure (VERIFIER-8 MEDIUM-3). Never inferred
-   * from the name.
-   *
-   * Optional because a tree restored from an older cache, or built by a test
-   * that predates this field, genuinely does not carry it — and "absent" must
-   * read as "not classified", never as a crash.
-   */
   is_test_fixture?: boolean;
-  /** Who created it. */
   created_by?: string | null;
-  /** The signed-in person created it — drawn first in the picker. */
   is_own?: boolean;
   role: OrgRole;
-  scope_types: ScopeTypeNode[];
+  scope_types: ScopeTypeWithScopes[];
   projects: ProjectNode[];
-  /**
-   * Loaded by the ADMIN LANE (`ensureScopeTree({ adminOrganizationId })`,
-   * only from `/administration/**`): an organization the platform admin is
-   * not a member of, read through the platform-admin RLS arm. Held outside
-   * `organizationIds` (no picker lists it), never persisted, and released when
-   * the admin console closes. Absent on every tree the person's own
-   * memberships built.
-   */
+  /** Loaded through the admin lane (not a membership). */
   admin_lane?: boolean;
 }
 
@@ -273,8 +148,6 @@ export interface ScopeTreeResponse {
   organizations: OrgNode[];
   fetched_at: string;
 }
-
-// ─── Task bucket (loaded per-level on demand) ──────────────────────────
 
 export interface TaskNode {
   id: string;
@@ -295,10 +168,7 @@ export interface TaskBucketEntry {
   error: string | null;
 }
 
-// ─── Orphan buckets (separate lifecycle from the tree) ────────────────
-
-export type OrphanBucketStatus =
-  "unfetched" | "loading" | "ready" | "empty" | "error";
+export type OrphanBucketStatus = "unfetched" | "loading" | "ready" | "empty" | "error";
 
 export interface OrphanBucket<T> {
   status: OrphanBucketStatus;
@@ -307,13 +177,6 @@ export interface OrphanBucket<T> {
   error: string | null;
 }
 
-// ─── Entity scope assignments (per-entity M2M cache) ──────────────────
-//
-// Cached per `${entityType}:${entityId}` key — populated lazily by
-// `ensureEntityScopes` and kept up-to-date by `setEntityScopes`. Read by
-// Surface B components (EntityScopeTagger) and the local-vs-global
-// resolution layer.
-
 export interface EntityScopesEntry {
   status: "idle" | "loading" | "ready" | "error";
   scope_ids: string[];
@@ -321,310 +184,40 @@ export interface EntityScopesEntry {
   error: string | null;
 }
 
-// ─── Context item values (high-churn sidecar slice) ───────────────────
-
-/** The `public.context_value_type` enum — generated types are the source of truth. */
-export type ContextItemValueType =
-  Database["public"]["Enums"]["context_value_type"];
-
-/** Migration alias for the legacy agent-context/scope-system `ContextValueType`. */
-export type ContextValueType = ContextItemValueType;
-
-export interface ContextItemValue {
-  context_item_id: string;
-  id: string;
-  version: number;
-  is_current: boolean;
-  value_text: string | null;
-  value_number: number | null;
-  value_boolean: boolean | null;
-  value_date: string | null;
-  value_json: Json | null;
-  value_document_url: string | null;
-  value_document_size_bytes: number | null;
-  /** `datetime` items (timestamptz). Optional: older echoes lack it. */
-  value_timestamp?: string | null;
-  /** `time` items. Optional: older echoes lack it. */
-  value_time?: string | null;
-  value_reference_id: string | null;
-  value_reference_type: string | null;
-  source_type: string;
-  authored_by: string | null;
-  created_at: string;
-  /**
-   * Set when `value_text` holds only the start of a text kept as a file (the whole file could not
-   * be read or checked). Editors must not save it back — `utils/incompleteValue.ts`.
-   */
-  value_incomplete?: IncompleteValue | null;
-}
-
-/**
- * One row from `public.list_context_value_refs` — a context item value whose
- * reference fence points at the queried `(ref_type, ref_key)` (e.g. "which
- * matters point at this file?"). Reverse of the forward lookup on the cell
- * itself; see `scopesService.listReferencingValues`.
- */
-export interface ReferencingContextValue {
-  scope_id: string;
-  scope_name: string;
-  scope_type_id: string;
-  organization_id: string;
-  context_item_id: string;
-  item_key: string;
-  item_display_name: string;
-  value_id: string;
-  is_current: boolean;
-  created_at: string;
-}
-
+/** One scope's values, keyed by FIELD id. */
 export interface ScopeValuesEntry {
   status: "idle" | "loading" | "ready" | "error";
   fetchedAt: number | null;
-  /** Keyed by context_item_id. */
-  values: Record<string, ContextItemValue>;
-  /** Unsaved drafts keyed by context_item_id. */
-  drafts: Record<string, Partial<ContextItemValue>>;
+  values: Record<string, ContextValue>;
   error: string | null;
-  /**
-   * The scope's type, recorded by `getScopeContext` when the scope is not in
-   * the tree (so the joined scope-context view can find the type's catalog).
-   */
+  /** The scope's type, when the tree did not hold the scope (learned from the scope door). */
   scopeTypeId?: string;
 }
 
-/**
- * Cache entry for one scope type's ACTIVE context-item catalog (the item
- * DEFINITIONS, not per-scope values — those live in `ScopeValuesEntry`).
- * Mirrors `CategoriesEntry`.
- */
+/** One scope type's context fields. */
 export interface ContextItemsEntry {
   status: "idle" | "loading" | "ready" | "error";
-  items: ContextItemRow[];
+  items: ContextField[];
   fetchedAt: number | null;
   error: string | null;
 }
 
-// ─── Templates (read-only catalog) ─────────────────────────────────────
+/** Who wrote a value (`ContextValueWrite.source_type`). */
+export type ContextSourceType =
+  "manual" | "ai_generated" | "ai_enriched" | "imported" | "scraped" | "system";
 
-/** One context-item column defined inside a template scope type. */
-export interface TemplateItemField {
-  key: string;
-  display_name: string;
-}
-
-/** One scope type inside a template, with its context-item columns. */
-export interface TemplateScopeTypeDetail {
-  id: string;
-  key: string;
-  icon: string;
-  label_singular: string;
-  label_plural: string;
-  sort_order: number;
-  max_assignments_per_entity: number | null;
-  parent_template_type_id: string | null;
-  /** Resolved label of the parent template scope type (client-side join). */
-  parent_type_label: string | null;
-  fields: TemplateItemField[];
-}
-
-/** `context.templates.audience`: who a template is written for. */
-export type TemplateAudience = "individual" | "organization";
-
-export interface ContextTemplate {
-  id: string;
-  key: string;
-  name: string;
-  description: string;
-  category: string;
-  icon: string;
-  is_active: boolean;
-  /** Who the template is written for (`context.templates.audience`). */
-  audience: TemplateAudience;
-  sort_order: number;
-  scope_type_count: number;
-  context_item_count: number;
-  /** Full nested detail — what applying this template creates. */
-  scope_types: TemplateScopeTypeDetail[];
-}
-
-/**
- * A template scope type flattened out of its template — the "Individual
- * scopes" borrow list in the gallery. Carries the source template identity.
- */
-export interface FlatTemplateScopeType extends TemplateScopeTypeDetail {
-  template_id: string;
-  template_key: string;
-  template_name: string;
-  template_category: string;
-  template_audience: TemplateAudience;
-}
-
-// ─── Mutation params (the sanctioned SECURITY DEFINER write family) ────
-
-export interface CreateScopeTypeParams {
-  org_id: string;
-  label_singular: string;
-  label_plural: string;
-  parent_type_id?: string;
-  icon?: string;
-  description?: string;
-  sort_order?: number;
-  max_assignments?: number;
-  default_variable_keys?: string[];
-  color?: string;
-  slug?: string;
-}
-
-export interface UpdateScopeTypeParams {
-  type_id: string;
-  label_singular?: string;
-  label_plural?: string;
-  icon?: string;
-  description?: string;
-  sort_order?: number;
-  max_assignments?: number;
-  color?: string;
-  slug?: string;
-}
-
-export interface CreateScopeParams {
-  org_id: string;
-  type_id: string;
-  name: string;
-  parent_scope_id?: string;
-  description?: string;
-  settings?: Json;
-  slug?: string;
-  sort_order?: number;
-}
-
-export interface UpdateScopeParams {
-  scope_id: string;
-  name?: string;
-  description?: string;
-  settings?: Json;
-  slug?: string;
-  sort_order?: number;
-}
-
-export interface CreateContextItemParams {
-  scope_type_id: string;
-  key: string;
-  display_name: string;
-  value_type?: ContextItemValueType;
-  description?: string;
-  category?: string;
-  fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"];
-  sensitivity?: Database["public"]["Enums"]["context_sensitivity"];
-  tags?: string[];
-  slug?: string;
-  sort_order?: number;
-  allowed_reference_types?: string[];
-  max_items?: number;
-  allowed_scope_type_ids?: string[];
-  reference_source?: Json;
-}
-
-export interface UpdateContextItemParams {
-  item_id: string;
-  display_name?: string;
-  description?: string;
-  /** `null` clears it. */
-  category?: string | null;
-  value_type?: ContextItemValueType;
-  fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"];
-  sensitivity?: Database["public"]["Enums"]["context_sensitivity"];
-  tags?: string[];
-  sort_order?: number;
-  status?: Database["public"]["Enums"]["context_item_status"];
-  /** `null` clears it. */
-  status_note?: string | null;
-  // ── Columns `update_context_item` does not take (see scopesService.updateContextItem) ──
-  custom_component?: Json | null;
-  review_interval_days?: number | null;
-  allowed_reference_types?: string[] | null;
-  max_items?: number;
-  allowed_scope_type_ids?: string[] | null;
-  reference_source?: Json | null;
-}
-
-// ─── Resolution shapes ─────────────────────────────────────────────────
-
-export type ContextSourceKind = "scope" | "project" | "task" | "user" | "org";
-export type ContextSourceOrigin = "local" | "global";
-
-export interface ContextSource {
-  kind: ContextSourceKind;
-  /** id of the contributing entity (scope_id, project_id, etc.) */
-  id: string;
-  origin: ContextSourceOrigin;
-  /** lower = closer to the action; sorted ascending in resolution. */
-  priority: number;
-}
-
-export interface ResolvedValue {
-  context_item_id: string;
-  key: string;
-  display_name: string;
-  value_type: ContextItemValueType;
-  value: string | number | boolean | Json | null;
-  document_url?: string | null;
-  reference_id?: string | null;
-  reference_type?: string | null;
-  version: number;
-}
-
-export interface ScopeContradiction {
-  scope_type_id: string;
-  global_scope_id: string;
-  local_scope_id: string;
-}
-
-export interface ResolvedContext {
-  values: Record<string, ResolvedValue>;
-  sourcePerKey: Record<string, ContextSource>;
-  contradictions: ScopeContradiction[];
-  activeScopes: ContextSource[];
-  organizationId: string | null;
-  userId: string;
-}
-
-// ─── Suggestion target resolution ──────────────────────────────────────
+// ─── Suggestion target (kg-suggestions decision view) ──────────────────
 //
-// The fully-resolved, human-readable picture behind a KG suggestion's
-// target. Returned by `scopesService.resolveSuggestionTarget`; consumed by
-// the kg-suggestions decision UI so it can show the org → type → scope →
-// item path, every item on the scope, and the CURRENT value each item holds
-// (so a suggestion that would overwrite a manually-entered value is obvious).
-
-export interface ResolvedSuggestionValue {
-  value_text: string | null;
-  value_number: number | null;
-  value_boolean: boolean | null;
-  value_json: Json | null;
-  /** e.g. "manual" | "ai" | "import" — how the current value was authored. */
-  source_type: string | null;
-  version: number | null;
-  created_at: string | null;
-}
+// The org → type → scope → field path behind a knowledge-graph suggestion, every field of the scope's
+// type and the value each holds now (so a suggestion that would overwrite a person's value shows).
 
 export interface ResolvedSuggestionItem {
-  id: string;
-  slug: string | null;
-  key: string;
-  display_name: string;
-  value_type: string;
-  sort_order: number;
-  /** Current value on this scope, or null if the cell is empty. */
-  current: ResolvedSuggestionValue | null;
+  field: ContextField;
+  current: ContextValue | null;
 }
 
 export interface ResolvedSuggestionTarget {
-  org: {
-    id: string;
-    name: string;
-    slug: string;
-  };
+  org: { id: string; name: string; slug: string };
   scope_type: {
     id: string;
     slug: string | null;
@@ -633,119 +226,7 @@ export interface ResolvedSuggestionTarget {
     icon: string | null;
     color: string | null;
   };
-  scope: {
-    id: string;
-    slug: string | null;
-    name: string;
-    description: string | null;
-  };
-  /** The specific item the suggestion proposes to fill (null if unresolved). */
+  scope: Pick<Scope, "id" | "slug" | "name" | "description">;
   target_item: ResolvedSuggestionItem | null;
-  /** Every active item on the scope type, in sort order (for context). */
   items: ResolvedSuggestionItem[];
-}
-
-// ─── set_context_value (the sanctioned ctx_context_item_values write) ──────
-//
-// `public.set_context_value` is the ONLY sanctioned mutation path for
-// `ctx_context_item_values` (atomic version-flip-then-insert with the scope
-// write-access check inside the SECURITY DEFINER function). EXECUTE is granted
-// to `authenticated`, so the chokepoint calls it directly. The suggestion
-// ledger only stores text, so callers typically send `value_text`; typed slots
-// may instead send the matching typed key.
-
-/** Mirrors the `public.context_source_type` enum. */
-export type ContextSourceType =
-  "manual" | "ai_generated" | "ai_enriched" | "imported" | "scraped" | "system";
-
-export interface SetContextValuePayload {
-  context_item_id: string;
-  scope_id: string;
-  value_text?: string | null;
-  value_number?: number | null;
-  value_boolean?: boolean | null;
-  value_date?: string | null;
-  value_json?: Json | null;
-  value_document_url?: string | null;
-  value_reference_id?: string | null;
-  /** `datetime` items — the RPC routes it to `value_timestamp` (timestamptz). */
-  value_timestamp?: string | null;
-  /** `time` items — the RPC routes it to `value_time`. */
-  value_time?: string | null;
-  /** Defaults to `ai_enriched` server-side when omitted. */
-  source_type?: ContextSourceType;
-  change_summary?: string;
-}
-
-/** The cell row `set_context_value` writes and returns on success. */
-export interface SetContextValueResult {
-  id: string;
-  context_item_id: string;
-  scope_id: string;
-  version: number;
-  value_text: string | null;
-  /** Echoed by the RPC (it returns what it stored for the typed columns). */
-  value_date?: string | null;
-  value_timestamp?: string | null;
-  value_time?: string | null;
-  source_type: string;
-}
-
-// ─── Service result envelope ───────────────────────────────────────────
-//
-// Mirrors the RpcResult shape this module's service returns. Contract of record:
-// /Users/armanisadeghi/code/common-docs/systems/data/scopes-context/STATE.md (the RPC_CONTRACTS.md spec was deleted 2026-08-25 — most of it was never built).
-// Service methods always return this — they never throw to callers.
-
-export type ScopesRpcErrorCode =
-  // access-errors: ok — error-code union member mirroring the RPC contract, never rendered as copy
-  | "unauthorized"
-  | "forbidden_org"
-  | "forbidden_role"
-  | "not_found"
-  | "conflict_in_use"
-  | "invalid_argument"
-  | "version_conflict"
-  | "quota_exceeded"
-  | "template_missing"
-  /**
-   * THE DEMANDED-SCHEMA SCREAM from `@ai-matrx/associations` (W5 swap): a
-   * PostgREST missing-function error (PGRST202) on a demanded association
-   * RPC. Present here so the package's `AssociationsRpcError` stays
-   * assignable to `ScopesRpcError` at the service wiring boundary.
-   */
-  | "demanded_schema_violation"
-  | "internal";
-
-export interface ScopesRpcError {
-  code: ScopesRpcErrorCode;
-  message: string;
-  hint?: string;
-  detail?: unknown;
-}
-
-export type ScopesRpcResult<T> =
-  { ok: true; data: T } | { ok: false; error: ScopesRpcError };
-
-/**
- * Type-guard narrowing helper for {@link ScopesRpcResult}. The repo runs with
- * `strictNullChecks: false`, which breaks TypeScript's default control-flow
- * narrowing for boolean discriminants (`if (!res.ok)` reverts to the wide
- * union). Callers should use this guard so the `ok: true` branch surfaces
- * `data` and the `ok: false` branch surfaces `error`.
- */
-export function isScopesRpcErr<T>(
-  r: ScopesRpcResult<T>,
-): r is { ok: false; error: ScopesRpcError } {
-  return r.ok === false;
-}
-
-/**
- * The success value of a scopes write, or a thrown `Error` carrying the
- * service's own message — for call sites that handle a refused write in one
- * try/catch with a toast (the scope CRUD console).
- */
-export function unwrapScopesRpc<T>(r: ScopesRpcResult<T>): T {
-  if (isScopesRpcErr(r)) throw new Error(r.error.message);
-  return r.data;
 }
