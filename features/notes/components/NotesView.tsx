@@ -18,7 +18,8 @@ import dynamic from "next/dynamic";
 import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
 import { X } from "lucide-react";
-import { NOTE_VIEW_MODES } from "./NoteViewControls";
+import { NoteModeSwitch } from "./NoteModeSwitch";
+import { NoteRecordTools } from "./NoteRecordTools";
 import {
   useGroupRef,
   usePanelRef,
@@ -44,8 +45,6 @@ import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import {
   ChevronLeftTapButton,
   PanelLeftTapButton,
-  HistoryTapButton,
-  ListTapButton,
   RetryTapButton,
   LoadingTapButton,
   MoreHorizontalTapButton,
@@ -55,9 +54,7 @@ import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import {
-  normalizeNoteEditorMode,
   useNoteEditorMode,
-  useSelectNoteMode,
 } from "../hooks/usePreferredDefaultEditorMode";
 
 const MobileNotesView = dynamic(() => import("./mobile/MobileNotesView"), {
@@ -110,10 +107,6 @@ import { cn } from "@/lib/utils";
 import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
 import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import { useRecordTitle } from "@/lib/record-title/record-title";
-import {
-  NAV_ITEM_SELECTED,
-  NAV_ITEM_UNSELECTED,
-} from "@/features/shell/components/header/navItemClasses";
 
 /** Below this width of its own container, the list and the note take turns. */
 const NARROW_NOTES_PX = 520;
@@ -450,14 +443,6 @@ export function NotesView({
   const history = useNoteHistoryTab(headerNoteId);
   const editorMode = useNoteEditorMode(headerNoteId);
 
-  // A mode click changes only this note (its mode and the mode it reopens in) —
-  // never the person's default; that lives on the Notes settings page.
-  const selectNoteMode = useSelectNoteMode();
-  const setMode = (mode: string) => {
-    const next = normalizeNoteEditorMode(mode, editorMode);
-    if (headerNoteId) selectNoteMode(headerNoteId, next);
-  };
-
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
   const toggleOutline = useCallback(() => {
     dispatch(setInstanceOutlineOpen({ instanceId, open: !outlineOpen }));
@@ -742,25 +727,11 @@ export function NotesView({
           // is selected (a bolder selected label used to nudge it sideways).
           // Desktop only: the server draws this header before the phone view
           // takes over, and a phone has its own Plain | Write switch.
-          <div className="matrx-glass-thin-border hidden grid-cols-4 items-center gap-0.5 rounded-full p-0.5 md:grid">
-            {/* The four note modes, one click each, from the one
-                NOTE_VIEW_MODES list: Split (plain text left, the formatted
-                note live right — the default), Plain (quick unformatted
-                text), Write (the one editor), Read. */}
-            {NOTE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
-              <button
-                key={mode}
-                type="button"
-                title={hint}
-                aria-pressed={editorMode === mode}
-                className={cn(modeBtnClass(mode), "justify-center font-medium", (narrowLayout || compactHeader) && "px-2")}
-                onClick={() => setMode(mode)}
-              >
-                <Icon />
-                {narrowLayout || compactHeader ? <span className="sr-only">{label}</span> : label}
-              </button>
-            ))}
-          </div>
+          <NoteModeSwitch
+            noteId={headerNoteId}
+            labels={narrowLayout || compactHeader ? "none" : "always"}
+            className="hidden md:inline-flex"
+          />
         )}
         {/* THE formatting toolbar, in every editing mode (Write, Split, Plain) —
             never in Read. It sits in THIS row, in the space beside the mode
@@ -780,21 +751,7 @@ export function NotesView({
         <TapTargetButtonGroup surface="solid">
           {activeTabId && !narrowShowsList && (
             <>
-              <ListTapButton
-                variant="group"
-                onClick={toggleOutline}
-                ariaLabel="Outline"
-                tooltip="Document outline"
-                pressed={outlineOpen}
-              />
-              <HistoryTapButton
-                variant="group"
-                onClick={history.toggle}
-                ariaLabel="Versions"
-                tooltip="Version history"
-                pressed={history.isVisible}
-              />
-              <NoteCleanupButton noteId={activeTabId} asTapGroup />
+              <NoteRecordTools instanceId={instanceId} noteId={activeTabId} />
             </>
           )}
           {isRefreshing ? (
@@ -884,21 +841,7 @@ export function NotesView({
                 <TapTargetButtonGroup>
                   {headerNoteId && (
                     <>
-                      <ListTapButton
-                        variant="group"
-                        onClick={toggleOutline}
-                        ariaLabel="Outline"
-                        tooltip="Document outline"
-                        pressed={outlineOpen}
-                      />
-                      <HistoryTapButton
-                        variant="group"
-                        onClick={history.toggle}
-                        ariaLabel="Versions"
-                        tooltip="Version history"
-                        pressed={history.isVisible}
-                      />
-                      <NoteCleanupButton noteId={headerNoteId} asTapGroup />
+                      <NoteRecordTools instanceId={instanceId} noteId={headerNoteId} />
                     </>
                   )}
                   {isRefreshing ? (

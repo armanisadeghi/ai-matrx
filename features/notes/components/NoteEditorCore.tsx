@@ -583,6 +583,12 @@ export function NoteEditorCore({
         <div
           className={cn(
             "absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm! [&_.ProseMirror]:px-0! [&_.ProseMirror_ul]:pl-6! [&_.ProseMirror_ol]:pl-6! [&_.ProseMirror_li]:pl-0!",
+            // THE READING INSET, every host: the editor's 48rem column kept no
+            // side padding of its own (ProseMirror's is dropped above), so in a
+            // host narrower than 48rem — a Board tile, the /notes column — the
+            // text touched the left edge. Same formula as Plain's textarea:
+            // 1.5rem minimum, centred 48rem column when wider.
+            "[&_.rich-editor-visual>div]:max-w-none! [&_.rich-editor-visual>div]:px-[max(1.5rem,calc((100%-48rem)/2))]! [&_.rich-editor-source>div]:max-w-none! [&_.rich-editor-source>div]:px-[max(1.5rem,calc((100%-48rem)/2))]!",
             // Match Plain/Split/Read inside the rich editor's scroll owners.
             // Padding the frame instead would lift the host's metadata/footer.
             // Embedded hosts keep the rich editor's existing compact runway.

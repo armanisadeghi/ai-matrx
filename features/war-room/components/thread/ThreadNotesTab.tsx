@@ -10,27 +10,16 @@
 // The active note is the is_active 'note' assignment edge — read via
 // selectActiveNoteId; the adapter is useThreadNoteSelectAdapter.
 //
-// Full view: one toolbar row (note select · Plain / Split / Read).
-// Compact ("All"): same merged toolbar; editor fills the section below.
+// A thread note is THE canonical note frame (`NoteWorkspace`): one top row —
+// the thread-note dropdown in the title slot, then the four modes, formatting,
+// tools — the editor, and the note's one bottom row. With no note yet, the
+// dropdown alone (it owns "+ New Note") above the empty state.
 
 import { useEffect } from "react";
-import { Loader2, Plus, StickyNote, Type, Columns2, Eye } from "lucide-react";
+import { Loader2, Plus, StickyNote } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
-import {
-  NoteEditorCore,
-  type EditorMode,
-} from "@/features/notes/components/NoteEditorCore";
-import {
-  selectNoteById,
-  selectNoteContent,
-  selectNoteEditorMode,
-} from "@/features/notes/redux/selectors";
-import {
-  setNoteEditorMode,
-  updateNoteContent,
-} from "@/features/notes/redux/slice";
-import { fetchNoteContent } from "@/features/notes/redux/thunks";
+import { NoteWorkspace } from "@/features/notes/components/NoteWorkspace";
 import {
   selectActiveNoteId,
   selectContainerAssignmentsLoaded,
@@ -40,28 +29,31 @@ import {
   hydrateThreadAssignments,
 } from "@/features/war-room/redux/thunks";
 import { useThreadNoteSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
-import { cn } from "@/lib/utils";
-import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
-
-const MODES: { id: EditorMode; label: string; Icon: typeof Type }[] = [
-  { id: "plain", label: "Plain", Icon: Type },
-  { id: "split", label: "Split", Icon: Columns2 },
-  { id: "preview", label: "Read", Icon: Eye },
-];
 
 export function ThreadNotesTab({
   threadId,
   sessionId,
-  compact,
 }: {
   threadId: string;
   sessionId: string;
+  /** Kept for callers; the canonical frame fits both the full and the compact tile. */
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const noteId = useAppSelector(selectActiveNoteId(threadId));
   const loaded = useAppSelector(
     selectContainerAssignmentsLoaded("thread", threadId),
+  );
+  // The canonical name dropdown: display + inline rename + switch + unlink +
+  // "+ New Note" — always visible, even with a single note.
+  const noteAdapter = useThreadNoteSelectAdapter(threadId, sessionId);
+  const noteSelect = (
+    <AssociationEntitySelect
+      token="note"
+      adapter={noteAdapter}
+      iconClassName="text-yellow-500"
+      className="min-w-0 flex-1"
+    />
   );
 
   // Hydrate the thread's assignments — NEVER creates a note. A thread's note
@@ -71,25 +63,31 @@ export function ThreadNotesTab({
     void dispatch(hydrateThreadAssignments(threadId));
   }, [threadId, dispatch]);
 
-  const body = noteId ? (
-    <ThreadNoteEditor noteId={noteId} compact={compact} />
-  ) : loaded ? (
-    <NoNoteEmptyState threadId={threadId} sessionId={sessionId} />
-  ) : (
-    <div className="grid h-full place-items-center">
-      <Loader2 className="size-5 animate-spin text-muted-foreground" />
-    </div>
-  );
+  if (noteId) {
+    return (
+      <NoteWorkspace
+        instanceId={`war-room-note:${threadId}`}
+        noteId={noteId}
+        titleSlot={noteSelect}
+        className="bg-transparent"
+      />
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ThreadNotesToolbar
-        threadId={threadId}
-        sessionId={sessionId}
-        noteId={noteId}
-        compact={compact}
-      />
-      <div className="min-h-0 flex-1">{body}</div>
+      <div className="flex h-7 shrink-0 items-center border-b border-border/60 pl-1.5 pr-1">
+        {noteSelect}
+      </div>
+      <div className="min-h-0 flex-1">
+        {loaded ? (
+          <NoNoteEmptyState threadId={threadId} sessionId={sessionId} />
+        ) : (
+          <div className="grid h-full place-items-center">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -120,110 +118,5 @@ function NoNoteEmptyState({
         </button>
       </div>
     </div>
-  );
-}
-
-function ThreadNotesToolbar({
-  threadId,
-  sessionId,
-  noteId,
-  compact,
-}: {
-  threadId: string;
-  sessionId: string;
-  noteId: string | null;
-  compact?: boolean;
-}) {
-  const dispatch = useAppDispatch();
-  const storedMode = useAppSelector(selectNoteEditorMode(noteId ?? ""));
-  const mode = ((storedMode as EditorMode) || "plain") as EditorMode;
-  // The canonical name dropdown: display + inline rename + switch + unlink +
-  // "+ New Note" — always visible, even with a single note.
-  const noteAdapter = useThreadNoteSelectAdapter(threadId, sessionId);
-
-  return (
-    <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
-      <AssociationEntitySelect
-        token="note"
-        adapter={noteAdapter}
-        iconClassName="text-yellow-500"
-        className="min-w-0 flex-1"
-      />
-
-      {noteId
-        ? MODES.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() =>
-                dispatch(setNoteEditorMode({ id: noteId, mode: id }))
-              }
-              aria-pressed={mode === id}
-              title={label}
-              className={cn(
-                "inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors",
-                mode === id
-                  ? "text-primary border border-primary/70"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              <Icon className="size-3" />
-              {!compact ? (
-                <span className="@max-[20rem]:hidden">{label}</span>
-              ) : null}
-            </button>
-          ))
-        : null}
-    </div>
-  );
-}
-
-function ThreadNoteEditor({
-  noteId,
-  compact,
-}: {
-  noteId: string;
-  compact?: boolean;
-}) {
-  const dispatch = useAppDispatch();
-  const content = useAppSelector(selectNoteContent(noteId));
-  const threadNote = useAppSelector(selectNoteById(noteId));
-  const viewerId = useAppSelector((state) => state.userAuth.id);
-  const storedMode = useAppSelector(selectNoteEditorMode(noteId));
-  const mode = ((storedMode as EditorMode) || "plain") as EditorMode;
-
-  useEffect(() => {
-    if (content === undefined) dispatch(fetchNoteContent(noteId));
-  }, [noteId, content, dispatch]);
-
-  const onChange = (next: string) =>
-    dispatch(updateNoteContent({ id: noteId, content: next }));
-
-  if (compact) {
-    return (
-      <NoteEditorCore imagePolicy={authoredBy(threadNote?.created_by, viewerId)}
-        content={content ?? ""}
-        onChange={onChange}
-        onChangeFlush={onChange}
-        editorMode={mode}
-        placeholder="Jot down anything for this thread…"
-        showVoiceButton={false}
-        embedded
-        className="h-full"
-      />
-    );
-  }
-
-  return (
-    <NoteEditorCore imagePolicy={authoredBy(threadNote?.created_by, viewerId)}
-      content={content ?? ""}
-      onChange={onChange}
-      onChangeFlush={onChange}
-      editorMode={mode}
-      showVoiceButton
-      embedded
-      placeholder="Jot down anything for this thread…"
-      className="h-full"
-    />
   );
 }
