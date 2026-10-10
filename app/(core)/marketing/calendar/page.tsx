@@ -7,6 +7,7 @@ import { RecordPageHeader } from "@/features/shell/components/header/templates/R
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { createClient } from "@/utils/supabase/server";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /**
  * `/marketing/calendar` lands on the PR calendar. The calendar belongs to one client
  * (`/marketing/<brand>/planning/calendar`), so with exactly one brand it goes straight
@@ -44,7 +45,7 @@ export default async function MarketingCalendarPage() {
                 your client list
               </Link>{" "}
               and choose Planning, then Calendar.
-            </p>
+            <ErrorAlchemyMenu /></p>
           ) : !brands?.length ? (
             <p className="text-sm text-muted-foreground">
               There is no client yet. <Link className="underline" href={marketingRoutes.brands()}>Add one</Link> and

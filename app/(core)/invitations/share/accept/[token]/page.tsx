@@ -120,7 +120,7 @@ export default function AcceptRecordSharePage() {
     return shell(
       <>
         <AlertCircle className="mx-auto mb-4 h-8 w-8 text-destructive" />
-        <h2 className="mb-2 text-xl font-semibold">We could not check this link</h2>
+        <h2 data-error-box className="mb-2 text-xl font-semibold">We could not check this link<ErrorAlchemyMenu /></h2>
         <p className="mb-4 text-sm text-muted-foreground">
           This does not mean it is dead — we could not look. Try again.{" "}
           <ErrorAlchemyMenu error={peekError} />
