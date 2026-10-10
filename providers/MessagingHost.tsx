@@ -50,7 +50,7 @@
 "use client";
 
 import { MessagingAttachment } from "@/features/messaging/components/MessagingAttachment";
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   MessagingProvider,
@@ -61,15 +61,12 @@ import {
 } from "@ai-matrx/messaging/react";
 import type { MessagingArchiveFilter, MessagingKindFilter } from "@ai-matrx/messaging/react";
 import type { ActionHandler } from "@ai-matrx/messaging";
-// One entry point: `@ai-matrx/meet/react` re-exports the whole core, so a React
-// file needs exactly one import specifier. (Through 0.2.0 this was a REQUIREMENT
-// — the two declaration files re-declared every branded type — but 0.2.1 builds
-// both entries in one dts pass, so it is now just the tidier habit.)
-import {
-  createCallInviteHandler,
-  createMeetingInviteHandler,
-  useMeetHost,
-} from "@ai-matrx/meet/react";
+// The Meet host CONTEXT comes from the tiny `host-slot` entry and the two invitation
+// handler factories are loaded with `import("@ai-matrx/meet/react")` after the page is idle
+// (the same chunk MeetHostCore loads) — a static import here would keep the whole Meet
+// engine (~650 KB source) in every route's first load. See providers/MeetHost.tsx.
+import { MeetHostContext } from "@ai-matrx/meet/host-slot";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import type {
   EngineDiagnostic,
   IncomingMessageContext,
@@ -241,12 +238,26 @@ export function MessagingHost({ children }: MessagingHostProps) {
   // handler is simply not registered, so an invitation message renders NO chips
   // rather than a button that cannot work. The meeting handler needs no runtime
   // — a durable link opens for anyone — so it is always registered.
-  const meetHost = useMeetHost();
+  const meetHost = useContext(MeetHostContext);
   const meetCalls = meetHost?.calls ?? null;
   const meetRepository = meetHost?.repository ?? null;
+  const idleForMeet = useIdleReady();
+  const [meetApi, setMeetApi] = useState<typeof import("@ai-matrx/meet/react") | null>(null);
+  useEffect(() => {
+    if (!idleForMeet) return;
+    let live = true;
+    void import("@ai-matrx/meet/react").then((api) => {
+      if (live) setMeetApi(api);
+    });
+    return () => {
+      live = false;
+    };
+  }, [idleForMeet]);
   const actions = useMemo(() => {
+    // Until the Meet package arrives no invite handler exists: an invitation renders no chips yet.
+    if (meetApi === null) return [] as ActionHandler<never>[];
     const list: ActionHandler<never>[] = [
-      createMeetingInviteHandler({
+      meetApi.createMeetingInviteHandler({
         onOpen: (payload) => {
           router.push(`/meet/${payload.slug}`);
         },
@@ -254,7 +265,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
     ];
     if (meetCalls !== null && meetRepository !== null) {
       list.unshift(
-        createCallInviteHandler({
+        meetApi.createCallInviteHandler({
           calls: meetCalls,
           repository: meetRepository,
           onJoin: (invite) => {
@@ -264,7 +275,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
       );
     }
     return list;
-  }, [meetCalls, meetRepository, router]);
+  }, [meetApi, meetCalls, meetRepository, router]);
 
   const onOpenReference = useCallback(
     (reference: { entityType: string; entityId: string }) => {

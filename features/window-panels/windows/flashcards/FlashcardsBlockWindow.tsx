@@ -16,7 +16,7 @@ import {
   useFlashcardsSet,
 } from "@/components/mardown-display/blocks/flashcards/flashcards-set-parts";
 import { PrintOptionsDialog } from "@ai-matrx/print/react";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { flashcardsPrinterLazy as flashcardsPrinter } from "@ai-matrx/print/flashcards-lazy";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowUpRight } from "lucide-react";
 import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";

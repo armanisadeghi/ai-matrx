@@ -10,6 +10,7 @@
  * `server.ts` directly from both places; they need no wrapper.
  */
 
+import type { SurfaceWriteHandlerEntry } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AD_LIBRARY_LABELS, isAdLibrary, type AdCardModel } from "./types";
 import { goalMetricId, measureGoal, metricDefOf, type KpiAccount, type KpiMetricId } from "./kpi";
 import { addToCollection, createCollection, ingestPost } from "./server";
@@ -119,6 +120,26 @@ export async function saveLinkToSwipe(args: {
     { organizationId },
   );
   return { postId: result.post_id, collectionId };
+}
+
+// -- Agent costs ----------------------------------------------------------------
+
+/** How many entries of an agent's list value match (all by default); 0 for a non-list. */
+export function countOf(value: unknown, match: (item: unknown) => boolean = () => true): number {
+  const list = Array.isArray(value) ? value : value && typeof value === "object" ? Object.values(value).find(Array.isArray) : null;
+  return Array.isArray(list) ? list.filter(match).length : 0;
+}
+
+/**
+ * Put a `cost` on one write handler of a set, so its approval card names what approving spends.
+ * `withCostOn(() => handlers)("create_x", (value) => "≈ 12 points")` returns `{ create_x: {...entry, cost} }`.
+ */
+export function withCostOn(handlers: () => Record<string, SurfaceWriteHandlerEntry>) {
+  return (name: string, cost: (value: unknown) => string | null): Record<string, SurfaceWriteHandlerEntry> => {
+    const entry = handlers()[name];
+    if (!entry) throw new Error(`No write handler "${name}" to put a cost on.`);
+    return { [name]: { ...entry, cost } };
+  };
 }
 
 // -- Ad library -----------------------------------------------------------------

@@ -20,6 +20,8 @@ import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matr
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateAccounts, parseUpdateAccounts } from "../agent-writes";
+import { useSocialSpend } from "../cost";
+import { countOf, withCostOn } from "../social-actions";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import { createSocialAccountsScope, SOCIAL_ACCOUNTS_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-social-accounts.manifest";
 import { useMemo, useState } from "react";
@@ -106,6 +108,7 @@ export function AccountsTab() {
     costText,
     confirmSpend,
   } = useTrackOwn(organizationId, brandId);
+  const { agentCostText } = useSocialSpend(organizationId);
 
   const {
     show: showRefused,
@@ -539,17 +542,13 @@ export function AccountsTab() {
   // Agent writes: Track an account (the Track dialog's handle-or-link save), Track as Own, Stop
   // tracking, role change and Refresh — the same saves as the buttons, each approved on a card
   // first; anything that spends points names them before it runs (confirmSpend).
-  const declined = (what: string) => new Error(`The person declined the points to ${what}.`);
-  useSurfaceWriteHandlers(
-    SOCIAL_ACCOUNTS_SURFACE_NAME,
-    collectionWriteHandlers(
+  const accountWrites = collectionWriteHandlers(
       {
         plural: "accounts",
         singular: "account",
         create: {
           parse: (value) => parseCreateAccounts(value),
           run: async (plan) => {
-            if (!(await confirmSpend("track", 1, { title: `Track ${plan.label}?`, confirmLabel: "Track" }))) throw declined(`track ${plan.label}`);
             const result = await trackAccount(
               { handleOrUrl: plan.handleOrUrl, platform: plan.platform, role: plan.role, brandId, pages: 1 },
               { organizationId },
@@ -567,12 +566,10 @@ export function AccountsTab() {
             const { row } = plan;
             if (plan.tracked === false && row.trackedAccountId) await untrackAccount(row.trackedAccountId, { organizationId });
             if (plan.tracked === true) {
-              if (!(await confirmSpend("track", 1, { title: `Track ${plan.label} as Own?`, confirmLabel: "Track" }))) throw declined(`track ${plan.label}`);
               if ((await trackOwnRow(row)) !== "ok") throw new Error(`${plan.label} could not be tracked.`);
             }
             if (plan.role && row.trackedAccountId) await setTrackedRole(row.trackedAccountId, plan.role);
             if (plan.refresh && row.profileId) {
-              if (!(await confirmSpend("profile_page", 1, { title: `Refresh ${plan.label}?`, confirmLabel: "Refresh" }))) throw declined(`refresh ${plan.label}`);
               await refreshProfile(row.profileId, { pages: 1 }, { organizationId });
             }
             await invalidate();
@@ -585,8 +582,20 @@ export function AccountsTab() {
         },
       },
       refuseSurfaceWrite,
+    );
+  // The approval card names the points, however small: one track per account, one page per refresh.
+  const flagged = (key: string) => (value: unknown) =>
+    countOf(value, (item) => !!item && typeof item === "object" && (item as Record<string, unknown>)[key] === true);
+  const accountCost = withCostOn(() => accountWrites);
+  useSurfaceWriteHandlers(SOCIAL_ACCOUNTS_SURFACE_NAME, {
+    ...accountWrites,
+    ...accountCost("create_accounts", (value) => agentCostText("track", countOf(value))),
+    ...accountCost("update_accounts", (value) =>
+      [agentCostText("track", flagged("tracked")(value)), agentCostText("profile_page", flagged("refresh")(value))]
+        .filter(Boolean)
+        .join(" + ") || null,
     ),
-  );
+  });
 
   return (
     <>
