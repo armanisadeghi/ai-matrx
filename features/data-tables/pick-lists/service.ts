@@ -188,3 +188,13 @@ export async function updateChoice(
   if (!updated.ok) throw new Error(`Failed to update the choice: ${updated.error.message}`);
   choiceVersions.wrote(client, choiceId, updated.data);
 }
+
+/**
+ * Retire one choice: it is ARCHIVED (soft, restorable), never destroyed. Records that hold it keep it
+ * and read it as retired, so a choice in use is never lost.
+ */
+export async function archiveChoice(listId: string, choiceId: string): Promise<void> {
+  const client = await recordsClientForList(listId);
+  const archived = await client.recordDelete({ record_id: choiceId });
+  if (!archived.ok) throw new Error(`Failed to archive the choice: ${archived.error.message}`);
+}
