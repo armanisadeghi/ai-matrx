@@ -50,23 +50,27 @@ export function createRecordCountStore(
       for (let i = 0; i < ids.length; i += RECORD_COUNT_CHUNK) chunks.push(ids.slice(i, i + RECORD_COUNT_CHUNK));
       // One organization's chunks go one after another (a burst of heavy counts is what timed out);
       // organizations go side by side.
-      void chunks.reduce<Promise<void>>(
-        (before, chunk) =>
-          before.then(() =>
-            ask(organizationId, chunk)
-              .then((answer) => {
-                if (answer.ok) {
-                  for (const row of answer.data) counts.set(row.table_id, Number(row.visible_rows));
-                }
-              })
-              .catch(() => undefined)
-              .finally(() => {
-                chunk.forEach((id) => inFlight.delete(id));
-                notify();
-              }),
-          ),
-        Promise.resolve(),
-      );
+      // The first chunk goes out in this tick (nothing waits on a promise to start); the rest follow
+      // one after another as each answer lands.
+      const run = (i: number): void => {
+        const chunk = chunks[i];
+        if (!chunk) return;
+        ask(organizationId, chunk)
+          .then(
+            (answer) => {
+              if (answer.ok) {
+                for (const row of answer.data) counts.set(row.table_id, Number(row.visible_rows));
+              }
+            },
+            () => undefined,
+          )
+          .then(() => {
+            chunk.forEach((id) => inFlight.delete(id));
+            notify();
+            run(i + 1);
+          });
+      };
+      run(0);
     }
   };
 

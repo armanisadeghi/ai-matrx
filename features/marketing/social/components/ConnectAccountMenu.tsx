@@ -2,7 +2,7 @@
 
 /**
  * The ONE connect control on the Accounts tab: a menu listing every network with where it stands
- * (Connect / Connected / Approved testers / Coming soon), plus "Manage connections" for the full hub.
+ * (Connect / Connected / Coming soon), plus "Manage connections" for the full hub.
  * Per-row connection state lives in the table's Connection column; this only starts a connection.
  * Nothing here claims a network is unavailable before its configuration has loaded.
  */

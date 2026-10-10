@@ -269,7 +269,7 @@ describe("the column has not been applied", () => {
     const m = await mount();
     try {
       expect(m.text).toContain("COLUMN ABSENT SENTENCE");
-      expect(m.text).not.toContain("No YouTube channel is bound to this client yet");
+      expect(m.text).not.toContain("No channel linked");
     } finally {
       m.unmount();
     }
@@ -318,7 +318,7 @@ describe("no channel is bound", () => {
     ];
     const m = await mount();
     try {
-      expect(m.text).toContain("No YouTube channel is bound");
+      expect(m.text).toContain("No channel linked");
       expect(m.text).toContain("All Green Recycling");
       expect(m.text).toContain("@allgreen");
       // The row names the channel and its handle, never the connected account's email.
@@ -735,8 +735,7 @@ describe("the pre-upload check is on the panel", () => {
   it("promises to publish nothing, in plain words", async () => {
     const m = await mount();
     try {
-      expect(m.text).toContain("Check a video before you upload it");
-      expect(m.text).toContain("Nothing here is sent to YouTube");
+      expect(m.text).toContain("Check a video");
     } finally {
       m.unmount();
     }

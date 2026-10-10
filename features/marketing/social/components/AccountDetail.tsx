@@ -340,6 +340,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const [busy, setBusy] = useState(false);
   // The refresh's inline home: its live stage while running, then what it did
   // (or why it failed), beside the button that started it.
+  const [captureNotice, setCaptureNotice] = useState<{ text: string; failed: boolean } | null>(null);
   const [refreshLine, setRefreshLine] = useState<{ text: string; failed: boolean; error?: unknown } | null>(null);
 
   async function refresh() {
@@ -402,6 +403,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   }
 
   const p = profile.data;
+  const notice = refreshLine ?? captureNotice;
   const list = enrichWithCaptures(posts.data ?? [], captures.data ?? [], p.platform);
   const role = tracked.data && isTrackedRole(tracked.data.role) ? tracked.data.role : null;
   const growth = judgeFollowerGrowth(snapshots.data ?? []);
@@ -442,17 +444,6 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
           <Badge tone="warning">Not tracked</Badge>
         )}
         <span className="ml-auto flex min-w-0 items-center gap-1">
-          {refreshLine ? (
-            <span
-              role="status"
-              aria-live="polite"
-              title={refreshLine.text}
-              className={`flex min-w-0 max-w-[44ch] items-center truncate text-xs ${refreshLine.failed ? "text-destructive" : "text-muted-foreground"}`}
-            >
-              <span className="truncate">{refreshLine.text}</span>
-              {refreshLine.failed ? <ErrorAlchemyMenu error={refreshLine.error} operation="refresh social account" /> : null}
-            </span>
-          ) : null}
           {tracked.data ? (
             <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}
@@ -465,6 +456,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
           {GUIDED_CAPTURE_PLATFORMS.has(p.platform) ? (
             <GatedCaptureOffer
               compact
+              onNotice={setCaptureNotice}
               organizationId={brand.organizationId}
               platformLabel={platformLabel(platform)}
               target={{
@@ -484,6 +476,19 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             </Button>
           ) : null}
         </span>
+      </div>
+
+      {/* Reserved line: the refresh notice never moves the page. */}
+      <div className="-mt-1 min-h-4 text-xs leading-4" role="status" aria-live="polite">
+        {notice ? (
+          <span
+            title={notice.text}
+            className={`flex min-w-0 items-center ${notice.failed ? "text-destructive" : "text-muted-foreground"}`}
+          >
+            <span className="truncate">{notice.text}</span>
+            {refreshLine?.failed ? <ErrorAlchemyMenu error={refreshLine.error} operation="refresh social account" /> : null}
+          </span>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">

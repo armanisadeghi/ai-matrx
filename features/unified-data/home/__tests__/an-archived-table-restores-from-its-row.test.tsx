@@ -20,7 +20,12 @@ import { ORGS, row } from "./fixtures";
 
 // The store, at the one seam the restore uses: `custom.table_restore` through the data source.
 const rpc = jest.fn();
-jest.mock("@ai-matrx/records/core", () => ({ createRecordsClient: jest.fn() }));
+// Keep the real core: `@ai-matrx/records` (loaded through records-ui) registers
+// `onTableStructureChanged` from it at import, so a mock with only the client factory broke the suite.
+jest.mock("@ai-matrx/records/core", () => ({
+  ...jest.requireActual("@ai-matrx/records/core"),
+  createRecordsClient: jest.fn(),
+}));
 jest.mock("@ai-matrx/records/react", () => ({
   RecordsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useRecordsClient: () => ({

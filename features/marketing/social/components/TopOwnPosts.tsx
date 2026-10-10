@@ -19,6 +19,7 @@ export function TopOwnPosts({ trackedAccountId, limit = 5 }: { trackedAccountId:
   const metrics = availablePostMetrics(figures);
   const metric = picked && metrics.some((m) => m.id === picked) ? picked : metrics[0]?.id ?? null;
   const top = metric ? topOwnPosts(figures, metric, limit) : [];
+  if (!query.isLoading && !query.isError && top.length === 0) return null;
   return (
     <section aria-label="Top posts" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -41,8 +42,6 @@ export function TopOwnPosts({ trackedAccountId, limit = 5 }: { trackedAccountId:
         <p className="text-xs text-muted-foreground">Loading</p>
       ) : query.isError ? (
         <p className="text-xs text-muted-foreground">Couldn't load</p>
-      ) : top.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Not available</p>
       ) : (
         <ol className="flex flex-col divide-y divide-border rounded-md border border-border">
           {top.map((f) => {

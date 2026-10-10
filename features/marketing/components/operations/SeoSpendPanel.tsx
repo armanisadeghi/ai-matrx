@@ -143,7 +143,7 @@ export function SeoSpendPanel() {
   const spend = useSeoSpendSummary(orgFilter);
   const orgName = orgFilter
     ? (organizations.find((org) => org.id === orgFilter)?.name ?? "")
-    : "All organizations";
+    : "All your organizations";
   const orgFilterControl = (
     <div className="flex justify-end pb-2">
       <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
@@ -297,7 +297,7 @@ export function SeoSpendPanel() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             This month by activity{orgName ? ` · ${orgName}` : ""}
-            {data.organizationCount > 1 ? ` (${data.organizationCount} organizations)` : ""}
+            {!orgFilter && data.organizationCount > 1 ? ` (${data.organizationCount})` : ""}
           </h2>
           <Button
             variant="quiet"

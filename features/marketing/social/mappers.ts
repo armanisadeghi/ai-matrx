@@ -527,7 +527,7 @@ function plural(n: number, word: string): string {
  */
 export function refreshSummary(r: IngestProfileResult): string {
   if (r.trace?.reused) {
-    return r.notes?.[0] ?? "Refreshed recently; served from the shared cache, no new fetch";
+    return "Up to date (refreshed in the last 12 hours)";
   }
   if (r.pages_walked > 0 && r.posts_upserted === 0) return "No posts returned";
   if (typeof r.posts_new === "number") {

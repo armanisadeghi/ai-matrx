@@ -26,7 +26,7 @@ export type ConnectionState =
 export const CONNECTION_STATE_LABELS: Record<ConnectionState, string> = {
   connected: "Connected",
   reconnect: "Needs reconnect",
-  testers_only: "Testers only",
+  testers_only: "Connect",
   not_offered: "Not offered yet",
   not_connected: "Not connected",
 };
@@ -88,6 +88,7 @@ export function judgeConnection(
     const config = configs.find((c) => c.provider === hubProvider);
     if (!config || config.status === "unavailable" || config.accessMode === "unavailable")
       return { platform, state: "not_offered", connectionId: null, canConnect: false, hubProvider };
+    // The server answers `available` only for a viewer it admits; a non-tester was already sent to "Coming soon" above.
     if (config.accessMode === "internal_test")
       return { platform, state: "testers_only", connectionId: null, canConnect: true, hubProvider };
   }
@@ -149,7 +150,7 @@ export async function loadConnectionSnapshot(organizationId: string): Promise<Co
 export const CONNECT_MENU_STATUS: Record<ConnectionState, string> = {
   connected: "Connected",
   reconnect: "Reconnect",
-  testers_only: "Approved testers",
+  testers_only: "Connect",
   not_offered: "Coming soon",
   not_connected: "Connect",
 };

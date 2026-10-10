@@ -289,7 +289,7 @@ function ChannelBindControl({
   return (
     <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border px-2.5 py-2">
       <p className="text-xs leading-5 text-muted-foreground">
-        No YouTube channel is bound to this client yet.
+        No channel linked
       </p>
       {inventory.isLoading || elsewhere.isLoading ? (
         <div className="h-6 w-40 animate-pulse rounded bg-muted/40" />
@@ -308,7 +308,7 @@ function ChannelBindControl({
       ) : rows.length === 0 ? (
         <>
           <p className="text-xs leading-5 text-muted-foreground">
-            No connected Google account owns a YouTube channel.
+            No connected account has a channel
           </p>
           <div>
             <Button

@@ -30,7 +30,9 @@ function InboxBadge({ count, dot }: { count: number; dot: "updates" | "unknown" 
   if (count > 0) {
     return (
       <span
-        className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground"
+        // Two-digit counts and "99+" share one width (27px): the count grows 12 -> 99+ as the inbox
+        // reads land, and a pill that widened with it shifted by 6px each time (CLS).
+        className={`pointer-events-none absolute right-1 top-1 flex h-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground ${count > 9 ? "min-w-[27px]" : "min-w-4"}`}
         aria-hidden
       >
         {count > 99 ? "99+" : count}

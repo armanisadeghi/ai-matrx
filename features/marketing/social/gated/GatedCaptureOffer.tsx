@@ -29,6 +29,7 @@ export function GatedCaptureOffer({
   platformLabel,
   onCaptured,
   compact = false,
+  onNotice,
 }: {
   organizationId: string;
   target: GuidedCaptureTarget;
@@ -36,6 +37,8 @@ export function GatedCaptureOffer({
   onCaptured?: () => void;
   /** One row of buttons, no lead line (inside a dialog footer area). */
   compact?: boolean;
+  /** When given, the capture's status/notice goes to the caller's reserved line instead of rendering here. */
+  onNotice?: (notice: { text: string; failed: boolean } | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<CaptureHandoff | null>(null);
@@ -66,6 +69,13 @@ export function GatedCaptureOffer({
     ? view.failure ?? (view.phase === "saved_unread" ? "Saved, not read yet" : view.label)
     : null;
 
+  const noticeText = status ?? line?.text ?? null;
+  const noticeFailed = status ? view?.phase === "failed" : Boolean(line?.failed);
+  useEffect(() => {
+    onNotice?.(noticeText ? { text: noticeText, failed: noticeFailed } : null);
+  }, [noticeText, noticeFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inline = !onNotice;
+
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {compact ? null : (
@@ -82,13 +92,13 @@ export function GatedCaptureOffer({
           {...(platformLabel ? { platformLabel } : {})}
           {...(onCaptured ? { onCaptured } : {})}
         />
-        {status ? (
+        {inline && status ? (
           <span role="status" aria-live="polite" className={`truncate text-xs ${view?.phase === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
             {status}
           </span>
         ) : null}
       </div>
-      {line ? (
+      {inline && line ? (
         <p className={`flex flex-wrap items-center gap-2 text-xs ${line.failed ? "text-destructive" : "text-muted-foreground"}`}>
           {line.text}
           {line.install ? (

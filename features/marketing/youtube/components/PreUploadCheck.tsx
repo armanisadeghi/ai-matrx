@@ -106,12 +106,8 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
     <section className={className}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">
-          Check a video before you upload it
+          Check a video
         </h3>
-        <p className="text-[11px] leading-4 text-muted-foreground">
-          Nothing here is sent to YouTube — our permission is read-only. You copy
-          the result and paste it into YouTube Studio yourself.
-        </p>
       </div>
 
       <div className="mt-2 grid gap-3 lg:grid-cols-2">
@@ -131,7 +127,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               onChange={(event) =>
                 setDraft({ ...draft, targetKeyword: event.target.value })
               }
-              placeholder="commercial roof inspection"
+              placeholder="Keyword"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -142,7 +138,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               id="yt-title"
               value={draft.title}
               onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-              placeholder="What the video is, in the words someone searches"
+              placeholder="Title"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -156,7 +152,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
                 setDraft({ ...draft, description: event.target.value })
               }
               rows={5}
-              placeholder="The first 150 characters are all most people ever read."
+              placeholder="Description"
               className="text-base sm:text-sm"
             />
           </div>
@@ -168,7 +164,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               id="yt-tags"
               value={draft.tagsRaw}
               onChange={(event) => setDraft({ ...draft, tagsRaw: event.target.value })}
-              placeholder="roof inspection, commercial roofing, flat roof"
+              placeholder="Tag, tag, tag"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -194,12 +190,8 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               onChange={(event) =>
                 setDraft({ ...draft, thumbnailText: event.target.value })
               }
-              placeholder="ROOF LEAK?"
+              placeholder="Words on the image"
             />
-            <p className="text-[10px] leading-3 text-muted-foreground">
-              We cannot read your image. Telling us the words lets us say whether
-              there are too many to read at feed size.
-            </p>
           </div>
         </div>
 
@@ -212,23 +204,19 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
                   ? `Your thumbnail, which you said reads "${draft.thumbnailText.trim()}"`
                   : "Your thumbnail at the size the YouTube mobile feed shows it"
               }
-              caption="Actual size in the YouTube mobile feed. If you cannot read it here, nobody can read it there."
+              caption="Actual size in the mobile feed"
             />
             <div className="min-w-0 flex-1">
               {/* 🚨 THE KNOB'S DEFAULT ANNOUNCES ITSELF (law 4). While the ladder
                   is being asked, the screen says which posture it is acting on
                   rather than flickering between two different rule sets. */}
               {knob.isResolving ? (
-                <p className="text-[11px] leading-4 text-muted-foreground">
-                  Checking whether your organization requires a target keyword —
-                  using the platform default (required) until it answers.
-                </p>
+                <p className="text-[11px] leading-4 text-muted-foreground">Checking keyword rule…</p>
               ) : null}
               {nothingTyped ? (
                 <p className="flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
                   <Eye className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-                  Type or paste a title, description and tags on the left. The
-                  checks below grade them as you go and nothing is saved anywhere.
+                  Add a title, description and tags to score them
                 </p>
               ) : null}
             </div>
@@ -251,16 +239,6 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
             >
               Copy to YouTube Studio
             </Button>
-            {nothingTyped ? (
-              <span className="text-[11px] leading-4 text-muted-foreground">
-                There is nothing to copy yet.
-              </span>
-            ) : (
-              <span className="text-[11px] leading-4 text-muted-foreground">
-                Copies the title, description and tags exactly as typed — nothing
-                is added and nothing is sent.
-              </span>
-            )}
           </div>
         </div>
       </div>

@@ -8,14 +8,14 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { useRouter } from "next/navigation";
 import { socialRowOpen } from "../row-open";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef, MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import { SOCIAL_ROLLUP_SURFACE_NAME, createSocialRollupScope } from "@/features/surfaces/manifests/marketing-social-rollup.manifest";
@@ -178,6 +178,43 @@ const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
   { id: "posted", label: "Posted", header: "Posted", accessorFn: (r) => r.postedAt, filter: "date", cell: (r) => relativeAge(r.postedAt) },
 ];
 
+function stat(label: string, value: ReactNode) {
+  return (
+    <span className="flex items-baseline gap-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm tabular-nums text-foreground">{value}</span>
+    </span>
+  );
+}
+
+function RollupAccountCard({ row: r, controls }: { row: AgencyAccountRow; controls: MatrxDataTableMobileCardControls }) {
+  return (
+    <div className="flex flex-col gap-1.5 p-3">
+      <div className="min-w-0 text-sm">{controls.renderCell("account")}</div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {stat("Brand", r.brandName)}
+        {stat("Followers", formatCompact(r.followers))}
+        {stat("Refreshed", relativeAge(r.lastRefreshedAt))}
+        <span className="text-xs text-muted-foreground">{TRACKED_ROLE_LABELS[r.role]}</span>
+      </div>
+    </div>
+  );
+}
+
+function RollupOutlierCard({ row: r, controls }: { row: AgencyOutlierRow; controls: MatrxDataTableMobileCardControls }) {
+  return (
+    <div className="flex flex-col gap-1.5 p-3">
+      <div className="min-w-0 text-sm">{controls.renderCell("post")}</div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {stat("Brand", r.brandName)}
+        {stat("Multiple", formatMultiplier(r.score))}
+        {stat("Views", formatCompact(r.views))}
+        {stat("Posted", relativeAge(r.postedAt))}
+      </div>
+    </div>
+  );
+}
+
 export function SocialReportsSection() {
   const agency = useAgencySocial();
   const router = useRouter();
@@ -255,6 +292,8 @@ export function SocialReportsSection() {
               if (href) router.push(href);
               else if (r.profileUrl) window.open(r.profileUrl, "_blank", "noopener,noreferrer");
             })}
+            mobileCardsBreakpoint="md"
+            mobileCards={(r, _i, controls) => <RollupAccountCard row={r} controls={controls} />}
             isLoading={agency.isLoading}
             read={{
               status: agency.isError ? "error" : agency.isLoading ? "loading" : "ready",
@@ -274,6 +313,8 @@ export function SocialReportsSection() {
             {...socialRowOpen<AgencyOutlierRow>((r) => {
               window.open(r.url, "_blank", "noopener,noreferrer");
             })}
+            mobileCardsBreakpoint="md"
+            mobileCards={(r, _i, controls) => <RollupOutlierCard row={r} controls={controls} />}
             isLoading={agency.isLoading}
             read={{
               status: agency.isError ? "error" : agency.isLoading ? "loading" : "ready",
