@@ -378,10 +378,10 @@ export function RoomHeader({
           // half-gap on the side facing it (rule 3).
           <div
             data-matrx-glass
-            className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-[var(--matrx-tap-wide-size)] items-center rounded-full"
+            className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-[var(--matrx-tap-wide-size)] items-center rounded-full pe-2"
           >
             <ChevronLeftTapButton variant="group" href="/war-room/all" ariaLabel="Back" />
-            <div data-matrx-glass className="flex min-w-0 items-center gap-1.5 ps-1 pe-2">
+            <div data-matrx-glass className="flex min-w-0 items-center gap-1.5 ps-1">
               {/* The room's mark opens its details (icon, color, purpose).
                   Drawn only when the header's own row is roomy, so on a
                   phone or beside the canvas the TITLE keeps the space. */}

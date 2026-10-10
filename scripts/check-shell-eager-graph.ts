@@ -54,6 +54,9 @@ export const HEAVY: ReadonlyArray<{ match: RegExp; why: string }> = [
   { match: /^xlsx\//, why: "SheetJS" },
   { match: /^pdfjs-dist\//, why: "PDF.js" },
   { match: /^katex\//, why: "KaTeX (~680 KB) — markdown math, loaded with @ai-matrx/print/markdown on first use" },
+  // BUNDLE-3: the first load carries only the generated surface INDEX; manifest bodies load lazily.
+  { match: /^features\/surfaces\/manifests\/(registry|.*\.manifest)\.tsx?$/, why: "surface manifest bodies (~600 KB gzip) — the shell reads the generated index; bodies load per surface" },
+  { match: /^@ai-matrx\/chat\/dist\/surfaces\/manifests\/(?!_baseline).*\.manifest\.js$/, why: "package surface manifest bodies — loaded with the app registry, never by the shell" },
 ];
 
 /** next.config.js turbopack.resolveAlias, for the production (non-demos) profile. Kept in sync

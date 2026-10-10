@@ -34,7 +34,7 @@ import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-p
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
-import { getManifest as getSurfaceManifest } from "@/features/surfaces/manifests/registry";
+import { getManifest as getSurfaceManifest } from "@ai-matrx/chat/surfaces/runtime/registry";
 import {
   usePageCapture,
   usePageCaptureContribution,

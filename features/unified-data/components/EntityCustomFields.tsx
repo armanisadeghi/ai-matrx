@@ -62,7 +62,7 @@ import {
   recordReadableKey,
   type RecordReadableAnswer,
 } from "@/features/unified-data/customFieldsRead";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getManifest } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export interface EntityCustomFieldsProps {
