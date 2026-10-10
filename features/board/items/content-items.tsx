@@ -16,6 +16,7 @@ import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
 import { TextTileBody } from "../tiles/TextTileBody";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { parseWebUrl } from "./web-address";
+import { FaceLine, faceCopy } from "./face-text";
 
 function UrlPicker({
   label,
@@ -102,6 +103,12 @@ function LabelBody({ source, onSource }: ItemBodyProps) {
   return <TextTileBody text={source.text} onChange={(text) => onSource({ kind: "label", text })} />;
 }
 
+/** The write-up's card at far zoom: its first words, or a line saying it is empty. */
+function WriteUpFace({ source }: { source: NodeSource }) {
+  const { text, muted } = faceCopy("write-up", source.kind === "text" ? source.markdown : null, true);
+  return <FaceLine icon={FileText} text={text} muted={muted} />;
+}
+
 export const CONTENT_ITEMS: BoardItemType[] = [
   {
     key: "web-page",
@@ -162,6 +169,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     defaultSize: { w: 640, h: 720 },
     matches: (s) => s.kind === "text",
     Body: WriteUpBody,
+    Face: WriteUpFace,
     kindLabel: "markdown",
   },
   {
