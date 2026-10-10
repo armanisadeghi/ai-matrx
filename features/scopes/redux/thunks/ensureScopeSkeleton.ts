@@ -20,37 +20,28 @@ import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
-let skeletonInFlight: Promise<void> | null = null;
-const typeInFlight = new Map<string, Promise<void>>();
-const searchInFlight = new Map<string, Promise<void>>();
+// No host in-flight state: a second ask while a read is out runs the same door call, which the
+// records client sends once (its in-flight dedupe), and every reducer here is idempotent (a page is
+// merged by scope id), so each caller simply awaits its own answer.
 
 export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     if (!getUserId()) return;
     const s = getState().scopesTree;
     if (!opts.refresh && (s.skeletonStatus === "ready" || s.treeStatus === "ready")) return;
-    if (skeletonInFlight) return skeletonInFlight;
     // A refresh asks for her organizations and projects again (lane PAGE-BUNDLE-2).
     if (opts.refresh) forgetSharedScopeBootRead();
     dispatch(scopesActions.skeletonFetchPending());
-    const promise = (async () => {
-      try {
-        const res = await scopesService.getScopeTree({ shape: "skeleton" });
-        if (!res.ok) {
-          dispatch(scopesActions.skeletonFetchRejected(res.error.message));
-          return;
-        }
-        dispatch(scopesActions.skeletonFetchFulfilled(res.data));
-        // No separate counts call: a count asks the one ladder of every Table — the same work as the
-        // whole tree, which loads right behind the first paint (DeferredSingletonCore) and fills every
-        // count. A count is an honest dash until then. `readScopeTypes(orgs, true)` stays for a screen
-        // that needs counts without the whole tree.
-      } finally {
-        skeletonInFlight = null;
-      }
-    })();
-    skeletonInFlight = promise;
-    return promise;
+    const res = await scopesService.getScopeTree({ shape: "skeleton" });
+    if (!res.ok) {
+      dispatch(scopesActions.skeletonFetchRejected(res.error.message));
+      return;
+    }
+    dispatch(scopesActions.skeletonFetchFulfilled(res.data));
+    // No separate counts call: a count asks the one ladder of every Table — the same work as the
+    // whole tree, which loads right behind the first paint (DeferredSingletonCore) and fills every
+    // count. A count is an honest dash until then. `readScopeTypes(orgs, true)` stays for a screen
+    // that needs counts without the whole tree.
   };
 }
 
@@ -75,34 +66,24 @@ export function ensureTypeScopes(
     const entry = state.scopesTree.typeScopes[scopeTypeId];
     if (entry?.status === "complete") return;
     if (entry?.status === "partial" && !opts.more) return;
-    const pending = typeInFlight.get(scopeTypeId);
-    if (pending) return pending;
     const offset = entry?.status === "partial" ? (entry.nextOffset ?? 0) : 0;
     dispatch(scopesActions.typeScopesPending({ scopeTypeId }));
-    const promise = (async () => {
-      try {
-        const res = await scopeDoors().typeScopesPage(scopeTypeId, offset, TYPE_SCOPES_PAGE);
-        if (!res.ok) {
-          dispatch(scopesActions.typeScopesRejected({ scopeTypeId, error: res.error.message }));
-          return;
-        }
-        const type = findType(getState(), scopeTypeId);
-        dispatch(
-          scopesActions.typeScopesPageFulfilled({
-            organizationId: type?.organization_id ?? res.data.scopes[0]?.organization_id ?? "",
-            scopeTypeId,
-            offset,
-            scopes: res.data.scopes,
-            total: res.data.total,
-            nextOffset: res.data.next_offset,
-          }),
-        );
-      } finally {
-        typeInFlight.delete(scopeTypeId);
-      }
-    })();
-    typeInFlight.set(scopeTypeId, promise);
-    return promise;
+    const res = await scopeDoors().typeScopesPage(scopeTypeId, offset, TYPE_SCOPES_PAGE);
+    if (!res.ok) {
+      dispatch(scopesActions.typeScopesRejected({ scopeTypeId, error: res.error.message }));
+      return;
+    }
+    const type = findType(getState(), scopeTypeId);
+    dispatch(
+      scopesActions.typeScopesPageFulfilled({
+        organizationId: type?.organization_id ?? res.data.scopes[0]?.organization_id ?? "",
+        scopeTypeId,
+        offset,
+        scopes: res.data.scopes,
+        total: res.data.total,
+        nextOffset: res.data.next_offset,
+      }),
+    );
   };
 }
 
@@ -119,24 +100,14 @@ export function searchScopes(query: string, limit = 100): AppThunk<Promise<void>
     if (getState().scopesTree.treeStatus === "ready") return;
     const prev = getState().scopesTree.scopeSearch[key];
     if (prev?.status === "ready") return;
-    const pending = searchInFlight.get(key);
-    if (pending) return pending;
     dispatch(scopesActions.scopeSearchPending({ key }));
-    const promise = (async () => {
-      try {
-        const st = getState().scopesTree;
-        const orgIds = st.treeStatus === "ready" ? st.organizationIds : st.skeletonOrganizationIds;
-        const res = await scopeDoors().search(orgIds, query, limit);
-        if (!res.ok) {
-          dispatch(scopesActions.scopeSearchRejected({ key, error: res.error.message }));
-          return;
-        }
-        dispatch(scopesActions.scopeSearchFulfilled({ key, scopes: res.data.scopes, total: res.data.total }));
-      } finally {
-        searchInFlight.delete(key);
-      }
-    })();
-    searchInFlight.set(key, promise);
-    return promise;
+    const st = getState().scopesTree;
+    const orgIds = st.treeStatus === "ready" ? st.organizationIds : st.skeletonOrganizationIds;
+    const res = await scopeDoors().search(orgIds, query, limit);
+    if (!res.ok) {
+      dispatch(scopesActions.scopeSearchRejected({ key, error: res.error.message }));
+      return;
+    }
+    dispatch(scopesActions.scopeSearchFulfilled({ key, scopes: res.data.scopes, total: res.data.total }));
   };
 }

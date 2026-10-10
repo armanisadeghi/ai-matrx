@@ -5,7 +5,9 @@
 // No-refetch policy: this thunk is the ONLY allowed entry point for the
 // tree boot fetch. It checks state before firing:
 //   - `treeStatus: 'ready'` and `refresh: false` → return cached
-//   - `treeStatus: 'loading'` → return the in-flight promise (dedup)
+//   - `treeStatus: 'loading'` → read again: the records client sends identical door reads once,
+//     and the boot read of organizations/projects is shared (`sharedScopeBootRead`), so every
+//     caller awaits a whole tree without a host in-flight map
 //   - otherwise → fire a new fetch
 //
 // Refresh is an explicit user action (a "Refresh" button click). Route
@@ -19,8 +21,6 @@ import { getUserId } from "@/utils/auth/getUserId";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
-
-let inFlight: Promise<void> | null = null;
 
 export interface EnsureScopeTreeOptions {
   refresh?: boolean;
@@ -40,8 +40,6 @@ export type AdminOrganizationTreeResult =
   | { status: "member" | "loaded" }
   | { status: "not_found" }
   | { status: "error"; message: string };
-
-const adminInFlightResult = new Map<string, Promise<AdminOrganizationTreeResult>>();
 
 /**
  * The admin-lane mode of the one tree loader (see EnsureScopeTreeOptions):
@@ -64,26 +62,11 @@ export function ensureAdminOrganizationTree(
     if (!refresh && state.organizations[organizationId]?.admin_lane) {
       return { status: "loaded" };
     }
-    const pending = adminInFlightResult.get(organizationId);
-    if (pending) return pending;
-    const promise = (async (): Promise<AdminOrganizationTreeResult> => {
-      try {
-        const res =
-          await scopesService.getOrganizationTreeForAdmin(organizationId);
-        if (!res.ok) {
-          return { status: "error", message: res.error.message };
-        }
-        if (!res.data.organization) return { status: "not_found" };
-        dispatch(
-          scopesActions.adminLaneOrganizationLoaded(res.data.organization),
-        );
-        return { status: "loaded" };
-      } finally {
-        adminInFlightResult.delete(organizationId);
-      }
-    })();
-    adminInFlightResult.set(organizationId, promise);
-    return promise;
+    const res = await scopesService.getOrganizationTreeForAdmin(organizationId);
+    if (!res.ok) return { status: "error", message: res.error.message };
+    if (!res.data.organization) return { status: "not_found" };
+    dispatch(scopesActions.adminLaneOrganizationLoaded(res.data.organization));
+    return { status: "loaded" };
   };
 }
 
@@ -110,26 +93,16 @@ export function ensureScopeTree(
     if (!getUserId()) return;
 
     if (!refresh && state.treeStatus === "ready") return;
-    if (state.treeStatus === "loading" && inFlight) return inFlight;
 
     // A refresh asks for her organizations and projects again (lane PAGE-BUNDLE-2).
     if (refresh) forgetSharedScopeBootRead();
     dispatch(scopesActions.treeFetchPending());
 
-    const promise = (async () => {
-      try {
-        const res = await scopesService.getScopeTree();
-        if (!res.ok) {
-          dispatch(scopesActions.treeFetchRejected(res.error.message));
-        } else {
-          dispatch(scopesActions.treeFetchFulfilled(res.data));
-        }
-      } finally {
-        inFlight = null;
-      }
-    })();
-
-    inFlight = promise;
-    return promise;
+    const res = await scopesService.getScopeTree();
+    if (!res.ok) {
+      dispatch(scopesActions.treeFetchRejected(res.error.message));
+    } else {
+      dispatch(scopesActions.treeFetchFulfilled(res.data));
+    }
   };
 }

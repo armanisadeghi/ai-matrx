@@ -62,6 +62,17 @@ function isTest(path) {
   return /(__tests__|\.test\.|\.spec\.)/.test(path);
 }
 
+// (review r2-3) A holder thunk keeps no in-flight state of its own: identical door reads are sent once
+// by the records client and the reducers are idempotent. Shrink-only allow-list: reads that do not go
+// through the records client (projects / tasks services) keep their per-key promise.
+const THUNK_IN_FLIGHT = /^(?:const|let)\s+\w+\s*(?::[^=]+)?=\s*new\s+(?:Map|Set)<[^>]*Promise|^let\s+\w+\s*:\s*Promise</m;
+const THUNK_IN_FLIGHT_ALLOW = new Map([
+  ["features/scopes/redux/thunks/ensureOrphanProjects.ts", "projects service read (not the records client)"],
+  ["features/scopes/redux/thunks/ensureScopeTasks.ts", "tasks service read (not the records client)"],
+]);
+// (review r2-3) A scope hook reads the holder; it never keeps a React-state copy of fields or values.
+const HOOK_STATE_COPY = /useState<[^>]*\b(ContextField|ContextValue)\b(?!Kind)/;
+
 export function findings(path, text) {
   const out = [];
   if (isTest(path)) return out;
@@ -75,6 +86,12 @@ export function findings(path, text) {
   }
   if (!path.startsWith("features/scopes/redux/") && MODULE_CACHE.test(text) && SCOPE_DATA.test(text)) {
     out.push(`${path}: keeps a module-level Map beside scope fields/values — the Redux holder is the one cache`);
+  }
+  if (path.startsWith("features/scopes/redux/thunks/") && !THUNK_IN_FLIGHT_ALLOW.has(path) && THUNK_IN_FLIGHT.test(text)) {
+    out.push(`${path}: keeps module-level in-flight state — the records client dedupes reads; the holder is the state`);
+  }
+  if (path.startsWith("features/scopes/hooks/") && HOOK_STATE_COPY.test(text)) {
+    out.push(`${path}: keeps a React-state copy of scope fields/values — read the holder's selectors`);
   }
   if (VALUE_ENCODING.test(text)) out.push(`${path}: encodes a scope value (value_* slot / fence write) — only @ai-matrx/records/scopes may`);
   if (DOOR_STRING.test(text)) out.push(`${path}: names a custom.context_* door — only @ai-matrx/records may`);
@@ -107,6 +124,12 @@ function selfTest() {
     ["features/scopes/redux/holder-cache.ts", 'import type { ContextField } from "x";\nconst cache = new Map<string, ContextField[]>();\n', false],
     ["features/tasks/plant-value.ts", 'const payload = { value_text: fence };\n', true],
     ["features/scopes/utils/plant-write.ts", 'export function contextValueWrite(f, s, v) {}\n', true],
+    ["features/scopes/redux/thunks/plant-flight.ts", 'const inFlight = new Map<string, Promise<void>>();\n', true],
+    ["features/scopes/redux/thunks/plant-flight2.ts", 'let skeletonInFlight: Promise<void> | null = null;\n', true],
+    ["features/scopes/redux/thunks/ensureScopeTasks.ts", 'const inFlight = new Map<string, Promise<void>>();\n', false],
+    ["features/scopes/redux/thunks/clean-map.ts", 'const lastAnswered = new Map<string, string>();\n', false],
+    ["features/scopes/hooks/plant-copy.ts", 'const [items, setItems] = useState<Record<string, ContextField[]>>({});\n', true],
+    ["features/scopes/hooks/clean-kind.ts", 'const [kind, setKind] = useState<ContextFieldKind>("string");\n', false],
     ["features/scopes/redux/thunks/clean.ts", 'const r = await scopeDoors().tree(ids);\nArray.from(x);\n', false],
   ];
   let bad = 0;

@@ -1,114 +1,61 @@
 // features/scopes/hooks/useScopeTypeTables.ts
 //
-// Data hook for the /scopes hub tables: given the scope types on screen,
-// batch-load every type's active context-item catalog (the table columns)
-// and every scope's CURRENT cell values (the table cells) in two
-// round-trips total. View-scoped cache; the per-scope Redux cache
-// (`useContextValues`) stays the editor path.
+// Data hook for the /scopes hub tables: given the scope types on screen, the holder's catalog of
+// each type's fields (the columns) and the holder's values of every scope (the cells). It asks the
+// holder's own thunks — one catalog read per type, ONE values read for every scope — and keeps no
+// copy and no sort of its own (the field door answers each type's fields in their order).
 
 "use client";
 
 import type { ContextField, ContextValue } from "@ai-matrx/records/scopes";
-import { useEffect, useRef, useState } from "react";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { useEffect, useMemo } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { listScopeTypeItems } from "@/features/scopes/redux/contextItemCatalog";
+import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
 
 export interface UseScopeTypeTablesReturn {
-  /** Active items per scope type, sorted by sort. */
+  /** Each scope type's fields, in the door's order. */
   itemsByType: Record<string, ContextField[]>;
   /** Current cell per scope, keyed scopeId → field id. */
   valuesByScope: Record<string, Record<string, ContextValue>>;
   status: "idle" | "loading" | "ready" | "error";
+  /** The first refusal the store answered (a refused read is never an empty table). */
   error: string | null;
 }
 
-export function useScopeTypeTables(
-  scopeTypeIds: string[],
-  scopeIds: string[],
-): UseScopeTypeTablesReturn {
-  const [itemsByType, setItemsByType] = useState<
-    Record<string, ContextField[]>
-  >({});
-  const [valuesByScope, setValuesByScope] = useState<
-    Record<string, Record<string, ContextValue>>
-  >({});
-  const [status, setStatus] = useState<UseScopeTypeTablesReturn["status"]>(
-    "idle",
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  // One fetch per distinct id-set; the tree is stable after boot, so this
-  // effectively runs once (and again only if the tree gains/loses rows).
-  const fetchedKey = useRef<string | null>(null);
+export function useScopeTypeTables(scopeTypeIds: string[], scopeIds: string[]): UseScopeTypeTablesReturn {
+  const dispatch = useAppDispatch();
   // Depend on the requested IDs, not arrays recreated by the caller on render.
-  const key = JSON.stringify([
-    [...new Set(scopeTypeIds)].sort(),
-    [...new Set(scopeIds)].sort(),
-  ]);
+  const key = JSON.stringify([[...new Set(scopeTypeIds)].sort(), [...new Set(scopeIds)].sort()]);
+  const [typeIds, rowIds] = useMemo(() => JSON.parse(key) as [string[], string[]], [key]);
 
   useEffect(() => {
-    const [typeIds, rowIds] = JSON.parse(key) as [string[], string[]];
-    if (typeIds.length === 0) {
-      setItemsByType({});
-      setValuesByScope({});
-      setError(null);
-      setStatus("idle");
-      return;
+    for (const t of typeIds) void dispatch(listScopeTypeItems(t));
+    if (rowIds.length > 0) void dispatch(ensureContextValuesForScopes(rowIds));
+  }, [dispatch, typeIds, rowIds]);
+
+  const catalogs = useAppSelector((s) => s.scopesTree.contextItemsByTypeId);
+  const byScope = useAppSelector((s) => s.contextValues.byScope);
+
+  return useMemo(() => {
+    if (typeIds.length === 0) return { itemsByType: {}, valuesByScope: {}, status: "idle", error: null };
+    const itemsByType: Record<string, ContextField[]> = {};
+    const valuesByScope: Record<string, Record<string, ContextValue>> = {};
+    let error: string | null = null;
+    let ready = true;
+    for (const t of typeIds) {
+      const entry = catalogs[t];
+      if (entry?.status === "error") error ??= entry.error ?? "The read failed.";
+      else if (entry?.status !== "ready") ready = false;
+      itemsByType[t] = entry?.items ?? [];
     }
-    if (fetchedKey.current === key) return;
-    fetchedKey.current = key;
-
-    let cancelled = false;
-    setStatus("loading");
-    void (async () => {
-      const [itemsRes, valuesRes] = await Promise.all([
-        scopesService.listContextItemsForTypes(typeIds),
-        scopesService.listContextValuesForScopes(rowIds),
-      ]);
-      if (cancelled) return;
-
-      if (!itemsRes.ok || !valuesRes.ok) {
-        const message = !itemsRes.ok
-          ? itemsRes.error.message
-          : !valuesRes.ok
-            ? valuesRes.error.message
-            : "Unknown error";
-        // Loud recovery: a silent empty table looks like "no context items
-        // defined", which is a lie when the fetch failed.
-        console.error("[scopes-hub] context items/values fetch failed:", {
-          itemsRes,
-          valuesRes,
-        });
-        setError(message);
-        setStatus("error");
-        return;
-      }
-
-      const byType: Record<string, ContextField[]> = {};
-      for (const item of itemsRes.data.items) {
-        (byType[item.scope_type_id] ??= []).push(item);
-      }
-      for (const list of Object.values(byType)) {
-        list.sort((a, b) => a.sort - b.sort);
-      }
-
-      const byScope: Record<string, Record<string, ContextValue>> = {};
-      for (const value of valuesRes.data.values) {
-        (byScope[value.scope_id] ??= {})[value.field_id] = value;
-      }
-
-      setItemsByType(byType);
-      setValuesByScope(byScope);
-      setError(null);
-      setStatus("ready");
-    })();
-
-    return () => {
-      // A cancelled run must not count as fetched, or the Strict Mode
-      // double-mount (run → cleanup → run) skips the second, real fetch.
-      cancelled = true;
-      if (fetchedKey.current === key) fetchedKey.current = null;
-    };
-  }, [key]);
-
-  return { itemsByType, valuesByScope, status, error };
+    for (const id of rowIds) {
+      const entry = byScope[id];
+      if (entry?.status === "error") error ??= entry.error ?? "The read failed.";
+      else if (entry?.status !== "ready") ready = false;
+      if (entry) valuesByScope[id] = entry.values;
+    }
+    const status = error ? "error" : ready ? "ready" : "loading";
+    return { itemsByType, valuesByScope, status, error };
+  }, [typeIds, rowIds, catalogs, byScope]);
 }
