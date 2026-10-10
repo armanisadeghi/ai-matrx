@@ -58,7 +58,10 @@ describe("connection state", () => {
   });
   it("offers, tester-only and not-offered are told apart", () => {
     expect(judgeConnection("pinterest", [], cfg("pinterest", "approved")).state).toBe("not_connected");
-    expect(judgeConnection("pinterest", [], cfg("pinterest", "internal_test")).state).toBe("testers_only");
+    // Test-mode app: a customer sees "Coming soon"; only our own team can connect.
+    expect(judgeConnection("pinterest", [], cfg("pinterest", "internal_test")).state).toBe("not_offered");
+    expect(judgeConnection("pinterest", [], cfg("pinterest", "internal_test")).canConnect).toBe(false);
+    expect(judgeConnection("pinterest", [], cfg("pinterest", "internal_test"), null, true).state).toBe("testers_only");
     expect(judgeConnection("pinterest", [], cfg("pinterest", undefined, "unavailable")).state).toBe("not_offered");
     expect(judgeConnection("pinterest", [], cfg("pinterest", undefined, "unavailable")).canConnect).toBe(false);
   });

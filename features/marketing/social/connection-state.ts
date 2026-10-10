@@ -72,6 +72,8 @@ export function judgeConnection(
   configs: readonly SocialProviderConfig[],
   /** Whether the X app is set up for this organization; null = not asked. */
   xAvailable: boolean | null = null,
+  /** Our own team (an admin row): the only people a provider admits while its app is in test mode. */
+  viewerIsInternal = false,
 ): PlatformConnection {
   const provider = providerOf(platform);
   const mine = connections.filter(
@@ -88,9 +90,12 @@ export function judgeConnection(
     const config = configs.find((c) => c.provider === hubProvider);
     if (!config || config.status === "unavailable" || config.accessMode === "unavailable")
       return { platform, state: "not_offered", connectionId: null, canConnect: false, hubProvider };
-    // The server answers `available` only for a viewer it admits; a non-tester was already sent to "Coming soon" above.
+    // `internal_test` = the provider's app is still in test mode: only our own team can connect.
+    // A customer would hit the provider's refusal, so for them it is honestly "Coming soon".
     if (config.accessMode === "internal_test")
-      return { platform, state: "testers_only", connectionId: null, canConnect: true, hubProvider };
+      return viewerIsInternal
+        ? { platform, state: "testers_only", connectionId: null, canConnect: true, hubProvider }
+        : { platform, state: "not_offered", connectionId: null, canConnect: false, hubProvider };
   }
   return { platform, state: "not_connected", connectionId: null, canConnect: true, hubProvider };
 }
