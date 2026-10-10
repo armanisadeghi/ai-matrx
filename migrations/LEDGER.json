@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T03:51:38.057Z",
+  "generated_at": "2026-10-10T03:58:08.914Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5450,6 +5450,12 @@
       "checksum": "d0ce63ea582c2a9de61f5bcc02b95684f8e32848609d6fecabe9c0e6c4e5b6f0",
       "applied_at": "2026-10-10 03:51:37.013174+00"
     },
+    "migrations/campaign/perf_watch2_doors_b_member_heavy_group.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch2_doors_b_member_heavy_group.sql",
+      "checksum": "70604d0cde0dd8b9241b664b6720692c7ca8b899da70e5c5702bb0704e6462d3",
+      "applied_at": "2026-10-10 03:58:05.915555+00"
+    },
     "migrations/campaign/perf_watch2_doors_b_settings_nav_hr_bell_search.sql": {
       "source": "matrx-frontend",
       "filename": "perf_watch2_doors_b_settings_nav_hr_bell_search.sql",
@@ -5462,11 +5468,23 @@
       "checksum": "09c27a623fac1eadfaa26a029f4c17ec4d3ceeae0e9b930fcd1144b3263dac9e",
       "applied_at": "2026-10-10 03:49:54.502218+00"
     },
+    "migrations/campaign/perf_watch2_pages_b_report_result_shape.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch2_pages_b_report_result_shape.sql",
+      "checksum": "f229670474a1e3f9f18c5a06d592530ab697154fe38e83a4bc8ec964dd6e75fa",
+      "applied_at": "2026-10-10 03:55:41.199765+00"
+    },
     "migrations/campaign/perf_watch2_ui_a_vital_rate_plan.sql": {
       "source": "matrx-frontend",
       "filename": "perf_watch2_ui_a_vital_rate_plan.sql",
       "checksum": "1421fbd6883551422b721f2dc75ccdac5438e0e14fba8aba3a4a0998aa9054b5",
       "applied_at": "2026-10-10 03:43:33.303183+00"
+    },
+    "migrations/campaign/perf_watch2_ui_b_slow_pages.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch2_ui_b_slow_pages.sql",
+      "checksum": "9fde091d94bcebd2a62632f1e06ba37c5a51b04558d542c172e64d1e3fc2fb36",
+      "applied_at": "2026-10-10 03:53:57.813256+00"
     },
     "migrations/campaign/perf_watch_tail_a_split_probe.sql": {
       "source": "matrx-frontend",

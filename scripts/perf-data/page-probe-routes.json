@@ -1,0 +1,25 @@
+{
+  "_about": "Top routes for the synthetic page probe (PERF-WATCH-2). route = the route template (watch slug pageprobe:<route>); path = the URL fetched (a dynamic route needs a pinned fixture id owned by the probe seat; none are pinned yet, so only static routes are probed). group = the run it belongs to (at most 10 routes a run keeps a run under its 75 s cap). doors = best-effort door slugs (ops.proof_check perf_kind 'door') the page depends on. Chosen from real route traffic (ops.perf_client_event, 2026-10-09) and the live route manifest.",
+  "routes": [
+    { "route": "/dashboard", "path": "/dashboard", "group": 1, "doors": [] },
+    { "route": "/chat", "path": "/chat", "group": 1, "doors": [] },
+    { "route": "/notes", "path": "/notes", "group": 1, "doors": [] },
+    { "route": "/tasks", "path": "/tasks", "group": 1, "doors": [] },
+    { "route": "/data", "path": "/data", "group": 1, "doors": ["door:custom.data_home@member", "door:custom.views@member", "door:custom.read_records_page:first_50@member"] },
+    { "route": "/files", "path": "/files", "group": 1, "doors": [] },
+    { "route": "/agents", "path": "/agents", "group": 1, "doors": [] },
+    { "route": "/spaces", "path": "/spaces", "group": 1, "doors": ["door:custom.read_records_page:first_50@member"] },
+    { "route": "/board", "path": "/board", "group": 1, "doors": [] },
+    { "route": "/meetings", "path": "/meetings", "group": 1, "doors": [] },
+    { "route": "/make", "path": "/make", "group": 2, "doors": [] },
+    { "route": "/hr", "path": "/hr", "group": 2, "doors": [] },
+    { "route": "/crm", "path": "/crm", "group": 2, "doors": ["door:custom.read_records_page:first_50@member"] },
+    { "route": "/projects", "path": "/projects", "group": 2, "doors": [] },
+    { "route": "/scopes", "path": "/scopes", "group": 2, "doors": [] },
+    { "route": "/organizations", "path": "/organizations", "group": 2, "doors": [] },
+    { "route": "/marketing/brands", "path": "/marketing/brands", "group": 2, "doors": [] },
+    { "route": "/messenger/agents", "path": "/messenger/agents", "group": 2, "doors": [] },
+    { "route": "/agents/classic", "path": "/agents/classic", "group": 2, "doors": [] },
+    { "route": "/workflows", "path": "/workflows", "group": 2, "doors": [] }
+  ]
+}

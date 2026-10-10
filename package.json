@@ -91,6 +91,7 @@
     "test:persona": "node --test scripts/lib/persona.test.mjs",
     "perf:data": "node scripts/perf-data/run.mjs",
     "perf:bundle": "node scripts/perf-data/bundle-equivalence.mjs",
+    "perf:pages": "node scripts/perf-data/pages-probe.mjs",
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "test:content-ir": "jest features/content-ir --no-coverage",
