@@ -11,7 +11,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
   const { provider: rawProvider } = await context.params;
   if (!isSocialProvider(rawProvider)) return NextResponse.json({ error: "Unknown social provider." }, { status: 404 });
   const provider = rawProvider;
-  const origin = request.nextUrl.origin;
+  const requestedOrigin = request.nextUrl.searchParams.get("frontend_origin");
+  const origin = requestedOrigin ?? request.nextUrl.origin;
   if (!isSocialCallbackOrigin(origin, provider)) return NextResponse.json({ error: "This address cannot start a social connection." }, { status: 400 });
   const returnUrl = safeSocialReturn(request.nextUrl.searchParams.get("return_url"));
   const finish = (status: string) => {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
     const response = await sendMatrxRequest(buildMatrxRequestUrl(backendOrigin, `/api/social-oauth/${provider}/authorize`), {
       method: "POST",
       headers: applyOrganizationContextHeader({ Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, organizationId),
-      body: JSON.stringify({ return_url: returnUrl, browser_proof_hash: createHash("sha256").update(browserProof).digest("hex"), redirect_uri: origin + socialCallbackPath(provider), ...(issuer ? { issuer } : {}), ...(handle ? { handle } : {}), ...((provider === "linkedin" || provider === "bluesky") && request.nextUrl.searchParams.get("connection_id") ? {connection_id: request.nextUrl.searchParams.get("connection_id")} : {}) }),
+      body: JSON.stringify({ return_url: returnUrl, browser_proof_hash: createHash("sha256").update(browserProof).digest("hex"), redirect_uri: origin + socialCallbackPath(provider), ...(issuer ? { issuer } : {}), ...(handle ? { handle } : {}), ...(["linkedin", "bluesky", "facebook", "instagram", "threads"].includes(provider) && request.nextUrl.searchParams.get("connection_id") ? {connection_id: request.nextUrl.searchParams.get("connection_id")} : {}) }),
       signal: AbortSignal.timeout(30_000),
     });
     const started: unknown = await response.json().catch(() => null);

@@ -14,7 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { readInChunks } from "@/features/scopes/service/inChunks";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { isRecordsErr } from "@ai-matrx/records";
 import type { Database } from "@/types/database.types";
 
 export type MemberOrganizationRow = Database["iam"]["Tables"]["organizations"]["Row"];
@@ -29,7 +29,7 @@ let shared: { userId: string; at: number; read: Promise<MemberOrganizationRows> 
 
 async function readOnce(): Promise<MemberOrganizationRows> {
   const memberships = await membershipsService.forUser("organization");
-  if (isScopesRpcErr(memberships)) {
+  if (isRecordsErr(memberships)) {
     return { ok: false, stage: "memberships", error: { message: memberships.error.message, code: memberships.error.code } };
   }
   const roleByOrgId = new Map<string, string>();

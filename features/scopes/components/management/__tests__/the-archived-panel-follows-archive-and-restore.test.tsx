@@ -21,8 +21,9 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { deleteScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
-import type { ArchivedScopeTypeRow, OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import { scopeDoors } from "@/features/scopes/service/scopeDoors";
+import type { ArchivedScopeType, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
+import type { OrgNode } from "@/features/scopes/types";
 import { ScopesManager } from "@/features/scopes/components/management/ScopesManager";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -69,19 +70,21 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
     listArchivedScopeTypes: jest.fn(),
   },
 }));
-jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: { deleteScopeType: jest.fn(), restoreScopeType: jest.fn() },
+const mockDoors = { archiveType: jest.fn(), restoreType: jest.fn() };
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  ...jest.requireActual("@/features/scopes/service/scopeDoors"),
+  scopeDoors: () => mockDoors,
 }));
 
 const svc = jest.mocked(scopesService);
-const store$ = jest.mocked(scopeStore);
+const store$ = jest.mocked(scopeDoors());
 
 const ORG = "8cb71c8b-5b49-4563-a5fe-d77ff600f8ee";
 const PROGRAMS = "4cd19025-4108-4183-962b-b69be8577371";
 const SITES = "5d2e8f10-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
 const STAMP = "2026-10-05T19:04:05.000Z";
 
-function type(id: string, singular: string, plural: string, order: number): ScopeTypeNode {
+function type(id: string, singular: string, plural: string, order: number): ScopeTypeWithScopes {
   return {
     id,
     organization_id: ORG,
@@ -98,21 +101,22 @@ function type(id: string, singular: string, plural: string, order: number): Scop
     created_at: STAMP,
     updated_at: STAMP,
     scopes: [],
-  } as unknown as ScopeTypeNode;
+  } as unknown as ScopeTypeWithScopes;
 }
 
-const archivedPrograms: ArchivedScopeTypeRow = {
+const archivedPrograms: ArchivedScopeType = {
   id: PROGRAMS,
   organization_id: ORG,
   label_singular: "Treatment Program",
   label_plural: "Treatment Programs",
   icon: "Folder",
   color: "blue",
-  deleted_at: "2026-10-05T20:01:01.693Z",
+  archived_at: "2026-10-05T20:01:01.693Z",
+  created_by: null,
   archived_scope_count: 1,
 };
 
-async function bootedStore(types: ScopeTypeNode[]) {
+async function bootedStore(types: ScopeTypeWithScopes[]) {
   const store = configureStore({
     reducer: createSlimRootReducer(),
     middleware: (g) => g({ serializableCheck: false, immutableCheck: false, actionCreatorCheck: false }),
@@ -180,7 +184,7 @@ describe("the /scopes Archived panel follows an archive and a restore", () => {
     expect(archivedToggle()).toBeUndefined();
 
     // The settings sheet's archive: the door answers, the tree drops the type, the archive now holds it.
-    store$.deleteScopeType.mockResolvedValue({ ok: true, data: { id: PROGRAMS } });
+    store$.archiveType.mockResolvedValue({ ok: true, data: { id: PROGRAMS } });
     svc.listArchivedScopeTypes.mockResolvedValue({ ok: true, data: { types: [archivedPrograms] } });
     await act(async () => {
       await store.dispatch(deleteScopeType({ type_id: PROGRAMS, organization_id: ORG }));
@@ -211,13 +215,13 @@ describe("the /scopes Archived panel follows an archive and a restore", () => {
     await settle();
 
     // The restore succeeds; the archive's re-read has not come back yet.
-    store$.restoreScopeType.mockResolvedValue({ ok: true, data: { id: PROGRAMS } });
+    store$.restoreType.mockResolvedValue({ ok: true, data: { id: PROGRAMS } });
     svc.listArchivedScopeTypes.mockReturnValue(new Promise(() => {}));
     const confirm = buttonsNamed("Restore");
     await act(async () => confirm[confirm.length - 1].click());
     await settle();
 
-    expect(store$.restoreScopeType).toHaveBeenCalledWith(PROGRAMS);
+    expect(store$.restoreType).toHaveBeenCalledWith(PROGRAMS);
     expect(archivedToggle()).toBeUndefined();
   });
 });

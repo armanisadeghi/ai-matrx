@@ -42,6 +42,7 @@
  * silent refusal.
  */
 
+import type { ContextField } from "@ai-matrx/records/scopes";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
@@ -70,7 +71,6 @@ import {
   selectItemsErrorForType,
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
-  type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import {
@@ -87,7 +87,7 @@ import {
 import {
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
 const EMPTY_LIST: never[] = [];
@@ -103,7 +103,7 @@ export interface ContextItemSelection {
   contextItemId: string;
   itemKey: string;
   /** The full picked item — present only when `contextItemId` changed in this emit. */
-  item?: ContextItem;
+  item?: ContextField;
 }
 
 interface ContextItemPickerProps {
@@ -132,12 +132,6 @@ interface ContextItemPickerProps {
 
 /** The Source value for the optional custom-data choice — never a `ContextItemSource`. */
 const CUSTOM_DATA_SOURCE = "custom_data";
-
-const CLASS_LABEL: Record<string, string> = {
-  ambient: "Ambient",
-  curated: "Curated",
-  dataset: "Dataset",
-};
 
 export function ContextItemPicker({
   value,
@@ -258,12 +252,12 @@ export function ContextItemPicker({
     try {
       const created = await dispatch(
         createScopeType({
-          org_id: orgId,
+          organization_id: orgId,
           label_singular: typed,
           label_plural: pluralize(typed),
           icon: "Folder",
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapRecords);
       toast.success(
         `Added scope type "${created.label_singular}" — fine-tune it any time from Scopes`,
       );
@@ -289,10 +283,8 @@ export function ContextItemPicker({
 
   const itemOptions: CreatableOption[] = items.map((i) => ({
     value: i.id,
-    label: i.display_name,
-    hint: i.system_item_class
-      ? `${i.key} · ${CLASS_LABEL[i.system_item_class] ?? i.system_item_class}`
-      : i.key,
+    label: i.label,
+    hint: i.key,
     keywords: i.key,
   }));
 

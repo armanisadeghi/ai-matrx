@@ -78,7 +78,10 @@ import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnec
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
-import { connectorDefinitionFromMcp, providerArtworkUrls } from "@/features/connectors/live-connectors";
+import {
+  connectorDefinitionFromMcp,
+  providerArtworkUrls,
+} from "@/features/connectors/live-connectors";
 import { ConnectorTile } from "@/features/connectors/ConnectorMark";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -98,8 +101,14 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toolCheckFailure } from "./integration-tool-check";
 import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
 import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
+import { SocialConnectionsPanel } from "@/features/social-connections/SocialConnectionsPanel";
+import { listSocialConnections } from "@/features/social-connections/connections";
 import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
-import { loadCustomerSocialConnections, type CustomerSocialConnection } from "@/features/social-connections/customer-service";
+import {
+  loadCustomerSocialConnections,
+  type CustomerSocialConnection,
+} from "@/features/social-connections/customer-service";
+
 import { TikTokConnectionsPanel } from "@/features/tiktok-connections/TikTokConnectionsPanel";
 import { listTikTokConnections } from "@/features/tiktok-connections/service";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
@@ -273,7 +282,10 @@ export function IntegrationsWorkspace({
     : (github.inventory.connection?.status ?? null);
   const catalogPresentation = (entry: McpCatalogEntry) =>
     catalogConnectionPresentation(
-      entry, githubStatus, github.loading, availability[entry.slug],
+      entry,
+      githubStatus,
+      github.loading,
+      availability[entry.slug],
     );
   const [filters, setFilters] = useState<DirectoryFilters>(
     DEFAULT_DIRECTORY_FILTERS,
@@ -304,7 +316,8 @@ export function IntegrationsWorkspace({
   }, [userId, socialVersion]);
   const params = useSearchParams();
   const openSettingsTab = useSettingsTabNavigate();
-  const returnTarget = !embedded && params ? directoryDetailFromParams(params) : null;
+  const returnTarget =
+    !embedded && params ? directoryDetailFromParams(params) : null;
   const [selectedDetail, setSelectedDetail] = useState<string | null>(
     returnTarget,
   );
@@ -321,7 +334,13 @@ export function IntegrationsWorkspace({
     microsoft: MicrosoftConnection[];
     storage: StorageConnection[];
     tiktok: Awaited<ReturnType<typeof listTikTokConnections>>;
-    errors: { microsoft: string | null; storage: string | null; tiktok: string | null };
+    x: Awaited<ReturnType<typeof listSocialConnections>>;
+    errors: {
+      microsoft: string | null;
+      storage: string | null;
+      tiktok: string | null;
+      x: string | null;
+    };
   } | null>(null);
   const nativeLoading =
     !nativeInventory ||
@@ -332,10 +351,12 @@ export function IntegrationsWorkspace({
   const microsoftConnections = currentInventory?.microsoft ?? [];
   const storageConnections = currentInventory?.storage ?? [];
   const tiktokConnections = currentInventory?.tiktok ?? [];
+  const xConnections = currentInventory?.x ?? [];
   const nativeErrors = currentInventory?.errors ?? {
     microsoft: null,
     storage: null,
     tiktok: null,
+    x: null,
   };
   const openWindow = useOpenLiveIntegrationsWindow();
 
@@ -354,7 +375,8 @@ export function IntegrationsWorkspace({
       listMicrosoftConnections(controller.signal),
       listStorageConnections(controller.signal),
       listTikTokConnections(controller.signal),
-    ]).then(([microsoft, storage, tiktok]) => {
+      listSocialConnections(controller.signal),
+    ]).then(([microsoft, storage, tiktok, x]) => {
       if (controller.signal.aborted) return;
       const message = (reason: unknown) =>
         reason instanceof Error
@@ -366,12 +388,14 @@ export function IntegrationsWorkspace({
         microsoft: microsoft.status === "fulfilled" ? microsoft.value : [],
         storage: storage.status === "fulfilled" ? storage.value : [],
         tiktok: tiktok.status === "fulfilled" ? tiktok.value : [],
+        x: x.status === "fulfilled" ? x.value : [],
         errors: {
           microsoft:
             microsoft.status === "rejected" ? message(microsoft.reason) : null,
           storage:
             storage.status === "rejected" ? message(storage.reason) : null,
           tiktok: tiktok.status === "rejected" ? message(tiktok.reason) : null,
+          x: x.status === "rejected" ? message(x.reason) : null,
         },
       });
     });
@@ -421,7 +445,10 @@ export function IntegrationsWorkspace({
     splitConnectionsByOwnership(
       (bingInventory.data?.connections ?? []).map((row) => ({
         ...row,
-        ownerKind: row.owner_type === "organization" ? ("organization" as const) : ("person" as const),
+        ownerKind:
+          row.owner_type === "organization"
+            ? ("organization" as const)
+            : ("person" as const),
         ownerUserId: row.owner_user_id,
         organizationId: row.organization_id,
       })),
@@ -440,7 +467,10 @@ export function IntegrationsWorkspace({
     splitConnectionsByOwnership(
       (googleInventory.data?.connections ?? []).map((row) => ({
         ...row,
-        ownerKind: row.owner_type === "organization" ? ("organization" as const) : ("person" as const),
+        ownerKind:
+          row.owner_type === "organization"
+            ? ("organization" as const)
+            : ("person" as const),
         ownerUserId: row.owner_user_id,
         organizationId: row.organization_id,
       })),
@@ -519,6 +549,40 @@ export function IntegrationsWorkspace({
   });
   const items: IntegrationDirectoryItem[] = [
     nativeItem(
+      "x",
+      "X",
+      "Connect your account to read your profile, posts and insights.",
+      "X",
+      "social",
+      "https://cdn.simpleicons.org/x",
+      savedAccountSummary(
+        xConnections.map((account) => ({
+          identity: account.account_name ?? "X account",
+          status: account.status,
+        })),
+        nativeLoading,
+        Boolean(nativeErrors.x),
+      ),
+      "twitter x social posts insights",
+    ),
+    nativeItem(
+      "tiktok",
+      "TikTok",
+      "Connect your account to track your profile and public videos.",
+      "TikTok",
+      "social",
+      "https://cdn.simpleicons.org/tiktok",
+      savedAccountSummary(
+        tiktokConnections.map((account) => ({
+          identity: account.account_name ?? "TikTok account",
+          status: account.status,
+        })),
+        nativeLoading,
+        Boolean(nativeErrors.tiktok),
+      ),
+      "social videos profile approved testers",
+    ),
+    nativeItem(
       "social-accounts",
       "Social accounts",
       "Connect your own social accounts.",
@@ -538,11 +602,6 @@ export function IntegrationsWorkspace({
       ),
       "LinkedIn Reddit Discord Twitch Bluesky Mastodon Snapchat profiles identity",
     ),
-
-    nativeItem("tiktok", "TikTok", "Connect your account to track your profile and public videos.",
-      "TikTok", "social", "https://cdn.simpleicons.org/tiktok",
-      savedAccountSummary(tiktokConnections.map(account => ({ identity: account.account_name ?? "TikTok account", status: account.status })),
-        nativeLoading, Boolean(nativeErrors.tiktok)), "social videos profile approved testers"),
     nativeItem(
       "google",
       "Google Workspace",
@@ -759,7 +818,10 @@ export function IntegrationsWorkspace({
     nativeErrors.storage
       ? { label: "File connections", message: nativeErrors.storage }
       : null,
-    nativeErrors.tiktok ? { label: "TikTok", message: nativeErrors.tiktok } : null,
+    nativeErrors.tiktok
+      ? { label: "TikTok", message: nativeErrors.tiktok }
+      : null,
+    nativeErrors.x ? { label: "X", message: nativeErrors.x } : null,
   ].filter((failure) => failure !== null);
 
   useSurfaceScopeContribution(
@@ -810,7 +872,8 @@ export function IntegrationsWorkspace({
         transport: "http",
       }),
     );
-    if (connectServerWithCredentials.fulfilled.match(result)) refreshMcpConnections();
+    if (connectServerWithCredentials.fulfilled.match(result))
+      refreshMcpConnections();
   };
 
   const handleManualConnect = async (
@@ -854,7 +917,10 @@ export function IntegrationsWorkspace({
       toast.success(`Connected to ${entry.name}`);
     } catch (error) {
       toast.error(`Could not connect to ${entry.name}`, {
-        description: failureLine(error, { action: `connecting ${entry.name}`, retrySafe: true }),
+        description: failureLine(error, {
+          action: `connecting ${entry.name}`,
+          retrySafe: true,
+        }),
       });
     }
   };
@@ -875,7 +941,10 @@ export function IntegrationsWorkspace({
       toast.success(`Disconnected ${entry.name}`);
     } catch (error) {
       toast.error(`Could not disconnect ${entry.name}`, {
-        description: failureLine(error, { action: `disconnecting ${entry.name}`, retrySafe: true }),
+        description: failureLine(error, {
+          action: `disconnecting ${entry.name}`,
+          retrySafe: true,
+        }),
       });
     }
   };
@@ -883,7 +952,11 @@ export function IntegrationsWorkspace({
   const handleTestConnection = async (entry: McpCatalogEntry) => {
     if (checkingServerId) return;
     setCheckingServerId(entry.serverId);
-    const record = { type: "mcp_server", id: entry.serverId, title: entry.name };
+    const record = {
+      type: "mcp_server",
+      id: entry.serverId,
+      title: entry.name,
+    };
     try {
       // This explicit click may ask for an organization. Background catalog
       // reads remain non-interactive through the service's GET default.
@@ -901,8 +974,8 @@ export function IntegrationsWorkspace({
       );
     } catch (error) {
       recordToast.error(record, `Could not check ${entry.name}'s tools`, {
-          description: toolCheckFailure(error),
-        });
+        description: toolCheckFailure(error),
+      });
     } finally {
       setCheckingServerId(null);
     }
@@ -917,7 +990,9 @@ export function IntegrationsWorkspace({
           connectionPresentation={catalogPresentation(entry)}
           isExpanded
           onToggleExpand={() => selectDetail(null)}
-          isConnecting={connectingId === entry.serverId || connectingSlug === entry.slug}
+          isConnecting={
+            connectingId === entry.serverId || connectingSlug === entry.slug
+          }
           isChecking={checkingServerId === entry.serverId}
           onOAuthConnect={(endpointOverride) =>
             handleOAuthConnect(entry, endpointOverride)
@@ -944,6 +1019,8 @@ export function IntegrationsWorkspace({
     if (item.id === "native:google") return <ConnectorsSettingsPanel />;
     if (item.id === "native:github") return <GitHubConnectionCard />;
     if (item.id === "native:microsoft") return <MicrosoftConnectPanel />;
+    if (item.id === "native:x")
+      return <SocialConnectionsPanel onChanged={refresh} />;
     if (item.id === "native:tiktok") return <TikTokConnectionsPanel />;
     if (item.id === "native:box" || item.id === "native:dropbox")
       return (
@@ -1087,12 +1164,14 @@ function ServerCard({
 
   const transport = TRANSPORT_META[entry.transport] ?? TRANSPORT_META.http;
   const connectionStatus =
-    connectionPresentation.state && connectionPresentation.state !== "disconnected"
+    connectionPresentation.state &&
+    connectionPresentation.state !== "disconnected"
       ? STATUS_CONFIG[connectionPresentation.state]
       : null;
-  const statusLabel = noAuth && connectionPresentation.state === "connected"
-    ? "Enabled"
-    : connectionStatus?.label;
+  const statusLabel =
+    noAuth && connectionPresentation.state === "connected"
+      ? "Enabled"
+      : connectionStatus?.label;
 
   // Inline token form state
   const [showTokenForm, setShowTokenForm] = useState(false);
@@ -1245,7 +1324,10 @@ function ServerCard({
           </p>
         )}
         {connectionPresentation.reason && !isConnected && (
-          <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">
+          <p
+            role="status"
+            className="mt-3 text-xs leading-5 text-muted-foreground"
+          >
             {connectionPresentation.reason}
           </p>
         )}
@@ -1255,7 +1337,13 @@ function ServerCard({
           {isConnected ? (
             <>
               <Button
-                icon={isChecking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                icon={
+                  isChecking ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )
+                }
                 variant="outline"
                 className="flex-1"
                 onClick={onTest}
@@ -1267,7 +1355,11 @@ function ServerCard({
                 icon={<Settings2 />}
                 variant="quiet"
                 onClick={onToggleExpand}
-                aria-label={isExpanded ? `Hide ${entry.name} connection management` : `Manage ${entry.name} connection`}
+                aria-label={
+                  isExpanded
+                    ? `Hide ${entry.name} connection management`
+                    : `Manage ${entry.name} connection`
+                }
               >
                 <span className="hidden sm:inline">Manage</span>
               </Button>
@@ -1284,11 +1376,9 @@ function ServerCard({
           ) : canConnect && needsOAuth && !isSupabase ? (
             <div className="flex min-w-0 flex-1 gap-2">
               <Button
-                icon={isConnecting ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Lock />
-                )}
+                icon={
+                  isConnecting ? <Loader2 className="animate-spin" /> : <Lock />
+                }
                 variant="primary"
                 className="min-w-0 flex-1"
                 onClick={() => onOAuthConnect()}
@@ -1319,19 +1409,23 @@ function ServerCard({
             </div>
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
-              icon={isConnecting ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Lock />
-              )}
+              icon={
+                isConnecting ? <Loader2 className="animate-spin" /> : <Lock />
+              }
               variant="primary"
               className="min-w-0 flex-1"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting}
-              aria-label={needsRecovery ? "Reconnect Supabase" : "Connect Supabase"}
+              aria-label={
+                needsRecovery ? "Reconnect Supabase" : "Connect Supabase"
+              }
             >
-              <span className="sm:hidden">{needsRecovery ? "Reconnect" : "Connect"}</span>
-              <span className="hidden sm:inline">{needsRecovery ? "Reconnect" : "Connect read-only"}</span>
+              <span className="sm:hidden">
+                {needsRecovery ? "Reconnect" : "Connect"}
+              </span>
+              <span className="hidden sm:inline">
+                {needsRecovery ? "Reconnect" : "Connect read-only"}
+              </span>
             </Button>
           ) : canConnect && needsToken ? (
             <Button
@@ -1341,15 +1435,17 @@ function ServerCard({
               onClick={() => setShowTokenForm(!showTokenForm)}
               disabled={isConnecting}
             >
-              {showTokenForm ? "Cancel" : needsRecovery ? "Reconnect" : "Enter Token"}
+              {showTokenForm
+                ? "Cancel"
+                : needsRecovery
+                  ? "Reconnect"
+                  : "Enter Token"}
             </Button>
           ) : canConnect && noAuth ? (
             <Button
-              icon={isConnecting ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Zap />
-              )}
+              icon={
+                isConnecting ? <Loader2 className="animate-spin" /> : <Zap />
+              }
               variant="primary"
               className="flex-1"
               onClick={onNoAuthConnect}
@@ -1415,49 +1511,63 @@ function ServerCard({
               variant="quiet"
               className="shrink-0"
               onClick={onToggleExpand}
-              aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
+              aria-label={
+                isExpanded
+                  ? `Hide ${entry.name} settings`
+                  : `Open ${entry.name} settings`
+              }
             />
           )}
         </div>
 
-        {isSupabase && !isConnected && canConnect && !showSupabaseProjectLock && (
-          <button
-            type="button"
-            className="mt-2 text-xs text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => setShowSupabaseProjectLock(true)}
-          >
-            Lock to one project (optional)
-          </button>
-        )}
+        {isSupabase &&
+          !isConnected &&
+          canConnect &&
+          !showSupabaseProjectLock && (
+            <button
+              type="button"
+              className="mt-2 text-xs text-muted-foreground underline-offset-2 hover:underline"
+              onClick={() => setShowSupabaseProjectLock(true)}
+            >
+              Lock to one project (optional)
+            </button>
+          )}
 
-        {isSupabase && !isConnected && canConnect && showSupabaseProjectLock && (
-          <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3">
-            <label className="block text-xs font-medium text-foreground">
-              Supabase project reference (optional)
-            </label>
-            <Input
-              value={supabaseProjectRef}
-              onChange={(event) => {
-                setSupabaseProjectRef(event.target.value);
-                setSupabaseError(null);
-              }}
-              placeholder="Leave empty for all your projects"
-              className="h-11 font-mono text-base sm:h-8 sm:text-xs"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") handleSupabaseOAuth();
-              }}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Read-only either way
-            </p>
-            {supabaseError && (
-              <ErrorNotice size="inline" className="text-[11px]" message={supabaseError} />
-            )}
-          </div>
-        )}
+        {isSupabase &&
+          !isConnected &&
+          canConnect &&
+          showSupabaseProjectLock && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+              <label className="block text-xs font-medium text-foreground">
+                Supabase project reference (optional)
+              </label>
+              <Input
+                value={supabaseProjectRef}
+                onChange={(event) => {
+                  setSupabaseProjectRef(event.target.value);
+                  setSupabaseError(null);
+                }}
+                placeholder="Leave empty for all your projects"
+                className="h-11 font-mono text-base sm:h-8 sm:text-xs"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleSupabaseOAuth();
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Read-only either way
+              </p>
+              {supabaseError && (
+                <ErrorNotice
+                  size="inline"
+                  className="text-[11px]"
+                  message={supabaseError}
+                />
+              )}
+            </div>
+          )}
 
         {needsRecovery && canConnect && isSupabase && (
           <Button
@@ -1489,11 +1599,7 @@ function ServerCard({
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                 <Button
-                  icon={showToken ? (
-                    <EyeOff />
-                  ) : (
-                    <Eye />
-                  )}
+                  icon={showToken ? <EyeOff /> : <Eye />}
                   variant="quiet"
                   onClick={() => setShowToken(!showToken)}
                   aria-label={showToken ? "Hide token" : "Show token"}
@@ -1639,7 +1745,9 @@ function ManualCredentialsForm({
     <div className="mt-3 space-y-3 border-t border-border pt-3">
       <div>
         <div className="flex items-center gap-1">
-          <p className="text-xs font-medium text-foreground">Token and headers</p>
+          <p className="text-xs font-medium text-foreground">
+            Token and headers
+          </p>
           <InfoHint text="Values are sealed in Vault and never sent back to this browser; OAuth is preferred." />
         </div>
         <p className="text-[11px] text-muted-foreground">
@@ -1726,14 +1834,12 @@ function ManualCredentialsForm({
           onClick={() =>
             setHeaders((current) => [...current, { name: "", value: "" }])
           }
-        > Add header
+        >
+          {" "}
+          Add header
         </Button>
         <Button
-          icon={showValues ? (
-            <EyeOff />
-          ) : (
-            <Eye />
-          )}
+          icon={showValues ? <EyeOff /> : <Eye />}
           type="button"
           variant="quiet"
           onClick={() => setShowValues((visible) => !visible)}

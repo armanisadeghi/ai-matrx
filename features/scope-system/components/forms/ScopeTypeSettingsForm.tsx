@@ -19,7 +19,7 @@ import {
   deleteScopeType,
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface ScopeTypeSettingsFormProps {
@@ -102,11 +102,11 @@ export function ScopeTypeSettingsForm({
           color,
           description,
           sort_order: sortOrder,
-          max_assignments: maxAssignments
+          max_assignments_per_entity: maxAssignments
             ? parseInt(maxAssignments, 10)
             : undefined,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapRecords);
       dispatch(ensureScopeTree());
       toast.success(`Updated "${trimmedPlural}"`);
       onSaved?.();
@@ -128,7 +128,7 @@ export function ScopeTypeSettingsForm({
     if (!ok) return;
     setBusy(true);
     try {
-      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapScopesRpc);
+      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapRecords);
       dispatch(ensureScopeTree());
       toast.success(`Deleted "${scopeType.label_plural}"`);
       onDeleted?.();

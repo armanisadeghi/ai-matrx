@@ -2,15 +2,15 @@
 
 // /administration/scopes-context/organizations/<orgId> — the platform-admin
 // scope console for ANY organization, member or not (THE ADMIN LANE).
-// Thin route wrapper: the console is the same ScopeManagerPage an
-// organization's own admins use on /organizations/<id>/settings/scopes, in its
+// Thin route wrapper: the console is the same ScopesManager an
+// organization's own admins use on /organizations/<id>/scopes, in its
 // admin-lane mode — the one tree loader reads this organization through the
 // platform-admin arm, and releases it when the page closes. Only routes under
 // /administration may pass `adminLane`; a user page never does.
 
 import { useParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
+import { ScopesManager } from "@/features/scopes/components/management/ScopesManager";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 import { useRecordTitle } from "@/lib/record-title/record-title";
 
@@ -55,10 +55,10 @@ export default function AdminOrganizationScopesPage() {
           ]}
         />
       </div>
-      <div className="min-h-0 flex-1">
-        <ScopeManagerPage
-          organizationId={orgId}
-          organizationName={org?.name ?? ""}
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+        <ScopesManager
+          organization={{ id: orgId, name: org?.name ?? "", slug: org?.slug ?? orgId, logoUrl: null }}
+          role="admin"
           adminLane
         />
       </div>

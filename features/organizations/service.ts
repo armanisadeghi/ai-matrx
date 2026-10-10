@@ -25,7 +25,7 @@ import {
   invitationsService,
   type Invitation,
 } from "@/features/organizations/service/invitationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { isRecordsErr } from "@ai-matrx/records";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import {
@@ -415,7 +415,7 @@ export async function getUserOrganizations(
 
   // Batch member counts — one round-trip instead of N.
   const countsResult = await membershipsService.counts("organization", orgIds);
-  if (isScopesRpcErr(countsResult)) {
+  if (isRecordsErr(countsResult)) {
     throw new Error(countsResult.error.message);
   }
   const countByOrgId = new Map<string, number>();
@@ -525,7 +525,7 @@ export async function updateMemberRole(
         "organization",
         orgId,
       );
-      if (isScopesRpcErr(membersResult)) {
+      if (isRecordsErr(membersResult)) {
         return { success: false, error: membersResult.error.message };
       }
       const owners = membersResult.data.members.filter(
@@ -550,7 +550,7 @@ export async function updateMemberRole(
       role: newRole,
     });
 
-    if (isScopesRpcErr(updateResult)) {
+    if (isRecordsErr(updateResult)) {
       console.error("Error updating member role:", updateResult.error);
       return {
         success: false,
@@ -591,7 +591,7 @@ export async function removeMember(
       "organization",
       orgId,
     );
-    if (isScopesRpcErr(membersResult)) {
+    if (isRecordsErr(membersResult)) {
       return { success: false, error: membersResult.error.message };
     }
     const target = membersResult.data.members.find((m) => m.userId === userId);
@@ -611,7 +611,7 @@ export async function removeMember(
       userId,
     });
 
-    if (isScopesRpcErr(removeResult)) {
+    if (isRecordsErr(removeResult)) {
       console.error("Error removing member:", removeResult.error);
       return {
         success: false,
@@ -711,7 +711,7 @@ export async function getUserRole(orgId: string): Promise<OrgRole | null> {
 
   // The current user's org memberships (canonical RPC); find this org.
   const membersResult = await membershipsService.forUser("organization");
-  if (isScopesRpcErr(membersResult)) {
+  if (isRecordsErr(membersResult)) {
     console.error("Error fetching user role:", membersResult.error.message);
     throw new Error(membersResult.error.message || "Could not read your role in this organization");
   }
@@ -755,7 +755,7 @@ export async function inviteToOrganization(
       orgId: organizationId,
     });
 
-    if (isScopesRpcErr(createResult)) {
+    if (isRecordsErr(createResult)) {
       return { success: false, error: createResult.error.message };
     }
 
@@ -843,7 +843,7 @@ export async function getOrganizationInvitations(
   orgId: string,
 ): Promise<OrganizationInvitation[]> {
   const result = await invitationsService.listForTarget("organization", orgId);
-  if (isScopesRpcErr(result)) {
+  if (isRecordsErr(result)) {
     console.error(
       "Error fetching organization invitations:",
       result.error.message,
@@ -860,7 +860,7 @@ export async function cancelInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
   const result = await invitationsService.revoke(invitationId);
-  if (isScopesRpcErr(result)) {
+  if (isRecordsErr(result)) {
     console.error("Error cancelling invitation:", result.error.message);
     return { success: false, error: result.error.message };
   }
@@ -878,7 +878,7 @@ export async function resendInvitation(
 ): Promise<ResendInvitationResult> {
   try {
     const resendResult = await invitationsService.resend(invitationId);
-    if (isScopesRpcErr(resendResult)) {
+    if (isRecordsErr(resendResult)) {
       return { success: false, error: resendResult.error.message };
     }
 
@@ -940,7 +940,7 @@ export async function acceptInvitation(
     requireUserId();
 
     const acceptResult = await invitationsService.accept(token);
-    if (isScopesRpcErr(acceptResult)) {
+    if (isRecordsErr(acceptResult)) {
       return {
         success: false,
         error:
@@ -983,7 +983,7 @@ export async function getUserInvitations(): Promise<
     requireUserId();
 
     const result = await invitationsService.forMe();
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       console.error("Error fetching user invitations:", result.error.message);
       throw new Error(result.error.message || "Could not read your invitations");
     }

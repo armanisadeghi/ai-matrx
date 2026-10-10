@@ -22,7 +22,7 @@ import {
   PenLine,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { INDUSTRY_CATEGORIES } from "../../constants";
+import { INDUSTRY_CATEGORIES } from "@/features/agent-context/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ import {
   createScope,
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -439,23 +439,23 @@ export function ScopeTemplateStarter({
       for (const preset of toCreate) {
         const typeResult = await dispatch(
           createScopeType({
-            org_id: organizationId,
+            organization_id: organizationId,
             label_singular: preset.label_singular,
             label_plural: preset.label_plural,
             icon: preset.icon,
             description: "",
             sort_order: 0,
-            max_assignments: preset.max_assignments,
+            max_assignments_per_entity: preset.max_assignments,
           }),
-        ).then(unwrapScopesRpc);
+        ).then(unwrapRecords);
 
         const typeId = (typeResult as { id: string }).id;
         if (typeId && preset.scopes.length > 0) {
           for (const scopeName of preset.scopes) {
             await dispatch(
               createScope({
-                org_id: organizationId,
-                type_id: typeId,
+                organization_id: organizationId,
+                scope_type_id: typeId,
                 name: scopeName,
               }),
             );

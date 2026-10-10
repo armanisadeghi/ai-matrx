@@ -18,12 +18,18 @@ export interface XBrowserSession {
 }
 
 export function safeXReturn(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\r\n]/.test(value)) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /[\\\r\n]/.test(value)
+  ) {
     return X_SETTINGS_RETURN;
   }
   // Only the two product mounts can receive an OAuth return.
   const path = value.split(/[?#]/, 1)[0];
-  return path === "/user-settings/integrations" || /^\/marketing\/[^/]+\/socials\/accounts$/.test(path)
+  return path === "/user-settings/integrations" ||
+    /^\/marketing\/[^/]+\/socials\/accounts$/.test(path)
     ? value
     : X_SETTINGS_RETURN;
 }
@@ -33,8 +39,17 @@ export function xBackendOrigin(value: string | null): string | null {
   if (!value) return null;
   try {
     const url = new URL(value);
-    if (url.pathname !== "/" || url.search || url.hash || url.username || url.password) return null;
-    return Object.values(BACKEND_URLS).some((known) => known && new URL(known).origin === url.origin)
+    if (
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      url.username ||
+      url.password
+    )
+      return null;
+    return Object.values(BACKEND_URLS).some(
+      (known) => known && new URL(known).origin === url.origin,
+    )
       ? url.origin
       : null;
   } catch {
@@ -46,12 +61,26 @@ export function parseXBrowserSession(raw: string): XBrowserSession | null {
   try {
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== "object") return null;
-    if (!("state" in value) || typeof value.state !== "string" || !value.state) return null;
-    if (!("browserProof" in value) || typeof value.browserProof !== "string" || !value.browserProof) return null;
-    if (!("organizationId" in value) || typeof value.organizationId !== "string" || !value.organizationId) return null;
-    if (!("returnUrl" in value) || typeof value.returnUrl !== "string") return null;
-    if (!("backendOrigin" in value) || typeof value.backendOrigin !== "string") return null;
-    if (!("createdAt" in value) || typeof value.createdAt !== "number") return null;
+    if (!("state" in value) || typeof value.state !== "string" || !value.state)
+      return null;
+    if (
+      !("browserProof" in value) ||
+      typeof value.browserProof !== "string" ||
+      !value.browserProof
+    )
+      return null;
+    if (
+      !("organizationId" in value) ||
+      typeof value.organizationId !== "string" ||
+      !value.organizationId
+    )
+      return null;
+    if (!("returnUrl" in value) || typeof value.returnUrl !== "string")
+      return null;
+    if (!("backendOrigin" in value) || typeof value.backendOrigin !== "string")
+      return null;
+    if (!("createdAt" in value) || typeof value.createdAt !== "number")
+      return null;
     const age = Date.now() - value.createdAt;
     const backendOrigin = xBackendOrigin(value.backendOrigin);
     if (age < 0 || age > 600_000 || !backendOrigin) return null;

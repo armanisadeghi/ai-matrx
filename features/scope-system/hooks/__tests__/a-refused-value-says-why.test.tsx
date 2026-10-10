@@ -24,7 +24,7 @@ it("says the store's words when a value is refused", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   let commit: ((v: unknown) => Promise<void>) | null = null;
   function Probe() {
-    commit = useScopeAutoSave("scope-1", "item-1", "string", "Latex, penicillin").commit;
+    commit = useScopeAutoSave("scope-1", { id: "item-1", kind: "string" }, "Latex, penicillin").commit;
     return null;
   }
   const host = document.createElement("div");

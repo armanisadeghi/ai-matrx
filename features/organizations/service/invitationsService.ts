@@ -7,7 +7,7 @@
 // shapes). The client has NO direct grant on `iam.invitations`; every read/write
 // goes through the PUBLIC SECURITY-DEFINER `inv_*` RPCs — and every call to
 // those RPCs goes through THIS file. No other file is allowed to call them.
-// Like `associationsService`, methods always return a `ScopesRpcResult` and
+// Like `associationsService`, methods always return a `RecordsResult` and
 // NEVER throw.
 //
 // A "target" is what the invitee will join: target_type ∈ { 'project', ... }
@@ -25,7 +25,7 @@ import {
   mapPgError,
   ok,
 } from "@/features/scopes/service/rpcResult";
-import type { ScopesRpcResult } from "@/features/scopes/types";
+import type { RecordsResult } from "@ai-matrx/records";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
 // ─── Shapes ─────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ export const invitationsService = {
   async listForTarget(
     targetType: string,
     targetId: string,
-  ): Promise<ScopesRpcResult<{ invitations: Invitation[] }>> {
+  ): Promise<RecordsResult<{ invitations: Invitation[] }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_list", {
@@ -174,7 +174,7 @@ export const invitationsService = {
    */
   async getByToken(
     token: string,
-  ): Promise<ScopesRpcResult<{ invitation: Invitation | null }>> {
+  ): Promise<RecordsResult<{ invitation: Invitation | null }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_get_by_token", {
@@ -194,7 +194,7 @@ export const invitationsService = {
   // ──────────────────────────────────────────────────────────────────
 
   /** Pending, unexpired invitations addressed to the current user. */
-  async forMe(): Promise<ScopesRpcResult<{ invitations: Invitation[] }>> {
+  async forMe(): Promise<RecordsResult<{ invitations: Invitation[] }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_for_me");
@@ -224,7 +224,7 @@ export const invitationsService = {
     orgId?: string | null;
     invitedUserId?: string | null;
     expiresAt?: string;
-  }): Promise<ScopesRpcResult<{ invitation: Invitation }>> {
+  }): Promise<RecordsResult<{ invitation: Invitation }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_create", {
@@ -256,7 +256,7 @@ export const invitationsService = {
    */
   async accept(
     token: string,
-  ): Promise<ScopesRpcResult<{ accepted: AcceptedInvitation }>> {
+  ): Promise<RecordsResult<{ accepted: AcceptedInvitation }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_accept", {
@@ -286,7 +286,7 @@ export const invitationsService = {
   // ──────────────────────────────────────────────────────────────────
 
   /** Revoke (cancel) the invitation `invitationId`. */
-  async revoke(invitationId: string): Promise<ScopesRpcResult<null>> {
+  async revoke(invitationId: string): Promise<RecordsResult<null>> {
     try {
       requireUserId();
       const { error } = await supabase.rpc("inv_revoke", {
@@ -310,7 +310,7 @@ export const invitationsService = {
   async resend(
     invitationId: string,
     expiresAt?: string,
-  ): Promise<ScopesRpcResult<{ token: string }>> {
+  ): Promise<RecordsResult<{ token: string }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_resend", {

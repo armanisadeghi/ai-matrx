@@ -35,6 +35,7 @@ beforeEach(() => {
 
 test("reconnect carries the selected connection through the UI URL and posted consent request", async () => {
   const url = socialAuthorizeUrl("linkedin", organizationId, undefined, undefined, connectionId);
+  expect(new URL(url).searchParams.get("frontend_origin")).toBe(origin);
   const response = await GET(new NextRequest(url), { params: Promise.resolve({ provider: "linkedin" }) });
   expect(response.status).toBe(307);
   expect(response.headers.get("location")).toContain("www.linkedin.com/oauth/v2/authorization");

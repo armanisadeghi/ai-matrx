@@ -39,8 +39,17 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { ReadGate, readStatusOf } from "@ai-matrx/design-system";
 import { UntrustedCount } from "@ai-matrx/design-system";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import {
+  ensureAdminOrganizationTree,
+  ensureScopeTree,
+  type AdminOrganizationTreeResult,
+} from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import { ScopeTemplateStarter } from "@/features/scopes/components/management/ScopeTemplateStarter";
+import { ScopeInstancePanel } from "@/features/scopes/components/management/ScopeInstancePanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isRecordsErr } from "@ai-matrx/records";
+import { restoreScopeType, updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopeOnboarding } from "@/features/scopes/components/management/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
@@ -49,12 +58,10 @@ import { ReorderDialog } from "@/features/scopes/components/management/ReorderDi
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
-import type { ArchivedScopeTypeRow } from "@/features/scopes/types";
+import type { ArchivedScopeType } from "@ai-matrx/records/scopes";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { Organization } from "@/features/organizations/types";
 
 interface ScopesManagerProps {
@@ -63,10 +70,25 @@ interface ScopesManagerProps {
     "id" | "name" | "slug" | "logoUrl"
   >;
   role?: string | null;
+  /**
+   * THE ADMIN LANE — set ONLY by the `/administration/**` console route. Loads this organization's
+   * tree through the platform-admin read arm (the admin is usually not a member) and releases it
+   * when the console closes. A user-page route never sets it: there the admin is an ordinary member.
+   */
+  adminLane?: boolean;
 }
 
-export function ScopesManager({ organization, role }: ScopesManagerProps) {
+export function ScopesManager({ organization, role, adminLane = false }: ScopesManagerProps) {
   const dispatch = useAppDispatch();
+  const [adminResult, setAdminResult] = useState<AdminOrganizationTreeResult | null>(null);
+  /** The one loader: the membership tree, or — admin lane — this organization's tree. */
+  const loadTree = (refresh = false) => {
+    if (adminLane) {
+      void dispatch(ensureAdminOrganizationTree(organization.id, { refresh })).then(setAdminResult);
+    } else {
+      void dispatch(ensureScopeTree(refresh ? { refresh: true } : undefined));
+    }
+  };
   const selectScopeTypesForOrg = useMemo(
     () => makeSelectScopeTypesForOrg(),
     [],
@@ -88,10 +110,10 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   // here — the canonical `ArchivedDisclosure`, never a local copy. The rows
   // are read on demand; the boot tree stays the live working set (F6).
   const [showArchived, setShowArchived] = useState(false);
-  const [archivedTypes, setArchivedTypes] = useState<ArchivedScopeTypeRow[]>([]);
+  const [archivedTypes, setArchivedTypes] = useState<ArchivedScopeType[]>([]);
   const [archiveReadFailed, setArchiveReadFailed] = useState(false);
   const [restoreTarget, setRestoreTarget] =
-    useState<ArchivedScopeTypeRow | null>(null);
+    useState<ArchivedScopeType | null>(null);
   const [restoring, setRestoring] = useState(false);
   const suggestions = useScopeSuggestions();
   const orgScopes = useMemo(
@@ -101,12 +123,16 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   useEffect(() => {
-    void dispatch(ensureScopeTree());
-  }, [dispatch]);
+    loadTree();
+    if (!adminLane) return;
+    return () => {
+      dispatch(scopesActions.adminLaneOrganizationReleased(organization.id));
+    };
+  }, [dispatch, organization.id, adminLane]);
 
   const loadArchived = React.useCallback(async () => {
     const res = await scopesService.listArchivedScopeTypes(organization.id);
-    if (isScopesRpcErr(res)) {
+    if (!res.ok) {
       // Nothing fails silently: an archive we could not read says so instead
       // of rendering as "Archived (0)".
       toast.error(`Could not read the archive: ${res.error.message}`);
@@ -124,11 +150,11 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
     void loadArchived();
   }, [loadArchived, liveTypeIds]);
 
-  async function restoreType(row: ArchivedScopeTypeRow) {
+  async function restoreType(row: ArchivedScopeType) {
     setRestoring(true);
     try {
-      const res = await scopeStore.restoreScopeType(row.id);
-      if (isScopesRpcErr(res)) {
+      const res = await dispatch(restoreScopeType(row.id));
+      if (!res.ok) {
         toast.error(`Restore failed: ${res.error.message}`);
         return;
       }
@@ -161,9 +187,25 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         dispatch(updateScopeType({ type_id: id, sort_order: i + 1 })),
       ),
     );
-    const failed = results.find(isScopesRpcErr);
+    const failed = results.find(isRecordsErr);
     if (failed) throw new Error(failed.error.message);
     toast.success("Order saved");
+  }
+
+  if (adminLane && adminResult && (adminResult.status === "not_found" || adminResult.status === "error")) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6 text-sm">
+        <p className="font-medium text-foreground">
+          {adminResult.status === "not_found"
+            ? "This organization was not found."
+            : "This organization's scopes could not be loaded."}
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          {adminResult.status === "error" ? adminResult.message : "It may have been archived, or the link is wrong."}
+          {adminResult.status === "error" ? <ErrorAlchemyMenu error={adminResult.message} /> : null}
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -269,7 +311,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         error={treeError}
         what="this organization's scopes"
         isEmpty={scopeTypes.length === 0}
-        onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        onRetry={() => loadTree(true)}
         empty={
           <Card className="p-6 md:p-8">
             <ScopeOnboarding orgId={organization.id} />
@@ -277,15 +319,23 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         }
       >
         <>
-          {orderedTypes.map((scopeType) => (
-            <OrgScopeTypeSection
-              key={scopeType.id}
-              scopeType={scopeType}
-              orgId={organization.id}
-              orgSlugOrId={slug}
-              role={role}
-            />
-          ))}
+          {orderedTypes.map((scopeType) =>
+            // A type whose scopes nest (a scope under a scope) shows as its tree, with
+            // add-child and edit in place; a flat type shows as its table.
+            scopeType.scopes.some((sc) => sc.parent_scope_id) ? (
+              <Card key={scopeType.id} className="overflow-hidden p-0">
+                <ScopeInstancePanel organizationId={organization.id} scopeType={scopeType} />
+              </Card>
+            ) : (
+              <OrgScopeTypeSection
+                key={scopeType.id}
+                scopeType={scopeType}
+                orgId={organization.id}
+                orgSlugOrId={slug}
+                role={role}
+              />
+            ),
+          )}
 
           <div className="flex items-center justify-center gap-2 pt-2">
             <Button
@@ -302,6 +352,16 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
                 Add from template
               </Link>
             </Button>
+            {canManage && (
+              <>
+                <span className="text-muted-foreground/50">·</span>
+                <ScopeTemplateStarter
+                  organizationId={organization.id}
+                  compact
+                  onTypesCreated={() => loadTree(true)}
+                />
+              </>
+            )}
             {canManage && scopeTypes.length > 1 && (
               <>
                 <span className="text-muted-foreground/50">·</span>
@@ -341,7 +401,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               </div>
               <div className="text-xs text-muted-foreground">
                 Removed{" "}
-                {new Date(row.deleted_at).toLocaleDateString(undefined, {
+                {new Date(row.archived_at).toLocaleDateString(undefined, {
                   year: "numeric",
                   month: "short",
                   day: "numeric",

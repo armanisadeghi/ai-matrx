@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toSlug } from "@/features/scopes/utils/slugify";
+import { toSlug } from "@ai-matrx/records/scopes";
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { ScopeNode as Scope, ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import type { Scope as Scope, ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
 import {
   selectScopesByType,
 } from "@/features/scopes/redux/selectors/admin";
@@ -23,7 +23,7 @@ import {
   createScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 import { toast } from "@/lib/toast";
 
 const NONE_VALUE = "__none__";
@@ -93,19 +93,19 @@ export function ScopeForm({
             description: description.trim(),
             slug: editingScope.slug ?? toSlug(name),
           }),
-        ).then(unwrapScopesRpc);
+        ).then(unwrapRecords);
       } else {
         await dispatch(
           createScope({
-            org_id: organizationId,
-            type_id: scopeType.id,
+            organization_id: organizationId,
+            scope_type_id: scopeType.id,
             name: name.trim(),
             description: description.trim(),
             slug: toSlug(name),
             parent_scope_id:
               selectedParent === NONE_VALUE ? undefined : selectedParent,
           }),
-        ).then(unwrapScopesRpc);
+        ).then(unwrapRecords);
       }
       onDone();
     } catch (e) {

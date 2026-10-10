@@ -65,8 +65,8 @@ import {
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
-import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
-import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
+import { ScopeOnboarding } from "@/features/scopes/components/management/ScopeOnboarding";
+import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import {
   CONTENT_ROLES,

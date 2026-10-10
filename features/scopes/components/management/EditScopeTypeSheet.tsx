@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -46,7 +47,8 @@ import {
   updateContextItem,
 } from "@/features/scopes/redux/thunks/contextItemMutations";
 import { isValidSlug, toFieldKey, toSlug } from "@ai-matrx/records/scopes";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { isRecordsErr } from "@ai-matrx/records";
+import { EditContextItemSheet } from "@/features/scope-system/components/EditContextItemSheet";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface EditScopeTypeSheetProps {
@@ -61,15 +63,15 @@ type ItemDraft = {
   /** Existing item id, or `new:<rowId>` for an unsaved row. */
   id: string;
   rowId: string;
-  display_name: string;
-  initialDisplayName?: string;
+  label: string;
+  initialLabel?: string;
   toDelete?: boolean;
 };
 
 const newRow = (): ItemDraft => ({
   id: `new:${Math.random().toString(36).slice(2)}`,
   rowId: Math.random().toString(36).slice(2),
-  display_name: "",
+  label: "",
 });
 
 export function EditScopeTypeSheet({
@@ -94,6 +96,8 @@ export function EditScopeTypeSheet({
   const [icon, setIcon] = useState("Folder");
   const [color, setColor] = useState("blue");
   const [items, setItems] = useState<ItemDraft[]>([]);
+  /** The saved field whose full editor (kind, sensitivity, tags, …) is open. */
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   // Advanced
   const [slug, setSlug] = useState("");
@@ -137,8 +141,8 @@ export function EditScopeTypeSheet({
       existingItems.map((i) => ({
         id: i.id,
         rowId: i.id,
-        display_name: i.display_name,
-        initialDisplayName: i.display_name,
+        label: i.label,
+        initialLabel: i.label,
       })),
     );
   }, [open, existingItems]);
@@ -228,10 +232,10 @@ export function EditScopeTypeSheet({
             color,
             slug: trimmedSlug || undefined,
             sort_order: sortOrder,
-            max_assignments: maxParsed ?? undefined,
+            max_assignments_per_entity: maxParsed,
           }),
         );
-        if (isScopesRpcErr(res)) throw new Error(res.error.message);
+        if (isRecordsErr(res)) throw new Error(res.error.message);
       }
 
       // Context items: archive, rename, create
@@ -240,25 +244,25 @@ export function EditScopeTypeSheet({
           const res = await dispatch(
             deleteContextItem({ item_id: row.id, scope_type_id: scopeType.id }),
           );
-          if (isScopesRpcErr(res)) throw new Error(res.error.message);
+          if (isRecordsErr(res)) throw new Error(res.error.message);
           continue;
         }
-        const trimmedName = row.display_name.trim();
+        const trimmedName = row.label.trim();
         if (!trimmedName) continue;
         if (row.id.startsWith("new:")) {
           const res = await dispatch(
             createContextItem({
               scope_type_id: scopeType.id,
               key: toFieldKey(trimmedName) || trimmedName.toLowerCase(),
-              display_name: trimmedName,
+              label: trimmedName,
             }),
           );
-          if (isScopesRpcErr(res)) throw new Error(res.error.message);
-        } else if (trimmedName !== row.initialDisplayName) {
+          if (isRecordsErr(res)) throw new Error(res.error.message);
+        } else if (trimmedName !== row.initialLabel) {
           const res = await dispatch(
-            updateContextItem({ item_id: row.id, display_name: trimmedName }),
+            updateContextItem({ item_id: row.id, scope_type_id: scopeType.id, label: trimmedName }),
           );
-          if (isScopesRpcErr(res)) throw new Error(res.error.message);
+          if (isRecordsErr(res)) throw new Error(res.error.message);
         }
       }
 
@@ -285,7 +289,7 @@ export function EditScopeTypeSheet({
       const res = await dispatch(
         deleteScopeType({ type_id: scopeType.id, organization_id: orgId }),
       );
-      if (isScopesRpcErr(res)) throw new Error(res.error.message);
+      if (isRecordsErr(res)) throw new Error(res.error.message);
       toast.success(`Deleted "${scopeType.label_plural}"`);
       onOpenChange(false);
       onDeleted?.();
@@ -299,6 +303,7 @@ export function EditScopeTypeSheet({
   if (!scopeType) return null;
 
   return (
+    <>
     <MatrxDynamicPanelHost
       open={open}
       onOpenChange={onOpenChange}
@@ -382,14 +387,26 @@ export function EditScopeTypeSheet({
                     }}
                     placeholder="Context item name"
                     aria-label={`Context item ${idx + 1} name`}
-                    value={row.display_name}
+                    value={row.label}
                     onChange={(e) =>
-                      patchItem(row.rowId, { display_name: e.target.value })
+                      patchItem(row.rowId, { label: e.target.value })
                     }
                     onKeyDown={(e) => handleRowKeyDown(e, idx)}
                     disabled={busy || removed}
                     mark={!removed && isNew ? "changed" : undefined}
                   />
+                  {!isNew && (
+                    <Button
+                      icon={<Pencil />}
+                      type="button"
+                      variant="quiet"
+                      onClick={() => setEditingItemId(row.id)}
+                      disabled={busy}
+                      aria-label={`Open full editor for ${row.label || `context item ${idx + 1}`}`}
+                      title="Full edit (type, sensitivity, tags, …)"
+                      className="shrink-0"
+                    />
+                  )}
                   <Button
                     icon={removed ? (
                       <Check />
@@ -400,7 +417,7 @@ export function EditScopeTypeSheet({
                     variant="quiet"
                     onClick={() => toggleDelete(row.rowId)}
                     disabled={busy}
-                    aria-label={`${removed ? "Restore" : "Remove"} ${row.display_name || `context item ${idx + 1}`}`}
+                    aria-label={`${removed ? "Restore" : "Remove"} ${row.label || `context item ${idx + 1}`}`}
                     title={removed ? "Restore" : "Remove"}
                     className={`shrink-0 ${
                       removed
@@ -527,5 +544,12 @@ export function EditScopeTypeSheet({
         </div>
       </div>
     </MatrxDynamicPanelHost>
+
+    <EditContextItemSheet
+      open={!!editingItemId}
+      onOpenChange={(o) => !o && setEditingItemId(null)}
+      itemId={editingItemId}
+    />
+    </>
   );
 }

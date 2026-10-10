@@ -1,15 +1,17 @@
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 
-export const SOCIAL_PROVIDERS = ["linkedin", "discord", "twitch", "snapchat", "mastodon", "bluesky"] as const;
+export const SOCIAL_PROVIDERS = ["pinterest", "linkedin", "discord", "twitch", "snapchat", "mastodon", "bluesky", "reddit", "facebook", "instagram", "threads"] as const;
 export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
 export const SOCIAL_SETTINGS_RETURN = "/user-settings/integrations";
 
 /** Production and agent-owned localhost previews are the only OAuth callback mounts. */
 export function isSocialCallbackOrigin(origin: string, provider?: SocialProvider): boolean {
+  if (provider === "pinterest") return ["https://www.aimatrx.com", "http://localhost:3000", "http://localhost:3001"].includes(origin);
   try {
     const url = new URL(origin);
     return url.origin === "https://www.aimatrx.com" ||
       url.origin === "http://localhost:3000" ||
+      url.origin === "http://localhost:3001" ||
       (url.protocol === "http:" && url.hostname.endsWith(".localhost") && url.port === "3001");
   } catch {
     return false;
@@ -41,7 +43,8 @@ export function safeSocialReturn(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\r\n]/.test(value)) {
     return SOCIAL_SETTINGS_RETURN;
   }
-  return value.split(/[?#]/, 1)[0] === SOCIAL_SETTINGS_RETURN
+  const path = value.split(/[?#]/, 1)[0];
+  return path === SOCIAL_SETTINGS_RETURN || /^\/marketing\/[^/]+\/socials\/accounts$/.test(path)
     ? value
     : SOCIAL_SETTINGS_RETURN;
 }

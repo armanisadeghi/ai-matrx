@@ -23,7 +23,7 @@ import {
   resolveColor,
   SCOPE_ICON_SURFACE,
 } from "@/features/scopes/constants/scope-colors";
-import type { ScopeTypeNode as ScopeTypeRow } from "@/features/scopes/types";
+import type { ScopeTypeWithScopes as ScopeTypeRow } from "@ai-matrx/records/scopes";
 import { ReadFailure } from "@ai-matrx/design-system";
 
 export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
@@ -75,13 +75,13 @@ export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
   return (
     <ul className="space-y-2.5">
       {scopeTypes.map((type) => (
-        <ScopeTypeNode key={type.id} type={type} slug={slug} />
+        <ScopeTypeTreeNode key={type.id} type={type} slug={slug} />
       ))}
     </ul>
   );
 }
 
-function ScopeTypeNode({ type, slug }: { type: ScopeTypeRow; slug: string }) {
+function ScopeTypeTreeNode({ type, slug }: { type: ScopeTypeRow; slug: string }) {
   const scopes = type.scopes;
   const Icon = resolveIcon(type.icon);
   const color = resolveColor(type);

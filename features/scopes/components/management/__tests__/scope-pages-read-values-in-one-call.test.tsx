@@ -22,7 +22,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import type { ContextItemRow, OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type { ContextField, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
+import type { OrgNode } from "@/features/scopes/types";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopesList } from "@/features/scope-system/components/ScopesList";
 
@@ -83,7 +84,7 @@ const SCOPE_IDS = Array.from({ length: 57 }, (_, i) =>
   `2645730c-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
 );
 
-function mattersType(): ScopeTypeNode {
+function mattersType(): ScopeTypeWithScopes {
   return {
     id: TYPE,
     organization_id: ORG,
@@ -113,7 +114,7 @@ function mattersType(): ScopeTypeNode {
       created_at: STAMP,
       updated_at: STAMP,
     })),
-  } as unknown as ScopeTypeNode;
+  } as unknown as ScopeTypeWithScopes;
 }
 
 const dateOfInjury = {
@@ -125,7 +126,7 @@ const dateOfInjury = {
   value_type: "date",
   sort_order: 1,
   is_active: true,
-} as unknown as ContextItemRow;
+} as unknown as ContextField;
 
 async function bootedStore() {
   const store = configureStore({

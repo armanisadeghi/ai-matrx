@@ -10,19 +10,15 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Plus, X } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import {
+  MatrxDynamicPanelHost,
+  type PanelPresentation,
+} from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { ScopeColorPicker } from "@/features/scopes/components/management/ScopeColorPicker";
 import { toast } from "@/lib/toast";
@@ -32,28 +28,29 @@ import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutatio
 import { createContextItem } from "@/features/scopes/redux/thunks/contextItemMutations";
 import { toFieldKey } from "@ai-matrx/records/scopes";
 import { pluralize } from "@/features/scopes/utils/pluralize";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
-type ContextItemDraft = { id: string; display_name: string };
+type ContextItemDraft = { id: string; label: string };
 
 interface AddScopeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
+  /** Docked side panel (default) or a floating window (e.g. on a Board). */
+  presentation?: PanelPresentation;
 }
 
-const NONE_VALUE = "__none__";
 
 const newItemRow = (): ContextItemDraft => ({
   id: Math.random().toString(36).slice(2),
-  display_name: "",
+  label: "",
 });
 
 export function AddScopeModal({
   open,
   onOpenChange,
   orgId,
+  presentation = "docked",
 }: AddScopeModalProps) {
   const generatedId = useId();
   const singularId = `scope-type-singular-${generatedId}`;
@@ -63,7 +60,6 @@ export function AddScopeModal({
   const advancedId = `scope-type-advanced-${generatedId}`;
   const sortOrderId = `scope-type-sort-order-${generatedId}`;
   const maxAssignmentsId = `scope-type-max-assignments-${generatedId}`;
-  const parentId = `scope-type-parent-${generatedId}`;
   const variableKeyId = `scope-type-variable-key-${generatedId}`;
   const dispatch = useAppDispatch();
   const selectScopeTypesForOrg = useMemo(
@@ -86,7 +82,6 @@ export function AddScopeModal({
   const [color, setColor] = useState("blue");
   const [sortOrder, setSortOrder] = useState(0);
   const [maxAssignments, setMaxAssignments] = useState("");
-  const [parentTypeId, setParentTypeId] = useState<string>(NONE_VALUE);
   const [variableKeyInput, setVariableKeyInput] = useState("");
   const [variableKeys, setVariableKeys] = useState<string[]>([]);
 
@@ -106,7 +101,6 @@ export function AddScopeModal({
     setColor("blue");
     setSortOrder(existingTypes.length);
     setMaxAssignments("");
-    setParentTypeId(NONE_VALUE);
     setVariableKeyInput("");
     setVariableKeys([]);
     setAdvancedOpen(false);
@@ -139,7 +133,7 @@ export function AddScopeModal({
   }
   function updateItemRow(id: string, value: string) {
     setItems((rows) =>
-      rows.map((r) => (r.id === id ? { ...r, display_name: value } : r)),
+      rows.map((r) => (r.id === id ? { ...r, label: value } : r)),
     );
   }
 
@@ -180,37 +174,35 @@ export function AddScopeModal({
     setBusy(true);
     try {
       const primaryItems = items
-        .map((f) => f.display_name.trim())
+        .map((f) => f.label.trim())
         .filter(Boolean);
 
       const created = await dispatch(
         createScopeType({
-          org_id: orgId,
+          organization_id: orgId,
           label_singular: trimmedSingular,
           label_plural: trimmedPlural || trimmedSingular,
           icon: icon || "Folder",
           color,
           description: description.trim(),
           sort_order: sortOrder,
-          max_assignments: maxAssignments
+          max_assignments_per_entity: maxAssignments
             ? parseInt(maxAssignments, 10)
-            : undefined,
-          parent_type_id:
-            parentTypeId === NONE_VALUE ? undefined : parentTypeId,
+            : null,
           default_variable_keys: variableKeys,
         }),
       );
-      if (isScopesRpcErr(created)) throw new Error(created.error.message);
+      if (!created.ok) throw new Error(created.error.message);
 
-      for (const display_name of primaryItems) {
+      for (const label of primaryItems) {
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: created.data.id,
-            key: toFieldKey(display_name) || display_name.toLowerCase(),
-            display_name,
+            key: toFieldKey(label) || label.toLowerCase(),
+            label,
           }),
         );
-        if (isScopesRpcErr(itemRes)) throw new Error(itemRes.error.message);
+        if (!itemRes.ok) throw new Error(itemRes.error.message);
       }
 
       toast.success(`Created “${trimmedPlural || trimmedSingular}”`);
@@ -225,7 +217,6 @@ export function AddScopeModal({
   }
 
   const canSave = labelSingular.trim().length > 0;
-  const parentCandidates = existingTypes;
 
   return (
     <MatrxDynamicPanelHost
@@ -238,6 +229,9 @@ export function AddScopeModal({
       initialFocus
       position="right"
       defaultSize={38}
+      presentation={presentation}
+      floatingSize="lg"
+      contentClassName={presentation === "floating" ? "px-4 py-4" : "px-3 pb-4"}
     >
       <form className="space-y-5" onSubmit={handleSave}>
         {/* Basics */}
@@ -343,7 +337,7 @@ export function AddScopeModal({
                         ? "e.g. Tier"
                         : "Another context item"
                   }
-                  value={row.display_name}
+                  value={row.label}
                   onChange={(e) => updateItemRow(row.id, e.target.value)}
                   onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
                   disabled={busy}
@@ -426,31 +420,6 @@ export function AddScopeModal({
                 </p>
               </div>
             </div>
-
-            {parentCandidates.length > 0 && (
-              <div className="space-y-1.5">
-                <Label htmlFor={parentId} className="text-xs">
-                  Parent type
-                </Label>
-                <Select
-                  value={parentTypeId}
-                  onValueChange={setParentTypeId}
-                  disabled={busy}
-                >
-                  <SelectTrigger id={parentId}>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE_VALUE}>None</SelectItem>
-                    {parentCandidates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.label_singular}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label htmlFor={variableKeyId} className="text-xs">

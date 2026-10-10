@@ -15,7 +15,7 @@
 // of the type.
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Info, Loader2, Plus, X } from "lucide-react";
+import { Info, Loader2, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
@@ -39,8 +39,10 @@ import {
 } from "@ai-matrx/records/scopes";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { customComponentOf } from "@/features/scopes/utils/customComponent";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ContextItemRow } from "@/features/scopes/types";
+import { isRecordsErr } from "@ai-matrx/records";
+import type { ContextField } from "@ai-matrx/records/scopes";
+import { cellWrite } from "@/features/scope-system/components/scope-detail-values";
+import { EditContextItemSheet } from "@/features/scope-system/components/EditContextItemSheet";
 
 interface NewScopeInlineProps {
   orgId: string;
@@ -56,13 +58,13 @@ interface NewScopeInlineProps {
 
 type NewItemRow = {
   rowId: string;
-  display_name: string;
+  label: string;
   value: string;
 };
 
 const newRow = (): NewItemRow => ({
   rowId: Math.random().toString(36).slice(2),
-  display_name: "",
+  label: "",
   value: "",
 });
 
@@ -100,6 +102,9 @@ export function NewScopeInline({
     {},
   );
   const [newItems, setNewItems] = useState<NewItemRow[]>([]);
+  /** The field whose full editor (kind, sensitivity, tags, …) is open. */
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const editItemButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -144,17 +149,11 @@ export function NewScopeInline({
     if (!slugTouched) setSlug(toSlug(value));
   }
 
-  async function writeValue(scopeId: string, item: ContextItemRow, raw: unknown) {
+  async function writeValue(scopeId: string, item: ContextField, raw: unknown) {
     const res = await dispatch(
-      setContextValue({
-        scope_id: scopeId,
-        field_id: item.id,
-        kind: item.value_type,
-        value: raw,
-        source_type: "manual",
-      }),
+      setContextValue(cellWrite(scopeId, item, raw)),
     );
-    if (isScopesRpcErr(res)) throw new Error(res.error.message);
+    if (isRecordsErr(res)) throw new Error(res.error.message);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -176,18 +175,18 @@ export function NewScopeInline({
     try {
       const created = await dispatch(
         createScope({
-          org_id: orgId,
-          type_id: typeId,
+          organization_id: orgId,
+          scope_type_id: typeId,
           name: trimmedName,
           description: description.trim(),
           slug: trimmedSlug || undefined,
         }),
       );
-      if (isScopesRpcErr(created)) throw new Error(created.error.message);
+      if (isRecordsErr(created)) throw new Error(created.error.message);
       const scope = created.data;
 
       for (const item of items) {
-        if (item.value_type === "reference") continue; // no scope id existed yet to point at
+        if (item.kind === "reference") continue; // no scope id existed yet to point at
         const draft = existingValues[item.id];
         if (isEmptyDraft(draft)) continue;
         await writeValue(scope.id, item, draft);
@@ -195,16 +194,16 @@ export function NewScopeInline({
 
       let newItemsCreated = 0;
       for (const row of newItems) {
-        const displayName = row.display_name.trim();
+        const displayName = row.label.trim();
         if (!displayName) continue;
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: typeId,
             key: toFieldKey(displayName) || displayName.toLowerCase(),
-            display_name: displayName,
+            label: displayName,
           }),
         );
-        if (isScopesRpcErr(itemRes)) throw new Error(itemRes.error.message);
+        if (isRecordsErr(itemRes)) throw new Error(itemRes.error.message);
         newItemsCreated++;
         const v = row.value.trim();
         if (v) {
@@ -232,6 +231,7 @@ export function NewScopeInline({
   }
 
   return (
+    <>
     <form
       onSubmit={handleSubmit}
       className="rounded-lg border bg-card p-5 space-y-5"
@@ -315,18 +315,33 @@ export function NewScopeInline({
           <p className="text-xs font-medium">Context items</p>
           {items.map((item) => (
             <div key={item.id} className="space-y-1.5">
-              <Label
-                id={`new-scope-label-${item.id}`}
-                htmlFor={
-                  item.value_type === "reference"
-                    ? undefined
-                    : `new-scope-val-${item.id}`
-                }
-                className="text-sm font-medium text-foreground"
-              >
-                {item.display_name}
-              </Label>
-              {item.value_type === "reference" ? (
+              <div className="flex items-center gap-1.5">
+                <Label
+                  id={`new-scope-label-${item.id}`}
+                  htmlFor={
+                    item.kind === "reference"
+                      ? undefined
+                      : `new-scope-val-${item.id}`
+                  }
+                  className="text-sm font-medium text-foreground"
+                >
+                  {item.label}
+                </Label>
+                <button
+                  ref={(element) => {
+                    if (element) editItemButtonRefs.current.set(item.id, element);
+                    else editItemButtonRefs.current.delete(item.id);
+                  }}
+                  type="button"
+                  onClick={() => setEditingItemId(item.id)}
+                  className="rounded-sm text-muted-foreground opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  aria-label={`Edit ${item.label} definition`}
+                  disabled={busy}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              </div>
+              {item.kind === "reference" ? (
                 <p className="text-xs text-muted-foreground">
                   Reference fields are set from the {labelSingular}
                   &apos;s own page once it&apos;s created.
@@ -335,11 +350,11 @@ export function NewScopeInline({
                 <ContextValueInput
                   id={`new-scope-val-${item.id}`}
                   aria-labelledby={`new-scope-label-${item.id}`}
-                  valueType={item.value_type}
+                  kind={item.kind}
                   customComponent={customComponentOf(item)}
                   value={existingValues[item.id] ?? ""}
                   onChange={(v) => setExistingValue(item.id, v)}
-                  displayName={item.display_name}
+                  displayName={item.label}
                   placeholder="Leave blank to fill later"
                   disabled={busy}
                   compact
@@ -377,10 +392,10 @@ export function NewScopeInline({
                   }}
                   aria-label="New context item name"
                   placeholder="New context item name"
-                  value={row.display_name}
+                  value={row.label}
                   onChange={(e) =>
                     updateNewItemRow(row.rowId, {
-                      display_name: e.target.value,
+                      label: e.target.value,
                     })
                   }
                   disabled={busy}
@@ -397,8 +412,8 @@ export function NewScopeInline({
               </div>
               <ContextValueInput
                 id={`new-context-item-value-${row.rowId}`}
-                aria-label={`Value for ${row.display_name || "new context item"}`}
-                valueType="string"
+                aria-label={`Value for ${row.label || "new context item"}`}
+                kind="string"
                 value={row.value}
                 onChange={(v) =>
                   updateNewItemRow(row.rowId, { value: String(v ?? "") })
@@ -442,5 +457,19 @@ export function NewScopeInline({
         </div>
       </div>
     </form>
+
+    <EditContextItemSheet
+      open={!!editingItemId}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) return;
+        const previousItemId = editingItemId;
+        setEditingItemId(null);
+        requestAnimationFrame(() => {
+          if (previousItemId) editItemButtonRefs.current.get(previousItemId)?.focus();
+        });
+      }}
+      itemId={editingItemId}
+    />
+    </>
   );
 }

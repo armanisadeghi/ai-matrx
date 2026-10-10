@@ -30,7 +30,6 @@ import { toFieldKey } from "@ai-matrx/records/scopes";
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
 import { useRouter } from "next/navigation";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
@@ -121,23 +120,23 @@ export function ScopeOnboarding({
     try {
       const typeRes = await dispatch(
         createScopeType({
-          org_id: orgId,
+          organization_id: orgId,
           label_singular: dim.singular,
           label_plural: dim.plural,
           icon: iconNameFor(dim.key),
         }),
       );
-      if (isScopesRpcErr(typeRes)) throw new Error(typeRes.error.message);
+      if (!typeRes.ok) throw new Error(typeRes.error.message);
       // Columns become context items. Sample rows are NOT seeded.
       for (const col of dim.columns) {
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: typeRes.data.id,
             key: toFieldKey(col.name) || col.name.toLowerCase(),
-            display_name: col.name,
+            label: col.name,
           }),
         );
-        if (isScopesRpcErr(itemRes)) throw new Error(itemRes.error.message);
+        if (!itemRes.ok) throw new Error(itemRes.error.message);
       }
       toast.success(`Added "${dim.plural}"`);
       onChanged?.();

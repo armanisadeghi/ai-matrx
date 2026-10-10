@@ -114,7 +114,10 @@ export function savedAccountSummary(
                 : accounts.length > 0
                   ? "Disconnected"
                   : "Not connected",
-    accountSummary: accounts.map((account) => account.identity).filter(Boolean).join(", "),
+    accountSummary: accounts
+      .map((account) => account.identity)
+      .filter(Boolean)
+      .join(", "),
   };
 }
 
@@ -132,6 +135,12 @@ export function directoryDetailFromParams(
     return "native:google";
   if (provider === "microsoft") return "native:microsoft";
   if (provider === "github") return "native:github";
-  if (provider === "dropbox" || provider === "box" || provider === "tiktok") return `native:${provider}`;
+  if (
+    provider === "dropbox" ||
+    provider === "box" ||
+    provider === "tiktok" ||
+    provider === "x"
+  )
+    return `native:${provider}`;
   return provider ? `provider:${provider}` : null;
 }

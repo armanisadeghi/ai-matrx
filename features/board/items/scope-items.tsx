@@ -29,7 +29,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { selectAllScopeTypes, selectScopeById, selectScopeTreeSettled } from "@/features/scopes/redux/selectors/admin";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { ScopeDetailEditor } from "@/features/scope-system/components/ScopeDetailEditor";
-import { NewScopeInline } from "@/features/scope-system/components/NewScopeInline";
+import { NewScopeInline } from "@/features/scopes/components/management/NewScopeInline";
 import { ScopeNotFound } from "@/features/scope-system/components/ScopeNotFound";
 import { SCOPE_DETAIL_SURFACE_NAME } from "@/features/surfaces/manifests/scope-detail.manifest";
 import type { NodeSource } from "../board/document";

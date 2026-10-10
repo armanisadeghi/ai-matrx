@@ -53,7 +53,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   deleteScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 /**
  * The single layout-level header for the org Scope & Context system. Mounted once
@@ -197,7 +197,7 @@ export function ScopesRouteHeader() {
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapRecords);
       toast.success(`Deleted “${scope.name}”`);
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {
@@ -255,10 +255,10 @@ export function ScopesRouteHeader() {
       const scopeIsContextItems = pathname.endsWith("/context-items");
       if (itemParam && item) {
         trail.push({
-          label: item.display_name,
+          label: item.label,
           href: scopeItemHref(orgSlugOrId, scopeType, scope, item),
           options: items.map((it) => ({
-            label: it.display_name,
+            label: it.label,
             href: scopeItemHref(orgSlugOrId, scopeType, scope, it),
             active: it.id === item.id,
           })),
@@ -327,10 +327,10 @@ export function ScopesRouteHeader() {
       if (itemParam && item) {
         trail.push({ label: "Context items", href: ciHref });
         trail.push({
-          label: item.display_name,
+          label: item.label,
           href: contextItemHref(orgSlugOrId, scopeType, item),
           options: items.map((it) => ({
-            label: it.display_name,
+            label: it.label,
             href: contextItemHref(orgSlugOrId, scopeType, it),
             active: it.id === item.id,
           })),

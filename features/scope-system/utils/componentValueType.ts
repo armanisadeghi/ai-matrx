@@ -1,6 +1,6 @@
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { readStructuredList } from "@ai-matrx/chat/agents/utils/variable-customcomponent";
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 
 /**
  * Storage `value_type` (which `value_*` column a context-item cell uses) derived
@@ -14,7 +14,7 @@ import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalo
  */
 export function componentToValueType(
   cc: VariableCustomComponent | undefined,
-): ContextValueType {
+): ContextFieldKind {
   if (!cc) return "string";
 
   // Picklist binding emits a ```matrx reference fence string (single or multi) → value_text.
@@ -26,7 +26,7 @@ export function componentToValueType(
       return "number";
     // Typed scalars — each maps 1:1 to a storage value_type. datetime→value_timestamp,
     // time→value_time, percent→value_number, currency→value_json, the rest→value_text;
-    // buildScopeValuePayload does the column routing.
+    // The canonical value write routes values by field kind.
     case "datetime":
       return "datetime";
     case "time":

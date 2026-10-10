@@ -7,7 +7,7 @@
 // shapes). The client has NO direct grant on `iam.memberships`; every
 // read/write goes through the PUBLIC SECURITY-DEFINER `mbr_*` RPCs — and every
 // call to those RPCs goes through THIS file. No other file is allowed to call
-// them. Like `associationsService`, methods always return a `ScopesRpcResult`
+// them. Like `associationsService`, methods always return a `RecordsResult`
 // and NEVER throw.
 //
 // A "container" is the thing being joined: container_type ∈ { 'project',
@@ -26,7 +26,7 @@ import {
   mapPgError,
   ok,
 } from "@/features/scopes/service/rpcResult";
-import type { ScopesRpcResult } from "@/features/scopes/types";
+import type { RecordsResult } from "@ai-matrx/records";
 import type { Json } from "@/types/database.types";
 
 // ─── Module-scoped in-flight dedup + short TTL cache ──────────────────
@@ -55,20 +55,20 @@ interface ReadCacheEntry<T> {
 
 const forUserCache = new Map<
   string,
-  ReadCacheEntry<ScopesRpcResult<{ memberships: UserMembership[] }>>
+  ReadCacheEntry<RecordsResult<{ memberships: UserMembership[] }>>
 >();
 const forUserInflight = new Map<
   string,
-  Promise<ScopesRpcResult<{ memberships: UserMembership[] }>>
+  Promise<RecordsResult<{ memberships: UserMembership[] }>>
 >();
 
 const countsCache = new Map<
   string,
-  ReadCacheEntry<ScopesRpcResult<{ counts: MemberCount[] }>>
+  ReadCacheEntry<RecordsResult<{ counts: MemberCount[] }>>
 >();
 const countsInflight = new Map<
   string,
-  Promise<ScopesRpcResult<{ counts: MemberCount[] }>>
+  Promise<RecordsResult<{ counts: MemberCount[] }>>
 >();
 
 function forUserKey(containerType: string): string {
@@ -264,7 +264,7 @@ export const membershipsService = {
   async listForContainer(
     containerType: string,
     containerId: string,
-  ): Promise<ScopesRpcResult<{ members: Membership[] }>> {
+  ): Promise<RecordsResult<{ members: Membership[] }>> {
     try {
       requireUserId();
       const { data, error } = await runWithSessionRetry(() =>
@@ -292,7 +292,7 @@ export const membershipsService = {
   async listWithUsers(
     containerType: string,
     containerId: string,
-  ): Promise<ScopesRpcResult<{ members: MembershipWithUser[] }>> {
+  ): Promise<RecordsResult<{ members: MembershipWithUser[] }>> {
     try {
       requireUserId();
       const { data, error } = await runWithSessionRetry(() =>
@@ -322,7 +322,7 @@ export const membershipsService = {
    */
   async forUser(
     containerType: string,
-  ): Promise<ScopesRpcResult<{ memberships: UserMembership[] }>> {
+  ): Promise<RecordsResult<{ memberships: UserMembership[] }>> {
     requireUserId();
     const key = forUserKey(containerType);
 
@@ -333,7 +333,7 @@ export const membershipsService = {
     if (pending) return pending;
 
     const request = (async (): Promise<
-      ScopesRpcResult<{ memberships: UserMembership[] }>
+      RecordsResult<{ memberships: UserMembership[] }>
     > => {
       try {
         // PAGED: PostgREST caps one answer at its max-rows (1000). A person in 1,043 organizations
@@ -383,7 +383,7 @@ export const membershipsService = {
   async listForUser(
     userId: string,
     containerType?: string,
-  ): Promise<ScopesRpcResult<{ members: Membership[] }>> {
+  ): Promise<RecordsResult<{ members: Membership[] }>> {
     try {
       requireUserId();
       const { data, error } = await runWithSessionRetry(() =>
@@ -412,7 +412,7 @@ export const membershipsService = {
   async counts(
     containerType: string,
     containerIds: string[],
-  ): Promise<ScopesRpcResult<{ counts: MemberCount[] }>> {
+  ): Promise<RecordsResult<{ counts: MemberCount[] }>> {
     requireUserId();
     const ids = Array.from(new Set(containerIds));
     if (ids.length === 0) return ok({ counts: [] });
@@ -425,7 +425,7 @@ export const membershipsService = {
     if (pending) return pending;
 
     const request = (async (): Promise<
-      ScopesRpcResult<{ counts: MemberCount[] }>
+      RecordsResult<{ counts: MemberCount[] }>
     > => {
       try {
         // One row per id comes back, so >1000 ids would hit PostgREST's row cap: ask in slices.
@@ -481,7 +481,7 @@ export const membershipsService = {
     role?: string;
     status?: string;
     metadata?: Json;
-  }): Promise<ScopesRpcResult<{ id: string }>> {
+  }): Promise<RecordsResult<{ id: string }>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("mbr_add", {
@@ -519,7 +519,7 @@ export const membershipsService = {
     containerId: string;
     userId: string;
     role: string;
-  }): Promise<ScopesRpcResult<null>> {
+  }): Promise<RecordsResult<null>> {
     try {
       requireUserId();
       const { error } = await supabase.rpc("mbr_update_role", {
@@ -542,7 +542,7 @@ export const membershipsService = {
     containerId: string;
     userId: string;
     role: string;
-  }): Promise<ScopesRpcResult<null>> {
+  }): Promise<RecordsResult<null>> {
     return membershipsService.updateRole(args);
   },
 
@@ -555,7 +555,7 @@ export const membershipsService = {
     containerType: string;
     containerId: string;
     userId: string;
-  }): Promise<ScopesRpcResult<null>> {
+  }): Promise<RecordsResult<null>> {
     try {
       requireUserId();
       const { error } = await supabase.rpc("mbr_remove", {

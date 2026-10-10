@@ -5,6 +5,10 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 export const CUSTOMER_SOCIAL_PROVIDERS = [
+  "facebook",
+  "instagram",
+  "threads",
+  "pinterest",
   "linkedin",
   "discord",
   "twitch",
@@ -22,6 +26,7 @@ export interface SocialProviderConfig {
   status: "available" | "unavailable";
   scopes: string[];
   reason?: string;
+  accessMode?: "internal_test" | "approved" | "unavailable";
 }
 
 export interface CustomerSocialConnection {
@@ -43,6 +48,7 @@ export interface SocialIdentity {
 export interface SocialResource {
   resource_id: string | null;
   selected: boolean;
+  attachedBrandId?: string;
   resource_ref: string;
   display_name: string;
   resource_type: string;
@@ -89,12 +95,12 @@ function errorMessage(value: unknown): string {
   return "Connection request failed. Try again.";
 }
 
-async function socialRequest<T>(
+async function socialRequest(
   provider: CustomerSocialProvider,
-  operation: "config" | "discover" | "read" | "refresh" | "disconnect" | "select",
+  operation: "config" | "discover" | "read" | "refresh" | "disconnect" | "select" | "attach",
   organizationId: string,
   body?: Record<string, string>,
-): Promise<T> {
+): Promise<unknown> {
   const supabase = createClient();
   const {
     data: { session },
@@ -121,7 +127,7 @@ async function socialRequest<T>(
   );
   const output: unknown = await response.json().catch(() => null);
   if (!response.ok) throw new Error(errorMessage(output));
-  return output as T;
+  return output;
 }
 
 export async function loadSocialConfigs(
@@ -130,7 +136,7 @@ export async function loadSocialConfigs(
   const results = await Promise.all(
     CUSTOMER_SOCIAL_PROVIDERS.map(async (provider): Promise<SocialProviderConfig> => {
       try {
-        const config = await socialRequest<unknown>(
+        const config = await socialRequest(
           provider,
           "config",
           organizationId,
@@ -152,6 +158,7 @@ export async function loadSocialConfigs(
           provider,
           status: config.status,
           scopes,
+          accessMode: "customer_access" in config && (config.customer_access === "internal_test" || config.customer_access === "approved" || config.customer_access === "unavailable") ? config.customer_access : undefined,
           reason:
             "reason" in config && typeof config.reason === "string"
               ? config.reason
@@ -215,7 +222,7 @@ export async function readCustomerSocialAccount(
   connectionId: string,
   operation: "read" | "discover" = "read",
 ): Promise<{ subject: SocialIdentity; resources: SocialResource[] }> {
-  const output = await socialRequest<unknown>(
+  const output = await socialRequest(
     provider,
     operation,
     organizationId,
@@ -250,6 +257,7 @@ export async function readCustomerSocialAccount(
                 {
                   resource_id: resource.resource_id,
                   selected: "selected" in resource && resource.selected === true,
+                  attachedBrandId: "attached_brand_id" in resource && typeof resource.attached_brand_id === "string" ? resource.attached_brand_id : undefined,
                   resource_ref: resource.resource_ref,
                   display_name: resource.display_name,
                   resource_type: resource.resource_type,
@@ -307,20 +315,23 @@ export function socialAuthorizeUrl(
   issuer?: string,
   handle?: string,
   reconnectConnectionId?: string,
+  returnUrl: string = "/user-settings/integrations",
 ): string {
   const target = new URL(
     `/api/social-oauth/${provider}/start`,
     window.location.origin,
   );
   target.searchParams.set("organization_id", organizationId);
-  target.searchParams.set("return_url", "/user-settings/integrations");
+  target.searchParams.set("return_url", returnUrl);
   target.searchParams.set("backend_origin", resolveServiceBaseUrl("aidream"));
-  if ((provider === "linkedin" || provider === "bluesky") && reconnectConnectionId) target.searchParams.set("connection_id", reconnectConnectionId);
+  target.searchParams.set("frontend_origin", window.location.origin);
+  if (["linkedin", "bluesky", "facebook", "instagram", "threads"].includes(provider) && reconnectConnectionId) target.searchParams.set("connection_id", reconnectConnectionId);
   if (issuer) target.searchParams.set("issuer", issuer);
   if (handle) target.searchParams.set("handle", handle);
   return target.toString();
 }
 
-export function selectCustomerSocialAccount(provider: CustomerSocialProvider, organizationId: string, connectionId: string, resource: SocialResource): Promise<unknown> {
-  return socialRequest(provider, "select", organizationId, {connection_id: connectionId, resource_type: resource.resource_type, resource_ref: resource.resource_ref});
+export function selectCustomerSocialAccount(provider: CustomerSocialProvider, organizationId: string, connectionId: string, resource: SocialResource, brandId?: string): Promise<unknown> {
+  const attachBrandId = brandId && ["facebook", "instagram", "threads"].includes(provider) ? brandId : undefined;
+  return socialRequest(provider, attachBrandId ? "attach" : "select", organizationId, {connection_id: connectionId, resource_type: resource.resource_type, resource_ref: resource.resource_ref, ...(attachBrandId ? {brand_id: attachBrandId} : {})});
 }

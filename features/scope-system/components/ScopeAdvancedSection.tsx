@@ -14,12 +14,12 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toSlug, isValidSlug } from "@/features/scopes/utils/slugify";
-import type { ScopeNode as Scope } from "@/features/scopes/types";
+import { toSlug, isValidSlug } from "@ai-matrx/records/scopes";
+import type { Scope as Scope } from "@ai-matrx/records/scopes";
 import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeAdvancedSectionProps {
@@ -86,7 +86,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           settings: parsedSettings,
           sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapRecords);
       toast.success("Advanced settings saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");

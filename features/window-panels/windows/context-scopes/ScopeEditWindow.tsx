@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ScopeForm } from "@/features/agent-context/components/scope-admin/ScopeForm";
+import { ScopeForm } from "@/features/scopes/components/management/ScopeForm";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   selectScopeById,

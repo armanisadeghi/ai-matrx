@@ -13,7 +13,7 @@ const scopeType = {
 
 const contextItem = {
   id: "context-item-1",
-  display_name: "Title",
+  label: "Title",
 } as Parameters<typeof ContextItemsReadyPreview>[0]["items"][number];
 
 describe("ContextItemsReadyPreview", () => {
