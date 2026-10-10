@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -236,7 +237,7 @@ function useStudyPassageActions(guide: Note): { actions: Action[]; tutor: React.
   return { actions, tutor };
 }
 
-function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpRequest, canEdit, onBodySaved }: { guide: Note; onEdit: () => void; onDelete: () => void; canDelete: boolean; deleting: boolean; jumpRequest: { index: number; nonce: number } | null; canEdit: boolean; onBodySaved: () => void }) {
+function ReaderContent({ guide, onEdit, onDelete, canDelete, jumpRequest, canEdit, onBodySaved }: { guide: Note; onEdit: () => void; onDelete: () => void; canDelete: boolean; jumpRequest: { index: number; nonce: number } | null; canEdit: boolean; onBodySaved: () => void }) {
   const readerRef = useRef<HTMLDivElement>(null);
   // EDIT IN PLACE (components/rich-editor/in-place): the guide's owner
   // double-clicks the text (or presses the pencil) and THE ONE editor opens
@@ -281,7 +282,7 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
       <Button icon={<Search aria-hidden />} variant="outline" aria-label="Search this guide" title="Search this guide" onClick={openFind} />
       <Button icon={<Pencil aria-hidden />} variant="outline" aria-label="Edit study guide" title="Edit study guide" onClick={canEdit ? () => setEditingBody(true) : onEdit} />
       {canEdit && <Button icon={<TextCursorInput aria-hidden />} variant="outline" aria-label="Rename study guide" title="Rename study guide" onClick={() => setEditingTitle(true)} />}
-      {canDelete && <Button icon={<Trash2 aria-hidden />} variant="outline" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} disabled={deleting} />}
+      {canDelete && <Button icon={<Trash2 aria-hidden />} variant="outline" aria-label="Delete study guide" title="Delete study guide" onClick={onDelete} />}
     </div>
     {findOpen && <div className="absolute right-3 top-11 z-30 w-[min(96%,520px)]"><RenderedFindBar rootRef={readerRef} onClose={() => setFindOpen(false)} label="Find in this guide" focusRequest={findFocusRequest} /></div>}
     <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto">
@@ -361,7 +362,6 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
   const [editError, setEditError] = useState<string | null>(null);
   const [creatingGuide, setCreatingGuide] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
-  const [deletingGuide, setDeletingGuide] = useState(false);
 
   useEffect(() => {
     let stale = false;
@@ -430,17 +430,17 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
     }
   };
 
+  // Leave the guide the moment the person confirms — the write follows. Waiting for it left the
+  // page on a deleted guide for ~4s; a failed write says so in a toast (this page is gone by then).
   const deleteGuide = async () => {
-    if (!pendingDelete || deletingGuide) return;
-    setDeletingGuide(true);
+    if (!pendingDelete) return;
+    const { id, label } = pendingDelete;
+    setPendingDelete(null);
+    router.replace("/education/study-guides");
     try {
-      await dispatch(deleteNote(pendingDelete.id)).unwrap();
-      setPendingDelete(null);
-      router.replace("/education/study-guides");
+      await dispatch(deleteNote(id)).unwrap();
     } catch (cause) {
-      setEditError(cause instanceof Error ? cause.message : "Could not move the study guide to Trash.");
-    } finally {
-      setDeletingGuide(false);
+      toast.error(`Could not move “${label || "Untitled guide"}” to Trash`, { description: cause instanceof Error ? cause.message : undefined });
     }
   };
 
@@ -640,13 +640,13 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
   );
 
   const canDeleteGuide = Boolean(guide && guides.some((item) => item.id === guide.id));
-  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="flex h-full min-h-0 flex-col bg-background"><div className="flex shrink-0 items-center gap-2 border-b border-border/40 px-2 py-1">{editError && <ErrorNotice size="inline" className="min-w-0 flex-1 text-xs" message={editError} />}<Button icon={<BookOpen aria-hidden />} variant="outline" className="ml-auto" onClick={() => { void finishEditing(); }}>Back to reading</Button></div><div className="min-h-0 flex-1"><NoteWorkspace instanceId={`study-guide-edit:${guide.id}`} noteId={guide.id} className="bg-transparent" /></div></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); setTitleDraft(guide.label); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} deleting={deletingGuide} jumpRequest={outlineJump} canEdit={canDeleteGuide} onBodySaved={() => { void loadStudyGuide(guide.id).then((saved) => { if (saved) setGuide(saved); }); }} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
+  const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? editingGuide ? <main className="flex h-full min-h-0 flex-col bg-background"><div className="flex shrink-0 items-center gap-2 border-b border-border/40 px-2 py-1">{editError && <ErrorNotice size="inline" className="min-w-0 flex-1 text-xs" message={editError} />}<Button icon={<BookOpen aria-hidden />} variant="outline" className="ml-auto" onClick={() => { void finishEditing(); }}>Back to reading</Button></div><div className="min-h-0 flex-1"><NoteWorkspace instanceId={`study-guide-edit:${guide.id}`} noteId={guide.id} className="bg-transparent" /></div></main> : <ReaderContent guide={guide} onEdit={() => { setEditError(null); setTitleDraft(guide.label); dispatch(setNoteEditorMode({ id: guide.id, mode: "write" })); setEditingGuide(true); }} onDelete={() => setPendingDelete(guide)} canDelete={canDeleteGuide} jumpRequest={outlineJump} canEdit={canDeleteGuide} onBodySaved={() => { void loadStudyGuide(guide.id).then((saved) => { if (saved) setGuide(saved); }); }} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
   const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide, () => { void loadStudyGuide(guide.id).then((next) => { if (next) setGuide(next); }); })}>{node}</AnnotationSidecarProvider> : node;
 
-  const deleteDialog = <ConfirmDialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)} title="Move study guide to Trash" description={archiveConfirmSentence(pendingDelete ? `“${pendingDelete.label || "Untitled guide"}”` : "this study guide")} confirmLabel="Move to Trash" variant="destructive" busy={deletingGuide} onConfirm={deleteGuide} />;
+  const deleteDialog = <ConfirmDialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)} title="Move study guide to Trash" description={archiveConfirmSentence(pendingDelete ? `“${pendingDelete.label || "Untitled guide"}”` : "this study guide")} confirmLabel="Move to Trash" variant="destructive" onConfirm={deleteGuide} />;
 
   if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope} getWriteHandlers={getWriteHandlers}>{agentBridge}{withMenu(<PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button variant="quiet" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button variant="quiet" onClick={() => setMobilePanel("details")}>Study details</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} hasGuide={Boolean(guide)} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} onCreate={() => { void createManualGuide(); }} creating={creatingGuide} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={tab === "terms" ? detailsLoading.terms : false} error={tab === "terms" ? detailsError.terms : null} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer>{deleteDialog}</div></PanelControlProvider>)}</SurfaceRuntimeProvider>);
 
