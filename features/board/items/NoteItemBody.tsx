@@ -244,8 +244,8 @@ export function NoteTileTitle({ source, title }: TitleFieldProps) {
   if (!noteId || !loaded) return <p className="truncate text-sm font-medium text-foreground">{title}</p>;
   // Clipped: in a narrow header the field shrinks, never paints over the chips beside it.
   return (
-    <div className="flex min-w-0 overflow-hidden">
-      <NoteTitleField noteId={noteId} className="-ml-1" />
+    <div className="flex min-w-0 flex-1 overflow-hidden">
+      <NoteTitleField noteId={noteId} className="-ml-1 w-full [field-sizing:fixed]" />
     </div>
   );
 }

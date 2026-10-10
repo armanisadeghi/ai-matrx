@@ -19,6 +19,7 @@ Focused tests cover missing organization, partial-save retry, annotation ownersh
 ## Changelog
 
 - 2026-09-27: The library surface now declares create/update/delete over its loaded guide list. Create persistence is separate from navigation so an agent batch cannot unmount mid-write; updates reload the accessible note and compare its emitted version before the canonical Notes CAS save. The manual door lands straight in the canonical editor with an editable title.
+- `2026-10-10` — page-pass: type workspace, fixed: with no guide open (or one that failed to load) the sidebar drew a phantom bold "Untitled guide" outline row that looked like a guide and did nothing when clicked; the outline now renders only for a loaded guide. The real guide list is the "Current guide" picker above it.
 - 2026-09-27: Collection updates carry the approved `available_guides` version as required `expected_version`; reparsing after any intervening save refuses instead of silently adopting a newer version. The embedded canonical editor now exposes its Notes label control, and returning to reading removes `?edit=1` after the save.
 - 2026-09-27: Added the library's direct **New study guide** door and the reader's Trash-confirmed archive control. Both use the canonical Notes create/archive paths and keep the Study Notes folder marker; the detail agent surface now exposes matching `create_study_guides` and `delete_study_guides` targets.
 - 2026-09-27: `/education/study-guides/[id]` is its own agent surface, `matrx-user/education-study-guide`

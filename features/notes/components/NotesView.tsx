@@ -616,14 +616,6 @@ export function NotesView({
     return () => window.removeEventListener("keydown", handler);
   }, [dispatch, instanceId, activeTabId, openTabs]);
 
-  const modeBtnClass = (mode: string) =>
-    cn(
-      "flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full transition-colors cursor-pointer",
-      "[&_svg]:w-3.5 [&_svg]:h-3.5",
-      editorMode === mode
-        ? NAV_ITEM_SELECTED
-        : NAV_ITEM_UNSELECTED,
-    );
 
   const narrowSidebar = narrowLayout && showSidebar && !singleNote;
   const narrowShowsList =

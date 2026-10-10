@@ -6,7 +6,9 @@
 // same behaviour inside its tab (both use useNoteTitleEditing).
 //
 // The field sizes to its text, so the rest of a host header stays a drag
-// handle.
+// handle. (Inside a scaled Board tile field-sizing measures a few px short and
+// the name ended in an ellipsis with room to spare, so the tile passes
+// `w-full [field-sizing:fixed]` and fills its header slot instead.)
 
 import { cn } from "@/lib/utils";
 import { useNoteTitleEditing } from "../hooks/useNoteTitleEditing";
