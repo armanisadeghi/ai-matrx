@@ -98,6 +98,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toolCheckFailure } from "./integration-tool-check";
 import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
 import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
+import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
+import { loadCustomerSocialConnections, type CustomerSocialConnection } from "@/features/social-connections/customer-service";
 import { TikTokConnectionsPanel } from "@/features/tiktok-connections/TikTokConnectionsPanel";
 import { listTikTokConnections } from "@/features/tiktok-connections/service";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
@@ -276,6 +278,30 @@ export function IntegrationsWorkspace({
   const [filters, setFilters] = useState<DirectoryFilters>(
     DEFAULT_DIRECTORY_FILTERS,
   );
+  const [socialInventory, setSocialInventory] = useState<{
+    userId: string;
+    connections: CustomerSocialConnection[];
+    error: boolean;
+  } | null>(null);
+  const [socialVersion, setSocialVersion] = useState(0);
+  useEffect(() => {
+    let active = true;
+    if (!userId) {
+      return;
+    }
+    void loadCustomerSocialConnections().then(
+      (connections) => {
+        if (active) setSocialInventory({ userId, connections, error: false });
+      },
+      () => {
+        if (active)
+          setSocialInventory({ userId, connections: [], error: true });
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [userId, socialVersion]);
   const params = useSearchParams();
   const openSettingsTab = useSettingsTabNavigate();
   const returnTarget = !embedded && params ? directoryDetailFromParams(params) : null;
@@ -357,6 +383,7 @@ export function IntegrationsWorkspace({
     if (organizationId) void dispatch(fetchAvailability({ organizationId }));
   };
   const refresh = () => {
+    setSocialVersion((value) => value + 1);
     refreshMcpConnections();
     void github.reload();
     void googleInventory.refetch();
@@ -491,6 +518,27 @@ export function IntegrationsWorkspace({
     sharedBy: id === "google" ? googleSharedBy : undefined,
   });
   const items: IntegrationDirectoryItem[] = [
+    nativeItem(
+      "social-accounts",
+      "Social accounts",
+      "Connect your own social accounts.",
+      "Social accounts",
+      "social",
+      null,
+      savedAccountSummary(
+        (socialInventory?.userId === userId
+          ? socialInventory.connections
+          : []
+        ).map((account) => ({
+          identity: account.accountName ?? account.provider,
+          status: account.status,
+        })),
+        Boolean(userId) && socialInventory?.userId !== userId,
+        socialInventory?.error ?? false,
+      ),
+      "LinkedIn Reddit Discord Twitch Bluesky Mastodon Snapchat profiles identity",
+    ),
+
     nativeItem("tiktok", "TikTok", "Connect your account to track your profile and public videos.",
       "TikTok", "social", "https://cdn.simpleicons.org/tiktok",
       savedAccountSummary(tiktokConnections.map(account => ({ identity: account.account_name ?? "TikTok account", status: account.status })),
@@ -884,6 +932,14 @@ export function IntegrationsWorkspace({
           onDisconnect={() => void handleDisconnect(entry)}
           onTest={() => void handleTestConnection(entry)}
         />
+      );
+    if (item.id === "native:social-accounts")
+      return organizationId ? (
+        <CustomerAccountsPanel organizationId={organizationId} />
+      ) : (
+        <p className="p-4 text-sm text-muted-foreground">
+          Choose an organization to connect an account.
+        </p>
       );
     if (item.id === "native:google") return <ConnectorsSettingsPanel />;
     if (item.id === "native:github") return <GitHubConnectionCard />;
