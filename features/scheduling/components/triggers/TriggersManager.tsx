@@ -33,6 +33,7 @@ import { automationIntervalText } from "@/features/scheduling/components/costs/A
 import { AutomationLimitsSection } from "@/features/scheduling/components/limits/AutomationLimitsSection";
 import { resumeAutomation } from "@/features/scheduling/service/automationGuardrails";
 import { TriggerRunsTable } from "./TriggerRunsTable";
+import { AutomationKillSwitch } from "@/features/scheduling/components/killswitch/AutomationKillSwitch";
 import {
   automationCostColumns,
   automationFlagHits,
@@ -410,6 +411,7 @@ export function TriggersManager({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
+      <AutomationKillSwitch seat={seat} orgId={orgId} />
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
