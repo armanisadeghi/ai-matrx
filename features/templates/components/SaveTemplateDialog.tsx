@@ -25,6 +25,7 @@ import { agentsReading, readSetupAgents, saveAsTemplate, tablesReadBy, type Save
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface SaveTemplateDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -158,7 +159,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 </Button>
               }
             />
-            {found && "error" in found ? <p className="type-body text-destructive">{found.error}</p> : null}
+            {found && "error" in found ? <p className="type-body text-destructive">{found.error}<ErrorAlchemyMenu error={found.error} /></p> : null}
             {agentId && !found ? (
               <p className="flex items-center gap-2 type-body text-muted-foreground">
                 <Spinner size="xs" className="text-current" /> Reading its tables
@@ -204,7 +205,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 {organizationId ? <p className="type-secondary text-muted-foreground">{`Saved in ${orgName ?? "its organization"}`}</p> : null}
               </>
             ) : null}
-            {error ? <p className="type-body text-destructive" role="alert">{error}</p> : null}
+            {error ? <p className="type-body text-destructive" role="alert">{error}<ErrorAlchemyMenu error={error} /></p> : null}
           </div>
         )}
 

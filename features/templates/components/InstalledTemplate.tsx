@@ -32,6 +32,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { variableLabel } from "../format";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface InstalledMade {
   kind: string;
   id: string | null;
@@ -211,7 +212,7 @@ export function InstalledTemplate({
 
   return (
     <div className="flex min-w-0 flex-col gap-8" data-template-installed={organizationId}>
-      {error ? <p className="text-sm text-destructive">{`The agents could not be read: ${error}`}</p> : null}
+      {error ? <p className="text-sm text-destructive">{`The agents could not be read: ${error}`}<ErrorAlchemyMenu /></p> : null}
 
       {ordered.length > 0 ? (
         <Section icon={<Play className="h-4 w-4 text-primary" />} title="Try it" hint="Each agent answers from the data this template installed.">
