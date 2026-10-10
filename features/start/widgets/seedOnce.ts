@@ -25,7 +25,7 @@ export function seedStartLayoutOnce(deps: SeedOnceDeps): Promise<SeedOutcome> {
   const running = IN_FLIGHT.get(deps.userId);
   if (running) return running.then(() => "skipped" as const);
   const run = (async () => {
-    let outcome: SeedOutcome = "skipped";
+    let outcome = "skipped" as SeedOutcome; // assigned inside the lock callback
     await deps.lock(`matrx-start-seed:${deps.userId}`, async () => {
       if (await deps.hasRow()) return;
       outcome = (await deps.write()).ok ? "wrote" : "failed";
