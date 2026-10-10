@@ -12,6 +12,7 @@ import { useSurfaceClientTools, type SurfaceToolCall } from "@ai-matrx/chat/surf
 import { selectIsAwaitingTools, selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { summarizeStartEdit } from "../widgets/editNote";
+import { sameStartDoc } from "../widgets/doc";
 import type { StartDoc } from "../widgets/types";
 import { applyAgentEdit, catalogForAgent, readForAgent } from "./agentEdits";
 
@@ -43,6 +44,15 @@ export function useStartAgentTools(surfaceName: string, host: StartAgentHost) {
     const p = pendingRef.current;
     if (!p) return Promise.resolve();
     const run = (async () => {
+      // A turn that left the layout as it was (an edit and its undo, or a request that changed nothing)
+      // saves no version: History must not fill with "Saved layout" entries that moved nothing.
+      if (sameStartDoc(p.base, p.doc)) {
+        if (pendingRef.current === p) {
+          pendingRef.current = null;
+          setPending(null);
+        }
+        return;
+      }
       const result = await hostRef.current.save(p.doc, `Agent: ${summarizeStartEdit(p.base, p.doc)}`, { byAgent: true });
       // A refused save keeps the pending doc on screen (and saves on the next flush).
       if (result.ok && pendingRef.current === p) {

@@ -53,6 +53,10 @@ jest.mock("@/features/surfaces/manifests/registry", () => {
   return {
     getManifest: (name: string) => all.find((m) => m.surfaceName === name),
     getAllManifests: () => all,
+    // The index + body seam (jest.setup registers the package source from these).
+    getRawManifest: (name: string) => all.find((m) => m.surfaceName === name),
+    getSurfaceAncestry: () => [] as string[],
+    getSurfaceChildren: () => [] as string[],
   };
 });
 jest.mock("@/lib/toast", () => ({ toast: Object.assign(jest.fn(), { error: jest.fn(), success: jest.fn() }) }));

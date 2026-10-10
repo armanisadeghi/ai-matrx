@@ -9,7 +9,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { startLayoutTable } from "./startLayout.typed-table";
 import { useStartPage } from "./useStartPage";
-import { parseStartDoc, serializeStartDoc } from "./widgets/doc";
+import { parseStartDoc, sameStartDoc, serializeStartDoc } from "./widgets/doc";
 import { summarizeStartEdit } from "./widgets/editNote";
 import { defaultStartDoc } from "./widgets/defaultDoc";
 import { browserLock, seedStartLayoutOnce } from "./widgets/seedOnce";
@@ -43,6 +43,8 @@ export function useStartLayout() {
   const save = async (doc: StartDoc, note: string, opts: { byAgent?: boolean } = {}): Promise<SaveResult> => {
     if (!userId) return { ok: false, error: "Sign in to save your start page." };
     if (!homeOrg) return { ok: false, error: "No organization to save your start page in." };
+    // Nothing changed: no new version. (The first-layout seed has no current row, so it still writes.)
+    if (parsed?.ok && sameStartDoc(parsed.doc, doc)) return { ok: true };
     setSaving(true);
     const row = { person: userId, doc: serializeStartDoc(doc), note, saved_at: new Date().toISOString() };
     const write = (data: typeof row) => upsertAppRow(client, startLayoutTable, data, { organizationId: homeOrg });

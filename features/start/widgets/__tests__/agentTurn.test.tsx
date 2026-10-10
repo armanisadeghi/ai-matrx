@@ -98,3 +98,23 @@ it("a conversation paused for its tools between two tool calls is mid-turn: ONE 
   await act(async () => m.rerender());
   expect(save).toHaveBeenCalledTimes(1);
 });
+
+it("a turn that leaves the layout as it was saves NO version", async () => {
+  const save = jest.fn(async () => ({ ok: true as const }));
+  const m = mount(save);
+  world.executing = true;
+  // Add a widget, then remove it again: the turn's net change is nothing.
+  let added: { id: string } | null = null;
+  act(() => {
+    added = handlers.start_add_widget!({ type: "tasks" }, call) as { id: string };
+  });
+  expect(added!.id).toBeTruthy();
+  m.rerender();
+  act(() => void handlers.start_remove_widget!({ id: added!.id }, call));
+  m.rerender();
+  world.executing = false;
+  await act(async () => m.rerender());
+  expect(save).not.toHaveBeenCalled();
+  await act(async () => m.root.unmount());
+  expect(save).not.toHaveBeenCalled();
+});

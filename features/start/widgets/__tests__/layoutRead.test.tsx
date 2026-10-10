@@ -21,6 +21,7 @@ jest.mock("../seedOnce", () => ({
   seedStartLayoutOnce: jest.fn(() => new Promise(() => {})), // never settles: the seed is still deciding
 }));
 
+import { upsertAppRow } from "@ai-matrx/records/react";
 import { useStartLayout } from "../../useStartLayout";
 import { defaultStartDoc } from "../defaultDoc";
 
@@ -57,4 +58,16 @@ it("a failed read says so instead of showing the starting layout", () => {
   const api = read();
   expect(api.doc).toBeNull();
   expect(api.error).toBe("read failed");
+});
+
+it("a save that changes nothing writes NO new version; a real change does", async () => {
+  Object.assign(world, { loading: false, error: null, rows: [{ _id: "r1", person: "u1", doc: active, saved_at: "2026-01-01", _organizationId: "org1" }] });
+  (upsertAppRow as jest.Mock).mockClear();
+  const api = read();
+  const unchanged = await api.save(api.doc!, "Saved layout");
+  expect(unchanged).toEqual({ ok: true });
+  expect(upsertAppRow).not.toHaveBeenCalled();
+  const changed = { ...api.doc!, widgets: api.doc!.widgets.slice(1) };
+  await api.save(changed, "Removed one");
+  expect(upsertAppRow).toHaveBeenCalledTimes(1);
 });
