@@ -683,6 +683,13 @@ export interface PromptsPreferences {
    * composer-draft-store.ts`.
    */
   restoreUnsentDrafts: boolean;
+  /**
+   * Prompt-fix suggestions the person dismissed (rich-editor `PromptFixReview`), by the text they
+   * belong to (`agent:<id>:system`, `agent:<id>:message:<n>`) → the dismissed fix ids. Kept in
+   * preferences so a dismissal follows the person across browsers; a key is dropped when its
+   * last dismissal is forgotten (the fix is no longer suggested).
+   */
+  dismissedPromptFixes: Record<string, string[]>;
 }
 
 /** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
@@ -1177,6 +1184,7 @@ export const initializeUserPreferencesState = (
       submitOnEnter: true,
       autoClearResponsesInEditMode: true,
       restoreUnsentDrafts: true,
+      dismissedPromptFixes: {},
     },
     voice: {
       // Empty = no explicit choice → resolveVoiceId() falls back to the

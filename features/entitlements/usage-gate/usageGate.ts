@@ -49,7 +49,7 @@ export type UsageGateVerdict =
   | { allowed: true }
   | { allowed: false; window: UsageWindow | null; message: string };
 
-const BLOCKED_MESSAGE = "You've reached your AI usage limit for now.";
+export const USAGE_BLOCKED_MESSAGE = "You've reached your AI usage limit for now.";
 
 function signedInUserId(root: UsageGateRoot): string | null {
   return root.userAuth?.id ?? null;
@@ -77,7 +77,7 @@ export async function checkUsageBeforeAiCall(
 
   const window = bindingWindow(fresh);
   dispatch(setUsageRefusal(window));
-  return { allowed: false, window, message: BLOCKED_MESSAGE };
+  return { allowed: false, window, message: USAGE_BLOCKED_MESSAGE };
 }
 
 // ── After a call: stale + one debounced background refresh ──────────────────

@@ -63,6 +63,7 @@ export default function AnnouncementProviderImpl() {
       .filter((id): id is string => !!id);
     if (ids.length === 0) return;
     let alive = true;
+    // read-gate-exempt: display names are enrichment beside alarms already shown; an unresolved name falls back to the id
     fetchUserDisplayNames(ids).then((m) => alive && setNames(m)).catch(() => {});
     return () => {
       alive = false;

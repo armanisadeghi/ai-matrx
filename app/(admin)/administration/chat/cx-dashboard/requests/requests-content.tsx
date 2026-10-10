@@ -386,6 +386,7 @@ export function RequestsContent({ result }: Props) {
               },
             }}
             pageSizeOptions={[25, 50, 100]}
+            // read-gate-exempt: rows are the server page's props; the page renders CxErrorPanel on a failed read before this mounts
             emptyState={{ title: "No requests match" }}
             toolbar={{
               title: "User Requests",

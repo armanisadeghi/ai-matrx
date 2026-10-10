@@ -432,6 +432,7 @@ export function VoicePage({
             ) : sources.length === 0 ? (
               <li className="p-2 text-sm text-muted-foreground">
                 {brandScoped
+                  // read-gate-exempt: sources stay null when the read fails; sourceError shows above
                   ? "No Sources for this brand yet. Try All my sources."
                   : "No Sources match. Add writing to Knowledge first."}
               </li>
@@ -493,6 +494,7 @@ export function VoicePage({
                   </li>
                 ) : socialPosts.length === 0 ? (
                   <li className="p-2 text-sm text-muted-foreground">
+                    {/* read-gate-exempt: socialPosts stay null when the read fails; socialError shows above */}
                     No tracked posts to measure yet.{" "}
                     <Link href={marketingRoutes.brandSocials(ownerId)} className="underline">
                       Track the brand&apos;s accounts

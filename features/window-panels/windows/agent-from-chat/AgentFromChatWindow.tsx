@@ -116,6 +116,7 @@ function AgentFromChatWindowInner({
       .then((found) => {
         if (live) setPrevious(found);
       })
+      // read-gate-exempt: previous build is a convenience pre-fill; the build itself never reads it
       .catch(() => {
         // Only a convenience door: the build itself never depends on it.
       });

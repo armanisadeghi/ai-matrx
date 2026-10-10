@@ -216,6 +216,7 @@ function BusinessStep({
       {state.kind === "loading" ? (
         <RegionSkeleton shape="rows" count={4} aria-label={state.buying ? "Searching Google" : "Checking stored searches"} />
       ) : state.kind === "not_stored" ? (
+        // read-gate-exempt: not_stored is its own result kind; a failed search arrives as the error kind
         <EmptyState
           icon={<Search />}
           title="No stored search to reuse"

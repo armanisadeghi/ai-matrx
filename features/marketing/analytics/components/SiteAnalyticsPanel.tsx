@@ -438,6 +438,7 @@ export function SiteAnalyticsPanel({
 
       {data && data.dataThrough === null && !windowQuery.isLoading ? (
         <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+          {/* read-gate-exempt: shown only when data exists, which only a successful read produces */}
           <p className="text-xs font-medium text-foreground">No Google Analytics days yet</p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">

@@ -125,6 +125,7 @@ export function useLastRunCost(
       .then((cost) => {
         if (!cancelled) setRead({ masterworkId, cost });
       })
+      // read-gate-exempt: the last-run price is enrichment beside the Run button; a refused read leaves the figure absent, not wrong
       .catch(() => {
         // The price is enrichment beside the button; a refused read leaves
         // the previous figure (or none), never a dead box.

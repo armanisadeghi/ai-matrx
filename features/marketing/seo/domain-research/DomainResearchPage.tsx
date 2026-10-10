@@ -265,6 +265,7 @@ export function DomainResearchPage() {
                       keywords.state.kind === "loading" ? (
                         <RegionSkeleton shape="rows" count={6} aria-label="Loading keywords" />
                       ) : (
+                        // read-gate-exempt: seeds come from the page address, not from a read
                         <EmptyState
                           icon={<KeyRound />}
                           title="Keywords come first"

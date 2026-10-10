@@ -28,6 +28,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bookmark, ExternalLink, PanelRightClose, RefreshCw } from "lucide-react";
 
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Button, RegionSkeleton, SegmentedControl, Tabs } from "@ai-matrx/design-system/controls";
 import {
   DropdownMenu,
@@ -143,6 +144,9 @@ function TranscriptTab({ postId, organizationId, canEdit }: { postId: string; or
   }
 
   if (transcript.isLoading) return <RegionSkeleton shape="rows" count={4} />;
+  if (transcript.isError) {
+    return <ReadFailure error={transcript.error} what="this transcript" onRetry={() => void transcript.refetch()} />;
+  }
   const row = transcript.data;
   if (!row) {
     return (

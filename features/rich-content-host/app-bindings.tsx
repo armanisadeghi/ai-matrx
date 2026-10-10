@@ -12,8 +12,8 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectIsAdminDebugger, selectIsAuthenticated, selectIsSuperAdmin, selectUser } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectDismissedPromptFixes, selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { setModulePreferences, setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
@@ -135,6 +135,18 @@ configureRichContent({
       const dispatch = useAppDispatch();
       return (preferences: Parameters<typeof setModulePreferences>[0]["preferences"]) =>
         dispatch(setModulePreferences({ module: "mermaid", preferences }));
+    },
+    // Dismissed prompt-fix suggestions follow the person (rich-editor PromptFixReview): same key → ids.
+    usePromptFixDismissals: () => useAppSelector(selectDismissedPromptFixes),
+    useSetPromptFixDismissals: () => {
+      const dispatch = useAppDispatch();
+      const store = useAppStore();
+      return (key: string, ids: readonly string[]) => {
+        const next = { ...selectDismissedPromptFixes(store.getState()) };
+        if (ids.length > 0) next[key] = [...ids];
+        else delete next[key];
+        dispatch(setPreference({ module: "prompts", preference: "dismissedPromptFixes", value: next }));
+      };
     },
     useImageKnob: useEffectiveKnob,
     imageKnobPrincipals: sessionKnobPrincipals,

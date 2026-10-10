@@ -365,6 +365,7 @@ export function KnobOverrideRow(props: {
         if (!active) return;
         setClassSibling(keys.find((k) => k.full_key === classKnob.fullKey) ?? null);
       })
+      // read-gate-exempt: class sibling is a hint beside the preferred class; the row stays correct without it
       .catch((error: unknown) => {
         console.error(
           `[KnobOverrideRow] ${classKnob.fullKey} could not be read — the class picker shows the preferred class:`,

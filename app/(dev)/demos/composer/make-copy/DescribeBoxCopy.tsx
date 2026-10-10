@@ -44,6 +44,7 @@ import * as doors from "@/features/unified-data/hub/doors";
 import { createClient } from "@/utils/supabase/client";
 import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 import { cn } from "@/lib/utils";
+import { agentRunFailureWords } from "@/features/entitlements/usage-gate/agentRunFailure";
 import { Landing } from "@/features/make/gallery/TemplateGallery";
 import { hrefForMade, openableMade, type MadeObject } from "@/features/make/gallery/catalogue";
 import { templatePreviewHref } from "@/features/make/gallery/galleryHref";
@@ -244,10 +245,10 @@ export function DescribeBoxCopy() {
       console.error(`[make:describe] the ${current} step failed`, err, (err as { detail?: string } | null)?.detail);
       const why =
         err instanceof AnswerRefused || err instanceof HeadlessAgentRunError || err instanceof DesignRefused
-          ? WRITTEN_WRONG
+          ? agentRunFailureWords(err, WRITTEN_WRONG)
           : err instanceof SpaceBuildRefused
             ? err.message
-            : STOPPED;
+            : agentRunFailureWords(err, STOPPED);
       mark(current, "failed");
       commit({ ...r, failed: { at: current, why } });
     } finally {

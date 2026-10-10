@@ -26,6 +26,7 @@ export const defaultUserPreferences: UserPreferences = {
     submitOnEnter: true,
     autoClearResponsesInEditMode: true,
     restoreUnsentDrafts: true,
+    dismissedPromptFixes: {},
   },
   voice: {
     voice: "",

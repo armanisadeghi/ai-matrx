@@ -443,6 +443,7 @@ export function HandleBrandCreator({
                 ? discovery.hubError
                   ? `Could not read ${linkLabel(discovery.hub)}`
                   : `Found on ${linkLabel(discovery.hub)}`
+                // read-gate-exempt: a failed bio-link read says so on this same line (hubError)
                 : "No bio link to read"}
             <ErrorAlchemyMenu error={discovery.hubError} /></span>
           </div>
@@ -475,6 +476,7 @@ export function HandleBrandCreator({
           </ul>
           {discovery.accounts.length === 0 ? (
             <p className="text-[11px] text-muted-foreground">
+              {/* read-gate-exempt: a failed discovery shows hubError and its Alchemy menu above this list */}
               No other accounts found. Add more on Socials later.
             </p>
           ) : null}
