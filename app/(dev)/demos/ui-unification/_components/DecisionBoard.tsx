@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
 import { downloadFile } from "@ai-matrx/kit/download";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const STORAGE_KEY = "ui-unification-decisions-round2";
 
 export interface DecisionState {
@@ -418,7 +419,7 @@ export function DecisionBoardView({
         {error && (
           <p className="px-3 py-2 text-xs text-destructive sm:px-6" role="alert">
             {error}
-          </p>
+          <ErrorAlchemyMenu error={error} /></p>
         )}
         <section
           id="agreed"

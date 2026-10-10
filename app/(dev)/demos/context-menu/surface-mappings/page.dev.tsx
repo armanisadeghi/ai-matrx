@@ -595,7 +595,7 @@ export default function SurfaceMappingsDemoPage() {
                           Inert layers (declared mappings, zero winning keys):{" "}
                           {output.merged.inertLayers.join(", ")} — fully
                           shadowed by more specific tiers.
-                        </p>
+                        <ErrorAlchemyMenu /></p>
                       )}
                     </div>
                   )}

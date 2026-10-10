@@ -1055,7 +1055,7 @@ export default function DynamicApiClient() {
                       {openApiError && openApiEndpoints.length === 0 && (
                         <p className="text-[10px] text-destructive">
                           Could not fetch the OpenAPI spec: {openApiError}
-                        </p>
+                        <ErrorAlchemyMenu error={openApiError} /></p>
                       )}
                       {openApiEndpoints.length > 0 && (
                         <div className="space-y-1">
@@ -1073,7 +1073,7 @@ export default function DynamicApiClient() {
                             <p className="text-[10px] text-destructive">
                               Refresh failed ({openApiError}); showing the last
                               spec that loaded.
-                            </p>
+                            <ErrorAlchemyMenu error={openApiError} /></p>
                           ) : (
                             <p className="text-[10px] text-muted-foreground">
                               {filteredEndpoints.length} of{" "}
@@ -1225,10 +1225,10 @@ export default function DynamicApiClient() {
                 >
                   {responseHeaders.length === 0 ? (
                     errorMessage ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p data-error-box className="text-xs text-muted-foreground">
                         The request failed before any headers arrived. The
                         error is shown above.
-                      </p>
+                      <ErrorAlchemyMenu /></p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         No response headers yet.

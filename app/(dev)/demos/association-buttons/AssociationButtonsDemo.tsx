@@ -42,6 +42,7 @@ import { MOCK_SHOWS } from "@/features/podcasts/studio/variants/create-d/mock/sh
 import { Composer as ReimagineComposer } from "@/features/podcasts/studio/variants/create-reimagine/components/Composer";
 import { StudioComposer } from "@/features/podcasts/studio/variants/create-f/components/StudioComposer";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const noop = () => {};
 const ALL_CAPABILITIES = {
   supportsImageUrls: true,
@@ -57,7 +58,7 @@ class VariantBoundary extends Component<{ children: ReactNode }, { error: string
   }
   override render() {
     if (this.state.error) {
-      return <p className="text-xs text-destructive">Render failed: {this.state.error}</p>;
+      return <p className="text-xs text-destructive">Render failed: {this.state.error}<ErrorAlchemyMenu error={this.state.error} /></p>;
     }
     return this.props.children;
   }

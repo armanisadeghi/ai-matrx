@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useSpaceBuild, type SpaceBuildOutcome } from "@/features/spaces/embed/useSpaceBuild";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const SAVED = "demo.space-build.conversation";
 
 export default function SpaceBuildReattachDemo() {
@@ -69,7 +70,7 @@ export default function SpaceBuildReattachDemo() {
       </div>
       <pre data-demo-state className="text-xs">{`organization ${active.organizationState} · build ${available ? "available" : "not available"}`}</pre>
       <pre data-saved-conversation={saved ?? ""} className="text-xs">{saved ? `conversation ${saved}` : "no saved conversation"}</pre>
-      {failure ? <pre data-failure className="text-xs text-red-600">{failure}</pre> : null}
+      {failure ? <pre data-failure className="text-xs text-red-600">{failure}<ErrorAlchemyMenu error={failure} /></pre> : null}
       {outcome ? <pre data-outcome className="text-xs">{JSON.stringify(outcome)}</pre> : null}
     </main>
   );

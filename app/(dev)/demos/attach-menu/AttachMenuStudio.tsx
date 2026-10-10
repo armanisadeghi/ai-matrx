@@ -26,6 +26,7 @@ import { ComposerPlusMenu } from "@ai-matrx/chat/agents/components/inputs/smart-
 import { SourceAddMenu } from "@/features/sources/components/SourceCapture";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const noop = () => {};
 const DEMO_CONVERSATION = "demo-attach-menu";
 const ALL_CAPABILITIES = {
@@ -41,7 +42,7 @@ class Boundary extends Component<{ children: ReactNode }, { error: string | null
     return { error: err instanceof Error ? err.message : String(err) };
   }
   override render() {
-    if (this.state.error) return <p className="text-xs text-destructive">Render failed: {this.state.error}</p>;
+    if (this.state.error) return <p className="text-xs text-destructive">Render failed: {this.state.error}<ErrorAlchemyMenu error={this.state.error} /></p>;
     return this.props.children;
   }
 }

@@ -1294,7 +1294,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 dbResponse?.error ? (
                   <span className="text-[10px] font-mono text-destructive">
                     query failed
-                  </span>
+                  <ErrorAlchemyMenu /></span>
                 ) : dbResponse ? (
                   <span className="text-[10px] font-mono text-muted-foreground">
                     {dbResponse.rowCount} rows

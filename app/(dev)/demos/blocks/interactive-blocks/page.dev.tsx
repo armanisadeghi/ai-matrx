@@ -18,6 +18,7 @@ import { parseTimelineMarkdown } from "@/components/mardown-display/blocks/timel
 import DecisionTreeBlock from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 import { parseDecisionTreeJSON } from "@/components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const PROGRESS = `### Launch checklist
 Everything needed before the first customer sees the product.
 
@@ -76,10 +77,10 @@ const TIMELINE_DATA = parseTimelineMarkdown(TIMELINE);
 export default function InteractiveBlocksDemo() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-3 pb-safe">
-      <section data-testid="demo-quiz">{QUIZ ? <MultipleChoiceQuiz quizData={QUIZ} enableAutoSave={false} /> : <p role="alert">The quiz sample did not parse.</p>}</section>
+      <section data-testid="demo-quiz">{QUIZ ? <MultipleChoiceQuiz quizData={QUIZ} enableAutoSave={false} /> : <p role="alert">The quiz sample did not parse.<ErrorAlchemyMenu /></p>}</section>
       <section data-testid="demo-progress"><ProgressTrackerBlock tracker={parseProgressMarkdown(PROGRESS)} /></section>
       <section data-testid="demo-troubleshooting"><TroubleshootingBlock troubleshooting={parseTroubleshootingMarkdown(TROUBLESHOOTING)} /></section>
-      <section data-testid="demo-timeline">{TIMELINE_DATA ? <TimelineBlock timeline={TIMELINE_DATA} /> : <p role="alert">The timeline sample did not parse.</p>}</section>
+      <section data-testid="demo-timeline">{TIMELINE_DATA ? <TimelineBlock timeline={TIMELINE_DATA} /> : <p role="alert">The timeline sample did not parse.<ErrorAlchemyMenu /></p>}</section>
       <section data-testid="demo-decision-tree"><DecisionTreeBlock decisionTree={parseDecisionTreeJSON(TREE)} /></section>
     </div>
   );

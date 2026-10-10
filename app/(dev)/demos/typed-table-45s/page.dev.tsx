@@ -19,6 +19,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { Button } from "@ai-matrx/design-system/controls";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // ── 1. the table, declared once ────────────────────────────────────────────────────────────
 export const supplyReorderPoints = defineTypedTable({
   name: "Supply reorder points",
@@ -89,7 +90,7 @@ function ReorderBoard() {
           Add 3 sample items
         </Button>
       </div>
-      {error && <p className="type-body text-destructive">{error.message}</p>}
+      {error && <p className="type-body text-destructive">{error.message}<ErrorAlchemyMenu error={error.message} /></p>}
       <form
         className="flex flex-wrap items-end gap-2 type-body"
         onSubmit={(e) => {
