@@ -63,6 +63,17 @@ const guardedAgent = new Agent({
   bodyTimeout: TIMEOUT_MS,
 });
 
+/**
+ * What a browser sends for an <img>: many CDNs answer an unidentified client 403 where the same
+ * address loads in a tab. No cookies, no Authorization, no Referer — this request is made by us,
+ * as nobody.
+ */
+const UPSTREAM_HEADERS = {
+  accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+  "user-agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+};
+
 function fail(status: number, message: string): NextResponse {
   return new NextResponse(message, {
     status,
@@ -99,7 +110,7 @@ export async function GET(request: NextRequest) {
       method: "GET",
       // Do NOT forward the caller's headers (cookies, Authorization). This
       // request is made by us, as nobody, to a third party.
-      headers: { accept: "image/*" },
+      headers: UPSTREAM_HEADERS,
     });
 
     for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
@@ -122,7 +133,7 @@ export async function GET(request: NextRequest) {
       upstream = await undiciRequest(current, {
         dispatcher: guardedAgent,
         method: "GET",
-        headers: { accept: "image/*" },
+        headers: UPSTREAM_HEADERS,
       });
     }
 
@@ -133,6 +144,11 @@ export async function GET(request: NextRequest) {
 
     if (upstream.statusCode >= 400) {
       upstream.body.dump().catch(() => {});
+      // The address answered and said "no" (a deleted file, an expired signed link, a
+      // hotlink refusal): that image is not available — a 404 for the caller, never a
+      // 502. 502 stays for the cases where the upstream itself failed (5xx, no answer),
+      // so a gateway-error alarm means a real outage and a dead image link does not.
+      if (upstream.statusCode < 500) return fail(404, "Image not available");
       return fail(502, "Upstream did not return an image");
     }
 
@@ -180,6 +196,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof BlockedAddressError) {
       return fail(403, "That address cannot be proxied");
+    }
+    // A domain that no longer exists is a dead image link, same as a deleted file: 404.
+    const failure = error as { code?: string; cause?: { code?: string } };
+    if ((failure.code ?? failure.cause?.code) === "ENOTFOUND") {
+      return fail(404, "Image not available");
     }
     // Generic on purpose — a distinguishable timeout vs refused vs DNS-failure
     // response is a working port scanner.

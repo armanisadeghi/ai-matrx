@@ -76,3 +76,10 @@ describe("legitimate use still works", () => {
     expect(res.status).toBe(415);
   });
 });
+
+describe("a dead image link is a 404, never a gateway error", () => {
+  test("a hostname that does not resolve", async () => {
+    const res = await call("https://no-such-host.invalid/logo.png");
+    expect(res.status).toBe(404);
+  });
+});
