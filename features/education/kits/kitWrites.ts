@@ -1,6 +1,7 @@
 import type { StudyKit } from "./kitService";
 import { kitArtifactKey, kitMembershipFingerprint } from "./kitService";
 import type { EducationLibraryRow } from "@/features/education/library/types";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   collectProblems,
   readCollectionList,
@@ -234,4 +235,42 @@ export function describeKitGenerate(request: KitGenerateRequest): string {
   if (request.into) return `${request.count ? `${request.count} ` : ""}${request.count === 1 ? one : many} for "${request.into.title}"`;
   const label = request.kind === "quiz" ? "quiz" : request.kind === "practice_test" ? "practice test" : request.kind === "deck" ? "flashcard deck" : one;
   return `a new ${label}`;
+}
+
+
+// ── one surface, three views ──────────────────────────────────────────────
+
+export type KitSurfaceView = "list" | "detail" | "new";
+
+/**
+ * Which view of the one `matrx-user/education-kits` surface actually services each write target.
+ * A manifest declares a target once; only the view that owns its state can apply it. The other
+ * views answer it themselves (`kitOutOfViewWrites`) instead of leaving a declared door with nothing
+ * behind it: the refusal comes BEFORE the person is asked, in words that say where it works.
+ */
+export const KIT_WRITE_TARGET_VIEWS: Record<string, readonly KitSurfaceView[]> = {
+  create_kits: ["new"],
+  update_kits: ["list", "detail"],
+  delete_kits: ["list", "detail"],
+  add_kit_members: ["detail"],
+  remove_kit_members: ["detail"],
+  generate_in_kit: ["detail"],
+};
+
+const KIT_VIEW_WHERE: Record<KitSurfaceView, string> = {
+  list: "the kits list",
+  detail: "an open kit",
+  new: "the new kit page",
+};
+
+/** Refusing handlers for every declared target this view does not own. Spread them BEFORE the view's own handlers. */
+export function kitOutOfViewWrites(view: KitSurfaceView): Record<string, { validate: (value: unknown) => void; apply: (value: unknown) => never }> {
+  const out: Record<string, { validate: (value: unknown) => void; apply: (value: unknown) => never }> = {};
+  for (const [name, views] of Object.entries(KIT_WRITE_TARGET_VIEWS)) {
+    if (views.includes(view)) continue;
+    const refuse = (): never =>
+      refuseSurfaceWrite(`${name} works on ${views.map((v) => KIT_VIEW_WHERE[v]).join(" or ")}, not on ${KIT_VIEW_WHERE[view]}. Nothing was changed.`);
+    out[name] = { validate: refuse, apply: refuse };
+  }
+  return out;
 }

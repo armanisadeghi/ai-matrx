@@ -32,6 +32,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { createEducationKitsScope, EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import { collectionWriteHandlers, readCollectionList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { kitOutOfViewWrites } from "../kitWrites";
 import { recoverManualKitDraft } from "./manualKitDraftRecovery";
 import { SavedAidPicker, SAVED_AID_PAGE_SIZE, savedAidKey } from "./SavedAidPicker";
 
@@ -176,7 +177,7 @@ export function SavedAidsKitForm({
     kit_sources: set.sources.map((card) => ({ name: card.draft.label, status: card.status })),
     kit_member_candidates: candidates().map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })),
   });
-  const getWriteHandlers = () => collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
+  const getWriteHandlers = () => ({ ...kitOutOfViewWrites("new"), ...collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
     parse: (value) => readCollectionList("create_kits", "kits", value, 25).map((raw, index) => {
       if (index > 0) throw new Error("create_kits accepts exactly one kit for the picked material.");
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`create_kits[${index}] must be an object.`);
@@ -200,7 +201,7 @@ export function SavedAidsKitForm({
       return { id, name: plan.title };
     },
     nameOf: (plan) => plan.title,
-  } }, refuseSurfaceWrite);
+  } }, refuseSurfaceWrite) });
 
   return (
     <SurfaceRuntimeProvider surfaceName={EDUCATION_KITS_SURFACE_NAME} getScope={getScope} getWriteHandlers={getWriteHandlers}>

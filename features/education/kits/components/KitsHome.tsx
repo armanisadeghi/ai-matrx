@@ -31,7 +31,7 @@ import {
 } from "@/features/education/components/EducationCollectionSearch";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
+import { kitOutOfViewWrites, parseKitDeletes, parseKitUpdates } from "../kitWrites";
 
 function KitRow({ kit }: { kit: StudyKit }) {
   return (
@@ -143,7 +143,7 @@ export function KitsHome() {
           }
         : {}),
     });
-  const getWriteHandlers = () => collectionWriteHandlers({
+  const getWriteHandlers = () => ({ ...kitOutOfViewWrites("list"), ...collectionWriteHandlers({
     plural: "kits", singular: "kit",
     update: {
       parse: (value) => parseKitUpdates(value, kits),
@@ -155,7 +155,7 @@ export function KitsHome() {
       run: async (plan) => { await archiveKit(plan.kit, plan.fingerprint); await reload(); return { id: plan.kit.sourceId, name: plan.kit.title }; },
       nameOf: (plan) => plan.kit.title,
     },
-  }, refuseSurfaceWrite);
+  }, refuseSurfaceWrite) });
 
   return (
     <SurfaceRuntimeProvider

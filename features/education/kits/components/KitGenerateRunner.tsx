@@ -7,10 +7,12 @@
 // apply only sets the request and returns "started"; this runner then does what
 // the dialogs do — the age gate, the entitlement guard (check before spend,
 // commit on success only), a tab-bound run marker so a refresh is reported and
-// repeatable — and says what it made in a toast. Never holds the tool call open.
+// repeatable — and shows progress and what it made (with Undo) in a card on the kit page. Never holds the tool call open.
 
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { usePdfClient } from "@/features/pdf/api/client";
@@ -61,15 +63,17 @@ export function KitGenerateRun({
   const coppa = useAiComplianceGate();
   const tabRun = useTabBoundRun(kitGenerateRunKey(kit), restoreKitGenerateRequest);
   const started = useRef(false);
-  const toastId = `kit-generate:${kit.sourceId}`;
   const what = describeKitGenerate(request);
+  // What the page shows for this run: working (with the live step), what it made (with Undo), or why it did not.
+  const [dismissed, setDismissed] = useState(false);
+  const [card, setCard] = useState<RunCard>({ phase: "working", line: `Making ${what}…` });
 
   const perform = async (): Promise<void> => {
     if (cardLimit.max === null && request.kind === "deck") {
       throw new Error(cardLimit.error ?? "The most cards one run may make is still loading. Ask again in a moment.");
     }
     const orgId = await ensureOrgId(kit.organizationId);
-    toast.loading(`Making ${what}…`, { id: toastId, duration: Infinity });
+    setCard({ phase: "working", line: `Making ${what}…` });
     const outcome = await tabRun.track(request as unknown as Record<string, unknown>, (settle, saving) =>
       runKitGenerate({
         kit,
@@ -81,25 +85,21 @@ export function KitGenerateRun({
         recover: () =>
           recoverKitMaterial({ sourceType: kit.sourceType, sourceId: kit.sourceId, kitTitle: kit.title, sources: kit.sources, organizationId: kit.organizationId, normalizeSources, pdf }),
         convert,
-        onStatus: (line) => toast.loading(`${line}`, { id: toastId, duration: Infinity }),
+        onStatus: (line) => setCard({ phase: "working", line }),
         saving,
         settle,
       }),
     );
     await gen.commit();
-    toast.success(outcome.summary, {
-      id: toastId,
-      duration: 20_000,
-      action: outcome.undo
-        ? {
-            label: "Undo",
-            onClick: () => {
-              void outcome.undo?.().then((problem) => {
-                if (problem) toast.error(problem);
-                else toast.info("Taken back out.");
-                onFinished(true);
-              });
-            },
+    setCard({
+      phase: "done",
+      line: outcome.summary,
+      undo: outcome.undo
+        ? async () => {
+            setCard({ phase: "working", line: "Taking it back out…" });
+            const problem = await outcome.undo?.();
+            setCard(problem ? { phase: "failed", line: problem } : { phase: "info", line: "Taken back out." });
+            onFinished(true);
           }
         : undefined,
     });
@@ -109,7 +109,7 @@ export function KitGenerateRun({
     onBusyChange(true);
     try {
       if (!(await coppa.ensureAllowed())) {
-        toast.info("A parent needs to approve AI study tools before this can run.", { id: toastId });
+        setCard({ phase: "info", line: "A parent needs to approve AI study tools before this can run." });
         return;
       }
       let ran = false;
@@ -117,10 +117,10 @@ export function KitGenerateRun({
         ran = true;
         await perform();
       });
-      if (!ran && !verdict.allowed) toast.info("Nothing was made: your generation allowance is used up.", { id: toastId });
+      if (!ran && !verdict.allowed) setCard({ phase: "info", line: "Nothing was made: your generation allowance is used up." });
       if (ran) onFinished(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "That could not be made. Try again.", { id: toastId });
+      setCard({ phase: "failed", line: e instanceof Error ? e.message : "That could not be made. Try again." });
       onFinished(false);
     } finally {
       onBusyChange(false);
@@ -136,7 +136,31 @@ export function KitGenerateRun({
     <>
       <coppa.Gate />
       <gen.Paywall />
+      {dismissed ? null : <KitRunCard card={card} onDismiss={card.phase === "working" ? undefined : () => setDismissed(true)} />}
     </>
+  );
+}
+
+type RunCard =
+  | { phase: "working"; line: string }
+  | { phase: "done"; line: string; undo?: () => Promise<void> }
+  | { phase: "info" | "failed"; line: string };
+
+/** The kit page's own readout of a chat-started run: live step while it goes, then what it made with Undo. */
+function KitRunCard({ card, onDismiss }: { card: RunCard; onDismiss?: () => void }) {
+  const Icon = card.phase === "working" ? Loader2 : card.phase === "done" ? CheckCircle2 : AlertCircle;
+  const tone = card.phase === "failed" ? "border-destructive/40" : card.phase === "done" ? "border-success/40" : "border-primary/30";
+  return (
+    <div role="status" aria-live="polite" data-kit-run-card={card.phase} className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border bg-card px-4 py-3 ${tone}`}>
+      <Icon className={`h-4 w-4 shrink-0 ${card.phase === "working" ? "animate-spin text-primary" : card.phase === "done" ? "text-success" : card.phase === "failed" ? "text-destructive" : "text-muted-foreground"}`} />
+      <span className="min-w-0 flex-1 break-words type-body text-foreground">{card.line}</span>
+      {card.phase === "done" && card.undo ? (
+        <Button size="sm" variant="outline" onClick={() => void card.undo?.()}>Undo</Button>
+      ) : null}
+      {onDismiss ? (
+        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Dismiss" onClick={onDismiss}><X className="h-4 w-4" /></Button>
+      ) : null}
+    </div>
   );
 }
 

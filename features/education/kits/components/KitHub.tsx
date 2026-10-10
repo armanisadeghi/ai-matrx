@@ -87,12 +87,12 @@ import {
 } from "../kitSurfaceScope";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import { KIT_MEMBER_CANDIDATE_LIMIT, describeKitGenerate, parseGenerateInKit, parseKitDeletes, parseKitMemberAdds, parseKitUpdates, type KitGenerateRequest } from "../kitWrites";
+import { KIT_MEMBER_CANDIDATE_LIMIT, describeKitGenerate, parseGenerateInKit, parseKitDeletes, parseKitMemberAdds, kitOutOfViewWrites, parseKitUpdates, type KitGenerateRequest } from "../kitWrites";
 import { KitGenerateRun, KitGenerateStopped } from "./KitGenerateRunner";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {
   deck: "Build recall one card at a time.",
@@ -438,7 +438,7 @@ export function KitHub({
       if (chatRunBusy) throw new Error("A generation is already running in this kit. Wait for it to finish, then ask again.");
       return parseGenerateInKit(value, kit, outline.sections ?? []);
     };
-    return { ...collection, generate_in_kit: {
+    return { ...kitOutOfViewWrites("detail"), ...collection, generate_in_kit: {
       validate: (value: unknown) => { parseGenerate(value); },
       apply: async (value: unknown) => {
         const request = parseGenerate(value);
@@ -825,26 +825,12 @@ export function KitHub({
                 {!proposedLayout &&
                   " Each progress number below comes from that study aid\u2019s real activity."}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
-                  {ordered.length} study {ordered.length === 1 ? "aid" : "aids"}
-                </span>
-                {!statsLoading && itemTotal > 0 && (
-                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
-                    {itemTotal} practice items
-                  </span>
-                )}
-                {!statsLoading && practicedTotal > 0 && (
-                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
-                    {practicedTotal} practiced
-                  </span>
-                )}
-                {!statsLoading && dueTotal > 0 && (
-                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 type-secondary font-semibold text-warning-ink">
-                    {dueTotal} due now
-                  </span>
-                )}
-              </div>
+              <ChipSet className="mt-5">
+                <Chip label={`${ordered.length} study ${ordered.length === 1 ? "aid" : "aids"}`} />
+                {!statsLoading && itemTotal > 0 && <Chip label={`${itemTotal} practice items`} />}
+                {!statsLoading && practicedTotal > 0 && <Chip label={`${practicedTotal} practiced`} />}
+                {!statsLoading && dueTotal > 0 && <Chip tone="warning" label={`${dueTotal} due now`} />}
+              </ChipSet>
             </div>
 
             {challenge && challengeLook && (
