@@ -1200,7 +1200,7 @@ export function CrmListPage({
           {customColumns.error && (
             <div className="mt-2 text-xs text-destructive" title={customColumns.error}>
               Custom fields could not be loaded
-            </div>
+            <ErrorAlchemyMenu error={customColumns.error} /></div>
           )}
           {grouped && list.ceiling !== null && (
             <div className="mt-2 text-xs text-muted-foreground">

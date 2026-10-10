@@ -16,6 +16,7 @@ import { RecipientFitBadge } from "./RecipientFitBadge";
 import type { OutletGroup, RecipientFit } from "./service";
 import type { PreSendCheckState } from "./usePreSendCheck";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface OutletPicks {
   /** outlet party id → the recipient party id to pitch first. */
   firstByOutlet: Record<string, string>;
@@ -73,7 +74,7 @@ export function OutletSendStep({
     );
   }
   if (error) {
-    return <p className="text-sm text-destructive">Outlet grouping did not run: {error}</p>;
+    return <p className="text-sm text-destructive">Outlet grouping did not run: {error}<ErrorAlchemyMenu error={error} /></p>;
   }
   if (!report) return null;
   const groups = sharedOutlets(report.outlets ?? []);

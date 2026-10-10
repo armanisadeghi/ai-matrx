@@ -23,6 +23,7 @@ import { MandateOffer } from "./MandateOffer";
 import type { AdvisoryOffer, PitchAdvisory } from "./service";
 import type { PitchAdvisoryState } from "./usePitchAdvisories";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const TONE: Record<PitchAdvisory["severity"], string> = {
   strong: "border-destructive/40 bg-destructive/5",
   warn: "border-amber-500/40 bg-amber-500/5",
@@ -108,7 +109,7 @@ export function PitchAdvisoryPanel({
       <div className={cn("rounded-md border border-border bg-muted/30 p-2 text-xs", className)} data-testid="pitch-advisories-error">
         <p className="text-muted-foreground">
           The pitch check could not run ({error}). Nothing is stopping {actionLabel}; you just won&rsquo;t see its warnings.
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
         <Button type="button" variant="quiet" className="mt-1" onClick={retry}>
           Check again
         </Button>

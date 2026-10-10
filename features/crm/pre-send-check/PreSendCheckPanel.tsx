@@ -18,6 +18,7 @@ import { RecipientFitBadge } from "./RecipientFitBadge";
 import type { PartStatus, PreSendCheckReport } from "./service";
 import type { PreSendCheckState } from "./usePreSendCheck";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function PartNote({ status }: { status: PartStatus }) {
   if (status.state === "ran") return null;
   return (
@@ -77,7 +78,7 @@ export function PreSendCheckPanel({
             Try again
           </Button>
         )}
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
   if (!report) return null;

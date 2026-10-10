@@ -17,6 +17,7 @@ import {
   type MediaResearchRow,
 } from "./service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const STATUS_TONE: Record<MediaResearchRow["status"], string> = {
   fit: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   soft_fit: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
@@ -57,7 +58,7 @@ export function MediaResearchResults({ result }: { result: MediaResearchResultDa
             {(result.problems ?? []).map((p) => (
               <li key={p}>{p}</li>
             ))}
-          </ul>
+          <ErrorAlchemyMenu /></ul>
         )}
       </div>
 

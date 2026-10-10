@@ -40,6 +40,7 @@ import {
   type MediaResearchRow,
 } from "./service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** What a caller already knows about the angle (a Press Room story angle). Every field stays editable. */
 export interface MediaResearchPrefill {
   angle?: string;
@@ -326,7 +327,7 @@ export function MediaResearchDialog({
         {error && (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-foreground" role="alert">
             {error}
-          </p>
+          <ErrorAlchemyMenu error={error} /></p>
         )}
 
         {running && (
