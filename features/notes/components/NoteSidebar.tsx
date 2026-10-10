@@ -113,6 +113,11 @@ import { getFolderIconAndColor, isDefaultFolder } from "../utils/folderUtils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { NoteSidebarRow } from "./NoteSidebarRow";
+import {
+  NoteSidebarVirtualList,
+  type NoteSidebarListItem,
+  type NoteSidebarReveal,
+} from "./NoteSidebarVirtualList";
 import { NoteSidebarBulkBar } from "./NoteSidebarBulkBar";
 import { NoteSyncStatusStrip } from "./NoteSyncStatusStrip";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
@@ -251,12 +256,12 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   // The list and the shared-with-me query land at different times. Until both
   // have settled once, the sidebar shows its own skeleton and renders the real
   // sections in ONE commit, so nothing below them (Recent, Shared, folders) moves.
-  const sharedSettledRef = useRef(false);
-  if (sharedStatus === "loaded" || sharedStatus === "error") sharedSettledRef.current = true;
+  const [sharedSettled, setSharedSettled] = useState(false);
+  if (!sharedSettled && (sharedStatus === "loaded" || sharedStatus === "error")) setSharedSettled(true);
   const listPending =
     listStatus === "idle" ||
     listStatus === "loading" ||
-    (!sharedSettledRef.current && sharedStatus === "loading");
+    (!sharedSettled && sharedStatus === "loading");
   const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
 
@@ -304,16 +309,22 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   // ── Reveal + center the active note ────────────────────────────────
   // ONE effect keyed on the active tab (and the grouping mode, which changes
   // where the row lives): expand the folder that holds it, open the "Shared
-  // with me" section if it lives there, then smooth-scroll it to the vertical
+  // with me" section if it lives there, then scroll it to the vertical
   // center of the list. Deliberately does NOT depend on `allNotes` — note-list
   // churn (autosave, realtime) must never re-scroll the sidebar; only a real
   // active-tab change does. `allNotes`/`sharedNotes` are read through refs so
   // the lookup stays current without widening the dependency set.
   const allNotesRef = useRef(allNotes);
-  allNotesRef.current = allNotes;
   const sharedNotesRef = useRef(sharedNotes);
-  sharedNotesRef.current = sharedNotes;
+  // Kept current in an effect (declared before the one that reads them), never
+  // written during render — the React Compiler skips a component that does.
+  useEffect(() => {
+    allNotesRef.current = allNotes;
+    sharedNotesRef.current = sharedNotes;
+  });
 
+  const [reveal, setReveal] = useState<NoteSidebarReveal | null>(null);
+  const revealSeqRef = useRef(0);
   useEffect(() => {
     if (!activeTabId) return undefined;
 
@@ -338,51 +349,18 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
       });
     }
 
-    // Scroll after the DOM settles. A just-triggered folder expansion paints
-    // on a later frame, so poll a few frames until the row exists, then center
-    // it within the list container only (never scrolls ancestors/the page).
-    let raf = 0;
-    let tries = 0;
-    const tryScroll = () => {
-      const container = folderTreeRef.current;
-      if (!container) return;
-      const el = container.querySelector<HTMLElement>(
-        `[data-note-id="${activeTabId}"]`,
-      );
-      if (el) {
-        const cRect = container.getBoundingClientRect();
-        const eRect = el.getBoundingClientRect();
-        const rowCenter =
-          eRect.top - cRect.top + container.scrollTop + eRect.height / 2;
-        // Clamp to [0, max]: a row too near the top can't be centered and so
-        // stays ABOVE center (never below it), exactly as required.
-        const target = Math.max(
-          0,
-          Math.min(
-            rowCenter - container.clientHeight / 2,
-            container.scrollHeight - container.clientHeight,
-          ),
-        );
-        container.scrollTo({ top: target, behavior: "smooth" });
-      } else if (tries++ < 12) {
-        raf = requestAnimationFrame(tryScroll);
-      }
-    };
-    raf = requestAnimationFrame(tryScroll);
-    return () => cancelAnimationFrame(raf);
+    // Center it once its row is in the (virtualised) list — the folder that
+    // holds it expands on the next commit, so the list retries until it is.
+    revealSeqRef.current += 1;
+    setReveal({ seq: revealSeqRef.current, noteId: activeTabId, align: "center" });
+    return undefined;
   }, [activeTabId, groupBy]);
 
-  // ── Auto-scroll first search result into view ─────────────────────
+  // ── Bring the first search result into view ───────────────────────
   useEffect(() => {
-    if (!searchQuery || !folderTreeRef.current) return undefined;
-    // Small delay to let the filtered list render
-    const timer = setTimeout(() => {
-      const firstNote = folderTreeRef.current?.querySelector("[data-note-id]");
-      if (firstNote) {
-        firstNote.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
+    if (!searchQuery) return;
+    revealSeqRef.current += 1;
+    setReveal({ seq: revealSeqRef.current, noteId: null, align: "start" });
   }, [searchQuery]);
 
   // ── Derived data ───────────────────────────────────────────────────
@@ -498,7 +476,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
     }
 
     return map;
-  }, [filteredNotes, folderVisibleNotes, groupBy, sortNotes]);
+  }, [filteredNotes, folderVisibleNotes, groupBy, sortNotes, searchQuery, scopeGrouped]);
 
   // Recent notes for "default" mode, always by updated_at desc (independent of
   // the user's sort field/order, which applies to folder groups). Fully sorted
@@ -530,15 +508,6 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
     return key.slice(0, 8) + "...";
   }
 
-  // Which folder labels appear more than once (folder + default modes).
-  function folderOrgSuffix(key: string): string | null {
-    if (groupBy !== "folder" && groupBy !== "default") return null;
-    const label = getGroupLabel(key);
-    const same = folders.filter((k) => getGroupLabel(k) === label);
-    if (same.length < 2) return null;
-    const orgId = groupedNotes.get(key)?.[0]?.organization_id;
-    return (orgId && orgNameById.get(orgId)) || null;
-  }
 
   // Ordered group keys
   const groupKeys = useMemo(() => {
@@ -747,13 +716,13 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         })).unwrap();
       });
     },
-    [dispatch, instanceId, userId, resolveOrganization, allNotes, selectNote, groupedNotes, draftControl],
+    [dispatch, instanceId, userId, resolveOrganization, store, selectNote, groupedNotes, draftControl],
   );
 
   // ── Folder context menu actions ────────────────────────────────────
   const handleFolderRename = useCallback((folder: string) => {
     setRenameFolderTarget(folder);
-  }, []);
+  }, [setRenameFolderTarget]);
 
   const handleFolderDeleteAll = useCallback(
     async (folder: string) => {
@@ -903,7 +872,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         });
       }
     },
-    [createFolderIntent, dispatch, activeOrgId, allNotes, userId, instanceId],
+    [createFolderIntent, dispatch, allNotes, userId, instanceId, draftControl],
   );
 
   // ── Format time ────────────────────────────────────────────────────
@@ -933,8 +902,402 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   );
   const createFolderForNote = useCallback(
     (noteId: string) => setCreateFolderIntent({ kind: "move-note", noteId }),
-    [],
+    [setCreateFolderIntent],
   );
+
+  // ── The list as ONE flat run of rows (virtualised: only visible rows mount) ──
+  const isFolderMode = groupBy === "folder" || groupBy === "default";
+
+  // Folder headers, computed once per list change — never per header. Each
+  // header used to rescan every folder to find same-name twins (O(folders³)
+  // per render).
+  const labelByKey = new Map<string, string>();
+  for (const key of groupKeys) labelByKey.set(key, getGroupLabel(key));
+  for (const key of folders) if (!labelByKey.has(key)) labelByKey.set(key, getGroupLabel(key));
+  const labelUses = new Map<string, number>();
+  if (isFolderMode) {
+    for (const key of folders) {
+      const label = labelByKey.get(key)!;
+      labelUses.set(label, (labelUses.get(label) ?? 0) + 1);
+    }
+  }
+  // Which folder labels appear more than once (folder + default modes) → the
+  // organization that tells them apart.
+  const orgSuffixOf = (key: string): string | null => {
+    if (!isFolderMode || (labelUses.get(labelByKey.get(key)!) ?? 0) < 2) return null;
+    const orgId = groupedNotes.get(key)?.[0]?.organization_id;
+    return (orgId && orgNameById.get(orgId)) || null;
+  };
+  const twinsByLabelAndBadge = new Map<string, string[]>();
+  const headerOf = new Map<string, { label: string; orgSuffix: string | null; badge: string | null; twinKey: string }>();
+  for (const key of groupKeys) {
+    const label = labelByKey.get(key)!;
+    const orgSuffix = orgSuffixOf(key);
+    const badge = orgSuffix ? orgInitials(orgSuffix) : null;
+    const twinKey = `${label}\u0000${badge ?? "\u0001"}`;
+    headerOf.set(key, { label, orgSuffix, badge, twinKey });
+    const twins = twinsByLabelAndBadge.get(twinKey);
+    if (twins) twins.push(key);
+    else twinsByLabelAndBadge.set(twinKey, [key]);
+  }
+
+  type SidebarItem = NoteSidebarListItem &
+    (
+      | { kind: "recent-header" | "recent-more" | "recent-end" | "shared-header" | "shared-end" }
+      | { kind: "recent-note" | "shared-note" | "flat-note"; note: NoteRecord }
+      | { kind: "folder" | "folder-empty"; groupKey: string }
+      | { kind: "folder-note"; note: NoteRecord; groupKey: string }
+    );
+  const items: SidebarItem[] = [];
+  if (groupBy === "default" && recentSorted.length > 0) {
+    items.push({ key: "recent-header", kind: "recent-header" });
+    if (recentOpen) {
+      for (const note of recentSorted.slice(0, recentVisibleCount)) {
+        items.push({ key: `recent:${note.id}`, noteId: note.id, kind: "recent-note", note });
+      }
+      if (recentSorted.length > recentVisibleCount || recentVisibleCount > RECENT_PAGE_SIZE) {
+        items.push({ key: "recent-more", kind: "recent-more" });
+      }
+    }
+    items.push({ key: "recent-end", kind: "recent-end" });
+  }
+  if (sharedNotes.length > 0) {
+    items.push({ key: "shared-header", kind: "shared-header" });
+    if (sharedOpen) {
+      for (const note of sharedNotes) {
+        items.push({ key: `shared:${note.id}`, noteId: note.id, kind: "shared-note", note });
+      }
+    }
+    items.push({ key: "shared-end", kind: "shared-end" });
+  }
+  const listIsEmpty = listStatus === "loaded" && allNotes.length === 0 && sharedNotes.length === 0;
+  if (!listIsEmpty && groupBy === "recent") {
+    for (const note of groupedNotes.get("__all__") ?? []) {
+      items.push({ key: `all:${note.id}`, noteId: note.id, kind: "flat-note", note });
+    }
+  } else if (!listIsEmpty) {
+    for (const groupKey of groupKeys) {
+      const groupNotes = groupedNotes.get(groupKey) ?? [];
+      if (searchQuery && groupNotes.length === 0) continue;
+      items.push({ key: `group:${groupKey}`, kind: "folder", groupKey });
+      if (!expandedFolders.has(groupKey)) continue;
+      if (groupNotes.length === 0) {
+        items.push({ key: `empty:${groupKey}`, kind: "folder-empty", groupKey });
+        continue;
+      }
+      for (const note of groupNotes) {
+        items.push({ key: `in:${groupKey}:${note.id}`, noteId: note.id, kind: "folder-note", note, groupKey });
+      }
+    }
+  }
+
+  const renderNoteRow = (note: NoteRecord, inFolder: boolean) => (
+    <NoteSidebarRow
+      note={note}
+      instanceId={instanceId}
+      isActive={activeTabId === note.id}
+      isOpenTab={openTabIds?.includes(note.id) ?? false}
+      allFolders={folderReferences}
+      openKnowledge={openKnowledgeStable}
+      formatTime={formatTime}
+      {...(inFolder
+        ? {
+            draggable: isFolderMode,
+            isDragging: draggedNoteId === note.id,
+            onDragStart: handleNoteDragStart,
+            onDragEnd: handleNoteDragEnd,
+          }
+        : {})}
+      onSelectNote={selectNote}
+      selectionMode={selectionMode}
+      isSelected={selectedIds.has(note.id)}
+      onToggleSelect={toggleSelect}
+      onCreateFolder={createFolderForNote}
+    />
+  );
+
+  // Folder drop targets: the header, its rows and its "Empty" line.
+  const folderDropZone = (groupKey: string, content: React.ReactNode) =>
+    isFolderMode ? (
+      <div
+        onDragOver={(e) => handleFolderDragOver(e, groupKey)}
+        onDragLeave={handleFolderDragLeave}
+        onDrop={(e) => handleFolderDrop(e, groupKey)}
+      >
+        {content}
+      </div>
+    ) : (
+      content
+    );
+
+  const renderFolderHeader = (groupKey: string) => {
+    const groupNotes = groupedNotes.get(groupKey) ?? [];
+    const isExpanded = expandedFolders.has(groupKey);
+    const { label, orgSuffix, badge, twinKey } = headerOf.get(groupKey)!;
+    const count = groupNotes.length;
+    // SAME NAME, SAME BADGE (legacy duplicate folders): the initials
+    // alone read "Draft · AW" twice. When the name AND the badge
+    // collide, the badge shows the organization's full name if the
+    // organizations differ, else a "1 of 2" ordinal — and the tooltip
+    // says plainly that two folders share the name (page-pass
+    // 2026-09-28). The duplicates themselves are legacy data.
+    const twins = twinsByLabelAndBadge.get(twinKey) ?? [groupKey];
+    const twinOrgs = new Set(twins.map((k) => headerOf.get(k)?.orgSuffix ?? null));
+    const collides = badge !== null && twins.length > 1;
+    const badgeText = !collides
+      ? badge
+      : twinOrgs.size === twins.length
+        ? orgSuffix
+        : `${badge} · ${twins.indexOf(groupKey) + 1} of ${twins.length}`;
+    const twinTitle = collides
+      ? `${label} — in ${orgSuffix}. ${twins.length} folders share this name; this one holds ${count} note${count === 1 ? "" : "s"}.`
+      : null;
+
+    // Folder + Default modes both render folder icons/colors and DnD
+    const { icon: FolderIcon, color: iconColor } = isFolderMode
+      ? getFolderIconAndColor(groupKey)
+      : {
+          icon: GROUP_MODES.find((m) => m.mode === groupBy)?.icon ?? Folder,
+          color: undefined,
+        };
+
+    const folderHeaderButton = (
+      <div
+        className={cn(
+          "group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
+          isFolderMode &&
+            dropTargetFolder === groupKey &&
+            "bg-primary/10 border-l-2 border-primary",
+        )}
+      >
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${label}`}
+          className="flex min-w-0 flex-1 items-center gap-1 text-left"
+          onClick={() => toggleFolder(groupKey)}
+        >
+          {isExpanded ? (
+            <ChevronDown className="opacity-60" />
+          ) : (
+            <ChevronRight className="opacity-60" />
+          )}
+          {isExpanded ? (
+            <FolderOpen className={cn("opacity-70", iconColor)} />
+          ) : (
+            <FolderIcon className={cn("opacity-70", iconColor)} />
+          )}
+          <span
+            className="flex min-w-0 flex-1 items-center gap-1"
+            title={twinTitle ?? (orgSuffix ? `${label} — in ${orgSuffix}` : undefined)}
+          >
+            <span className="min-w-[3.5rem] truncate">{label}</span>
+            {orgSuffix && (
+              // The organization is what tells same-name folders
+              // apart: its chip keeps its natural width and the
+              // folder name truncates instead (a long folder name
+              // used to squeeze the chip to one letter).
+              // The folder name has priority: the organization shows
+              // as its initials (full name in the row's tooltip).
+              // Once the name is at its 3.5rem floor the chip gives way (it
+              // truncates): a shrink-0 chip ran past the row into the count
+              // ("AW · 1 of 2" over "2", 2026-10-05 final check).
+              <span
+                aria-label={`in ${orgSuffix}`}
+                className="min-w-0 max-w-[9rem] truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
+              >
+                {badgeText}
+              </span>
+            )}
+          </span>
+          <span className="shrink-0 text-xs font-normal opacity-50 tabular-nums">
+            {count}
+          </span>
+        </button>
+        {isFolderMode && (
+          <button
+            type="button"
+            aria-label={`New Note in ${label}`}
+            disabled={draftControl.pending}
+            className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-60 pointer-coarse:opacity-60 disabled:pointer-events-none disabled:opacity-30"
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleNewNote(groupKey).catch(() => undefined);
+            }}
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    );
+
+    // Folder actions ride the universal v3 menu (folder mode only)
+    return isFolderMode ? (
+      <NonEditableContextMenu
+        sourceFeature="notes"
+        // Folder actions only — no Copy / Speak / Compare / Chat / agent rows.
+        recordActionsOnly
+        // The notes surface: "Save to Notes" is absent inside Notes.
+        surfaceName="matrx-user/notes"
+        // The folder's NAME heads the menu — never the group key
+        // ("pending:<org>:General" is an internal id).
+        contextData={{ content: label }}
+        resolveContextOnOpen={() => ({
+          [CONTEXT_MENU_HEADING_KEY]: { label: "Folder", text: label },
+        })}
+        extraSections={buildFolderSections(groupKey)}
+      >
+        {folderHeaderButton}
+      </NonEditableContextMenu>
+    ) : (
+      folderHeaderButton
+    );
+  };
+
+  const renderItem = (item: SidebarItem): React.ReactNode => {
+    switch (item.kind) {
+      case "recent-header":
+        return (
+          <button
+            type="button"
+            onClick={() => setRecentOpen((v) => !v)}
+            className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+          >
+            {recentOpen ? (
+              <ChevronDown className="opacity-60" />
+            ) : (
+              <ChevronRight className="opacity-60" />
+            )}
+            <Clock className="text-amber-500 dark:text-amber-400" />
+            <span className="flex-1 text-left truncate">Recent</span>
+            <span className="text-xs font-normal opacity-50 tabular-nums">
+              <UntrustedCount value={recentSorted.length} trustworthy={!listError} label="Recent notes" />
+            </span>
+          </button>
+        );
+      case "recent-note":
+        return <div className="ml-1">{renderNoteRow(item.note, false)}</div>;
+      case "recent-more":
+        return (
+          <div className="ml-1 flex items-center gap-2 px-2 pt-0.5">
+            {recentSorted.length > recentVisibleCount && (
+              <button
+                type="button"
+                onClick={() =>
+                  setRecentVisibleCount((c) => c + RECENT_PAGE_SIZE)
+                }
+                className="text-xs font-medium text-primary/80 hover:text-primary cursor-pointer transition-colors"
+              >
+                Show{" "}
+                {Math.min(
+                  RECENT_PAGE_SIZE,
+                  recentSorted.length - recentVisibleCount,
+                )}{" "}
+                more
+              </button>
+            )}
+            {recentVisibleCount > RECENT_PAGE_SIZE && (
+              <button
+                type="button"
+                onClick={() => setRecentVisibleCount(RECENT_PAGE_SIZE)}
+                className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              >
+                Show less
+              </button>
+            )}
+          </div>
+        );
+      case "recent-end":
+        // The section's bottom rule, then a gap before what follows.
+        return (
+          <div className="pb-1">
+            <div className={cn(recentOpen && "pt-1", "border-b border-border/30")} />
+          </div>
+        );
+      case "shared-header":
+        return (
+          <button
+            type="button"
+            onClick={() => setSharedOpen((v) => !v)}
+            className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+          >
+            {sharedOpen ? (
+              <ChevronDown className="opacity-60" />
+            ) : (
+              <ChevronRight className="opacity-60" />
+            )}
+            <Users className="text-indigo-500 dark:text-indigo-400" />
+            <span className="flex-1 text-left truncate">Shared with me</span>
+            <span className="text-xs font-normal opacity-50 tabular-nums">
+              <UntrustedCount value={sharedNotes.length} trustworthy={!sharedError} label="Notes shared with me" />
+            </span>
+          </button>
+        );
+      case "shared-note": {
+        const note = item.note;
+        const level = note._sharedMeta?.permissionLevel ?? "viewer";
+        const canEdit = level === "editor" || level === "admin";
+        const isActive = activeTabId === note.id;
+        const isOpenTab = openTabIds?.includes(note.id) ?? false;
+        return (
+          <div className="ml-2">
+            <button
+              type="button"
+              data-note-id={note.id}
+              onClick={() => selectNote(note.id)}
+              title={
+                `${note._sharedMeta?.ownerEmail ?? "Someone"} shared this with you — ` +
+                (canEdit ? "you can edit" : "view only")
+              }
+              className={cn(
+                "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
+                isActive
+                  ? "bg-primary/10 dark:bg-primary/20 font-medium text-foreground shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
+                  : isOpenTab
+                    ? "bg-accent/30 text-foreground/80"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+              )}
+            >
+              <FileText className="w-3.5 h-3.5 shrink-0 text-indigo-500/70 dark:text-indigo-400/70" />
+              <span className="flex-1 text-xs truncate leading-tight">
+                {note.label}
+              </span>
+              <span className="text-xs opacity-40 shrink-0 truncate max-w-[80px]">
+                {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
+              </span>
+              {canEdit ? (
+                <Pencil className="w-3 h-3 shrink-0 text-emerald-500/70" />
+              ) : (
+                <Eye className="w-3 h-3 shrink-0 text-sky-500/70" />
+              )}
+            </button>
+          </div>
+        );
+      }
+      case "shared-end":
+        return <div className="h-1" />;
+      case "flat-note":
+        return <div className="ml-1">{renderNoteRow(item.note, false)}</div>;
+      case "folder":
+        return folderDropZone(item.groupKey, renderFolderHeader(item.groupKey));
+      case "folder-empty":
+        return folderDropZone(
+          item.groupKey,
+          <div className="ml-2 px-5 py-2 text-xs text-muted-foreground/50 italic">
+            Empty
+          </div>,
+        );
+      case "folder-note":
+        return folderDropZone(
+          item.groupKey,
+          <div className="ml-2">{renderNoteRow(item.note, true)}</div>,
+        );
+    }
+  };
+
+  const estimateItemSize = (item: SidebarItem): number =>
+    item.kind === "recent-end" ? 9 : item.kind === "shared-end" ? 4 : item.kind === "folder-empty" ? 32 : 26;
+  const getListScroller = () => folderTreeRef.current;
 
   const sortLabel =
     SORT_FIELDS.find((s) => s.field === sortField)?.label ?? "Modified";
@@ -1298,153 +1661,16 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
             <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
-        {!listPending && (<>
-        {/* Recent — collapsible, paginated. Sits ABOVE "Shared with me".
-            Default mode only (other modes surface recency differently). */}
-        {groupBy === "default" && recentSorted.length > 0 && (
-          <div className="mb-1 border-b border-border/30">
-            <button
-              type="button"
-              onClick={() => setRecentOpen((v) => !v)}
-              className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
-            >
-              {recentOpen ? (
-                <ChevronDown className="opacity-60" />
-              ) : (
-                <ChevronRight className="opacity-60" />
-              )}
-              <Clock className="text-amber-500 dark:text-amber-400" />
-              <span className="flex-1 text-left truncate">Recent</span>
-              <span className="text-xs font-normal opacity-50 tabular-nums">
-                <UntrustedCount value={recentSorted.length} trustworthy={!listError} label="Recent notes" />
-              </span>
-            </button>
-            {recentOpen && (
-              <div className="ml-1 pb-1">
-                {recentSorted.slice(0, recentVisibleCount).map((note) => {
-                  const isActive = activeTabId === note.id;
-                  const isOpenTab = openTabIds?.includes(note.id) ?? false;
-                  return (
-                    <NoteSidebarRow
-                      key={note.id}
-                      note={note}
-                      instanceId={instanceId}
-                      isActive={isActive}
-                      isOpenTab={isOpenTab}
-                      allFolders={folderReferences}
-                      openKnowledge={openKnowledgeStable}
-                      formatTime={formatTime}
-                      onSelectNote={selectNote}
-                      selectionMode={selectionMode}
-                      isSelected={selectedIds.has(note.id)}
-                      onToggleSelect={toggleSelect}
-                      onCreateFolder={createFolderForNote}
-                    />
-                  );
-                })}
-                {(recentSorted.length > recentVisibleCount ||
-                  recentVisibleCount > RECENT_PAGE_SIZE) && (
-                  <div className="flex items-center gap-2 px-2 pt-0.5">
-                    {recentSorted.length > recentVisibleCount && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRecentVisibleCount((c) => c + RECENT_PAGE_SIZE)
-                        }
-                        className="text-xs font-medium text-primary/80 hover:text-primary cursor-pointer transition-colors"
-                      >
-                        Show{" "}
-                        {Math.min(
-                          RECENT_PAGE_SIZE,
-                          recentSorted.length - recentVisibleCount,
-                        )}{" "}
-                        more
-                      </button>
-                    )}
-                    {recentVisibleCount > RECENT_PAGE_SIZE && (
-                      <button
-                        type="button"
-                        onClick={() => setRecentVisibleCount(RECENT_PAGE_SIZE)}
-                        className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                      >
-                        Show less
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        {!listPending && (
+          <NoteSidebarVirtualList
+            items={items}
+            getScrollElement={getListScroller}
+            estimateSize={estimateItemSize}
+            renderItem={renderItem}
+            reveal={reveal}
+          />
         )}
-
-        {/* Shared with me — collapsible section, below Recent */}
-        {sharedNotes.length > 0 && (
-          <div className="mb-1">
-            <button
-              type="button"
-              onClick={() => setSharedOpen((v) => !v)}
-              className="group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
-            >
-              {sharedOpen ? (
-                <ChevronDown className="opacity-60" />
-              ) : (
-                <ChevronRight className="opacity-60" />
-              )}
-              <Users className="text-indigo-500 dark:text-indigo-400" />
-              <span className="flex-1 text-left truncate">Shared with me</span>
-              <span className="text-xs font-normal opacity-50 tabular-nums">
-                <UntrustedCount value={sharedNotes.length} trustworthy={!sharedError} label="Notes shared with me" />
-              </span>
-            </button>
-            {sharedOpen && (
-              <div className="ml-2">
-                {sharedNotes.map((note) => {
-                  const level = note._sharedMeta?.permissionLevel ?? "viewer";
-                  const canEdit = level === "editor" || level === "admin";
-                  const isActive = activeTabId === note.id;
-                  const isOpenTab = openTabIds?.includes(note.id) ?? false;
-                  return (
-                    <button
-                      key={note.id}
-                      type="button"
-                      data-note-id={note.id}
-                      onClick={() => selectNote(note.id)}
-                      title={
-                        `${note._sharedMeta?.ownerEmail ?? "Someone"} shared this with you — ` +
-                        (canEdit ? "you can edit" : "view only")
-                      }
-                      className={cn(
-                        "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
-                        isActive
-                          ? "bg-primary/10 dark:bg-primary/20 font-medium text-foreground shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
-                          : isOpenTab
-                            ? "bg-accent/30 text-foreground/80"
-                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                      )}
-                    >
-                      <FileText className="w-3.5 h-3.5 shrink-0 text-indigo-500/70 dark:text-indigo-400/70" />
-                      <span className="flex-1 text-xs truncate leading-tight">
-                        {note.label}
-                      </span>
-                      <span className="text-xs opacity-40 shrink-0 truncate max-w-[80px]">
-                        {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
-                      </span>
-                      {canEdit ? (
-                        <Pencil className="w-3 h-3 shrink-0 text-emerald-500/70" />
-                      ) : (
-                        <Eye className="w-3 h-3 shrink-0 text-sky-500/70" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {listStatus === "loaded" &&
-        allNotes.length === 0 &&
-        sharedNotes.length === 0 ? (
+        {!listPending && listIsEmpty && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-8">
             <StickyNote className="w-10 h-10 mb-3 opacity-40" />
             <p className="text-xs font-medium">No notes yet</p>
@@ -1452,229 +1678,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
               Click "New Note" below to get started
             </p>
           </div>
-        ) : groupBy === "recent" ? (
-          /* ── Recent mode: flat sorted list ──────────────────────── */
-          <div className="ml-1">
-            {(groupedNotes.get("__all__") ?? []).map((note) => {
-              const isActive = activeTabId === note.id;
-              const isOpenTab = openTabIds?.includes(note.id) ?? false;
-              return (
-                <NoteSidebarRow
-                  key={note.id}
-                  note={note}
-                  instanceId={instanceId}
-                  isActive={isActive}
-                  isOpenTab={isOpenTab}
-                  allFolders={folderReferences}
-                  openKnowledge={openKnowledgeStable}
-                  formatTime={formatTime}
-                  onSelectNote={selectNote}
-                  selectionMode={selectionMode}
-                  isSelected={selectedIds.has(note.id)}
-                  onToggleSelect={toggleSelect}
-                  onCreateFolder={createFolderForNote}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          /* ── Grouped mode: collapsible sections (folder + default + hierarchy).
-             Default mode's recents now live in the "Recent" section above. ── */
-          <>
-            {groupKeys.map((groupKey, _i, allKeys) => {
-              const groupNotes = groupedNotes.get(groupKey) ?? [];
-              const isExpanded = expandedFolders.has(groupKey);
-              const label = getGroupLabel(groupKey);
-              const orgSuffix = folderOrgSuffix(groupKey);
-              const count = groupNotes.length;
-              // SAME NAME, SAME BADGE (legacy duplicate folders): the initials
-              // alone read "Draft · AW" twice. When the name AND the badge
-              // collide, the badge shows the organization's full name if the
-              // organizations differ, else a "1 of 2" ordinal — and the tooltip
-              // says plainly that two folders share the name (page-pass
-              // 2026-09-28). The duplicates themselves are legacy data.
-              const badge = orgSuffix ? orgInitials(orgSuffix) : null;
-              const twins = allKeys.filter(
-                (k) =>
-                  getGroupLabel(k) === label &&
-                  (folderOrgSuffix(k) ? orgInitials(folderOrgSuffix(k)!) : null) === badge,
-              );
-              const twinOrgs = new Set(twins.map((k) => folderOrgSuffix(k)));
-              const collides = badge !== null && twins.length > 1;
-              const badgeText = !collides
-                ? badge
-                : twinOrgs.size === twins.length
-                  ? orgSuffix
-                  : `${badge} · ${twins.indexOf(groupKey) + 1} of ${twins.length}`;
-              const twinTitle = collides
-                ? `${label} — in ${orgSuffix}. ${twins.length} folders share this name; this one holds ${count} note${count === 1 ? "" : "s"}.`
-                : null;
-
-              // Folder + Default modes both render folder icons/colors and DnD
-              const isFolderMode =
-                groupBy === "folder" || groupBy === "default";
-              const { icon: FolderIcon, color: iconColor } = isFolderMode
-                ? getFolderIconAndColor(groupKey)
-                : {
-                    icon:
-                      GROUP_MODES.find((m) => m.mode === groupBy)?.icon ??
-                      Folder,
-                    color: undefined,
-                  };
-
-              if (searchQuery && count === 0) return null;
-
-              const folderHeaderButton = (
-                <div
-                  className={cn(
-                    "group flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
-                    isFolderMode &&
-                      dropTargetFolder === groupKey &&
-                      "bg-primary/10 border-l-2 border-primary",
-                  )}
-                >
-                  <button
-                    type="button"
-                    aria-expanded={isExpanded}
-                    aria-label={`${isExpanded ? "Collapse" : "Expand"} ${label}`}
-                    className="flex min-w-0 flex-1 items-center gap-1 text-left"
-                    onClick={() => toggleFolder(groupKey)}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="opacity-60" />
-                    ) : (
-                      <ChevronRight className="opacity-60" />
-                    )}
-                    {isExpanded ? (
-                      <FolderOpen className={cn("opacity-70", iconColor)} />
-                    ) : (
-                      <FolderIcon className={cn("opacity-70", iconColor)} />
-                    )}
-                    <span
-                      className="flex min-w-0 flex-1 items-center gap-1"
-                      title={twinTitle ?? (orgSuffix ? `${label} — in ${orgSuffix}` : undefined)}
-                    >
-                      <span className="min-w-[3.5rem] truncate">{label}</span>
-                      {orgSuffix && (
-                        // The organization is what tells same-name folders
-                        // apart: its chip keeps its natural width and the
-                        // folder name truncates instead (a long folder name
-                        // used to squeeze the chip to one letter).
-                        // The folder name has priority: the organization shows
-                        // as its initials (full name in the row's tooltip).
-                        // Once the name is at its 3.5rem floor the chip gives way (it
-                        // truncates): a shrink-0 chip ran past the row into the count
-                        // ("AW · 1 of 2" over "2", 2026-10-05 final check).
-                        <span
-                          aria-label={`in ${orgSuffix}`}
-                          className="min-w-0 max-w-[9rem] truncate rounded bg-muted px-1 text-xs font-normal normal-case tracking-normal text-muted-foreground"
-                        >
-                          {badgeText}
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 text-xs font-normal opacity-50 tabular-nums">
-                      {count}
-                    </span>
-                  </button>
-                  {isFolderMode && (
-                    <button
-                      type="button"
-                      aria-label={`New Note in ${label}`}
-                      disabled={draftControl.pending}
-                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-60 pointer-coarse:opacity-60 disabled:pointer-events-none disabled:opacity-30"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleNewNote(groupKey).catch(() => undefined);
-                      }}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              );
-
-              return (
-                <div
-                  key={groupKey}
-                  onDragOver={
-                    isFolderMode
-                      ? (e) => handleFolderDragOver(e, groupKey)
-                      : undefined
-                  }
-                  onDragLeave={isFolderMode ? handleFolderDragLeave : undefined}
-                  onDrop={
-                    isFolderMode
-                      ? (e) => handleFolderDrop(e, groupKey)
-                      : undefined
-                  }
-                >
-                  {/* Folder actions ride the universal v3 menu (folder mode only) */}
-                  {isFolderMode ? (
-                    <NonEditableContextMenu
-                      sourceFeature="notes"
-                      // Folder actions only — no Copy / Speak / Compare / Chat / agent rows.
-                      recordActionsOnly
-                      // The notes surface: "Save to Notes" is absent inside Notes.
-                      surfaceName="matrx-user/notes"
-                      // The folder's NAME heads the menu — never the group key
-                      // ("pending:<org>:General" is an internal id).
-                      contextData={{ content: label }}
-                      resolveContextOnOpen={() => ({
-                        [CONTEXT_MENU_HEADING_KEY]: { label: "Folder", text: label },
-                      })}
-                      extraSections={buildFolderSections(groupKey)}
-                    >
-                      {folderHeaderButton}
-                    </NonEditableContextMenu>
-                  ) : (
-                    folderHeaderButton
-                  )}
-
-                  {isExpanded && (
-                    <div className="ml-2">
-                      {groupNotes.length === 0 ? (
-                        <div className="px-5 py-2 text-xs text-muted-foreground/50 italic">
-                          Empty
-                        </div>
-                      ) : (
-                        groupNotes.map((note) => {
-                          const isActive = activeTabId === note.id;
-                          const isOpenTab =
-                            openTabIds?.includes(note.id) ?? false;
-                          const isDragging = draggedNoteId === note.id;
-                          return (
-                            <NoteSidebarRow
-                              key={note.id}
-                              note={note}
-                              instanceId={instanceId}
-                              isActive={isActive}
-                              isOpenTab={isOpenTab}
-                              allFolders={folderReferences}
-                              openKnowledge={openKnowledgeStable}
-                              formatTime={formatTime}
-                              draggable={isFolderMode}
-                              isDragging={isDragging}
-                              onDragStart={handleNoteDragStart}
-                              onDragEnd={handleNoteDragEnd}
-                              onSelectNote={selectNote}
-                              selectionMode={selectionMode}
-                              isSelected={selectedIds.has(note.id)}
-                              onToggleSelect={toggleSelect}
-                              onCreateFolder={createFolderForNote}
-                            />
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </>
         )}
-
-        </>)}
       </div>
 
         {/* Trash — soft-deleted recovery, pinned below the list so its slot never moves while the list loads */}

@@ -454,20 +454,23 @@ export function NotesView({
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
-    try {
-      const work: Promise<unknown>[] = [
-        dispatch(fetchNotesList()).unwrap(),
-        dispatch(fetchSharedNotesList()).unwrap(),
-      ];
-      // Explicit user refresh → force-refresh the canonical scope tree.
-      work.push(dispatch(ensureScopeTree({ refresh: true })));
-      for (const noteId of openTabs ?? []) {
-        work.push(dispatch(refreshNoteContent(noteId)).unwrap());
-      }
-      await Promise.allSettled(work);
-    } finally {
-      setIsRefreshing(false);
-    }
+    // A promise chain, not try/finally: the React Compiler cannot compile a
+    // `try` without a `catch`, and skipping NotesView left it unmemoised — every
+    // render of it redrew the whole sidebar while the person typed.
+    await Promise.resolve()
+      .then(() => {
+        const work: Promise<unknown>[] = [
+          dispatch(fetchNotesList()).unwrap(),
+          dispatch(fetchSharedNotesList()).unwrap(),
+        ];
+        // Explicit user refresh → force-refresh the canonical scope tree.
+        work.push(dispatch(ensureScopeTree({ refresh: true })));
+        for (const noteId of openTabs ?? []) {
+          work.push(dispatch(refreshNoteContent(noteId)).unwrap());
+        }
+        return Promise.allSettled(work);
+      })
+      .finally(() => setIsRefreshing(false));
   }, [dispatch, isRefreshing, openTabs]);
 
   // ── Keyboard shortcuts ───────────────────────────────────────────
