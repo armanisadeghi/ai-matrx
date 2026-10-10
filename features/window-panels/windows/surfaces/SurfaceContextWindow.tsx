@@ -319,7 +319,9 @@ export default function SurfaceContextWindow({
         <div className="flex min-w-0 items-center gap-1.5">
           <Braces className="h-4 w-4 shrink-0 text-primary" />
           {/* The same path the composer's value list heads this page with. */}
-          <span className="truncate text-sm font-semibold">
+          {/* data-surface-name: the key, for proof tools on every seat (the
+              visible key is admin-only). Not shown. */}
+          <span className="truncate text-sm font-semibold" data-surface-name={surfaceName ?? undefined}>
             {surfaceName ? surfaceLevelPlace(surfaceName).path.join(" › ") : friendlySurfaceName}
           </span>
         </div>

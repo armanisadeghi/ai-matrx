@@ -258,8 +258,12 @@ async function pointerClick(page, selector, textPrefix) {
 
 async function readProbe(page) {
   return page.evaluate(() => {
+    // A value row carries a status dot titled with its state; group rows do
+    // not. (The key <code> trail is admin-only, so it cannot mark a value row
+    // on a member's seat.)
+    const STATES = /^(Supplied|Supplied, empty|Required, not supplied|Not supplied)$/;
     const rows = Array.from(document.querySelectorAll("button[data-row-id]")).filter((r) =>
-      r.querySelector("code"),
+      Array.from(r.querySelectorAll("[title]")).some((d) => STATES.test(d.getAttribute("title") || "")),
     );
     const supplied = [];
     const suppliedEmpty = [];
@@ -270,7 +274,7 @@ async function readProbe(page) {
     );
     for (const row of rows) {
       const name = row.dataset.rowId;
-      const dot = row.querySelector("[title]");
+      const dot = Array.from(row.querySelectorAll("[title]")).find((d) => STATES.test(d.getAttribute("title") || ""));
       const state = dot ? dot.getAttribute("title") : null;
       if (state === "Supplied") supplied.push(name);
       else if (state === "Supplied, empty") suppliedEmpty.push(name);
@@ -620,8 +624,14 @@ try {
       // the admin lane is closed on user pages), so the page is also "named"
       // when the Surface Context window it opens shows the key.
       if (!result.surfaceNamed) {
-        const windowText = await page.evaluate(() => document.body.innerText || "");
-        result.surfaceNamed = windowText.includes(opts.surface);
+        result.surfaceNamed = await page.evaluate(
+          (key) =>
+            (document.body.innerText || "").includes(key) ||
+            Array.from(document.querySelectorAll("[data-surface-name]")).some(
+              (e) => e.getAttribute("data-surface-name") === key,
+            ),
+          opts.surface,
+        );
       }
       await shot(page, `${index}-before`);
 
