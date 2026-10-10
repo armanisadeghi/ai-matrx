@@ -400,7 +400,7 @@ function VirtualList({
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground" style={{ height: END_H }} role="status">
           {more?.error ? (
             <>
-              <span className="min-w-0 truncate text-destructive">{more.error}</span>
+              <span className="min-w-0 truncate text-destructive">{more.error}<ErrorAlchemyMenu error={more.error} /></span>
               <button type="button" className="font-medium text-foreground underline-offset-2 hover:underline" onClick={more.load}>
                 Try again
               </button>
@@ -1066,7 +1066,7 @@ export function BrowseResults({
         <div className="flex shrink-0 items-center justify-center gap-2 py-2 text-xs text-muted-foreground" role="status">
           {moreState.error ? (
             <>
-              <span className="text-destructive">{moreState.error}</span>
+              <span className="text-destructive">{moreState.error}<ErrorAlchemyMenu error={moreState.error} /></span>
               <button type="button" className="font-medium text-foreground hover:underline" onClick={moreState.load}>
                 Try again
               </button>
