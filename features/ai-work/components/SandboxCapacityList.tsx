@@ -81,7 +81,6 @@ export function SandboxCapacityList({
               </span>
               <Button
                 variant="outline"
-                size="sm"
                 aria-label={`Stop ${o.sandbox_id}`}
                 onClick={() => void stop(o)}
                 disabled={disabled || stopping !== null}

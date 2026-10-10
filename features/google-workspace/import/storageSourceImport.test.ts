@@ -29,7 +29,7 @@ function fileRow(overrides: Partial<FileRecordApi> = {}): FileRecordApi {
 
 describe("canonical Google Drive import", () => {
   it("sends only the selected source reference and safe destination fields", async () => {
-    jest.mocked(apiPost).mockResolvedValue({
+    (apiPost as unknown as jest.Mock).mockResolvedValue({
       data: {
         file_id: "canonical-file",
         file_path: "My Files/Imports/report.pdf",
@@ -71,7 +71,7 @@ describe("canonical Google Drive import", () => {
       file_path: "My Files/Imports/report.pdf",
       visibility: "personal",
     });
-    expect(JSON.stringify(jest.mocked(apiPost).mock.calls[0])).not.toContain(
+    expect(JSON.stringify((apiPost as unknown as jest.Mock).mock.calls[0])).not.toContain(
       "secret-download-url",
     );
     expect(result).toMatchObject({
@@ -89,7 +89,7 @@ describe("canonical Google Drive import", () => {
   });
 
   it("uses the invoking Files folder without treating picker metadata as result truth", async () => {
-    jest.mocked(apiPost).mockResolvedValue({
+    (apiPost as unknown as jest.Mock).mockResolvedValue({
       data: {
         file_id: "canonical-doc",
         file_path: "My Files/Projects/Proposal",
@@ -145,7 +145,7 @@ describe("canonical Google Drive import", () => {
   });
 
   it("imports into the Files root without sending an absolute path", async () => {
-    jest.mocked(apiPost).mockResolvedValue({
+    (apiPost as unknown as jest.Mock).mockResolvedValue({
       data: {
         file_id: "root-file",
         file_path: "root.txt",

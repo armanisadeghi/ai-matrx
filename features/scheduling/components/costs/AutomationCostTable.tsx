@@ -23,6 +23,7 @@ import { adminScheduleHref, scheduleHref } from "@/features/scheduling/constants
 import {
   AUTOMATION_COST_WINDOW_DAYS,
   AUTOMATION_KIND_LABEL,
+  automationAiState,
   automationCostDetailHref,
   orgAutomationCostDetailHref,
   conversationHref,

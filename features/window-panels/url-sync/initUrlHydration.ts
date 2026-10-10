@@ -282,7 +282,7 @@ export function initUrlHydration() {
       console.warn(
         `[initUrlHydration] Ignoring "?panels=social_post:${id}": a post panel needs its post and organization ("social_post:<postId>:o-<organizationId>"). Re-copy the link from the panel.`,
       );
-      return;
+      return undefined;
     }
     // A post panel scoped to another brand is refused here and its token leaves the address,
     // instead of lingering in the URL as a window that never opens.
@@ -296,6 +296,7 @@ export function initUrlHydration() {
         data: { stackIndex: 0, postId: id, organizationId, brandSeg: args.b ?? "", tab: args.t ?? "overview" },
       }),
     );
+    return undefined;
   });
 
   // Agent variable editor — `?panels=agent_variable:<agentId>|<variableName>`

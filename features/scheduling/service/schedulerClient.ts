@@ -342,8 +342,8 @@ export function getStatus(
 // task whose handler is not registered — that refusal must reach the admin
 // verbatim (the shared `request` helper already surfaces `detail`).
 
-export function listSystemTasks(): Promise<SystemTaskListResponse> {
-  return request<SystemTaskListResponse>("/scheduling/admin/system-tasks", {
+export function listSystemTasks(support = false): Promise<SystemTaskListResponse> {
+  return request<SystemTaskListResponse>(support ? "/scheduling/admin/support-tasks" : "/scheduling/admin/system-tasks", {
     method: "GET",
   });
 }

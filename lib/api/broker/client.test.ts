@@ -3,7 +3,7 @@ import { mintCredential } from "@/lib/api/broker/client";
 
 jest.mock("@/lib/api/typed-client", () => ({ apiPost: jest.fn() }));
 
-const apiPostMock = apiPost as jest.MockedFunction<typeof apiPost>;
+const apiPostMock = apiPost as unknown as jest.Mock;
 
 describe("mintCredential", () => {
   beforeEach(() => apiPostMock.mockReset());

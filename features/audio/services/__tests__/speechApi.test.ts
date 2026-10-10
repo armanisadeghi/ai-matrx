@@ -14,8 +14,9 @@ jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: jest.fn().mockResolvedValue("org-1"),
 }));
 
-const apiPostMock = jest.mocked(apiPost);
-const apiMultipartMock = jest.mocked(apiMultipart);
+// Cast: the typed client's overload union is too complex for jest.mocked to represent.
+const apiPostMock = apiPost as unknown as jest.Mock;
+const apiMultipartMock = apiMultipart as unknown as jest.Mock;
 const responseMeta = {
   requestId: "request-1",
   status: 200,

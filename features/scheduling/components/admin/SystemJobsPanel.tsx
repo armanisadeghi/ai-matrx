@@ -205,7 +205,8 @@ export function SystemJobsPanel({ lane }: { lane: "system" | "support" }) {
   const [clickedJob, setClickedJob] = useState<SystemTaskResponse | null>(null);
   const [clickedDbJob, setClickedDbJob] = useState<DbJobResponse | null>(null);
 
-  useAdminSchedulingScopeSlice(support ? "support" : "system_jobs", () =>
+  // The support lane has no tab of its own in the surface manifest; it publishes nothing.
+  useAdminSchedulingScopeSlice("system_jobs", () =>
     definedOnly(support ? {} : {
       system_job_count: loading ? undefined : rows.length,
       system_job_enabled_count: loading

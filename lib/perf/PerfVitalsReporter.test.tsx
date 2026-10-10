@@ -15,7 +15,7 @@ const onCLS = jest.fn((cb: Cb) => { callbacks.CLS = cb; });
 const onFCP = jest.fn((cb: Cb) => { callbacks.FCP = cb; });
 const onTTFB = jest.fn((cb: Cb) => { callbacks.TTFB = cb; });
 const observerRegistered = onLCP;
-const fetchMock = jest.fn(() => Promise.resolve({ ok: true }));
+const fetchMock = jest.fn((_url?: unknown, _init?: unknown) => Promise.resolve({ ok: true }));
 jest.mock("web-vitals", () => ({
   onLCP: (cb: Cb) => onLCP(cb), onINP: (cb: Cb) => onINP(cb), onCLS: (cb: Cb) => onCLS(cb),
   onFCP: (cb: Cb) => onFCP(cb), onTTFB: (cb: Cb) => onTTFB(cb),

@@ -73,7 +73,7 @@ export function SessionDetail({
           </p>
         </div>
         {needsClaudeAccount(lag) && (
-          <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Button asChild variant="outline" className="shrink-0">
             <Link href="/work/connections#claude-accounts">Connect Claude account</Link>
           </Button>
         )}

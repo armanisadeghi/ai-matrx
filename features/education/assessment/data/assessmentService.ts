@@ -546,7 +546,7 @@ export const assessmentService = {
           return fail("createWithItems", have.error ?? "adopt failed");
         }
         const missing = items.slice(have.data.items.length);
-        if (missing.length === 0) return have;
+        if (missing.length === 0) return { data: have.data, error: null };
         const added = await this.addItems(earlier.data.id, missing, {
           startPosition: have.data.items.length,
         });

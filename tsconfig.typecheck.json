@@ -37,6 +37,8 @@
     // Gitignored agent scratch (.gitignore: /tmp/ and /tmp*.ts): copies and probes that never ship.
     "tmp",
     "tmp*.ts",
+    // Committed one-off probe scripts (run via tsx, import .mts paths); never shipped.
+    "scripts/_dd4_*.mts",
     "out",
     "utils/schema/schemaUtils.ts",
     "next-env.d.ts",

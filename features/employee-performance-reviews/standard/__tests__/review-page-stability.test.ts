@@ -37,7 +37,7 @@ describe("3. a write that changes a list reaches every mounted list", () => {
   it("creating a cycle announces itself", async () => {
     rpc.mockResolvedValueOnce({ data: { ok: true }, error: null }); // template_ensure_default
     rpc.mockResolvedValueOnce({ data: { ok: true, cycle_id: "c1" }, error: null });
-    const r = await createCycle({ organizationId: "o1", name: "H2", periodStart: "2026-07-01", periodEnd: "2026-12-31" });
+    const r = await createCycle({ organizationId: "o1", name: "H2", periodStart: "2026-07-01", periodEnd: "2026-12-31", selfDueOn: "", managerDueOn: "", shareDueOn: "" });
     expect(r.ok).toBe(true);
     expect(seen).toHaveBeenCalledTimes(1);
   });
@@ -45,7 +45,7 @@ describe("3. a write that changes a list reaches every mounted list", () => {
   it("a refused write, a read and a draft autosave do not", async () => {
     rpc.mockResolvedValueOnce({ data: { ok: true }, error: null });
     rpc.mockResolvedValueOnce({ data: { ok: false, reason: "name_taken" }, error: null });
-    await createCycle({ organizationId: "o1", name: "H2", periodStart: "2026-07-01", periodEnd: "2026-12-31" });
+    await createCycle({ organizationId: "o1", name: "H2", periodStart: "2026-07-01", periodEnd: "2026-12-31", selfDueOn: "", managerDueOn: "", shareDueOn: "" });
     rpc.mockResolvedValueOnce({ data: { ok: true, cycles: [] }, error: null });
     await listCycles("o1");
     rpc.mockResolvedValueOnce({ data: { ok: true, version: 2 }, error: null });
