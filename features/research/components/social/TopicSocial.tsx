@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, BadgeCheck, Mic, UserRound } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, LayoutGrid, Mic, UserRound } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger, ReadFailure, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker";
@@ -68,6 +68,12 @@ function handlesOf(subject: unknown): Handle[] {
   return Object.entries(subject.handles).flatMap(([platform, handle]) =>
     typeof handle === "string" && handle.trim() ? [{ platform, handle: handle.trim().replace(/^@/, "") }] : [],
   );
+}
+
+/** A display name a person can read: a scraper's "…" or an empty string is no name at all. */
+function readableName(name: string | null | undefined): string | null {
+  const t = name?.trim();
+  return t && /[\p{L}\p{N}]/u.test(t) ? t : null;
 }
 
 function trackHref(brandId: string, text: string): string {
@@ -182,7 +188,7 @@ export default function TopicSocial() {
                     <PlatformMark platform={h.platform} size={28} />
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate type-title">{found?.facts.displayName ?? `@${h.handle}`}</span>
+                        <span className="truncate type-title">{readableName(found?.facts.displayName) ?? `@${h.handle}`}</span>
                         {found?.facts.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Verified" />}
                       </div>
                       <div className="type-meta text-muted-foreground">
@@ -233,7 +239,7 @@ export default function TopicSocial() {
           )}
         </Section>
 
-        <Section icon={UserRound} title="Posts" count={posts.length}>
+        <Section icon={LayoutGrid} title="Posts" count={posts.length}>
           {sources === null ? (
             <Skeleton className="h-40 w-full rounded" />
           ) : posts.length === 0 ? (
@@ -272,7 +278,7 @@ export default function TopicSocial() {
             </div>
           ) : (
             <p className="py-2 text-center type-secondary text-muted-foreground">
-              {voice.reason ?? voice.summary ?? `Voice stage: ${voice.status}`}
+              {voice.reason ?? voice.summary ?? `Speaking style: ${voice.status.replace(/_/g, " ")}`}
             </p>
           )}
         </Section>
