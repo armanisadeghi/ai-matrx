@@ -239,20 +239,32 @@ export function useDataHomeRowMenus({
     const inOrganization = row.organizationId
       ? createRecordsClient({ ...client.config, organizationId: row.organizationId })
       : client;
-    const result = await archiveTableFromHome({
-      client: inOrganization,
-      tableId,
-      notify: recordsUi.notify,
-      fallbackName: row.name,
-      onOptimisticHide: () => onHide(row.id),
-      onRollback: () => onUnhide(row.id),
-      onRestored: () => onUnhide(row.id),
-    });
+    // THE RUN IS SEEN: a big-enough table takes several passes, and the row is already gone from the list,
+    // so a toast carries the count until the run ends (and a reload mid-run is asked about, not silent).
+    const progressToast = `archive-${tableId}`;
+    const leaving = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", leaving);
+    let result: Awaited<ReturnType<typeof archiveTableFromHome>>;
+    try {
+      result = await archiveTableFromHome({
+        client: inOrganization,
+        tableId,
+        notify: recordsUi.notify,
+        fallbackName: row.name,
+        onOptimisticHide: () => onHide(row.id),
+        onRollback: () => onUnhide(row.id),
+        onRestored: () => onUnhide(row.id),
+        onProgress: ({ name, archived, total }) => toast.loading(`Archiving “${name}”: ${archived} of ${total}`, { id: progressToast }),
+      });
+    } finally {
+      window.removeEventListener("beforeunload", leaving);
+      toast.dismiss(progressToast);
+    }
     if (result.outcome === "needs-confirm") ask("archive", row);
     else if (result.outcome === "refused") {
       const codeDepends = codeDependsRefusal(result.error);
       if (codeDepends) setAsked((now) => ({ what: "archive-deliberately", row, count: (now?.count ?? 0) + 1, codeDepends }));
-      else toast.error(result.sentence);
+      else toast.error(result.sentence, result.left ? { duration: 15000 } : undefined);
     }
   };
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
@@ -291,7 +303,11 @@ export function useDataHomeRowMenus({
         addColumn: () => go("rail=field"),
         settings: () => go("rail=settings"),
         openBuiltOn: (destination) => go(BUILT_ON_ADDRESS[destination]),
-        archive: () => void archiveNow(row, tableId),
+        archive: () =>
+          void archiveNow(row, tableId).catch((thrown: unknown) => {
+            // Nothing in a row's menu fails silently: a throw outside the run itself says so.
+            toast.error(thrown instanceof Error && thrown.message ? thrown.message : "Couldn’t archive the table. Try again.");
+          }),
         unavailableReasons: {
           history: NO_TABLE_HISTORY_REASON,
           "make-default": "Open the table to choose",
