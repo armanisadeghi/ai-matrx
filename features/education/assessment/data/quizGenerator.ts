@@ -150,7 +150,7 @@ function makeRun(kind: "quiz" | "practice_test") {
       resolved: outline ? resolvedFromOutline(outline, source) : resolvedFromConvertSource(source),
       sectionPerSource: outline?.sections.map((s) => ({ id: s.id, title: s.title })),
       existing,
-      count: options?.count,
+      count: outlineRunCount(options?.count, Boolean(outline), KIND_CONFIG[kind].defaultCount),
       difficulty: options?.difficulty ?? "Medium",
       depth: defaults.depth,
       title: source.title ?? "Study material",
