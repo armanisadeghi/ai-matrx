@@ -1,29 +1,46 @@
-// "Set active" must write even when the preview's version read is missing (a remount between preview and
-// press, or a failed read). Before: restoreAt got seenVersion null and refused, writing nothing.
-const restoreAt = jest.fn(async (_c: unknown, args: { seenVersion: number | null }) =>
-  args.seenVersion === null
-    ? { ok: false as const, error: { code: "version_unread", message: "Could not check for changes" } }
-    : { ok: true as const, data: {} },
-);
-jest.mock("@ai-matrx/records/versions", () => ({
-  readVersionNow: jest.fn(async () => 4),
-  restoreAt: (c: unknown, a: { seenVersion: number | null }) => restoreAt(c, a),
-}));
+// "Set active" restores a version as ONE new version, labeled from the version it restores. Before: the
+// store-side restore copied the old note back, so restoring a different layout was labeled "Starting layout".
+const readVersionNow = jest.fn(async () => 4);
+jest.mock("@ai-matrx/records/versions", () => ({ readVersionNow: (...a: unknown[]) => (readVersionNow as any)(...a) }));
 jest.mock("@ai-matrx/records/react", () => ({}));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 jest.mock("../../useStartPage", () => ({ useStartPage: () => ({}) }));
 
-import { setActiveVersion } from "../../useStartLayout";
+import { restoredNote, setActiveVersion } from "../../useStartLayout";
 
-it("reads the record's version now when the preview's read is missing, and writes", async () => {
-  const result = await setActiveVersion({} as never, "rec-1", 1, null);
+const docJson = (types: string[]) => JSON.stringify({ schema: 1, widgets: types.map((t, i) => ({ id: `w${i}`, type: t, size: "m", config: {} })) });
+const preview = (after: string) => ({ ok: true as const, data: { changes: [{ key: "doc", after }] } });
+
+it("saves the restored layout as one new version labeled from the version it restores", async () => {
+  const save = jest.fn(async () => ({ ok: true as const }));
+  const client = { restorePreview: jest.fn(async () => preview(docJson(["tasks", "agenda"]))) };
+  const result = await setActiveVersion(client as never, "rec-1", 5, null, { currentDoc: null, note: restoredNote(5, "Added Today's meetings"), save });
   expect(result).toEqual({ ok: true });
-  expect(restoreAt).toHaveBeenLastCalledWith({}, { record_id: "rec-1", version: 1, seenVersion: 4 });
+  expect(save).toHaveBeenCalledTimes(1);
+  const [doc, note] = save.mock.calls[0] as unknown as [{ widgets: { type: string }[] }, string];
+  expect(note).toBe("Restored v5: Added Today's meetings");
+  expect(note).not.toBe("Starting layout");
+  expect(doc.widgets.map((w) => w.type)).toEqual(["tasks", "agenda"]);
 });
 
-it("keeps the preview's version when it has one (a change since then is still refused by restoreAt)", async () => {
-  await setActiveVersion({} as never, "rec-1", 2, 3);
-  expect(restoreAt).toHaveBeenLastCalledWith({}, { record_id: "rec-1", version: 2, seenVersion: 3 });
+it("reads the record's version now when the preview's read is missing, and writes", async () => {
+  const save = jest.fn(async () => ({ ok: true as const }));
+  const client = { restorePreview: jest.fn(async () => preview(docJson(["tasks"]))) };
+  const result = await setActiveVersion(client as never, "rec-1", 1, null, { currentDoc: null, note: "Restored v1", save });
+  expect(result).toEqual({ ok: true });
+  expect(save).toHaveBeenCalledTimes(1);
+});
+
+it("refuses, writing nothing, when the layout changed since the preview", async () => {
+  const save = jest.fn(async () => ({ ok: true as const }));
+  const client = { restorePreview: jest.fn(async () => preview(docJson(["tasks"]))) };
+  const result = await setActiveVersion(client as never, "rec-1", 2, 3, { currentDoc: null, note: "Restored v2", save });
+  expect(result.ok).toBe(false);
+  expect(save).not.toHaveBeenCalled();
+});
+
+it("labels a restore with just the version when that version had no note", () => {
+  expect(restoredNote(3, null)).toBe("Restored v3");
 });
 
 import { versionNote } from "../../useStartLayout";

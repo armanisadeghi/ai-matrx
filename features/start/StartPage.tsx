@@ -63,7 +63,7 @@ function StartBody() {
   const [panel, setPanel] = useState<Panel>(null);
   const [preview, setPreview] = useState<{ version: number; doc: StartDoc; seenVersion: number | null } | null>(null);
   const [busy, setBusy] = useState(false);
-  const history = useStartHistory(layout.recordId, panel?.kind === "history");
+  const history = useStartHistory(layout.recordId, panel?.kind === "history", (doc, note) => layout.save(doc, note));
   const openMandateWindow = useOpenMandateWindow();
   const editing = draft !== null;
   const agent = useStartAgentTools(START_PAGE_SURFACE_NAME, {
@@ -118,7 +118,7 @@ function StartBody() {
   };
   const setActive = async (version: number) => {
     setBusy(true);
-    const result = await history.setActive(version, preview?.version === version ? preview.seenVersion : null);
+    const result = await history.setActive(version, preview?.version === version ? preview.seenVersion : null, layout.doc);
     setBusy(false);
     if (!result.ok) return void toast.error(result.error);
     toast.success(`Version ${version} is active again`);

@@ -4,7 +4,7 @@
 // Must sit under a records provider (StartPage's RecordsMount).
 import { useEffect, useRef, useState } from "react";
 import { listAppRows, upsertAppRow, useRecordsClient, useTypedTable, type RecordHistoryEntry } from "@ai-matrx/records/react";
-import { readVersionNow, restoreAt } from "@ai-matrx/records/versions";
+import { readVersionNow } from "@ai-matrx/records/versions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { startLayoutTable } from "./startLayout.typed-table";
@@ -25,6 +25,8 @@ export function useStartLayout() {
   const choice = useStartPage();
   const [saving, setSaving] = useState(false);
   const reloadedAfterSkip = useRef(false);
+  // Set ONLY when the first-layout write truly failed: the one case the starting layout is shown as a stand-in.
+  const [seedFailed, setSeedFailed] = useState(false);
 
   const mine = table.rows
     .filter((r) => r.person === userId)
@@ -33,7 +35,10 @@ export function useStartLayout() {
   const parsed = current ? parseStartDoc(current.doc) : null;
   // The home organization: where her row already is, else where new things are saved.
   const homeOrg = current?._organizationId ?? client.config.organizationId ?? null;
-  const loading = table.loading || choice.loading;
+  // No row yet and nothing wrong: the first read (or the seed that follows it) has not settled. The starting
+  // layout is NEVER shown for that gap, or a reload that read no row yet looked like a different layout.
+  const settling = Boolean(userId) && !current && !table.error && !seedFailed && Boolean(homeOrg);
+  const loading = table.loading || choice.loading || settling;
 
   const save = async (doc: StartDoc, note: string, opts: { byAgent?: boolean } = {}): Promise<SaveResult> => {
     if (!userId) return { ok: false, error: "Sign in to save your start page." };
@@ -67,6 +72,7 @@ export function useStartLayout() {
       write: () => save(defaultStartDoc(choice.pageId), "Starting layout"),
     }).then((outcome) => {
       if (outcome === "failed") {
+        setSeedFailed(true);
         toast.error("Your start page could not be saved; showing the starting layout");
         return;
       }
@@ -78,12 +84,17 @@ export function useStartLayout() {
     });
   });
 
-  const doc: StartDoc | null = parsed?.ok ? parsed.doc : current ? null : defaultStartDoc(choice.pageId);
+  // The active version, or nothing: never the starting layout as a guess for a row that is not there.
+  const doc: StartDoc | null = parsed?.ok ? parsed.doc : current ? null : seedFailed ? defaultStartDoc(choice.pageId) : null;
+  const noHome = Boolean(userId) && !current && !homeOrg && !table.loading;
 
   return {
     loading,
     saving,
-    error: table.error?.message ?? (parsed && !parsed.ok ? parsed.error : null),
+    error:
+      table.error?.message ??
+      (parsed && !parsed.ok ? parsed.error : null) ??
+      (noHome ? "No organization to save your start page in." : null),
     doc,
     recordId: current?._id ?? null,
     save,
@@ -113,7 +124,11 @@ export function versionNote(entry: RecordHistoryEntry): string {
   return entry.changes.length === 0 ? "Saved again, no change" : entry.operation_label;
 }
 
-export function useStartHistory(recordId: string | null, open: boolean) {
+export function useStartHistory(
+  recordId: string | null,
+  open: boolean,
+  save: (doc: StartDoc, note: string) => Promise<SaveResult>,
+) {
   const client = useRecordsClient();
   const [entries, setEntries] = useState<RecordHistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -151,10 +166,15 @@ export function useStartHistory(recordId: string | null, open: boolean) {
     return parsed.ok ? { ok: true, doc: parsed.doc, seenVersion } : { ok: false, error: parsed.error };
   };
 
-  /** Make `version` the active layout — a NEW version; nothing is lost. */
-  const setActive = async (version: number, seenVersion: number | null): Promise<SaveResult> => {
+  /** Make `version` the active layout: a NEW version labeled "Restored vN", with that version's own note. */
+  const setActive = async (version: number, seenVersion: number | null, currentDoc: StartDoc | null): Promise<SaveResult> => {
     if (!recordId) return { ok: false, error: "No saved layout yet." };
-    const answer = await setActiveVersion(client, recordId, version, seenVersion);
+    const entry = entries?.find((e) => e.version === version);
+    const answer = await setActiveVersion(client, recordId, version, seenVersion, {
+      currentDoc,
+      note: restoredNote(version, entry ? versionNote(entry) : null),
+      save,
+    });
     setRevision((n) => n + 1);
     return answer;
   };
@@ -162,17 +182,38 @@ export function useStartHistory(recordId: string | null, open: boolean) {
   return { entries, error, preview, setActive, refresh: () => setRevision((n) => n + 1) };
 }
 
+/** The label a restore is saved with: "Restored v5", plus the note that version carried. */
+export function restoredNote(version: number, versionsOwnNote: string | null): string {
+  const own = versionsOwnNote?.trim();
+  return own ? `Restored v${version}: ${own}` : `Restored v${version}`;
+}
+
 /**
- * Restore `version` as a new version. A preview's version read can be missing (the page remounted
- * between preview and press, or that read failed): read it now instead of refusing the press.
+ * Restore `version` as ONE new version, written through the normal save so it carries its own label and a
+ * fresh saved time (a store-side restore copied the old note and the old saved time back, so the new
+ * version read as "Starting layout" and the newest-row rule could pick another row). A preview's version
+ * read can be missing (the page remounted between preview and press): read it now instead of refusing.
  */
 export async function setActiveVersion(
-  client: Parameters<typeof restoreAt>[0],
+  client: Pick<ReturnType<typeof useRecordsClient>, "recordHeaders" | "restorePreview">,
   recordId: string,
   version: number,
   seenVersion: number | null,
+  write: { currentDoc: StartDoc | null; note: string; save: (doc: StartDoc, note: string) => Promise<SaveResult> },
 ): Promise<SaveResult> {
   const seen = seenVersion ?? (await readVersionNow(client, recordId));
-  const answer = await restoreAt(client, { record_id: recordId, version, seenVersion: seen });
-  return answer.ok ? { ok: true } : { ok: false, error: answer.error.message };
+  const now = await readVersionNow(client, recordId);
+  if (seen === null || now === null) return { ok: false, error: "Could not check your layout for changes. Try again." };
+  if (now !== seen) return { ok: false, error: "Your layout changed since you previewed it. Preview the version again." };
+  const answer = await client.restorePreview({ record_id: recordId, version });
+  if (!answer.ok) return { ok: false, error: answer.error.message };
+  const change = answer.data.changes.find((c) => c.key === "doc");
+  let doc = write.currentDoc;
+  if (change) {
+    const parsed = parseStartDoc(change.after);
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+    doc = parsed.doc;
+  }
+  if (!doc) return { ok: false, error: "No saved layout yet." };
+  return write.save(doc, write.note);
 }
