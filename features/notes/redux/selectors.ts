@@ -209,6 +209,8 @@ export const selectSharedWithMeNotes = createSelector(
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
 );
 
+export const selectNotesSharedStatus = (state: RootState) => state.notes.sharedStatus;
+
 /** Why the "Shared with me" read failed, or null — its count says "—" then, never 0. */
 export const selectNotesSharedError = (state: RootState): string | null =>
   state.notes.sharedError ?? null;

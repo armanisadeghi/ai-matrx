@@ -87,6 +87,7 @@ import {
   selectAllNotesList,
   selectSharedWithMeNotes,
   selectNotesSharedError,
+  selectNotesSharedStatus,
   selectDeletedNotesList,
   selectNotesTrashStatus,
   selectNotesTrashError,
@@ -240,6 +241,16 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   const trashError = useAppSelector(selectNotesTrashError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const sharedError = useAppSelector(selectNotesSharedError);
+  const sharedStatus = useAppSelector(selectNotesSharedStatus);
+  // The list and the shared-with-me query land at different times. Until both
+  // have settled once, the sidebar shows its own skeleton and renders the real
+  // sections in ONE commit, so nothing below them (Recent, Shared, folders) moves.
+  const sharedSettledRef = useRef(false);
+  if (sharedStatus === "loaded" || sharedStatus === "error") sharedSettledRef.current = true;
+  const listPending =
+    listStatus === "idle" ||
+    listStatus === "loading" ||
+    (!sharedSettledRef.current && sharedStatus === "loading");
   const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
 
@@ -1234,7 +1245,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         ref={folderTreeRef}
         onDragOver={handleListAutoScroll}
       >
-        {(listStatus === "idle" || listStatus === "loading") && (
+        {listPending && (
           // The list's own shape while it loads — rows where the notes will be.
           <div className="space-y-1 px-2 py-2" role="status" aria-label="Loading notes" aria-busy="true">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
@@ -1262,6 +1273,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
             <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
+        {!listPending && (<>
         {/* Recent — collapsible, paginated. Sits ABOVE "Shared with me".
             Default mode only (other modes surface recency differently). */}
         {groupBy === "default" && recentSorted.length > 0 && (
@@ -1648,8 +1660,11 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
           </>
         )}
 
-        {/* Trash — soft-deleted recovery, bottom of the scrollable list */}
-        <div className="mt-1 border-t border-border/20">
+        </>)}
+      </div>
+
+        {/* Trash — soft-deleted recovery, pinned below the list so its slot never moves while the list loads */}
+        <div className="shrink-0 border-t border-border/20">
           <button
             type="button"
             onClick={() => {
@@ -1740,7 +1755,6 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
             </div>
           )}
         </div>
-      </div>
 
       {/* Bottom: New Note + New Folder. Stays put in selection mode — the
           bulk-action bar lives at the top (below the toolbar) instead. */}
