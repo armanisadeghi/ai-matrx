@@ -45,7 +45,7 @@ import {
   deleteContextItem,
   updateContextItem,
 } from "@/features/scopes/redux/thunks/contextItemMutations";
-import { slugifyKey, toSlug, isValidSlug } from "@/features/scopes/utils/slugify";
+import { isValidSlug, toFieldKey, toSlug } from "@ai-matrx/records/scopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
@@ -249,7 +249,7 @@ export function EditScopeTypeSheet({
           const res = await dispatch(
             createContextItem({
               scope_type_id: scopeType.id,
-              key: slugifyKey(trimmedName) || trimmedName.toLowerCase(),
+              key: toFieldKey(trimmedName) || trimmedName.toLowerCase(),
               display_name: trimmedName,
             }),
           );

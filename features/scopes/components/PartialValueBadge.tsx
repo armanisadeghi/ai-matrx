@@ -5,13 +5,13 @@
 // THE "PARTIAL" STATE OF A SCOPE VALUE (lane 9 SCOPES-ON-THE-STORE, D-LAST, 2026-10-02).
 // A value over the store's 100,000-byte ceiling is kept as a file; when the web could not read
 // that file whole (gone, size or SHA-256 mismatch, no Web Crypto, still being saved) the cell holds
-// only its first words and carries `value_incomplete` (service/storeScopeReads.ts). Every editor
+// only its first words and carries `incomplete` (`@ai-matrx/records/scopes`). Every editor
 // that shows such a cell shows this badge, so nobody mistakes the start for the whole value — and
-// the one write path refuses to save it back (utils/incompleteValue.ts).
+// the one write path refuses to save it back.
 
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/official/InfoHint";
-import type { IncompleteValue } from "@/features/scopes/utils/incompleteValue";
+import type { IncompleteValue } from "@ai-matrx/records/scopes";
 
 /** The tooltip (≤ 140 chars, one sentence): what the person sees and what saving needs. */
 export const PARTIAL_VALUE_HINT = "Only the start loaded; saving needs the whole text pasted in.";

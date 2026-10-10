@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { createContextItem } from "@/features/scopes/redux/thunks/contextItemMutations";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { toFieldKey } from "@ai-matrx/records/scopes";
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
 import { useRouter } from "next/navigation";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
@@ -133,7 +133,7 @@ export function ScopeOnboarding({
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: typeRes.data.id,
-            key: slugifyKey(col.name) || col.name.toLowerCase(),
+            key: toFieldKey(col.name) || col.name.toLowerCase(),
             display_name: col.name,
           }),
         );

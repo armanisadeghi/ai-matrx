@@ -31,13 +31,12 @@ import {
   makeSelectItemsForType,
   makeSelectItemsStatusForType,
 } from "@/features/scopes/redux/selectors/context-items";
-import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import {
   isReservedSlug,
   isValidSlug,
-  slugifyKey,
+  toFieldKey,
   toSlug,
-} from "@/features/scopes/utils/slugify";
+} from "@ai-matrx/records/scopes";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { customComponentOf } from "@/features/scopes/utils/customComponent";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -96,7 +95,7 @@ export function NewScopeInline({
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   // Unknown, not string — a custom-component item's draft is a structured
-  // object (see `buildScopeValuePayload`), everything else is a string.
+  // object, everything else is a string.
   const [existingValues, setExistingValues] = useState<Record<string, unknown>>(
     {},
   );
@@ -149,9 +148,10 @@ export function NewScopeInline({
     const res = await dispatch(
       setContextValue({
         scope_id: scopeId,
-        context_item_id: item.id,
+        field_id: item.id,
+        kind: item.value_type,
+        value: raw,
         source_type: "manual",
-        ...buildScopeValuePayload(raw, item.value_type),
       }),
     );
     if (isScopesRpcErr(res)) throw new Error(res.error.message);
@@ -200,7 +200,7 @@ export function NewScopeInline({
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: typeId,
-            key: slugifyKey(displayName) || displayName.toLowerCase(),
+            key: toFieldKey(displayName) || displayName.toLowerCase(),
             display_name: displayName,
           }),
         );

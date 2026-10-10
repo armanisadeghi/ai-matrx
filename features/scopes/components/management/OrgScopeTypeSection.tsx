@@ -38,7 +38,7 @@ import {
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { canShapeScopeType } from "@/features/scopes/utils/canShapeScopeType";
+import { canShapeScopeType } from "@ai-matrx/records/scopes";
 import { makeSelectScopesForType } from "@/features/scopes/redux/selectors/tree";
 import { makeSelectItemsForType } from "@/features/scopes/redux/selectors/context-items";
 import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";

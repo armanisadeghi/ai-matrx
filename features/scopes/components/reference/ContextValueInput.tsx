@@ -8,7 +8,7 @@
  * reports changes as a plain `unknown` echo of what the caller already stores
  * (a string for text/number/boolean/date/document/json-as-text/reference
  * fences, a structured object for custom Smart-Input components) — the same
- * shape `buildScopeValuePayload` already routes into the right `value_*`
+ * write shape preserves the field kind and value
  * column. Callers own persistence (auto-save debounce, or an explicit Save
  * button); this component only owns "what does the input look like".
  *

@@ -30,7 +30,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { createContextItem } from "@/features/scopes/redux/thunks/contextItemMutations";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { toFieldKey } from "@ai-matrx/records/scopes";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
@@ -159,7 +159,7 @@ export function AddScopeModal({
   }
 
   function addVariableKey() {
-    const key = slugifyKey(variableKeyInput);
+    const key = toFieldKey(variableKeyInput);
     if (key && !variableKeys.includes(key)) {
       setVariableKeys([...variableKeys, key]);
     }
@@ -206,7 +206,7 @@ export function AddScopeModal({
         const itemRes = await dispatch(
           createContextItem({
             scope_type_id: created.data.id,
-            key: slugifyKey(display_name) || display_name.toLowerCase(),
+            key: toFieldKey(display_name) || display_name.toLowerCase(),
             display_name,
           }),
         );

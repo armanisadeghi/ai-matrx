@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { canShapeScopeType } from "@/features/scopes/utils/canShapeScopeType";
+import { canShapeScopeType } from "@ai-matrx/records/scopes";
 import {
   makeSelectScopeTypesForOrg,
   selectTreeError,
