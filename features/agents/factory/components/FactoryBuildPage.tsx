@@ -67,6 +67,8 @@ import { SpineStatusChip, formatDuration } from "./factory-shared";
 import { FACTORY_BASE_PATH } from "./FactoryBuildsPage";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@ai-matrx/design-system";
 const POLL_MS = 3000;
 
 export type RowStatus = "done" | "running" | "failed" | "skipped" | "pending";
@@ -375,7 +377,7 @@ function StepRow({
           {open && expandable ? (
             <div className="mt-1.5 flex min-w-0 flex-col gap-3 rounded-md border border-border bg-card p-3">
               {rec?.error ? (
-                <p className="type-secondary text-destructive">{rec.error}</p>
+                <p className="type-secondary text-destructive">{rec.error}<ErrorAlchemyMenu error={rec.error} /></p>
               ) : null}
               {findings.length > 0 ? (
                 <ul className="list-disc space-y-0.5 pl-5 type-secondary text-destructive">
@@ -544,10 +546,10 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
   if (error || !detail) {
     return (
       <div className="mx-auto w-full max-w-5xl p-6">
-        <EmptyState
-          icon={<AlertTriangle />}
+        <ErrorNotice
+         
           title={error ? "Could not load this build" : "No build has this id"}
-          line={error ?? buildId}
+           message={error ?? buildId}
         />
       </div>
     );
@@ -613,7 +615,7 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
           {state.error ? (
             <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-destructive/40 bg-destructive/5 p-2.5 font-mono type-secondary text-destructive-ink">
               {state.error}
-            </pre>
+            <ErrorAlchemyMenu error={state.error} /></pre>
           ) : null}
         </header>
 

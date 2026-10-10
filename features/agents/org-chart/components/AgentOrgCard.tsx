@@ -30,6 +30,7 @@ import { usePlacementPoints } from "../useOrgChartPoints";
 import { Cost } from "@/components/cost/Cost";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Where a box opens. A position has no page of its own: its menu edits it in place. */
 export function boxHref(d: AgentOrgNodeData): string | null {
   switch (d.boxType) {
@@ -222,12 +223,15 @@ export function AgentOrgCard({
           />
         )}
         {d.unavailable && (
+          <>
           <Chip
             tone="destructive"
             icon={<AlertTriangle />}
             label="Team couldn't load"
             title="This Orchestra could not be loaded — you may not have access, or it was removed."
           />
+          <ErrorAlchemyMenu input={{ message: "This Orchestra could not be loaded — you may not have access, or it was removed." }} />
+          </>
         )}
         {d.loop && (
           <Chip

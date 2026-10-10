@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 import { boxId, parseBoxId, type OrgBoxType } from "../constants";
 import { loadOrgDirectory, type OrgMember, type OrgTeam } from "../useBoxIdentity";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const TAB_LABEL: Record<OrgBoxType, string> = {
   agent: "Agents",
   membership: "People",
@@ -167,7 +168,7 @@ export function OrgBoxPicker({
                 }}>
                 Retry
               </Button>
-            </div>
+            <ErrorAlchemyMenu error={loadError} /></div>
           )}
           <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-card p-1">
             {tab === "membership" &&

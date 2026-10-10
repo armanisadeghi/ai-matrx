@@ -958,12 +958,12 @@ export function AgentOrgChartView({
       {!error && points.error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink">
           Points could not load: {points.error}
-        </div>
+        <ErrorAlchemyMenu error={points.error} /></div>
       )}
       {!error && !directoryError && activity.error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink">
           Live activity is unavailable: {activity.error}
-        </div>
+        <ErrorAlchemyMenu error={activity.error} /></div>
       )}
       {error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink">
@@ -985,7 +985,7 @@ export function AgentOrgChartView({
           >
             Retry
           </Button>
-        </div>
+        <ErrorAlchemyMenu error={directoryError} /></div>
       )}
       <OrgChart
         roots={forest}

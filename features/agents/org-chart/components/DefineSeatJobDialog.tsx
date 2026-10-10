@@ -27,6 +27,7 @@ import { updateOrgPosition, loadSeatJobs } from "@/features/agents/redux/orchest
 import type { OrgPosition } from "../positionsService";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** What the chart knows around the seat, for the suggester. */
 export interface SeatContext {
   /** The box above: its name and kind ("Head of Marketing (Agent)"). */
@@ -237,7 +238,7 @@ function Body({
         {missing.length > 0 && goal.trim() && (
           <p className="type-secondary text-muted-foreground">You can add {missing.join(" and ")} later.</p>
         )}
-        {error && <p className="type-secondary text-destructive">{error}</p>}
+        {error && <p className="type-secondary text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>

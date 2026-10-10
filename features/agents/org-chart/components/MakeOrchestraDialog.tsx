@@ -25,6 +25,7 @@ import { removeManualManager, setManualManager } from "@/features/agents/redux/o
 import { DEFAULT_ORCHESTRA_ACCENT } from "@/features/agents/orchestras/constants";
 import { boxId } from "../constants";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface MakeOrchestraRequest {
   /** Agent ids that become its members (form A). Empty for a leader-first team (form B). */
   memberIds: string[];
@@ -154,7 +155,7 @@ function Body({
           <p className="type-secondary text-destructive">
             {error}
             {createError ? ` ${createError}` : ""}
-          </p>
+          <ErrorAlchemyMenu error={error} /></p>
         )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} disabled={step !== null}>

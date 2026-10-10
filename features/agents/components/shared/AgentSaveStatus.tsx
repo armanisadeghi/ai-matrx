@@ -24,7 +24,6 @@ import {
 } from "@ai-matrx/design-system";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
-import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export function AgentSaveStatus({
   agentId,
@@ -92,7 +91,6 @@ export function AgentSaveStatus({
         {isEditMode && isDirty && (
           <>
             <Badge tone="warning">{isNewRoute ? "Not saved" : "Unsaved"}</Badge>
-            <ErrorAlchemyMenu />
             {!isNewRoute && (
               <Button variant="quiet" icon={<Undo2 />} onClick={() => setConfirmDiscardOpen(true)} disabled={isLoading} title="Discard unsaved changes" aria-label="Discard unsaved changes" />
             )}
