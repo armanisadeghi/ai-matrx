@@ -23,6 +23,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface SaveToTableOverlayProps {
   isOpen: boolean;
   onClose: () => void;
@@ -95,7 +96,7 @@ export function SaveToTableOverlay({
         {where.state === "asking" ? (
           <p className="text-sm text-muted-foreground">Finding where this organization keeps its tables…</p>
         ) : where.state === "refused" ? (
-          <p className="text-sm text-destructive">{where.sentence}</p>
+          <p className="text-sm text-destructive">{where.sentence}<ErrorAlchemyMenu /></p>
         ) : userId ? (
           <RecordsMount
             letTheStoreDecideRights
