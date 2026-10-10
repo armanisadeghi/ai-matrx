@@ -16,17 +16,22 @@ export interface TableMenuExtras {
   rowChangeAgent?: () => void;
   /** Workflows on this table (lane 11): the simple builder for this table. */
   workflows?: () => void;
+  /** Automations on this table ("when a row is added / edited / a date arrives…"): opens the panel. */
+  automations?: () => void;
 }
 
 const NOOP = () => {};
 
 /** The two entries, in their one order — pass as `host.extend`'s result. */
 export function tableMenuExtensions(extras: TableMenuExtras): ObjectAction[] {
-  const { rowChangeAgent, workflows } = extras;
+  const { rowChangeAgent, workflows, automations } = extras;
   return [
     workflows
       ? { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", run: workflows }
       : { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", disabledReason: "Not available here", run: NOOP },
+    automations
+      ? { id: "automations", label: "Automations", icon: "bell", group: "built-on", run: automations }
+      : { id: "automations", label: "Automations", icon: "bell", group: "built-on", disabledReason: "Not available here", run: NOOP },
     rowChangeAgent
       ? { id: "row-change-agent", label: ROW_CHANGE_AGENT_LABEL, icon: "bell", group: "built-on", run: rowChangeAgent }
       : {
@@ -49,6 +54,7 @@ export interface TableMenuExtra {
 
 const EXTRA_LOOK: Record<string, Pick<ObjectAction, "icon" | "group">> = {
   workflows: { icon: "blocks", group: "built-on" },
+  automations: { icon: "bell", group: "built-on" },
   "row-change-agent": { icon: "bell", group: "built-on" },
 };
 

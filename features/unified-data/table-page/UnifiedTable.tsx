@@ -18,7 +18,7 @@
  * the table itself.
  */
 
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, TablePageSkeleton, WhereItLives, skeletonLayoutFor } from "@ai-matrx/records-ui";
 import type { PageView, RecordsMountProps, TablePageActionHost, ViewAddressState } from "@ai-matrx/records-ui";
@@ -43,6 +43,7 @@ import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/merged
 import { toast } from "@/lib/toast";
 import { useRowChangeAgentOffer } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 import { tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
+import { TableAutomationsDialog } from "@/features/unified-data/actions/TableAutomationsDialog";
 import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { useTablePageCommands } from "@/features/unified-data/actions/tableActionCommands";
@@ -191,6 +192,7 @@ export function useUnifiedTable({
    */
   /** ⌘K finds this table's actions (the same list the header ⋯ draws; TABLE-ACTIONS T4.1). */
   const onActions = useTablePageCommands(null);
+  const [automationsOpen, setAutomationsOpen] = useState(false);
   const actionHost: TablePageActionHost = {
     ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
     ...(favorite.known ? { isFavorite: favorite.isFavorite, toggleFavorite: favorite.toggle } : {}),
@@ -199,6 +201,8 @@ export function useUnifiedTable({
       ...tableMenuExtensions({
         // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder.
         workflows: () => router.push(`/workflows/builder/${tableId}`),
+        // AUTOMATIONS ON THIS TABLE: the same panel Spaces' databases carry, one click from the ⋯ menu.
+        automations: () => setAutomationsOpen(true),
         ...(rowChangeOffer.state === "offered"
           ? { rowChangeAgent: () => router.push((rowChangeOffer as { href: string }).href) }
           : rowChangeOffer.state === "refused"
@@ -263,6 +267,8 @@ export function useUnifiedTable({
     whereItLives,
     allTablesHref,
     actionHost,
+    automationsOpen,
+    setAutomationsOpen,
     onActions,
     says,
     mountsTheTable,
@@ -346,6 +352,14 @@ export function UnifiedTableBody({
           {...pageHeader}
         />
       </RecordStoreTableSurface>
+      {mount.automationsOpen ? (
+        <TableAutomationsDialog
+          tableId={tableId}
+          organizationId={mount.object.state === "found" ? mount.object.organizationId : null}
+          open={mount.automationsOpen}
+          onOpenChange={mount.setAutomationsOpen}
+        />
+      ) : null}
     </>
   );
 
