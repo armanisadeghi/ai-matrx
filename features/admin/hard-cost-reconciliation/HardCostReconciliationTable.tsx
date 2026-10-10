@@ -10,11 +10,18 @@
  * only: the table's RLS (`platform_admin_read`) is the gate; any other seat reads zero rows.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { xmlElement, xmlText } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_HARD_COST_RECONCILIATION_SURFACE_NAME,
+  createHardCostReconciliationScope,
+} from "@/features/surfaces/manifests/admin-hard-cost-reconciliation.manifest";
 import { createClient } from "@/utils/supabase/client";
 
 export type ReconciliationRow = {
@@ -82,10 +89,64 @@ const COLUMNS: MatrxColumnDef<ReconciliationRow>[] = [
   { id: "findings", header: "Findings", accessorFn: (r) => (r.findings ?? []).join("; "), width: 320 },
 ];
 
+const money = (v: number | null) => (v === null ? null : v.toFixed(4));
+
+/** The newest run for each window and provider as one bundle (what the page's top rows hold), inside the context budget. */
+export function buildReconciliationSummary(rows: ReconciliationRow[]): string {
+  const newest = new Map<string, ReconciliationRow>();
+  for (const r of rows) {
+    const key = `${r.window_kind}|${r.provider}`;
+    const have = newest.get(key);
+    if (!have || r.created_at > have.created_at) newest.set(key, r);
+  }
+  const latest = [...newest.values()].sort((a, b) => a.window_kind.localeCompare(b.window_kind) || a.provider.localeCompare(b.provider));
+  const MAX_ROWS = 40;
+  const shown = latest.slice(0, MAX_ROWS);
+  const count = (status: string) => latest.filter((r) => r.status === status).length;
+  return xmlElement(
+    "reconciliation",
+    {
+      runs: new Set(rows.map((r) => r.created_at.slice(0, 16))).size,
+      total_rows: rows.length,
+      ok: count("ok"),
+      drift: count("drift"),
+      unverifiable: count("unverifiable"),
+      shown: shown.length < latest.length ? shown.length : null,
+    },
+    shown.map((r) =>
+      xmlElement(
+        "row",
+        {
+          window: r.window_kind,
+          from: r.window_start.slice(0, 10),
+          provider: r.provider,
+          status: r.status,
+          vendor_usd: money(num(r.provider_actual_usd)),
+          recorded_usd: money(num(r.recorded_usd)),
+          drift_usd: money(num(r.provider_drift_usd)),
+          drift_pct: r.provider_drift_pct === null ? null : Number(r.provider_drift_pct).toFixed(1),
+          points_charged: Number(r.charged_points),
+          points_expected: Number(r.expected_points),
+          uncharged_rows: r.uncharged_rows || null,
+          run: r.created_at.slice(0, 16),
+        },
+        [xmlText("findings", (r.findings ?? []).join("; "), { max: 240 })],
+      ),
+    ),
+  );
+}
+
 export function HardCostReconciliationTable() {
   const [rows, setRows] = useState<ReconciliationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -105,11 +166,27 @@ export function HardCostReconciliationTable() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [attempt]);
 
-  if (error) return <div className="p-4 text-sm text-destructive">Could not read the reconciliation: {error}</div>;
+  const getScope = () =>
+    createHardCostReconciliationScope(
+      error
+        ? { load_error: error }
+        : loading
+          ? {}
+          : { reconciliation_summary: buildReconciliationSummary(rows), row_count: rows.length },
+    );
+
+  if (error) {
+    return (
+      <SurfaceRuntimeProvider surfaceName={ADMIN_HARD_COST_RECONCILIATION_SURFACE_NAME} getScope={getScope}>
+        <ReadFailure error={new Error(error)} what="the hard-cost reconciliation" onRetry={retry} />
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_HARD_COST_RECONCILIATION_SURFACE_NAME} getScope={getScope}>
     <div className="min-h-0 flex-1">
       <MatrxDataTable
         tableId="admin-hard-cost-reconciliation"
@@ -126,5 +203,6 @@ export function HardCostReconciliationTable() {
         emptyState={{ title: "No reconciliation has run yet", description: "The daily system task writes the first rows." }}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

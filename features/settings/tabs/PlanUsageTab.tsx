@@ -33,7 +33,7 @@ export function PlanUsageTab() {
   const organizationId = billingOrganizationId;
 
   return (
-    <div className="space-y-3">
+    <div className="matrx-touch-targets space-y-3">
       <SettingsSubHeader
         title="Plan & usage"
         icon={Gauge}

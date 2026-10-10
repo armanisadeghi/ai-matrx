@@ -11,10 +11,12 @@ import { cn } from "@/lib/utils";
 import type { ResearchSource } from "../../types";
 import { socialFactsOf, socialPostCardModel } from "../../utils/socialSource";
 
+// A count the platform did not report is left out: "No views" already says so once on the badge.
 function Stat({ label, value }: { label: string; value: number | null }) {
+  if (value === null) return null;
   return (
     <span className="tabular-nums" title={label}>
-      {value === null ? "—" : formatCompact(value)} <span className="text-muted-foreground/70">{label}</span>
+      {formatCompact(value)} <span className="text-muted-foreground/70">{label}</span>
     </span>
   );
 }

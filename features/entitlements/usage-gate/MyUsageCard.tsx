@@ -9,6 +9,8 @@
 // background (a page read, never on an AI request's path).
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ArrowUpRight, Infinity as InfinityIcon, RotateCw } from "lucide-react";
 import { formatCost, pointsToUsd } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
@@ -162,6 +164,27 @@ export function MyUsageCard({ className }: { className?: string }) {
     read();
   });
 
+  // What the card shows, for an agent on Settings -> Plan & usage (values owned by `matrx-user/settings`).
+  useSurfaceScopeContribution("matrx-user/settings", "my-usage", () =>
+    level === "unknown"
+      ? { usage_read_failed: !reading }
+      : {
+          usage_state: {
+            level,
+            plan_name: planName ?? null,
+            free_until: freeUntil,
+            windows: windows.map((w) => ({
+              window: windowLabel(w.period),
+              used_points: w.used,
+              limit_points: w.limit,
+              remaining_points: w.remaining,
+              resets_at: w.resetsAt,
+              state: w.state,
+            })),
+          },
+        },
+  );
+
   const frame = cn("rounded-md border border-border bg-card", className);
 
   if (level === "unknown") {
@@ -218,10 +241,10 @@ export function MyUsageCard({ className }: { className?: string }) {
           ) : null}
         </div>
         <Button variant="outline" asChild>
-          <a href="/pricing">
+          <Link href="/pricing">
             See plans
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-          </a>
+          </Link>
         </Button>
       </div>
       <div className="px-3 sm:px-4">

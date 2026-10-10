@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { formatPoints } from "@ai-matrx/kit/format";
@@ -35,6 +38,7 @@ export function UsageHistory() {
   const [pageIndex, setPageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cause, setCause] = useState<unknown>(null);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -48,8 +52,10 @@ export function UsageHistory() {
         setPriorPages((pages) => [...pages.slice(0, query.page), page]);
         setPageIndex(query.page);
       })
-      .catch(() => {
-        if (live) setError("We couldn’t load your usage history. Try again.");
+      .catch((err: unknown) => {
+        if (!live) return;
+        setCause(err);
+        setError("We couldn’t load your usage history. Try again.");
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -70,6 +76,24 @@ export function UsageHistory() {
     if (!result?.nextCursor) return;
     setQuery((current) => ({ ...current, page: pageIndex + 1, snapshotAt: result.snapshotAt, cursor: result.nextCursor }));
   };
+
+  // What the list shows, for an agent on Settings -> Plan & usage (values owned by `matrx-user/settings`).
+  useSurfaceScopeContribution("matrx-user/settings", "usage-history", () => ({
+    usage_history_filters: { range: query.range, activity: query.activity, page: pageIndex + 1 },
+    ...(error
+      ? { usage_history_error: error }
+      : loading || !result
+        ? {}
+        : {
+            usage_history: result.entries.map((e) => ({
+              recorded_at: e.createdAt,
+              activity: e.activity,
+              points: e.quantity === null ? null : -e.quantity,
+              outcome: e.outcome,
+            })),
+            usage_history_has_next: result.nextCursor !== null,
+          }),
+  }));
 
   return (
     <SettingsSection title="Usage history">
@@ -96,10 +120,13 @@ export function UsageHistory() {
         </Button>
       </div>
 
-      {loading ? <p className="py-6 type-body text-muted-foreground">Loading usage history…</p> : null}
+      {loading ? <Skeleton className="mt-3 h-40 w-full rounded-md" aria-label="Loading usage history" /> : null}
       {error ? (
         <div className="py-6 type-body text-muted-foreground">
-          <p>{error}</p>
+          <p className="flex items-center gap-1">
+            {error}
+            <ErrorAlchemyMenu error={cause} operation="load usage history" />
+          </p>
           <Button className="mt-2" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button>
         </div>
       ) : null}
