@@ -970,7 +970,19 @@ const ENTITY = (key: string) => (s: NodeSource) => s.kind === "entity" && s.enti
 function PostFace({ source }: { source: NodeSource }) {
   const detail = usePostDetail(idOf(source, SOCIAL_POST_KEY));
   const post = detail.data?.post;
-  if (!post) return null;
+  if (!post) {
+    // A link that has not become a stored post (still reading, or the platform would not give it up): the face shows the link, never a blank grey card.
+    const meta = metaOf(source);
+    if (!meta.url) return null;
+    const platform = meta.platform && isSocialPlatform(meta.platform) ? meta.platform : null;
+    const shown = meta.url.replace(/^https?:\/\/(www\.)?/, "");
+    return (
+      <span className="absolute inset-0 flex flex-col items-center justify-center gap-[5%] bg-gradient-to-br from-muted via-muted to-accent p-[6%] text-center">
+        {platform ? <PlatformMark platform={platform} size={28} /> : null}
+        <span className="line-clamp-3 break-all text-[min(12px,7cqmin)] font-medium leading-tight text-foreground/70">{shown}</span>
+      </span>
+    );
+  }
   const card = toPostCardModel({ post, stat: detail.data?.stat ?? null, handle: detail.data?.profile?.handle ?? null });
   return (
     <>

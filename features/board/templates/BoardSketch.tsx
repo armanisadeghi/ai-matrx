@@ -5,6 +5,17 @@
 
 import type { BoardDocument } from "../board/document";
 
+const KIND_LABELS: Record<string, string> = { text: "Write-up", label: "Text", html: "Page", stream: "AI result", thread: "Thread", record: "Record" };
+
+/** The tile's kind as a person reads it ("social-post" -> "Social post"), never the registry key. */
+function kindLabel(source: BoardDocument["nodes"][number]["source"]): string {
+  const key = source.kind === "entity" ? source.entity : source.kind;
+  const named = KIND_LABELS[key];
+  if (named) return named;
+  const words = key.replace(/[-_]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function BoardSketch({ doc }: { doc: BoardDocument }) {
   const boxes = [...doc.groups.map((g) => g.rect), ...doc.nodes.map((n) => n.rect)];
   if (boxes.length === 0) return <p className="text-sm text-muted-foreground">This board is empty.</p>;
@@ -42,7 +53,7 @@ export function BoardSketch({ doc }: { doc: BoardDocument }) {
             {n.title}
           </text>
           <text x={n.rect.x + 24} y={n.rect.y + 100} fontSize={26} fill="currentColor" fillOpacity={0.55}>
-            {n.source.kind === "entity" ? n.source.entity : n.source.kind}
+            {kindLabel(n.source)}
           </text>
         </g>
       ))}

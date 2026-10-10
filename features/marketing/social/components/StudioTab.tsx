@@ -86,7 +86,9 @@ export function StudioTab() {
       return b ? !hasProfileTiles(b.doc) : false;
     },
     enabled: Boolean(currentId),
-    staleTime: 15_000,
+    staleTime: 0,
+    // While the offer shows, look again: an account tile added from the Add menu must take the offer away.
+    refetchInterval: (q) => (q.state.data === true ? 4_000 : false),
   });
   const offerAccounts = shape.data === true && ownSeeds.length > 0;
 
@@ -147,7 +149,7 @@ export function StudioTab() {
 
   return (
     <div className="relative h-full min-h-0 w-full">
-      <PresetBoard key={`${current.id}:${rev}`} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} />
+      <PresetBoard key={`${current.id}:${rev}`} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} hideNewBoard />
       {offerAccounts ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center">
           <Button variant="primary" className="pointer-events-auto shadow-lg" icon={<Users />} disabled={addingAccounts} onClick={() => void addAccounts()}>

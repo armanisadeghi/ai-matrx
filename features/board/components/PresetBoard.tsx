@@ -18,6 +18,7 @@ export function PresetBoard({
   workspaceId,
   initialLayout,
   titleMenuExtra,
+  hideNewBoard,
 }: {
   preset: BoardPresetKey;
   boardId: string;
@@ -26,6 +27,8 @@ export function PresetBoard({
   initialLayout: CanvasWorkspaceLayout;
   /** Extra items for the board's own title ▾. */
   titleMenuExtra?: ReactNode;
+  /** The host offers its own "New board" in `titleMenuExtra`. */
+  hideNewBoard?: boolean;
 }) {
   return (
     <BoardPage
@@ -33,6 +36,7 @@ export function PresetBoard({
       workspaceId={workspaceId ?? `board-${boardId}`}
       initialLayout={initialLayout}
       titleMenuExtra={titleMenuExtra}
+      hideNewBoard={hideNewBoard}
       preset={presetByKey(preset) ?? BOARD_PRESETS[preset]}
     />
   );

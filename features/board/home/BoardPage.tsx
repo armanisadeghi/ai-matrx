@@ -46,6 +46,7 @@ export function BoardPage({
   initialLayout,
   preset,
   titleMenuExtra,
+  hideNewBoard = false,
 }: {
   target: SavedBoardTarget;
   /** The workspace's remembered layout (the chat's is the shell chat's: `shellChatHome`). */
@@ -55,6 +56,8 @@ export function BoardPage({
   preset?: BoardPreset;
   /** Extra items for the board's own title ▾ (a host's boards to switch to). Shown first. */
   titleMenuExtra?: ReactNode;
+  /** The host already offers its own "New board" in `titleMenuExtra` (a brand's Studio makes boards linked to the brand): one door, not two. */
+  hideNewBoard?: boolean;
 }) {
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
@@ -118,10 +121,12 @@ export function BoardPage({
                 Rename…
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem disabled={creating} onSelect={() => void newBoard()}>
-              <Plus className="mr-2 h-4 w-4" />
-              New board
-            </DropdownMenuItem>
+            {hideNewBoard ? null : (
+              <DropdownMenuItem disabled={creating} onSelect={() => void newBoard()}>
+                <Plus className="mr-2 h-4 w-4" />
+                New board
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => setTemplatesOpen(true)}>
               <LayoutTemplate className="mr-2 h-4 w-4" />
               New board from template…
