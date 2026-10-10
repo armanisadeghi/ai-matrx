@@ -10,6 +10,7 @@ import {
 } from "../vault-service";
 import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 const ACCESS_TOKEN = "test-access-token";
 const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
@@ -237,6 +238,9 @@ describe("Vault and Authenticator organization transport", () => {
     await checkVaultDestination("https://example.com");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      `${AIDREAM_PRODUCTION_URL.replace(/\/+$/, "")}/api/vault/destination/check`,
+    );
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       Authorization: `Bearer ${ACCESS_TOKEN}`,
       "Content-Type": "application/json",

@@ -114,7 +114,9 @@ async function socialRequest(
     throw new Error("Sign in to manage social accounts.");
   const response = await sendMatrxRequest(
     buildMatrxRequestUrl(
-      resolveServiceBaseUrl("aidream"),
+      // This router is mounted under `/api`; buildMatrxRequestUrl removes a
+      // leading `/api/` from paths, so keep the route prefix on its base.
+      `${resolveServiceBaseUrl("aidream").replace(/\/+$/, "")}/api`,
       `/api/social-oauth/${provider}/${operation}`,
     ),
     {
