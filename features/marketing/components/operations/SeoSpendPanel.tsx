@@ -367,6 +367,7 @@ export function SeoSpendPanel() {
           extraSections={[rejectionMenuSection]}
         >
         <MatrxDataTable
+          {...NO_RAW_ROW_WINDOW}
           urlState={{ id: "seo-budget-rejections" }}
           data={data.recent_budget_rejections}
           columns={rejectionColumns}

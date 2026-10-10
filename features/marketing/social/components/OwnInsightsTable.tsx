@@ -7,6 +7,7 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 import { Badge } from "@ai-matrx/design-system/controls";
@@ -23,7 +24,7 @@ import { useConnectionStates } from "../useConnectionStates";
 import { useOwnInsights } from "../useOwnInsights";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
-import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
+import { socialRowOpen } from "../row-open";
 
 export function OwnInsightsTable({
   accounts,
@@ -36,6 +37,7 @@ export function OwnInsightsTable({
   brandSeg: string;
   loading: boolean;
 }) {
+  const router = useRouter();
   const own = useMemo(
     () => accounts.filter((a) => a.role === "own" && a.trackedAccountId),
     [accounts],
@@ -130,7 +132,11 @@ export function OwnInsightsTable({
   );
 
   return (
-    <MatrxDataTable<AccountRow> {...NO_RAW_ROW_WINDOW}
+    <MatrxDataTable<AccountRow>
+      {...socialRowOpen<AccountRow>((r) => {
+        const href = brandAccountHref(brandSeg, r);
+        if (href) router.push(href);
+      })}
       tableId="marketing-social-own-insights"
       data={own as AccountRow[]}
       columns={columns}
