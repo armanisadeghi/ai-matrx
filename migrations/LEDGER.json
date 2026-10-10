@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T05:26:46.055Z",
+  "generated_at": "2026-10-10T06:18:50.451Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4087,6 +4087,12 @@
       "filename": "hr_rev_03_workflow_instance_is_an_hr_door_token.sql",
       "checksum": "23835347c38be848a8ca3668fef60460b612e4373b4b5111e516612a52c470db",
       "applied_at": "2026-10-10 04:39:29.151175+00"
+    },
+    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_rev_05_standard_review_wave2.sql",
+      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
+      "applied_at": "2026-10-10 06:18:44.291274+00"
     },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",

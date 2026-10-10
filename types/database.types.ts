@@ -7847,6 +7847,13 @@ export type Database = {
       _run_approval_can_decide: { Args: { p_org: string }; Returns: boolean }
       _run_approval_threshold: { Args: { p_org: string }; Returns: number }
       _signup_free_months: { Args: { p_user: string }; Returns: undefined }
+      account_spend_today: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          usd: number
+          user_id: string
+        }[]
+      }
       addon_grant: {
         Args: {
           p_capability: string
@@ -38399,6 +38406,10 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: boolean
       }
+      may_see_table_structure: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
       member_personal_tables: {
         Args: { p_organization_id: string; p_person: string }
         Returns: Json
@@ -66988,6 +66999,8 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledgment_comment: string | null
+          calibrated_at: string | null
+          calibrated_by: string | null
           calibrated_rating: string | null
           calibration_note: string | null
           cancel_reason: string | null
@@ -67019,6 +67032,8 @@ export type Database = {
         Insert: {
           acknowledged_at?: string | null
           acknowledgment_comment?: string | null
+          calibrated_at?: string | null
+          calibrated_by?: string | null
           calibrated_rating?: string | null
           calibration_note?: string | null
           cancel_reason?: string | null
@@ -67050,6 +67065,8 @@ export type Database = {
         Update: {
           acknowledged_at?: string | null
           acknowledgment_comment?: string | null
+          calibrated_at?: string | null
+          calibrated_by?: string | null
           calibrated_rating?: string | null
           calibration_note?: string | null
           cancel_reason?: string | null
@@ -73302,10 +73319,16 @@ export type Database = {
       }
       _rev_default_rating_scale: { Args: never; Returns: Json }
       _rev_default_sections: { Args: never; Returns: Json }
+      _rev_ensure_cadence: { Args: { p_org: string }; Returns: Json }
+      _rev_knob: {
+        Args: { p_default: Json; p_key: string; p_org: string }
+        Returns: Json
+      }
       _rev_lane: {
         Args: { p_review_id: string; p_role: string; p_uid: string }
         Returns: string
       }
+      _rev_mean_rating: { Args: { p_answers: Json }; Returns: number }
       _rev_person_name: { Args: { p_employment_id: string }; Returns: string }
       _rev_response_visible: {
         Args: {
@@ -73329,6 +73352,10 @@ export type Database = {
         Returns: undefined
       }
       _rev_skip_level_on: { Args: { p_org: string }; Returns: boolean }
+      _rev_template_problems: {
+        Args: { p_scale: Json; p_sections: Json }
+        Returns: Json
+      }
       _rules_evidence: { Args: { p_ids: string[] }; Returns: Json }
       _run_fixture_probe: {
         Args: { p_input: Json; p_probe: string }
@@ -74078,6 +74105,14 @@ export type Database = {
         Args: { p_comment?: string; p_review_id: string }
         Returns: Json
       }
+      hr_review_calibrate: {
+        Args: { p_note?: string; p_rating: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_calibration: {
+        Args: { p_cycle_id: string; p_filter?: Json }
+        Returns: Json
+      }
       hr_review_cancel: {
         Args: { p_reason: string; p_review_id: string }
         Returns: Json
@@ -74125,10 +74160,19 @@ export type Database = {
         Args: { p_review_id: string; p_role: string }
         Returns: Json
       }
+      hr_review_template_archive: {
+        Args: { p_template_id: string }
+        Returns: Json
+      }
       hr_review_template_ensure_default: {
         Args: { p_organization_id: string }
         Returns: Json
       }
+      hr_review_template_list: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      hr_review_template_save: { Args: { p_payload: Json }; Returns: Json }
       incident_excluded: {
         Args: { p_incident: string; p_user: string }
         Returns: boolean
@@ -87017,7 +87061,11 @@ export type Database = {
           agent_id: string | null
           cache_outcome: Json
           client_prep_ms: number | null
+          client_render_ms: number | null
+          client_reported_at: string | null
           client_sent_at: string | null
+          client_total_ms: number | null
+          client_wait_ms: number | null
           conversation_id: string | null
           created_at: string
           created_by: string | null
@@ -87028,10 +87076,17 @@ export type Database = {
           organization_id: string
           prep_blocks: Json
           prep_s: number | null
+          provider_call_started_at: string | null
+          provider_first_response_at: string | null
+          provider_first_response_kind: string | null
           provider_ttft_ms: number | null
+          provider_wait_ms: number | null
           request_id: string
           route: string
           server_arrived_at: string
+          server_first_emit_at: string | null
+          server_prep_ms: number | null
+          server_relay_ms: number | null
           server_task_id: string | null
           stage: string
           status: string | null
@@ -87045,7 +87100,11 @@ export type Database = {
           agent_id?: string | null
           cache_outcome?: Json
           client_prep_ms?: number | null
+          client_render_ms?: number | null
+          client_reported_at?: string | null
           client_sent_at?: string | null
+          client_total_ms?: number | null
+          client_wait_ms?: number | null
           conversation_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -87056,10 +87115,17 @@ export type Database = {
           organization_id: string
           prep_blocks?: Json
           prep_s?: number | null
+          provider_call_started_at?: string | null
+          provider_first_response_at?: string | null
+          provider_first_response_kind?: string | null
           provider_ttft_ms?: number | null
+          provider_wait_ms?: number | null
           request_id: string
           route: string
           server_arrived_at: string
+          server_first_emit_at?: string | null
+          server_prep_ms?: number | null
+          server_relay_ms?: number | null
           server_task_id?: string | null
           stage?: string
           status?: string | null
@@ -87073,7 +87139,11 @@ export type Database = {
           agent_id?: string | null
           cache_outcome?: Json
           client_prep_ms?: number | null
+          client_render_ms?: number | null
+          client_reported_at?: string | null
           client_sent_at?: string | null
+          client_total_ms?: number | null
+          client_wait_ms?: number | null
           conversation_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -87084,10 +87154,17 @@ export type Database = {
           organization_id?: string
           prep_blocks?: Json
           prep_s?: number | null
+          provider_call_started_at?: string | null
+          provider_first_response_at?: string | null
+          provider_first_response_kind?: string | null
           provider_ttft_ms?: number | null
+          provider_wait_ms?: number | null
           request_id?: string
           route?: string
           server_arrived_at?: string
+          server_first_emit_at?: string | null
+          server_prep_ms?: number | null
+          server_relay_ms?: number | null
           server_task_id?: string | null
           stage?: string
           status?: string | null
@@ -95582,6 +95659,15 @@ export type Database = {
           route: string
         }[]
       }
+      ai_latency_round_trip_ms: {
+        Args: {
+          p_client_wait_ms: number
+          p_provider_wait_ms: number
+          p_server_prep_ms: number
+          p_server_relay_ms: number
+        }
+        Returns: number
+      }
       ai_latency_route_pattern: { Args: { p_route: string }; Returns: string }
       ai_usage_names: {
         Args: { p_ids: Json; p_organization_id: string }
@@ -97074,6 +97160,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_rpc_once: { Args: { p_args?: Json; p_fn: string }; Returns: Json }
       log_activity:
         | {
             Args: {
@@ -116882,6 +116969,15 @@ export type Database = {
           p_guardrails: Json
           p_organization_id: string
           p_user_id: string
+        }
+        Returns: Json
+      }
+      automation_repeat_runs_24h: {
+        Args: {
+          p_id: string
+          p_inputs?: Json
+          p_kind: string
+          p_trigger_id?: string
         }
         Returns: Json
       }
