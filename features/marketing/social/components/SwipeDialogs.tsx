@@ -24,7 +24,14 @@ import { useAllSwipeCollections, useInvalidateSocial } from "../hooks";
 import { looksLikePostUrl } from "../link";
 import { useSocialSpend } from "../cost";
 import { addToCollection, createCollection, ingestPost, socialErrorMessage } from "../server";
-import { parseTagInput, visibleCollections } from "../swipe";
+import {
+  NEW_COLLECTION_CHOICE,
+  defaultCollectionChoice,
+  defaultSwipeCollectionName,
+  parseTagInput,
+  saveCollectionOptions,
+} from "../swipe";
+import { useBrand } from "@/features/marketing/data/hooks";
 import { NoteTagsFields } from "./NoteTagsFields";
 
 // ---------------------------------------------------------------------------
@@ -105,28 +112,38 @@ export function CollectionNameDialog({
 // Pick the collection to save into
 // ---------------------------------------------------------------------------
 
-const NEW_COLLECTION = "__new__";
+const NEW_COLLECTION = NEW_COLLECTION_CHOICE;
 
 export interface SaveTarget {
   itemType: "social_post" | "social_ad";
   itemId: string;
 }
 
-/** Collection options + the "New collection" choice; `defaultId` preselects. */
-function useCollectionChoice(open: boolean, defaultId: string | null) {
+/**
+ * Collection options + the "New collection" choice. A save from a brand lands in that brand's own collection:
+ * `defaultId` (the one in view) wins, then the brand's first, else "new" named after the brand.
+ */
+function useCollectionChoice(open: boolean, brandId: string, defaultId: string | null) {
   const collections = useAllSwipeCollections();
-  const live = visibleCollections(collections.data ?? [], false);
+  const brand = useBrand(brandId);
+  const rows = collections.data ?? [];
   const options: SelectOption[] = [
-    ...live.map((c) => ({ value: c.id, label: c.name })),
+    ...saveCollectionOptions(rows, brandId, defaultId).map((c) => ({ value: c.id, label: c.name })),
     { value: NEW_COLLECTION, label: "New collection…" },
   ];
   const [choice, setChoice] = useState<string>(NEW_COLLECTION);
   useEffect(() => {
     if (!open || collections.isPending) return;
-    setChoice(defaultId && live.some((c) => c.id === defaultId) ? defaultId : (live[0]?.id ?? NEW_COLLECTION));
+    setChoice(defaultCollectionChoice(rows, brandId, defaultId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, collections.isPending]);
-  return { options, choice, setChoice, loading: collections.isPending };
+  return {
+    options,
+    choice,
+    setChoice,
+    loading: collections.isPending,
+    newName: defaultSwipeCollectionName(brand.data?.name),
+  };
 }
 
 export function SaveToCollectionDialog({
@@ -149,7 +166,7 @@ export function SaveToCollectionDialog({
   onSaved?: () => void;
 }) {
   const invalidate = useInvalidateSocial();
-  const { options, choice, setChoice, loading } = useCollectionChoice(open, defaultCollectionId);
+  const { options, choice, setChoice, loading, newName: suggestedName } = useCollectionChoice(open, brandId, defaultCollectionId);
   const [newName, setNewName] = useState("");
   const [note, setNote] = useState("");
   const [tagText, setTagText] = useState("");
@@ -166,6 +183,7 @@ export function SaveToCollectionDialog({
       setFailure(null);
     }
   }, [open]);
+  const nameToCreate = newName.trim() || suggestedName;
 
   async function submit() {
     setBusy(true);
@@ -174,7 +192,7 @@ export function SaveToCollectionDialog({
     try {
       let collectionId = choice;
       if (creating) {
-        const made = await createCollection({ name: newName.trim(), brandId }, { organizationId });
+        const made = await createCollection({ name: nameToCreate, brandId }, { organizationId });
         collectionId = made.collection_id;
       }
       const tags = parseTagInput(tagText);
@@ -206,7 +224,7 @@ export function SaveToCollectionDialog({
         <div className="flex flex-col gap-2">
           <Select aria-label="Collection" value={choice} options={options} onValueChange={setChoice} disabled={loading} />
           {creating ? (
-            <Field aria-label="New collection name" placeholder="Collection name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Field aria-label="New collection name" placeholder={suggestedName} value={newName} onChange={(e) => setNewName(e.target.value)} />
           ) : null}
           <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} />
           <p className="min-h-4 text-xs text-destructive" aria-live="polite">
@@ -218,7 +236,7 @@ export function SaveToCollectionDialog({
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={() => void submit()} disabled={busy || loading || targets.length === 0 || (creating && !newName.trim())}>
+          <Button variant="primary" onClick={() => void submit()} disabled={busy || loading || targets.length === 0}>
             {busy ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
@@ -246,9 +264,9 @@ export function SaveLinkDialog({
 }) {
   const invalidate = useInvalidateSocial();
   const { costText } = useSocialSpend(organizationId);
-  const { options, choice, setChoice, loading } = useCollectionChoice(open, defaultCollectionId);
+  const { options, choice, setChoice, loading, newName: suggestedName } = useCollectionChoice(open, brandId, defaultCollectionId);
   const [url, setUrl] = useState("");
-  const [newName, setNewName] = useState("Saved");
+  const [newName, setNewName] = useState("");
   const [note, setNote] = useState("");
   const [tagText, setTagText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -284,7 +302,7 @@ export function SaveLinkDialog({
       setStatus("Adding to the collection…");
       let collectionId = choice;
       if (creating) {
-        const made = await createCollection({ name: newName.trim() || "Saved", brandId }, { organizationId });
+        const made = await createCollection({ name: newName.trim() || suggestedName, brandId }, { organizationId });
         collectionId = made.collection_id;
       }
       const tags = parseTagInput(tagText);
@@ -315,7 +333,7 @@ export function SaveLinkDialog({
           <Field aria-label="Post link" placeholder="Paste a post or video link" value={url} onChange={(e) => setUrl(e.target.value)} autoFocus />
           <Select aria-label="Collection" value={choice} options={options} onValueChange={setChoice} disabled={loading} />
           {creating ? (
-            <Field aria-label="New collection name" placeholder="Collection name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Field aria-label="New collection name" placeholder={suggestedName} value={newName} onChange={(e) => setNewName(e.target.value)} />
           ) : null}
           <NoteTagsFields note={note} tagText={tagText} onNoteChange={setNote} onTagTextChange={setTagText} disabled={busy} />
           {failure && !busy ? (
@@ -341,7 +359,7 @@ export function SaveLinkDialog({
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={() => void submit()} disabled={busy || loading || !valid || (creating && !newName.trim())}>
+          <Button variant="primary" onClick={() => void submit()} disabled={busy || loading || !valid}>
             {busy ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>

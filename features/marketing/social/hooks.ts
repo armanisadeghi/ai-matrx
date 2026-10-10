@@ -95,6 +95,7 @@ export function useProfile(profileId: string) {
     queryKey: socialKeys.profile(profileId),
     queryFn: () => readProfile(profileId),
     staleTime: 30_000,
+    enabled: Boolean(profileId),
   });
 }
 

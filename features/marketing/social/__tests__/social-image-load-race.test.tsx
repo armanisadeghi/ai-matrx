@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { SocialImage, imageSettled } from "../components/SocialImage";
+import { SocialImage, imageSettled, youtubeThumbStepDown } from "../components/SocialImage";
 
 let mockOrg = "org-1";
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => mockOrg }));
@@ -17,6 +17,19 @@ describe("imageSettled", () => {
     expect(imageSettled({ complete: true, naturalWidth: 0 })).toBe("failed");
     expect(imageSettled({ complete: false, naturalWidth: 0 })).toBe("pending");
     expect(imageSettled(null)).toBe("pending");
+  });
+});
+
+describe("a missing YouTube max-res thumbnail", () => {
+  const max = "https://img.youtube.com/vi/jNQXAC9IVRw/maxresdefault.jpg";
+  it("steps down to hqdefault when the stub (120px) loads or the load fails", () => {
+    expect(youtubeThumbStepDown(max, 120)).toBe("https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg");
+    expect(youtubeThumbStepDown(max, null)).toBe("https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg");
+  });
+  it("leaves a real picture, hqdefault and other hosts alone", () => {
+    expect(youtubeThumbStepDown(max, 1280)).toBeNull();
+    expect(youtubeThumbStepDown("https://img.youtube.com/vi/x/hqdefault.jpg", 120)).toBeNull();
+    expect(youtubeThumbStepDown("https://cdn.example.com/maxresdefault.jpg", 120)).toBeNull();
   });
 });
 

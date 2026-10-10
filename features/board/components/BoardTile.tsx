@@ -68,6 +68,7 @@ import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 import type { BoardAccent } from "../items/types";
+import { ConnectHandles, type ConnectPoint } from "./ConnectHandles";
 import { OverviewCard, StatusChip } from "./TileFace";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
@@ -99,6 +100,10 @@ export interface BoardTileProps {
   accent?: BoardAccent;
   /** The item type's name on the far-zoom card ("Note", "War Room"). */
   typeLabel?: string;
+  /** Connects this tile to whatever the pointer is released on (the host draws the bound arrow). Omit for none. */
+  onConnect?: (id: string, from: ConnectPoint, to: ConnectPoint) => void;
+  /** The item's picture for the far-zoom card (`BoardItemType.Face`). */
+  faceSlot?: ReactNode;
   /** The item's own status chip (`BoardItemType.status`), drawn by the host in
    * the header (`header`) and on the far-zoom card (`face`). A leaf: its reads
    * never re-render the body. */
@@ -174,6 +179,8 @@ export function BoardTile({
   icon: Icon,
   accent = "slate",
   typeLabel,
+  onConnect,
+  faceSlot,
   renderStatus,
   statusFrom = IDLE_STATUS,
   titleSlot,
@@ -314,7 +321,7 @@ export function BoardTile({
       pressedAt = 0;
       if (pressed || e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
       const target = e.target as HTMLElement;
-      if (target.closest("[data-board-resize]") || target.closest(INTERACTIVE_SELECTOR)) return;
+      if (target.closest("[data-board-resize]") || target.closest("[data-board-connect]") || target.closest(INTERACTIVE_SELECTOR)) return;
       if (e.shiftKey || e.metaKey) store.toggleSelected(id);
       else store.select(id);
     };
@@ -326,7 +333,7 @@ export function BoardTile({
       if (e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
       const target = e.target as HTMLElement;
       lastPressRef.current = target;
-      if (target.closest("[data-board-resize]")) return; // the handle owns it
+      if (target.closest("[data-board-resize]") || target.closest("[data-board-connect]")) return; // the handle owns it
       // The far-zoom card stands in for the whole tile: a press on it moves it, like the header.
       const inHeader = !!headerRef.current?.contains(target) || !!target.closest("[data-board-overview]");
       const press = pressAction({
@@ -582,6 +589,7 @@ export function BoardTile({
         <OverviewCard
           title={title}
           typeLabel={typeLabel}
+          media={faceSlot}
           icon={Icon}
           accent={accent}
           selected={selected}
@@ -610,6 +618,7 @@ export function BoardTile({
           inHeader:
             !!headerRef.current?.contains(target) ||
             !!target.closest("[data-board-resize]") ||
+            !!target.closest("[data-board-connect]") ||
             !!target.closest("[data-board-overview]"),
           onControl: !!target.closest(INTERACTIVE_SELECTOR),
           interacting,
@@ -622,7 +631,7 @@ export function BoardTile({
         store.fitItem(id);
       }}
       className={cn(
-        "absolute max-w-none rounded-xl transition-shadow",
+        "group/tile absolute max-w-none rounded-xl transition-shadow",
         focused
           ? "border-2 border-dashed border-primary/50"
           : interacting
@@ -649,6 +658,9 @@ export function BoardTile({
           it, so a drag would resize instead of move: there, only the
           selected tile shows them (Figma). */}
       {/* Resizing is one tile at a time: a tile in a multi-selection shows none. */}
+      {onConnect && !focused && !interacting && tier !== "offscreen" && store.getCamera().z >= RESIZE_AFFORDANCE_ZOOM && (
+        <ConnectHandles id={id} rect={rect} onConnect={onConnect} />
+      )}
       {onResize && !focused && (sole || interacting || (!selected && tier !== "offscreen" && store.getCamera().z >= RESIZE_AFFORDANCE_ZOOM)) && (
         <ResizeHandles id={id} rect={rect} selected={sole || interacting} onResize={onResize} />
       )}

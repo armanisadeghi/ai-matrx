@@ -97,7 +97,10 @@ export function OverviewCard({
   selected = false,
   from,
   status,
+  media,
 }: {
+  /** A picture for the card (`BoardItemType.Face`), drawn in the space between the title and the status. */
+  media?: React.ReactNode;
   title: string;
   typeLabel?: string;
   icon?: LucideIcon;
@@ -125,6 +128,7 @@ export function OverviewCard({
         <p className="board-face-title line-clamp-2 break-words font-semibold leading-[1.18] tracking-[-0.01em] text-foreground">
           {title}
         </p>
+        {media ? <div className="board-face-media relative min-h-0 flex-1 overflow-hidden">{media}</div> : null}
         <div className="board-face-foot mt-auto flex min-w-0 items-center">
           {from.kind === "static" ? status : <StreamFoot from={from} />}
         </div>

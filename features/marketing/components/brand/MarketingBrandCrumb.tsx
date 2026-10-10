@@ -399,12 +399,12 @@ export function MarketingBrandCrumb() {
           {levels.map((level, index) => (
             <span
               key={level.key}
-              // The root crumb keeps its whole word ("Marketing"); the deeper levels give way first,
-              // and the current level never collapses below a readable stub.
+              // The root and the current level keep their whole words ("Marketing", "Socials"; the current one
+              // may take at most 60% of the row); the MIDDLE levels (the brand's long name) give way first.
               className={cn(
                 "flex items-center gap-1",
-                index === 0 ? "shrink-0" : "min-w-0",
-                index === levels.length - 1 && "min-w-[4rem]",
+                index === 0 || index === levels.length - 1 ? "shrink-0" : "min-w-0",
+                index === levels.length - 1 && index > 0 && "max-w-[60%]",
               )}
             >
               {index > 0 ? (

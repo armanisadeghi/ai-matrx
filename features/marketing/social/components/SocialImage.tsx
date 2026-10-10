@@ -81,6 +81,17 @@ export function imageSettled(img: Pick<HTMLImageElement, "complete" | "naturalWi
   return img.naturalWidth > 0 ? "ready" : "failed";
 }
 
+/**
+ * YouTube answers a missing `maxresdefault` with a 120px grey stub that still "loads" (HTTP 200 for older
+ * videos), so an <img> reports success and the card shows grey. A stub, or a failed load, of a maxres
+ * thumbnail steps down to `hqdefault`, which every video has. Null = nothing further to try.
+ */
+export function youtubeThumbStepDown(src: string | null, naturalWidth: number | null): string | null {
+  if (!src || !/^https:\/\/(img\.youtube\.com|i\.ytimg\.com)\/vi(_webp)?\/[^/]+\/maxresdefault\./.test(src)) return null;
+  if (naturalWidth !== null && naturalWidth > 120) return null;
+  return src.replace("/maxresdefault.", "/hqdefault.");
+}
+
 export interface SocialImageProps {
   /** Stored-copy door path (`postThumbnailDoor` / `profileAvatarDoor`); null when nothing is stored. */
   door: string | null;
@@ -124,7 +135,9 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
   useEffect(() => {
     if (!src || state !== "loading") return;
     const settled = imageSettled(imgRef.current);
-    if (settled === "ready") setState("ready");
+    const stepped = settled === "pending" ? null : youtubeThumbStepDown(src, settled === "ready" ? (imgRef.current?.naturalWidth ?? null) : null);
+    if (stepped) setSrc(stepped);
+    else if (settled === "ready") setState("ready");
     else if (settled === "failed") setState("failed");
   }, [src, state]);
 
@@ -142,8 +155,16 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
           alt={alt}
           decoding="async"
           referrerPolicy="no-referrer"
-          onLoad={() => setState("ready")}
-          onError={() => setState("failed")}
+          onLoad={(e) => {
+            const stepped = youtubeThumbStepDown(src, e.currentTarget.naturalWidth);
+            if (stepped) setSrc(stepped);
+            else setState("ready");
+          }}
+          onError={() => {
+            const stepped = youtubeThumbStepDown(src, null);
+            if (stepped) setSrc(stepped);
+            else setState("failed");
+          }}
           className={cn("absolute inset-0 h-full w-full object-cover", state === "ready" ? "bg-muted" : "opacity-0", className)}
         />
       ) : null}

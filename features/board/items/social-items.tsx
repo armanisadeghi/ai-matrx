@@ -57,6 +57,9 @@ import {
 } from "@/features/marketing/social/kind-models";
 import { toAdCardModel } from "@/features/marketing/social/ads";
 import { PostMedia } from "@/features/marketing/social/components/PostMedia";
+import { PlatformMark } from "@/features/marketing/social/components/PlatformMark";
+import { SocialImage } from "@/features/marketing/social/components/SocialImage";
+import { formatCompact } from "@/features/marketing/social/outlier";
 import { postAddress, toPostCardModel } from "@/features/marketing/social/mappers";
 import {
   addToCollection,
@@ -67,6 +70,8 @@ import {
   ingestPost,
   ingestProfile,
   listPostMedia,
+  postThumbnailDoor,
+  profileAvatarDoor,
   socialErrorCode,
   socialErrorMessage,
   trackAccount,
@@ -1024,6 +1029,55 @@ function SwipePicker({ onPick, onCancel }: PickerProps) {
 const none = (why: string) => ({ none: why });
 const ENTITY = (key: string) => (s: NodeSource) => s.kind === "entity" && s.entity === key;
 
+// ─── Far-zoom faces ──────────────────────────────────────────────────────────
+
+/** A post's card at far zoom: its picture (or its hook line on a designed card) and its numbers. Same cache the body reads. */
+function PostFace({ source }: { source: NodeSource }) {
+  const detail = usePostDetail(idOf(source, SOCIAL_POST_KEY));
+  const post = detail.data?.post;
+  if (!post) return null;
+  const card = toPostCardModel({ post, stat: detail.data?.stat ?? null, handle: detail.data?.profile?.handle ?? null });
+  return (
+    <>
+      <SocialImage
+        door={card.thumbnailFileId ? postThumbnailDoor(card.postId) : null}
+        url={card.thumbnailUrl}
+        fallback={
+          <span className="absolute inset-0 flex items-start bg-gradient-to-br from-muted via-muted to-accent p-[4%] text-[min(14px,9cqmin)] font-semibold leading-tight text-foreground/80">
+            <span className="line-clamp-6">{card.hookLine || "No caption"}</span>
+          </span>
+        }
+      />
+      {card.hookLine ? (
+        <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">
+          {card.hookLine}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** An account's card at far zoom: its avatar large, with its follower count. */
+function ProfileFace({ source }: { source: NodeSource }) {
+  const id = idOf(source, SOCIAL_PROFILE_KEY);
+  const row = useProfile(id ?? "").data;
+  if (!row) return null;
+  return (
+    <span className="absolute inset-0 flex flex-col items-center justify-center gap-[4%]">
+      <span className="relative aspect-square h-[62%] max-h-full overflow-hidden rounded-full bg-muted">
+        <SocialImage
+          door={row.avatar_file_id ? profileAvatarDoor(row.id) : null}
+          url={row.avatar_url}
+          fallback={<span className="absolute inset-0 flex items-center justify-center"><PlatformMark platform={isSocialPlatform(row.platform) ? row.platform : "tiktok"} size={28} /></span>}
+        />
+      </span>
+      {row.follower_count !== null ? (
+        <span className="text-[min(14px,9cqmin)] font-semibold tabular-nums text-foreground">{formatCompact(row.follower_count)} followers</span>
+      ) : null}
+    </span>
+  );
+}
+
 export const SOCIAL_ITEMS: readonly BoardItemType[] = [
   {
     key: SOCIAL_POST_KEY,
@@ -1041,6 +1095,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     growOnFill: true,
     matches: ENTITY(SOCIAL_POST_KEY),
     Body: SocialPostBody,
+    Face: PostFace,
     bringIn: { label: "Social post from a link", Picker: PostLinkPicker },
     record: { place: (id, title) => ({ title: title?.trim() || "Social post", source: entity(SOCIAL_POST_KEY, id) }) },
     href: (s) => metaOf(s).url ?? null,
@@ -1060,6 +1115,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     growOnFill: true,
     matches: ENTITY(SOCIAL_PROFILE_KEY),
     Body: SocialProfileBody,
+    Face: ProfileFace,
     // The brand's accounts first (what a person has already tracked), a pasted link second.
     startNew: [
       { label: "From this brand's accounts", icon: Users, Picker: BrandAccountsPicker },

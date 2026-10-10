@@ -83,6 +83,12 @@
   font-size: var(--face-kind);
 }
 
+/* The item's picture on the card: its own rounded frame, sized by what the title and foot leave. */
+.board-face-media {
+  border-radius: min(calc(6px / var(--board-z, 1)), 4cqmin);
+  background: hsl(var(--muted));
+}
+
 .board-face-bar {
   height: max(0.35em, 2px);
 }

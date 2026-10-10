@@ -336,10 +336,11 @@ export function EntityModeHeader({
               <nav
                 aria-label="Breadcrumb"
                 data-entity-trail
-                className="hidden sm:flex shrink-0 items-center gap-1 ps-[3px]"
+                className="hidden sm:flex min-w-0 shrink items-center gap-1 ps-[3px]"
               >
                 {trail.map((crumb, i) => (
-                  <span key={`${crumb.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                  // The root crumb keeps its whole word; the middle crumbs (a long name) give way first.
+                  <span key={`${crumb.label}-${i}`} className={cn("flex items-center gap-1", i === 0 ? "shrink-0" : "min-w-0")}>
                     <CrumbNode crumb={crumb} isLast={false} />
                     <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
                   </span>
@@ -352,7 +353,7 @@ export function EntityModeHeader({
                   <button
                     type="button"
                     aria-label="Switch"
-                    className="flex items-center gap-0.5 min-w-0 rounded-full ms-[3px] px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
+                    className="flex shrink-0 items-center gap-0.5 rounded-full ms-[3px] px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
                   >
                     {label}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />

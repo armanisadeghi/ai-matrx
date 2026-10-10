@@ -211,6 +211,12 @@ export interface BoardItemType {
   matches: (source: NodeSource) => boolean;
   /** The tile body — the feature's canonical component. */
   Body: ComponentType<ItemBodyProps>;
+  /**
+   * What the far-zoom card shows between its title and status: a picture the item already holds (a post's
+   * thumbnail, an account's avatar), read from caches the tile's own body filled. It fills a box the card
+   * sizes; it never fetches on its own account.
+   */
+  Face?: ComponentType<{ source: NodeSource; title: string }>;
   /** The feature's agent surface for the tile's record (see `ItemSurface`). */
   surface: ItemSurface;
   /**

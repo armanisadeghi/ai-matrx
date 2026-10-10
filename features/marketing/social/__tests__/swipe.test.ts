@@ -5,6 +5,10 @@ import {
   DEFAULT_SWIPE_FILTERS,
   buildSwipeItems,
   collectionsForBrandScope,
+  defaultCollectionChoice,
+  defaultSwipeCollectionName,
+  saveCollectionOptions,
+  NEW_COLLECTION_CHOICE,
   otherCollectionCount,
   collectionCounts,
   filterSwipeItems,
@@ -169,5 +173,30 @@ describe("brand-scoped collections", () => {
   });
   it("counts live collections outside the brand", () => {
     expect(otherCollectionCount(rows, "dd")).toBe(2);
+  });
+});
+
+describe("saving from a brand lands in that brand's collection", () => {
+  const rows = [
+    { id: "hook", brand_id: null, deleted_at: null },
+    { id: "other", brand_id: "hl", deleted_at: null },
+    { id: "mine", brand_id: "dd", deleted_at: null },
+    { id: "gone", brand_id: "dd", deleted_at: "2026-10-01T00:00:00Z" },
+  ] as unknown as SwipeCollectionRow[];
+  it("never defaults to an unlinked or other brand's collection", () => {
+    expect(defaultCollectionChoice(rows, "dd", null)).toBe("mine");
+    expect(defaultCollectionChoice(rows.slice(0, 2), "dd", null)).toBe(NEW_COLLECTION_CHOICE);
+  });
+  it("an explicit live scope wins, an archived one does not", () => {
+    expect(defaultCollectionChoice(rows, "dd", "hook")).toBe("hook");
+    expect(defaultCollectionChoice(rows, "dd", "gone")).toBe("mine");
+  });
+  it("offers the brand's collections plus the one in view", () => {
+    expect(saveCollectionOptions(rows, "dd", null).map((r) => r.id)).toEqual(["mine"]);
+    expect(saveCollectionOptions(rows, "dd", "hook").map((r) => r.id)).toEqual(["hook", "mine"]);
+  });
+  it("names the first collection after the brand", () => {
+    expect(defaultSwipeCollectionName("Gary Vee")).toBe("Gary Vee swipe file");
+    expect(defaultSwipeCollectionName(" ")).toBe("Swipe file");
   });
 });

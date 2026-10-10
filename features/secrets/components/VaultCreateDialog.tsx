@@ -129,6 +129,10 @@ interface VaultCreateDialogProps {
   /** Opens directly in one canonical definition form. Authenticator uses this
    *  for Website login instead of maintaining a second create UI. */
   initialDefinitionKey?: string;
+  /** Prefills the destination of a login form (a caller that knows the site, e.g. a social platform). */
+  initialLoginUrl?: string;
+  /** Prefills the item name of the form opened by `initialDefinitionKey`. */
+  initialDisplayName?: string;
   /** Fires after all optional follow-up work, including TOTP enrollment. */
   onSaved?: (item: VaultItem) => void | Promise<void>;
 }
@@ -197,6 +201,8 @@ export function VaultCreateDialog({
   onCreate,
   onAssign,
   initialDefinitionKey,
+  initialLoginUrl,
+  initialDisplayName,
   onSaved,
 }: VaultCreateDialogProps) {
   const initialDefinition = initialDefinitionKey
@@ -299,6 +305,8 @@ export function VaultCreateDialog({
                   onCreate={submitCreate}
                   onAssign={submitAssign}
                   onSaved={onSaved}
+                  initialLoginUrl={initialLoginUrl}
+                  initialDisplayName={initialDisplayName}
                 />
               )}
               {step.kind === "custom" && (
@@ -776,7 +784,11 @@ function DefinitionForm({
   onCreate,
   onAssign,
   onSaved,
+  initialLoginUrl,
+  initialDisplayName,
 }: {
+  initialLoginUrl?: string;
+  initialDisplayName?: string;
   definition: CredentialDefinition;
   definitions: CredentialDefinition[];
   principal: VaultPrincipal;
@@ -822,7 +834,9 @@ function DefinitionForm({
   const showNotEncrypted = showNotes || extraMetaDefs.length > 0;
   const attachmentOnly = definition.payload.attachment_only === true;
 
-  const [displayName, setDisplayName] = useState(definition.payload.label);
+  const [displayName, setDisplayName] = useState(
+    initialDisplayName ?? definition.payload.label,
+  );
   const [description, setDescription] = useState("");
   const [drafts, setDrafts] = useState<FieldDraft[]>(() =>
     encryptedDefs.map((def) => ({
@@ -833,7 +847,7 @@ function DefinitionForm({
     })),
   );
   const [loginUrls, setLoginUrls] = useState<string[]>(() =>
-    showDestination ? [""] : [],
+    showDestination ? [initialLoginUrl ?? ""] : [],
   );
   const [destinationFeedback, setDestinationFeedback] = useState<
     Record<number, DestinationFeedback>

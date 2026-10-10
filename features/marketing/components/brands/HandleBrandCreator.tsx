@@ -76,12 +76,24 @@ export function HandleBrandCreator({
 
   const [step, setStep] = useState<Step>("start");
   // No organization here: Look up below is the one paid fetch; the field only checks our store.
-  const account = useSocialAccountInput({});
+  const [failure, setFailure] = useState<string | null>(null);
+  // An error is about the input it was raised for: editing the handle or picking a platform retires it.
+  const [typed, setTyped] = useState("");
+  const account = useSocialAccountInput({
+    text: typed,
+    onTextChange: (next) => {
+      setTyped(next);
+      setFailure(null);
+    },
+  });
   const { parsed } = account;
+  const { picked } = account;
+  useEffect(() => {
+    setFailure(null);
+  }, [picked]);
   const [name, setName] = useState("");
   const [websiteTyped, setWebsiteTyped] = useState("");
   const [progress, setProgress] = useState<string[]>([]);
-  const [failure, setFailure] = useState<string | null>(null);
 
   const [seed, setSeed] = useState<SeedProfile | null>(null);
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
@@ -97,6 +109,12 @@ export function HandleBrandCreator({
   useEffect(() => {
     if (opening && created && pathname?.startsWith(marketingRoutes.brand(marketingSeg(created.brand)))) onClose();
   }, [opening, created, pathname, onClose]);
+
+  // The brand page compiles/loads on first visit (the "Opening…" wait): start fetching it the moment the brand exists.
+  const createdSeg = created ? marketingSeg(created.brand) : null;
+  useEffect(() => {
+    if (createdSeg) router.prefetch(marketingRoutes.brand(createdSeg));
+  }, [createdSeg, router]);
 
   const startKind = classifyStartInput(account.text);
   const keyOf = (a: { platform: string; handle: string }) => `${a.platform}:${a.handle.toLowerCase()}`;

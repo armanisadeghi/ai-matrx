@@ -591,6 +591,12 @@ export function UserBoard({
   });
   // Stable (it closes over a ref only), so a tile never re-renders because its host did.
   const onThrow = (id: string, direction: ThrowDirection) => throwRef.current(id, direction);
+  // A connection handle dragged onto another tile is the Arrow tool's own bound arrow (stable: a ref only).
+  const connectRef = useRef<(from: { x: number; y: number }, to: { x: number; y: number }) => void>(() => undefined);
+  const onConnect = (_id: string, from: { x: number; y: number }, to: { x: number; y: number }) => connectRef.current(from, to);
+  useEffect(() => {
+    connectRef.current = (from, to) => onCreate({ tool: "arrow", from, to });
+  });
   // A frame goes as one undoable step; its tiles stay where they are.
   const deleteFrame = (id: string) => {
     const frame = board.frames.find((f) => f.id === id);
@@ -913,6 +919,7 @@ export function UserBoard({
                   boardRecord={boardId ? { id: boardId, title } : null}
                   itemSurfaces={itemSurfaces}
                   onThrow={onThrow}
+                  onConnect={onConnect}
                 />
               ))}
             </TileLayersContext.Provider>
@@ -1045,6 +1052,7 @@ function BoardItemTile({
   boardRecord,
   itemSurfaces,
   onThrow,
+  onConnect,
 }: {
   id: string;
   board: BoardStore<UserBoardTile>;
@@ -1052,6 +1060,7 @@ function BoardItemTile({
   boardRecord: { id: string; title: string } | null;
   itemSurfaces: ItemSurfaceIndex;
   onThrow: (id: string, direction: ThrowDirection) => void;
+  onConnect: (id: string, from: { x: number; y: number }, to: { x: number; y: number }) => void;
 }) {
   const tile = useBoardTile(board, id);
   const interacting = useIsEditing(id);
@@ -1087,11 +1096,13 @@ function BoardItemTile({
         icon={type?.icon}
         accent={type?.accent}
         typeLabel={type?.label ?? "Unavailable"}
+        faceSlot={type?.Face ? <type.Face source={source} title={title} /> : undefined}
         renderStatus={type ? statusRenderer(type.key, type.status, source, tile.basics?.values) : undefined}
         onMove={board.moveTile}
         onResize={board.resizeTile}
         onThrow={onThrow}
         throwActions={BOARD_THROWS}
+        onConnect={onConnect}
         sleeps={type?.sleeps ?? false}
         titleSlot={type?.TitleField ? <type.TitleField tileId={id} source={source} title={title} /> : undefined}
         actions={

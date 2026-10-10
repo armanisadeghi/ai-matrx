@@ -234,3 +234,36 @@ export function adMapOf(rows: readonly Parameters<typeof toAdCardModel>[0][]): M
 export function parseTagInput(text: string): string[] {
   return [...new Set(text.split(/[,\n]/).map((t) => t.trim().replace(/^#+/, "").trim()).filter(Boolean))].map((t) => t.slice(0, 40));
 }
+
+/** The collection a save from a brand's page lands in when nobody picked one: never another brand's. */
+export const NEW_COLLECTION_CHOICE = "__new__";
+
+/** "<Brand> swipe file": the default collection created on a brand's first save. */
+export function defaultSwipeCollectionName(brandName: string | null | undefined): string {
+  const name = (brandName ?? "").trim();
+  return name ? `${name} swipe file` : "Swipe file";
+}
+
+/**
+ * What a save dialog preselects. An explicit scope (a collection the person is looking at) wins when it is
+ * live; otherwise the brand's own first collection; otherwise "new", which the dialog names after the brand.
+ * The organization's other collections (another brand's, unlinked) are never a silent default.
+ */
+export function defaultCollectionChoice(
+  rows: readonly SwipeCollectionRow[],
+  brandId: string,
+  preferredId: string | null,
+): string {
+  const live = visibleCollections(rows, false);
+  if (preferredId && live.some((c) => c.id === preferredId)) return preferredId;
+  return live.find((c) => c.brand_id === brandId)?.id ?? NEW_COLLECTION_CHOICE;
+}
+
+/** The collections a save dialog offers: the brand's, plus the one already in view if it belongs elsewhere. */
+export function saveCollectionOptions(
+  rows: readonly SwipeCollectionRow[],
+  brandId: string,
+  preferredId: string | null,
+): SwipeCollectionRow[] {
+  return visibleCollections(rows, false).filter((c) => c.brand_id === brandId || c.id === preferredId);
+}
