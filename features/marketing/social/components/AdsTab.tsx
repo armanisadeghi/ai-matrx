@@ -91,7 +91,7 @@ async function lookAgainAt(def: TrackedAdvertiser["definition"], organizationId:
  * same saves as the buttons, each approved on a card first; Look again names its points first.
  */
 function useAdsAgentWrites(onTracked: () => void) {
-  const { organizationId } = useSocials();
+  const { organizationId, brandId } = useSocials();
   const { confirmSpend } = useSocialSpend(organizationId);
   const client = useQueryClient();
   const invalidate = useInvalidateSocial();
@@ -107,7 +107,7 @@ function useAdsAgentWrites(onTracked: () => void) {
           run: async (adId: string) => {
             const [row] = await readAdRows([adId]);
             if (!row) throw new Error(`ad ${adId} is not in the ad cache; use an ad_id from results.`);
-            const made = await trackAdvertiserFromAd(toAdCardModel(row), { organizationId });
+            const made = await trackAdvertiserFromAd(toAdCardModel(row), { organizationId, brandId });
             await invalidate();
             onTracked();
             return { id: made.viewId, name: made.definition.advertiser };
@@ -253,7 +253,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
   async function trackAdvertiser(ad: AdCardModel) {
     if (!isAdLibrary(ad.library)) return;
     try {
-      await trackAdvertiserFromAd(ad, { organizationId });
+      await trackAdvertiserFromAd(ad, { organizationId, brandId });
       await invalidate();
       toast.success(`Tracking ${ad.advertiser}`);
       onTracked();
@@ -417,8 +417,15 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
 // Tracked advertisers
 // ---------------------------------------------------------------------------
 
+const TRACKED_SCOPES = [
+  { value: "brand", label: "This brand" },
+  { value: "all", label: "All brands" },
+] as const;
+type TrackedScope = (typeof TRACKED_SCOPES)[number]["value"];
+
 function TrackedAdvertisers() {
-  const tracked = useTrackedAdvertisers();
+  const [scope, setScope] = useState<TrackedScope>("brand");
+  const tracked = useTrackedAdvertisers(scope);
   const [openId, setOpenId] = useState<string | null>(null);
   const current = tracked.data?.find((t) => t.viewId === openId) ?? null;
   const { brandId } = useSocials();
@@ -462,18 +469,31 @@ function TrackedAdvertisers() {
     );
   }
   if (current) return <AdvertiserView advertiser={current} onBack={() => setOpenId(null)} />;
+  const scopeControl = (
+    <SegmentedControl aria-label="Advertisers shown" value={scope} data={TRACKED_SCOPES} onValueChange={(v) => setScope(v as TrackedScope)} />
+  );
   if ((tracked.data ?? []).length === 0) {
     return (
-      <div className="flex min-h-[35vh] items-center justify-center">
-        <EmptyState icon={<Radar className="h-5 w-5" />} title="No tracked advertisers" line="Track one from a search result" />
+      <div className="flex flex-col gap-3">
+        <div>{scopeControl}</div>
+        <div className="flex min-h-[35vh] items-center justify-center">
+          <EmptyState
+            icon={<Radar className="h-5 w-5" />}
+            title={scope === "brand" ? `No advertisers tracked for ${brandName}` : "No tracked advertisers"}
+            line="Track one from a search result"
+          />
+        </div>
       </div>
     );
   }
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {(tracked.data ?? []).map((t) => (
-        <AdvertiserCard key={t.viewId} advertiser={t} onOpen={() => setOpenId(t.viewId)} />
-      ))}
+    <div className="flex flex-col gap-3">
+      <div>{scopeControl}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {(tracked.data ?? []).map((t) => (
+          <AdvertiserCard key={t.viewId} advertiser={t} onOpen={() => setOpenId(t.viewId)} />
+        ))}
+      </div>
     </div>
   );
 }

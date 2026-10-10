@@ -3,12 +3,13 @@
 /**
  * Studio (UI-SPEC §9): the Board with the `marketing-social` preset, for this brand. One Studio board per brand
  * (database-unique) is made on the first open (from the Viral breakdown template); the picker switches to any other board
- * linked to the brand, "New board" adds one. Full-bleed, exactly as /board/<id>: the board's own title dropdown lists the brand's boards (no strip over it).
+ * linked to the brand, "New board" adds one. The open board is `?board=<id>` in the address. Full-bleed, exactly as /board/<id>: the board's own title dropdown lists the brand's boards (no strip over it).
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, Plus, Users } from "lucide-react";
 import { getBoard } from "@/features/board/persistence/boardsService";
 
@@ -35,7 +36,16 @@ export function StudioTab() {
   const client = useQueryClient();
   const key = ["marketing", "social", "studio-boards", organizationId, brandId] as const;
   const boards = useQuery({ queryKey: key, queryFn: () => listStudioBoards({ organizationId, brandId }), staleTime: 15_000 });
-  const [picked, setPicked] = useState<string | null>(null);
+  // The open board is part of the address (?board=<id>): a refresh or a shared link opens the same board.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const picked = searchParams.get("board");
+  function setPicked(id: string) {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("board", id);
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  }
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const started = useRef(false);

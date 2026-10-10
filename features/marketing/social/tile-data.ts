@@ -16,7 +16,8 @@ import { supabase } from "@/utils/supabase/client";
 
 import { outlierRowKind, type OutlierRowKind } from "./kind-models";
 import { toPostCardModel } from "./mappers";
-import { readProfiles } from "./service";
+import { readAdRows, readProfiles, readSwipeCollections, readSwipeEdges, readTrackedAdvertisers } from "./service";
+import { collectionsForBrandScope } from "./swipe";
 import type {
   PostCardModel,
   PostStatRow,
@@ -47,6 +48,35 @@ export async function readRecentAds(): Promise<SocialAdRow[]> {
     (e: unknown) => fail("social.ad list", errorText(e)),
   );
   return rows as unknown as SocialAdRow[];
+}
+
+/**
+ * The ads a BRAND has to pick from: those of the advertisers it tracks, and those saved in its swipe collections
+ * (stored ads carry no brand of their own; the brand's link is through those two). Newest first, capped.
+ */
+export async function readBrandAds(args: { organizationId: string; brandId: string }): Promise<SocialAdRow[]> {
+  const [tracked, collections] = await Promise.all([
+    readTrackedAdvertisers({ ...args, scope: "brand" }),
+    readSwipeCollections({ organizationId: args.organizationId }),
+  ]);
+  const mine = collectionsForBrandScope(collections, args.brandId, "brand");
+  const edges = await readSwipeEdges(mine.map((c) => c.id));
+  const savedIds = [...new Set(edges.filter((e) => e.itemType === "social_ad").map((e) => e.itemId))];
+  const perAdvertiser = await Promise.all(
+    tracked.map(async (t) => {
+      let q = supabase.schema("social").from("ad").select("*").eq("library", t.definition.library).is("deleted_at", null);
+      q = t.definition.advertiserPlatformId
+        ? q.eq("advertiser_platform_id", t.definition.advertiserPlatformId)
+        : q.ilike("advertiser_name", t.definition.advertiser.replace(/[%_]/g, (c) => `\\${c}`));
+      const { data, error } = await q.order("first_seen_at", { ascending: false }).limit(AD_PICKER_LIMIT);
+      if (error) fail("social.ad advertiser list", error.message);
+      return (data ?? []) as SocialAdRow[];
+    }),
+  );
+  const saved = await readAdRows(savedIds);
+  const byId = new Map<string, SocialAdRow>();
+  for (const row of [...saved, ...perAdvertiser.flat()]) if (!row.deleted_at) byId.set(row.id, row);
+  return [...byId.values()].sort((a, b) => (b.first_seen_at ?? "").localeCompare(a.first_seen_at ?? "")).slice(0, AD_PICKER_LIMIT);
 }
 
 export async function readSwipeCollection(collectionId: string): Promise<SwipeCollectionRow | null> {

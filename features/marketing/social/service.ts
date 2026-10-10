@@ -1027,22 +1027,29 @@ interface SavedViewLite {
   name: string;
   version: number;
   definition: unknown;
+  subject_id: string | null;
+  organization_id: string | null;
 }
 
 function toTracked(row: SavedViewLite): TrackedAdvertiser | null {
   const definition = parseAdvertiserDefinition(row.definition);
-  return definition ? { viewId: row.id, name: row.name, version: row.version, definition } : null;
+  return definition ? { viewId: row.id, name: row.name, version: row.version, definition, brandId: row.subject_id } : null;
 }
 
-/** The advertisers this person tracks (`platform.saved_view`, surface `social.advertisers`). */
-export async function readTrackedAdvertisers(): Promise<TrackedAdvertiser[]> {
+/**
+ * The advertisers this person tracks (`platform.saved_view`, surface `social.advertisers`), in one organization.
+ * An advertiser belongs to the brand it was tracked from (`subject_id`); the brand's list holds only those.
+ * `scope: "all"` lists every brand's, including ones tracked before they carried a brand.
+ */
+export async function readTrackedAdvertisers(args: { organizationId: string; brandId: string; scope: "brand" | "all" }): Promise<TrackedAdvertiser[]> {
   const rows = await readAllRows<SavedViewLite>(
     ({ from, to }) =>
       supabase
         .schema("platform")
         .from("saved_view")
-        .select("id, name, version, definition", { count: "exact" })
+        .select("id, name, version, definition, subject_id, organization_id", { count: "exact" })
         .eq("surface_key", ADVERTISER_SURFACE)
+        .eq("organization_id", args.organizationId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
@@ -1050,11 +1057,14 @@ export async function readTrackedAdvertisers(): Promise<TrackedAdvertiser[]> {
         .returns<SavedViewLite[]>(),
     { label: "platform.saved_view (tracked advertisers)" },
   );
-  return rows.map(toTracked).filter((t): t is TrackedAdvertiser => t !== null);
+  const all = rows.map(toTracked).filter((t): t is TrackedAdvertiser => t !== null);
+  return args.scope === "all" ? all : all.filter((t) => t.brandId === args.brandId);
 }
 
 export async function saveTrackedAdvertiser(args: {
   organizationId: string;
+  /** The brand this advertiser is tracked for (stored on create; a look on an existing view keeps its own). */
+  brandId?: string;
   name: string;
   definition: AdvertiserDefinition;
   /** Present = update that view (a new look); absent = create. */
@@ -1064,6 +1074,7 @@ export async function saveTrackedAdvertiser(args: {
     p_surface_key: ADVERTISER_SURFACE,
     p_id: args.viewId,
     p_organization_id: args.viewId ? undefined : args.organizationId,
+    p_subject_id: args.viewId ? undefined : args.brandId,
     p_name: args.name,
     p_definition: args.definition as never,
     p_visibility: args.viewId ? undefined : "personal",

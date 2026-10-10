@@ -32,6 +32,8 @@ import {
   readTrackedForProfile,
 } from "./service";
 
+import { useSocials } from "./components/SocialsContext";
+
 export const socialKeys = {
   all: ["marketing", "social"] as const,
   accounts: (orgId: string, brandId: string) =>
@@ -57,7 +59,7 @@ export const socialKeys = {
   agency: () => ["marketing", "social", "agency"] as const,
   swipeCollections: ["marketing", "social", "swipe-collections"] as const,
   swipeItems: (ids: string) => ["marketing", "social", "swipe-items", ids] as const,
-  advertisers: ["marketing", "social", "advertisers"] as const,
+  advertisers: (orgId: string, brandId: string, scope: string) => ["marketing", "social", "advertisers", orgId, brandId, scope] as const,
   advertiserAds: (key: string) => ["marketing", "social", "advertiser-ads", key] as const,
   collections: (orgId: string) => ["marketing", "social", "collections", orgId] as const,
 };
@@ -233,10 +235,13 @@ export function useSwipeItems(collectionIds: readonly string[], enabled: boolean
   });
 }
 
-export function useTrackedAdvertisers() {
+/** The advertisers tracked for the open brand (`scope: "all"`: every brand's in its organization). */
+export function useTrackedAdvertisers(scope: "brand" | "all" = "brand") {
+  const { organizationId, brandId } = useSocials();
   return useQuery({
-    queryKey: socialKeys.advertisers,
-    queryFn: () => readTrackedAdvertisers(),
+    queryKey: socialKeys.advertisers(organizationId, brandId, scope),
+    queryFn: () => readTrackedAdvertisers({ organizationId, brandId, scope }),
+    enabled: Boolean(organizationId && brandId),
     staleTime: 30_000,
   });
 }

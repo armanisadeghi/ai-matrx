@@ -19,7 +19,7 @@ import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasW
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ShimmerText } from "@/components/loaders/ShimmerText";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { TextInputDialog } from "@ai-matrx/design-system";
 import { BoardOrganizationProvider } from "../items/board-organization";
@@ -33,11 +33,23 @@ import { toast } from "@/lib/toast";
 import { BoardTemplateGallery } from "../templates/BoardTemplateGallery";
 import { isBoardTemplate, saveBoardAsTemplate } from "../templates/board-templates";
 
-const OPENING = "Opening your board…";
+/** The board while it opens: board-shaped placeholders from the first frame, never a line of text. */
+function BoardOpening() {
+  return (
+    <div className="h-full min-h-0 w-full overflow-hidden p-4">
+      <RegionSkeleton shape="cards" count={6} aria-label="Opening your board" />
+    </div>
+  );
+}
 
-const UserBoard = dynamic(() => import("./UserBoard").then((m) => m.UserBoard), {
+const loadUserBoard = () => import("./UserBoard").then((m) => m.UserBoard);
+// The canvas chunk starts downloading when this page's code arrives, in parallel with the board's own read,
+// not after it (the read used to finish first and then wait for the chunk).
+if (typeof window !== "undefined") void loadUserBoard();
+
+const UserBoard = dynamic(loadUserBoard, {
   ssr: false,
-  loading: () => <BoardMessage>{<ShimmerText text={OPENING} />}</BoardMessage>,
+  loading: () => <BoardOpening />,
 });
 
 export function BoardPage({
@@ -147,11 +159,7 @@ export function BoardPage({
         }
         canvas={
           <div className="relative h-full min-h-0">
-            {saved.state === "loading" && (
-              <BoardMessage>
-                <ShimmerText text={OPENING} />
-              </BoardMessage>
-            )}
+            {saved.state === "loading" && <BoardOpening />}
             {saved.state === "failed" && (
               <BoardMessage>
                 <ErrorNotice

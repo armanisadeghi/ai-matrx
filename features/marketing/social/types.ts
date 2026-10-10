@@ -440,4 +440,6 @@ export interface TrackedAdvertiser {
   name: string;
   version: number;
   definition: AdvertiserDefinition;
+  /** The brand it is tracked for; null on one tracked before advertisers carried a brand. */
+  brandId: string | null;
 }

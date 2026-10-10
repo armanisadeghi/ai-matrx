@@ -124,10 +124,11 @@ export async function saveLinkToSwipe(args: {
 // -- Ad library -----------------------------------------------------------------
 
 /** Follow an ad's advertiser (a saved view; spends nothing). Returns the tracked advertiser id. */
-export async function trackAdvertiserFromAd(ad: AdCardModel, ctx: { organizationId: string }): Promise<TrackedAdvertiser> {
+export async function trackAdvertiserFromAd(ad: AdCardModel, ctx: { organizationId: string; brandId?: string }): Promise<TrackedAdvertiser> {
   if (!isAdLibrary(ad.library)) throw new Error(`${ad.library} is not an ad library this page follows.`);
   return saveTrackedAdvertiser({
     organizationId: ctx.organizationId,
+    brandId: ctx.brandId,
     name: `${ad.advertiser} · ${AD_LIBRARY_LABELS[ad.library]}`,
     definition: {
       version: 1,

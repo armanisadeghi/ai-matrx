@@ -17,7 +17,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Bookmark, CircleAlert, FileText, Images, Link2, LockKeyhole, Megaphone, PanelRightOpen, RefreshCw, Sparkle, TrendingUp, UserRound, Users, Wand2 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ReadGate, readOf } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { accountTileSeeds } from "@/features/marketing/social/board-accounts";
@@ -76,6 +76,7 @@ import {
   socialErrorMessage,
   trackAccount,
 } from "@/features/marketing/social/server";
+import { collectionsForBrandScope } from "@/features/marketing/social/swipe";
 import { classifySocialLink, type SocialLink } from "@/features/marketing/social/link";
 import { describeSocialFailure, type SocialFailure } from "@/features/marketing/social/failure";
 import { GatedCaptureAction } from "./social-gated-seam";
@@ -91,6 +92,7 @@ import {
   OUTLIER_FEED_LIMIT,
   readAd,
   readBrandOutliers,
+  readBrandAds,
   readBrandTopPosts,
   readRecentAds,
   readSwipeCollection,
@@ -872,10 +874,37 @@ function SocialAdBody(props: ItemBodyProps) {
   return id ? <AdRecordBody key={id} id={id} {...props} /> : <Centered>Bring in an ad from the library.</Centered>;
 }
 
+/**
+ * The choice every social picker over stored records offers inside a brand's Studio: that brand's records first,
+ * with one obvious way to everything the organization holds. Outside a brand there is nothing to narrow by.
+ */
+const PICKER_SCOPES = [
+  { value: "brand", label: "This brand" },
+  { value: "all", label: "All brands" },
+] as const;
+type PickerScope = (typeof PICKER_SCOPES)[number]["value"];
+
+function PickerScopeControl({ scope, onChange }: { scope: PickerScope; onChange: (s: PickerScope) => void }) {
+  return (
+    <div className="px-3 pt-3">
+      <SegmentedControl aria-label="Records shown" value={scope} data={PICKER_SCOPES} onValueChange={(v) => onChange(v as PickerScope)} />
+    </div>
+  );
+}
+
 function AdPicker({ onPick, onCancel }: PickerProps) {
-  const ads = useQuery({ queryKey: ["board", "social-ad-picker"], queryFn: readRecentAds });
+  const organizationId = useBoardOrganizationId() ?? "";
+  const brand = useMarketingBrandOptional();
+  const [scope, setScope] = useState<PickerScope>("brand");
+  const brandScoped = Boolean(brand) && scope === "brand";
+  const ads = useQuery({
+    queryKey: ["board", "social-ad-picker", brandScoped ? organizationId : "all", brandScoped ? brand?.id : null],
+    queryFn: () => (brandScoped && brand ? readBrandAds({ organizationId, brandId: brand.id }) : readRecentAds()),
+    enabled: !brandScoped || Boolean(organizationId),
+  });
   return (
     <div className="max-h-[min(560px,70dvh)] overflow-y-auto">
+      {brand ? <PickerScopeControl scope={scope} onChange={setScope} /> : null}
       <RecordList
         rows={ads.data ?? []}
         read={readOf({ loading: ads.isLoading, error: ads.error instanceof Error ? ads.error.message : null }, { what: "stored ads", onRetry: () => void ads.refetch() })}
@@ -883,7 +912,13 @@ function AdPicker({ onPick, onCancel }: PickerProps) {
         rowText={(a) => `${a.advertiser_name} ${a.headline ?? ""}`}
         onChoose={(a) => onPick([{ title: a.advertiser_name, source: entity(SOCIAL_AD_KEY, a.id) }])}
         onCancel={onCancel}
-        emptyState={<>No ads stored yet. Search the libraries on the Ads tab.</>}
+        emptyState={
+          brandScoped ? (
+            <>No ads for {brand?.name} yet. Track an advertiser or save an ad to a collection on the Ads tab, or show all brands.</>
+          ) : (
+            <>No ads stored yet. Search the libraries on the Ads tab.</>
+          )
+        }
         renderRow={(a) => (
           <>
             <span className="min-w-0 flex-1 truncate">{a.headline ?? a.advertiser_name}</span>
@@ -939,11 +974,19 @@ function SwipeBody(props: ItemBodyProps) {
 
 function SwipePicker({ onPick, onCancel }: PickerProps) {
   const organizationId = useBoardOrganizationId() ?? "";
+  const brand = useMarketingBrandOptional();
+  const [scope, setScope] = useState<PickerScope>("brand");
   const collections = useSwipeCollections(organizationId);
+  const brandScoped = Boolean(brand) && scope === "brand";
+  const rows = useMemo(
+    () => (brand && brandScoped ? collectionsForBrandScope(collections.data ?? [], brand.id, "brand") : (collections.data ?? [])),
+    [collections.data, brand, brandScoped],
+  );
   return (
     <div className="max-h-[min(560px,70dvh)] overflow-y-auto">
+      {brand ? <PickerScopeControl scope={scope} onChange={setScope} /> : null}
       <RecordList
-        rows={collections.data ?? []}
+        rows={rows}
         read={readOf(
           { loading: collections.isLoading, error: collections.error instanceof Error ? collections.error.message : null },
           { what: "your swipe collections", onRetry: () => void collections.refetch() },
@@ -952,7 +995,13 @@ function SwipePicker({ onPick, onCancel }: PickerProps) {
         rowText={(c) => c.name}
         onChoose={(c) => onPick([{ title: c.name, source: entity(SOCIAL_SWIPE_KEY, c.id) }])}
         onCancel={onCancel}
-        emptyState={<>No collections yet. Save a post to make one.</>}
+        emptyState={
+          brandScoped ? (
+            <>No collections linked to {brand?.name} yet. Save a post to make one, or show all brands.</>
+          ) : (
+            <>No collections yet. Save a post to make one.</>
+          )
+        }
         renderRow={(c) => <span className="min-w-0 flex-1 truncate">{c.name}</span>}
       />
     </div>
@@ -1025,6 +1074,93 @@ function ProfileFace({ source }: { source: NodeSource }) {
   );
 }
 
+/** A grid of pictures at far zoom: up to four posts, as on the board's feed and collection tiles. */
+function PostMosaic({ posts, label }: { posts: readonly PostCardModel[]; label: string }) {
+  const shown = posts.slice(0, 4);
+  return (
+    <>
+      <span className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-border">
+        {shown.map((p) => (
+          <span key={p.postId} className="relative overflow-hidden bg-muted">
+            <SocialImage
+              door={p.thumbnailFileId ? postThumbnailDoor(p.postId) : null}
+              url={p.thumbnailUrl}
+              fallback={<span className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted via-muted to-accent"><PlatformMark platform={p.platform} size={20} /></span>}
+            />
+          </span>
+        ))}
+      </span>
+      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">{label}</span>
+    </>
+  );
+}
+
+/** An outlier feed at far zoom: its top posts as pictures. Same cache the body reads. */
+function OutlierFeedFace({ source }: { source: NodeSource }) {
+  const organizationId = useBoardOrganizationId();
+  const brand = useMarketingBrandOptional();
+  const brandId = metaOf(source).brandId ?? brand?.id ?? null;
+  const feed = useQuery({
+    queryKey: ["board", "social-outlier-feed", organizationId, brandId],
+    queryFn: () => readBrandOutliers({ organizationId: organizationId!, brandId: brandId! }),
+    enabled: Boolean(organizationId && brandId),
+    refetchInterval: 60_000,
+  });
+  const top = useQuery({
+    queryKey: ["board", "social-top-posts", organizationId, brandId],
+    queryFn: () => readBrandTopPosts({ organizationId: organizationId!, brandId: brandId! }),
+    enabled: Boolean(organizationId && brandId && feed.data && feed.data.length === 0),
+  });
+  const ranked = Boolean(feed.data && feed.data.length > 0);
+  const posts = ranked ? (feed.data ?? []).map((r) => postCardModelFromOutlierRow(r)) : (top.data ?? []);
+  if (posts.length === 0) return null;
+  return <PostMosaic posts={posts} label={ranked ? "Top outliers" : "Top posts"} />;
+}
+
+/** An ad at far zoom: its creative, with the advertiser and headline. Same cache the body reads. */
+function AdFace({ source }: { source: NodeSource }) {
+  const id = idOf(source, SOCIAL_AD_KEY);
+  const row = useQuery({ queryKey: ["board", "social-ad", id], queryFn: () => readAd(id!), enabled: Boolean(id) }).data;
+  if (!row) return null;
+  const model = toAdCardModel(row);
+  return (
+    <>
+      {model.thumbnailUrl ? (
+        <img src={model.thumbnailUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <span className="absolute inset-0 flex items-start bg-gradient-to-br from-muted via-muted to-accent p-[4%] text-[min(14px,9cqmin)] font-semibold leading-tight text-foreground/80">
+          <span className="line-clamp-6">{model.headline || model.body || model.advertiser}</span>
+        </span>
+      )}
+      <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">
+        {model.advertiser}
+        {model.headline ? ` · ${model.headline}` : ""}
+      </span>
+    </>
+  );
+}
+
+/** A swipe collection at far zoom: its first saved pictures, with its count. Same cache the body reads. */
+function SwipeFace({ source }: { source: NodeSource }) {
+  const id = idOf(source, SOCIAL_SWIPE_KEY);
+  const items = useSwipeItems(id ? [id] : [], Boolean(id)).data?.items;
+  if (!items) return null;
+  const posts = items.map((i) => i.post).filter((p): p is PostCardModel => p !== null);
+  if (posts.length > 0) return <PostMosaic posts={posts} label={`${items.length} saved`} />;
+  const ads = items.map((i) => i.ad).filter((a) => a?.thumbnailUrl);
+  if (ads.length === 0) return null;
+  return (
+    <>
+      <span className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-border">
+        {ads.slice(0, 4).map((a) => (
+          <img key={a!.adId} src={a!.thumbnailUrl ?? undefined} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+        ))}
+      </span>
+      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium text-white">{items.length} saved</span>
+    </>
+  );
+}
+
 export const SOCIAL_ITEMS: readonly BoardItemType[] = [
   {
     key: SOCIAL_POST_KEY,
@@ -1085,6 +1221,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     defaultSize: { w: 560, h: 640 },
     matches: ENTITY(SOCIAL_OUTLIER_FEED_KEY),
     Body: OutlierFeedBody,
+    Face: OutlierFeedFace,
     startNew: { label: "Outlier feed", icon: TrendingUp, create: () => ({ title: "Outlier feed", source: entity(SOCIAL_OUTLIER_FEED_KEY, null) }) },
   },
   {
@@ -1101,6 +1238,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     defaultSize: { w: 520, h: 420 },
     matches: ENTITY(SOCIAL_AD_KEY),
     Body: SocialAdBody,
+    Face: AdFace,
     bringIn: { label: "Ad from the library", Picker: AdPicker },
     record: { place: (id, title) => ({ title: title?.trim() || "Ad", source: entity(SOCIAL_AD_KEY, id) }) },
   },
@@ -1118,6 +1256,7 @@ export const SOCIAL_ITEMS: readonly BoardItemType[] = [
     defaultSize: { w: 480, h: 280 },
     matches: ENTITY(SOCIAL_SWIPE_KEY),
     Body: SwipeBody,
+    Face: SwipeFace,
     bringIn: { label: "Swipe collection", Picker: SwipePicker },
     record: { place: (id, title) => ({ title: title?.trim() || "Swipe collection", source: entity(SOCIAL_SWIPE_KEY, id) }) },
   },
