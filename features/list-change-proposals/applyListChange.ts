@@ -33,6 +33,7 @@
  * not because a flag says so.
  */
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import {
   bulkWrite,
@@ -42,7 +43,6 @@ import {
 import type { BulkOp } from "@/features/data-tables/types";
 import { describeBulkFailures, isBulkOpError } from "@/features/data-tables/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
@@ -109,7 +109,7 @@ async function resolveScopeDataset(
     target.contextItemId,
     target.scopeId,
   );
-  if (isScopesRpcErr(res)) return { refused: res.error.message };
+  if (isRecordsErr(res)) return { refused: res.error.message };
   return { datasetId: res.data.datasetId };
 }
 

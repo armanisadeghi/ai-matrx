@@ -17,6 +17,7 @@
  * the whole value before the approval card, and reports what landed with ids.
  */
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -40,7 +41,6 @@ import type { FolderReference } from "@/features/notes/types";
 import type { NoteRecord } from "@/features/notes/redux/notes.types";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -294,7 +294,7 @@ export function useNotesCollectionWriteHandlers(
     const resolveScopes = async (value: unknown) => {
       const names = parseScopes(value);
       const found = await scopesService.findScopesByName(activeOrganizationId, names);
-      if (isScopesRpcErr(found)) throw new Error(found.error.message);
+      if (isRecordsErr(found)) throw new Error(found.error.message);
       const byName = new Map<string, Array<{ id: string; name: string; type: string }>>();
       for (const s of found.data) {
         const k = s.name.toLowerCase();

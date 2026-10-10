@@ -175,7 +175,7 @@ describe("resolveVariantComponent", () => {
     kind: "text",
     variants: serializeKindVariants([textarea, slider]),
     defaultInputComponentKey: null,
-    valueType: "string" as ContextValueType,
+    valueType: "string" as ContextFieldKind,
   };
 
   it("rung 1 — the named variant wins", () => {
@@ -290,7 +290,7 @@ describe("the derived-default table is the inverse of componentToValueType", () 
   // toggle components to `string` storage, so no component emits it. The
   // table still maps boolean → toggle, matching the kind ⇄ variable bridge's
   // canonicalComponentForField.
-  const emittable: ContextValueType[] = [
+  const emittable: ContextFieldKind[] = [
     "string",
     "number",
     "datetime",
