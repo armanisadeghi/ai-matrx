@@ -505,7 +505,7 @@ const PROJECTS_NAV_CHILDREN: ShellNavChild[] = [
   },
 ];
 
-/** The War Room — a live board, so it lives in the Board domain (domain tree, 2026-10-04). */
+/** The War Room — a live board, so it lives in the Workspace group (Arman, 2026-10-09). */
 const WAR_ROOM_NAV_CHILDREN: ShellNavChild[] = [
   {
     label: "War Room",
@@ -528,8 +528,7 @@ const WAR_ROOM_NAV_CHILDREN: ShellNavChild[] = [
 /**
  * Projects, Tasks and the War Room — the destination strip the projects and
  * tasks hubs render (features/projects ProjectsHub, features/tasks
- * TasksWorkbenchHome). In the menu, Projects and Tasks are the Projects domain
- * and the War Room is in Board.
+ * TasksWorkbenchHome). In the menu, all three sit in Workspace.
  */
 export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
   label: "Projects",
@@ -538,7 +537,7 @@ export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
 };
 
 /**
- * Tables, Make and Pick Lists — the record store's rows in the Data domain (Workbooks are
+ * Tables, Templates and Pick Lists — the record store's rows in the Data domain (Make, Pages and Dashboards left for Workspace, Arman 2026-10-09) (Workbooks are
  * Univer spreadsheets, so they live in Content). NO ROW HERE IS EVER HIDDEN BEHIND A SWITCH
  * (Arman, 2026-10-03: "EVERYTHING IS ON by default … Don't limit what users can do"): the
  * record store is the only data system, so Make and Records always show, with or without an
@@ -553,32 +552,6 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     color: "cyan",
     profileMenu: true,
     dashboard: true,
-  },
-  {
-    // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place.
-    label: "Make",
-    href: "/make",
-    iconName: "LayoutGrid",
-    description: "Make a table, form, booking page or dashboard",
-    color: "cyan",
-  },
-  {
-    // Every dashboard built from tables, across organizations (ItemsHome kind "dashboard").
-    label: "Dashboards",
-    href: "/data/dashboards",
-    iconName: "LayoutDashboard",
-    description: "Dashboards built from your tables",
-    color: "cyan",
-    guestHidden: true,
-  },
-  {
-    // Every page built from tables (a dashboard record whose presentation is a page).
-    label: "Pages",
-    href: "/data/pages",
-    iconName: "AppWindow",
-    description: "Pages built from your tables",
-    color: "cyan",
-    guestHidden: true,
   },
   {
     // THE template gallery (lane CHAIR-GALLERY): one public route for everyone, signed in or out.
@@ -799,29 +772,21 @@ const INDUSTRY_NAV_CHILDREN: ShellNavChild[] = [
  */
 export const primaryNavItems: ShellNavItem[] = [
   {
-    // board: dashboard, launchpad, boards, war-room. The home. Authed users
-    // get their dashboard; guests get the public `/features` page (the
-    // middleware hard-redirects guests off `/dashboard`).
-    label: "Board",
+    // workspace: every place a person works from — launchpad, dashboard, start page, spaces, boards,
+    // pages, dashboards, make, war room, projects and tasks (Arman, 2026-10-09: "Change Board at the
+    // top level of the menu to Workspace… pages and things like that cannot be in Data"). Authed
+    // users get their dashboard; guests get the public `/features` page (the middleware
+    // hard-redirects guests off `/dashboard`).
+    label: "Workspace",
     href: "/dashboard",
     guestHref: "/features",
     iconName: "LayoutDashboard",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Your home: dashboard, boards and the war room",
+    description: "Boards, pages, projects and dashboards",
     color: "sky",
     children: [
-      {
-        label: "Dashboard",
-        href: "/dashboard",
-        guestHref: "/features",
-        iconName: "LayoutDashboard",
-        description: "Your central hub for all activities and insights",
-        color: "sky",
-        profileMenu: true,
-        dashboard: true,
-      },
       {
         label: "Launchpad",
         href: USER_LAUNCHPAD_PATH,
@@ -833,8 +798,17 @@ export const primaryNavItems: ShellNavItem[] = [
         openInNewTab: true,
       },
       {
-        // features/start: the person's own start page — a Page built from tables they chose
-        // ("Make start page" on any page). Until this row it was reachable only from a page screen.
+        label: "Dashboard",
+        href: "/dashboard",
+        guestHref: "/features",
+        iconName: "LayoutDashboard",
+        description: "Your central hub for all activities and insights",
+        color: "sky",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        // features/start: the person's own start page — a Page built from tables they chose.
         label: "Start Page",
         href: "/start",
         iconName: "Compass",
@@ -843,8 +817,6 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
       },
       {
-        // Spaces lives on Board, beside the Dashboard, so a person finds it from home (Arman 2026-10-09:
-        // "add it to Board so it's somewhere at least"). One destination, one domain (nav-no-loss test).
         label: "Spaces",
         href: "/spaces",
         iconName: "NotebookTabs",
@@ -905,20 +877,35 @@ export const primaryNavItems: ShellNavItem[] = [
           { label: "Swipe collection", href: "/board?add=social-swipe-collection", iconName: "Images", group: "Web & social", actionItem: true, guestHidden: true },
         ],
       },
+      {
+        // Every page built from tables (a dashboard record whose presentation is a page).
+        label: "Pages",
+        href: "/data/pages",
+        iconName: "AppWindow",
+        description: "Pages built from your tables",
+        color: "cyan",
+        guestHidden: true,
+      },
+      {
+        // Every dashboard built from tables, across organizations (ItemsHome kind "dashboard").
+        label: "Dashboards",
+        href: "/data/dashboards",
+        iconName: "LayoutDashboard",
+        description: "Dashboards built from your tables",
+        color: "cyan",
+        guestHidden: true,
+      },
+      {
+        // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place.
+        label: "Make",
+        href: "/make",
+        iconName: "LayoutGrid",
+        description: "Make a table, form, booking page or dashboard",
+        color: "cyan",
+      },
       ...WAR_ROOM_NAV_CHILDREN,
+      ...PROJECTS_NAV_CHILDREN,
     ],
-  },
-  {
-    // projects: tasks-and-projects (schema `projects`).
-    label: "Projects",
-    href: "/projects",
-    iconName: "FolderKanban",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description: "Projects and tasks",
-    color: "violet",
-    children: PROJECTS_NAV_CHILDREN,
   },
   {
     // Sidebar points at the gallery (`/agents/all`) for authed users; for
@@ -1999,19 +1986,18 @@ export const adminNavItems: ShellNavItem[] = [
 ];
 
 /**
- * The phone's bottom dock — the eight most-used destinations, unchanged by the
+ * The phone's bottom dock — the seven most-used destinations, unchanged by the
  * domain reorganization (the dock is a launcher, not the menu tree).
  */
 // The phone dock uses the strip's own names and icons, so the two never disagree.
 export const dockItems: ShellNavItem[] = [
-  { label: "Board", href: "/dashboard", guestHref: "/features", iconName: "LayoutDashboard", section: "primary", dockOrder: 1 },
+  { label: "Workspace", href: "/dashboard", guestHref: "/features", iconName: "LayoutDashboard", section: "primary", dockOrder: 1 },
   { label: "Chat", href: "/chat/new", guestHref: "/chat", iconName: "MessageCircle", section: "primary", dockOrder: 2 },
   { label: "Agents", href: "/agents/all", guestHref: "/agents", iconName: AGENT_ICON_NAME, section: "primary", dockOrder: 3 },
   { label: "Content", href: "/notes", iconName: "FileText", section: "primary", dockOrder: 4 },
   { label: "Data", href: "/data", iconName: "Database", section: "primary", dockOrder: 5 },
   { label: "Account", href: "/organizations", iconName: "Building2", section: "primary", dockOrder: 6, guestHidden: true },
-  { label: "Projects", href: "/projects", iconName: "FolderKanban", section: "primary", dockOrder: 7 },
-  { label: "Files", href: "/files/all", guestHref: "/files", iconName: "Cloud", section: "primary", dockOrder: 8 },
+  { label: "Files", href: "/files/all", guestHref: "/files", iconName: "Cloud", section: "primary", dockOrder: 7 },
 ];
 
 export interface ShellNavChildSection {

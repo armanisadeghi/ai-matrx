@@ -99,11 +99,11 @@ describe("shell navigation route ownership", () => {
     expect(owner("/data/some-table")).toBe("Data");
     expect(owner("/shapes/all")).toBe("Data");
     expect(owner("/scopes")).toBe("Data");
-    expect(owner("/war-room")).toBe("Board");
-    expect(owner("/war-room/all")).toBe("Board");
-    expect(owner("/board")).toBe("Board");
-    expect(owner("/board/all")).toBe("Board");
-    expect(owner("/dashboard")).toBe("Board");
+    expect(owner("/war-room")).toBe("Workspace");
+    expect(owner("/war-room/all")).toBe("Workspace");
+    expect(owner("/board")).toBe("Workspace");
+    expect(owner("/board/all")).toBe("Workspace");
+    expect(owner("/dashboard")).toBe("Workspace");
     expect(owner("/transcripts")).toBe("Audio");
     expect(owner("/transcripts/scribe")).toBe("Audio");
     expect(owner("/voice/playground")).toBe("Audio");
@@ -111,8 +111,11 @@ describe("shell navigation route ownership", () => {
     expect(owner("/images")).toBe("Media");
     expect(owner("/libraries")).toBe("Media");
     expect(owner("/tools/scanner")).toBe("Media");
-    expect(owner("/projects")).toBe("Projects");
-    expect(owner("/tasks")).toBe("Projects");
+    expect(owner("/projects")).toBe("Workspace");
+    expect(owner("/data/pages")).toBe("Workspace");
+    expect(owner("/data/dashboards")).toBe("Workspace");
+    expect(owner("/make")).toBe("Workspace");
+    expect(owner("/tasks")).toBe("Workspace");
     expect(owner("/scraper")).toBe("Web");
     expect(owner("/search")).toBe("Web");
     expect(owner("/connect-computer")).toBe("Computer");
@@ -196,7 +199,7 @@ describe("shell navigation route ownership", () => {
   });
 
   it("never lights a new-tab launcher as the current route", () => {
-    const board = primaryNavItems.find((item) => item.label === "Board")!;
+    const board = primaryNavItems.find((item) => item.label === "Workspace")!;
     expect(findActiveNavChild("/launchpad", board)?.label).not.toBe("Launchpad");
   });
 

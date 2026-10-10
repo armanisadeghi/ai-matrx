@@ -6,14 +6,21 @@
  * from a page screen. A new page under /data now fails here until it gets a Data menu row or a
  * line below saying where its door is.
  *
+ * 2026-10-09 (Arman: "pages and things like that cannot be in Data"): /data/pages and
+ * /data/dashboards (and Make) moved to the Workspace menu; their door is there, never in Data.
+ *
  * RED when: a static `app/(core)/data/<segment>/page.tsx` exists whose `/data/<segment>` is not a
- * Data menu row and not in LINK_ONLY; or /start leaves the Board menu.
+ * Data or Workspace menu row and not in LINK_ONLY; Pages, Dashboards or Make reappear in Data or
+ * leave Workspace; or /start leaves the Workspace menu.
  */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { DATA_NAV_CHILDREN, primaryNavItems, type ShellNavChild } from "../constants/nav-data";
 
 const ROOT = path.resolve(__dirname, "../../..");
+/** Arman, 2026-10-09: pages, dashboards and Make are places a person works, never "Data". */
+const WORKSPACE_NOT_DATA = ["/data/pages", "/data/dashboards", "/make"] as const;
+
 const DATA_DIR = path.join(ROOT, "app/(core)/data");
 
 /** Static /data pages deliberately reached by a link, not a menu row — each names its door. */
@@ -34,11 +41,13 @@ function staticDataPages(): string[] {
 }
 
 describe("every /data page has a menu door", () => {
-  const dataHrefs = new Set(
-    everyChild(DATA_NAV_CHILDREN)
+  const doorsOf = (children: ShellNavChild[] | undefined) =>
+    everyChild(children)
       .filter((c) => !c.panelAction && !c.actionItem && !c.action)
-      .map((c) => c.href),
-  );
+      .map((c) => c.href);
+  const workspace = primaryNavItems.find((item) => item.label === "Workspace");
+  const workspaceHrefs = new Set(doorsOf(workspace?.children as ShellNavChild[] | undefined));
+  const dataHrefs = new Set([...doorsOf(DATA_NAV_CHILDREN), ...workspaceHrefs]);
 
   it("finds the static /data pages to check", () => {
     expect(staticDataPages()).toEqual(expect.arrayContaining(["/data/dashboards", "/data/pages"]));
@@ -53,9 +62,12 @@ describe("every /data page has a menu door", () => {
     expect(Object.keys(LINK_ONLY).filter((href) => !pages.has(href))).toEqual([]);
   });
 
-  it("the person's start page is in the Board menu", () => {
-    const board = primaryNavItems.find((item) => item.label === "Board");
-    const hrefs = everyChild(board?.children as ShellNavChild[] | undefined).map((c) => c.href);
-    expect(hrefs).toContain("/start");
+  it.each(WORKSPACE_NOT_DATA.map((href) => [href] as const))("%s is in Workspace and not in Data", (href) => {
+    expect(workspaceHrefs.has(href)).toBe(true);
+    expect(doorsOf(DATA_NAV_CHILDREN)).not.toContain(href);
+  });
+
+  it("the person's start page is in the Workspace menu", () => {
+    expect(workspaceHrefs.has("/start")).toBe(true);
   });
 });

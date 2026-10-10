@@ -73,9 +73,12 @@ describe("no nav row is gated", () => {
     expect(src).not.toMatch(/^\s*gate\??:/m);
   });
 
-  it("Make and Records are always in the Data menu (templates live on /make; /kits is retired)", () => {
+  it("Records are always in the Data menu and Make in Workspace (/kits is retired)", () => {
     const hrefs = DATA_NAV_CHILDREN.map((child) => child.href);
-    expect(hrefs).toEqual(expect.arrayContaining(["/make", "/data"]));
+    expect(hrefs).toContain("/data");
+    expect(hrefs).not.toContain("/make");
+    const workspace = primaryNavItems.find((item) => item.label === "Workspace");
+    expect((workspace?.children ?? []).map((child) => child.href)).toContain("/make");
     expect(DATA_NAV_CHILDREN.some((child) => /\/kits/i.test(child.href ?? ""))).toBe(false);
   });
 

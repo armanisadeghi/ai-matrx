@@ -7,7 +7,9 @@ import { DATA_NAV_CHILDREN, primaryNavItems } from "../constants/nav-data";
 import { searchNavDestinations } from "./search-nav";
 
 // Destinations only: the "Data Tables Window" panel row and the "New Table" action also carry /data.
-const dataRows = DATA_NAV_CHILDREN.filter(
+// Make moved to the Workspace menu (Arman, 2026-10-09), so it is read from there.
+const workspaceChildren = primaryNavItems.find((item) => item.label === "Workspace")?.children ?? [];
+const dataRows = [...DATA_NAV_CHILDREN, ...workspaceChildren].filter(
   (child) => ["/make", "/data"].includes(child.href ?? "") && !child.panelAction && !child.actionItem,
 );
 
