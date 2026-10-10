@@ -341,8 +341,19 @@ begin
   return v_cnt;
 end $f$;
 
+-- the seats a person holds on one review, labelled: '(fallback)' when only a fallback filled it, and
+-- 'employee(linked)' when the employee seat comes from a login linked after the review was created
+create function pg_temp.seat_labels(p_uid uuid, p_review uuid) returns text[] language sql stable as $f$
+  select coalesce(array_agg(distinct l order by l), '{}') from (
+    select case when t.source = 'fallback' then t.seat || '(fallback)'
+                when t.seat = 'employee' and (select employee_user_id from hr.review where id = p_review) is null
+                  then 'employee(linked)'
+                else t.seat end l
+      from iam._seat_table('hr_review', p_review) t where t.user_id = p_uid) z
+$f$;
+
 -- MODE 2: legacy answers vs the pure-model prediction
-create function pg_temp.mode2(p_config int)
+create function pg_temp.mode2(p_config int, p_live boolean default false)
 returns table (caller text, review uuid, door text, fact text, part text, legacy text, predicted text, seats text[])
 language plpgsql as $f$
 declare
@@ -351,14 +362,17 @@ declare
   v_open boolean; lc jsonb; v_anon boolean; v_names boolean; e jsonb; v_rid uuid;
 begin
   -- hr_review_get
-  for o in select f.caller, f.review, f.legacy, k.uid from fx_out f join fx_caller k on k.key = f.caller
+  for o in select f.caller, f.review, case when p_live then coalesce(f.live, f.legacy) else f.legacy end legacy, k.uid from fx_out f join fx_caller k on k.key = f.caller
             where f.config = p_config and f.door = 'hr_review_get' loop
     caller := o.caller; review := o.review; door := 'hr_review_get'; v_uid := o.uid;
     L := case when o.legacy like '{%' then o.legacy::jsonb else '{}'::jsonb end;
     select * into r from hr.review where id = o.review;
     select * into cy from hr.review_cycle where id = r.cycle_id;
-    v_seats := coalesce(iam.seats_of(v_uid, 'hr_review', o.review), '{}'); seats := v_seats;
-    lr := coalesce((L ->> 'ok')::boolean, false); pr := cardinality(v_seats) > 0;
+    v_seats := coalesce(iam.seats_of(v_uid, 'hr_review', o.review), '{}');
+    seats := pg_temp.seat_labels(v_uid, o.review);
+    -- reach: a seat that opens the record (line_manager, which only history reads, never does)
+    lr := coalesce((L ->> 'ok')::boolean, false);
+    pr := cardinality(coalesce(iam.seats_opening(v_uid, 'hr_review', o.review), '{}')) > 0;
     fact := 'reach'; part := null; legacy := lr::text; predicted := pr::text; return next;
     if not (lr or pr) then continue; end if;
     -- every response row
@@ -449,12 +463,12 @@ begin
   end loop;
 
   -- _list_mine (fixture reviews only) and _peer_requests_mine
-  for o in select k.key, k.uid, f.door, f.legacy, fr.id rid, fr.org from fx_caller k
+  for o in select k.key, k.uid, f.door, case when p_live then coalesce(f.live, f.legacy) else f.legacy end legacy, fr.id rid, fr.org from fx_caller k
              join fx_out f on f.caller = k.key and f.config = p_config
                           and f.door in ('hr_review_list_mine', 'hr_review_peer_requests_mine')
              join fx_review fr on (f.door = 'hr_review_peer_requests_mine' or f.target = fr.org::text) loop
     caller := o.key; review := o.rid; door := o.door; part := null;
-    v_seats := coalesce(iam.seats_of(o.uid, 'hr_review', o.rid), '{}'); seats := v_seats;
+    v_seats := coalesce(iam.seats_of(o.uid, 'hr_review', o.rid), '{}'); seats := pg_temp.seat_labels(o.uid, o.rid);
     L := case when o.legacy like '{%' then o.legacy::jsonb else '{}'::jsonb end;
     if o.door = 'hr_review_list_mine' then
       lv := exists (select 1 from jsonb_array_elements(coalesce(L -> 'reviews', '[]')) e2 where e2 ->> 'review_id' = o.rid::text);
@@ -470,14 +484,14 @@ begin
   end loop;
 
   -- history: the scope stays today's; each entry is redacted by parts
-  for o in select f.caller, k.uid, f.legacy from fx_out f join fx_caller k on k.key = f.caller
-            where f.config = p_config and f.door = 'hr_review_history' and f.legacy like '{"ok": true%' loop
+  for o in select f.caller, k.uid, case when p_live then coalesce(f.live, f.legacy) else f.legacy end legacy from fx_out f join fx_caller k on k.key = f.caller
+            where f.config = p_config and f.door = 'hr_review_history' and case when p_live then coalesce(f.live, f.legacy) else f.legacy end like '{"ok": true%' loop
     door := 'hr_review_history'; caller := o.caller;
     for e in select * from jsonb_array_elements(o.legacy::jsonb -> 'reviews') loop
       v_rid := (e ->> 'review_id')::uuid; review := v_rid;
       continue when not exists (select 1 from fx_review where id = v_rid);
       select * into r from hr.review where id = v_rid;
-      v_seats := coalesce(iam.seats_of(o.uid, 'hr_review', v_rid), '{}'); seats := v_seats;
+      v_seats := coalesce(iam.seats_of(o.uid, 'hr_review', v_rid), '{}'); seats := pg_temp.seat_labels(o.uid, v_rid);
       foreach col in array array['overall_rating', 'shared_at'] loop
         raw := to_jsonb(r) -> col;
         continue when raw is null or jsonb_typeof(raw) = 'null';
@@ -622,6 +636,7 @@ def main():
     m1_compared = 0
     m1_diffs = []
     m2_rows = []
+    m2_live_diffs = []
     for ci, bits in enumerate(configs):
         vals, seen = set_knobs(bits)
         log(f"config {ci} knobs {vals} (resolved M/F: {seen}) writes={'yes' if ci in write_cfgs else 'no'}")
@@ -630,7 +645,7 @@ def main():
         for caller, door, target, legacy, live in q(
                 "select caller, door, target, legacy, live from fx_out where config = %s and live is not null", (ci,)):
             if normalize(legacy, known) != normalize(live, known):
-                m1_diffs.append((ci, caller, door, target, legacy[:300], live[:300]))
+                m1_diffs.append((ci, caller, door, target, legacy, live))
         log(f"  mode 1: {n} door calls compared, {len(m1_diffs)} differences so far")
         if os.environ.get('MODE1_ONLY'):
             for door, cnt in Counter(d[2] for d in m1_diffs).most_common():
@@ -646,6 +661,10 @@ def main():
             strata[f"door {door}"] += cnt
         rows = q("select * from pg_temp.mode2(%s)", (ci,))
         m2_rows += [(ci,) + tuple(r) for r in rows]
+        # mode 2 = mode 1 now: the same facts read from the LIVE door's answers must equal the model's prediction
+        live_rows = q("select * from pg_temp.mode2(%s, true)", (ci,))
+        m2_live_diffs.extend((ci,) + tuple(r) for r in live_rows if r[5] != r[6])
+        log(f"  mode 2 on the live doors: {len(live_rows)} facts, {sum(1 for r in live_rows if r[5] != r[6])} differ from the model")
         log(f"  mode 2: {len(rows)} facts compared, {sum(1 for r in rows if r[5] != r[6])} differences")
 
     # strata over the fixture itself
@@ -693,27 +712,143 @@ def main():
         print(f"  {door:36s} {outs}"[:400])
         if not any(o.startswith('ok ') or o.startswith('value ') for o in outs.split(' · ')):
             print(f"      (never succeeded: only its refusals are compared)")
-    print(f"\nMODE 1 (legacy door vs live door, same person): {m1_compared} calls compared, {len(m1_diffs)} differences")
-    for d in m1_diffs[:40]:
-        print('  DIFF', d)
-    check('mode 1: legacy and live doors agree for every person, review and door', not m1_diffs, f"{len(m1_diffs)} diffs")
+    print(f"\nMODE 1 (legacy door vs live door, same person): {m1_compared} calls compared, {len(m1_diffs)} raw differences")
+    opening_pairs = defaultdict(set)
+    for r in m2_rows:
+        c = opening_class(r) if r[6] != r[7] else None
+        if c:
+            opening_pairs[(r[0], r[1], str(r[2]))].add(c)
+    upper_in = {(k, str(o)) for k, o in q("""select k.key, o.org from fx_caller k
+                  cross join (values (%s::uuid), (%s::uuid)) o(org)
+                  where hr.review_seat_upper_in_org(k.uid, o.org)""", (ORG_M, ORG_F))}
+    cycle_org = {str(v): str(k[0]) for k, v in CYCLES.items()}
+    m1_classes = Counter()
+    m1_not = []
+    for d in m1_diffs:
+        cls = mode1_class(d, known, opening_pairs, upper_in, cycle_org)
+        if cls:
+            m1_classes[cls] += 1
+        else:
+            m1_not.append(d)
+    for k, n in m1_classes.most_common():
+        print(f"  explained  {n:6d}  {k}")
+    print(f"  NOT in the opening list: {len(m1_not)}")
+    for door, cnt in Counter(d[2] for d in m1_not).most_common():
+        ex = next(d for d in m1_not if d[2] == door)
+        print(f"  {cnt:6d} {door} (e.g. {KIND.get(ex[1], ex[1])}, config {ex[0]}, target {ex[3]})\n"
+              f"      legacy {normalize(ex[4], known)[:400]}\n      live   {normalize(ex[5], known)[:400]}")
+    check('mode 1: every legacy/live difference is in the opening list', not m1_not, f"{len(m1_not)} NOT in it")
+    print(f"\nMODE 2 ON THE LIVE DOORS (live door facts vs model): {len(m2_live_diffs)} differences")
+    for r in m2_live_diffs[:30]:
+        print('  LIVE≠MODEL', r[:8], r[8])
+    check('mode 2 = mode 1: the live doors answer exactly what the model predicts', not m2_live_diffs,
+          f"{len(m2_live_diffs)} diffs")
 
     classify_and_print(m2_rows)
     plants(known)
     return 1 if failures else 0
 
 
+OPENING_LIST = [   # the written opening list (PLAN §8 step 3, plus the owner's rulings of 2026-10-10)
+    '_list_mine adds upper management',
+    'upper management where listed',
+    'union across seats outside blind_wins',
+    'a fallback filling an empty required seat',
+    'a login linked after creation saves and submits its own self-evaluation',
+]
+
+
+ACCESS_REFUSALS = {'not_reachable', 'not_permitted', 'not_the_manager', 'not_the_employee', 'not_respondent'}
+LIST_KEYS = {'hr_review_list_mine': 'reviews', 'hr_review_history': 'reviews', 'hr_review_peer_requests_mine': 'requests'}
+
+
+def _seatless(obj, seen):
+    """Drop my_seat (legacy) / seats (swapped) everywhere, remembering each per review_id."""
+    if isinstance(obj, dict):
+        if 'my_seat' in obj or 'seats' in obj:
+            seen.append((obj.get('my_seat'), obj.get('seats'), obj.get('review_id')))
+        return {k: _seatless(v, seen) for k, v in obj.items() if k not in ('my_seat', 'seats')}
+    if isinstance(obj, list):
+        return [_seatless(v, seen) for v in obj]
+    return obj
+
+
+def _parse(text):
+    try:
+        return json.loads(text)
+    except (TypeError, ValueError):
+        return text
+
+
+def _refused(x):
+    return isinstance(x, dict) and x.get('ok') is False or (isinstance(x, str) and x.startswith('ERROR'))
+
+
+def mode1_class(d, known, opening_pairs, upper_in, cycle_org):
+    """Why one legacy-vs-live difference is allowed, or None (NOT in the opening list).
+    The seat shape (my_seat -> seats) is the swap itself: today's seat must be in the list. A refusal against a
+    refusal is the same answer (nothing happens). Legacy answering and the live door refusing is a tightening:
+    never allowed. Anything else must sit on a (person, review) pair where mode 2 found an opening-list class."""
+    ci, caller, door, target, legacy, live = d
+    ls, ns = [], []
+    L = _seatless(_parse(normalize(legacy, known)), ls)
+    N = _seatless(_parse(normalize(live, known)), ns)
+    live_seats = {rid: s for _, s, rid in ns if s is not None}
+    for ms, _, rid in ls:
+        if ms and rid in live_seats and ms not in live_seats[rid]:
+            return None
+    if L == N:
+        return 'the seat list replaces my_seat (today\'s seat is in it)'
+    if _refused(L) and _refused(N):
+        return 'both refuse (the reason is worded differently)'
+    if _refused(N):
+        return None
+    if target in {str(k) for k in REVIEWS}:
+        cls = opening_pairs.get((ci, caller, target))
+        return 'opening: ' + ' + '.join(sorted(cls)) if cls else None
+    if door in LIST_KEYS:
+        if _refused(L):
+            return None
+        key = LIST_KEYS[door]
+        if {k: v for k, v in L.items() if k != key} != {k: v for k, v in N.items() if k != key}:
+            return None
+        lm = {e.get('review_id'): e for e in L.get(key) or []}
+        nm = {e.get('review_id'): e for e in N.get(key) or []}
+        classes = set()
+        for rid in set(lm) | set(nm):
+            if lm.get(rid) == nm.get(rid):
+                continue
+            if rid not in nm:
+                return None
+            cls = opening_pairs.get((ci, caller, rid))
+            if not cls:
+                return None
+            classes |= cls
+        return 'opening: ' + ' + '.join(sorted(classes)) if classes else None
+    if door == 'hr_review_calibration' and _refused(L) and (caller, cycle_org.get(target)) in upper_in:
+        return 'opening: ' + OPENING_LIST[1]
+    return None
+
+
 def opening_class(row):
+    """The opening-list class of one difference (an OPENING: legacy false, model true), or None.
+    seats are labelled by pg_temp.seat_labels: 'hr(fallback)' = held only through the fallback;
+    'employee(linked)' = the employee seat of a login linked after the review was created."""
     ci, caller, review, door, fact, part, legacy, predicted, seats = row
-    seats = seats or []
+    labels = seats or []
+    base = sorted({s.split('(')[0] for s in labels if s != 'line_manager'})
     if predicted == 'true' and legacy == 'false':
-        if door == 'hr_review_list_mine' and 'upper_management' in seats:
-            return '_list_mine adds upper management'
-        if 'upper_management' in seats:
-            return 'upper management where listed'
-        blind = part == 'self_evaluation' and 'manager' in seats
-        if len(seats) > 1 and not blind:
-            return 'union across seats outside blind_wins'
+        if door == 'hr_review_list_mine' and 'upper_management' in base:
+            return OPENING_LIST[0]
+        if 'upper_management' in base:
+            return OPENING_LIST[1]
+        if 'employee(linked)' in labels and fact in ('can save_self', 'can submit_self'):
+            return OPENING_LIST[4]
+        if any(s.endswith('(fallback)') for s in labels):
+            return OPENING_LIST[3]
+        blind = part == 'self_evaluation' and 'manager' in labels   # a fallback manager never keeps the blind
+        if len(base) > 1 and not blind:
+            return OPENING_LIST[2]
     return None
 
 
