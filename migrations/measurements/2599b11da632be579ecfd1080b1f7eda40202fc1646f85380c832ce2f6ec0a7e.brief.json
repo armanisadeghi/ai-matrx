@@ -2,6 +2,6 @@
   "file": "datadefects4_b2_the_row_guards_part_two_skip_archive_bookkeeping.sql",
   "sha256": "2599b11da632be579ecfd1080b1f7eda40202fc1646f85380c832ce2f6ec0a7e",
   "target": "clone",
-  "totalMs": 18125,
-  "measuredAt": "2026-10-10T15:58:31.911Z"
+  "totalMs": 2224,
+  "measuredAt": "2026-10-10T16:15:29.089Z"
 }

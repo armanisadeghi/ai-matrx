@@ -320,15 +320,18 @@ function recordBriefLockMeasurement(
   m: Awaited<ReturnType<typeof measure>>,
 ): void {
   if (!briefLockDeclared(sql)) return;
+  // REAL WALL TIME: the sum of the statements' own execution times. The pg_locks sampling between statements is
+  // not part of the lock a writer waits behind, so it is not counted.
+  const wall = m.statements.reduce((a, st) => a + st.ms, 0);
   const sha = sha256OfBytes(sql);
   const out = briefLockMeasurementPath(filePath, sha);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(
     out,
-    JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: m.totalMs, measuredAt: new Date().toISOString() }, null, 2) + "\n",
+    JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: wall, measuredAt: new Date().toISOString() }, null, 2) + "\n",
     "utf8",
   );
-  console.log(`${TAG.ok}brief-lock transaction measured ${C.bold}${m.totalMs} ms${C.reset} on the clone, bound to these bytes.`);
+  console.log(`${TAG.ok}brief-lock statements measured ${C.bold}${wall} ms wall${C.reset} on the clone, bound to these bytes.`);
 }
 
 /**
