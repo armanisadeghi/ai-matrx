@@ -106,8 +106,12 @@ export function insertPromptText({
     }
     return null;
   }
-  const start = textarea ? textarea.selectionStart : (fallbackCaret?.start ?? text.length);
-  const end = textarea ? textarea.selectionEnd : (fallbackCaret?.end ?? start);
+  // The live selection counts only while the textarea still has focus: the menu
+  // takes focus, and a box that blurred (or remounted) reports a caret at 0. The
+  // caret saved when the menu opened is the person's real caret.
+  const live = textarea && typeof document !== "undefined" && document.activeElement === textarea;
+  const start = live ? textarea.selectionStart : (fallbackCaret?.start ?? text.length);
+  const end = live ? textarea.selectionEnd : (fallbackCaret?.end ?? start);
   const result = insertIntoText(text, start, end, insert);
   onChange(result.text);
   if (textarea) {
