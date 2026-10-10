@@ -305,7 +305,7 @@ create_swipe_links saves post links into a collection (it fetches each post and 
     listTarget(
       "create_swipe_links",
       "Save links",
-      'Saves links to single posts into the swipe file, exactly as the Save link dialog does: each post is fetched (this SPENDS POINTS per link; when the cost is worth a warning the page names the points and asks again) and filed in a collection. Value is a JSON ARRAY of 1-10 objects { "url": "<a post link>", "collection_id": "<from collections>" OR "new_collection_name": "<name>", "note"?: string, "tags"?: [string] }. A profile link, a bad collection_id or both/neither collection fields refuses the whole list.',
+      'Saves links to single posts into the swipe file, exactly as the Save link dialog does: each post is fetched (this SPENDS POINTS per link; the approval card names the points) and filed in a collection. Value is a JSON ARRAY of 1-10 objects { "url": "<a post link>", "collection_id": "<from collections>" OR "new_collection_name": "<name>", "note"?: string, "tags"?: [string] }. A profile link, a bad collection_id or both/neither collection fields refuses the whole list.',
       "items",
       "swipe",
       300,
@@ -419,7 +419,7 @@ Never search to look around: results is already what the person sees.
     listTarget(
       "update_tracked_advertisers",
       "Look again",
-      'For tracked advertisers: look_again searches their ad library for new ads, exactly as Look again does (SPENDS POINTS per advertiser; when the cost is worth a warning the page names the points and asks again); mark_seen marks their current ads seen. Value is a JSON ARRAY of { "id": "<from tracked_advertisers>", "look_again"?: true, "mark_seen"?: true }.',
+      'For tracked advertisers: look_again searches their ad library for new ads, exactly as Look again does (SPENDS POINTS per advertiser; the approval card names the points); mark_seen marks their current ads seen. Value is a JSON ARRAY of { "id": "<from tracked_advertisers>", "look_again"?: true, "mark_seen"?: true }.',
       "tracked_advertisers",
       "ads",
       310,
