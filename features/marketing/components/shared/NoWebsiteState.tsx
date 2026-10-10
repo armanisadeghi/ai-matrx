@@ -47,17 +47,17 @@ export function NoWebsiteState({
           : "mx-auto w-full max-w-lg rounded-lg border border-border bg-card p-6 text-center"
       }
     >
-      <div className={compact ? "flex items-start gap-3" : undefined}>
+      <div className={compact ? "flex items-center gap-3" : undefined}>
         <Globe
           className={compact ? "mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" : "mx-auto h-5 w-5 text-muted-foreground"}
           aria-hidden
         />
-        <div className="min-w-0">
-          <p className="mt-2 text-sm font-medium text-foreground first:mt-0" title={`${brandName}: ${needs} needs a website`}>
+        <div className={compact ? "flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2" : "min-w-0"}>
+          <p className={compact ? "text-sm font-medium text-foreground" : "mt-2 text-sm font-medium text-foreground"} title={`${brandName}: ${needs} needs a website`}>
             Needs a website
           </p>
           {children}
-          <div className={compact ? "mt-3 flex flex-wrap gap-2" : "mt-3 flex flex-wrap justify-center gap-2"}>
+          <div className={compact ? "flex flex-wrap gap-2" : "mt-3 flex flex-wrap justify-center gap-2"}>
             <Button variant="primary" asChild>
               <Link href={marketingRoutes.newSite(brandId)}>
                 <Plus className="h-3.5 w-3.5" />

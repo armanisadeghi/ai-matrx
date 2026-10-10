@@ -86,6 +86,7 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- `2026-10-10` — **F14 tester sweep.** Every spend is named on its control before the click (Add competitor, per-handle Add, Track, Track N: `· ≈ N points`); Find socials reads the website and is labelled `Free`. Directory columns: Status sits right after the name, the Followers total column only exists with 2+ platforms (one platform column already is the total), the name column is wider with a title. A social-first brand's autopsy modes (run, review, history, opportunities, evidence) show one `NoWebsiteState` line with a door to the list instead of repeating the directory; `all` and `competitors` are the directory. The empty state no longer carries a second Add button. `NoWebsiteState` is one line (the needs phrase rides the tooltip).
 - 2026-10-09 — page-pass (L6), type list page, sharp after Linear: the brand directory has its own agent surface
   (`matrx-user/marketing-competitor-directory`, read-only; the autopsy modes resolve to `matrx-user/marketing-competitors`),
   clears the header, shows phone cards instead of a clipped table, opens the website in a new tab; the detail panel uses
