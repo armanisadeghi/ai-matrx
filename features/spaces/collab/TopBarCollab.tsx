@@ -71,7 +71,7 @@ export function ShareMenu({ spaceId, title, onCopyLink }: { spaceId: string; tit
             Share
           </button>
         </PopoverTrigger>
-        <PopoverContent surface="solid" align="end" className="w-[360px] p-2">
+        <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ surface="solid" align="end" className="w-[360px] p-2">
           <Tabs
             value={tab}
             onValueChange={setTab}

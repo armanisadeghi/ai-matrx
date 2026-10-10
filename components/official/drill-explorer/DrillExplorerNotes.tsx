@@ -72,7 +72,7 @@ export function DrillExplorerNotes({ chips, notes }: { chips: readonly DrillNote
               {`Notes (${notes.length})`}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-2">
+          <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="start" className="w-[min(24rem,calc(100vw-2rem))] p-2">
             <ul className="space-y-1.5 type-secondary text-muted-foreground">
               {notes.map((n) => (
                 <li key={n} data-drill-explorer-said>

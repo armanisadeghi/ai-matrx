@@ -81,7 +81,7 @@ function CommentItem({
                   <MoreHorizontal size={16} />
                 </button>
               </PopoverTrigger>
-              <PopoverContent surface="solid" align="end" className="w-[200px] p-1">
+              <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ surface="solid" align="end" className="w-[200px] p-1">
                 <div
                   role="menuitem"
                   tabIndex={0}

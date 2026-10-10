@@ -77,7 +77,7 @@ export function DrillNumberFilter({
         <Button icon={<ListFilter />} type="button" variant="quiet" data-drill-explorer-number-filter> Filter{mine.length > 0 ? ` (${mine.length})` : ""}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-2 type-body">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-[min(22rem,calc(100vw-2rem))] p-2 type-body">
         {mine.length > 0 ? (
           <ul className="mb-2 flex flex-col gap-1">
             {mine.map((h, i) => (

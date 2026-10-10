@@ -127,7 +127,7 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
           Test orgs
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-2">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-80 p-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

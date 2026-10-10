@@ -735,7 +735,7 @@ export function ActionRow({
             Change…
           </button>
         </PopoverTrigger>
-        <PopoverContent
+        <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */
           align="end"
           className="w-72 max-w-[calc(100vw-2rem)] space-y-0.5 p-1 text-xs"
         >

@@ -107,7 +107,7 @@ export function PageMenu({
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<MoreHorizontal size={18} />} aria-label="Page options" />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ surface="solid" align="end" className="w-[260px] p-1">
         <p className="px-2 pb-1 pt-1.5 type-secondary text-muted-foreground">Style</p>
         <div className="grid grid-cols-3 gap-1 px-1 pb-1">
           {FONTS.map((f) => (

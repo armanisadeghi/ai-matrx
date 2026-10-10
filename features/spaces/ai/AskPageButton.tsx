@@ -32,7 +32,7 @@ export function AskPageButton({ page }: { page: () => { title: string; markdown:
           <AGENT_ICON size={17} />
         </button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="spaces-ai w-[min(420px,92vw)] p-0">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ surface="solid" align="end" className="spaces-ai w-[min(420px,92vw)] p-0">
         <form
           className="spaces-ai-input"
           onSubmit={(e) => {

@@ -92,7 +92,7 @@ function FormulaHelp({ ask }: { ask: FormulaHelpAsk }) {
           Help with this…
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-0">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-auto p-0">
         {open ? (
           <ProTextareaAgentPanel
             actionId="help"

@@ -264,7 +264,7 @@ function CollectorsPopover({ collectors, vitals }: { collectors: PerfCollector[]
           {waiting.length ? <span className="ml-1 text-muted-foreground">· {waiting.length} routes sampling</span> : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[34rem] max-w-[92vw] space-y-3 p-2 text-xs">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="start" className="w-[34rem] max-w-[92vw] space-y-3 p-2 text-xs">
         <table className="w-full">
           <thead>
             <tr className="text-left text-muted-foreground">

@@ -91,7 +91,7 @@ export function InfoHint({ text, label = "More info", className, side = "top" }:
             {glyph}
           </button>
         </PopoverTrigger>
-        <PopoverContent
+        <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */
           side={side}
           sideOffset={6}
           className={cn("w-auto px-3 py-2 text-popover-foreground", CONTENT_CLASS)}

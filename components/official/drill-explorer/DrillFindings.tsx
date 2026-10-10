@@ -155,7 +155,7 @@ export function DrillFindings({
         <Button icon={<SearchCheck />} type="button" variant="quiet" data-drill-explorer-findings> Findings ({findings.length + (sections ?? []).reduce((n, x) => n + x.count, 0)})
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
         <ul className="max-h-[70vh] divide-y divide-border overflow-auto type-body">
           {sections?.length && findings.length > 0 ? <li className="bg-muted/40 px-3 py-1 type-meta font-medium text-muted-foreground">{label ?? "Findings"}</li> : null}
           {findings.map((finding) => {

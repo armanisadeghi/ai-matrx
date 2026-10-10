@@ -75,7 +75,7 @@ export function PersonOwnerChip({
           Link person
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-2">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="start" className="w-64 p-2">
         <input
           autoFocus
           value={term}

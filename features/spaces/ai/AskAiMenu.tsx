@@ -199,7 +199,7 @@ export function AskAiMenu({
       <PopoverAnchor asChild>
         <span aria-hidden style={{ position: "fixed", left: target.at.left, top: target.at.top, width: 1, height: 1 }} />
       </PopoverAnchor>
-      <PopoverContent
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */
         surface="solid"
         align="start"
         side="bottom"

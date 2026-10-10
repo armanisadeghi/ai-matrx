@@ -99,7 +99,7 @@ export function FileViewerControlsButton({
           />
         </span>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-52 p-0">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-52 p-0">
         <ControlRailLayoutContext.Provider value="popover">
           <Controls />
         </ControlRailLayoutContext.Provider>

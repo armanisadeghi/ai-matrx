@@ -121,7 +121,7 @@ export function ApprovalStatusSelect({
           {busy ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : <ChevronDown className="size-3 text-muted-foreground" />}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-60 p-1" onClick={(e) => e.stopPropagation()}>
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="start" className="w-60 p-1" onClick={(e) => e.stopPropagation()}>
         {!next ? (
           <div role="listbox" className="flex flex-col">
             {ORDER.map((s) => (

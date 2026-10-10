@@ -40,7 +40,7 @@ export default function TopTierAccessButton() {
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-2 text-xs">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-80 p-2 text-xs">
         <div className="mb-1 font-medium">MAX models — allowed accounts</div>
         {error ? (
           <div role="alert" className="text-destructive-ink">{error}</div>

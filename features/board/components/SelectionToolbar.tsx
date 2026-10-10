@@ -240,7 +240,7 @@ export function SelectionToolbarMenu({ label, trigger, children }: { label: stri
           {trigger}
         </button>
       </PopoverTrigger>
-      <PopoverContent data-board-chrome side="top" align="center" sideOffset={8} className="w-auto p-2">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ data-board-chrome side="top" align="center" sideOffset={8} className="w-auto p-2">
         {children}
       </PopoverContent>
     </Popover>

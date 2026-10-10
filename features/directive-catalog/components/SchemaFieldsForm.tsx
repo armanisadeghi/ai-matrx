@@ -411,7 +411,7 @@ function RecordControl({
               : emptyLabel || `Choose a ${noun}`}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-2" align="start">
+        <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ className="w-80 p-2" align="start">
           <RecordReferencePicker
             token={field.recordToken}
             onPickMany={(items) => {

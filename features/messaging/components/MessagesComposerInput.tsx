@@ -78,7 +78,7 @@ export function MessagesComposerInput({
           {kind === "attach" ? <Plus size={19} /> : <Smile size={18} />}
         </button>
       </PopoverTrigger>
-      <PopoverContent
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */
         side="top"
         align={kind === "attach" ? "start" : "end"}
         className="w-[min(380px,calc(100vw-24px))] max-h-[min(600px,var(--radix-popover-content-available-height))] overflow-auto p-0"

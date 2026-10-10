@@ -54,7 +54,7 @@ export function ReusedMarker({ source }: { source: NodeSource }) {
           on {n} boards
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 p-1">
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-64 p-1">
         <p className="px-2 py-1 text-xs text-muted-foreground">Also on</p>
         {others.map((b) => (
           <Link key={b.id} href={boardHref(b)} className="block truncate rounded-md px-2 py-1.5 text-sm hover:bg-accent">

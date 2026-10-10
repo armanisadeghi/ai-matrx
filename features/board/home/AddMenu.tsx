@@ -129,7 +129,7 @@ export function AddMenu({ types, more = [], onStartNew, onBringIn, canvasTools, 
           <ChevronDown className="h-3 w-3 opacity-80" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0" data-board-chrome>
+      <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="start" className="w-80 p-0" data-board-chrome>
         <Command
           shouldFilter={false}
           loop

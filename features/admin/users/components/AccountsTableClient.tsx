@@ -721,7 +721,7 @@ function AccountsRoster() {
                         +{row.organizations.length - ORG_CELL_VISIBLE} more
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent
+                    <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */
                       align="start"
                       className="max-h-72 w-72 overflow-y-auto p-2"
                       onClick={(event) => event.stopPropagation()}
