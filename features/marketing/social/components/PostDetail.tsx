@@ -223,8 +223,11 @@ function MetricsTab({
   const rows = snapshots.data ?? [];
   const metrics = availableMetrics(rows);
   // A line needs two readings. Until then the figures stand as tiles, not a chart of one dot.
-  if (rows.length < 2) {
-    const first = rows.length ? Math.min(...rows.map((r) => Date.parse(r.observed_at))) : null;
+  // (the chart itself draws a tile, repeating the header's figure, for readings within one day of each other).
+  const times = rows.map((r) => Date.parse(r.observed_at));
+  const drawsLine = rows.length >= 2 && Math.max(...times) - Math.min(...times) >= 24 * 60 * 60 * 1000;
+  if (!drawsLine) {
+    const first = rows.length ? Math.min(...times) : null;
     // The header already shows today's figures: until there is history, only what it does not show.
     return (
       <div className="flex flex-col gap-1.5">
