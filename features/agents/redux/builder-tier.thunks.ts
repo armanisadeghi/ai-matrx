@@ -331,94 +331,9 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
   },
 );
 /**
- * Toggles the agent's `auto_tools_disabled` kill switch — the inverse of the
- * Builder's "Allow automated tool injection" switch.
- *
- * Persists into `agent.definition.tool_config.auto_tools_disabled` via a
- * read-merge-write so sibling tool_config keys (`excluded_tools`) are never
- * clobbered. Strips the dead `tools` key if present — tool assignment lives
- * on `agent.definition.tools` / `custom_tools`, never in tool_config. The
- * server reads this flag from tool_config (agx_manager.py); there is no
- * dedicated column, so a targeted merge is the correct write. Optimistic via
- * mergePartialAgent (does NOT mark dirty); reverted on failure.
- */
-export const setAgentAutoToolsDisabled = createAsyncThunk<
-  void,
-  { agentId: string; disabled: boolean },
-  ThunkApi
->(
-  "agentDefinition/setAutoToolsDisabled",
-  async ({ agentId, disabled }, { dispatch, getState }) => {
-    const previous =
-      selectAgentById(getState(), agentId)?.autoToolsDisabled ?? false;
-
-    // Optimistic — value updates immediately without being marked dirty.
-    dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: disabled }));
-
-    // Synthetic comparison/variation agents live only in Redux — never persist.
-    if (isSyntheticAgentId(agentId)) return;
-
-    const { data: current, error: readError } = await supabase
-      .schema("agent")
-      .from("definition")
-      .select("tool_config")
-      .eq("id", agentId)
-      .single();
-
-    if (readError) {
-      dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
-      dispatch(setAgentError({ id: agentId, error: readError.message }));
-      throw pgErrorToError(readError);
-    }
-
-    const existingConfig =
-      current?.tool_config &&
-      typeof current.tool_config === "object" &&
-      !Array.isArray(current.tool_config)
-        ? { ...(current.tool_config as Record<string, unknown>) }
-        : {};
-    // Dead key — never re-persist; assignment is agent.definition.tools.
-    delete existingConfig.tools;
-
-    const { data, error } = await writeOneRow(
-      supabase
-        .schema("agent")
-        .from("definition")
-        .update({
-          tool_config: {
-            ...existingConfig,
-            auto_tools_disabled: disabled,
-          } as Database["agent"]["Tables"]["definition"]["Update"]["tool_config"],
-        })
-        .eq("id", agentId)
-        .select("version, updated_at, follows_source"),
-      { action: "update", noun: "definition" },
-    );
-
-    if (error) {
-      dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
-      dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw agentNameTakenError(error) ?? pgErrorToError(error);
-    }
-
-    if (data) {
-      dispatch(
-        mergePartialAgent({
-          id: agentId,
-          version: data.version,
-          updatedAt: data.updated_at,
-          // An edit to what a following copy follows turns it off in the database.
-          followsSource: data.follows_source,
-        }),
-      );
-    }
-  },
-);
-
-/**
  * Toggles the agent's `auto_context_disabled` kill switch — the inverse of the
  * Builder's "Allow automated context injection" switch, and the exact mirror of
- * `setAgentAutoToolsDisabled` above.
+ * `setAgentAutoToolsDisabled` (auto-tools.thunks.ts).
  *
  * Unlike the tools switch (which lives inside the `tool_config` JSONB and needs
  * a read-merge-write), this is a first-class column on `agent.definition`, so a

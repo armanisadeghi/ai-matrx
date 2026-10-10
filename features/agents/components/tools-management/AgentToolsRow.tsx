@@ -32,6 +32,7 @@ import {
   setAgentTools,
 } from "@/features/agents/redux/agent-builder.slice";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
+import { AgentToolsInjectionSwitch } from "@/features/agents/components/tools-management/AgentToolsInjectionSwitch";
 import { loadAvailableTools, loadToolById, selectAllTools, selectToolIdentityMap, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 interface AgentToolsRowProps {
@@ -105,6 +106,10 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex min-w-0 items-center gap-2">
         <Label className="shrink-0 text-xs text-muted-foreground">Tools</Label>
+
+        {/* The automatic-tools switch sits on the row, like Context policy's —
+            not only inside the picker. */}
+        <AgentToolsInjectionSwitch agentId={agentId} compact />
 
         <ScrollFade
           orientation="horizontal"

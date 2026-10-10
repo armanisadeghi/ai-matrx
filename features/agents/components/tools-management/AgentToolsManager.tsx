@@ -72,15 +72,11 @@ import {
   selectAgentById,
   selectAgentCustomTools,
   selectAgentMcpServers,
-  selectAgentAutoToolsDisabled,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentTools, setAgentCustomTools, setAgentMcpServers,
 } from "@/features/agents/redux/agent-builder.slice";
-import {
-  setAgentAutoToolsDisabled,
-} from "@/features/agents/redux/builder-tier.thunks";
-import { AutoInjectionSwitch } from "@ai-matrx/chat/agents/components/shared/AutoInjectionSwitch";
+import { AgentToolsInjectionSwitch } from "@/features/agents/components/tools-management/AgentToolsInjectionSwitch";
 import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
@@ -364,9 +360,6 @@ interface AgentToolsManagerProps {
 
 export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   const dispatch = useAppDispatch();
-  const autoToolsDisabled = useAppSelector((state) =>
-    selectAgentAutoToolsDisabled(state, agentId),
-  );
 
   // Tool support is a MODEL capability — the server drops all tools for models
   // that can't use them. Read the canonical capability once and align the UI:
@@ -539,20 +532,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
           context kill switch (AgentContextInjectionSwitch) can never drift
           into looking like different mechanisms — they are the same idea
           applied to the two automatic input channels. */}
-      <AutoInjectionSwitch
-        id={`allow-auto-tools-${agentId}`}
-        label="Allow automated tool injection"
-        icon={<Zap className="w-3.5 h-3.5" />}
-        disabled={autoToolsDisabled}
-        statusText={
-          autoToolsDisabled
-            ? "Off — this agent only ever gets the tools selected here. No surface or automatic tools are added."
-            : "On — the active surface may add its default tools on top of your selection."
-        }
-        onChange={(disabled) =>
-          dispatch(setAgentAutoToolsDisabled({ agentId, disabled }))
-        }
-      />
+      <AgentToolsInjectionSwitch agentId={agentId} />
 
       {/* Model capability advisory — non-blocking. The selected model can't use
           tools; the server drops all of them at run time. Never blocks saving. */}

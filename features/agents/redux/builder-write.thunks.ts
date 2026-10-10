@@ -6,6 +6,10 @@
  * Action types and behavior are unchanged.
  */
 
+import {
+  applyModelToolDefault,
+  setAgentAutoToolsDisabled,
+} from "./auto-tools.thunks";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { Database } from "@/types/database.types";
 import { pgErrorToError } from "@ai-matrx/data";
@@ -341,6 +345,23 @@ export const createAgent = createAsyncThunk<
 
   const newAgent = dbRowToAgentDefinition(data);
   dispatch(upsertAgent(newAgent));
+  // The insert carries no automatic-tools switch (it lives in tool_config). A
+  // caller that set it (an import) keeps it; otherwise the model decides: a
+  // model that cannot use tools starts with automatic tools off.
+  try {
+    if (partial.autoToolsDisabled === true) {
+      await dispatch(
+        setAgentAutoToolsDisabled({ agentId: newAgent.id, disabled: true }),
+      ).unwrap();
+    } else {
+      await dispatch(applyModelToolDefault({ agentId: newAgent.id })).unwrap();
+    }
+  } catch (toolDefaultError) {
+    console.error(
+      `[createAgent] Agent ${newAgent.id} was created, but its automatic-tools default was not saved:`,
+      toolDefaultError,
+    );
+  }
   // The insert never carries a star; a caller that asked for one gets it in
   // platform.user_entity_state.
   if (partial.isFavorite) {
