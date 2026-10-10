@@ -4913,10 +4913,6 @@
    "file": "app/(core)/scopes/page.tsx",
    "pending": true
   },
-  "route:/scopes/fade-lab": {
-   "file": "app/(core)/scopes/fade-lab/page.tsx",
-   "pending": true
-  },
   "route:/scopes/manage": {
    "file": "app/(core)/scopes/manage/page.tsx",
    "pending": true

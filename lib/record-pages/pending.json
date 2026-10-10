@@ -1134,7 +1134,6 @@
   "route:/schedules/[id]/edit",
   "route:/schedules/new",
   "route:/scopes",
-  "route:/scopes/fade-lab",
   "route:/scopes/manage",
   "route:/scopes/s/[scopeId]",
   "route:/scopes/settings",

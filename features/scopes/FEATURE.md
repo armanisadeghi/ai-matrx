@@ -51,8 +51,7 @@ this directory.
    name, nor a scope RPC whose name falls outside the family grammar.
 
    **Who is exempt, and why:** the allowlist at the bottom of `eslint.config.mjs` (§"features/scopes
-   chokepoint allowlist") names every exempt file with its reason — 5 today: the service itself, the
-   typed schema handle (`utils/supabase/contextDb.ts`), and three server-side or service-role doors this
+   chokepoint allowlist") names every exempt file with its reason — 4 today: the service itself and three server-side or service-role doors this
    `"use client"` service cannot serve (`app/(core)/scopes/s/**`, `app/api/admin/system-context/route.ts`,
    `app/api/stripe/class-checkout/route.ts`). **The retirement queue is EMPTY** (2026-09-25, lane
    SCOPE-ADMIN-2). A new entry there is a new duplicate path — it needs a reason and a line here, never
@@ -183,7 +182,7 @@ this directory.
   `categoriesService.ts`, `commentsService.ts` (the `cmt_*` chokepoint — replaced the
   deleted `features/comments/`), `favoritesService.ts`, `favoritesCore.ts`
   (server-injectable `ues_get_bulk`), `associationCandidates.ts`, `entityTitles.ts`,
-  `entityRows.ts`, `associationGuards.ts`, `associationEdges.ts`. Do not grow logic in
+  `entityRows.ts`, `associationEdges.ts`. Do not grow logic in
   a wiring module — grow the package.
 - `host/` — the ONE `@ai-matrx/associations` binding: `associationsStore.ts` (store
   singleton over supabase + `requireUserId`/`ensureOrgId` + errorSink + the
@@ -214,9 +213,9 @@ this directory.
   into the slice — no refetch, no legacy-action mirroring.
 - `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`
   are Lane F implementations. `useAssociations` (alias
-  `useEntityRelationships`), `useContainerLinks`, `useAssociationCandidates`,
-  `useCategories`, `useEntityTitles`, `useUniversalEntitySearch`,
-  `useAssociationEntitySelect` are RE-EXPORTS of `@ai-matrx/associations/react`
+  `useEntityRelationships`), `useContainerLinks`,
+  `useCategories`, `useEntityTitles`, `useUniversalEntitySearch`
+  are RE-EXPORTS of `@ai-matrx/associations/react`
   (byte-compatible signatures). `useKindCounts(scope)` / `useKindItems(kind, scope, query)` are host
   hooks over `service/kindInventory.ts`: "what you have" by kind, `scope` = mine | one organization
   (a filter, never permission); counts and lists share one DB filter (`platform._inventory_filter`
@@ -254,7 +253,7 @@ this directory.
   delegates to `createEntityRegistry` from `@ai-matrx/associations/core`.
   `entityContentAdapters.ts` stays a local implementation.
 - `utils/` — `scopeMismatch.ts` (pure decision logic + tests for the send-time gate),
-  `categoryHierarchy.ts`, `slugify.ts` (key/slug rules shared app-wide),
+  `slugify.ts` (key/slug rules shared app-wide),
   `scopeValuePayload.ts` (raw input → `value_*` column routing),
   `customComponent.ts` (jsonb → `VariableCustomComponent` narrowing).
 - `lib/scopeRoutes.ts` — the canonical URL builders (`scopeSeg`, `scopeHref`,
@@ -371,7 +370,6 @@ The canonical **faceted category** primitive, owned by this module. **One table*
 | **Service**   | `@ai-matrx/associations/core` `createCategoriesService` — the sole `cat_*` chokepoint, re-exposed as `service/categoriesService.ts` (thin host wiring). No other file may call those RPCs.                                                                                                                                                                                                                                                                                                                                     |
 | **Hook**      | `hooks/useCategories.ts` — a re-export of `@ai-matrx/associations/react` `useCategories({ dimension })`, same signature. Components never touch the store or service directly.                                                                                                                                                                                                                                                                                                                                                 |
 | **Cache**     | The package store's category facets (echo-insert on create preserved). The Redux `categoriesByDimension` fragments were DELETED in the W5 swap.                                                                                                                                                                                                                                                                                                                                                                                |
-| **Hierarchy** | `utils/categoryHierarchy.ts` — the one two-level ordering/path resolver (host-local; the packaged pickers ship their own). Flat input returns in the exact original order; malformed/orphaned rows stay visible.                                                                                                                                                                                                                                                                                                               |
 | **Pickers**   | `CategorySelect` (one value) + `CategoryTagPicker` (many) ship in `@ai-matrx/associations/react`. Both render roots + indented children and show `Parent / Child` when selected. 🚨 **BOTH TAKE NEW INPUT** — type a name that does not exist and they offer `Create "…"` (org-scoped via the identity port's `ensureOrgId`). `CategorySelect` is THE category control for the whole app: pass `dimension` and it works. Never fork a per-feature copy, and never turn `allowCreate` off without a reason a user would accept. |
 | **Types**     | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` re-exported from the package via `types.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
@@ -401,6 +399,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-10-09 — Lane SCOPES-STALE-DELETE: deleted provably-dead code (0 importers re-proved): `ActiveContextLayersPanel`, `useEntitiesByScopes`, `useAssociationCandidates`, `useAssociationEntitySelect`, `service/associationGuards.ts`, `utils/categoryHierarchy.ts` (+test), the `context-tree/index.ts` and `quick-pick/index.ts` barrels, `quick-pick/QuickPick.tsx`, `features/scope-system/components/ScopesGrid.tsx`, `features/agent-context/utils/groupProjectsByOrgDisplay.ts`, `utils/supabase/contextDb.ts` (+ its ESLint allowlist line), the `/scopes/fade-lab` route, the `/demos/scopes` context-lab bakeoff (kept only `reimagine/{TokenComposer,ContextMatrix,engine,parts}` — the Token Composer and Context Matrix keepers have no other home), and the unused `scopesService` methods `listTemplates`, `setEntityScopes`, `listReferencingValues`, `revertContextValue`, `deleteContextValue`. `listScopeTypesForOrganization` / `listScopesOfType` stay (the store-reads test calls them). `ContradictionBanner` stays (STATE rule 4).
 - 2026-10-05 — ONE scope control: `ActiveContextButton` and `ContextLensBar` deleted; every caller renders `ActiveContextLensChip` (new states `iconOnly` + count badge, amber `attention`, `fill`, and the preview eye via `onOpenPreview`/`previewOpen`).
 
 - 2026-10-03 — **The flip: scopes are read from the record store only** (lane 9 SCOPES-ON-THE-STORE, wave 1 step 5;

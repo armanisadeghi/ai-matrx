@@ -2115,7 +2115,6 @@ export default [
       // ── Permanent chokepoint ──
       // The service itself, and the typed schema handle it is built on.
       "features/scopes/service/scopesService.ts",
-      "utils/supabase/contextDb.ts",
 
       // ── Server-side doors the client-only service cannot serve ──
       // Server component: resolves the /scopes/s/<id> short link to the

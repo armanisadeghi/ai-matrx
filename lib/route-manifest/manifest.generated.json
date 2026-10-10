@@ -6301,11 +6301,6 @@
       "source": "app/(core)/scopes/page.tsx"
     },
     {
-      "pattern": "/scopes/fade-lab",
-      "status": "live",
-      "source": "app/(core)/scopes/fade-lab/page.tsx"
-    },
-    {
       "pattern": "/scopes/manage",
       "status": "live",
       "source": "app/(core)/scopes/manage/page.tsx"

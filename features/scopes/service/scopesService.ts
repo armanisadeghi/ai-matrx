@@ -37,7 +37,6 @@ import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { readInChunks } from "@/features/scopes/service/inChunks";
 import {
-  callContextDoor,
   contextDoorQuery,
   readArchivedScopeTypes,
   readContextItems,
@@ -67,10 +66,8 @@ import type {
   ArchivedScopeTypeRow,
   ContextItemRow,
   ContextItemValue,
-  ContextTemplate,
   OrgNode,
   ProjectNode,
-  ReferencingContextValue,
   ResolvedSuggestionItem,
   ResolvedSuggestionTarget,
   ResolvedSuggestionValue,
@@ -83,7 +80,6 @@ import type {
   ScopeWithType,
   TaskBucketLevel,
   TaskNode,
-  TemplateScopeTypeDetail,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
@@ -1037,78 +1033,6 @@ export const scopesService = {
     }
   },
 
-  // ──────────────────────────────────────────────────────────────────
-  //  READ — TEMPLATES (read-only catalog)
-  // ──────────────────────────────────────────────────────────────────
-
-  async listTemplates(
-    activeOnly = true,
-  ): Promise<ScopesRpcResult<{ templates: ContextTemplate[] }>> {
-    try {
-      // VIEW LAW: public catalog by design — templates are a read-only, platform-wide catalog (see header above).
-      // Read through the store's own templates door (reference data; lane SCOPES-READS-WEB). The door
-      // answers the ACTIVE templates — the only ones any caller asks for (no caller passes false today).
-      const res = await callContextDoor<StoreTemplateRow[]>("context_templates");
-      if (!res.ok) return res;
-      const data = (res.data ?? [])
-        .filter((row) => !activeOnly || row.is_active !== false)
-        .map((row) => ({
-          ...row,
-          template_scope_types: (row.scope_types ?? []).map((st) => ({
-            ...st,
-            template_context_items: st.fields ?? [],
-          })),
-        }))
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-      const templates: ContextTemplate[] = (data ?? []).map((row) => {
-        const scopeTypes = row.template_scope_types ?? [];
-        const labelById = new Map(
-          scopeTypes.map((st) => [st.id, st.label_singular]),
-        );
-        const scope_types: TemplateScopeTypeDetail[] = scopeTypes
-          .map((st) => ({
-            id: st.id,
-            key: st.key,
-            icon: st.icon ?? "",
-            label_singular: st.label_singular,
-            label_plural: st.label_plural,
-            sort_order: st.sort_order ?? 0,
-            max_assignments_per_entity: st.max_assignments_per_entity ?? null,
-            parent_template_type_id: st.parent_template_type_id ?? null,
-            parent_type_label: st.parent_template_type_id
-              ? (labelById.get(st.parent_template_type_id) ?? null)
-              : null,
-            fields: [...(st.template_context_items ?? [])]
-              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-              .map((f) => ({ key: f.key, display_name: f.display_name })),
-          }))
-          .sort((a, b) => a.sort_order - b.sort_order);
-        const context_item_count = scope_types.reduce(
-          (acc, st) => acc + st.fields.length,
-          0,
-        );
-        return {
-          id: row.id,
-          key: row.key,
-          name: row.name,
-          description: row.description ?? "",
-          category: row.category ?? "",
-          icon: row.icon ?? "",
-          is_active: !!row.is_active,
-          audience: row.audience === "individual" ? "individual" : "organization",
-          sort_order: row.sort_order ?? 0,
-          scope_type_count: scope_types.length,
-          context_item_count,
-          scope_types,
-        };
-      });
-
-      return ok({ templates });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
 
   // ──────────────────────────────────────────────────────────────────
   //  READ — ENTITY ASSIGNMENTS (M2M tags on a single entity)
@@ -1277,44 +1201,6 @@ export const scopesService = {
     }
   },
 
-  // ──────────────────────────────────────────────────────────────────
-  //  WRITE — ENTITY ASSIGNMENTS (M2M tagging)
-  //
-  //  Set-semantics on the unified association edge via `assoc_set_targets`:
-  //  one transaction that makes the entity's `scope` edges exactly equal
-  //  `scopeIds` (adds missing, removes extras), org-checked inside the RPC.
-  //  Replaced the legacy `set_entity_scopes` RPC (which wrote the dropped
-  //  `ctx_scope_assignments` table). `assoc_set_targets` returns void, so we
-  //  echo the deduped input as the authoritative post-state — it is exactly
-  //  what the transaction just made true.
-  //
-  //  NOTE: the old RPC also enforced `max_assignments_per_entity`; the assoc
-  //  layer does not. If that cap must hold, it belongs in `assoc_add`/
-  //  `assoc_set_targets`, not re-implemented here.
-  // ──────────────────────────────────────────────────────────────────
-
-  async setEntityScopes(
-    entityType: EntityTypeToken,
-    entityId: string,
-    scopeIds: string[],
-  ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
-    try {
-      requireUserId();
-      const target = Array.from(new Set(scopeIds));
-
-      const res = await associationsService.setTargets({
-        sourceType: entityType,
-        sourceId: entityId,
-        targetType: "scope",
-        targetIds: target,
-      });
-      if (isScopesRpcErr(res)) return res;
-
-      return ok({ scope_ids: target });
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
 
   /**
    * An org-less container adopts the org of its first assigned scope.
@@ -1408,38 +1294,6 @@ export const scopesService = {
   // through the store's scope door, scopeStore.updateContextItem (custom.context_item_write), which
   // decides the RPC-or-column split from the patch exactly as this method did.
 
-  // Value history operations — their RPCs do not exist yet; the surface
-  // stays constant so callers compile today and light up when they ship.
-  revertContextValue: notYetImplemented("revert_context_value"),
-  deleteContextValue: notYetImplemented("delete_context_value"),
-
-  /**
-   * Reverse lookup over the `context_value_refs` index — every CURRENT
-   * reference cell (across every org the caller belongs to) whose fence
-   * contains an item of `refType` pointing at `refKey` (a file id, scope id,
-   * URL, etc.). E.g. "which matters have this PDF as their QME Report?" via
-   * `listReferencingValues("file", fileId)`. Backed by the
-   * `list_context_value_refs` SECURITY DEFINER RPC (membership-checked
-   * inside the function, so this never touches `context.context_value_refs`
-   * directly).
-   */
-  async listReferencingValues(
-    refType: string,
-    refKey: string,
-  ): Promise<ScopesRpcResult<ReferencingContextValue[]>> {
-    try {
-      requireUserId();
-      const { data, error } = await supabase.rpc("list_context_value_refs", {
-        p_ref_type: refType,
-        p_ref_key: refKey,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      const rows = Array.isArray(data) ? data : [];
-      return ok(rows as unknown as ReferencingContextValue[]);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
 };
 
 // ─── internal: bulk source→scope read over the association edge ─────────
@@ -1493,34 +1347,3 @@ async function fetchScopeDisplays(
   );
 }
 
-/** One template as the store's templates door answers it (the shape `listTemplates` maps). */
-type StoreTemplateRow = {
-  id: string;
-  key: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  icon: string | null;
-  is_active: boolean | null;
-  sort_order: number | null;
-  audience: string | null;
-  scope_types?: Array<{
-    id: string;
-    key: string;
-    icon: string | null;
-    label_singular: string;
-    label_plural: string;
-    sort_order: number | null;
-    max_assignments_per_entity: number | null;
-    parent_template_type_id: string | null;
-    fields?: Array<{ id: string; key: string; display_name: string; sort_order: number | null }>;
-  }>;
-};
-
-function notYetImplemented(name: string) {
-  return async (..._args: unknown[]): Promise<ScopesRpcResult<never>> =>
-    err(
-      "internal",
-      `scopesService.${name} is not yet implemented — waiting on the Python RPC. See /Users/armanisadeghi/code/common-docs/systems/scopes-context/HANDOFF.md.`,
-    );
-}

@@ -5,7 +5,7 @@
  *
  * THE one read-only "label + current value" list row for a context item
  * cell. Used by every surface that lists a scope's values top-to-bottom
- * (`ScopeDetailView`, `ActiveContextLayersPanel`, `ContextLayerBodies`'
+ * (`ScopeDetailView`, `ContextLayerBodies`'
  * `ScopeLayerBody`) — those surfaces differ in container chrome (padding,
  * whether a version badge shows), never in how a cell renders. Extend THIS
  * component for a new value-type render, never re-copy the row markup.
