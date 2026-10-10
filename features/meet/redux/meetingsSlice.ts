@@ -22,12 +22,11 @@
 // access gate asks the platform which failure it is.
 
 import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import {
-  createMeetRepository,
-  type MeetingInvitee,
-  type MeetingOccurrence,
-  type MeetingRecord,
-  type MeetRepository,
+import type {
+  MeetingInvitee,
+  MeetingOccurrence,
+  MeetingRecord,
+  MeetRepository,
 } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
 import { fetchKnobWriteDoor } from "@/lib/scoped-config/service";
@@ -67,9 +66,13 @@ const DAY_MS = 86_400_000;
 
 // Reads need no organization (access is personal): a plain repository on the
 // app's client, the same one `useMeetingActions` reads through without a host.
-let readRepository: MeetRepository | null = null;
-function repository(): MeetRepository {
-  readRepository ??= createMeetRepository({ client: supabase });
+// The package loads on the first read (this slice is in the store, so every route's first
+// load): a static import here kept the whole Meet package in the shell.
+let readRepository: Promise<MeetRepository> | null = null;
+function repository(): Promise<MeetRepository> {
+  readRepository ??= import("@ai-matrx/meet/core").then(({ createMeetRepository }) =>
+    createMeetRepository({ client: supabase }),
+  );
   return readRepository;
 }
 
@@ -101,7 +104,7 @@ export const loadMeeting = createAsyncThunk<
   { state: WithMeetings; rejectValue: unknown }
 >("meetings/load", async ({ meetingId }, { rejectWithValue }) => {
   try {
-    return await readMeeting(repository(), meetingId);
+    return await readMeeting(await repository(), meetingId);
   } catch (thrown) {
     // Kept whole: the access gate reads the PostgREST code off it.
     return rejectWithValue(thrown);
@@ -124,7 +127,7 @@ export const refreshMeetingInvitees = createAsyncThunk<
   "meetings/refreshInvitees",
   async ({ meetingId }) => ({
     meetingId,
-    invitees: await repository().invitees(meetingId as MeetingRecord["id"]),
+    invitees: await (await repository()).invitees(meetingId as MeetingRecord["id"]),
   }),
   {
     // Nothing to refresh until the meeting itself is in the store.
