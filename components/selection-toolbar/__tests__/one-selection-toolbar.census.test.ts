@@ -60,6 +60,8 @@ const ALLOW: Record<string, string> = {
   // A bulk bar for picked ITEMS (images, rows): "3 selected · Delete" — no text selection.
   "components/shared/FloatingSelectionToolbar.tsx": "multi-item bulk bar, not a text selection toolbar",
   "components/shared/FloatingSelectionToolbar.test.tsx": "its test",
+  // The board's action bar for picked board OBJECTS (notes, shapes, frames): colour, arrange, delete. It is anchored to the picked objects on the canvas, never to selected text.
+  "features/board/components/SelectionToolbar.tsx": "action bar for picked board objects, not a text selection toolbar",
   // The context menu tracks the selection for what its right-click menu acts on; it draws no popup.
   "features/context-menu-v3/ContextMenuV3.tsx": "selection tracking for the right-click menu; no popup",
   // Its capture helper: reads and measures the selection so the right-click menu knows what it

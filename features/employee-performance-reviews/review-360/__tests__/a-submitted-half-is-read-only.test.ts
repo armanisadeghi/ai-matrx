@@ -22,6 +22,7 @@ function client(submittedAt: string | null) {
       data: { id: "t1", level: "confidential", maker_is_reader: true, readers: review360Track.confidential!.readers },
     }),
     recordRead: async () => ({ ok: true, data: { document: { track: "self", submitted_at: submittedAt } } }),
+    recordHeaders: async ({ ids }: { ids: string[] }) => ({ ok: true, data: ids.map((id) => ({ id, version: 7 })) }),
     recordUpdate: async (args: unknown) => {
       writes.push(args);
       return { ok: true, data: 2 };
@@ -40,6 +41,8 @@ it("writes a half that is not submitted yet", async () => {
   const { c, writes } = client(null);
   expect((await saveTrack(c, ORG, TRACK, "{}", true)).ok).toBe(true);
   expect(writes).toHaveLength(1);
+  // the write names the version the store reported, never goes out as last-write-wins
+  expect(writes[0]).toMatchObject({ record_id: TRACK, expectedVersion: 7 });
 });
 
 it("the respond page renders read-only once submitted and stops autosaving", () => {

@@ -7,6 +7,7 @@
 // `iam.open_confidential_audited` first, so each read — and each refusal — is a row in
 // iam.access_audit; the row itself is then read through the records store as the person.
 
+import { readVersionNow, updateRecordAt } from "@/lib/records/record-versions";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { confidentialGate, upsertAppRow } from "@ai-matrx/records/typed-table";
 
@@ -114,7 +115,7 @@ export async function ensureMeetingNotes(
     { organizationId },
   );
   if (!made.ok) return no(made.error.message);
-  const linked = await client.recordUpdate({ record_id: review.id, patch: { meeting_notes: made.data } });
+  const linked = await updateRecordAt(client, { record_id: review.id, patch: { meeting_notes: made.data }, version: await readVersionNow(client, review.id) });
   if (!linked.ok) return no(linked.error.message);
   // The notes row exists now, so the meeting's recording and transcript can be filed under it.
   const captured = await linkMeetingCaptureToNotes(review.id, made.data);
@@ -179,6 +180,6 @@ export async function saveMeetingNotes(
 ): Promise<R360<true>> {
   const gate = await confidentialGate(client, review360MeetingNotes, { organizationId });
   if (!gate.ok) return no(gate.error.message);
-  const res = await client.recordUpdate({ record_id: notesId, patch });
+  const res = await updateRecordAt(client, { record_id: notesId, patch, version: await readVersionNow(client, notesId) });
   return res.ok ? { ok: true, data: true } : no(res.error.message);
 }

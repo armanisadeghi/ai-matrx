@@ -8,6 +8,7 @@
 // cells and "Refresh" rewrites every cell. Each cell is ONE run of the mandate with that row as markdown
 // (`row_markdown`) — never the table, never another row — and the answer is written to that row's cell.
 
+import { readVersionNow, updateRecordAt } from "@/lib/records/record-versions";
 import { Button, Field, Select, Textarea } from "@ai-matrx/design-system/controls";
 import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
@@ -109,7 +110,7 @@ export function AutofillRows({
         });
         const value = typeof out === "string" ? out.trim() : "";
         if (!value) continue;
-        const wrote = await client.recordUpdate({ record_id: row.id, patch: { [spec.key]: value } });
+        const wrote = await updateRecordAt(client, { record_id: row.id, patch: { [spec.key]: value }, version: await readVersionNow(client, row.id) });
         if (!wrote.ok) throw new Error(wrote.error.message);
         done += 1;
       }

@@ -9,6 +9,7 @@
 // records-ui's `Peek` as a side peek, a center peek or a full page. The store decides what a person
 // may read and write — this block is a filter, never a permission.
 
+import { readVersionNow, updateRecordAt } from "@/lib/records/record-versions";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, FormLookFrame, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField } from "@ai-matrx/records-ui";
@@ -231,7 +232,7 @@ function DatabaseFrame({
                 // Notion: an inline database's title IS the database's name (relation pickers, search, the sidebar).
                 // A linked view keeps a title of its own.
                 if (!props.linked && next !== table.data?.name)
-                  void client.recordUpdate({ record_id: tableId, patch: { name: next, label_singular: next, label_plural: next } }).then((renamed) => {
+                  void readVersionNow(client, tableId).then((seen) => updateRecordAt(client, { record_id: tableId, patch: { name: next, label_singular: next, label_plural: next }, version: seen })).then((renamed) => {
                     if (renamed.ok) tableShapeChanged(tableId);
                     else toast.error(`Database not renamed: ${renamed.error.message}`);
                   });

@@ -118,7 +118,7 @@ export const PROPOSED_MENU_GROUPING: MenuGrouping = {
       to: { kind: "group", key: "share" },
     },
     {
-      when: { ids: ["cm:attach", "set-context-value", "pin-message", "notes-and-comments"] },
+      when: { ids: ["cm:attach", "attach-artifact-to-chat", "set-context-value", "pin-message", "notes-and-comments"] },
       to: { kind: "group", key: "organize" },
     },
     {

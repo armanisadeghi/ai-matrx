@@ -36,6 +36,10 @@ const NOT_THE_STORE = [/\bVersions\.restoreVersion\(/, /\bactions\.restoreVersio
  * count that goes UP is red.
  */
 const OPEN: Record<string, { count: number; owner: string }> = {
+  "features/content-ir/records/kind-record-service.ts": { count: 1, owner: "SUITE-ROOTS-3 triage — the kind record write has no seen version at the call; the kind editor must hold it" },
+  "features/rich-document/annotations/storeRecordLink.ts": { count: 1, owner: "SUITE-ROOTS-3 triage — record_update rpc for a link; the annotation must carry the version it read" },
+  "features/spaces/data/page-database-live-proof.ts": { count: 1, owner: "SUITE-ROOTS-3 triage — a live-proof script that edits a row on purpose through a second client" },
+  "features/spaces/editor/button-block.tsx": { count: 1, owner: "SUITE-ROOTS-3 triage — the button's batch of changes; the block must hold each row's seen version" },
   "features/data-tables/data-source/record-store.ts": {
     count: 4,
     owner:

@@ -10,6 +10,7 @@
 // Every write goes through @ai-matrx/records, which refuses until the organization's copy is
 // Confidential (FAIL CLOSED). Rows are found by id, never by scanning.
 
+import { readVersionNow, updateRecordAt } from "@/lib/records/record-versions";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import {
   confidentialGate,
@@ -291,16 +292,14 @@ export async function startReview360(a: StartReview360Args): Promise<R360<{ revi
     trackIds[h.kind] = made.data;
     const assigned = await a.client.workAssign({ record_id: made.data, user_id: h.respondentUser, dueDate: `${dueOn}T${String(a.knobs.dueHourUtc).padStart(2, "0")}:00:00.000Z` });
     if (!assigned.ok) return no(assigned.error.message);
-    const linked = await a.client.recordUpdate({
+    const linked = await updateRecordAt(a.client, {
       record_id: made.data,
-      patch: { link: `${a.origin}${respondHref(made.data, a.organizationId)}` },
-    });
+      patch: { link: `${a.origin}${respondHref(made.data, a.organizationId)}` }, version: await readVersionNow(a.client, made.data) });
     if (!linked.ok) return no(linked.error.message);
   }
-  const stamped = await a.client.recordUpdate({
+  const stamped = await updateRecordAt(a.client, {
     record_id: review.data,
-    patch: { self_track: trackIds.self, manager_track: trackIds.manager },
-  });
+    patch: { self_track: trackIds.self, manager_track: trackIds.manager }, version: await readVersionNow(a.client, review.data) });
   if (!stamped.ok) return no(stamped.error.message);
   return { ok: true, data: { reviewRef } };
 }
@@ -364,7 +363,7 @@ export async function saveTrack(
   if (now.data.submittedAt) return no(SUBMITTED_REFUSAL);
   const patch: Record<string, unknown> = { document };
   if (submit) patch.submitted_at = new Date().toISOString();
-  const res = await client.recordUpdate({ record_id: trackId, patch });
+  const res = await updateRecordAt(client, { record_id: trackId, patch, version: await readVersionNow(client, trackId) });
   return res.ok ? { ok: true, data: true } : no(res.error.message);
 }
 
@@ -416,9 +415,9 @@ export async function shareReview360(
   trackIds: string[],
 ): Promise<R360<true>> {
   for (const id of trackIds) {
-    const res = await client.recordUpdate({ record_id: id, patch: { shared: true } });
+    const res = await updateRecordAt(client, { record_id: id, patch: { shared: true }, version: await readVersionNow(client, id) });
     if (!res.ok) return no(res.error.message);
   }
-  const res = await client.recordUpdate({ record_id: reviewId, patch: { status: "shared", shared_at: new Date().toISOString() } });
+  const res = await updateRecordAt(client, { record_id: reviewId, patch: { status: "shared", shared_at: new Date().toISOString() }, version: await readVersionNow(client, reviewId) });
   return res.ok ? { ok: true, data: true } : no(res.error.message);
 }

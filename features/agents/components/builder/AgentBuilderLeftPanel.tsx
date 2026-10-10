@@ -38,14 +38,18 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
     <div className="flex flex-col h-full">
       <div className="flex flex-col gap-2 shrink-0 pt-0.5 pb-2">
         <AgentModelConfiguration agentId={agentId} />
-        <AgentVariablesManager agentId={agentId} />
+        <div data-agent-builder-section="variables">
+          <AgentVariablesManager agentId={agentId} />
+        </div>
         {/* Tools reads as a row, like Variables and Resources — not only as the
             wrench icon above, which a whole verification pass never found. */}
         <AgentToolsRow agentId={agentId} />
-        <AgentContextPoliciesManager
-          agentId={agentId}
-          showCompactInjectionControl
-        />
+        <div data-agent-builder-section="context">
+          <AgentContextPoliciesManager
+            agentId={agentId}
+            showCompactInjectionControl
+          />
+        </div>
         <AgentResourcesManager agentId={agentId} />
         <AgentTermListsManager agentId={agentId} />
       </div>

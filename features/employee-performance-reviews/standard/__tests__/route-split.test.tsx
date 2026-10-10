@@ -16,15 +16,15 @@ import HrPerformancePage from "@/app/(core)/hr/performance/page";
 const html = (el: unknown) => renderToStaticMarkup(el as ReactElement);
 
 describe("the performance route split", () => {
-  it("/hr/performance renders the standard review home, not the 360 list", () => {
-    const out = html(HrPerformancePage());
+  it("/hr/performance renders the standard review home, not the 360 list", async () => {
+    const out = html(await HrPerformancePage({ searchParams: Promise.resolve({}) }));
     expect(out).toContain('data-testid="standard-home"');
     expect(out).not.toContain("review-360-list");
     expect(out).toContain("<h1>Performance</h1>");
   });
 
-  it("/hr/performance/360 renders the 360 list titled as a trial", () => {
-    const out = html(Hr360Page());
+  it("/hr/performance/360 renders the 360 list titled as a trial", async () => {
+    const out = html(await Hr360Page({ searchParams: Promise.resolve({}) }));
     expect(out).toContain('data-testid="review-360-list"');
     expect(out).not.toContain("standard-home");
     expect(out).toContain("<h1>360 review (trial)</h1>");
