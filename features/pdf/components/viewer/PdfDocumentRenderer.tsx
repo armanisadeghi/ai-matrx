@@ -63,8 +63,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /** One toolbar icon button — every control in the row shares it. */
+// 44px on phones (the touch floor — the pager already sets the row there,
+// so the row height does not move), 28px from `sm` up.
 const TOOL_BUTTON =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7";
 
 // Worker source — pinned to the installed pdfjs version and served from
 // our own origin (`/public/pdfjs/pdf.worker.min.mjs`, mirrored by a post-
@@ -885,7 +887,8 @@ export default function PdfDocumentRenderer({
        * viewer lives in panes from ~280px (studio reader column) to full
        * screen, so the row is sized by ITS container, never the viewport.
        * Below 26rem the secondary view controls (fit width, actual size,
-       * rotate) fold into one overflow menu; the pager never overflows
+       * rotate — and fit page under 24rem, so phone-size 44px targets fit)
+       * fold into one overflow menu; the pager never overflows
        * onto a neighbouring pane (the 2026-10-09 extractor defect). */}
       {toolbar === "full" ? (
       <div className="flex min-h-10 min-w-0 items-center justify-between gap-1 border-b border-border/60 bg-background/80 px-2 text-xs shrink-0">
@@ -922,20 +925,22 @@ export default function PdfDocumentRenderer({
             </button>
           </TooltipIcon>
           <span className="mx-1 h-4 w-px shrink-0 bg-border" />
-          <TooltipIcon label="Fit page (default)">
-            <button
-              type="button"
-              aria-label="Fit page"
-              aria-pressed={zoom.kind === "fit"}
-              onClick={() => setZoom({ kind: "fit" })}
-              className={cn(
-                TOOL_BUTTON,
-                zoom.kind === "fit" && "bg-accent text-accent-foreground",
-              )}
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          </TooltipIcon>
+          <div className="hidden @[24rem]/pdf-viewer:flex">
+            <TooltipIcon label="Fit page (default)">
+              <button
+                type="button"
+                aria-label="Fit page"
+                aria-pressed={zoom.kind === "fit"}
+                onClick={() => setZoom({ kind: "fit" })}
+                className={cn(
+                  TOOL_BUTTON,
+                  zoom.kind === "fit" && "bg-accent text-accent-foreground",
+                )}
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </button>
+            </TooltipIcon>
+          </div>
           <div className="hidden items-center gap-0.5 @[26rem]/pdf-viewer:flex">
             <TooltipIcon label="Fit width">
               <button
@@ -989,6 +994,9 @@ export default function PdfDocumentRenderer({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-40">
+                <DropdownMenuItem onSelect={() => setZoom({ kind: "fit" })}>
+                  <Maximize2 className="h-3.5 w-3.5" /> Fit page
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setZoom({ kind: "fit-width" })}>
                   <Maximize className="h-3.5 w-3.5" /> Fit width
                 </DropdownMenuItem>
