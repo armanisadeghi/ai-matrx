@@ -12,6 +12,7 @@ export interface PinterestData {
   boards?: {id: string; name?: string; privacy?: string; pin_count?: number}[];
   pins?: {id: string; title?: string; description?: string; board_id?: string}[];
   pin_analytics?: Record<string, {observed_at: string; metrics: Record<string, {summary_metrics?: Record<string, number>}>}>;
+  pin_analytics_capacity?: number;
   analytics: {date: string; engagements: number | null; impressions: number | null; saves: number | null; outbound_clicks: number | null; pin_clicks: number | null}[];
 }
 
