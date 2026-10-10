@@ -12,6 +12,7 @@ import { VaultCreateDialog } from "./VaultCreateDialog";
 import { useVault, useVaultDefinitions } from "../vault-hooks";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function WebsiteLoginCreateDialog({
   open,
   onOpenChange,
@@ -35,7 +36,14 @@ export function WebsiteLoginCreateDialog({
       <Dialog open onOpenChange={onOpenChange}>
         <DialogContent className="matrx-touch-targets max-w-sm">
           <DialogHeader>
-            <DialogTitle>{loading ? "Opening the login form" : "Couldn't open the login form"}</DialogTitle>
+            {loading ? (
+              <DialogTitle>Opening the login form</DialogTitle>
+            ) : (
+              <div className="flex items-center gap-2">
+                <DialogTitle>Couldn&apos;t open the login form</DialogTitle>
+                <ErrorAlchemyMenu input={{ message: error ?? "Website logins are not available on this account." }} />
+              </div>
+            )}
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {loading ? "One moment." : (error ?? "Website logins are not available on this account.")}
