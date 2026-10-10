@@ -6,12 +6,13 @@
 // member edges and are read and written by orchestrasService, never here.
 //
 // Every id in and out of this module is a BOX id (`type:entityId`, constants.ts).
-// Every method returns a AssociationsRpcResult and never throws.
+// Every method returns a RecordsResult and never throws.
 
 "use client";
 
-import { isAssociationsRpcErr, type AssociationsRpcResult } from "@ai-matrx/associations";
+import { isRecordsErr, type RecordsResult } from "@ai-matrx/records";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { fromAssociations } from "@/features/agents/orchestras/service/associationResult";
 import { err, ok } from "@/features/scopes/service/rpcResult";
 import { MEMBER_ROLE } from "@/features/agents/orchestras/constants";
 import {
@@ -39,7 +40,7 @@ interface RawEdge {
   metadata: unknown;
 }
 
-type Read = AssociationsRpcResult<RawEdge[]>;
+type Read = RecordsResult<RawEdge[]>;
 
 /** Group box ids by type: { agent: [...], user: [...] }. */
 function byType(boxIds: readonly string[]): Map<OrgBoxType, string[]> {
@@ -52,7 +53,7 @@ function byType(boxIds: readonly string[]): Map<OrgBoxType, string[]> {
   return out;
 }
 
-const overCap = () => err("quota_exceeded", `One box has ${ROW_CAP} or more links; the org chart can't read them all.`);
+const overCap = () => err("store_limit", `One box has ${ROW_CAP} or more links; the org chart can't read them all.`);
 
 /**
  * Every edge OUT of (or INTO) these entities of one type. A read that comes back
@@ -61,8 +62,8 @@ const overCap = () => err("quota_exceeded", `One box has ${ROW_CAP} or more link
  */
 async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in"): Promise<Read> {
   if (direction === "out") {
-    const res = await associationsService.listForSources(type, ids);
-    if (isAssociationsRpcErr(res)) return res;
+    const res = fromAssociations(await associationsService.listForSources(type, ids));
+    if (isRecordsErr(res)) return res;
     if (res.data.edges.length < ROW_CAP) {
       return ok(
         res.data.edges
@@ -77,8 +78,8 @@ async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in
       );
     }
   } else {
-    const res = await associationsService.listForTargets(type, ids);
-    if (isAssociationsRpcErr(res)) return res;
+    const res = fromAssociations(await associationsService.listForTargets(type, ids));
+    if (isRecordsErr(res)) return res;
     if (res.data.edges.length < ROW_CAP) {
       return ok(
         res.data.edges
@@ -99,8 +100,8 @@ async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in
     readWhole(type, ids.slice(0, mid), direction),
     readWhole(type, ids.slice(mid), direction),
   ]);
-  if (isAssociationsRpcErr(a)) return a;
-  if (isAssociationsRpcErr(b)) return b;
+  if (isRecordsErr(a)) return a;
+  if (isRecordsErr(b)) return b;
   return ok([...a.data, ...b.data]);
 }
 
@@ -109,7 +110,7 @@ async function readAll(boxIds: readonly string[], direction: "out" | "in"): Prom
   for (const [type, ids] of byType(boxIds)) {
     for (let i = 0; i < ids.length; i += ORG_CHART_READ_CHUNK) {
       const res = await readWhole(type, ids.slice(i, i + ORG_CHART_READ_CHUNK), direction);
-      if (isAssociationsRpcErr(res)) return res;
+      if (isRecordsErr(res)) return res;
       out.push(...res.data);
     }
   }
@@ -135,13 +136,13 @@ export const orgChartService = {
   async listManualEdges(
     boxIds: readonly string[],
     direction: "out" | "both" = "out",
-  ): Promise<AssociationsRpcResult<ManualOrgEdge[]>> {
+  ): Promise<RecordsResult<ManualOrgEdge[]>> {
     const out = await readAll(boxIds, "out");
-    if (isAssociationsRpcErr(out)) return out;
+    if (isRecordsErr(out)) return out;
     const edges = out.data.filter(isRecorded);
     if (direction === "both") {
       const into = await readAll(boxIds, "in");
-      if (isAssociationsRpcErr(into)) return into;
+      if (isRecordsErr(into)) return into;
       edges.push(...into.data.filter(isRecorded));
     }
     const seen = new Set<string>();
@@ -152,9 +153,9 @@ export const orgChartService = {
    * Everyone directly under these boxes by a TREE link (Orchestra or reports to),
    * read fresh from the server, so a loop check never trusts a half-loaded chart.
    */
-  async listChildren(boxIds: readonly string[]): Promise<AssociationsRpcResult<Array<{ parentId: string; childId: string }>>> {
+  async listChildren(boxIds: readonly string[]): Promise<RecordsResult<Array<{ parentId: string; childId: string }>>> {
     const res = await readAll(boxIds, "out");
-    if (isAssociationsRpcErr(res)) return res;
+    if (isRecordsErr(res)) return res;
     return ok(
       res.data
         .filter((e) => e.from !== e.to && (e.role === MEMBER_ROLE || (e.role === ORG_CHART_ROLE && isTree(e))))
@@ -163,35 +164,35 @@ export const orgChartService = {
   },
 
   /** The recorded TREE links that currently place this box under someone. */
-  async listManagersOf(reportBoxId: string): Promise<AssociationsRpcResult<ManualOrgEdge[]>> {
+  async listManagersOf(reportBoxId: string): Promise<RecordsResult<ManualOrgEdge[]>> {
     const res = await readAll([reportBoxId], "in");
-    if (isAssociationsRpcErr(res)) return res;
+    if (isRecordsErr(res)) return res;
     return ok(res.data.filter((e) => isRecorded(e) && isTree(e)).map(toManual));
   },
 
   /** Record (or re-type) the one link between this pair — the edge is unique per pair. */
-  async add(fromBox: string, toBox: string, kind: RecordedLinkKind = "reports_to"): Promise<AssociationsRpcResult<{ id: string }>> {
+  async add(fromBox: string, toBox: string, kind: RecordedLinkKind = "reports_to"): Promise<RecordsResult<{ id: string }>> {
     const from = parseBoxId(fromBox);
     const to = parseBoxId(toBox);
-    return associationsService.add({
+    return fromAssociations(await associationsService.add({
       sourceType: from.type,
       sourceId: from.id,
       targetType: to.type,
       targetId: to.id,
       role: ORG_CHART_ROLE,
       metadata: { [ORG_LINK_KIND_KEY]: kind },
-    });
+    }));
   },
 
-  async remove(fromBox: string, toBox: string): Promise<AssociationsRpcResult<null>> {
+  async remove(fromBox: string, toBox: string): Promise<RecordsResult<null>> {
     const from = parseBoxId(fromBox);
     const to = parseBoxId(toBox);
-    return associationsService.remove({
+    return fromAssociations(await associationsService.remove({
       sourceType: from.type,
       sourceId: from.id,
       targetType: to.type,
       targetId: to.id,
       role: ORG_CHART_ROLE,
-    });
+    }));
   },
 };

@@ -11,16 +11,17 @@
 //   member : (agent:X) --role 'member'-----> (agent:Y)   [ordered by position]
 
 //
-// Like associationsService, every method returns a `AssociationsRpcResult` and NEVER
+// Like associationsService, every method returns a `RecordsResult` and NEVER
 // throws. See features/agents/docs/ORCHESTRAS.md.
 
 "use client";
 
-import { isAssociationsRpcErr, type AssociationsRpcResult } from "@ai-matrx/associations";
+import { isRecordsErr, type RecordsResult } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ok, err, mapPgError, mapPgErrorPair } from "@/features/scopes/service/rpcResult";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { fromAssociations } from "@/features/agents/orchestras/service/associationResult";
 import type { Json } from "@/types/database.types";
 import {
   AGENT_TOKEN,
@@ -120,7 +121,7 @@ function rowToSummary(r: OrchestraListRow): OrchestraSummary {
 
 export const orchestrasService = {
   /** Enumerate every Orchestra the caller can see (conductors + member counts). */
-  async list(): Promise<AssociationsRpcResult<OrchestraSummary[]>> {
+  async list(): Promise<RecordsResult<OrchestraSummary[]>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("orchestra_list");
@@ -133,13 +134,13 @@ export const orchestrasService = {
   },
 
   /** Load one Orchestra's marker config + ordered members in a single round-trip. */
-  async load(conductorId: string): Promise<AssociationsRpcResult<OrchestraDetail>> {
-    const res = await associationsService.listForSources(
+  async load(conductorId: string): Promise<RecordsResult<OrchestraDetail>> {
+    const res = fromAssociations(await associationsService.listForSources(
       AGENT_TOKEN,
       [conductorId],
       AGENT_TOKEN,
-    );
-    if (isAssociationsRpcErr(res)) return res;
+    ));
+    if (isRecordsErr(res)) return res;
 
     const edges = res.data.edges;
     const marker = edges.find(
@@ -175,8 +176,8 @@ export const orchestrasService = {
   async create(
     conductorId: string,
     opts?: { label?: string; config?: OrchestraConfig },
-  ): Promise<AssociationsRpcResult<{ id: string }>> {
-    return associationsService.add({
+  ): Promise<RecordsResult<{ id: string }>> {
+    return fromAssociations(await associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
@@ -184,15 +185,15 @@ export const orchestrasService = {
       role: ORCHESTRA_MARKER_ROLE,
       label: opts?.label,
       metadata: configToMeta(opts?.config ?? {}),
-    });
+    }));
   },
 
   /** Persist Orchestra-level config (accent / tagline / conductor position). */
   async saveConfig(
     conductorId: string,
     args: { label?: string; config: OrchestraConfig },
-  ): Promise<AssociationsRpcResult<{ id: string }>> {
-    return associationsService.add({
+  ): Promise<RecordsResult<{ id: string }>> {
+    return fromAssociations(await associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
@@ -200,7 +201,7 @@ export const orchestrasService = {
       role: ORCHESTRA_MARKER_ROLE,
       label: args.label,
       metadata: configToMeta(args.config ?? {}),
-    });
+    }));
   },
 
   /** Add (or upsert) a member with its position + authored role/gap metadata. */
@@ -208,9 +209,9 @@ export const orchestrasService = {
     conductorId: string,
     memberId: string,
     args?: { position?: number; meta?: OrchestraMemberMeta },
-  ): Promise<AssociationsRpcResult<{ id: string }>> {
+  ): Promise<RecordsResult<{ id: string }>> {
     const meta = args?.meta ?? {};
-    return associationsService.add({
+    return fromAssociations(await associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
@@ -233,39 +234,39 @@ export const orchestrasService = {
           ? { result_mode: meta.resultMode }
           : {}),
       } as Json,
-    });
+    }));
   },
 
   /** Remove one member (role-scoped: never touches the marker self-edge). */
   async removeMember(
     conductorId: string,
     memberId: string,
-  ): Promise<AssociationsRpcResult<null>> {
-    return associationsService.remove({
+  ): Promise<RecordsResult<null>> {
+    return fromAssociations(await associationsService.remove({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetId: memberId,
       role: MEMBER_ROLE,
-    });
+    }));
   },
 
   /** Delete an Orchestra: clear all members (role-scoped) then drop the marker. */
-  async deleteOrchestra(conductorId: string): Promise<AssociationsRpcResult<null>> {
-    const cleared = await associationsService.setTargets({
+  async deleteOrchestra(conductorId: string): Promise<RecordsResult<null>> {
+    const cleared = fromAssociations(await associationsService.setTargets({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetIds: [],
       role: MEMBER_ROLE,
-    });
-    if (isAssociationsRpcErr(cleared)) return cleared;
-    return associationsService.remove({
+    }));
+    if (isRecordsErr(cleared)) return cleared;
+    return fromAssociations(await associationsService.remove({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
       targetType: AGENT_TOKEN,
       targetId: conductorId,
       role: ORCHESTRA_MARKER_ROLE,
-    });
+    }));
   },
 };

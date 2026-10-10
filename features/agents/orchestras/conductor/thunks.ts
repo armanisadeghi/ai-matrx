@@ -17,7 +17,7 @@
 // instance is deliberately KEPT after completion so the finished description
 // stays readable in the window; the next sync releases it.
 
-import { isAssociationsRpcErr } from "@ai-matrx/associations";
+import { isRecordsErr } from "@ai-matrx/records";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
@@ -84,7 +84,7 @@ export function enableConductorSync(args: {
     const res = await conductorService.ensureAvailableAgentsSection(
       args.conductorId,
     );
-    if (isAssociationsRpcErr(res)) return { ok: false, error: res.error.message };
+    if (isRecordsErr(res)) return { ok: false, error: res.error.message };
     try {
       await dispatch(fetchFullAgent(args.conductorId)).unwrap();
     } catch {
@@ -119,7 +119,7 @@ export function syncConductorPrompt(args: {
     const marker = await conductorService.hasAvailableAgentsSection(
       args.conductorId,
     );
-    if (isAssociationsRpcErr(marker))
+    if (isRecordsErr(marker))
       return { ok: false, error: marker.error.message };
     if (!marker.data) {
       return {
@@ -139,7 +139,7 @@ export function syncConductorPrompt(args: {
 
     // Each member agent's config (system prompt, inputs, output shape).
     const configsRes = await conductorService.fetchMemberConfigs(memberIds);
-    if (isAssociationsRpcErr(configsRes)) {
+    if (isRecordsErr(configsRes)) {
       return { ok: false, error: configsRes.error.message };
     }
     const configById = new Map<string, MemberConfigRow>(
@@ -351,7 +351,7 @@ export function syncConductorPrompt(args: {
       args.conductorId,
       block,
     );
-    if (isAssociationsRpcErr(inj)) {
+    if (isRecordsErr(inj)) {
       return { ok: false, error: inj.error.message, membersUpdated };
     }
 

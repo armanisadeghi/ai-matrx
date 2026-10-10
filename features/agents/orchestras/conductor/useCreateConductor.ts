@@ -9,7 +9,7 @@
 
 "use client";
 
-import { isAssociationsRpcErr } from "@ai-matrx/associations";
+import { isRecordsErr } from "@ai-matrx/records";
 import { useCallback, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -36,7 +36,7 @@ export function useCreateConductor() {
         // 1) Copy the template. The new agent ships the empty <available_agents>
         //    placeholder; org is backfilled by the DB `_stamp_org_default` trigger.
         const created = await conductorService.createFromTemplate();
-        if (isAssociationsRpcErr(created)) {
+        if (isRecordsErr(created)) {
           setError(created.error.message);
           return null;
         }

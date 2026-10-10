@@ -2,13 +2,13 @@
 //
 // The plumbing for "generate an conductor agent": copy the template, dump the
 // selected agents, and inject the generated <agent> blocks into the conductor's
-// <available_agents> section. Every method returns a AssociationsRpcResult and NEVER
+// <available_agents> section. Every method returns a RecordsResult and NEVER
 // throws. Running the description-generator agent itself is a THUNK (needs
 // dispatch) — see ./thunks.ts. See features/agents/docs/ORCHESTRAS.md.
 
 "use client";
 
-import { type AssociationsRpcResult } from "@ai-matrx/associations";
+import { type RecordsResult } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import { createAgentFromTemplate } from "@/features/agents/agent-creators/templates/templateService";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -187,7 +187,7 @@ export function buildAvailableAgentsBlock(
 
 export const conductorService = {
   /** Copy the "Agent Conductor" template into a new agent owned by the caller. */
-  async createFromTemplate(): Promise<AssociationsRpcResult<{ agentId: string }>> {
+  async createFromTemplate(): Promise<RecordsResult<{ agentId: string }>> {
     const made = await createAgentFromTemplate(CONDUCTOR_TEMPLATE_ID);
     if ("cancelled" in made) return err("internal", "No organization chosen for the new leader.");
     return "error" in made ? err("internal", made.error) : ok({ agentId: made.agentId });
@@ -200,7 +200,7 @@ export const conductorService = {
    */
   async fetchMemberConfigs(
     memberIds: string[],
-  ): Promise<AssociationsRpcResult<MemberConfigRow[]>> {
+  ): Promise<RecordsResult<MemberConfigRow[]>> {
     try {
       if (memberIds.length === 0) return ok([]);
       const { data, error } = await supabase
@@ -220,7 +220,7 @@ export const conductorService = {
   /** Cheap check: does this agent's system prompt have an <available_agents> section? */
   async hasAvailableAgentsSection(
     agentId: string,
-  ): Promise<AssociationsRpcResult<boolean>> {
+  ): Promise<RecordsResult<boolean>> {
     try {
       const { data, error } = await supabase
         .schema("agent")
@@ -249,7 +249,7 @@ export const conductorService = {
    */
   async ensureAvailableAgentsSection(
     conductorId: string,
-  ): Promise<AssociationsRpcResult<null>> {
+  ): Promise<RecordsResult<null>> {
     try {
       const { data, error } = await supabase
         .schema("agent")
@@ -314,7 +314,7 @@ export const conductorService = {
   },
 
   /** Rename an agent (used to name the generated conductor). */
-  async rename(agentId: string, name: string): Promise<AssociationsRpcResult<null>> {
+  async rename(agentId: string, name: string): Promise<RecordsResult<null>> {
     try {
       const { error } = await tryWriteOne(
         supabase
@@ -342,7 +342,7 @@ export const conductorService = {
     agentId: string,
     systemText: string,
     userText: string,
-  ): Promise<AssociationsRpcResult<null>> {
+  ): Promise<RecordsResult<null>> {
     try {
       const messages: AgentDefinitionMessage[] = [
         { role: "system", content: [{ type: "text", text: systemText }] },
@@ -373,7 +373,7 @@ export const conductorService = {
   async injectAvailableAgents(
     conductorId: string,
     agentBlocks: string,
-  ): Promise<AssociationsRpcResult<null>> {
+  ): Promise<RecordsResult<null>> {
     try {
       const { data, error } = await supabase
         .schema("agent")
