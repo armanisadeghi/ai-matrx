@@ -21,6 +21,7 @@ import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/t
 import { Skeleton } from "@ai-matrx/design-system";
 import { CONVERSATION_CONTEXT_LABEL, readConversationContextTab } from "./conversationContextKind";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export default function ConversationContextCanvasView({ data, item, canvas, presentation }: CanvasKindProps) {
   const tab = readConversationContextTab(data);
   const conversationId = tab?.conversationId ?? null;
@@ -57,9 +58,9 @@ export default function ConversationContextCanvasView({ data, item, canvas, pres
   if (!loaded) {
     if (failed) {
       return (
-        <div className="p-4 type-body text-muted-foreground" data-values-tab-state="unavailable">
+        <div data-error-box className="p-4 type-body text-muted-foreground" data-values-tab-state="unavailable">
           This chat could not be opened.
-        </div>
+        <ErrorAlchemyMenu /></div>
       );
     }
     return (

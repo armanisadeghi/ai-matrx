@@ -16,6 +16,7 @@ import {
   type CanvasArtifactRow,
 } from "@/features/canvas/services/canvasArtifactService";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The chat package's `CanvasItemCardProps`. */
 interface CanvasItemCardProps {
   canvasItemId: string;
@@ -54,7 +55,7 @@ export function CanvasItemCard({ canvasItemId }: CanvasItemCardProps) {
     return <p className="text-xs text-muted-foreground">This version was removed.</p>;
   }
   if (read.status === "error") {
-    return <p className="text-xs text-destructive">This version could not be loaded: {read.message}</p>;
+    return <p className="text-xs text-destructive">This version could not be loaded: {read.message}<ErrorAlchemyMenu error={read.message} /></p>;
   }
   const { row } = read;
   const content = (row.content ?? {}) as { data?: unknown; metadata?: Record<string, unknown> };
