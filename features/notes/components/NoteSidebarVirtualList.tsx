@@ -16,6 +16,11 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
+/** The sidebar height assumed before the scroller is measured. */
+const INITIAL_VIEWPORT_PX = 900;
+/** Rows rendered when the scroller has no height at all. */
+const UNMEASURED_ROW_COUNT = 60;
+
 export interface NoteSidebarListItem {
   /** Stable React key for the row (also the virtualiser's item key). */
   key: string;
@@ -49,6 +54,8 @@ export function NoteSidebarVirtualList<T extends NoteSidebarListItem>(props: Not
     estimateSize: (index) => estimateSize(items[index]!),
     getItemKey: (index) => items[index]!.key,
     overscan: 12,
+    // The first render fills a typical sidebar before the scroller is measured.
+    initialRect: { width: 0, height: INITIAL_VIEWPORT_PX },
     // Anything rendered above the list inside the same scroller (a load
     // failure line) offsets every row.
     scrollMargin: listRef.current?.offsetTop ?? 0,
@@ -69,13 +76,26 @@ export function NoteSidebarVirtualList<T extends NoteSidebarListItem>(props: Not
   }, [reveal, items, virtualizer]);
 
   const scrollMargin = virtualizer.options.scrollMargin;
+  const rows = virtualizer.getVirtualItems();
+  if (rows.length === 0 && items.length > 0) {
+    // A scroller with no height (no layout: a test DOM, a pane not shown yet)
+    // gives the virtualiser no window to fill. The head of the list renders in
+    // normal flow instead, so the rows exist rather than an empty box.
+    return (
+      <div ref={listRef} data-virtual-list="notes-sidebar" data-unmeasured="true">
+        {items.slice(0, UNMEASURED_ROW_COUNT).map((item) => (
+          <div key={item.key}>{renderItem(item)}</div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div
       ref={listRef}
       data-virtual-list="notes-sidebar"
       style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}
     >
-      {virtualizer.getVirtualItems().map((row) => (
+      {rows.map((row) => (
         <div
           key={row.key}
           data-index={row.index}
