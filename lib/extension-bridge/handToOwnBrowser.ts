@@ -84,8 +84,7 @@ interface PickUpResult {
   waitingCount?: unknown;
 }
 
-const NO_EXTENSION_SENTENCE =
-  "The Matrx extension is not installed in this browser, so there is nothing to hand the pages to. Adding it takes about a minute and it is the only thing these pages are waiting for.";
+const NO_EXTENSION_SENTENCE = "Install the Matrx extension to use your own browser.";
 
 /**
  * Is the Matrx extension installed and answering in THIS browser?

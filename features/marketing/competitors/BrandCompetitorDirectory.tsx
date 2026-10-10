@@ -71,6 +71,12 @@ import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competi
 import { foundKey, useCompetitorSocialActions, useFoundSocials, type FoundSocials } from "./useCompetitorSocials";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
+/** A name that is just the website (www/scheme/case aside) is shown once. */
+function sameAsName(name: string, domain: string | null | undefined): boolean {
+  const clean = (v: string) => v.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
+  return !domain || clean(name) === clean(domain);
+}
+
 const CORE_PLATFORMS = ["instagram", "tiktok", "youtube"];
 
 function accountsOn(row: BrandCompetitor, platform: string): CompetitorAccount[] {
@@ -95,6 +101,8 @@ function bestOutlier(row: BrandCompetitor) {
 function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: string; organizationId: string } }) {
   const found = useFoundSocials(brand.id, row.key);
   const { find, track } = useCompetitorSocialActions(brand);
+  const { pointsText } = useSocialSpend(brand.organizationId);
+  const trackPoints = pointsText("track");
   if (row.progress) return null;
   const busy = found?.status === "finding" || found?.status === "tracking";
   return (
@@ -103,6 +111,7 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
         <Button
           variant="outline"
           disabled={busy}
+          title={trackPoints ? `Tracking an account uses ${trackPoints}` : undefined}
           icon={found?.status === "finding" ? <Loader2 className="animate-spin" /> : <Search />}
           onClick={async () => {
             // A failure is told in a toast and in the competitor's detail panel, never inside this cell (it would push the row).
@@ -146,7 +155,7 @@ export function BrandCompetitorDirectory() {
   const queryClient = useQueryClient();
   const brandRef = useMemo(() => ({ id: brand.id, organizationId: brand.organizationId }), [brand.id, brand.organizationId]);
   const socialActions = useCompetitorSocialActions(brandRef);
-  const { agentCostText } = useSocialSpend(brand.organizationId);
+  const { agentCostText, pointsText } = useSocialSpend(brand.organizationId);
   const [jobs, setJobs] = useState<BrandCompetitor[]>([]);
   const patchJob = useCallback((key: string, fn: (job: BrandCompetitor) => BrandCompetitor) => {
     setJobs((current) => current.map((job) => (job.key === key ? fn(job) : job)));
@@ -274,7 +283,8 @@ export function BrandCompetitorDirectory() {
   const toSearch = useMemo(() => rowsToSearch(rows, searched), [rows, searched]);
   const platforms = useMemo(() => {
     const present = new Set(realRows.flatMap((r) => r.accounts.map((a) => a.platform)));
-    const ordered = [...CORE_PLATFORMS, ...[...present].filter((p) => !CORE_PLATFORMS.includes(p)).sort()];
+    // Only platforms somebody is tracked on: a column of dashes says nothing (the row's Find socials covers the rest).
+    const ordered = [...CORE_PLATFORMS.filter((p) => present.has(p)), ...[...present].filter((p) => !CORE_PLATFORMS.includes(p)).sort()];
     return ordered;
   }, [realRows]);
 
@@ -650,14 +660,14 @@ export function BrandCompetitorDirectory() {
           <DialogHeader>
             <DialogTitle>Find socials for {toSearch.length} {toSearch.length === 1 ? rivals.oneLower : rivals.manyLower}?</DialogTitle>
             <DialogDescription>
-              We read each website for its Instagram, TikTok, YouTube and other profile links. Nothing is saved or tracked until you press Track.
+              We read each website for its profile links. Nothing is tracked until you press Track{pointsText("track") ? `; each account tracked uses ${pointsText("track")}` : ""}.
             </DialogDescription>
           </DialogHeader>
           <ul className="max-h-48 space-y-0.5 overflow-auto rounded-md border border-border p-2 text-xs">
             {toSearch.map((r) => (
               <li key={r.key} className="flex justify-between gap-3">
                 <span className="truncate font-medium">{r.name}</span>
-                <span className="truncate text-muted-foreground">{r.domain}</span>
+                {sameAsName(r.name, r.domain) ? null : <span className="truncate text-muted-foreground">{r.domain}</span>}
               </li>
             ))}
           </ul>

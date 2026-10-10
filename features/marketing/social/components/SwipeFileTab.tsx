@@ -564,9 +564,6 @@ export function SwipeFileTab() {
                       Show all collections ({otherCount})
                     </Button>
                   ) : null}
-                  <Button variant="primary" icon={<Link2 />} onClick={() => setLinkOpen(true)}>
-                    Save link
-                  </Button>
                   <Button variant="outline" asChild>
                     <Link href="/extend" target="_blank">
                       Get the Chrome extension

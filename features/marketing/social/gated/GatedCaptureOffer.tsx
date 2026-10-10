@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Globe } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system/controls";
@@ -38,7 +39,7 @@ export function GatedCaptureOffer({
 }) {
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<CaptureHandoff | null>(null);
-  const [line, setLine] = useState<{ text: string; failed: boolean } | null>(null);
+  const [line, setLine] = useState<{ text: string; failed: boolean; install?: boolean } | null>(null);
   const { view } = useGuidedJob(job?.id ?? null, job);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export function GatedCaptureOffer({
       const started = await startBackgroundCapture(target, organizationId);
       setJob(started.job);
       if (started.handOff.kind !== "handed_over") {
-        setLine({ text: started.handOff.sentence, failed: started.handOff.kind === "refused" });
+        setLine({ text: started.handOff.sentence, failed: started.handOff.kind === "refused", install: started.handOff.kind === "no_extension" });
       }
     } catch (err) {
       setLine({ text: err instanceof Error ? err.message : "Couldn't start the capture", failed: true });
@@ -87,7 +88,18 @@ export function GatedCaptureOffer({
           </span>
         ) : null}
       </div>
-      {line ? <p className={`text-xs ${line.failed ? "text-destructive" : "text-muted-foreground"}`}>{line.text}</p> : null}
+      {line ? (
+        <p className={`flex flex-wrap items-center gap-2 text-xs ${line.failed ? "text-destructive" : "text-muted-foreground"}`}>
+          {line.text}
+          {line.install ? (
+            <Button variant="outline" asChild>
+              <Link href="/extend" target="_blank">
+                Install
+              </Link>
+            </Button>
+          ) : null}
+        </p>
+      ) : null}
       {compact ? null : (
         <CloudCaptureButton
           organizationId={organizationId}
