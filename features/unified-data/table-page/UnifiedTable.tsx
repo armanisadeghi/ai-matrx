@@ -19,6 +19,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { useOpenNotionImport } from "@/features/spaces/io/NotionImportDoor";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, TablePageSkeleton, WhereItLives, skeletonLayoutFor } from "@ai-matrx/records-ui";
 import type { PageView, RecordsMountProps, TablePageActionHost, ViewAddressState } from "@ai-matrx/records-ui";
@@ -42,7 +43,7 @@ import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
 import { useRowChangeAgentOffer } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
-import { tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
+import { notionImportEntry, tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
 import { TableAutomationsDialog } from "@/features/unified-data/actions/TableAutomationsDialog";
 import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
@@ -193,6 +194,8 @@ export function useUnifiedTable({
   /** ⌘K finds this table's actions (the same list the header ⋯ draws; TABLE-ACTIONS T4.1). */
   const onActions = useTablePageCommands(null);
   const [automationsOpen, setAutomationsOpen] = useState(false);
+  /** Table ⋯ → Import from Notion: the Spaces door (lane NOTION-DOOR), loaded only when pressed. */
+  const notion = useOpenNotionImport();
   const actionHost: TablePageActionHost = {
     ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
     ...(favorite.known ? { isFavorite: favorite.isFavorite, toggleFavorite: favorite.toggle } : {}),
@@ -214,6 +217,7 @@ export function useUnifiedTable({
               }
             : {}),
       }),
+      notionImportEntry(notion.open),
       ...(actionExtensions ?? []),
     ],
   };
@@ -269,6 +273,7 @@ export function useUnifiedTable({
     actionHost,
     automationsOpen,
     setAutomationsOpen,
+    notionDoor: notion.door,
     onActions,
     says,
     mountsTheTable,
@@ -352,6 +357,7 @@ export function UnifiedTableBody({
           {...pageHeader}
         />
       </RecordStoreTableSurface>
+      {mount.notionDoor}
       {mount.automationsOpen ? (
         <TableAutomationsDialog
           tableId={tableId}

@@ -11,6 +11,7 @@
 import { useState } from "react";
 
 import { NewTableDialog } from "@/features/make/MakeMount";
+import { useOpenNotionImport } from "@/features/spaces/io/NotionImportDoor";
 
 import { DataHomeShellPage } from "./DataHomeShellPage";
 
@@ -18,6 +19,8 @@ import { DataHomeShellPage } from "./DataHomeShellPage";
 export interface DataHomeMaking {
   asked: { create: number };
   ask: (what: "create") => void;
+  /** "Import from Notion": opens the Spaces door's importer in place (lane NOTION-DOOR). */
+  importFromNotion: () => void;
 }
 
 export function DataHomeRoute() {
@@ -25,7 +28,9 @@ export function DataHomeRoute() {
   // THE PRESS OPENS ONE DIALOG, WHERE IT WAS PRESSED (G5 b, lane MAKE-HOME): never a name box at the
   // foot of the list, and never a missing button when no organization is chosen — the dialog asks.
   const [opened, setOpened] = useState<"create" | null>(null);
+  const notion = useOpenNotionImport();
   const making: DataHomeMaking = {
+    importFromNotion: notion.open,
     asked,
     ask: (what) => {
       setAsked((n) => ({ ...n, [what]: n[what] + 1 }));
@@ -36,6 +41,7 @@ export function DataHomeRoute() {
     <>
       <DataHomeShellPage making={making} />
       <NewTableDialog what={opened} onClose={() => setOpened(null)} />
+      {notion.door}
     </>
   );
 }

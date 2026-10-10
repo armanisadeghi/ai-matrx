@@ -157,12 +157,21 @@ export function useNotionImport() {
   return { stage, setStage, fromZip, connect, token, setToken, saveTokenAndConnect };
 }
 
-export function NotionImportDialog({ state }: { state: ReturnType<typeof useNotionImport> }) {
+export interface NotionImportDialogProps {
+  state: ReturnType<typeof useNotionImport>;
+  /** Open an imported page (the Spaces host and the door each know their own router). */
+  onOpenPage: (spaceId: string) => void;
+  /** The report was dismissed: the Spaces host re-reads its tree. */
+  onFinished?: () => void;
+  /** Open the report table in this tab; absent = a new tab (the Spaces host keeps its workspace). */
+  onOpenTable?: (tableId: string) => void;
+}
+
+export function NotionImportDialog({ state, onOpenPage, onFinished, onOpenTable }: NotionImportDialogProps) {
   const { stage, setStage, token, setToken, saveTokenAndConnect } = state;
-  const spaces = useSpaces();
   const busy = stage?.phase === "uploading" || stage?.phase === "running";
   const close = () => {
-    if (stage?.phase === "finished") spaces.retryLoad();
+    if (stage?.phase === "finished") onFinished?.();
     setStage(null);
   };
 
@@ -206,7 +215,7 @@ export function NotionImportDialog({ state }: { state: ReturnType<typeof useNoti
           </div>
         ) : null}
         {stage?.phase === "failed" ? <p className="type-secondary text-destructive">{stage.message}</p> : null}
-        {stage?.phase === "finished" ? <Report report={stage.report} onOpen={(id) => (close(), spaces.open(id))} /> : null}
+        {stage?.phase === "finished" ? <Report report={stage.report} onOpen={(id) => (close(), onOpenPage(id))} onOpenTable={onOpenTable ? (id) => (close(), onOpenTable(id)) : undefined} /> : null}
         {stage?.phase === "failed" || stage?.phase === "finished" ? (
           <div className="flex justify-end">
             <Button type="button" variant="outline" onClick={close}>
@@ -219,7 +228,7 @@ export function NotionImportDialog({ state }: { state: ReturnType<typeof useNoti
   );
 }
 
-function Report({ report, onOpen }: { report: Finished; onOpen: (spaceId: string) => void }) {
+function Report({ report, onOpen, onOpenTable }: { report: Finished; onOpen: (spaceId: string) => void; onOpenTable?: (tableId: string) => void }) {
   const came = Object.entries(report.came_over).filter(([, n]) => n > 0);
   return (
     <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
@@ -264,13 +273,22 @@ function Report({ report, onOpen }: { report: Finished; onOpen: (spaceId: string
           </Button>
         ) : null}
         {report.report_table_id ? (
-          <Button type="button" variant="outline" onClick={() => window.open(`/data/${report.report_table_id}`, "_blank", "noopener")}>
+          <Button
+            type="button"
+            variant={report.top_pages[0] ? "outline" : "primary"}
+            onClick={() => (onOpenTable ? onOpenTable(report.report_table_id as string) : window.open(`/data/${report.report_table_id}`, "_blank", "noopener"))}
+          >
             Full report
           </Button>
         ) : null}
       </div>
     </div>
   );
+}
+
+function SpacesNotionImportDialog({ state }: { state: ReturnType<typeof useNotionImport> }) {
+  const spaces = useSpaces();
+  return <NotionImportDialog state={state} onOpenPage={spaces.open} onFinished={spaces.retryLoad} />;
 }
 
 type Door = Pick<ReturnType<typeof useNotionImport>, "fromZip" | "connect">;
@@ -282,7 +300,7 @@ export function NotionImportHost({ children }: { children: ReactNode }) {
   return (
     <DoorContext.Provider value={{ fromZip: state.fromZip, connect: state.connect }}>
       {children}
-      <NotionImportDialog state={state} />
+      <SpacesNotionImportDialog state={state} />
     </DoorContext.Provider>
   );
 }

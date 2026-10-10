@@ -103,6 +103,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
+                  { icon: "FileInput", label: "Import from Notion", onPress: making.importFromNotion },
                   { icon: mapOn ? "List" : "Network", label: mapOn ? "List" : "Map", onPress: toggleMap },
                   {
                     icon: "LayoutTemplate",

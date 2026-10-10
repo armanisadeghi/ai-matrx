@@ -45,6 +45,17 @@ export function tableMenuExtensions(extras: TableMenuExtras): ObjectAction[] {
   ];
 }
 
+/**
+ * "Import from Notion…" in the Share group, right after the package's own Import… (CSV / XLSX). It is the
+ * Spaces door's importer (`useOpenNotionImport`), so it needs no records-ui hook. Without an opener it stays
+ * listed, disabled with a reason.
+ */
+export function notionImportEntry(open?: () => void): ObjectAction {
+  return open
+    ? { id: "import-notion", label: "Import from Notion…", icon: "upload", group: "share", run: open }
+    : { id: "import-notion", label: "Import from Notion…", icon: "upload", group: "share", disabledReason: "Not available here", run: NOOP };
+}
+
 /** A host's extra entries as the page used to take them (`{key, label, onSelect}`). */
 export interface TableMenuExtra {
   key: string;
