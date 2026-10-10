@@ -23,6 +23,7 @@
  * when this input goes away (the page navigated).
  */
 
+// wizard-draft-exempt: the saved draft holds only the 'review already opened' flag, no typed text is restored into a field
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertCircle, ListChecks, Loader2, Search, X } from "lucide-react";
 import { Textarea } from "@ai-matrx/design-system";

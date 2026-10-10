@@ -74,6 +74,7 @@ const DELEGATED: Readonly<Record<string, string>> = {
   mandate: "MandatePeekModal — the mandates feature's own preview",
   party: "fetchPartyDetail — guarded by the-peek-names-the-kind.test.tsx",
   user: "resolveVisiblePerson — a person's display name, not a table column",
+  table: "TablePeek reads details.table.name through the data seam — a custom Table is not a platform.entity_types row (no title_column exists to read)",
   dataset: "readTableDetails — the data-tables service names the table",
   seo_map_topic: "useMapTopicRow + TopicDetailBody — the topical map's own panel",
   sandbox_instance: "a sandbox has no name; its id is what the sandbox UI shows",

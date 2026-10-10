@@ -17,6 +17,7 @@
  * by project — a remount or a wake loses neither and reads nothing.
  */
 
+// wizard-draft-exempt: the quick-add row is a single inline task field, not a wizard; its half-typed row is kept on purpose
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import {

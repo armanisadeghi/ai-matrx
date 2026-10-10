@@ -281,6 +281,11 @@ it("every wizard that restores a persisted draft renders the notice", () => {
     "features/research/components/init/ResearchInitForm.tsx",
     // Create deck (flashcards) — renders the notice; added to the census 2026-09-30.
     "features/flashcards/components/create/CreateDeckPage.tsx",
+    // Holders that are NOT wizards (found 2026-10-10): each carries a `wizard-draft-exempt: <reason>`
+    // comment and is judged by the exemption rule below instead of the notice.
+    "features/flashcards/components/set-detail/SetDetailView.tsx",
+    "features/projects/components/ProjectTaskList.tsx",
+    "features/resource-manager/source-input/components/SourceInput.tsx",
   ];
   const {
     execFileSync,
@@ -306,9 +311,20 @@ it("every wizard that restores a persisted draft renders the notice", () => {
 
   for (const file of found) {
     const source = readFileSync(path.join(repoRoot, file), "utf8");
+    // An exemption is a single-field inline add, or a draft holding only bookkeeping (no typed text
+    // restored into a field). It must say why, in words: `wizard-draft-exempt: <reason>`.
+    const exempt = /wizard-draft-exempt:\s*(\S[^\n*]{11,})/.exec(source);
+    if (exempt) continue;
     expect({ file, rendersNotice: source.includes("<WizardDraftRestored") }).toEqual({
       file,
       rendersNotice: true,
     });
   }
+});
+
+it("an exemption needs a stated reason, and a wizard without one still needs the notice", () => {
+  const reasonRule = /wizard-draft-exempt:\s*(\S[^\n*]{11,})/;
+  expect(reasonRule.test("// wizard-draft-exempt: inline quick-add row, one field")).toBe(true);
+  expect(reasonRule.test("// wizard-draft-exempt:")).toBe(false);
+  expect(reasonRule.test("// wizard-draft-exempt: ok")).toBe(false);
 });

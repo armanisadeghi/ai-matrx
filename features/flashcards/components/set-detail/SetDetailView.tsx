@@ -9,6 +9,7 @@
 
 "use client";
 
+// wizard-draft-exempt: this reads only the 'deck just made' marker (a banner flag), no typed text is ever put back into a field
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";

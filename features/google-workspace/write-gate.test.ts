@@ -181,11 +181,16 @@ describe("every direct Google write can come back as a proposal", () => {
   it("registerSelectedGoogleFile refuses to send with no organization in reach — no request is sent", async () => {
     mockOrganizationId = null;
     mockPost.mockClear();
-    await expect(
-      registerSelectedGoogleFile("c1", "file-1"),
-    ).rejects.toThrow(/select an organization/i);
-    expect(mockPost).not.toHaveBeenCalled();
-    mockOrganizationId = TEST_ORGANIZATION_ID;
+    try {
+      // The organization gate's own words for a person with no organization in reach.
+      await expect(
+        registerSelectedGoogleFile("c1", "file-1"),
+      ).rejects.toThrow(/belong to an organization/i);
+      expect(mockPost).not.toHaveBeenCalled();
+    } finally {
+      // Restored even when the assertion fails, so one red cannot turn the next tests red too.
+      mockOrganizationId = TEST_ORGANIZATION_ID;
+    }
   });
 
   it("REFUSES a 202 that does not say which approval, rather than reporting success", async () => {
