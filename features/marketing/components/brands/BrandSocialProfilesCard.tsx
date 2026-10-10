@@ -18,6 +18,7 @@ import { SectionCard } from "@/features/marketing/components/shared/MarketingUi"
 import { useBrandSocialAccounts, useInvalidateSocial } from "@/features/marketing/social/hooks";
 import { useRefusedRead } from "@/features/marketing/social/gated/RefusedReadOffer";
 import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guidedJob";
+import { brandAccountHref } from "@/features/marketing/social/property-account-href";
 import { accountLabels, formatGrowth, lastPostLabel, showOwnerChip } from "@/features/marketing/social/mappers";
 import { formatCompact, outlierBadgeModel } from "@/features/marketing/social/outlier";
 import { profileAvatarDoor } from "@/features/marketing/social/server";
@@ -109,9 +110,7 @@ export function BrandSocialProfilesCard({
           </Button>
         </div>
       ) : rows.length === 0 && extras.length === 0 ? (
-        <p className="p-4 text-xs text-muted-foreground">
-          No social profiles yet. Add one, or confirm profile links from the discovery inbox.
-        </p>
+        <p className="px-4 py-2.5 text-xs text-muted-foreground">No social profiles yet.</p>
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((row) => {
@@ -179,7 +178,7 @@ function SocialRow({
   const brandKind = useMarketingBrand().kind;
   const tracked = Boolean(row.trackedAccountId);
   const handle = formatSocialHandle({ platform: row.platform, handle: row.handle, url: row.profileUrl });
-  const href = row.profileId ? `/marketing/${brandSeg}/socials/${row.platform}/${row.profileId}` : null;
+  const href = brandAccountHref(brandSeg, row);
   const canTrack = trackableOwn(row);
   // Numbers read when the account was added still show: the same numbers Socials -> Accounts shows for this row.
   const hasReadings = row.followers !== null || row.postsTracked > 0;
@@ -201,9 +200,8 @@ function SocialRow({
   const name = (
     <span className="truncate text-sm font-medium text-foreground">{labels.primary}</span>
   );
-  return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
-      {row.profileId && row.avatarHint ? (
+  const avatarNode = (
+    row.profileId && row.avatarHint ? (
         <span className="relative h-8 w-8 shrink-0">
           <span className="relative block h-8 w-8 overflow-hidden rounded-full bg-muted">
             <SocialImage
@@ -218,6 +216,17 @@ function SocialRow({
         </span>
       ) : (
         <PlatformMark platform={row.platform} size={32} />
+      )
+  );
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
+      {href ? (
+        <Link href={href} aria-label={`Open ${labels.primary}`} className="shrink-0">
+          {avatarNode}
+        </Link>
+      ) : (
+        avatarNode
       )}
 
       <div className="flex min-w-[200px] flex-1 flex-col leading-tight">

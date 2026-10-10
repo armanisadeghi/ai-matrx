@@ -125,8 +125,7 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
     overview: {
       factsTitle: "Business facts",
       factsAdd: "Add fact",
-      factsEmpty:
-        "No confirmed facts yet. Add one directly, or review the discovery inbox to confirm phones, emails, addresses, and taglines.",
+      factsEmpty: "No confirmed facts yet.",
       mapTitle: "Topical map",
       websitesEmpty: "No website property yet.",
     },
@@ -206,7 +205,7 @@ export const BRAND_KIND_COPY: Record<BrandKind, BrandKindCopy> = {
     overview: {
       factsTitle: "About",
       factsAdd: "Add detail",
-      factsEmpty: "Nothing confirmed yet. Add a detail, or confirm what discovery found.",
+      factsEmpty: "No details yet.",
       mapTitle: "Content map",
       websitesEmpty: "No website yet.",
     },

@@ -13,7 +13,14 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, ExternalLink, Loader2, Search, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ExternalLink,
+  Loader2,
+  Search,
+  UserRound,
+} from "lucide-react";
 import { Button, Field } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -25,8 +32,14 @@ import { formatCount } from "@ai-matrx/kit/format";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { marketingSeg } from "@/features/marketing/lib/keys";
-import { BRAND_KIND_COPY, type BrandKind } from "@/features/marketing/lib/brand-kind";
-import { linkLabel, type DiscoveredAccount } from "@/features/marketing/lib/link-in-bio";
+import {
+  BRAND_KIND_COPY,
+  type BrandKind,
+} from "@/features/marketing/lib/brand-kind";
+import {
+  linkLabel,
+  type DiscoveredAccount,
+} from "@/features/marketing/lib/link-in-bio";
 import {
   classifyStartInput,
   createPersonBrand,
@@ -41,10 +54,20 @@ import {
   personBrandDeps,
   scrapeLinkInBio,
 } from "@/features/marketing/lib/person-brand-io";
-import { profileAvatarDoor, socialErrorMessage, trackAccount } from "@/features/marketing/social/server";
+import {
+  profileAvatarDoor,
+  socialErrorMessage,
+  trackAccount,
+} from "@/features/marketing/social/server";
 import { useSocialSpend } from "@/features/marketing/social/cost";
-import { SocialAccountInput, useSocialAccountInput } from "@/features/marketing/social/components/SocialAccountInput";
-import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
+import {
+  SocialAccountInput,
+  useSocialAccountInput,
+} from "@/features/marketing/social/components/SocialAccountInput";
+import {
+  PlatformMark,
+  platformLabel,
+} from "@/features/marketing/social/components/PlatformMark";
 import { SocialImage } from "@/features/marketing/social/components/SocialImage";
 import {
   TRACKABLE_PLATFORMS,
@@ -53,7 +76,10 @@ import {
 
 type Step = "start" | "looking" | "confirm" | "creating" | "track" | "tracking";
 
-type TrackState = { state: "idle" | "running" | "ok" | "failed"; message: string | null };
+type TrackState = {
+  state: "idle" | "running" | "ok" | "failed";
+  message: string | null;
+};
 
 export function HandleBrandCreator({
   kind,
@@ -107,7 +133,12 @@ export function HandleBrandCreator({
   // The dialog stays up, saying "Opening", until the brand page is the page: a first visit can
   // take a moment, and a dialog that vanishes with nothing behind it reads as a dead button.
   useEffect(() => {
-    if (opening && created && pathname?.startsWith(marketingRoutes.brand(marketingSeg(created.brand)))) onClose();
+    if (
+      opening &&
+      created &&
+      pathname?.startsWith(marketingRoutes.brand(marketingSeg(created.brand)))
+    )
+      onClose();
   }, [opening, created, pathname, onClose]);
 
   // The brand page compiles/loads on first visit (the "Opening…" wait): start fetching it the moment the brand exists.
@@ -117,18 +148,26 @@ export function HandleBrandCreator({
   }, [createdSeg, router]);
 
   const startKind = classifyStartInput(account.text);
-  const keyOf = (a: { platform: string; handle: string }) => `${a.platform}:${a.handle.toLowerCase()}`;
-  const say = (line: string) => setProgress((p) => (p[p.length - 1] === line ? p : [...p, line]));
+  const keyOf = (a: { platform: string; handle: string }) =>
+    `${a.platform}:${a.handle.toLowerCase()}`;
+  const say = (line: string) =>
+    setProgress((p) => (p[p.length - 1] === line ? p : [...p, line]));
 
   const lookUp = async () => {
     setFailure(null);
-    if (!organizationId) return setFailure("Choose an owning organization first.");
-    if (parsed.status === "empty") return setFailure("Paste a social handle or profile link.");
+    if (!organizationId)
+      return setFailure("Choose an owning organization first.");
+    if (parsed.status === "empty")
+      return setFailure("Paste a social handle or profile link.");
     if (startKind === "website") {
-      return setFailure("That is a website. Paste a social profile, or use the website form.");
+      return setFailure(
+        "That is a website. Paste a social profile, or use the website form.",
+      );
     }
-    if (parsed.status === "needs_platform") return setFailure("Pick the platform for that handle.");
-    if (parsed.status !== "ok") return setFailure("That is not a social account address.");
+    if (parsed.status === "needs_platform")
+      return setFailure("Pick the platform for that handle.");
+    if (parsed.status !== "ok")
+      return setFailure("That is not a social account address.");
     setStep("looking");
     onLocked?.(true);
     setProgress([]);
@@ -142,14 +181,22 @@ export function HandleBrandCreator({
       });
       setSeed(profile);
       setName((n) => n.trim() || profile.displayName);
-      say(profile.externalUrl ? `Reading the bio link ${linkLabel(profile.externalUrl)}` : "Reading the bio");
-      const found = await discoverPresence(profile, { scrape: (url) => scrapeLinkInBio(url, dispatch) });
+      say(
+        profile.externalUrl
+          ? `Reading the bio link ${linkLabel(profile.externalUrl)}`
+          : "Reading the bio",
+      );
+      const found = await discoverPresence(profile, {
+        scrape: (url) => scrapeLinkInBio(url, dispatch),
+      });
       setDiscovery(found);
       setChosen(new Set(found.accounts.map(keyOf)));
       setWebsite(websiteTyped.trim() || found.website || "");
       setStep("confirm");
     } catch (error) {
-      setFailure(socialErrorMessage(error, "The profile could not be fetched."));
+      setFailure(
+        socialErrorMessage(error, "The profile could not be fetched."),
+      );
       setStep("start");
       onLocked?.(false);
     }
@@ -171,7 +218,9 @@ export function HandleBrandCreator({
       });
       const result = await createPersonBrand(plan, seed, personBrandDeps);
       setCreated(result);
-      void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "brands"] });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brands"],
+      });
       if (result.siteError) {
         toast.error("The website was not added", {
           description: `${result.siteError} Add it from Websites.`,
@@ -179,12 +228,23 @@ export function HandleBrandCreator({
       }
       const failed = result.properties.filter((p) => p.error);
       if (failed.length) {
-        toast.error(`${failed.length} account${failed.length === 1 ? "" : "s"} not added`, {
-          description: failed.map((f) => `${platformLabel(f.platform)} @${f.handle}: ${f.error}`).join(" · "),
-        });
+        toast.error(
+          `${failed.length} account${failed.length === 1 ? "" : "s"} not added`,
+          {
+            description: failed
+              .map(
+                (f) => `${platformLabel(f.platform)} @${f.handle}: ${f.error}`,
+              )
+              .join(" · "),
+          },
+        );
       }
       setTracking(
-        Object.fromEntries(result.properties.filter((p) => p.propertyId).map((p) => [keyOf(p), { state: "idle", message: null }])),
+        Object.fromEntries(
+          result.properties
+            .filter((p) => p.propertyId)
+            .map((p) => [keyOf(p), { state: "idle", message: null }]),
+        ),
       );
       setStep("track");
     } catch (error) {
@@ -193,7 +253,9 @@ export function HandleBrandCreator({
     }
   };
 
-  const trackable = (created?.properties ?? []).filter((p) => p.propertyId && TRACKABLE_PLATFORMS.has(p.platform));
+  const trackable = (created?.properties ?? []).filter(
+    (p) => p.propertyId && TRACKABLE_PLATFORMS.has(p.platform),
+  );
 
   const openBrand = () => {
     if (!created) return;
@@ -211,13 +273,19 @@ export function HandleBrandCreator({
     setStep("tracking");
     for (const p of trackable) {
       const key = keyOf(p);
-      setTracking((t) => ({ ...t, [key]: { state: "running", message: "Starting" } }));
+      setTracking((t) => ({
+        ...t,
+        [key]: { state: "running", message: "Starting" },
+      }));
       try {
         await trackAccount(
           {
             ...(p.platform === seed?.platform && p.handle === seed?.handle
               ? { profileId: seed.profileId }
-              : { handleOrUrl: p.url ?? p.handle, platform: p.platform as SocialPlatform }),
+              : {
+                  handleOrUrl: p.url ?? p.handle,
+                  platform: p.platform as SocialPlatform,
+                }),
             role: "own",
             brandId: created.brand.id,
             propertyId: p.propertyId ?? undefined,
@@ -225,12 +293,22 @@ export function HandleBrandCreator({
           },
           {
             organizationId,
-            onProgress: (pr) => setTracking((t) => ({ ...t, [key]: { state: "running", message: pr.message } })),
+            onProgress: (pr) =>
+              setTracking((t) => ({
+                ...t,
+                [key]: { state: "running", message: pr.message },
+              })),
           },
         );
         setTracking((t) => ({ ...t, [key]: { state: "ok", message: null } }));
       } catch (error) {
-        setTracking((t) => ({ ...t, [key]: { state: "failed", message: socialErrorMessage(error, "Not tracked") } }));
+        setTracking((t) => ({
+          ...t,
+          [key]: {
+            state: "failed",
+            message: socialErrorMessage(error, "Not tracked"),
+          },
+        }));
       }
     }
     setStep("track");
@@ -261,6 +339,7 @@ export function HandleBrandCreator({
               Name
             </Label>
             <Field
+              className="w-full"
               id="handle-brand-name"
               value={name}
               disabled={busy}
@@ -273,6 +352,7 @@ export function HandleBrandCreator({
               Website (optional)
             </Label>
             <Field
+              className="w-full"
               id="handle-brand-website"
               value={websiteTyped}
               disabled={busy}
@@ -282,7 +362,10 @@ export function HandleBrandCreator({
           </div>
         </div>
         {busy ? (
-          <ol className="space-y-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground" aria-live="polite">
+          <ol
+            className="space-y-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground"
+            aria-live="polite"
+          >
             {progress.map((line, i) => (
               <li key={`${i}:${line}`} className="flex items-center gap-2">
                 {i === progress.length - 1 ? (
@@ -301,7 +384,9 @@ export function HandleBrandCreator({
           </p>
         ) : null}
         <div className="flex items-center justify-end gap-2">
-          {lookCost ? <span className="text-xs text-muted-foreground">{lookCost}</span> : null}
+          {lookCost ? (
+            <span className="text-xs text-muted-foreground">{lookCost}</span>
+          ) : null}
           <Button variant="quiet" disabled={busy} onClick={onClose}>
             Cancel
           </Button>
@@ -322,7 +407,13 @@ export function HandleBrandCreator({
     const busy = step === "creating";
     // Only links that look like their own site: press and articles about them are never offered.
     const websiteOptions = [
-      ...new Set([discovery.website, websiteTyped.trim(), ...discovery.siteCandidates].filter((v): v is string => Boolean(v))),
+      ...new Set(
+        [
+          discovery.website,
+          websiteTyped.trim(),
+          ...discovery.siteCandidates,
+        ].filter((v): v is string => Boolean(v)),
+      ),
     ].slice(0, 6);
     return (
       <div className="grid gap-3" data-testid="handle-brand-confirm">
@@ -332,6 +423,7 @@ export function HandleBrandCreator({
             Name
           </Label>
           <Field
+            className="w-full"
             id="handle-brand-name-confirm"
             value={name}
             disabled={busy}
@@ -342,7 +434,10 @@ export function HandleBrandCreator({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <Label className="text-xs">Accounts</Label>
-            <span className="text-[11px] text-muted-foreground" title={discovery.hubError ?? undefined}>
+            <span
+              className="text-[11px] text-muted-foreground"
+              title={discovery.hubError ?? undefined}
+            >
               {discovery.hub
                 ? discovery.hubError
                   ? `Could not read ${linkLabel(discovery.hub)}`
@@ -352,7 +447,11 @@ export function HandleBrandCreator({
           </div>
           <ul className="divide-y divide-border rounded-md border border-border">
             <AccountRowView
-              account={{ platform: seed.platform, handle: seed.handle, url: seed.profileUrl }}
+              account={{
+                platform: seed.platform,
+                handle: seed.handle,
+                url: seed.profileUrl,
+              }}
               checked
               locked
             />
@@ -374,7 +473,9 @@ export function HandleBrandCreator({
             ))}
           </ul>
           {discovery.accounts.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">No other accounts found. Add more on Socials later.</p>
+            <p className="text-[11px] text-muted-foreground">
+              No other accounts found. Add more on Socials later.
+            </p>
           ) : null}
         </div>
 
@@ -383,6 +484,7 @@ export function HandleBrandCreator({
             Website (optional)
           </Label>
           <Field
+            className="w-full"
             id="handle-brand-website-confirm"
             value={website}
             disabled={busy}
@@ -409,9 +511,15 @@ export function HandleBrandCreator({
 
         {kind === "person" ? (
           <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={isMe} disabled={busy || !userId} onCheckedChange={(v) => setIsMe(v === true)} />
+            <Checkbox
+              checked={isMe}
+              disabled={busy || !userId}
+              onCheckedChange={(v) => setIsMe(v === true)}
+            />
             This is me
-            <span className="text-[11px] text-muted-foreground">Their voice becomes your own</span>
+            <span className="text-[11px] text-muted-foreground">
+              Their voice becomes your own
+            </span>
           </label>
         ) : null}
 
@@ -448,22 +556,34 @@ export function HandleBrandCreator({
 
   if ((step === "track" || step === "tracking") && created) {
     const busy = step === "tracking";
-    const anyDone = Object.values(tracking).some((t) => t.state === "ok" || t.state === "failed");
+    const anyDone = Object.values(tracking).some(
+      (t) => t.state === "ok" || t.state === "failed",
+    );
     return (
       <div className="grid gap-3" data-testid="handle-brand-track">
         <p className="text-sm text-foreground">
-          {created.brand.name} is created with {created.properties.filter((p) => p.propertyId).length} account
-          {created.properties.filter((p) => p.propertyId).length === 1 ? "" : "s"}.
+          {created.brand.name} is created with{" "}
+          {created.properties.filter((p) => p.propertyId).length} account
+          {created.properties.filter((p) => p.propertyId).length === 1
+            ? ""
+            : "s"}
+          .
         </p>
         <ul className="divide-y divide-border rounded-md border border-border">
           {created.properties.map((p) => {
             const t = tracking[keyOf(p)];
             const canTrack = TRACKABLE_PLATFORMS.has(p.platform);
             return (
-              <li key={keyOf(p)} className="flex items-center gap-2 px-2 py-1.5 text-sm">
+              <li
+                key={keyOf(p)}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm"
+              >
                 <PlatformMark platform={p.platform} size={16} />
                 <span className="truncate">@{p.handle}</span>
-                <span className="ml-auto truncate text-xs text-muted-foreground" title={p.error ?? t?.message ?? undefined}>
+                <span
+                  className="ml-auto truncate text-xs text-muted-foreground"
+                  title={p.error ?? t?.message ?? undefined}
+                >
                   {p.error
                     ? "Not added"
                     : !canTrack
@@ -476,13 +596,17 @@ export function HandleBrandCreator({
                             ? (t.message ?? "Not tracked")
                             : "Not tracked"}
                 </span>
-                {t?.state === "running" ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
+                {t?.state === "running" ? (
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                ) : null}
               </li>
             );
           })}
         </ul>
         <div className="flex items-center justify-end gap-2">
-          {!anyDone && trackCost ? <span className="text-xs text-muted-foreground">{trackCost}</span> : null}
+          {!anyDone && trackCost ? (
+            <span className="text-xs text-muted-foreground">{trackCost}</span>
+          ) : null}
           <Button
             variant="quiet"
             disabled={busy || opening}
@@ -520,7 +644,10 @@ function SeedHeader({ seed }: { seed: SeedProfile }) {
           alt={seed.displayName}
           fallback={
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <UserRound className="h-5 w-5 text-muted-foreground" aria-hidden />
+              <UserRound
+                className="h-5 w-5 text-muted-foreground"
+                aria-hidden
+              />
             </span>
           }
         />
@@ -528,13 +655,23 @@ function SeedHeader({ seed }: { seed: SeedProfile }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <PlatformMark platform={seed.platform} size={14} />
-          <span className="truncate text-sm font-medium">{seed.displayName}</span>
-          <span className="truncate text-xs text-muted-foreground">@{seed.handle}</span>
+          <span className="truncate text-sm font-medium">
+            {seed.displayName}
+          </span>
+          <span className="truncate text-xs text-muted-foreground">
+            @{seed.handle}
+          </span>
           {seed.followers != null ? (
-            <span className="ml-auto shrink-0 text-xs text-muted-foreground">{formatCount(seed.followers)} followers</span>
+            <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+              {formatCount(seed.followers)} followers
+            </span>
           ) : null}
         </div>
-        {seed.bio ? <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{seed.bio}</p> : null}
+        {seed.bio ? (
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+            {seed.bio}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -563,8 +700,12 @@ function AccountRowView({
       />
       <PlatformMark platform={account.platform} size={16} />
       <span className="truncate">@{account.handle}</span>
-      <span className="text-xs text-muted-foreground">{platformLabel(account.platform)}</span>
-      {locked ? <span className="text-[11px] text-muted-foreground">Looked up</span> : null}
+      <span className="text-xs text-muted-foreground">
+        {platformLabel(account.platform)}
+      </span>
+      {locked ? (
+        <span className="text-[11px] text-muted-foreground">Looked up</span>
+      ) : null}
       <a
         href={account.url}
         target="_blank"

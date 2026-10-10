@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useBrandSocialAccounts } from "@/features/marketing/social/hooks";
+import { brandAccountHref } from "@/features/marketing/social/property-account-href";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { businessFactValueText } from "@/features/marketing/lib/business-fact-value";
@@ -147,6 +149,11 @@ function RowActionButton({
       {children}
     </button>
   );
+}
+
+/** A stored website may lack its scheme; a bare domain in an href is a relative link. */
+function externalHref(url: string): string {
+  return /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
 }
 
 function factValueText(fact: BusinessFact): string {
@@ -398,6 +405,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const facts = useBusinessFacts(brandId);
   // access-errors: ok — inbox count badge; absence only hides the badge
   const pending = usePendingDiscoveredCount(brandId);
+  // access-errors: ok — the hero's account icons; without it they fall back to the public link
+  const socialAccounts = useBrandSocialAccounts(brandId);
 
   if (brand.isLoading) {
     // The [brandId] layout's trail is the header for this whole tree — a
@@ -648,7 +657,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               </h2>
               {current.website_url ? (
                 <a
-                  href={current.website_url}
+                  href={externalHref(current.website_url)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex max-w-full items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
@@ -671,19 +680,34 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 {socialProperties.length > 0 ? (
                   <span className="ml-1 inline-flex items-center gap-1">
                     {socialProperties.slice(0, 8).map((property) => {
-                      const href = propertyPublicUrl(property);
+                      const accountRow = (socialAccounts.data ?? []).find((r) => r.propertyId === property.id);
+                      const href = accountRow
+                        ? brandAccountHref(marketingSeg(current), accountRow)
+                        : propertyPublicUrl(property);
+                      const internal = Boolean(accountRow && href);
                       const label =
                         PROPERTY_KIND_LABELS[toPropertyKind(property.kind)];
                       const title = property.handle
                         ? `${label} · ${formatSocialHandle({ platform: property.kind, handle: property.handle, url: property.url })}`
                         : label;
-                      return href ? (
+                      return internal && href ? (
+                        <Link
+                          key={property.id}
+                          href={href}
+                          title={title}
+                          aria-label={title}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <PropertyKindMark kind={property.kind} size={24} />
+                        </Link>
+                      ) : href ? (
                         <a
                           key={property.id}
                           href={href}
                           target="_blank"
                           rel="noreferrer"
                           title={title}
+                          aria-label={title}
                           className="transition-transform hover:scale-110"
                         >
                           <PropertyKindMark kind={property.kind} size={24} />
@@ -794,7 +818,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             }}
           >
             {websiteSites.length === 0 ? (
-              <div className="flex flex-wrap items-center gap-3 p-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-xs text-muted-foreground">
                 <p>{overviewCopy.websitesEmpty}</p>
                 {current.website_url ? (
                   <Button
@@ -811,20 +835,22 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 {websiteSites.map((site) => (
                   <li
                     key={site.id}
-                    className="flex cursor-pointer flex-wrap items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
-                    onClick={() =>
-                      router.push(marketingRoutes.site(brandId, site.id))
-                    }
+                    className="flex flex-wrap items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
                   >
-                    <SiteIdentityMark site={site} size={28} />
-                    <div className="min-w-0 flex-1 basis-48">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {site.name}
-                      </p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {site.domain}
-                      </p>
-                    </div>
+                    <Link
+                      href={marketingRoutes.site(brandId, site.id)}
+                      className="flex min-w-0 flex-1 basis-48 items-center gap-3"
+                    >
+                      <SiteIdentityMark site={site} size={28} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground hover:underline">
+                          {site.name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {site.domain}
+                        </p>
+                      </div>
+                    </Link>
                     <SiteConnectionChips site={site} />
                     <div className="flex shrink-0 items-center gap-0.5">
                       <CopyButtons
@@ -902,7 +928,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               }}
             >
               {factRows.length === 0 ? (
-                <p className="p-4 text-xs text-muted-foreground">
+                <p className="px-4 py-2.5 text-xs text-muted-foreground">
                   {overviewCopy.factsEmpty}
                 </p>
               ) : (
@@ -1012,16 +1038,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             }}
           >
             {(assets.data ?? []).length === 0 ? (
-              <div className="flex min-h-28 flex-col items-center justify-center gap-2 p-4 text-center">
-                <Images className="h-6 w-6 text-muted-foreground" />
-                <p className="max-w-md text-xs text-muted-foreground">
-                  No confirmed assets yet. Add one directly, or initialize a
-                  site and confirm logos, favicons, and imagery from its
-                  discovery inbox — they become the brand's asset library here.
-                  The asset desk also holds research imagery, stock sources, and
-                  AI image generation.
-                </p>
-              </div>
+              <p className="px-4 py-2.5 text-xs text-muted-foreground">No confirmed assets yet.</p>
             ) : (
               <ul className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-6">
                 {sortedAssets.map((asset) => {

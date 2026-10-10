@@ -53,15 +53,12 @@ export function BrandTopicalMapCard({
       ) : maps.isError ? (
         <ErrorNotice size="inline" className="p-4 text-xs" message={topicalMapErrorText(maps.error)} />
       ) : maps.data.length === 0 ? (
-        <div className="grid gap-2 p-4">
-          <p className="text-xs text-muted-foreground">
-            No {title.toLowerCase()} yet. The map decides which pages this brand should have
-            and where they live; the content plan writes the ones it calls for.
-          </p>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+          <p className="text-xs text-muted-foreground">No {title.toLowerCase()} yet.</p>
           {/* Placement §7 #4 — "Generate map" when there is none. */}
           <Link
             href={startMapHref(brandSeg, { source: "data" })}
-            className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1 text-sm hover:bg-muted"
           >
             <AGENT_ICON className="h-4 w-4" aria-hidden />
             Start a map from this brand&apos;s data
