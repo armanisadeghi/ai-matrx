@@ -47,11 +47,11 @@ export async function readCursorAccounts(): Promise<CursorAccountRow[]> {
   }));
 }
 
-/** The server's refusal sentence (`{detail: {message}}`), else the error's own message. */
+/** The server's refusal sentence (BackendApiError `details.message`), else the error's own message. */
 export function cursorErrorMessage(cause: unknown, fallback: string): string {
   if (cause && typeof cause === "object") {
-    const c = cause as { detail?: unknown; data?: unknown; body?: unknown; message?: unknown };
-    for (const holder of [c.detail, c.data, c.body]) {
+    const c = cause as { details?: unknown; detail?: unknown; data?: unknown; body?: unknown; message?: unknown };
+    for (const holder of [c.details, c.detail, c.data, c.body]) {
       if (holder && typeof holder === "object") {
         const inner = (holder as { detail?: unknown; message?: unknown }).detail ?? holder;
         const msg = (inner as { message?: unknown }).message;
