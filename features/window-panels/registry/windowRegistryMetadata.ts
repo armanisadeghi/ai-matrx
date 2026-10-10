@@ -1300,6 +1300,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "feedback" },
   },
 
+  // ── People involved (access setup) ───────────────────────────────────────
+  {
+    slug: "access-setup-window",
+    overlayId: "accessSetupWindow",
+    kind: "window",
+    label: "People involved",
+    defaultData: {
+      headType: null,
+      recordId: null,
+      cycleId: null,
+      recordName: null,
+    },
+    mobilePresentation: "drawer",
+    ephemeral: true,
+  },
+
   // ── Share Modal Window ────────────────────────────────────────────────────
   {
     slug: "share-modal-window",

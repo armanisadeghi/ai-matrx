@@ -36629,6 +36629,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      custom_fields_on: {
+        Args: { p_organization_id: string; p_table_token: string }
+        Returns: {
+          field_id: string
+          field_key: string
+          field_label: string
+          field_required: boolean
+          field_sort: number
+          field_source: string
+          field_type: string
+          table_label: string
+        }[]
+      }
       custom_fields_tables: {
         Args: never
         Returns: {
@@ -36741,6 +36754,17 @@ export type Database = {
           id: string
           organization_id: string
           who: string
+        }[]
+      }
+      data_home_custom_fields: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          field_count: number
+          organization_id: string
+          organization_name: string
+          table_label: string
+          table_token: string
+          updated_at: string
         }[]
       }
       data_home_items: {
@@ -38890,8 +38914,19 @@ export type Database = {
         }
         Returns: Json
       }
+      pick_list_for_selection: { Args: { p_list_id: string }; Returns: Json }
+      pick_list_get: { Args: { p_list_id: string }; Returns: Json }
       pick_list_index: { Args: { p_organization_id: string }; Returns: Json }
       pick_list_index_everywhere: { Args: never; Returns: Json }
+      pick_list_update: {
+        Args: {
+          p_description?: string
+          p_items?: Json
+          p_list_id: string
+          p_list_name?: string
+        }
+        Returns: Json
+      }
       pin_agent_cells: {
         Args: { p_agent_keys: string[]; p_new: Json; p_old: Json }
         Returns: Json
@@ -73926,30 +73961,13 @@ export type Database = {
         Args: { p_default: Json; p_key: string; p_org: string }
         Returns: Json
       }
-      _rev_lane: {
-        Args: { p_review_id: string; p_role: string; p_uid: string }
-        Returns: string
-      }
       _rev_mean_rating: { Args: { p_answers: Json }; Returns: number }
       _rev_notify_peer: { Args: { p_nomination_id: string }; Returns: Json }
       _rev_person_name: { Args: { p_employment_id: string }; Returns: string }
-      _rev_response_visible: {
-        Args: {
-          p_response_id: string
-          p_review_id: string
-          p_seat: string
-          p_uid: string
-        }
-        Returns: boolean
-      }
       _rev_review_goal_ids: { Args: { p_review_id: string }; Returns: string[] }
       _rev_review_json: {
         Args: { p_review_id: string; p_uid: string }
         Returns: Json
-      }
-      _rev_seat: {
-        Args: { p_review_id: string; p_uid: string }
-        Returns: string
       }
       _rev_set_due: {
         Args: { p_due: string; p_instance: string; p_step_key: string }
@@ -73959,6 +73977,10 @@ export type Database = {
       _rev_template_problems: {
         Args: { p_scale: Json; p_sections: Json }
         Returns: Json
+      }
+      _review_lane: {
+        Args: { p_review_id: string; p_role: string; p_uid: string }
+        Returns: string
       }
       _review_logins_of_employment: {
         Args: { p_employment_id: string }
@@ -73971,6 +73993,10 @@ export type Database = {
       _review_orgs_capable: {
         Args: { p_capability: string; p_person: string }
         Returns: string[]
+      }
+      _review_reaches: {
+        Args: { p_review_id: string; p_uid: string }
+        Returns: boolean
       }
       _review_skip_level_on: { Args: { p_org: string }; Returns: boolean }
       _rules_evidence: { Args: { p_ids: string[] }; Returns: Json }
@@ -74735,6 +74761,10 @@ export type Database = {
           schema_name: string
         }[]
       }
+      hr_owner_takes_hr_role: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       hr_review_acknowledge: {
         Args: { p_comment?: string; p_review_id: string }
         Returns: Json
@@ -74749,6 +74779,10 @@ export type Database = {
       }
       hr_review_cancel: {
         Args: { p_reason: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_cycle_access_setup: {
+        Args: { p_cycle_id: string }
         Returns: Json
       }
       hr_review_cycle_close: { Args: { p_cycle_id: string }; Returns: Json }
@@ -75697,6 +75731,14 @@ export type Database = {
       }
       review_seat_hr: { Args: { p_review_id: string }; Returns: string[] }
       review_seat_hr_set: { Args: { p_person: string }; Returns: string[] }
+      review_seat_line_manager: {
+        Args: { p_review_id: string }
+        Returns: string[]
+      }
+      review_seat_line_manager_set: {
+        Args: { p_person: string }
+        Returns: string[]
+      }
       review_seat_manager: { Args: { p_review_id: string }; Returns: string[] }
       review_seat_manager_set: { Args: { p_person: string }; Returns: string[] }
       review_seat_peers: { Args: { p_review_id: string }; Returns: string[] }
@@ -78316,7 +78358,12 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: string
       }
+      _access_setup_needs_confirm: {
+        Args: { p_ids: string[]; p_org: string; p_type: string; p_user: string }
+        Returns: boolean
+      }
       _access_setup_of: { Args: { p_type: string }; Returns: Json }
+      _access_setup_person: { Args: { p_user: string }; Returns: Json }
       _access_setup_problems: {
         Args: { p_type: string; s: Json }
         Returns: string[]
@@ -79360,6 +79407,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      may_act_seat: {
+        Args: {
+          p_action: string
+          p_id: string
+          p_person: string
+          p_type: string
+        }
+        Returns: boolean
+      }
       may_address_user_in_org: {
         Args: { p_org: string; p_user: string }
         Returns: boolean
@@ -79741,6 +79797,14 @@ export type Database = {
           why: string
         }[]
       }
+      record_access_setup: {
+        Args: { p_id: string; p_type: string }
+        Returns: Json
+      }
+      record_seat_clear: {
+        Args: { p_id: string; p_seat: string; p_type: string; p_user: string }
+        Returns: Json
+      }
       record_seat_set: {
         Args: {
           p_change: string
@@ -79750,6 +79814,10 @@ export type Database = {
           p_type: string
           p_user: string
         }
+        Returns: Json
+      }
+      record_setup_confirm: {
+        Args: { p_ids: string[]; p_type: string }
         Returns: Json
       }
       record_transfer_refusal: { Args: { p_refusal: Json }; Returns: string }
@@ -79898,6 +79966,10 @@ export type Database = {
         }[]
       }
       seats_of: {
+        Args: { p_id: string; p_person: string; p_type: string }
+        Returns: string[]
+      }
+      seats_opening: {
         Args: { p_id: string; p_person: string; p_type: string }
         Returns: string[]
       }

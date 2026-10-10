@@ -17,6 +17,7 @@ import { activeStructure, useHrStructure } from "@/features/hr/people/shared/use
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { toast } from "@/lib/toast";
+import { useAfterCreateOpenAccessSetup } from "@/features/access-setup/afterCreate";
 
 import { CalibrationTab } from "./CalibrationTab";
 import { launchRefusalMessage } from "./messages";
@@ -221,6 +222,7 @@ function LaunchPanel({ cycleId, organizationId, onLaunched }: { cycleId: string;
   };
   const chosen = population();
 
+  const afterCreateOpenAccessSetup = useAfterCreateOpenAccessSetup();
   const launch = async () => {
     if (!chosen || busy) return;
     setBusy(true);
@@ -232,6 +234,8 @@ function LaunchPanel({ cycleId, organizationId, onLaunched }: { cycleId: string;
     }
     const n = r.data.created.length;
     if (n > 0) toast.success(n === 1 ? "1 review started" : `${n} reviews started`);
+    // access-setup §5b: one People involved panel for the whole launch (only until the org confirmed)
+    afterCreateOpenAccessSetup(r.data.accessSetup);
     setManager(null);
     setPeople([]);
     setPickerKey((k) => k + 1);

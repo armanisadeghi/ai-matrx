@@ -80,6 +80,18 @@
       "checksum": "ab5cb8839659c660d8c704bfdcb5030363915973c6970c6dd1191a98b0807eb5",
       "applied_at": "2026-10-10 18:51:20.201346+00"
     },
+    "migrations/campaign/accesssetup_h2_only_setup_changers_confirm.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_h2_only_setup_changers_confirm.sql",
+      "checksum": "79980dc85f1b0e42399d898ba667a1ef09684645f7867e980cfdb097d136f7a6",
+      "applied_at": "2026-10-10 22:27:09.779206+00"
+    },
+    "migrations/campaign/accesssetup_h_the_setup_panel_reads_and_confirms.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_h_the_setup_panel_reads_and_confirms.sql",
+      "checksum": "06c6929aee204548db37276f4182456ff68ca74a132a97dce2681b2cc5af4eee",
+      "applied_at": "2026-10-10 22:08:08.547279+00"
+    },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",
       "filename": "agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql",
