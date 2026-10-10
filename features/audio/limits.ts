@@ -33,7 +33,8 @@
  */
 
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 

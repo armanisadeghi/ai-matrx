@@ -41,7 +41,7 @@ import {
 } from "@ai-matrx/kit/format";
 import type { RootState } from "@/lib/redux/store";
 import { selectCanToggleCostUnit, selectCostUnit } from "./costUnit";
-import { formatAdminCost } from "./formatAdminCost";
+import { formatAdminCost, formatSpendUsd } from "./formatAdminCost";
 import { usePointsRate } from "./pointsRate.client";
 
 export { currentCostUnit, selectCostUnit, selectShowCostInUsdPreference } from "./costUnit";
@@ -61,7 +61,8 @@ export interface CostDisplay {
   /** A USD cost → the viewer's string: `"1,234 points"` or `"$0.0617"`. */
   format: (
     usd: number | null | undefined,
-    options?: { short?: boolean; unknown?: string },
+    /** `price` — a rate someone compares (a model's per-token price): exact dollars, not cents. */
+    options?: { short?: boolean; unknown?: string; price?: boolean },
   ) => string;
   /** A USD cost → whole points (for math, tiers, sorting). */
   toPoints: (usd: number | null | undefined) => number | null;
@@ -112,10 +113,12 @@ export function useCostDisplay(): CostDisplay {
     unit,
     canToggle,
     rate,
-    format: (usd, options) =>
+    format: (usd, { price, ...options } = {}) =>
       showBoth
-        ? formatAdminCost(usd, { ...options, rate })
-        : formatCost(usd, { ...options, unit, rate }),
+        ? formatAdminCost(usd, { ...options, rate, usdDigits: price ? "price" : undefined })
+        : unit === "usd" && !price
+          ? formatSpendUsd(usd, options.unknown)
+          : formatCost(usd, { ...options, unit, rate }),
     toPoints: (usd) => usdToPoints(usd, { rate }),
   };
 }

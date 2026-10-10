@@ -23,6 +23,7 @@ import {
   createHardCostReconciliationScope,
 } from "@/features/surfaces/manifests/admin-hard-cost-reconciliation.manifest";
 import { createClient } from "@/utils/supabase/client";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 export type ReconciliationRow = {
   id: string;
@@ -51,7 +52,7 @@ export type ReconciliationRow = {
 };
 
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
-const usd = (v: number | null) => (v === null ? "—" : `${v < 0 ? "-" : ""}$${Math.abs(v).toFixed(4)}`);
+const usd = (v: number | null) => formatAdminUsd(v);
 const fmt = (v: number | null) => (v === null ? "—" : v.toLocaleString());
 
 function StatusBadge({ status }: { status: string }) {

@@ -27,7 +27,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatCost, formatFileSize, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { formatFileSize, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { isMicroUsd, isPoints, MICRO_USD_PER_USD } from "@/features/admin/limits/types";
 import {

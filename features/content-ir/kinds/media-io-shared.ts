@@ -34,9 +34,8 @@ import type { AiUsage_AgentResult, GeneratedImage } from "./generated/kinds.gene
 import { currentCostUnit } from "@/components/cost/costUnit";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
-import {
-  formatCost as formatKitCost,
-  type CostUnit, formatDurationSeconds } from "@ai-matrx/kit/format";
+import { type CostUnit, formatDurationSeconds } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatKitCost } from "@/components/cost/formatAdminCost";
 
 export function stringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";

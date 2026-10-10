@@ -2,7 +2,8 @@
 //
 // The words and numbers a run row prints. Pure — tested in __tests__.
 
-import { formatCost, type CostUnit, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
+import { type CostUnit, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import type { MandateRun, RunHistoryView, RunRung, RunStatus } from "./service";
 import { currentCostUnit } from "@/components/cost/costUnit";
 

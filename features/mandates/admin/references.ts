@@ -27,7 +27,8 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
-import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 

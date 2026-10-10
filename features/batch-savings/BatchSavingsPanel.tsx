@@ -17,15 +17,14 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight, PiggyBank } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { AdminCost } from "@/components/cost/AdminCost";
-import { usePointsRate } from "@/components/cost/pointsRate.client";
-import { count, usdPrecise } from "@/features/admin/spend/format";
+import { count } from "@/features/admin/spend/format";
 import { buildBillingBatchSavingsScope } from "@/features/admin/spend/spend-surface-scope";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
 import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -58,7 +57,7 @@ function Tile({
   className = "",
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   hint: string;
   tone?: "normal" | "success" | "muted";
   hero?: boolean;
@@ -77,7 +76,7 @@ function Tile({
       </div>
       <div
         className={[
-          "truncate font-semibold tabular-nums leading-tight",
+          "min-w-0 font-semibold tabular-nums leading-tight",
           hero ? "text-3xl" : "text-lg",
           tone === "success" ? "text-success" : tone === "muted" ? "text-muted-foreground" : "text-foreground",
         ].join(" ")}
@@ -153,7 +152,6 @@ export function BatchSavingsPanel({
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const rate = usePointsRate();
 
   const fromIso = from?.toISOString() ?? null;
   const toIso = to?.toISOString() ?? null;
@@ -229,17 +227,17 @@ export function BatchSavingsPanel({
               hero
               tone={data.savedUsd > 0 ? "success" : "muted"}
               label="Saved by batching"
-              value={usdPrecise(data.savedUsd, rate)}
+              value={<AdminCost usd={data.savedUsd} unknown="not measured" />}
               hint={
                 data.items === 0
                   ? `No batch work completed in ${windowLabel.toLowerCase()}`
                   : `${pct(data.discountPct)} below live price · ${count(data.items)} items · ${windowLabel}`
               }
             />
-            <Tile label="Batch billed" value={usdPrecise(data.actualUsd, rate)} hint="what the providers charged" />
+            <Tile label="Batch billed" value={<AdminCost usd={data.actualUsd} unknown="not measured" />} hint="what the providers charged" />
             <Tile
               label="Same work at live price"
-              value={usdPrecise(data.liveEquivalentUsd, rate)}
+              value={<AdminCost usd={data.liveEquivalentUsd} unknown="not measured" />}
               hint="actual tokens × the model's live catalog rate"
             />
             <div className="col-span-2">

@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { HouseWifi } from "lucide-react";
-import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type {
   EgressUnavailable,

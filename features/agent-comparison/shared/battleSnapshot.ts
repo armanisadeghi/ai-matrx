@@ -16,7 +16,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * columns are labelled anonymously, exactly as the page shows them.
  */
 
-import { formatCost } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import type { RootState } from "@/lib/redux/store";
 import {

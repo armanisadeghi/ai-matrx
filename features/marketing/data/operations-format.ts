@@ -1,4 +1,5 @@
-import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** Format runtime execution cost without hiding useful sub-cent precision. */

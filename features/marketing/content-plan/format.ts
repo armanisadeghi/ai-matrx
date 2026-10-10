@@ -23,7 +23,8 @@ import type { PlanAiRunSummary } from "./hooks/usePlanAiRuns";
 import type { PlanSiteStats } from "./data/service";
 import type { RealityVerdict } from "./lib/page-reality";
 import type { PlanEntityRow, PlanNodeRow } from "./types";
-import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The workspace's leading metric strip, as data. */

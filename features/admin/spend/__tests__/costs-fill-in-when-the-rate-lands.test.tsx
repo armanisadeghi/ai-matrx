@@ -67,9 +67,9 @@ async function mountPanel() {
 it("system admin: the Estimated total shows dollars and its points once the rate knob answers, after the data", async () => {
   mockSeat.sees = true;
   const { panel, unmount } = await mountPanel();
-  expect(panel()).toContain("$0.0204 · —");
+  expect(panel()).toContain("$0.02 · —");
   landRate(20_000);
-  expect(panel()).toContain("$0.0204 · 408 points");
+  expect(panel()).toContain("$0.02 · 408 points");
   unmount();
 });
 

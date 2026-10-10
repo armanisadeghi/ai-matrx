@@ -11,7 +11,8 @@
 // server left null) reads "Not measured yet"; `campaign_response` with no
 // pre-registered design reads "Not set up". Neither is ever "0%".
 
-import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCost } from "@/components/cost/formatAdminCost";
 import { AI_VISIBILITY_ENGINES } from "../types";
 import type {
   DesignPerformer,

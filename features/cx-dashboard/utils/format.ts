@@ -4,7 +4,8 @@ import { parseTimestamp } from "@/utils/datetime";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatCount, formatDurationMs, formatCost as formatCostInUnit, type CostUnit } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
+import { formatViewerCost as formatCostInUnit } from "@/components/cost/formatAdminCost";
 import { currentCostUnit } from "@/components/cost/costUnit";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.

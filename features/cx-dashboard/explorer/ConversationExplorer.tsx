@@ -29,7 +29,8 @@ import {
   type ExplorerFacets,
   type FacetOption,
 } from "./service";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 
 const detailHref = (id: string) => `/administration/chat/cx-dashboard/conversations/${id}`;
 
@@ -42,7 +43,7 @@ function options(list: FacetOption[]) {
 }
 
 // Admin surface: dollars, at the price voice so a sub-cent conversation reads its real cost.
-const money = (n: number) => (n === 0 ? "—" : formatUsd(n, { digits: "trim" }));
+const money = (n: number) => (n === 0 ? "—" : formatAdminUsd(n));
 const compact = (n: number) => (n === 0 ? "—" : formatCount(n, { style: "compact" }));
 
 function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation>[] {
@@ -239,7 +240,7 @@ function menuTarget(r: ExplorerConversation): CxMenuTarget {
       r.organization_name ? `Organization: ${r.organization_name}` : "",
       r.agent_name ? `Agent: ${r.agent_name}` : "",
       `Messages: ${r.message_count} · Requests: ${r.request_count}`,
-      `Tokens: ${formatCount(r.total_tokens)} · Cost: ${formatUsd(r.total_cost, { digits: "trim" })}`,
+      `Tokens: ${formatCount(r.total_tokens)} · Cost: ${formatAdminUsd(r.total_cost)}`,
       r.model_names.length ? `Models: ${r.model_names.join(", ")}` : "",
       r.status ? `Status: ${r.status}` : "",
     ],

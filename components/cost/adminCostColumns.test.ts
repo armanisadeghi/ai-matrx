@@ -27,7 +27,7 @@ describe("admin cost columns", () => {
     expect(columns.map((column) => column.header)).toEqual(["Cost (USD)", "Points"]);
     expect(columns[0].accessorFn?.({ cost: 0.004 })).toBe(0.004);
     expect(columns[1].accessorFn?.({ cost: 0.004 })).toBe(80);
-    expect(columns[0].cell?.({ cost: 0.004 }, 0)).toBe("$0.004000");
+    expect(columns[0].cell?.({ cost: 0.004 }, 0)).toBe("<$0.01");
     expect(text(columns[1].cell?.({ cost: 0.004 }, 0))).toBe("80 points");
   });
 
