@@ -48,6 +48,7 @@ import {
 import { ValueText } from "./ValueText";
 import { workflowSummary } from "./workflowSummary";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Seat {
   dataSource: RecordsDataSource;
   userId: string | null;
@@ -875,7 +876,7 @@ function AiColumnPicker({
     };
   }, [seat.dataSource, seat.userId, organizationId, tableId]);
 
-  if (why) return <p className="text-xs text-destructive">{why}</p>;
+  if (why) return <p className="text-xs text-destructive">{why}<ErrorAlchemyMenu error={why} /></p>;
   if (columns === null) return <p className="text-xs text-muted-foreground">Finding the AI columns…</p>;
   if (columns.length === 0) {
     return (

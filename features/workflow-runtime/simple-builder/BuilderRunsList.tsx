@@ -24,6 +24,7 @@ import {
 import { runHref } from "@/features/workflow-runtime/run-doors";
 import type { BuilderRun, RunStepStatus } from "./builderApi";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const STEP_LOOK: Record<RunStepStatus, { tone: StatusTone; icon: LucideIcon }> =
   {
     done: { tone: "success", icon: CheckCircle2 },
@@ -80,7 +81,7 @@ export function BuilderRunsList({
   emptyLabel?: string;
   showWorkflowLink?: boolean;
 }) {
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (error) return <p className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>;
   if (loading && !runs)
     return (
       <p className="text-sm text-muted-foreground">Loading runs&hellip;</p>

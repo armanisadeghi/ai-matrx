@@ -70,6 +70,7 @@ import { BuilderEditor } from "./BuilderEditor";
 import { BuilderRunsList } from "./BuilderRunsList";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const KIND_ICON: Record<TableWorkflowKind, LucideIcon> = {
   workflow: Workflow,
   button: MousePointerClick,
@@ -516,7 +517,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   // ── The right side ──
   let main: ReactNode;
   if (object.state === "unavailable")
-    main = <p className="text-sm text-destructive">{object.why}</p>;
+    main = <p className="text-sm text-destructive">{object.why}<ErrorAlchemyMenu error={object.why} /></p>;
   else if (!table)
     main = (
       <p className="text-sm text-muted-foreground">
@@ -526,7 +527,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       </p>
     );
   else if (loadError)
-    main = <p className="text-sm text-destructive">{loadError}</p>;
+    main = <p className="text-sm text-destructive">{loadError}<ErrorAlchemyMenu error={loadError} /></p>;
   else if (tab === "runs")
     main = view ? (
       <div className="flex flex-col gap-3">
@@ -583,7 +584,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
             className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink"
           >
             {says}
-          </p>
+          <ErrorAlchemyMenu /></p>
         ) : null}
         <BuilderEditor
           spec={spec}
@@ -692,7 +693,7 @@ function WorkflowList({
       >
         New workflow
       </Button>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       {!rows && !error ? (
         <p className="px-2 text-sm text-muted-foreground">Loading&hellip;</p>
       ) : null}
@@ -765,14 +766,14 @@ function WorkflowList({
         );
       })}
       {unavailable.length > 0 ? (
-        <p
+        <p data-error-box
           className="px-2 pt-2 text-xs text-muted-foreground"
           title={unavailable.join(", ")}
         >
           {unavailable.length === 1
             ? "1 feature couldn't be read"
             : `${unavailable.length} features couldn't be read`}
-        </p>
+        <ErrorAlchemyMenu /></p>
       ) : null}
     </nav>
   );
