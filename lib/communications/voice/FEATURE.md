@@ -44,7 +44,12 @@ long-lived media and agent execution stay in aidream.
 - The caller hears a hold message before a 20-second `<Dial>`. Its signed `transfer-ended`
   action handles no-answer/busy/failed/canceled with an honest closing message and hangup;
   completed calls remain silent. No retries, second recording, or raw handoff content is spoken.
-- Missing configuration or routing-read failure returns an unavailable message. Summary delivery,
+- The `<Dial><Number url>` receiver callback introduces the AI transfer before bridging. A v1
+  content-free brief supplies bounded counts of started agent requests and interruptions through
+  the signed query; absent/invalid counts get a generic introduction. It returns only `<Say>`,
+  without hangup or redial. Raw speech, model output, tools and inferred actions never enter it.
+  Official contract: https://www.twilio.com/docs/voice/twiml/number#url.
+- Missing configuration or routing-read failure returns an unavailable message. Full conversational summary delivery,
   a general agent tool, configuration UI, durable transfer receipts and handset acceptance remain
   outside this slice; local HTTP/loopback checks do not prove carrier dialing or audio.
 

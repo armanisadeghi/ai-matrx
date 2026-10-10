@@ -8,6 +8,9 @@ export const VOICE_RELAY_ENDED_PATH = "/api/webhooks/twilio/voice/relay-ended";
 export const VOICE_TRANSFER_ENDED_PATH =
   "/api/webhooks/twilio/voice/transfer-ended";
 
+export const VOICE_TRANSFER_BRIEF_PATH =
+  "/api/webhooks/twilio/voice/transfer-brief";
+
 const VOICE = "Polly.Joanna-Neural";
 
 export const OWNER_BETA_VOICE_DISCLOSURE_VERSION = "owner-beta-2026-08-17-v2";
@@ -86,17 +89,24 @@ export function buildVoiceRelayEndedTwiml(
       { voice: VOICE },
       "Please hold while I connect you to a person.",
     );
-    response.dial(
-      {
-        action: new URL(
-          VOICE_TRANSFER_ENDED_PATH,
-          getApplicationBaseUrl(),
-        ).toString(),
-        method: "POST",
-        timeout: 20,
-      },
-      transferNumber,
+    const dial = response.dial({
+      action: new URL(
+        VOICE_TRANSFER_ENDED_PATH,
+        getApplicationBaseUrl(),
+      ).toString(),
+      method: "POST",
+      timeout: 20,
+    });
+    const briefUrl = new URL(
+      VOICE_TRANSFER_BRIEF_PATH,
+      getApplicationBaseUrl(),
     );
+    const brief = readVoiceTransferBrief(params.HandoffData);
+    if (brief) {
+      briefUrl.searchParams.set("agentRequests", String(brief.agentRequests));
+      briefUrl.searchParams.set("interruptions", String(brief.interruptions));
+    }
+    dial.number({ url: briefUrl.toString(), method: "POST" }, transferNumber);
     return response.toString();
   }
   // Provider error text and handoffData can carry private content; never read them aloud.
@@ -214,4 +224,61 @@ export function buildVoiceTransferEndedTwiml(
   return disclosedResponse(
     "We could not reach a person. Please call again later. Goodbye.",
   );
+}
+
+export interface VoiceTransferBrief {
+  agentRequests: number;
+  interruptions: number;
+}
+
+/** Counts only. Caller speech, model output, tools and unverified claims never travel in this brief. */
+export function readVoiceTransferBrief(
+  raw: string | undefined,
+): VoiceTransferBrief | null {
+  if (!raw || !requestsHumanTransfer(raw)) return null;
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (!payload || typeof payload !== "object" || !("brief" in payload))
+      return null;
+    const brief = payload.brief;
+    if (
+      !brief ||
+      typeof brief !== "object" ||
+      !("schemaVersion" in brief) ||
+      brief.schemaVersion !== 1 ||
+      !("agentRequests" in brief) ||
+      !("interruptions" in brief)
+    )
+      return null;
+    const { agentRequests, interruptions } = brief;
+    if (
+      typeof agentRequests !== "number" ||
+      !Number.isSafeInteger(agentRequests) ||
+      agentRequests < 0 ||
+      agentRequests > 500 ||
+      typeof interruptions !== "number" ||
+      !Number.isSafeInteger(interruptions) ||
+      interruptions < 0 ||
+      interruptions > 500
+    )
+      return null;
+    return { agentRequests, interruptions };
+  } catch {
+    return null;
+  }
+}
+
+export function buildVoiceTransferBriefTwiml(
+  brief: VoiceTransferBrief | null,
+): string {
+  const response = new twilio.twiml.VoiceResponse();
+  response.say(
+    { voice: VOICE },
+    "A caller has requested to speak to a person through A.I. Matrix. " +
+      (brief
+        ? `The A.I. assistant started ${brief.agentRequests} ${brief.agentRequests === 1 ? "response" : "responses"}. There ${brief.interruptions === 1 ? "was" : "were"} ${brief.interruptions} ${brief.interruptions === 1 ? "interruption" : "interruptions"}. `
+        : "") +
+      "Connecting you now.",
+  );
+  return response.toString();
 }

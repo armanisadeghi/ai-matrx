@@ -16,7 +16,7 @@ test("application transfer uses only configured destination and a result callbac
   expect(xml).toContain("<Dial");
   expect(xml).toContain('timeout="20"');
   expect(xml).toContain("/voice/transfer-ended");
-  expect(xml).toContain("+19498072145</Dial>");
+  expect(xml).toContain("+19498072145</Number>");
   expect(xml).not.toContain("+18005559999");
   expect(xml).not.toContain("private");
 });
@@ -45,4 +45,39 @@ test("completed caller never transfers", () => {
       "+19498072145",
     ),
   ).not.toContain("<Dial");
+});
+
+test("brief is on the receiver Number callback, never said to the caller", () => {
+  const HandoffData = JSON.stringify({
+    reasonCode: "live-agent-handoff",
+    brief: { schemaVersion: 1, agentRequests: 3, interruptions: 1 },
+    summary: "private transcript",
+  });
+  const xml = buildVoiceRelayEndedTwiml(
+    { ...params, HandoffData },
+    "+19498072145",
+  );
+  expect(xml).toContain("<Number url=");
+  expect(xml).toContain(
+    "/voice/transfer-brief?agentRequests=3&amp;interruptions=1",
+  );
+  expect(xml).not.toContain("private transcript");
+  expect(xml).not.toContain("started 3 responses");
+});
+
+test.each([
+  { schemaVersion: 2, agentRequests: 3, interruptions: 1 },
+  { schemaVersion: 1, agentRequests: "3", interruptions: 1 },
+  { schemaVersion: 1, agentRequests: 501, interruptions: 1 },
+  { schemaVersion: 1, agentRequests: 3, interruptions: -1 },
+])("invalid brief %j never propagates counts to receiver URL", (brief) => {
+  const xml = buildVoiceRelayEndedTwiml(
+    {
+      ...params,
+      HandoffData: JSON.stringify({ reasonCode: "live-agent-handoff", brief }),
+    },
+    "+19498072145",
+  );
+  expect(xml).toContain("<Number url=");
+  expect(xml).not.toContain("agentRequests=");
 });
