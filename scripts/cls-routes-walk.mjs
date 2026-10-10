@@ -92,7 +92,7 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
   await bp.waitForTimeout(3000);
   const state = await boot.storageState();
   await boot.close();
-  for (const width of widths.filter((w) => w >= 1024)) {
+  for (const width of widths.filter((w) => w >= 1024)) for (let attempt = 0; attempt < 3; attempt++) try {
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, storageState: state });
     const page = await ctx.newPage();
     await page.goto(`${origin}/chat/new`, { timeout: 240_000 });
@@ -107,7 +107,7 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
     const link = page.locator('a[href="/notes"]:visible').first();
     await link.waitFor({ state: "attached", timeout: 30_000 }).catch(() => {});
     const box = await link.boundingBox().catch(() => null);
-    if (!box) { console.log(`${seat} ${width}px client-nav /chat/new -> /notes: SKIPPED (no visible /notes link; open the nav)`); await ctx.close(); continue; }
+    if (!box) { console.log(`${seat} ${width}px client-nav /chat/new -> /notes: SKIPPED (no visible /notes link; open the nav)`); await ctx.close(); break; }
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForURL(/\/notes(\?|$)/, { timeout: 60_000 }).catch(() => {});
@@ -117,6 +117,10 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
     if (r.url !== "/notes" || r.cls > MAX) bad = true;
     if (r.cls > MAX || verbose) console.log(JSON.stringify(r.shifts, null, 1));
     await ctx.close();
+    break;
+  } catch (e) {
+    // A dev server that recompiles mid-click destroys the page context: retry the case.
+    if (attempt >= 2) throw e;
   }
 }
 await browser.close();
