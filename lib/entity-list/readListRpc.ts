@@ -16,6 +16,14 @@
  *     `error` (code `incomplete_read`) — never a confident short list. The
  *     list shell renders that as a failed side read with Try again.
  *
+ * PAGE-SPEED-3 (2026-10-09): for the browser client's `public` schema the whole read is
+ * ONE request. A scope-count function returns a row per organization, so the member with
+ * 1,532 organizations got 3,072 rows and the paging above ran the function FIVE times
+ * (a count, page one, pages two to four) for one dropdown. `platform.list_rpc_once`
+ * runs the named function once and returns every row as a single jsonb array, which the
+ * row cap cannot cut, so nothing is dropped and nothing is re-executed. The paging above
+ * remains only for a caller that names another schema's client (`options.client`).
+ *
  * It answers `{ data, error }` like supabase-js so a caller keeps its own
  * error mapping. Guard: `__tests__/list-rpc-reads-never-truncate.test.ts`,
  * which also fails when any facet/count RPC is called around this reader.
@@ -87,6 +95,7 @@ export async function readListRpc<Row>(
   args: object,
   options: ListRpcOptions<Row>,
 ): Promise<ListRpcResult<Row>> {
+  if (!options.client && ONCE_RPC_NAME.test(fn) && !hasArrayArg(args)) return readOnce<Row>(fn, args);
   const client: ListRpcClient = options.client ?? (supabase as unknown as ListRpcClient);
   const page = (from: number, to: number, ordered: boolean): PageBuilder<Row> => {
     let builder = client.rpc(fn, args, { count: "exact" }) as PageBuilder<Row>;
@@ -122,6 +131,36 @@ export async function readListRpc<Row>(
       return { data: null, error: { message, code: "incomplete_read" } };
     }
     return { data: null, error: { message } };
+  }
+}
+
+/** The names `platform.list_rpc_once` accepts (the same pattern the function enforces). */
+const ONCE_RPC_NAME = /^[a-z][a-z0-9_]*(?:_scope_counts|_facets|_counts|_lane_facets)$/;
+
+/**
+ * `platform.list_rpc_once` casts every argument through its text form, which is malformed for a
+ * JSON array bound to a `text[]` parameter (22P02 "malformed array literal"). A call that
+ * carries an array argument keeps the paged read above, which sends the array as the API does.
+ */
+function hasArrayArg(args: object): boolean {
+  return Object.values(args).some((v) => Array.isArray(v));
+}
+
+/** One request, one execution, every row: the function's rows come back as a single jsonb array. */
+async function readOnce<Row>(fn: string, args: object): Promise<ListRpcResult<Row>> {
+  try {
+    const platform = (supabase as unknown as { schema(name: string): ListRpcClient }).schema("platform");
+    const res = (await platform.rpc("list_rpc_once", { p_fn: fn, p_args: args })) as PageResponse<unknown>;
+    if (res.error) return { data: null, error: res.error };
+    if (!Array.isArray(res.data)) {
+      return {
+        data: null,
+        error: { message: `${fn}: the one-call reader answered something that is not a list`, code: "incomplete_read" },
+      };
+    }
+    return { data: res.data as Row[], error: null };
+  } catch (err) {
+    return { data: null, error: { message: err instanceof Error ? err.message : String(err) } };
   }
 }
 
