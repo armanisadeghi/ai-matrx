@@ -79,6 +79,7 @@ import { PostMedia, guessAspect } from "./PostMedia";
 import { usePostActions } from "./usePostActions";
 import { postScopeValues } from "@/features/board/items/social-tile-values";
 import { socialPostKind, postTranscriptKind } from "../kind-models";
+import { useSocialSpend } from "../cost";
 import {
   SOCIAL_POST_CLIENT_TOOLS,
   SOCIAL_POST_SURFACE_NAME,
@@ -337,6 +338,7 @@ function PostAgentSurface({
   host: PostHost;
 }) {
   const router = useRouter();
+  const { agentCostText } = useSocialSpend(organizationId);
   const transcript = usePostTranscript(postId);
   const kind = socialPostKind({
     post: data.post,
@@ -361,6 +363,12 @@ function PostAgentSurface({
     [SOCIAL_POST_CLIENT_TOOLS.openDetail]: () => {
       actions.openDetail();
       return host === "page" ? "Already on the post's full page." : "Opened the post's full page.";
+    },
+  }, {
+    // Named on the approval card before an agent spends: the transcript's points, and the breakdown's AI run.
+    costs: {
+      [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => agentCostText("transcript"),
+      [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => "AI usage, billed in points",
     },
   });
   return null;

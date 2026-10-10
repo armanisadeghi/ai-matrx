@@ -41,7 +41,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import { confirmSocialSpendNow } from "@/features/marketing/social/cost";
+import { useSocialSpend } from "@/features/marketing/social/cost";
+import { countOf, withCostOn } from "@/features/marketing/social/social-actions";
 import { parseCreateCompetitors, parseUpdateCompetitors } from "./competitor-agent-writes";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
@@ -145,6 +146,7 @@ export function BrandCompetitorDirectory() {
   const queryClient = useQueryClient();
   const brandRef = useMemo(() => ({ id: brand.id, organizationId: brand.organizationId }), [brand.id, brand.organizationId]);
   const socialActions = useCompetitorSocialActions(brandRef);
+  const { agentCostText } = useSocialSpend(brand.organizationId);
   const [jobs, setJobs] = useState<BrandCompetitor[]>([]);
   const patchJob = useCallback((key: string, fn: (job: BrandCompetitor) => BrandCompetitor) => {
     setJobs((current) => current.map((job) => (job.key === key ? fn(job) : job)));
@@ -465,22 +467,13 @@ export function BrandCompetitorDirectory() {
   // Agent writes: Add competitor (the dialog's save, `startAdd`), Find socials and Track found
   // accounts (`useCompetitorSocialActions`) — the same paths as the buttons, each approved on a card;
   // tracking accounts names its points first when the cost is worth a warning.
-  useSurfaceWriteHandlers(
-    COMPETITOR_DIRECTORY_SURFACE_NAME,
-    collectionWriteHandlers(
+  const competitorWrites = collectionWriteHandlers(
       {
         plural: "competitors",
         singular: "competitor",
         create: {
           parse: (value) => parseCreateCompetitors(value),
           run: async (plan) => {
-            if (plan.handles.length > 0) {
-              const ok = await confirmSocialSpendNow("track", plan.handles.length, {
-                title: `Add ${plan.name} and track ${plan.handles.length} account${plan.handles.length === 1 ? "" : "s"}?`,
-                confirmLabel: "Add",
-              });
-              if (!ok) throw new Error(`The person declined the points to track ${plan.name}'s accounts.`);
-            }
             startAdd(plan);
             return { id: plan.domain ?? plan.name, name: `${plan.name} (adding; each account reports on its row)` };
           },
@@ -501,11 +494,6 @@ export function BrandCompetitorDirectory() {
             }
             if (plan.trackFound) {
               if (links.length === 0) throw new Error(`No found accounts to track for ${plan.row.name}; send find_socials true first.`);
-              const ok = await confirmSocialSpendNow("track", links.length, {
-                title: `Track ${links.length} of ${plan.row.name}'s accounts?`,
-                confirmLabel: "Track",
-              });
-              if (!ok) throw new Error(`The person declined the points to track ${plan.row.name}'s accounts.`);
               const out = await socialActions.track(plan.row, links);
               note = [note, `tracked ${out.tracked}`].filter(Boolean).join("; ");
             }
@@ -518,8 +506,23 @@ export function BrandCompetitorDirectory() {
         },
       },
       refuseSurfaceWrite,
+    );
+  // The approval card names the points, however small: one track per handle / per account found.
+  const competitorCost = withCostOn(() => competitorWrites);
+  useSurfaceWriteHandlers(COMPETITOR_DIRECTORY_SURFACE_NAME, {
+    ...competitorWrites,
+    ...competitorCost("create_competitors", (value) => {
+      const handles = Array.isArray(value)
+        ? value.reduce((n: number, c) => n + Object.keys((c as { handles?: object } | null)?.handles ?? {}).length, 0)
+        : 0;
+      return handles > 0 ? agentCostText("track", handles) : null;
+    }),
+    ...competitorCost("update_competitors", (value) =>
+      countOf(value, (item) => (item as { track_found?: unknown } | null)?.track_found === true) > 0
+        ? `${agentCostText("track", 1)} per account tracked`
+        : null,
     ),
-  );
+  });
 
   if (sites.isPending) return <LoadingSurface label={`Loading ${rivals.manyLower}…`} />;
   if (sites.isError) return <QueryError error={sites.error} />;

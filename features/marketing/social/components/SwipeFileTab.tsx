@@ -29,11 +29,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers, type SurfaceWriteHandlerEntry } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateSwipeLinks, parseUpdateSwipeCollections, parseUpdateSwipeItems } from "../agent-writes";
-import { saveLinkToSwipe } from "../social-actions";
+import { countOf, saveLinkToSwipe, withCostOn } from "../social-actions";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   SOCIAL_SWIPE_SURFACE_NAME,
@@ -99,7 +99,7 @@ function chip(active: boolean) {
 
 export function SwipeFileTab() {
   const { brandId, organizationId } = useSocials();
-  const { costText, confirmSpend } = useSocialSpend(organizationId);
+  const { costText, agentCostText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const collections = useAllSwipeCollections();
   const [showArchived, setShowArchived] = useState(false);
@@ -338,7 +338,8 @@ export function SwipeFileTab() {
   // Agent writes: Save link, Rename / Archive / Restore a collection, an item's note and tags — the
   // same saves the dialogs and the item sheet call. Each is approved on a card first.
   const collectionRefs = [...live, ...archived].map((c) => ({ id: c.id, name: c.name }));
-  useSurfaceWriteHandlers(SOCIAL_SWIPE_SURFACE_NAME, {
+  const withCost = withCostOn(() => swipeWrites);
+  const swipeWrites: Record<string, SurfaceWriteHandlerEntry> = {
     ...collectionWriteHandlers(
       {
         plural: "swipe_links",
@@ -346,19 +347,17 @@ export function SwipeFileTab() {
         create: {
           parse: (value) => parseCreateSwipeLinks(value, liveIds),
           run: async (plan) => {
-            const ok = await confirmSpend("save_link", 1, { title: "Save this link?", description: plan.url, confirmLabel: "Save" });
-            if (!ok) throw new Error("The person declined the points for this link.");
             const saved = await saveLinkToSwipe({ ...plan, brandId, organizationId });
             await invalidate();
             return { id: saved.postId, name: plan.url };
           },
           nameOf: (plan) => plan.url,
-          refusalFor: (err, savedSoFar) =>
-            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
         },
       },
       refuseSurfaceWrite,
     ),
+    // The approval card names the points, however small (one fetch per link).
+    ...withCost("create_swipe_links", (value) => agentCostText("save_link", countOf(value))),
     ...collectionWriteHandlers(
       {
         plural: "swipe_collections",
@@ -399,7 +398,8 @@ export function SwipeFileTab() {
       },
       refuseSurfaceWrite,
     ),
-  });
+  };
+  useSurfaceWriteHandlers(SOCIAL_SWIPE_SURFACE_NAME, swipeWrites);
 
   if (collections.isPending) {
     return <RegionSkeleton shape="cards" count={6} />;

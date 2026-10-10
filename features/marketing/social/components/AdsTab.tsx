@@ -30,11 +30,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers, type SurfaceWriteHandlerEntry } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseAdIds, parseDeleteIds, parseUpdateAdvertisers } from "../agent-writes";
-import { trackAdvertiserFromAd } from "../social-actions";
+import { countOf, trackAdvertiserFromAd, withCostOn } from "../social-actions";
 import {
   SOCIAL_ADS_SURFACE_NAME,
   SOCIAL_ADS_TOOLS,
@@ -92,12 +92,12 @@ async function lookAgainAt(def: TrackedAdvertiser["definition"], organizationId:
  */
 function useAdsAgentWrites(onTracked: () => void) {
   const { organizationId, brandId } = useSocials();
-  const { confirmSpend } = useSocialSpend(organizationId);
+  const { agentCostText } = useSocialSpend(organizationId);
   const client = useQueryClient();
   const invalidate = useInvalidateSocial();
   const tracked = useTrackedAdvertisers();
   const known = (tracked.data ?? []).map((t) => ({ id: t.viewId, name: t.definition.advertiser, t }));
-  useSurfaceWriteHandlers(SOCIAL_ADS_SURFACE_NAME, {
+  const adsWrites: Record<string, SurfaceWriteHandlerEntry> = {
     ...collectionWriteHandlers(
       {
         plural: "tracked_advertisers",
@@ -120,12 +120,6 @@ function useAdsAgentWrites(onTracked: () => void) {
             const t = known.find((k) => k.id === plan.id)?.t;
             if (!t) throw new Error(`Advertiser ${plan.id} is no longer tracked.`);
             if (plan.lookAgain) {
-              const ok = await confirmSpend("ads_search", 1, {
-                title: `Look again at ${t.definition.advertiser}?`,
-                description: `Searches the ${AD_LIBRARY_LABELS[t.definition.library]} library.`,
-                confirmLabel: "Look again",
-              });
-              if (!ok) throw new Error(`The person declined the points to look again at ${t.definition.advertiser}.`);
               await lookAgainAt(t.definition, organizationId, client);
             }
             if (plan.markSeen) {
@@ -154,6 +148,13 @@ function useAdsAgentWrites(onTracked: () => void) {
       },
       refuseSurfaceWrite,
     ),
+  };
+  // Look again spends one ad search per advertiser; the approval card names the points.
+  const lookAgainCount = (value: unknown) =>
+    countOf(value, (item) => !!item && typeof item === "object" && (item as { look_again?: unknown }).look_again === true);
+  useSurfaceWriteHandlers(SOCIAL_ADS_SURFACE_NAME, {
+    ...adsWrites,
+    ...withCostOn(() => adsWrites)("update_tracked_advertisers", (value) => agentCostText("ads_search", lookAgainCount(value))),
   });
 }
 
@@ -206,7 +207,7 @@ function AdFilters({
 
 function AdsSearch({ onTracked }: { onTracked: () => void }) {
   const { organizationId, brandId } = useSocials();
-  const { costText, confirmSpend } = useSocialSpend(organizationId);
+  const { costText, confirmSpend, agentCostText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const [library, setLibrary] = useState<AdLibrary>("meta");
   const [kind, setKind] = useState<"query" | "advertiser">("query");
@@ -313,7 +314,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
       await run({ library: lib, kind: by, text: q });
       return "Search finished; see results.";
     },
-  });
+  }, { costs: { [SOCIAL_ADS_TOOLS.search]: () => agentCostText("ads_search") } });
   const canSearch = text.trim().length > 1 && !busy;
   const country = meta?.effective_params?.country;
   const region = meta?.effective_params?.region;

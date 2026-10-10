@@ -49,6 +49,17 @@ export function formatPointsCost(
   return `≈ ${display.format(usd)}`;
 }
 
+/**
+ * The words an AGENT's proposal shows on its approval card: always the points, however small
+ * (a person's own click keeps the warn-tier rule above). Null only when the server prices nothing.
+ */
+export function formatPointsAlways(usd: number | null, toPoints: (usd: number) => number | null): string | null {
+  if (usd == null) return null;
+  const points = toPoints(usd);
+  if (points == null) return null;
+  return `≈ ${Math.max(1, Math.ceil(points)).toLocaleString("en-US")} points`;
+}
+
 export function useSocialSpend(organizationId: string | null | undefined) {
   const { format, toPoints } = useCostDisplay();
   const costs = useQuery({
@@ -66,6 +77,12 @@ export function useSocialSpend(organizationId: string | null | undefined) {
     return formatPointsCost(actionUsd(costs.data, action, count), display);
   }
 
+  /** For an agent's approval card: the points, even when small; "points (price not loaded)" when unknown. */
+  function agentCostText(action: SocialSpendAction, count = 1): string | null {
+    if (count <= 0) return null;
+    return formatPointsAlways(actionUsd(costs.data, action, count), display.toPoints) ?? "points (price not loaded yet)";
+  }
+
   async function confirmSpend(
     action: SocialSpendAction,
     count: number,
@@ -80,7 +97,7 @@ export function useSocialSpend(organizationId: string | null | undefined) {
     });
   }
 
-  return { costText, confirmSpend };
+  return { costText, agentCostText, confirmSpend };
 }
 
 // ---------------------------------------------------------------------------

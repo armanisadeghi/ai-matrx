@@ -50,7 +50,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "create_competitors",
     label: "Add competitors",
     description:
-      'Adds competitors, exactly as the Add competitor dialog does: the website is saved as a website competitor and each handle is tracked as a competitor account (tracking SPENDS POINTS per account; when the cost is worth a warning the page names the points and asks again). Value is a JSON ARRAY of 1-10 objects { "name": string (required), "website"?: "example.com", "handles"?: { "instagram"?: "<link or handle>", "tiktok"?, "youtube"?, "x"?, "linkedin"?, "facebook"?, ... } }. Rows appear at once and each account reports its own progress on the row.',
+      'Adds competitors, exactly as the Add competitor dialog does: the website is saved as a website competitor and each handle is tracked as a competitor account (tracking SPENDS POINTS per account; the approval card names the points). Value is a JSON ARRAY of 1-10 objects { "name": string (required), "website"?: "example.com", "handles"?: { "instagram"?: "<link or handle>", "tiktok"?, "youtube"?, "x"?, "linkedin"?, "facebook"?, ... } }. Rows appear at once and each account reports its own progress on the row.',
     valueType: "array",
     updatesValue: "competitors",
     mode: "entity",
