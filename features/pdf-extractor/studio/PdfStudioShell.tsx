@@ -107,6 +107,7 @@ import {
 } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface PdfStudioShellProps {
   initialDocumentId?: string;
 }
@@ -1209,7 +1210,7 @@ function LiveStatusStrip({
         >
           Retry
         </button>
-      </div>
+      <ErrorAlchemyMenu error={runError} /></div>
     );
   }
   if (!local && runPhase === "done") {
