@@ -18,6 +18,7 @@ import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { toast } from "@/lib/toast";
 
+import { CalibrationTab } from "./CalibrationTab";
 import { launchRefusalMessage } from "./messages";
 import { closeCycle, getCycle, launchCycle, type LaunchPopulation } from "./service";
 import { OUTSTANDING_LABEL, formatDay, periodLabel, statusLabel, statusTone } from "./status";
@@ -34,6 +35,7 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
   const [tick, setTick] = useState(0);
   const [refused, setRefused] = useState<LaunchRefused[]>([]);
   const [closing, setClosing] = useState(false);
+  const [view, setView] = useState<"reviews" | "calibration">("reviews");
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
@@ -133,7 +135,19 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
               ) : null}
             </div>
 
-            {!closed && c.organizationId ? (
+            <SegmentedControl<"reviews" | "calibration">
+              aria-label="Cycle view"
+              value={view}
+              onValueChange={setView}
+              data={[
+                { value: "reviews", label: "Reviews" },
+                { value: "calibration", label: "Calibration" },
+              ]}
+            />
+
+            {view === "calibration" ? <CalibrationTab cycleId={cycleId} orgRef={orgRef} open={!closed} /> : null}
+
+            {view === "reviews" && !closed && c.organizationId ? (
               <LaunchPanel
                 cycleId={cycleId}
                 organizationId={c.organizationId}
@@ -144,7 +158,7 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
               />
             ) : null}
 
-            {refused.length > 0 ? (
+            {view === "reviews" && refused.length > 0 ? (
               <div role="alert" className="space-y-1 rounded-md border border-border bg-card p-3 text-sm">
                 <p className="font-medium">Not added</p>
                 <ul className="list-disc pl-5">
@@ -155,7 +169,7 @@ export function CyclePage({ cycleId }: { cycleId: string }) {
               </div>
             ) : null}
 
-            {cycle.reviews.length > 0 ? (
+            {view !== "reviews" ? null : cycle.reviews.length > 0 ? (
               <MatrxDataTable<CycleReviewRow>
                 tableId="hr/performance/cycle-reviews"
                 data={cycle.reviews}

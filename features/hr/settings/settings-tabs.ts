@@ -17,6 +17,7 @@ import {
   BrainCircuit,
   Building2,
   CalendarDays,
+  ClipboardCheck,
   ClipboardList,
   Coins,
   FileSpreadsheet,
@@ -221,6 +222,14 @@ export const HR_SETTINGS_TABS: HrSettingsTabDef[] = [
     icon: MessageSquare,
     purpose: "The questions asked when somebody leaves.",
     owner: "onboarding",
+  },
+  {
+    section: "review-templates",
+    route: "81b",
+    label: "Review templates",
+    icon: ClipboardCheck,
+    purpose: "The questions and rating scale of performance reviews, and how reviews run.",
+    owner: "l1",
   },
 ];
 

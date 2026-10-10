@@ -12,6 +12,7 @@ import { supabase } from "@/utils/supabase/client";
 import { refusalMessage } from "./messages";
 import {
   isRec,
+  parseCalibration,
   parseCycleDetail,
   parseCycleSummary,
   parseHistory,
@@ -19,12 +20,15 @@ import {
   parseProblems,
   parseReviewDetail,
   parseReviewSummary,
+  parseTemplateList,
   type AnswerProblem,
+  type CalibrationData,
   type CycleDetail,
   type CycleSummary,
   type HistoryRow,
   type LaunchResult,
   type ResponseRole,
+  type TemplateRow,
   type ReviewAnswers,
   type ReviewDetail,
   type ReviewSummary,
@@ -136,9 +140,12 @@ export interface NewCycleInput {
   name: string;
   periodStart: string;
   periodEnd: string;
+  /** Blank takes the organization's knob days. */
   selfDueOn: string;
   managerDueOn: string;
   shareDueOn: string;
+  /** Absent takes the organization's default template. */
+  templateId?: string | null;
 }
 
 /** Makes sure the organization has the default template, then creates the cycle. Returns the cycle id. */
@@ -151,9 +158,10 @@ export async function createCycle(input: NewCycleInput): Promise<StdResult<strin
       name: input.name,
       period_start: input.periodStart,
       period_end: input.periodEnd,
-      self_due_on: input.selfDueOn,
-      manager_due_on: input.managerDueOn,
-      share_due_on: input.shareDueOn,
+      ...(input.selfDueOn ? { self_due_on: input.selfDueOn } : {}),
+      ...(input.managerDueOn ? { manager_due_on: input.managerDueOn } : {}),
+      ...(input.shareDueOn ? { share_due_on: input.shareDueOn } : {}),
+      ...(input.templateId ? { template_id: input.templateId } : {}),
     },
   });
   if (!made.ok) return made;
@@ -239,5 +247,46 @@ export async function cancelReview(reviewId: string, reason: string): Promise<St
 
 export async function replaceManager(reviewId: string, managerEmploymentId: string): Promise<StdResult<true>> {
   const r = await callDoor("hr_review_replace_manager", { p_review_id: reviewId, p_manager_employment_id: managerEmploymentId });
+  return r.ok ? { ok: true, data: true } : r;
+}
+
+// ── wave 2: templates, calibration ───────────────────────────────────────────────────────────
+
+export async function listTemplates(organizationId: string): Promise<StdResult<TemplateRow[]>> {
+  const r = await callDoor("hr_review_template_list", { p_organization_id: organizationId });
+  return r.ok ? { ok: true, data: parseTemplateList(r.data) } : r;
+}
+
+export interface SavedTemplate {
+  templateId: string;
+  created: boolean;
+  version: number;
+}
+
+/** `payload` is built by templateBuilder.ts, so every object carries the `__kind` the door validates. */
+export async function saveTemplate(payload: Record<string, unknown>): Promise<StdResult<SavedTemplate>> {
+  const r = await callDoor("hr_review_template_save", { p_payload: payload });
+  if (!r.ok) return r;
+  return typeof r.data.template_id === "string"
+    ? { ok: true, data: { templateId: r.data.template_id, created: r.data.created === true, version: typeof r.data.version === "number" ? r.data.version : 1 } }
+    : unreadable("The saved template");
+}
+
+export async function archiveTemplate(templateId: string): Promise<StdResult<{ wasDefault: boolean }>> {
+  const r = await callDoor("hr_review_template_archive", { p_template_id: templateId });
+  return r.ok ? { ok: true, data: { wasDefault: r.data.was_default === true } } : r;
+}
+
+export async function getCalibration(cycleId: string): Promise<StdResult<CalibrationData>> {
+  const r = await callDoor("hr_review_calibration", { p_cycle_id: cycleId, p_filter: {} });
+  return r.ok ? { ok: true, data: parseCalibration(r.data) } : r;
+}
+
+export async function calibrateReview(reviewId: string, ratingKey: string, note: string | null): Promise<StdResult<true>> {
+  const r = await callDoor("hr_review_calibrate", {
+    p_review_id: reviewId,
+    p_rating: ratingKey,
+    ...(note ? { p_note: note } : {}),
+  });
   return r.ok ? { ok: true, data: true } : r;
 }

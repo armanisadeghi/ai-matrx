@@ -33,6 +33,9 @@ const REFUSALS: Record<string, string> = {
   manager_already_submitted: "The manager already submitted, so the manager cannot be changed.",
   not_in_organization: "That person does not work for this employer.",
   nobody_to_review: "No one matched. Pick a team, a department or named people.",
+  calibration_required: "HR has to record a calibrated rating before this review can be shared. Ask HR to calibrate it.",
+  comment_not_enabled: "This employer has turned acknowledgment comments off. Acknowledge without a comment.",
+  template_invalid: "This template has problems. They are marked below.",
   not_performance_review_answers: "The answers could not be read. Reload the review and try again.",
 };
 
@@ -97,4 +100,27 @@ export function problemMessage(p: AnswerProblem, labelOf: (key: string) => strin
     default:
       return `${q}: ${p.problem}.`;
   }
+}
+
+const TEMPLATE_PROBLEMS: Record<string, string> = {
+  empty: "Add at least one section.",
+  section_kind: "This section is not valid. Remove it and add it again.",
+  key_and_title_required: "Every section needs a title.",
+  no_questions: "This section has no questions. Add one or remove the section.",
+  question_kind: "This question is not valid. Remove it and add it again.",
+  question_key_and_label_required: "Every question needs a label.",
+  duplicate_question_key: "Two questions share the same name. Give each its own label.",
+  question_type: "Pick a question type.",
+  min_items: "The minimum number of items must be zero or more.",
+  max_items: "The maximum must be at least one and no smaller than the minimum.",
+  no_rating_items: "A rating question needs at least one item to rate.",
+  rating_item: "Every item to rate needs a label.",
+  scale_needs_two_points: "The rating scale needs at least two points.",
+  point_needs_value_key_label: "Every rating point needs a number and a label.",
+  duplicate_point_value: "Two rating points share the same number.",
+};
+
+/** One template problem (`{ at, problem }`) said in words; never the bare code. */
+export function templateProblemMessage(problem: string): string {
+  return TEMPLATE_PROBLEMS[problem] ?? `This part is not valid (${problem}).`;
 }

@@ -406,7 +406,7 @@ export function parseLaunch(raw: Rec): LaunchResult {
 
 export function parseProblems(raw: unknown): AnswerProblem[] {
   return recs(raw).map((p) => ({
-    question: str(p.question),
+    question: str(p.question) ?? str(p.at),
     problem: str(p.problem) ?? "invalid",
     minItems: num(p.min_items),
     maxItems: num(p.max_items),
@@ -432,4 +432,108 @@ export function parseHistory(raw: Rec): HistoryRow[] {
       },
     ];
   });
+}
+
+// ── wave 2: templates and calibration ───────────────────────────────────────────────────────
+
+export interface TemplateRow {
+  templateId: string;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  sectionCount: number;
+  questionCount: number;
+  version: number;
+  updatedAt: string | null;
+  cycleCount: number;
+}
+
+export function parseTemplateList(raw: Rec): TemplateRow[] {
+  return recs(raw.templates).flatMap((t) => {
+    const templateId = str(t.template_id);
+    if (!templateId) return [];
+    return [
+      {
+        templateId,
+        name: str(t.name) ?? "Template",
+        description: str(t.description),
+        isDefault: t.is_default === true,
+        sectionCount: num(t.section_count) ?? 0,
+        questionCount: num(t.question_count) ?? 0,
+        version: num(t.version) ?? 1,
+        updatedAt: str(t.updated_at),
+        cycleCount: num(t.cycle_count) ?? 0,
+      },
+    ];
+  });
+}
+
+export interface CalibrationRow {
+  reviewId: string;
+  employeeName: string;
+  managerName: string;
+  managerEmploymentId: string | null;
+  department: string | null;
+  /** Mean of the 1-5 ratings each side gave. Never answer text. */
+  selfOverall: number | null;
+  managerOverall: number | null;
+  overallRating: string | null;
+  calibratedRating: string | null;
+  calibrationNote: string | null;
+  calibratedAt: string | null;
+  status: ReviewStatus;
+}
+
+export interface ManagerDistribution {
+  managerName: string;
+  managerEmploymentId: string | null;
+  count: number;
+  byRating: Record<string, number>;
+}
+
+export interface CalibrationData {
+  rows: CalibrationRow[];
+  byRating: Record<string, number>;
+  byManager: ManagerDistribution[];
+  scale: RatingPoint[];
+}
+
+const counts = (v: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (isRec(v)) for (const [k, n] of Object.entries(v)) if (typeof n === "number") out[k] = n;
+  return out;
+};
+
+export function parseCalibration(raw: Rec): CalibrationData {
+  const dist = isRec(raw.distribution) ? raw.distribution : {};
+  return {
+    rows: recs(raw.rows).flatMap((r) => {
+      const reviewId = str(r.review_id);
+      if (!reviewId) return [];
+      return [
+        {
+          reviewId,
+          employeeName: str(r.employee_name) ?? "Employee",
+          managerName: str(r.manager_name) ?? "Manager",
+          managerEmploymentId: str(r.manager_employment_id),
+          department: str(r.department),
+          selfOverall: num(r.self_overall),
+          managerOverall: num(r.manager_overall),
+          overallRating: str(r.overall_rating),
+          calibratedRating: str(r.calibrated_rating),
+          calibrationNote: str(r.calibration_note),
+          calibratedAt: str(r.calibrated_at),
+          status: (str(r.status) ?? "not_started") as ReviewStatus,
+        },
+      ];
+    }),
+    byRating: counts(dist.by_rating),
+    byManager: recs(dist.by_manager).map((m) => ({
+      managerName: str(m.manager_name) ?? "Manager",
+      managerEmploymentId: str(m.manager_employment_id),
+      count: num(m.count) ?? 0,
+      byRating: counts(m.by_rating),
+    })),
+    scale: parseTemplate({ rating_scale: raw.rating_scale }).ratingPoints,
+  };
 }

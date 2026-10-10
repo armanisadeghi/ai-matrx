@@ -58,7 +58,8 @@ export function HrLanePanel({
   prefixes?: string[];
   excludePrefixes?: string[];
   presentation?: HrKnobPresentationMap;
-  promise: string;
+  /** Omit once the panel is finished: the "what this panel becomes" note is then not shown. */
+  promise?: string;
   children?: React.ReactNode;
   title?: string;
   description?: string;
@@ -98,6 +99,7 @@ export function HrLanePanel({
           />
         ) : null}
 
+        {promise ? (
         <section className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0 space-y-1">
@@ -111,6 +113,7 @@ export function HrLanePanel({
             </p>
           </div>
         </section>
+        ) : null}
       </div>
     </HrSettingsShell>
   );

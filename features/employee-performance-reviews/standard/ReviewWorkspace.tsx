@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 
 import { AnswerForm } from "./AnswerForm";
 import { AnswerReadout, Comparison } from "./Comparison";
+import { ReviewExtras } from "./ReviewExtras";
 import { acknowledgeReview, cancelReview, getReview, reopenReview, setOverallRating, shareReview, type StdResult } from "./service";
 import { formatDay, nextStep, periodLabel, ratingLabel, statusLabel, statusTone } from "./status";
 import type { ResponseView, ReviewDetail } from "./types";
@@ -97,6 +98,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
             </header>
 
             <Timeline review={review} />
+            <ReviewExtras detail={detail} />
 
             {review.can.save_self ? (
               <AnswerForm

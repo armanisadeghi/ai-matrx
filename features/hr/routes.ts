@@ -509,6 +509,7 @@ export const HR_SETTINGS_SECTIONS = [
   "ai",
   "retention",
   "exit-surveys",
+  "review-templates",
 ] as const;
 export type HrSettingsSection = (typeof HR_SETTINGS_SECTIONS)[number];
 
