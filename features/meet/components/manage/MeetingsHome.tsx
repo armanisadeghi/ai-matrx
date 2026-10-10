@@ -410,9 +410,18 @@ export function MeetingsHome() {
                 />
                 Calendar events
               </label>
+            ) : tab === "upcoming" ? (
+              // The switch's slot, held while the planning read lands: on a phone this bar wraps, and
+              // the switch arriving moved the zone label to another line (CLS 0.069 at 390px).
+              <div aria-hidden="true" className="invisible flex items-center gap-1.5 text-xs">
+                <span className="inline-block h-5 w-9" />
+                Calendar events
+              </div>
             ) : null}
             <span
-              className="ml-auto text-xs text-muted-foreground"
+              // Its own line on a phone (the bar's other controls change with the tab and the read),
+              // and a box that does not resize when the viewer's zone replaces the server's.
+              className="ml-auto min-w-44 basis-full text-right text-xs text-muted-foreground sm:basis-auto"
               title={zone}
             >
               Times in {zoneLabel(zone)}

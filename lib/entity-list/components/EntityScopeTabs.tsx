@@ -165,11 +165,18 @@ export function scopeKindLabel(kind: ListScopeKind): string {
   return SCOPE_META[kind]?.label ?? kind;
 }
 
+/** At most four characters: 9999 stays whole, 12,345 reads "12k", 1.2 million "1m". */
+export function compactCount(n: number): string {
+  if (n < 10_000) return String(n);
+  if (n < 1_000_000) return `${Math.floor(n / 1000)}k`;
+  return `${Math.floor(n / 1_000_000)}m`;
+}
+
 function CountPill({ n, active, pending }: { n: number | null; active: boolean; pending: boolean }) {
   // Counted nothing and not reading (a failed or unknowable count): no pill, never a stand-in forever.
   if (n === null && !pending) return null;
   // ONE FIXED-WIDTH SLOT (STABLE-2, /data home: the lane tabs widened 36px each when their counts
-  // landed): the pill is three digits wide PLUS its own px-1 (border-box: 3ch alone left 3 digits 8px wider) before the number is real and after, so a count arriving
+  // landed): the pill is three digits wide PLUS its own px-1 (border-box: 3ch alone left 3 digits 8px wider); FOUR digits wide, and a count of 10,000 or more reads compact ("12k") so no count is wider than four characters before the number is real and after, so a count arriving
   // moves nothing. Absent, never dishonest: until the number is real the slot is an empty shape,
   // no digit in it.
   return (
@@ -177,13 +184,13 @@ function CountPill({ n, active, pending }: { n: number | null; active: boolean; 
       data-scope-count={n === null ? "pending" : "ready"}
       aria-hidden={n === null ? true : undefined}
       className={cn(
-        "inline-block min-w-[calc(3ch+0.5rem)] rounded px-1 text-center type-meta font-semibold tabular-nums",
+        "inline-block min-w-[calc(4ch+0.5rem)] rounded px-1 text-center type-meta font-semibold tabular-nums",
         active ? "bg-primary-foreground/20" : "bg-muted-foreground/15",
         n === null && "animate-pulse",
       )}
     >
       {/* a non-breaking space keeps the pill the line's height while it waits */}
-      {n === null ? "\u00a0" : n}
+      {n === null ? "\u00a0" : compactCount(n)}
     </span>
   );
 }
@@ -251,7 +258,9 @@ export function EntityScopeTabs({
           onChange(at === -1 ? makeScope(v as ListScopeKind) : makeScope(v.slice(0, at) as ListScopeKind, v.slice(at + 1)));
         }}
       >
-        <SelectTrigger aria-label="List scope" className={cn("h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs", !selectEverywhere && "sm:hidden")}>
+        <SelectTrigger aria-label="List scope" // The label gains its count after the first frame ("All" -> "All (1829)"); the chevron sits
+        // at the trigger's far edge, so the trigger holds a floor wide enough for the counted label.
+        className={cn("h-7 w-auto min-w-32 max-w-full gap-1.5 text-xs", !selectEverywhere && "sm:hidden")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
