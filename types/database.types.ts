@@ -6353,6 +6353,90 @@ export type Database = {
         }
         Relationships: []
       }
+      external_api_reservation: {
+        Row: {
+          actor_user_id: string
+          actual_micro_usd: number | null
+          app_id: string
+          billable_resources: Json
+          connection_id: string
+          created_at: string
+          created_by: string | null
+          error_code: string | null
+          estimated_micro_usd: number
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          period_start: string
+          provider: string
+          request_id: string
+          resource_day: string | null
+          settled_at: string | null
+          settlement_execution_id: string | null
+          settlement_status: string
+          started_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_user_id: string
+          actual_micro_usd?: number | null
+          app_id: string
+          billable_resources?: Json
+          connection_id: string
+          created_at?: string
+          created_by?: string | null
+          error_code?: string | null
+          estimated_micro_usd: number
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          period_start: string
+          provider: string
+          request_id: string
+          resource_day?: string | null
+          settled_at?: string | null
+          settlement_execution_id?: string | null
+          settlement_status?: string
+          started_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_user_id?: string
+          actual_micro_usd?: number | null
+          app_id?: string
+          billable_resources?: Json
+          connection_id?: string
+          created_at?: string
+          created_by?: string | null
+          error_code?: string | null
+          estimated_micro_usd?: number
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          period_start?: string
+          provider?: string
+          request_id?: string
+          resource_day?: string | null
+          settled_at?: string | null
+          settlement_execution_id?: string | null
+          settlement_status?: string
+          started_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       free_period_grant: {
         Row: {
           capped: boolean
@@ -7841,6 +7925,47 @@ export type Database = {
       entitlement_snapshot:
         | { Args: never; Returns: Json }
         | { Args: { p_org: string }; Returns: Json }
+      external_api_receipt: {
+        Args: {
+          r: Database["billing"]["Tables"]["external_api_reservation"]["Row"]
+        }
+        Returns: Json
+      }
+      external_api_release: {
+        Args: { p_definitive_no_charge: boolean; p_request_id: string }
+        Returns: Json
+      }
+      external_api_reserve: {
+        Args: {
+          p_actor_user_id: string
+          p_app_id: string
+          p_cap_micro_usd: number
+          p_connection_id: string
+          p_estimate_micro_usd: number
+          p_expires_at: string
+          p_organization_id: string
+          p_provider: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      external_api_settle: {
+        Args: { p_request_id: string; p_resources: Json }
+        Returns: Json
+      }
+      external_api_settlement_failed: {
+        Args: { p_request_id: string; p_safe_code: string }
+        Returns: Json
+      }
+      external_api_settlement_recorded: {
+        Args: { p_execution_id: string; p_request_id: string }
+        Returns: Json
+      }
+      external_api_start: { Args: { p_request_id: string }; Returns: Json }
+      external_api_unknown: {
+        Args: { p_error_code: string; p_request_id: string }
+        Returns: Json
+      }
       free_months_apply: {
         Args: {
           p_months: number
@@ -96497,6 +96622,7 @@ export type Database = {
           run_count: number
           success_count: number
           total_cost: number
+          warning_count: number
         }[]
       }
       extensibility_knob: {
@@ -110368,6 +110494,7 @@ export type Database = {
           updated_at: string
           version: number
           visibility: string
+          warning_count: number
           workflow_type: string
         }[]
       }
@@ -116257,33 +116384,45 @@ export type Database = {
           claimed_at: string
           claimed_by: string
           completed_at: string | null
+          cost_usd: number | null
+          guardrail: Json | null
           id: string
           machine: string | null
+          minutes: number | null
           result_note: string | null
           status: string
           task_key: string
+          turns: number | null
           window_key: string
         }
         Insert: {
           claimed_at?: string
           claimed_by: string
           completed_at?: string | null
+          cost_usd?: number | null
+          guardrail?: Json | null
           id?: string
           machine?: string | null
+          minutes?: number | null
           result_note?: string | null
           status?: string
           task_key: string
+          turns?: number | null
           window_key: string
         }
         Update: {
           claimed_at?: string
           claimed_by?: string
           completed_at?: string | null
+          cost_usd?: number | null
+          guardrail?: Json | null
           id?: string
           machine?: string | null
+          minutes?: number | null
           result_note?: string | null
           status?: string
           task_key?: string
+          turns?: number | null
           window_key?: string
         }
         Relationships: [
@@ -116635,6 +116774,7 @@ export type Database = {
           workflow_run_id: string
         }[]
       }
+      _is_guardrail_stop: { Args: { p_error: string }; Returns: boolean }
       _is_premium_model: { Args: { p_name: string }; Returns: boolean }
       admin_disable_task: {
         Args: { p_reason?: string; p_task_id: string }
@@ -116643,6 +116783,16 @@ export type Database = {
       admin_mark_run_failed: {
         Args: { p_reason: string; p_run_id: string }
         Returns: Json
+      }
+      agent_schedule_record_completion: {
+        Args: {
+          p_claim_id: string
+          p_cost_usd: number
+          p_guardrail?: Json
+          p_minutes: number
+          p_turns: number
+        }
+        Returns: undefined
       }
       automation_cost_rollup: {
         Args: { p_days?: number; p_org_id?: string }

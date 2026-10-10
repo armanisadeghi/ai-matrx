@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T04:39:30.665Z",
+  "generated_at": "2026-10-10T05:14:38.670Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1255,6 +1255,12 @@
       "filename": "cifix3_two_door_rows_say_what_is_true.sql",
       "checksum": "c66407c51fe889beff7bfb6dce9162aa9b7c2add14aa25f95f6dba3efdcb8d31",
       "applied_at": "2026-09-22 17:43:57.685784+00"
+    },
+    "migrations/campaign/confstructure_a_the_hide_structure_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "confstructure_a_the_hide_structure_knob.sql",
+      "checksum": "f3670f06efb9a26a2f1d3e98bfb6bdbd757b7582cc12a2a0a7e6a18368fb50f6",
+      "applied_at": "2026-10-10 05:10:03.925787+00"
     },
     "migrations/campaign/contextfields_agent_context_has_a_knob.sql": {
       "source": "matrx-frontend",
@@ -5473,6 +5479,18 @@
       "filename": "pagespeed2_get_org_file_list_skips_what_it_would_refuse.sql",
       "checksum": "ba1d0b7a04b26828f18bcf63c14e901660c9ccb45fded8eb84567b0c4ced4419",
       "applied_at": "2026-10-10 04:27:36.713811+00"
+    },
+    "migrations/campaign/pagespeed3_a2_files_folders_row_is_probed_by_a_cached_plan.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_a2_files_folders_row_is_probed_by_a_cached_plan.sql",
+      "checksum": "48eb023f225c90072e7873cc568fa33074d89be0b6275eb64adb54077712fcdd",
+      "applied_at": "2026-10-10 05:14:21.434419+00"
+    },
+    "migrations/campaign/pagespeed3_a_files_row_is_probed_by_a_cached_plan.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_a_files_row_is_probed_by_a_cached_plan.sql",
+      "checksum": "63a39cc8fde81cb70daf98732d9ec35e9eeba8d29e177a2e1b4b106313539d3c",
+      "applied_at": "2026-10-10 05:06:50.196418+00"
     },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",
@@ -10471,6 +10489,12 @@
       "filename": "tails7_the_seo_set_doors_archive_the_edge_down.sql",
       "checksum": "1eb937d5f936a575fbe57f353b2ad541a3e058e13ae3e3fedf7852d67d4f9b69",
       "applied_at": "2026-09-22 01:49:10.917933+00"
+    },
+    "migrations/inverse/wfx_warnings_column.sql": {
+      "source": "matrx-frontend",
+      "filename": "wfx_warnings_column.sql",
+      "checksum": "50e0154b38c7004897d51202e18873393a5d68424420cfe743d40b7b41467770",
+      "applied_at": "2026-10-10 05:14:34.464581+00"
     },
     "migrations/inverse/writeperf3b_a_standard_tables_fields_are_read_once_per_statement_down.sql": {
       "source": "matrx-frontend",
