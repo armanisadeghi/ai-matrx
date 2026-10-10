@@ -523,7 +523,7 @@ export function TryItNowPanel({
       {adminSeat ? null : (
       <PropertyRow
         label="Test mode"
-        help="Server test runs the job; display preview runs your saved holder."
+        help="Server test runs the job; display preview runs your saved Mandate Holder."
         value={
             <Select
               value={testMode}
@@ -701,7 +701,7 @@ export function TryItNowPanel({
                   </div>
                 ),
                 source: (
-                  <span title={blankUsesDefault ? "Blank uses the holder's default" : undefined}>
+                  <span title={blankUsesDefault ? "Blank uses the Mandate Holder's default" : undefined}>
                     {ORIGIN_LABEL[field.origin]}
                     {field.sourcing !== "optional" ? " · Required" : ""}
                     {field.pinned ? " · Automatic" : ""}

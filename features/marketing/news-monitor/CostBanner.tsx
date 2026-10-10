@@ -86,7 +86,7 @@ export function CostBanner({
             </p>
             <p className="text-xs text-muted-foreground">
               {format(spent)} of {format(ceiling)} spent this month
-              {pausedReason ? ` — ${asClause(pausedReason)}` : ""}. Run now still works. Resume lets
+              {`${pausedReason ? ` — ${asClause(pausedReason)}` : ""}.`} Run now still works. Resume lets
               scheduled runs spend past the limit for the rest of this month; the limit itself
               is a setting your organization can change.
             </p>

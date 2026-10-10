@@ -241,7 +241,7 @@ function TryWithRun({
       ) : preview ? (
         <div className={previewing ? "opacity-60" : undefined}>
           <PlacementTable
-            label="Placement for the picked holder"
+            label="Placement for the picked Mandate Holder"
             placement={preview.placement}
             // The values the preview was sent — a run without saved placement has none of its
             // own provisions, so the table reads the same values the server placed.

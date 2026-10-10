@@ -68,7 +68,7 @@ export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" 
           <StatusToken status="error" label="Failed" />
         )}
       </Fact>
-      <Fact label="Holder">
+      <Fact label="Mandate Holder">
         <HolderRef run={run} />
       </Fact>
       <Fact label="Model">{run.modelName ?? modelName(run.modelId)}</Fact>

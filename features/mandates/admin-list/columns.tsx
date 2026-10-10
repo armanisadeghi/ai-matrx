@@ -195,7 +195,7 @@ function SpendCell({ row, unit }: { row: MandateAdminRow; unit: "usd" | "points"
     <span className="flex items-center justify-end gap-1 type-secondary tabular-nums">
       {row.inferredUsd > 0 ? (
         <EstimatedMark
-          detail={`Inferred: ${formatAdminUsd(row.inferredUsd)} of ${formatAdminUsd(row.spendUsd)} · Holder agent runs without the mandate's name`}
+          detail={`Inferred: ${formatAdminUsd(row.inferredUsd)} of ${formatAdminUsd(row.spendUsd)} · Mandate Holder agent runs without the mandate's name`}
         />
       ) : null}
       {unit === "usd" ? formatAdminUsd(row.spendUsd) : <AdminPoints usd={row.spendUsd} />}
@@ -215,7 +215,7 @@ function RunsCell({ row }: { row: MandateAdminRow }) {
     <span className="flex items-center justify-end gap-1">
       {row.inferredRuns > 0 ? (
         <EstimatedMark
-          detail={`Inferred: ${row.inferredRuns.toLocaleString("en-US")} of ${row.runs.toLocaleString("en-US")} runs · Holder agent runs without the mandate's name`}
+          detail={`Inferred: ${row.inferredRuns.toLocaleString("en-US")} of ${row.runs.toLocaleString("en-US")} runs · Mandate Holder agent runs without the mandate's name`}
         />
       ) : null}
       <Link
