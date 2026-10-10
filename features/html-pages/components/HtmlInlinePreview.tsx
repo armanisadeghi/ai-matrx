@@ -627,7 +627,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
               {e.message}
             </li>
           ))}
-        </ul>
+        <ErrorAlchemyMenu /></ul>
       ) : null}
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
