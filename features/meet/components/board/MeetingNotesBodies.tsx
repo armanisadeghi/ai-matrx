@@ -40,6 +40,7 @@ import { ActionItemsSection } from "@/features/meet/components/record/ActionItem
 import { useMeetingById, type LoadedMeeting } from "@/features/meet/hooks/useMeetingById";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const EMPTY: Record<Exclude<MeetingPart, "transcript" | "summary">, string> = {
   notes: "Notes appear here as the meeting goes on.",
   decisions: "Nothing has been decided yet.",
@@ -184,7 +185,7 @@ function RecordPart({ loaded, part }: { loaded: LoadedMeeting; part: MeetingPart
         <Button variant="outline" onClick={record.reload}>
           Try again
         </Button>
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
   if (record.loading || record.record === null) return <PartSkeleton />;

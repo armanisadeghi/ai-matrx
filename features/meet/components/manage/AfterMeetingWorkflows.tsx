@@ -17,6 +17,7 @@ import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface AfterMeetingRunRecord {
   readonly definition_id: string;
   readonly run_id?: string | null;
@@ -125,7 +126,7 @@ export function AfterMeetingWorkflows({
                     title={ran.error}
                   >
                     Did not run: {ran.error}
-                  </span>
+                  <ErrorAlchemyMenu error={ran.error} /></span>
                 ) : null}
                 {disabled ? null : (
                   <Button

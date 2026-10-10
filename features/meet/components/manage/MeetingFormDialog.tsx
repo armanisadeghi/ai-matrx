@@ -707,7 +707,7 @@ export function MeetingFormDialog({
                     agendaDraft.run.error ? (
                     <p role="alert" className="text-xs text-destructive">
                       {agendaDraft.run.error}
-                    </p>
+                    <ErrorAlchemyMenu error={agendaDraft.run.error} /></p>
                   ) : null}
                   {pendingAgenda !== null ? (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">

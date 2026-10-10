@@ -15,6 +15,7 @@ import { durationLabel } from "@/features/meet/lib/meeting-draft";
 import type { Slot } from "@/features/meet/lib/find-time";
 import type { FindTimeResult } from "@/features/meet/hooks/useFindTime";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function slotLabel(slot: Slot): string {
   const [y, m, d] = slot.date.split("-").map(Number);
   const day = new Date(Date.UTC(y!, m! - 1, d!, 12)).toLocaleDateString(
@@ -110,7 +111,7 @@ export function FindTimePanel({
       ) : failure ? (
         <p role="alert" className="text-xs text-destructive">
           Availability could not be read: {failure}
-        </p>
+        <ErrorAlchemyMenu error={failure} /></p>
       ) : result && result.slots.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No open {durationLabel(durationMinutes)} slot in the next{" "}
