@@ -246,13 +246,12 @@ const CREATE_ACTIONS_BEFORE_DOMAIN_TREE: readonly string[] = [
 ];
 
 /**
- * The domain tree's product domains (corrected tree, Arman 2026-10-04): Board
- * (the home) with Projects beside it, then the tree's "Product — what users
- * see" order, then the ONE Industries menu, then the temporary Other pen.
+ * The domain tree's product domains (Arman 2026-10-04; 2026-10-09: Board and
+ * Projects became ONE top group, Workspace — "Change Board to Workspace"),
+ * then the tree's "Product — what users see" order, then the ONE Industries menu, then the temporary Other pen.
  */
 const DOMAIN_ORDER = [
-  "Board",
-  "Projects",
+  "Workspace",
   "Agents",
   "Applets",
   "Chat",
@@ -732,7 +731,9 @@ describe("main menu — nothing is lost", () => {
     expect(owner("/tools/pdf-extractor")).toBe("Files");
     expect(owner("/images")).toBe("Media");
     expect(owner("/transcripts")).toBe("Audio");
-    expect(owner("/war-room")).toBe("Board");
+    expect(owner("/war-room")).toBe("Workspace");
+    expect(owner("/projects")).toBe("Workspace");
+    expect(owner("/data/pages")).toBe("Workspace");
     expect(owner("/reports")).toBe("Intelligence");
     expect(owner("/print")).toBe("Publish");
     expect(owner("/tools/product-capture")).toBe("Industries");
