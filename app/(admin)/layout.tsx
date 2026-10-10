@@ -31,6 +31,7 @@ import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
 import { userShellPathForSystemAgentPath } from "@ai-matrx/chat/agents/addressing/agentAddress";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // Admin pages require authentication and cannot be statically generated
 export const dynamic = "force-dynamic";
 
@@ -65,10 +66,10 @@ export default async function AdminLayout({
           pathname={pathname}
           sidebarExpanded={sidebarExpanded}
         >
-          <div className="p-4 text-sm text-muted-foreground">
+          <div data-error-box className="p-4 text-sm text-muted-foreground">
             We couldn&apos;t verify you on this request. You&apos;re still signed
             in — reload in a moment.
-          </div>
+          <ErrorAlchemyMenu /></div>
         </AppShell>
       );
     }
