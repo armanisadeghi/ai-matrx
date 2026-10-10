@@ -64,6 +64,15 @@ interface SpinnerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color
 
 type SpinnerVariantSize = "default" | "xs" | "sm" | "md" | "lg" | "xl";
 
+const SPINNER_BOX: Record<SpinnerVariantSize, string> = {
+    default: "h-8 w-8",
+    xs: "h-4 w-4",
+    sm: "h-5 w-5",
+    md: "h-8 w-8",
+    lg: "h-12 w-12",
+    xl: "h-16 w-16",
+};
+
 const normalizeSpinnerSize = (size: ComponentSize): SpinnerVariantSize => {
     if (size === "icon") return "sm";
     if (size === "2xl" || size === "3xl") return "xl";
@@ -83,7 +92,10 @@ const Spinner = forwardRef<HTMLDivElement, SpinnerProps>(
                 className={cn(spinnerVariants({ size: normalizedSize, variant, className }))}
                 {...props}
             >
-                <div className="relative">
+                {/* Sized like the circles it holds: an unsized wrapper put the
+                    absolute circles' corner at the centre, so every spinner
+                    drew down-right of its box, over the text beside it. */}
+                <div className={cn("relative shrink-0", SPINNER_BOX[normalizedSize])}>
                     <div
                         className={cn(
                             spinnerCircleVariants({ size: normalizedSize }),

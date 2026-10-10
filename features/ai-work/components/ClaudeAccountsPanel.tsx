@@ -19,11 +19,10 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, ExternalLink, KeyRound, LogOut, Plus, X } from "lucide-react";
+import { Check, Copy, ExternalLink, KeyRound, Loader2, LogOut, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Spinner } from "@/components/ui/loaders/Spinner";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -31,17 +30,17 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { isJsonObject } from "@/types/json";
-import { apiGet } from "@/lib/api/typed-client";
-import { runClaudeConnect } from "@/features/ai-work/lib/claudeConnectFlow";
+import {
+  abortableSleep,
+  connectClaudeAccount,
+} from "@/features/ai-work/lib/connectClaudeAccount";
 import { SandboxCapacityList } from "@/features/ai-work/components/SandboxCapacityList";
 import {
   cancelOwnPlanSignIn,
   capacityRefusalOf,
-  HOSTED_RUNTIME_PATH,
   readHostedCapacity,
   newClaudeAccountSlot,
   signOutOwnPlan,
-  startOwnPlanSignIn,
   submitOwnPlanCode,
   type OwnPlanStatus,
   type SandboxCapacityRefusal,
@@ -50,19 +49,7 @@ import {
 
 const PROVIDER = "claude_code" as const;
 
-function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const id = window.setTimeout(resolve, ms);
-    signal.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(id);
-        resolve();
-      },
-      { once: true },
-    );
-  });
-}
+
 const SLOT_WAIT_MS = 90_000;
 
 /** After a Stop: wait until the cap no longer refuses (the box has really stopped). */
@@ -159,22 +146,17 @@ export function ClaudeAccountsPanel() {
     try {
       if (opts.afterStop) await waitForFreeSlot(controller.signal);
       if (controller.signal.aborted) return;
-      const outcome = await runClaudeConnect({
-        start: () => startOwnPlanSignIn(PROVIDER, slot),
-        readiness: async () => (await apiGet(HOSTED_RUNTIME_PATH)).data,
-        isFatal: (cause) => capacityRefusalOf(cause) !== null,
-        describe: (cause) => getUserMessage(cause),
-        sleep: abortableSleep,
-        now: () => Date.now(),
-        signal: controller.signal,
-        onStarting: () => {},
-      });
+      const outcome = await connectClaudeAccount(slot, controller.signal);
       if (outcome.kind === "signed_in") {
         toast.success("Claude account connected");
         reload();
       } else if (outcome.kind === "awaiting") {
         setPending({ slot, status: outcome.status });
-      } else if (outcome.kind === "failed" || outcome.kind === "timeout") {
+      } else if (
+        outcome.kind === "failed" ||
+        outcome.kind === "timeout" ||
+        outcome.kind === "offline"
+      ) {
         setConnectFailure(outcome.message);
       }
     } catch (cause) {
@@ -250,12 +232,11 @@ export function ClaudeAccountsPanel() {
           <h2 className="text-sm font-semibold text-foreground">Claude accounts</h2>
           <Button
             variant="outline"
-            size="sm"
+            icon={<Plus />}
             onClick={() => void connect()}
             disabled={busy !== null || pending !== null}
           >
-            {busy === "starting" ? <Spinner size="sm" /> : <Plus className="size-3.5" />}
-            {busy === "starting" ? "Starting…" : "Connect"}
+            Connect
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -267,11 +248,11 @@ export function ClaudeAccountsPanel() {
             className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-border p-3"
             role="status"
           >
-            <span className="flex items-center gap-2 text-xs text-foreground">
-              <Spinner size="sm" />
-              Starting your sandbox…
+            <span className="flex min-w-0 items-center gap-2 text-xs text-foreground">
+              <Loader2 aria-hidden className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+              <span className="truncate">Starting your sandbox…</span>
             </span>
-            <Button variant="quiet" size="sm" onClick={cancelStarting}>
+            <Button variant="quiet" onClick={cancelStarting}>
               Cancel
             </Button>
           </div>
@@ -280,7 +261,7 @@ export function ClaudeAccountsPanel() {
         {connectFailure && busy !== "starting" && (
           <div className="mt-3 space-y-2 rounded-lg border border-border p-3" role="alert">
             <ErrorNotice message={connectFailure} size="inline" />
-            <Button variant="outline" size="sm" onClick={() => void connect()}>
+            <Button variant="outline" onClick={() => void connect()}>
               Try again
             </Button>
           </div>
@@ -304,7 +285,7 @@ export function ClaudeAccountsPanel() {
         {pending && (
           <div className="mt-3 space-y-2 rounded-lg border border-border p-3">
             {pending.status.sign_in_url ? (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline">
                 <a href={pending.status.sign_in_url} target="_blank" rel="noreferrer">
                   <ExternalLink className="size-3.5" />
                   Sign in on Claude
@@ -322,16 +303,16 @@ export function ClaudeAccountsPanel() {
                 aria-label="Code from Claude"
               />
               <Button
-                size="sm"
+                variant="primary"
+                icon={busy === "code" ? <Loader2 className="animate-spin" /> : <KeyRound />}
                 onClick={() => void finish()}
                 disabled={busy !== null || !code.trim()}
               >
-                {busy === "code" ? <Spinner size="sm" /> : <KeyRound className="size-3.5" />}
                 Finish
               </Button>
               <Button
                 variant="quiet"
-                size="sm"
+               
                 aria-label="Cancel sign-in"
                 onClick={() => void cancel()}
                 disabled={busy !== null}
@@ -367,11 +348,10 @@ export function ClaudeAccountsPanel() {
               {row.status === "connected" && row.slot && (
                 <Button
                   variant="quiet"
-                  size="sm"
+                  icon={busy === `out:${row.id}` ? <Loader2 className="animate-spin" /> : <LogOut />}
                   onClick={() => void signOut(row)}
                   disabled={busy !== null}
                 >
-                  {busy === `out:${row.id}` ? <Spinner size="sm" /> : <LogOut className="size-3.5" />}
                   Sign out
                 </Button>
               )}
@@ -392,12 +372,15 @@ export function ClaudeAccountsPanel() {
           <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1 text-xs">
             {connectorUrl}
           </code>
-          <Button variant="outline" size="sm" onClick={() => void copyUrl()}>
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          <Button
+            variant="outline"
+            icon={copied ? <Check /> : <Copy />}
+            onClick={() => void copyUrl()}
+          >
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
-        <Button asChild variant="outline" size="sm" className="mt-3">
+        <Button asChild variant="outline" className="mt-3">
           <a href={CLAUDE_CONNECTORS_URL} target="_blank" rel="noreferrer">
             <ExternalLink className="size-3.5" />
             Open Claude connectors
