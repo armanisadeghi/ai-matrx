@@ -122,7 +122,7 @@ registerChatUi({
   // Loads @ai-matrx/print/markdown (KaTeX, ~680 KB) on the first share, never on every page;
   // @ai-matrx/chat >= 0.5.2 awaits this slot.
   convertMarkdownToHtml: async (markdown: string) =>
-    (await import("@/features/html-pages/utils/html-preview-utils")).convertMarkdownToHtml(markdown),
+    (await import("@/features/html-pages/utils/html-markdown")).convertMarkdownToHtml(markdown),
   sklActions: sklActions,
   selectAllContentBlocksArray,
   selectContentBlocksByScope,

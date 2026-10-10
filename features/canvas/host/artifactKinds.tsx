@@ -59,7 +59,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { copyHtmlSource, downloadHtmlSource, resolveShownHtml } from "@/features/html-pages/output/htmlSourceOutput";
-import { extractTitleFromHTML } from "@/features/html-pages/utils/html-preview-utils";
+import { extractTitleFromHTML } from "@/features/html-pages/utils/html-title";
 import {
   getDefaultTitle,
   isPersistableCanvasType,

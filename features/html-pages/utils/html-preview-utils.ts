@@ -3,11 +3,13 @@
  * Extracted from useHtmlPreviewState to keep the hook focused on state management
  */
 
-import { markdownToHtml, removeThinkingContent } from "@ai-matrx/print/markdown";
+import { extractTitleFromHTML } from "./html-title";
 import {
   evaluateMetaDescription,
   evaluateMetaTitle,
 } from "@/features/marketing/seo/serp/metrics";
+
+export { extractTitleFromHTML };
 
 /**
  * Detect whether a string is a complete, standalone HTML document — i.e. it has
@@ -113,14 +115,6 @@ export function analyzeHtmlForPreview(code: string): HtmlPreviewAnalysis {
 }
 
 /**
- * Simple conversion: markdown -> clean HTML
- */
-export function convertMarkdownToHtml(markdown: string): string {
-  const cleanedMarkdown = removeThinkingContent(markdown);
-  return markdownToHtml(cleanedMarkdown);
-}
-
-/**
  * Determine which HTML to use for publishing based on edit state
  */
 export function prepareHtmlForPublish(params: {
@@ -129,6 +123,8 @@ export function prepareHtmlForPublish(params: {
   currentMarkdown: string;
   editedCompleteHtml: string;
   generatedHtmlContent: string;
+  /** `convertMarkdownToHtml` from `./html-markdown` — injected so THIS module never statically loads the markdown pipeline. */
+  convertMarkdown: (markdown: string) => string;
 }): {
   bodyHtml: string;
   completeHtmlToPublish?: string;
@@ -140,11 +136,12 @@ export function prepareHtmlForPublish(params: {
     currentMarkdown,
     editedCompleteHtml,
     generatedHtmlContent,
+    convertMarkdown,
   } = params;
 
   // Case 1: Markdown was edited -> regenerate from markdown
   if (isMarkdownDirty || !editedCompleteHtml) {
-    const newHtml = convertMarkdownToHtml(currentMarkdown);
+    const newHtml = convertMarkdown(currentMarkdown);
     return {
       bodyHtml: newHtml,
       newlyGeneratedHtml: newHtml,
@@ -209,31 +206,6 @@ export function prepareMetadataForPublish(params: {
     description: "",
     metaFields: {},
   };
-}
-
-/**
- * Extract the title from HTML content by finding the first h1 or h2
- */
-export function extractTitleFromHTML(htmlContent: string): string {
-  try {
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = htmlContent;
-
-    const h1 = tempDiv.querySelector("h1");
-    if (h1 && h1.textContent?.trim()) {
-      return h1.textContent.trim();
-    }
-
-    const h2 = tempDiv.querySelector("h2");
-    if (h2 && h2.textContent?.trim()) {
-      return h2.textContent.trim();
-    }
-
-    return "";
-  } catch (error) {
-    console.error("Error extracting title from HTML:", error);
-    return "";
-  }
 }
 
 /**
