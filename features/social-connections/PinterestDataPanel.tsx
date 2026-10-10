@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { loadPinterestData, pinterestRequest, type PinterestData } from "./pinterest-service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function PinterestDataPanel({organizationId, connectionId, selectionVersion}: {organizationId: string; connectionId: string; selectionVersion: unknown}) {
   const [data, setData] = useState<PinterestData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -14,7 +15,7 @@ export function PinterestDataPanel({organizationId, connectionId, selectionVersi
       .catch((failure) => {if (!cancelled) setError(failure instanceof Error ? failure.message : "Pinterest data could not be loaded.");});
     return () => {cancelled = true;};
   }, [organizationId, connectionId, selectionVersion]);
-  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>;
   if (!data) return null;
   const total = (field: "engagements" | "impressions" | "saves" | "outbound_clicks" | "pin_clicks") => data.analytics.some((day) => day[field] !== null) ? data.analytics.reduce((sum, day) => sum + (day[field] ?? 0), 0).toLocaleString() : "—";
   return <div className="space-y-2 rounded-md border p-3" aria-label="Pinterest data">
