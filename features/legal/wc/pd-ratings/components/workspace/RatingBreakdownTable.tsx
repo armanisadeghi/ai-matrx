@@ -29,6 +29,7 @@ import {
   type MatrxDataTableCopyConfig,
 } from "@ai-matrx/design-system/data-table";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface RatingBreakdownTableProps {
   result: StatelessRatingResponse;
   isStale?: boolean;
@@ -405,7 +406,7 @@ const BREAKDOWN_COLUMNS: MatrxColumnDef<InjuryDetailRow>[] = [
               <span className="truncate">{w}</span>
             </li>
           ))}
-        </ul>
+        <ErrorAlchemyMenu /></ul>
       ) : (
         <Dash />
       ),
