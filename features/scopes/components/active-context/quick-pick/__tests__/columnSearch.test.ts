@@ -44,7 +44,7 @@ function clientsType(): ScopeTypeWithScopes {
     color: "blue",
     max_assignments_per_entity: null,
     sort_order: 1,
-    parent_type_id: null,
+    created_by: null,
     default_variable_keys: [],
     slug: null,
     description: "",

@@ -14,8 +14,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async () => [
-    { id: "item-phone", key: "contact_phone", display_name: "Contact Phone" },
-    { id: "item-industry", key: "industry", display_name: "Industry" },
+    { id: "item-phone", key: "contact_phone", label: "Contact Phone" },
+    { id: "item-industry", key: "industry", label: "Industry" },
   ]),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
@@ -54,7 +54,7 @@ const type = (id: string, plural: string, names: string[]) => ({
   color: "blue",
   max_assignments_per_entity: null,
   sort_order: 1,
-  parent_type_id: null,
+  created_by: null,
   default_variable_keys: [],
   scopes: names.map((name, i) => ({
     id: `${id}-scope-${i}`,

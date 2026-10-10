@@ -74,6 +74,16 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
     getScopeHome: jest.fn(),
   },
 }));
+// Scope reads go through the one binding of the records package's scope doors.
+const doors = { values: jest.fn(), fields: jest.fn(), scopes: jest.fn() };
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => doors,
+  readScopeFileText: jest.fn(),
+  unwrapRecords: (r: { ok: boolean; data?: unknown; error?: { message: string } }) => {
+    if (r.ok) return r.data;
+    throw new Error(r.error?.message);
+  },
+}));
 
 const svc = jest.mocked(scopesService);
 
@@ -96,7 +106,7 @@ function mattersType(): ScopeTypeWithScopes {
     color: "blue",
     max_assignments_per_entity: null,
     sort_order: 1,
-    parent_type_id: null,
+    created_by: null,
     default_variable_keys: [],
     slug: "matters",
     description: "Open and closed cases",
@@ -123,11 +133,11 @@ const dateOfInjury = {
   id: ITEM,
   scope_type_id: TYPE,
   key: "date_of_injury",
-  display_name: "Date of Injury",
+  label: "Date of Injury",
   description: "",
-  value_type: "date",
-  sort_order: 1,
-  is_active: true,
+  kind: "date",
+  sort: 1,
+  status: "active",
 } as unknown as ContextField;
 
 async function bootedStore() {
@@ -148,25 +158,17 @@ async function bootedStore() {
   return store;
 }
 
+const injury = {
+  scope_id: SCOPE_IDS[0], field_id: ITEM, key: "date_of_injury", kind: "date", value: "2023-09-02", references: [],
+  version: 1, set_at: STAMP, source_type: "manual", authored_by: null, whole_value: null, incomplete: null,
+};
+
 function stubReads() {
-  svc.listContextItems.mockResolvedValue({ ok: true, data: { items: [dateOfInjury] } });
-  svc.listContextItemsForTypes.mockResolvedValue({ ok: true, data: { items: [dateOfInjury] } });
+  doors.fields.mockResolvedValue({ ok: true, data: [dateOfInjury] });
   // Only the first matter has a value; every other one is ready with none.
-  svc.listContextValuesForScopes.mockImplementation(async (ids: string[]) => ({
+  doors.values.mockImplementation(async (ids: string[]) => ({
     ok: true,
-    data: {
-      values: ids.includes(SCOPE_IDS[0])
-        ? [{ scope_id: SCOPE_IDS[0], context_item_id: ITEM, id: "v1", version: 1, is_current: true, value_date: "2023-09-02" } as never]
-        : [],
-    },
-  }));
-  svc.listContextValues.mockImplementation(async (scopeId: string) => ({
-    ok: true,
-    data: {
-      values: scopeId === SCOPE_IDS[0]
-        ? [{ context_item_id: ITEM, id: "v1", version: 1, is_current: true, value_date: "2023-09-02" } as never]
-        : [],
-    },
+    data: ids.includes(SCOPE_IDS[0]) ? [injury] : [],
   }));
 }
 
@@ -193,11 +195,9 @@ afterEach(() => {
   container.remove();
 });
 
+/** Every values read, each as the sorted scope ids it asked for. */
 function valuesCalls() {
-  return {
-    perScope: svc.listContextValues.mock.calls.length,
-    batched: svc.listContextValuesForScopes.mock.calls.map((c) => [...(c[0] as string[])].sort()),
-  };
+  return doors.values.mock.calls.map((c) => [...(c[0] as string[])].sort());
 }
 
 describe("a page of many scopes reads their values in one call", () => {
@@ -221,12 +221,10 @@ describe("a page of many scopes reads their values in one call", () => {
     });
     await settle();
 
-    const calls = valuesCalls();
-    expect(calls.perScope).toBe(0);
-    expect(calls.batched).toEqual([[...SCOPE_IDS].sort()]);
+    expect(valuesCalls()).toEqual([[...SCOPE_IDS].sort()]);
     const byScope = (store.getState() as RootState).contextValues.byScope;
     expect(SCOPE_IDS.every((id) => byScope[id]?.status === "ready")).toBe(true);
-    expect(byScope[SCOPE_IDS[0]]?.values[ITEM]).toMatchObject({ value_date: "2023-09-02" });
+    expect(byScope[SCOPE_IDS[0]]?.values[ITEM]).toMatchObject({ value: "2023-09-02" });
     expect(Object.keys(byScope[SCOPE_IDS[1]]?.values ?? {})).toEqual([]);
   });
 
@@ -243,9 +241,7 @@ describe("a page of many scopes reads their values in one call", () => {
     });
     await settle();
 
-    const calls = valuesCalls();
-    expect(calls.perScope).toBe(0);
-    expect(calls.batched).toEqual([[...SCOPE_IDS].sort()]);
+    expect(valuesCalls()).toEqual([[...SCOPE_IDS].sort()]);
     const byScope = (store.getState() as RootState).contextValues.byScope;
     expect(SCOPE_IDS.every((id) => byScope[id]?.status === "ready")).toBe(true);
   });
@@ -257,14 +253,12 @@ describe("a page of many scopes reads their values in one call", () => {
     const store = await bootedStore();
     stubReads();
     await store.dispatch(ensureContextValues(SCOPE_IDS[0]));
-    expect(svc.listContextValues).toHaveBeenCalledTimes(1);
+    expect(valuesCalls()).toEqual([[SCOPE_IDS[0]]]);
 
     await store.dispatch(ensureContextValuesForScopes(SCOPE_IDS.slice(0, 3)));
-    expect(svc.listContextValuesForScopes.mock.calls.map((c) => [...(c[0] as string[])].sort())).toEqual([
-      [SCOPE_IDS[1], SCOPE_IDS[2]].sort(),
-    ]);
+    expect(valuesCalls().slice(1)).toEqual([[SCOPE_IDS[1], SCOPE_IDS[2]].sort()]);
 
-    svc.listContextValuesForScopes.mockResolvedValueOnce({
+    doors.values.mockResolvedValueOnce({
       ok: false,
       error: { message: "custom.context_values: canceling statement due to statement timeout", code: "57014" },
     } as never);

@@ -150,7 +150,7 @@ describe("buildScopeDisplayItems", () => {
               name: "Rejuvina",
               description: "",
               parent_scope_id: null,
-              settings: null,
+              settings: {},
               slug: null,
               sort_order: 0,
               created_by: null,

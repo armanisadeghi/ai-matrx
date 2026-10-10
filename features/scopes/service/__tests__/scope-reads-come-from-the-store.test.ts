@@ -155,7 +155,7 @@ beforeEach(() => {
   doorsCalled.length = 0;
 });
 
-it("the boot tree is the store's tree, in the old nodes (slug words restored, settings objects back)", async () => {
+it("the boot tree is the store's tree, in the package's shapes (store slugs, settings objects back)", async () => {
   const res = await scopesService.getScopeTree();
   if (!res.ok) throw new Error(res.error.message);
   expect(doorsCalled).toEqual(["context_tree"]);
@@ -163,49 +163,39 @@ it("the boot tree is the store's tree, in the old nodes (slug words restored, se
   const matters = org.scope_types.find((t) => t.id === MATTERS)!;
   expect(matters).toMatchObject({ label_plural: "Matters", slug: "matters", description: "Cases the firm handles", sort_order: 3, default_variable_keys: [] });
   const clients = org.scope_types.find((t) => t.id === CLIENTS)!;
-  expect(clients.slug).toBe("practice-clients");
+  expect(clients.slug).toBe("practice_clients");
   const reyes = matters.scopes.find((s) => s.id === REYES)!;
   expect(reyes).toMatchObject({ slug: "reyes-v-pinnacle", sort_order: 1 });
   expect(reyes.settings).toEqual({ exam_dates: [{ date: "2027-03-01", id: "exam-1", title: "Midterm" }], access_mode: "paid" });
 });
 
-it("a type's context items are its Fields, in the old item row", async () => {
+it("a type's context fields are its Fields, in the store's words", async () => {
   const res = await scopesService.listContextItems(MATTERS);
   if (!res.ok) throw new Error(res.error.message);
   const byId = new Map(res.data.items.map((i) => [i.id, i]));
-  expect(byId.get(ITEM_CLIENT)).toMatchObject({ key: "client", display_name: "Client", value_type: "reference", sort_order: 8, fetch_hint: "on_demand", is_active: true });
-  expect(byId.get(ITEM_INJURY)).toMatchObject({ value_type: "date", fetch_hint: "always" });
-  expect(byId.get(ITEM_QME)).toMatchObject({ value_type: "reference", max_items: 10, allowed_reference_types: ["file"] });
+  expect(byId.get(ITEM_CLIENT)).toMatchObject({ key: "client", label: "Client", kind: "reference", context_policy: "on_request" });
+  expect(byId.get(ITEM_INJURY)).toMatchObject({ kind: "date", context_policy: "include" });
+  expect(byId.get(ITEM_QME)).toMatchObject({ kind: "reference", max_items: 10 });
 });
 
-it("a scope's values land in the columns the screens read: a reference as the chip fence, a date as a date", async () => {
+it("a scope's values are cells: a reference as its references, a date as a date", async () => {
   const res = await scopesService.listContextValues(REYES);
   if (!res.ok) throw new Error(res.error.message);
-  const byItem = new Map(res.data.values.map((v) => [v.context_item_id, v]));
-  const client = byItem.get(ITEM_CLIENT)!;
-  expect(client.value_text).toContain('"type": "scope"');
-  expect(client.value_text).toContain(GOLDEN_STATE);
-  expect(client.value_text).toContain("Golden State Indemnity Co.");
-  expect(client).toMatchObject({ id: "b7e92e83-8829-42a2-a988-0a16ccd00c30", version: 2, source_type: "manual" });
-  expect(byItem.get(ITEM_INJURY)).toMatchObject({ value_date: "2023-09-02", value_text: null });
-  const qme = byItem.get(ITEM_QME)!;
-  expect(qme.value_text).toContain('"type": "file"');
-  expect(qme).toMatchObject({ source_type: "ai_enriched", version: 3, id: `${REYES}:${ITEM_QME}` });
+  const byField = new Map(res.data.values.map((v) => [v.field_id, v]));
+  const client = byField.get(ITEM_CLIENT)!;
+  expect(client.references).toEqual([expect.objectContaining({ id: GOLDEN_STATE, label: "Golden State Indemnity Co." })]);
+  expect(client).toMatchObject({ version: 2, source_type: "manual", kind: "reference" });
+  expect(byField.get(ITEM_INJURY)).toMatchObject({ value: "2023-09-02", kind: "date" });
+  const qme = byField.get(ITEM_QME)!;
+  expect(qme.references[0]).toMatchObject({ type: "file" });
+  expect(qme).toMatchObject({ source_type: "ai_enriched", version: 3 });
 });
 
-it("the chat lens's cell chip and the inspector's drill-down read the store", async () => {
+it("the chat lens's cell chip and a scope's home read the store", async () => {
   const cell = await scopesService.resolveContextCell({ scopeId: REYES, contextItemId: ITEM_INJURY });
   if (!cell.ok) throw new Error(cell.error.message);
   expect(cell.data).toMatchObject({ scopeName: TREE.scopes[1]!.name, itemName: "Date of Injury" });
-  expect(cell.data.value?.value_date).toBe("2023-09-02");
-
-  const types = await scopesService.listScopeTypesForOrganization(ORG);
-  if (!types.ok) throw new Error(types.error.message);
-  expect(types.data.types.map((t) => t.id)).toEqual([CLIENTS, MATTERS]);
-
-  const scopes = await scopesService.listScopesOfType(ORG, MATTERS);
-  if (!scopes.ok) throw new Error(scopes.error.message);
-  expect(scopes.data.scopes.map((s) => s.id)).toEqual([REYES]);
+  expect(cell.data.value?.value).toBe("2023-09-02");
 
   const home = await scopesService.getScopeHome(REYES);
   if (!home.ok) throw new Error(home.error.message);
@@ -216,8 +206,8 @@ it("a suggestion's target, a name lookup, the archive and the System items read 
   const target = await scopesService.resolveSuggestionTarget({ scopeId: REYES, contextItemId: ITEM_CLIENT });
   if (!target.ok) throw new Error(target.error.message);
   expect(target.data.scope_type).toMatchObject({ id: MATTERS, slug: "matters", label_singular: "Matter" });
-  expect(target.data.target_item).toMatchObject({ id: ITEM_CLIENT, key: "client" });
-  expect(target.data.target_item?.current?.value_text).toContain(GOLDEN_STATE);
+  expect(target.data.target_item?.field).toMatchObject({ id: ITEM_CLIENT, key: "client" });
+  expect(target.data.target_item?.current?.references[0]?.id).toBe(GOLDEN_STATE);
 
   const named = await scopesService.findScopesByName(ORG, ["golden state indemnity co."]);
   if (!named.ok) throw new Error(named.error.message);
@@ -226,7 +216,7 @@ it("a suggestion's target, a name lookup, the archive and the System items read 
   const archived = await scopesService.listArchivedScopeTypes(ORG);
   if (!archived.ok) throw new Error(archived.error.message);
   expect(archived.data.types).toEqual([
-    expect.objectContaining({ label_plural: "Referral Sources", archived_scope_count: 1, deleted_at: "2026-09-20T12:00:00Z" }),
+    expect.objectContaining({ label_plural: "Referral Sources", archived_scope_count: 1, archived_at: "2026-09-20T12:00:00Z" }),
   ]);
 
   const system = await scopesService.listSystemContextItems();

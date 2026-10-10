@@ -32,7 +32,7 @@ const CLIENTS = "6f0c2a3e-0000-4000-8000-0000000000a2";
 function type(id: string, label: string, scopes: Scope[] = []): ScopeTypeWithScopes {
   return {
     id, organization_id: ORG, label_singular: label, label_plural: `${label}s`, icon: "folder", color: "",
-    max_assignments_per_entity: null, sort_order: 0, parent_type_id: null, default_variable_keys: [],
+    max_assignments_per_entity: null, sort_order: 0, created_by: null, default_variable_keys: [],
     slug: label.toLowerCase(), description: "", created_at: "", updated_at: "", scopes,
   };
 }

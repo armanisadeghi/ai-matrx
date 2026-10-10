@@ -44,7 +44,7 @@ import { makeSelectScopesForType } from "@/features/scopes/redux/selectors/tree"
 import { makeSelectItemsForType } from "@/features/scopes/redux/selectors/context-items";
 import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
+import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { EditScopeTypeSheet } from "@/features/scopes/components/management/EditScopeTypeSheet";
 import { NewScopeInline } from "@/features/scopes/components/management/NewScopeInline";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
@@ -84,6 +84,12 @@ export function OrgScopeTypeSection({
   useEffect(() => {
     void dispatch(ensureScopeTypeItems(scopeType.id));
   }, [dispatch, scopeType.id]);
+
+  // Every scope on the card in ONE values read (the door takes many scopes a call), never one per row.
+  const scopeIdsKey = scopes.map((sc) => sc.id).join(",");
+  useEffect(() => {
+    if (scopeIdsKey) void dispatch(ensureContextValuesForScopes(scopeIdsKey.split(",")));
+  }, [dispatch, scopeIdsKey]);
 
   const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
@@ -205,12 +211,8 @@ export function OrgScopeTypeSection({
   );
 }
 
-/** The scope's name, as a real link; drawing it loads this scope's values (once, deduped). */
+/** The scope's name, as a real link (the card reads every scope's values in one call). */
 function ScopeNameCell({ scope, href, colorClass }: { scope: Scope; href: string; colorClass: string }) {
-  const dispatch = useAppDispatch();
-  useEffect(() => {
-    void dispatch(ensureContextValues(scope.id));
-  }, [dispatch, scope.id]);
   return (
     <Link
       href={href}

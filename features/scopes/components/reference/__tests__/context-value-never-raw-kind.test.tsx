@@ -18,6 +18,8 @@ jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
 }));
 
 import { ContextValueDisplay } from "../ContextValueDisplay";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
+import type { ContextCellLike } from "@/features/scopes/utils/referenceCell";
 
 const SET_JSON = JSON.stringify({
   __kind: "flashcard_set",
@@ -43,7 +45,7 @@ describe("ContextValueDisplay", () => {
     ["markdown text", { kind: "markdown", value: SET_JSON, references: [] }, "markdown"],
     ["plain text", { kind: "string", value: SET_JSON, references: [] }, null],
     ["json", { kind: "object", value: JSON.parse(SET_JSON), references: [] }, null],
-  ] as const)("a kind in %s renders as the kind", (_label, value, kind) => {
+  ] as Array<[string, ContextCellLike, ContextFieldKind | null]>)("a kind in %s renders as the kind", (_label, value, kind) => {
     const host = mount(<ContextValueDisplay value={value} kind={kind} />);
     expect(host.textContent).not.toContain("__kind");
     expect(host.querySelector('[data-testid="answer-value-view"]')).not.toBeNull();
