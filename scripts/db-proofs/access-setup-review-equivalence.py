@@ -75,6 +75,7 @@ PEOPLE = [
     ('emp_ro', 'employee moved in a reorg', 'M', True, 'mgr', None),
     ('emp_rp', 'employee whose review manager was replaced', 'M', True, 'mgr', None),
     ('emp_mh', 'employee of the manager who is HR', 'M', True, 'mgr_hr', None),
+    ('hr_subj', 'HR who is the review subject', 'M', True, 'mgr', 'hr_admin'),
     ('peer_sub', 'peer (approved, submitted)', 'M', True, 'mgr', None),
     ('peer_draft', 'peer (approved, draft)', 'M', True, 'mgr', None),
     ('peer_pend', 'peer (nomination pending)', 'M', True, 'mgr', None),
@@ -88,7 +89,7 @@ KIND = {p[0]: p[1] for p in PEOPLE}
 KIND['admin'] = 'existing HR owner + org owner (admin@admin.com)'
 # subject -> review manager column (person key)
 SUBJECTS = {'emp': 'mgr', 'emp_nl': 'mgr', 'emp_nm': 'mgr_nl', 'emp_ll': 'mgr', 'emp_ro': 'mgr_old',
-            'emp_rp': 'mgr', 'emp_mh': 'mgr_hr', 'small_emp': 'owner'}
+            'emp_rp': 'mgr', 'emp_mh': 'mgr_hr', 'small_emp': 'owner', 'hr_subj': 'mgr'}
 
 KNOBS = [  # (feature, key, default, flipped) — the skip-level key is assembled (T-13 trigger reads function text only)
     ('hr.performance', 'standard_review_manager_sees_self', 'after_both_submit', 'after_employee_submits'),
@@ -679,6 +680,8 @@ def main():
     strata['upper management holds the upper_management seat'] = one(
         "select count(*) from fx_review r where iam.seats_of(%s, 'hr_review', r.id) @> array['upper_management']",
         (P['upper']['uid'],))
+    strata['HR who is the subject: calibrate on their own review'] = one(
+        "select count(*) from fx_out where caller = 'hr_subj' and door = 'hr_review_calibrate' and target in (select id::text from fx_review where subject = 'hr_subj')")
     strata['no-login employee reviews'] = sum(1 for m in REVIEWS.values() if m['subject'] == 'emp_nl')
     strata['no-login manager reviews'] = sum(1 for m in REVIEWS.values() if m['subject'] == 'emp_nm')
     for st in ('pending', 'approved', 'declined'):

@@ -54,6 +54,13 @@ jest.mock("@ai-matrx/meet/react", () => ({
   isJoinRefusalReason: (value: unknown) =>
     typeof value === "string" &&
     ["not_found", "cancelled", "ended", "locked", "removed"].includes(value),
+  // The core's rule (CORE-DESIGN §3.1): `ended` -> `ended`, a gate reason -> `refused:*`, anything else -> `disconnected`.
+  refusalPhase: (reason: string | null) =>
+    reason === "ended"
+      ? "ended"
+      : typeof reason === "string" && ["not_found", "cancelled", "locked", "removed"].includes(reason)
+        ? `refused:${reason}`
+        : "disconnected",
   MeetAppPanels: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,

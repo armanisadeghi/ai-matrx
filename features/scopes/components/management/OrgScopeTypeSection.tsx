@@ -40,8 +40,10 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { canShapeScopeType } from "@ai-matrx/records/scopes";
-import { makeSelectScopesForType } from "@/features/scopes/redux/selectors/tree";
-import { makeSelectItemsForType } from "@/features/scopes/redux/selectors/context-items";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { makeSelectScopesForType, selectTreeError, selectTreeStatus } from "@/features/scopes/redux/selectors/tree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { makeSelectItemsErrorForType, makeSelectItemsForType } from "@/features/scopes/redux/selectors/context-items";
 import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
@@ -78,6 +80,10 @@ export function OrgScopeTypeSection({
   const scopes = useAppSelector((s) => selectScopesForType(s, scopeType.id));
   const selectItemsForType = useMemo(() => makeSelectItemsForType(), []);
   const items = useAppSelector((s) => selectItemsForType(s, scopeType.id));
+  const selectItemsErrorForType = useMemo(() => makeSelectItemsErrorForType(), []);
+  const itemsError = useAppSelector((s) => selectItemsErrorForType(s, scopeType.id));
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const treeError = useAppSelector(selectTreeError);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -192,6 +198,14 @@ export function OrgScopeTypeSection({
             orgSlugOrId={orgSlugOrId}
             nameColorClass={color.fg}
             onAdd={() => setAdding(true)}
+          />
+        ) : treeError || treeStatus === "error" ? (
+          <ReadFailure error={treeError ?? true} what={plural} onRetry={() => void dispatch(ensureScopeTree())} />
+        ) : itemsError ? (
+          <ReadFailure
+            error={itemsError}
+            what={`the ${singular} fields`}
+            onRetry={() => void dispatch(ensureScopeTypeItems(scopeType.id, { refresh: true }))}
           />
         ) : (
           <MatrxTableCardEmpty

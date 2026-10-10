@@ -54,12 +54,37 @@ import { archiveTableFromHome } from "./archiveTableFromHome";
 /** How many table ids one `custom.my_levels` call asks about. */
 const LEVELS_PER_CALL = 200;
 
+/**
+ * How many of those calls are in flight at once. The home lists every organization the person is in, so
+ * one call per organization used to leave them ALL running together (34 at once for one member), and a
+ * re-render that changed the list asked again for every id still waiting, so one organization was asked
+ * thirteen times over. Each call is a few seconds of ladder work for the database; together they ran past
+ * the statement timeout (57014, a 500) while any one alone answers in about a second.
+ */
+const LEVELS_IN_FLIGHT = 3;
+
 /** The table's level for each table id in hand; absent = not answered yet. */
 /**
  * Answers already given, for the rest of this page's life: a table's level is asked once, so a
  * search keystroke that changes the visible rows asks only for rows not asked about before.
  */
 const LEVELS_ASKED = new Map<string, PermissionLevel | null>();
+/** Ids a call is already out for: a later render never asks for them a second time. */
+const LEVELS_OUT = new Set<string>();
+const LEVELS_QUEUE: Array<() => Promise<void>> = [];
+const LEVELS_LISTENERS = new Set<() => void>();
+let levelsWorking = 0;
+
+function pumpLevels(): void {
+  while (levelsWorking < LEVELS_IN_FLIGHT && LEVELS_QUEUE.length > 0) {
+    const job = LEVELS_QUEUE.shift()!;
+    levelsWorking++;
+    void job().finally(() => {
+      levelsWorking--;
+      pumpLevels();
+    });
+  }
+}
 
 export function useTableLevels(
   tables: ReadonlyArray<{ tableId: string; organizationId: string | null }>,
@@ -70,14 +95,20 @@ export function useTableLevels(
   // A table with no organization (an invitation not yet accepted) is never asked —
   // `actionsForHomeTable` resolves it at once.
   const key = [...tables]
-    .filter((t) => t.organizationId && !LEVELS_ASKED.has(t.tableId))
+    .filter((t) => t.organizationId && !LEVELS_ASKED.has(t.tableId) && !LEVELS_OUT.has(t.tableId))
     .map((t) => `${t.organizationId}:${t.tableId}`)
     .sort()
     .join(",");
   const [, setAnswered] = useState(0);
   useEffect(() => {
+    const listener = () => setAnswered((n) => n + 1);
+    LEVELS_LISTENERS.add(listener);
+    return () => {
+      LEVELS_LISTENERS.delete(listener);
+    };
+  }, []);
+  useEffect(() => {
     if (key === "") return;
-    let live = true;
     const byOrganization = new Map<string, string[]>();
     for (const pair of key.split(",")) {
       const [organizationId, tableId] = pair.split(":") as [string, string];
@@ -87,28 +118,29 @@ export function useTableLevels(
       const inOrganization = createRecordsClient({ ...client.config, organizationId });
       for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
         const asked = ids.slice(i, i + LEVELS_PER_CALL);
+        for (const id of asked) LEVELS_OUT.add(id);
         // A read that fails is asked again (three tries, a pause between): the menu says
         // "Checking your access…" meanwhile, never a refusal it did not get.
         const ask = async () => {
           for (let attempt = 0; attempt < 3; attempt++) {
             const answered = await inOrganization.myLevels({ ids: asked });
-            if (answered.ok || !live) return answered;
+            if (answered.ok) return answered;
             await new Promise((r) => setTimeout(r, 3000));
           }
           return null;
         };
-        void ask().then((answered) => {
+        LEVELS_QUEUE.push(async () => {
+          const answered = await ask();
+          for (const id of asked) LEVELS_OUT.delete(id);
           if (!answered || !answered.ok) return;
           // An id the store did not answer for is "you hold nothing on it" — an answer, not a wait.
           for (const id of asked) LEVELS_ASKED.set(id, null);
           for (const row of answered.data) LEVELS_ASKED.set(row.id, row.level);
-          if (live) setAnswered((n) => n + 1);
+          for (const listener of LEVELS_LISTENERS) listener();
         });
       }
     }
-    return () => {
-      live = false;
-    };
+    pumpLevels();
   }, [client, key]);
   return LEVELS_ASKED;
 }

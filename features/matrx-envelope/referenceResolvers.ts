@@ -47,6 +47,7 @@ import {
 } from "@/features/data-tables/service";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { readPickList, readPickListForSelection } from "@/features/data-tables/pick-lists/doors";
 
 /**
  * WHERE THIS TABLE OPENS. The table names its OWN organization (`custom.where_id_opens`, inside
@@ -275,9 +276,8 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
-      const read = await supabase.rpc("get_pick_list_for_selection", { p_list_id: ref.list_id });
-      const doc = (read.data ?? null) as { list_name?: string | null; description?: string | null } | null;
-      if (read.error || !doc) return undefined;
+      const doc = (await readPickListForSelection(supabase, ref.list_id).catch(() => null)) as { list_name?: string | null; description?: string | null } | null;
+      if (!doc) return undefined;
       return stringify(doc.list_name) ?? stringify(doc.description);
     },
   },
@@ -299,11 +299,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.item_id || !ref.list_id) return undefined;
       // The list door shows a choice's description to an editor.
-      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
-      const doc = (read.data ?? null) as {
+      const doc = (await readPickList(supabase, ref.list_id).catch(() => null)) as {
         items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
       } | null;
-      if (read.error || !doc) return undefined;
+      if (!doc) return undefined;
       const item = Object.values(doc.items_grouped ?? {}).flat().find((i) => i.id === ref.item_id);
       if (!item) return undefined;
       return stringify(item.description) ?? stringify(item.label);

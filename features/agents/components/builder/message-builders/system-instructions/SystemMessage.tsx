@@ -26,10 +26,11 @@ import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageF
 import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 import {
   MessageViewModeMenu,
+  DEFAULT_MESSAGE_VIEW_MODE,
+  showsTextTools,
   type MessageViewMode,
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { PromptInsertMenu } from "@ai-matrx/rich-editor/format/PromptInsertMenu";
 import { PromptFixReview } from "@ai-matrx/rich-editor/format/PromptFixReview";
@@ -87,7 +88,7 @@ export function SystemMessage({
   onOpenFullScreenEditor,
   scrollContainerRef,
 }: SystemMessageProps) {
-  const [viewMode, setViewMode] = useState<MessageViewMode>("plain");
+  const [viewMode, setViewMode] = useState<MessageViewMode>(DEFAULT_MESSAGE_VIEW_MODE);
   const isEditing = viewMode === "edit";
   const setIsEditing = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -482,15 +483,6 @@ export function SystemMessage({
     contextMenuOpenRef.current = false;
   }, []);
 
-  // Split's own text box (MatrxSplit carries the formatting layer itself):
-  // only the cursor-insert helpers need to see it.
-  const handleSplitTextareaRef = useCallback(
-    (el: HTMLTextAreaElement | null) => {
-      textareaRefs.current[systemMessageIndex] = el;
-    },
-    [systemMessageIndex],
-  );
-
   const handleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
     textareaRefs.current[systemMessageIndex] = el;
     setFormatElement(el);
@@ -731,7 +723,7 @@ export function SystemMessage({
               />
             )}
           </div>
-          {(viewMode === "write" || viewMode === "edit" || viewMode === "split") && (
+          {showsTextTools(viewMode) && (
             <PromptFormatButtons
               mode={viewMode === "write" ? "write" : "textarea"}
               writeRef={writeRef}
@@ -739,6 +731,7 @@ export function SystemMessage({
             />
           )}
           <div className="flex items-center gap-1">
+{showsTextTools(viewMode) && (
           <PromptInsertMenu
             variables={insertSources.variables}
             kinds={insertSources.kinds}
@@ -749,6 +742,7 @@ export function SystemMessage({
             onAddVariable={() => goToBuilderSection("variables")}
             onAddContextItem={() => goToBuilderSection("context")}
           />
+)}
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
               hasVariableSupport={hasVariableSupport}
@@ -785,18 +779,6 @@ export function SystemMessage({
               surfaceName="matrx-user/agent-builder"
               placeholder="You're a very helpful assistant"
             />
-          ) : viewMode === "split" ? (
-            <div style={{ height: "360px" }}>
-              <MatrxSplit
-                imagePolicy="other"
-                value={developerMessage}
-                onChange={handleTextChange}
-                textareaRef={handleSplitTextareaRef}
-                placeholder="You're a very helpful assistant"
-                textareaClassName="text-xs"
-                allowFullScreenEditor={false}
-              />
-            </div>
           ) : viewMode === "preview" ? (
             <div
               className="min-h-[240px] cursor-text"

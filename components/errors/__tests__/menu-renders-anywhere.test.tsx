@@ -35,7 +35,7 @@ it("takes one line-height of width in the text flow, not its 32px tap target (ne
   });
   const menu = host.querySelector("[data-error-alchemy-menu]")!;
   const cls = menu.className.split(/\s+/);
-  expect(cls).toEqual(expect.arrayContaining(["w-[calc(1lh+0.25rem)]", "h-[1lh]", "justify-center", "overflow-visible"]));
+  expect(cls).toEqual(expect.arrayContaining(["w-[calc(var(--matrx-tap-box,2.375rem)+var(--matrx-tap-gap,0.375rem))]", "h-[1lh]", "justify-center", "overflow-visible"]));
   await act(async () => root.unmount());
 });
 

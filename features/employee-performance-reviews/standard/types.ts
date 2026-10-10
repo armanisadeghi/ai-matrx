@@ -208,6 +208,8 @@ export interface LaunchRefused {
 export interface LaunchResult {
   created: LaunchCreated[];
   refused: LaunchRefused[];
+  /** The door's `access_setup` block, handed as-is to afterCreateOpenAccessSetup (features/access-setup). */
+  accessSetup: unknown;
 }
 
 export interface AnswerProblem {
@@ -458,6 +460,7 @@ export function parseLaunch(raw: Rec): LaunchResult {
       employeeName: str(r.employee_name),
       reason: str(r.reason) ?? "refused",
     })),
+    accessSetup: raw.access_setup ?? null,
   };
 }
 

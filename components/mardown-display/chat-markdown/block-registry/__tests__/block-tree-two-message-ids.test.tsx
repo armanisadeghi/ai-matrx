@@ -65,7 +65,9 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
 }));
 
 // The dispatched block reports exactly the two ids it was handed.
+// The app's domain dispatch reads the engine's tables (BLOCK_DISPATCH, its classification) when it loads.
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
+  ...jest.requireActual("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch"),
   registerBlockDispatch: () => undefined,
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},

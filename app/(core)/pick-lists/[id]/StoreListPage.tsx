@@ -7,11 +7,16 @@
 // — its choices are the table's rows, edited there — under one line saying what the page is.
 
 import Link from "next/link";
+import { useState } from "react";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+
+import { PickListChoicesEditor } from "@/features/data-tables/pick-lists/components/PickListChoicesEditor";
 
 import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 import { LIST_PAGE_LINE } from "@/features/data-tables/pick-lists/list-page-line";
 
 export function StoreListPage({ listId }: { listId: string }) {
+  const [view, setView] = useState<"choices" | "table">("choices");
   return (
     <div className="flex h-full flex-col">
       <p
@@ -23,9 +28,20 @@ export function StoreListPage({ listId }: { listId: string }) {
           All lists
         </Link>
       </p>
+      <div className="shrink-0 px-4 pb-1">
+        <SegmentedControl
+          value={view}
+          aria-label="Pick list view"
+          onValueChange={(v: string) => setView(v === "table" ? "table" : "choices")}
+          data={[
+            { value: "choices", label: "Choices" },
+            { value: "table", label: "Table" },
+          ]}
+        />
+      </div>
       {/* The table page pads itself below the shell header; the line above already sits there. */}
       <div className="min-h-0 flex-1 [--shell-header-h:0px]">
-        <UnifiedDataTablePage tableId={listId} />
+        {view === "choices" ? <PickListChoicesEditor listId={listId} /> : <UnifiedDataTablePage tableId={listId} />}
       </div>
     </div>
   );

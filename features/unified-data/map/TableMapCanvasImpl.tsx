@@ -36,6 +36,9 @@ export interface TableMapCanvasProps {
   onOpen: (card: MapCard) => void;
 }
 
+// A card is a button, not a handle to move. `nopan` keeps the canvas's drag-to-pan (d3-zoom) from taking the
+// press: after any pointer movement, however small, d3-zoom swallows the click that follows it, so a card
+// pressed with a 2px wobble never opened its table. `nodrag` is the same promise for the node wrapper.
 function TableCardNode({ data }: NodeProps<Node<CardData>>) {
   const { card, count, onOpen } = data;
   return (
@@ -44,7 +47,7 @@ function TableCardNode({ data }: NodeProps<Node<CardData>>) {
       onClick={() => onOpen(card)}
       data-table-map-card={card.id}
       style={{ width: CARD_W, height: CARD_H }}
-      className="flex flex-col gap-1 overflow-hidden rounded-lg border border-border bg-card p-3 text-left shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="nodrag nopan flex flex-col gap-1 overflow-hidden rounded-lg border border-border bg-card p-3 text-left shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       <Handle type="target" position={Position.Left} className="!h-1.5 !w-1.5 !bg-muted-foreground" />
       <Handle type="source" position={Position.Right} className="!h-1.5 !w-1.5 !bg-muted-foreground" />
@@ -138,6 +141,8 @@ function Canvas({ map, countOf, onOpen }: TableMapCanvasProps) {
       onlyRenderVisibleElements={!fitAll}
       minZoom={0.05}
       nodesDraggable={false}
+      paneClickDistance={4}
+      nodeClickDistance={4}
       nodesConnectable={false}
       elementsSelectable={true}
       proOptions={{ hideAttribution: true }}
