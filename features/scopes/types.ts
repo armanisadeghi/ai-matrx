@@ -12,11 +12,12 @@ import type {
   Scope,
   ScopeTypeWithScopes,
 } from "@ai-matrx/records/scopes";
+import { isRecordsErr } from "@ai-matrx/records";
 
 // Host callers still import this historical name while their result envelopes
 // have moved to the record store. Keep the import edge stable by exposing the
 // record store's discriminant guard, not a second scopes-shaped result type.
-export { isRecordsErr as isScopesRpcErr } from "@ai-matrx/records";
+export const isScopesRpcErr = isRecordsErr;
 
 // Re-export the GENERATED entity-token vocabulary so consumers import the
 // canonical, type-safe token set from the scopes types module (the single

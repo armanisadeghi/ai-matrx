@@ -22,14 +22,9 @@ import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createContextItem,
-  type ContextItem,
-  type ContextValueType,
-  type ContextFetchHint,
-  type ContextSensitivity,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
-import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { toFieldKey, type ContextField as ContextItem, type ContextFieldKind as ContextValueType, type ContextSensitivity } from "@ai-matrx/records/scopes";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import {
   EntryModeToggle,
@@ -49,6 +44,7 @@ import {
 } from "@/features/agent-context/constants";
 
 const NO_CATEGORY = "__none__";
+type ContextFetchHint = "always" | "on_demand" | "never";
 
 /** Direct-entry primitive types — "Reference" is a separate first-class mode, never mixed into this list. */
 const PRIMITIVE_VALUE_TYPES = (
@@ -217,15 +213,20 @@ export function ContextItemAddForm({
       const item = await dispatch(
         createContextItem({
           scope_type_id: scopeTypeId,
-          key: slugifyKey(trimmed) || trimmed.toLowerCase(),
-          display_name: trimmed,
-          value_type: valueType,
+          key: toFieldKey(trimmed) || trimmed.toLowerCase(),
+          label: trimmed,
+          kind: valueType,
           description: description.trim() || undefined,
           category: category.trim() || undefined,
           tags: tags.length ? tags : undefined,
-          fetch_hint: fetchHint,
+          context_policy:
+            fetchHint === "always"
+              ? "include"
+              : fetchHint === "never"
+                ? "exclude"
+                : "on_request",
           sensitivity,
-          sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
+          sort: sortOrder.trim() ? Number(sortOrder) : undefined,
           allowed_reference_types: isReference
             ? allowedReferenceTypes
             : undefined,
@@ -248,24 +249,25 @@ export function ContextItemAddForm({
 
       onAdded?.(item);
 
-      // A reference value is a `matrx` fence string; buildScopeValuePayload routes
-      // it to value_text and write_context_value validates it against the item's
-      // just-saved allowed_reference_types.
+      // The records door routes this typed cell value to its canonical storage
+      // shape; reference fences remain text until the picker supplies refs.
       const hasValue =
         value != null && (typeof value !== "string" || value.trim() !== "");
       if (scopeId && hasValue) {
         await dispatch(
           setScopeContextValue({
             scope_id: scopeId,
-            context_item_id: item.id,
-            ...buildScopeValuePayload(value, valueType),
+            field_id: item.id,
+            kind: item.kind,
+            value,
+            source_type: "manual",
           }),
         ).unwrap();
       }
 
       recordToast.success(
-        { type: "context_item", id: item.id, title: item.display_name },
-        `Added "${item.display_name}" to all ${labelPlural}`,
+        { type: "context_item", id: item.id, title: item.label },
+        `Added "${item.label}" to all ${labelPlural}`,
       );
 
       if (keepOpen) {
