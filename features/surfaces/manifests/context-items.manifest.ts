@@ -18,7 +18,7 @@
  * Nothing on this page can be authored per-scope, so it emits no
  * `scope_context_values` and no active-context values.
  *
- * Runtime emitter: `features/scope-system/components/ContextItemsHub.tsx`
+ * Runtime emitter: `features/scopes/components/pages/ContextItemsHub.tsx`
  * (`AllContextItemsHub`), via `createContextItemsScope`.
  */
 
@@ -124,7 +124,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "context_item_authoring",
     label: "Field authoring copy",
     description:
-      "The AUTHORED copy of every loaded context item — one entry per item: { id, organization_id, scope_type_id, key, display_name, description, category, tags, status_note }. This is the read twin of this surface's write targets: `id` is what you pass as `item_id`, and every field it carries is one a write target can change. Auto-context on purpose — without it an agent has no item id to write to — but it costs roughly 300 characters per LOADED field and is by far the heaviest value on this surface (a catalog of ~100 fields runs to ~30k). Absent until at least one scope type's items have loaded; a scope type missing from loaded_scope_type_ids has an UNKNOWN field list, never an empty one.",
+      "The AUTHORED copy of every loaded context item — one entry per item: { id, organization_id, scope_type_id, key, label, description, category, tags, status_note }. This is the read twin of this surface's write targets: `id` is what you pass as `item_id`, and every field it carries is one a write target can change. Auto-context on purpose — without it an agent has no item id to write to — but it costs roughly 300 characters per LOADED field and is by far the heaviest value on this surface (a catalog of ~100 fields runs to ~30k). Absent until at least one scope type's items have loaded; a scope type missing from loaded_scope_type_ids has an UNKNOWN field list, never an empty one.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 12000,
@@ -149,19 +149,19 @@ const surfaceSpecific: SurfaceValue[] = [
  * derived from the display name on create exactly as the add form derives it,
  * and never rewritten afterwards), `scope_type_id` / organization ownership,
  * `sort_order` (mechanical ordering, and the page already has a drag-and-arrows
- * reorder dialog), `value_type` on an EXISTING item (the editor itself warns
+ * reorder dialog), `kind` on an EXISTING item (the editor itself warns
  * that stored values do not convert), `sensitivity` / `fetch_hint` (how far
  * this data travels is the user's call, never the reader's), item deletion,
  * and anything about which organizations the viewer may manage
  * (`manageable_organization_ids` is a permission read).
  *
- * Handlers: `features/scope-system/components/ContextItemsWriteTargets.tsx`.
+ * Handlers: `features/scopes/components/pages/ContextItemsWriteTargets.tsx`.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "context_item_copy",
     label: "Field name & description",
-    description: `Rewrite one context item's authored copy — its display name and/or its description (the field's meaning: what it is for and when an agent should use it). Value: { item_id: string, display_name?: string, description?: string } — at least one of the two; each provided key REPLACES that whole text (read context_item_authoring for the current wording and include anything you want kept), the omitted one is untouched. display_name must be non-empty; description may be "" to clear it. item_id is the \`id\` from context_item_authoring. Saved immediately through the same updateContextItem path the edit sheet's Save uses. Refused when the item is not loaded on this page or the viewer cannot manage its organization.`,
+    description: `Rewrite one context item's authored copy — its label and/or its description (the field's meaning: what it is for and when an agent should use it). Value: { item_id: string, label?: string, description?: string } — at least one of the two; each provided key REPLACES that whole text (read context_item_authoring for the current wording and include anything you want kept), the omitted one is untouched. label must be non-empty; description may be "" to clear it. item_id is the \`id\` from context_item_authoring. Saved immediately through the same updateContextItem path the edit sheet's Save uses. Refused when the item is not loaded on this page or the viewer cannot manage its organization.`,
     valueType: "object",
     updatesValue: "context_item_authoring",
     mode: "entity",
@@ -209,9 +209,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "add_context_items",
     label: "Add fields to a scope type",
-    description: `Add one or more NEW context items (field definitions) to a scope type — the "this dimension is missing a field" move. Value: { scope_type_id: string, items: [{ display_name: string, description?: string, category?: string, value_type?: string }] } — scope_type_id comes from scope_types_summary and its section must already be loaded (see loaded_scope_type_ids); items must be non-empty and created in the order given. value_type defaults to "string" and must be one of: ${AGENT_WRITABLE_VALUE_TYPES.join(
+    description: `Add one or more NEW context items (field definitions) to a scope type — the "this dimension is missing a field" move. Value: { scope_type_id: string, items: [{ label: string, description?: string, category?: string, kind?: string }] } — scope_type_id comes from scope_types_summary and its section must already be loaded (see loaded_scope_type_ids); items must be non-empty and created in the order given. kind defaults to "string" and must be one of: ${AGENT_WRITABLE_VALUE_TYPES.join(
       " | ",
-    )} — "reference" items cannot be created here because their fence config is not agent-authorable. The storage key is derived from display_name exactly as the add form derives it; you never supply one, and an item whose derived key already exists on that scope type is refused rather than duplicated. Each new field applies to EVERY scope of that type. Created immediately through the same createContextItem path the add form uses. Refused when the section has not loaded or the viewer cannot manage the owning organization.`,
+    )} — "reference" items cannot be created here because their fence config is not agent-authorable. The storage key is derived from label exactly as the add form derives it; you never supply one, and an item whose derived key already exists on that scope type is refused rather than duplicated. Each new field applies to EVERY scope of that type. Created immediately through the same createContextItem path the add form uses. Refused when the section has not loaded or the viewer cannot manage the owning organization.`,
     valueType: "object",
     updatesValue: "context_item_authoring",
     mode: "entity",
@@ -256,7 +256,7 @@ export interface ContextItemAuthoringEntry {
   organization_id: string;
   scope_type_id: string;
   key: string;
-  display_name: string;
+  label: string;
   description: string;
   category: string | null;
   tags: string[];

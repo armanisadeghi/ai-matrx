@@ -39,7 +39,7 @@ import {
   DEFAULT_CATEGORIES,
 } from "@/features/agent-context/constants";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
-import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
+import { componentToValueType } from "@/features/scopes/components/pages/utils/componentValueType";
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {

@@ -2,7 +2,7 @@
 
 // All context items across every organization the user belongs to.
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
-import { AllContextItemsHub } from "@/features/scope-system/components/ContextItemsHub";
+import { AllContextItemsHub } from "@/features/scopes/components/pages/ContextItemsHub";
 
 export default function AllContextItemsPage() {
   return (

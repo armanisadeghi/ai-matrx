@@ -76863,7 +76863,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/AddScopeModal.tsx",
+      "file": "features/scopes/components/pages/AddScopeModal.tsx",
       "line": 244,
       "rule": "over-budget",
       "severity": 2,
@@ -76873,7 +76873,7 @@
       "detail": "secondary slot: 123 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/AddScopeModal.tsx",
+      "file": "features/scopes/components/pages/AddScopeModal.tsx",
       "line": 244,
       "rule": "multi-sentence",
       "severity": 2,
@@ -76883,7 +76883,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/AddScopeModal.tsx",
+      "file": "features/scopes/components/pages/AddScopeModal.tsx",
       "line": 336,
       "rule": "over-budget",
       "severity": 2,
@@ -76893,7 +76893,7 @@
       "detail": "secondary slot: 62 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/AddScopeModal.tsx",
+      "file": "features/scopes/components/pages/AddScopeModal.tsx",
       "line": 526,
       "rule": "over-budget",
       "severity": 2,
@@ -76903,7 +76903,7 @@
       "detail": "secondary slot: 75 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ContextItemAddForm.tsx",
+      "file": "features/scopes/components/pages/ContextItemAddForm.tsx",
       "line": 446,
       "rule": "over-budget",
       "severity": 2,
@@ -76913,7 +76913,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ContextItemEditView.tsx",
+      "file": "features/scopes/components/pages/ContextItemEditView.tsx",
       "line": 121,
       "rule": "page-description",
       "severity": 1,
@@ -76923,7 +76923,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ContextItemsHub.tsx",
+      "file": "features/scopes/components/pages/ContextItemsHub.tsx",
       "line": 277,
       "rule": "over-budget",
       "severity": 2,
@@ -76933,7 +76933,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ContextItemsHub.tsx",
+      "file": "features/scopes/components/pages/ContextItemsHub.tsx",
       "line": 461,
       "rule": "page-description",
       "severity": 1,
@@ -76943,7 +76943,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ContextItemsHub.tsx",
+      "file": "features/scopes/components/pages/ContextItemsHub.tsx",
       "line": 608,
       "rule": "page-description",
       "severity": 1,
@@ -76953,7 +76953,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ContextItemsHub.tsx",
+      "file": "features/scopes/components/pages/ContextItemsHub.tsx",
       "line": 608,
       "rule": "over-budget",
       "severity": 2,
@@ -76963,7 +76963,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/EditContextItemSheet.tsx",
+      "file": "features/scopes/components/pages/EditContextItemSheet.tsx",
       "line": 33,
       "rule": "over-budget",
       "severity": 2,
@@ -76973,7 +76973,7 @@
       "detail": "secondary slot: 79 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/EditContextItemSheet.tsx",
+      "file": "features/scopes/components/pages/EditContextItemSheet.tsx",
       "line": 33,
       "rule": "multi-sentence",
       "severity": 2,
@@ -76983,7 +76983,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/EditScopeTypeSheet.tsx",
+      "file": "features/scopes/components/pages/EditScopeTypeSheet.tsx",
       "line": 320,
       "rule": "over-budget",
       "severity": 2,
@@ -76993,7 +76993,7 @@
       "detail": "secondary slot: 86 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/EditScopeValueSheet.tsx",
+      "file": "features/scopes/components/pages/EditScopeValueSheet.tsx",
       "line": 188,
       "rule": "over-budget",
       "severity": 2,
@@ -77003,7 +77003,7 @@
       "detail": "secondary slot: 91 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/EditScopeValueSheet.tsx",
+      "file": "features/scopes/components/pages/EditScopeValueSheet.tsx",
       "line": 188,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77013,7 +77013,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/forms/ContextItemSettingsForm.tsx",
+      "file": "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx",
       "line": 343,
       "rule": "over-budget",
       "severity": 2,
@@ -77023,7 +77023,7 @@
       "detail": "secondary slot: 127 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/forms/ContextItemSettingsForm.tsx",
+      "file": "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx",
       "line": 379,
       "rule": "over-budget",
       "severity": 2,
@@ -77033,7 +77033,7 @@
       "detail": "secondary slot: 117 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/forms/ContextItemSettingsForm.tsx",
+      "file": "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx",
       "line": 379,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77043,7 +77043,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/NewScopeInline.tsx",
+      "file": "features/scopes/components/pages/NewScopeInline.tsx",
       "line": 379,
       "rule": "over-budget",
       "severity": 2,
@@ -77053,7 +77053,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 146,
       "rule": "over-budget",
       "severity": 2,
@@ -77063,7 +77063,7 @@
       "detail": "secondary slot: 81 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 146,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77073,7 +77073,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 166,
       "rule": "over-budget",
       "severity": 2,
@@ -77083,7 +77083,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 166,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77093,7 +77093,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 200,
       "rule": "over-budget",
       "severity": 2,
@@ -77103,7 +77103,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeAdvancedSection.tsx",
+      "file": "features/scopes/components/pages/ScopeAdvancedSection.tsx",
       "line": 200,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77113,7 +77113,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeContextItemsHub.tsx",
+      "file": "features/scopes/components/pages/ScopeContextItemsHub.tsx",
       "line": 164,
       "rule": "page-description",
       "severity": 1,
@@ -77123,7 +77123,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ScopeEditView.tsx",
+      "file": "features/scopes/components/pages/ScopeEditView.tsx",
       "line": 197,
       "rule": "page-description",
       "severity": 1,
@@ -77133,7 +77133,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ScopeNotFound.tsx",
+      "file": "features/scopes/components/pages/ScopeNotFound.tsx",
       "line": 88,
       "rule": "page-description",
       "severity": 1,
@@ -77143,7 +77143,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/scope-system/components/ScopeNotFound.tsx",
+      "file": "features/scopes/components/pages/ScopeNotFound.tsx",
       "line": 88,
       "rule": "over-budget",
       "severity": 2,
@@ -77153,7 +77153,7 @@
       "detail": "secondary slot: 103 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeNotFound.tsx",
+      "file": "features/scopes/components/pages/ScopeNotFound.tsx",
       "line": 88,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77163,7 +77163,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 176,
       "rule": "page-description",
       "severity": 1,
@@ -77173,7 +77173,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 176,
       "rule": "over-budget",
       "severity": 1,
@@ -77183,7 +77183,7 @@
       "detail": "secondary slot: 192 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 176,
       "rule": "multi-sentence",
       "severity": 1,
@@ -77193,7 +77193,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 179,
       "rule": "over-budget",
       "severity": 2,
@@ -77203,7 +77203,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 179,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77213,7 +77213,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 198,
       "rule": "over-budget",
       "severity": 2,
@@ -77223,7 +77223,7 @@
       "detail": "secondary slot: 64 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 198,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77233,7 +77233,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 212,
       "rule": "over-budget",
       "severity": 2,
@@ -77243,7 +77243,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopeOnboarding.tsx",
+      "file": "features/scopes/components/pages/ScopeOnboarding.tsx",
       "line": 218,
       "rule": "over-budget",
       "severity": 2,
@@ -77253,7 +77253,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopesGrid.tsx",
+      "file": "features/scopes/components/pages/ScopesGrid.tsx",
       "line": 72,
       "rule": "page-description",
       "severity": 1,
@@ -77263,7 +77263,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/scope-system/components/ScopesGrid.tsx",
+      "file": "features/scopes/components/pages/ScopesGrid.tsx",
       "line": 72,
       "rule": "over-budget",
       "severity": 2,
@@ -77273,7 +77273,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopesGrid.tsx",
+      "file": "features/scopes/components/pages/ScopesGrid.tsx",
       "line": 88,
       "rule": "over-budget",
       "severity": 2,
@@ -77283,7 +77283,7 @@
       "detail": "secondary slot: 109 chars, budget 60"
     },
     {
-      "file": "features/scope-system/components/ScopesGrid.tsx",
+      "file": "features/scopes/components/pages/ScopesGrid.tsx",
       "line": 88,
       "rule": "multi-sentence",
       "severity": 2,
@@ -77293,7 +77293,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/scope-system/components/ScopeTypeEditView.tsx",
+      "file": "features/scopes/components/pages/ScopeTypeEditView.tsx",
       "line": 98,
       "rule": "page-description",
       "severity": 1,

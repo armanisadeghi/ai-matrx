@@ -14,7 +14,7 @@ import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { customComponentOf } from "@/features/scopes/utils/customComponent";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
-import { useScopeFieldRows } from "@/features/scope-system/hooks/useScopeFieldRows";
+import { useScopeFieldRows } from "@/features/scopes/components/pages/hooks/useScopeFieldRows";
 import { cellDraft, cellWrite } from "./scope-detail-values";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { PartialValueBadge } from "@/features/scopes/components/PartialValueBadge";

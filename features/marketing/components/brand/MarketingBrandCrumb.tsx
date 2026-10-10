@@ -2,7 +2,7 @@
 
 /**
  * The client workspace's one piece of chrome — the FULL breadcrumb concept the
- * org/scope tier already ships (`features/scope-system/components/ScopeBreadcrumb`):
+ * org/scope tier already ships (`features/scopes/components/pages/ScopeBreadcrumb`):
  * EVERY level is a switcher, not just the brand.
  *
  *   Marketing › <client> ▾ › <section> ▾ › <site> ▾ › <site view> ▾

@@ -54,7 +54,7 @@ import {
 /** Wire value for `context_item_copy`. At least one text key is required. */
 export interface ContextItemCopyWrite {
   item_id: string;
-  display_name?: string;
+  label?: string;
   description?: string;
 }
 
@@ -83,7 +83,7 @@ export interface AddContextItemsWrite {
     label: string;
     description?: string;
     category?: string;
-    value_type?: string;
+    kind?: string;
   }[];
 }
 
@@ -233,16 +233,16 @@ export function ContextItemsWriteTargets() {
       const target = "context_item_copy";
       const obj = asRecord(value, target);
       const itemId = requiredId(obj, "item_id", target);
-      const displayName = optionalText(obj, "display_name", target);
+      const displayName = optionalText(obj, "label", target);
       const description = optionalText(obj, "description", target);
       if (displayName === undefined && description === undefined) {
         throw new Error(
-          `${target}: provide display_name and/or description.`,
+          `${target}: provide label and/or description.`,
         );
       }
       if (displayName !== undefined && !displayName) {
         throw new Error(
-          `${target}: display_name must be a non-empty string — the editor refuses to save a field with no name. Omit the key to leave it unchanged.`,
+          `${target}: label must be a non-empty string — the editor refuses to save a field with no name. Omit the key to leave it unchanged.`,
         );
       }
       const item = resolveItem(itemId, target);
@@ -328,7 +328,7 @@ export function ContextItemsWriteTargets() {
       const rawItems = obj.items;
       if (!Array.isArray(rawItems) || rawItems.length === 0) {
         throw new Error(
-          `${target}: items must be a non-empty array of { display_name, description?, category?, value_type? }.`,
+          `${target}: items must be a non-empty array of { label, description?, category?, kind? }.`,
         );
       }
 
@@ -349,7 +349,7 @@ export function ContextItemsWriteTargets() {
         const record = asRecord(entry, `${target}: items[${index}]`);
         const displayName = optionalText(
           record,
-          "display_name",
+          "label",
           `${target}: items[${index}]`,
         );
         if (!displayName) {

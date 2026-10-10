@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/creatable-picker";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
-import { ContextItemAddForm } from "@/features/scope-system/components/ContextItemAddForm";
+import { ContextItemAddForm } from "@/features/scopes/components/pages/ContextItemAddForm";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";

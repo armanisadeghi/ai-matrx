@@ -48,7 +48,7 @@ import {
 } from "@/features/scopes/redux/thunks/contextItemMutations";
 import { isValidSlug, toFieldKey, toSlug } from "@ai-matrx/records/scopes";
 import { isRecordsErr } from "@ai-matrx/records";
-import { EditContextItemSheet } from "@/features/scope-system/components/EditContextItemSheet";
+import { EditContextItemSheet } from "@/features/scopes/components/pages/EditContextItemSheet";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface EditScopeTypeSheetProps {

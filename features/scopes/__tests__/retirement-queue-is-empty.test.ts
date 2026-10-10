@@ -30,7 +30,7 @@ const RETIRED = [
   "features/scope-system/redux/contextItemsSlice.ts",
   "features/scope-system/redux/templatesSlice.ts",
   "features/scope-system/redux/scopeValuesSlice.ts",
-  "features/scope-system/components/TemplateGalleryDrawer.tsx",
+  "features/scopes/components/pages/TemplateGalleryDrawer.tsx",
 ];
 
 /** The reads/writes those paths made directly, which only the service may make. */

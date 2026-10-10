@@ -78,16 +78,16 @@ jest.mock("@/features/scopes/components/reference/ContextValueInput", () => ({
   ...jest.requireActual("@/features/scopes/components/reference/ContextValueInput"),
   ContextValueInput: () => <textarea readOnly />,
 }));
-jest.mock("@/features/scope-system/components/EditContextItemSheet", () => ({ EditContextItemSheet: () => null }));
-jest.mock("@/features/scope-system/hooks/useScopeAutoSave", () => ({
+jest.mock("@/features/scopes/components/pages/EditContextItemSheet", () => ({ EditContextItemSheet: () => null }));
+jest.mock("@/features/scopes/components/pages/hooks/useScopeAutoSave", () => ({
   useScopeAutoSave: () => ({ commit: () => undefined, status: "idle" }),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { selectValuesByScope } = require("@/features/scopes/redux/scopeContextView");
-const { EditScopeValueSheet } = require("@/features/scope-system/components/EditScopeValueSheet");
-const { ScopeFieldInput } = require("@/features/scope-system/components/ScopeFieldInput");
+const { EditScopeValueSheet } = require("@/features/scopes/components/pages/EditScopeValueSheet");
+const { ScopeFieldInput } = require("@/features/scopes/components/pages/ScopeFieldInput");
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const PARTIAL = 'data-testid="scope-value-partial"';

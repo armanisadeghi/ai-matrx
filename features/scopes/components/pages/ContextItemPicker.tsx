@@ -133,6 +133,18 @@ interface ContextItemPickerProps {
 /** The Source value for the optional custom-data choice — never a `ContextItemSource`. */
 const CUSTOM_DATA_SOURCE = "custom_data";
 
+const CLASS_LABEL: Record<string, string> = {
+  ambient: "Ambient",
+  curated: "Curated",
+  dataset: "Dataset",
+};
+
+/** A System Context item's class (ambient / curated / dataset), carried in its field config. */
+function systemItemClassOf(item: ContextField): string | null {
+  const cls = (item.config as { item_class?: unknown } | null)?.item_class;
+  return typeof cls === "string" && cls ? cls : null;
+}
+
 export function ContextItemPicker({
   value,
   onChange,
@@ -284,7 +296,9 @@ export function ContextItemPicker({
   const itemOptions: CreatableOption[] = items.map((i) => ({
     value: i.id,
     label: i.label,
-    hint: i.key,
+    hint: systemItemClassOf(i)
+      ? `${i.key} · ${CLASS_LABEL[systemItemClassOf(i)!] ?? systemItemClassOf(i)}`
+      : i.key,
     keywords: i.key,
   }));
 

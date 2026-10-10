@@ -47,14 +47,14 @@ import {
   updateContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import { ContextItemSettingsForm } from "@/features/scope-system/components/forms/ContextItemSettingsForm";
-import { ContextItemAddForm } from "@/features/scope-system/components/ContextItemAddForm";
+import { ContextItemSettingsForm } from "@/features/scopes/components/pages/forms/ContextItemSettingsForm";
+import { ContextItemAddForm } from "@/features/scopes/components/pages/ContextItemAddForm";
 import {
   contextItemEntityRef,
   contextItemMenuContent,
   buildContextItemMenuSection,
   type ContextItemMenuRow,
-} from "@/features/scope-system/components/context-item-actions";
+} from "@/features/scopes/components/pages/context-item-actions";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { makeSelectScopeType } from "@/features/scopes/redux/selectors/tree";

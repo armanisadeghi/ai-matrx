@@ -70,7 +70,7 @@ export function ScopeDetailSurface({ scope, scopeType, orgId, rows, readError }:
               item_id: r.field.id,
               slug: r.field.key,
               name: r.field.label,
-              value_type: r.field.kind,
+              kind: r.field.kind,
               has_value: hasCellValue(r.value),
               value: cellText(r.value),
             })),

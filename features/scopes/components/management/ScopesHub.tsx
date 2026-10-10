@@ -114,9 +114,9 @@ export function ScopesHub() {
           id: item.id,
           scope_type_id: item.scope_type_id,
           key: item.key,
-          display_name: item.label,
+          label: item.label,
           description: item.description,
-          value_type: item.kind,
+          kind: item.kind,
           sort_order: item.sort,
         });
       }

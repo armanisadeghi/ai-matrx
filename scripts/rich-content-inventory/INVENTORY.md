@@ -305,10 +305,10 @@ Files scanned: 15836. Surfaces reached: 1292. Unresolved local code imports (bro
 
 - [ ] `features/resource-manager/resource-picker/TasksResourcePicker.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{task.description}`
 
-### `features/scope-system/components/forms/ContextItemSettingsForm.tsx` — reaches 12 surfaces
+### `features/scopes/components/pages/forms/ContextItemSettingsForm.tsx` — reaches 12 surfaces
 
-- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:455` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{FETCH_HINT_CONFIG[fetchHint].description}`
-- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:482` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{SENSITIVITY_CONFIG[sensitivity].description}`
+- [ ] `features/scopes/components/pages/forms/ContextItemSettingsForm.tsx:455` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{FETCH_HINT_CONFIG[fetchHint].description}`
+- [ ] `features/scopes/components/pages/forms/ContextItemSettingsForm.tsx:482` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{SENSITIVITY_CONFIG[sensitivity].description}`
 
 ### `features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx` — reaches 24 surfaces
 
@@ -1517,10 +1517,10 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
 - [ ] `features/research/components/init/TemplatePicker.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
 - [ ] `features/resource-manager/source-input/components/SourceCard.tsx:190` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /c/[handle]
 
@@ -1612,7 +1612,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /context-items
 
-- [ ] `features/scope-system/components/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /crm/[partyId]
 
@@ -2830,10 +2830,10 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
 - [ ] `features/research/components/init/TemplatePicker.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
 - [ ] `features/resource-manager/source-input/components/SourceCard.tsx:190` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /meetings/[id]
 
@@ -2858,7 +2858,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]/context-items
 
-- [ ] `features/scope-system/components/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/mandates/[mandateKey]
 
@@ -2889,36 +2889,36 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]/scopes/[typeId]
 
-- [ ] `features/scope-system/components/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/ScopesList.tsx:325` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
-- [ ] `features/scope-system/components/ScopesList.tsx:761` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/NewScopeInline.tsx:395` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ScopesList.tsx:325` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
+- [ ] `features/scopes/components/pages/ScopesList.tsx:761` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/ScopeDetailEditor.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]/[itemId]
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
-- [ ] `features/scope-system/components/ScopeItemDetail.tsx:203` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/ScopeItemDetail.tsx:203` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]/context-items
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/context-items
 
-- [ ] `features/scope-system/components/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/ContextItemsHub.tsx:853` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/context-items/[itemId]
 
-- [ ] `features/scope-system/components/ContextItemHub.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scopes/components/pages/ContextItemHub.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scopes/components/pages/EditScopeValueSheet.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scopes/components/pages/ScopeFieldInput.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/settings
 
@@ -3563,7 +3563,7 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `features/pricing/components/industry/IndustryUpgrade.tsx:180` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{cfg.quote.body}`
 - [ ] `features/projects/components/ProjectCard.tsx:143` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
 - [ ] `features/rag/components/library/ProcessingProgressDialog.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
-- [ ] `features/scope-system/components/ScopeTypeCard.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
+- [ ] `features/scopes/components/pages/ScopeTypeCard.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
 - [ ] `features/scraper/parts/tabs/images/SEOImageViewer.tsx:252` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{currentMetadata.description}`
 - [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:583` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
 - [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:1172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.description}`

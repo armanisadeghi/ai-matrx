@@ -44,7 +44,7 @@
  *
  * The 2026-08-12 scouting brief was factually wrong on its two central claims,
  * and both corrections point the same way:
- *   1. It named `features/scope-system/components/ContextItemsHub.tsx:210` as a
+ *   1. It named `features/scopes/components/pages/ContextItemsHub.tsx:210` as a
  *      mount of THIS surface. It is not — it mounts `matrx-user/context-items`,
  *      which ALREADY ships five write targets (`context_item_copy`,
  *      `context_item_category`, `context_item_tags`, `context_item_status_note`,
@@ -232,7 +232,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "context_items_summary",
     label: "Context items",
     description:
-      "One entry per loaded context item: { id, scope_type_id, key, display_name, description, value_type, sort_order }. These are the FIELDS a scope type defines (the table columns), not their values. Emitted on the hub view once the fetch is ready.",
+      "One entry per loaded context item: { id, scope_type_id, key, label, description, kind, sort_order }. These are the FIELDS a scope type defines (the table columns), not their values. Emitted on the hub view once the fetch is ready.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 2500,
@@ -473,9 +473,9 @@ export interface ScopesContextItemEntry {
   id: string;
   scope_type_id: string;
   key: string;
-  display_name: string;
+  label: string;
   description: string;
-  value_type: string;
+  kind: string;
   sort_order: number;
 }
 

@@ -265,7 +265,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 ## Related features
 
 - **Depends on:** `lib/redux/slices/appContextSlice.ts` (active org state), `features/email/` + `lib/email/client.ts` (Resend integration + templates), `@/utils/auth/getUserId` (user id/email helpers), `@/utils/supabase/{client,server}`
-- **Depended on by:** `features/projects/` (project FKs `organization_id`), `features/scope-system/`, `features/tasks/`, `features/sharing/`, `features/agents/` (agent ownership + multi-scope), every `/organizations/[orgId]/**` route
+- **Depended on by:** `features/projects/` (project FKs `organization_id`), `features/scopes/`, `features/tasks/`, `features/sharing/`, `features/agents/` (agent ownership + multi-scope), every `/organizations/[orgId]/**` route
 - **Cross-links:**
   - [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — scopes sit between org and project in the hierarchy
   - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — cross-org/user/project sharing of resources

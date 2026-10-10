@@ -142,7 +142,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "context_item_values",
     label: "Context item values",
     description:
-      "Every context item of this scope as { item_id, slug, name, value_type, has_value, value }. value is the cell's text (or its JSON for a structured value), null when empty. Absent while the values load or when their read failed (values_error says which). Empty items are listed too, so an agent can see what to fill in.",
+      "Every context item of this scope as { item_id, slug, name, kind, has_value, value }. value is the cell's text (or its JSON for a structured value), null when empty. Absent while the values load or when their read failed (values_error says which). Empty items are listed too, so an agent can see what to fill in.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 3000,
@@ -246,7 +246,7 @@ export interface ScopeDetailScopeValues {
     item_id: string;
     slug: string | null;
     name: string;
-    value_type: string;
+    kind: string;
     has_value: boolean;
     value: string | null;
   }>;

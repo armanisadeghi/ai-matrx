@@ -11,7 +11,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useScopeFieldRows } from "@/features/scope-system/hooks/useScopeFieldRows";
+import { useScopeFieldRows } from "@/features/scopes/components/pages/hooks/useScopeFieldRows";
 import { hasCellValue } from "./scope-detail-values";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";

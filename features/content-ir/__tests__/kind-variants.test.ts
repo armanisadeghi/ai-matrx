@@ -20,7 +20,7 @@ import {
   variantToCustomComponent,
   type KindPresentationVariant,
 } from "@/features/content-ir/variants/kind-variants";
-import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
+import { componentToValueType } from "@/features/scopes/components/pages/utils/componentValueType";
 import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 
 const textarea: KindPresentationVariant = {

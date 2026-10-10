@@ -6598,7 +6598,7 @@
   "features/research/admin/TemplatesManager.tsx": "pending",
   "features/research/components/costs/CostDashboard.tsx": "pending",
   "features/research/components/sources/SourceResultsTable.tsx": "pending",
-  "features/scope-system/components/ScopesList.tsx": "noncanonical",
+  "features/scopes/components/pages/ScopesList.tsx": "noncanonical",
   "features/scopes/components/management/OrgScopeTypeSection.tsx": "noncanonical",
   "features/scopes/components/management/ScopesHub.tsx": "pending",
   "features/scraper/batch/BatchScrapePage.tsx": "pending",

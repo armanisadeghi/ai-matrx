@@ -17,7 +17,7 @@
 //
 // Mobile: the trail collapses to the LAST crumb (+ its dropdown) so the row
 // never overflows. The full-fidelity scope implementation (drawer, org root,
-// "view all" links) remains `features/scope-system/components/ScopeBreadcrumb.tsx`;
+// "view all" links) remains `features/scopes/components/pages/ScopeBreadcrumb.tsx`;
 // migrate it onto this template when touched.
 
 import { Fragment } from "react";

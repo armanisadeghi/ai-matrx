@@ -782,7 +782,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // COMPONENT of a scope type would be inventing a second identity for it.
     // So the door is the all-orgs hub with the item resolved, scrolled to and
     // highlighted (`AllContextItemsHub` in
-    // features/scope-system/components/ContextItemsHub.tsx). An id the caller
+    // features/scopes/components/pages/ContextItemsHub.tsx). An id the caller
     // cannot reach renders the access gate, never a list that looks like the
     // link worked. There is no `/context-items/{id}` and there must never be.
     hrefFor: (id) => `/context-items?item=${encodeURIComponent(id)}`,

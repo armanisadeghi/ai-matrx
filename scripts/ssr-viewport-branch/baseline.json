@@ -110,7 +110,7 @@
     "structural-viewport-branch|features/research/components/tags/TagManager.tsx": 1,
     "structural-viewport-branch|features/resource-manager/source-input/review/SourceReviewRow.tsx": 1,
     "structural-viewport-branch|features/rich-document/annotations/RecordAnnotationsImpl.tsx": 1,
-    "structural-viewport-branch|features/scope-system/components/ScopeBreadcrumb.tsx": 1,
+    "structural-viewport-branch|features/scopes/components/pages/ScopeBreadcrumb.tsx": 1,
     "structural-viewport-branch|features/scopes/components/active-context/ActiveContextLensChip.tsx": 1,
     "structural-viewport-branch|features/scopes/components/active-context/drill-deck/DrillDeckPopover.tsx": 1,
     "structural-viewport-branch|features/scopes/components/active-context/miller-columns/MillerColumnsPopover.tsx": 1,

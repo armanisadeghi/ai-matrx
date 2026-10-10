@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
-import { ScopesRouteHeader } from "@/features/scope-system/components/ScopesRouteHeader";
-import { ScopeAddressCanonicalizer } from "@/features/scope-system/components/ScopeAddressCanonicalizer";
+import { ScopesRouteHeader } from "@/features/scopes/components/pages/ScopesRouteHeader";
+import { ScopeAddressCanonicalizer } from "@/features/scopes/components/pages/ScopeAddressCanonicalizer";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export async function generateMetadata({

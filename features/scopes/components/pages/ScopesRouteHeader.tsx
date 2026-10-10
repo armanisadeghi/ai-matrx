@@ -17,12 +17,12 @@ import {
 import {
   ScopeBreadcrumb,
   type ScopeBreadcrumbTrailNode,
-} from "@/features/scope-system/components/ScopeBreadcrumb";
+} from "@/features/scopes/components/pages/ScopeBreadcrumb";
 import {
   HeaderActionGroup,
   type HeaderAction,
-} from "@/features/scope-system/components/HeaderActionGroup";
-import { useBreadcrumbOrgOptions } from "@/features/scope-system/hooks/useBreadcrumbOrgOptions";
+} from "@/features/scopes/components/pages/HeaderActionGroup";
+import { useBreadcrumbOrgOptions } from "@/features/scopes/components/pages/hooks/useBreadcrumbOrgOptions";
 import {
   canManageSettings,
   type OrgRole,
@@ -42,7 +42,7 @@ import {
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { CompoundReferenceCopyButton } from "@/features/matrx-envelope/components/CompoundReferenceCopyButton";
 import { buildContextValueReferenceFence } from "@/features/matrx-envelope/compoundReference";
-import { resolveScopeRouteReference } from "@/features/scope-system/utils/scopeRouteReference";
+import { resolveScopeRouteReference } from "@/features/scopes/components/pages/utils/scopeRouteReference";
 import {
   selectScopeBySlugOrId,
   selectScopeTypeBySlugOrId,

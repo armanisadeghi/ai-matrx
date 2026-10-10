@@ -260,7 +260,7 @@ this directory.
   `scopeItemHref`, `contextItemHref`, …) plus `canonicalizeScopePath`. 🚨 **Every scope
   segment is an ADDRESS, never an identifier, and exactly ONE address is canonical: the
   slug.** A UUID address is rewritten in place by
-  `features/scope-system/components/ScopeAddressCanonicalizer.tsx`, mounted once in
+  `features/scopes/components/pages/ScopeAddressCanonicalizer.tsx`, mounted once in
   `app/(core)/organizations/[orgId]/layout.tsx` beside `ScopesRouteHeader` — it reads the
   already-resolved org / type / scope / item out of Redux (it dispatches NOTHING) and
   `router.replace`s org, type, scope and item segments together in a single navigation,
@@ -270,8 +270,8 @@ this directory.
 - Routes: `app/(core)/scopes/` (`page`, `manage`, `s/[scopeId]`, `templates`, `settings`)
   and
   `app/(core)/organizations/[orgId]/scopes/**` (the root page is the canonical
-  `ScopesManager`; the deeper per-type/per-scope editors are still legacy
-  `features/scope-system/` pending their own teardown wave).
+  `ScopesManager`; the per-type / per-scope / per-field pages and the
+  `/context-items` hubs render `components/pages/`).
 
 ---
 
@@ -391,7 +391,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   (`pnpm gen:entity-types`), never hand-maintained. `features/scopes/docs/scopeable_entities.md`
   — a 2026-era hand-written "working list" naming tables that no longer exist — was deleted
   2026-08-25; do not re-create one.
-- Legacy scope surfaces awaiting teardown: `features/scope-system/`, `features/agent-context/`.
+- Legacy scope surface awaiting teardown: `features/agent-context/` (hierarchy caches). `features/scope-system/` is gone (2026-10-09): its detail pages live in `components/pages/`.
   The teardown order and delete list are in the node's `HANDOFF.md`.
 - [`features/agent-context/FEATURE.md`](../agent-context/FEATURE.md) — the invocation-time consumer.
 - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — permissions cross-cut scope; they are
@@ -403,7 +403,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 - 2026-10-09 (SCOPES-WEB-CORE): the hand-rolled data layer is gone. ONE binding `service/scopeDoors.ts` (`scopeDoors()` = `@ai-matrx/records` `client.scopes`; `serverScopeDoors()` for server components). Deleted `storeScopeReads`, `scopeStore`, `storeScopeAdapter`, `scopeRows`, `utils/{canShapeScopeType,slugify,scopeValuePayload,incompleteValue}`; `rpcResult` speaks `RecordsResult`. The holder keeps its names and holds package shapes (`ScopeTypeWithScopes`, `Scope`, `ContextField`, `ContextValue` by field id); resolution = `resolveScopeContext`, field+value join = `joinFieldValues` (records 0.97.2). `setScopeContextValue`/`setContextValue` take a `ContextValueWrite`. Persisted tree policy v5. Guard: `pnpm check:scopes-data-layer` (+ `:self-test`).
 
-- 2026-10-09 — Lane SCOPES-STALE-DELETE: deleted provably-dead code (0 importers re-proved): `ActiveContextLayersPanel`, `useEntitiesByScopes`, `useAssociationCandidates`, `useAssociationEntitySelect`, `service/associationGuards.ts`, `utils/categoryHierarchy.ts` (+test), the `context-tree/index.ts` and `quick-pick/index.ts` barrels, `quick-pick/QuickPick.tsx`, `features/scope-system/components/ScopesGrid.tsx`, `features/agent-context/utils/groupProjectsByOrgDisplay.ts`, `utils/supabase/contextDb.ts` (+ its ESLint allowlist line), the `/scopes/fade-lab` route, the `/demos/scopes` context-lab bakeoff (kept only `reimagine/{TokenComposer,ContextMatrix,engine,parts}` — the Token Composer and Context Matrix keepers have no other home), and the unused `scopesService` methods `listTemplates`, `setEntityScopes`, `listReferencingValues`, `revertContextValue`, `deleteContextValue`. `listScopeTypesForOrganization` / `listScopesOfType` stay (the store-reads test calls them). `ContradictionBanner` stays (STATE rule 4).
+- 2026-10-09 — Lane SCOPES-STALE-DELETE: deleted provably-dead code (0 importers re-proved): `ActiveContextLayersPanel`, `useEntitiesByScopes`, `useAssociationCandidates`, `useAssociationEntitySelect`, `service/associationGuards.ts`, `utils/categoryHierarchy.ts` (+test), the `context-tree/index.ts` and `quick-pick/index.ts` barrels, `quick-pick/QuickPick.tsx`, `features/scopes/components/pages/ScopesGrid.tsx`, `features/agent-context/utils/groupProjectsByOrgDisplay.ts`, `utils/supabase/contextDb.ts` (+ its ESLint allowlist line), the `/scopes/fade-lab` route, the `/demos/scopes` context-lab bakeoff (kept only `reimagine/{TokenComposer,ContextMatrix,engine,parts}` — the Token Composer and Context Matrix keepers have no other home), and the unused `scopesService` methods `listTemplates`, `setEntityScopes`, `listReferencingValues`, `revertContextValue`, `deleteContextValue`. `listScopeTypesForOrganization` / `listScopesOfType` stay (the store-reads test calls them). `ContradictionBanner` stays (STATE rule 4).
 - 2026-10-05 — ONE scope control: `ActiveContextButton` and `ContextLensBar` deleted; every caller renders `ActiveContextLensChip` (new states `iconOnly` + count badge, amber `attention`, `fill`, and the preview eye via `onOpenPreview`/`previewOpen`).
 
 - 2026-10-03 — **The flip: scopes are read from the record store only** (lane 9 SCOPES-ON-THE-STORE, wave 1 step 5;
@@ -692,7 +692,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 - 2026-08-30 — **Address canonicalization (marketing key-system back-port)**: the org
   scope tree now has exactly ONE canonical address per screen. `canonicalizeScopePath`
   (`lib/scopeRoutes.ts`, tested) + `ScopeAddressCanonicalizer`
-  (`features/scope-system/components/`, mounted in the `[orgId]` layout) rewrite a UUID
+  (`features/scopes/components/pages/`, mounted in the `[orgId]` layout) rewrite a UUID
   org / type / scope / item segment to its slug in one `router.replace`, preserving the
   deep path and query. `/scopes/s/[scopeId]` now redirects to slug segments instead of
   raw ids (each falling back to its id). No data-shape, RLS or not-found change — the

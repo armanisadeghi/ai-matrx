@@ -27,7 +27,7 @@ import type {
   OrgNode,
 } from "@/features/scopes/types";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
-import { ScopesList } from "@/features/scope-system/components/ScopesList";
+import { ScopesList } from "@/features/scopes/components/pages/ScopesList";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

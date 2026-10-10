@@ -8,7 +8,7 @@ import {
   orgScopesHref,
   scopeSeg,
 } from "@/features/scopes/lib/scopeRoutes";
-import type { ScopeCrumbOption } from "@/features/scope-system/components/ScopeBreadcrumb";
+import type { ScopeCrumbOption } from "@/features/scopes/components/pages/ScopeBreadcrumb";
 
 /**
  * Sibling-org options for the breadcrumb org switcher. Each option points at the

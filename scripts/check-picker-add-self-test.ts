@@ -33,7 +33,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 const DETECTOR = join(REPO_ROOT, "scripts/check-picker-custom-entry.ts");
 const TSX = join(REPO_ROOT, "node_modules/tsx/dist/cli.mjs");
 const PRE_FIX = "839d3c8a75^"; // the commit that fixed the cascade
-const PICKER = "features/scope-system/components/ContextItemPicker.tsx";
+const PICKER = "features/scopes/components/pages/ContextItemPicker.tsx";
 
 /** Minimal shapes history cannot supply. Each is a real JSX picker body. */
 const FIXTURES = {

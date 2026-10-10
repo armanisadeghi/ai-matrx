@@ -6181,7 +6181,7 @@
       "name": "MIN_INTERVAL_SECONDS"
     },
     {
-      "file": "matrx-frontend/features/scope-system/components/OrgHomeScopeSection.tsx",
+      "file": "matrx-frontend/features/scopes/components/pages/OrgHomeScopeSection.tsx",
       "name": "MAX_COLUMNS"
     },
     {

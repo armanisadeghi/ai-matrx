@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import type { ContextField } from "@ai-matrx/records/scopes";
-import { cellWrite } from "@/features/scope-system/components/scope-detail-values";
+import { cellWrite } from "@/features/scopes/components/pages/scope-detail-values";
 
 type Status = "idle" | "saving" | "saved" | "error";
 

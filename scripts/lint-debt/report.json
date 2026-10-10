@@ -15515,7 +15515,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/scope-system/components/OrgHomeScopeSection.tsx",
+      "file": "features/scopes/components/pages/OrgHomeScopeSection.tsx",
       "line": 95,
       "column": 14,
       "rule": "react-hooks/static-components",
@@ -15524,7 +15524,7 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/scope-system/componen…"
     },
     {
-      "file": "features/scope-system/components/ScopeTypeCard.tsx",
+      "file": "features/scopes/components/pages/ScopeTypeCard.tsx",
       "line": 42,
       "column": 12,
       "rule": "react-hooks/static-components",
@@ -15533,7 +15533,7 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/scope-system/componen…"
     },
     {
-      "file": "features/scope-system/components/TemplateGalleryDrawer.tsx",
+      "file": "features/scopes/components/pages/TemplateGalleryDrawer.tsx",
       "line": 148,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -15542,7 +15542,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/scope-system/components/TemplateGalleryDrawer.tsx",
+      "file": "features/scopes/components/pages/TemplateGalleryDrawer.tsx",
       "line": 491,
       "column": 12,
       "rule": "react-hooks/static-components",
@@ -15551,7 +15551,7 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/scope-system/componen…"
     },
     {
-      "file": "features/scope-system/components/TemplateGalleryDrawer.tsx",
+      "file": "features/scopes/components/pages/TemplateGalleryDrawer.tsx",
       "line": 542,
       "column": 10,
       "rule": "react-hooks/static-components",
@@ -15560,7 +15560,7 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/scope-system/componen…"
     },
     {
-      "file": "features/scope-system/components/TemplateGalleryDrawer.tsx",
+      "file": "features/scopes/components/pages/TemplateGalleryDrawer.tsx",
       "line": 629,
       "column": 12,
       "rule": "react-hooks/static-components",

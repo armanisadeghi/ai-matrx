@@ -373,7 +373,7 @@ export function validateKindVariants(
 /**
  * The component the platform falls back to for a storage value type when the
  * kind registers neither a matching variant nor a default input component.
- * The INVERSE of `features/scope-system/utils/componentValueType.ts`
+ * The INVERSE of `features/scopes/components/pages/utils/componentValueType.ts`
  * (`componentToValueType`), and kept honest by a round-trip test: every value
  * type that `componentToValueType` can EMIT maps back to its own key here.
  * The remaining members are value types no component produces: `boolean`

@@ -451,7 +451,7 @@
   "features/resource-manager/resource-picker/WebpageResourcePicker.tsx",
   "features/resource-manager/resource-picker/YouTubeResourcePicker.tsx",
   "features/rich-document/variants/shared/OpenOneMenuButton.tsx",
-  "features/scope-system/components/ContextItemAddForm.tsx",
+  "features/scopes/components/pages/ContextItemAddForm.tsx",
   "features/scopes/components/active-context/engagement/EngagementPicker.tsx",
   "features/scopes/components/active-context/miller-columns/MillerColumnsPopover.tsx",
   "features/scopes/components/context-assignment/ContextAssignmentField.tsx",

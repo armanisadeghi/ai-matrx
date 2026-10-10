@@ -204,7 +204,7 @@
       "high": 0
     },
     {
-      "key": "features/scope-system/components/ContextItemPicker.tsx",
+      "key": "features/scopes/components/pages/ContextItemPicker.tsx",
       "count": 1,
       "high": 0
     },
@@ -941,7 +941,7 @@
       "route": null
     },
     {
-      "file": "features/scope-system/components/ContextItemPicker.tsx",
+      "file": "features/scopes/components/pages/ContextItemPicker.tsx",
       "line": 254,
       "column": 7,
       "rule": "toast-names-record",

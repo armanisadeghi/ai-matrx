@@ -3724,62 +3724,62 @@
      "detail": "<p>{task.description}"
     },
     {
-     "file": "features/scope-system/components/ContextItemHub.tsx",
+     "file": "features/scopes/components/pages/ContextItemHub.tsx",
      "line": 168,
      "detail": "<p>{item.description}"
     },
     {
-     "file": "features/scope-system/components/ContextItemsHub.tsx",
+     "file": "features/scopes/components/pages/ContextItemsHub.tsx",
      "line": 853,
      "detail": "<p>{item.description}"
     },
     {
-     "file": "features/scope-system/components/EditScopeValueSheet.tsx",
+     "file": "features/scopes/components/pages/EditScopeValueSheet.tsx",
      "line": 236,
      "detail": "<span>{row.description}"
     },
     {
-     "file": "features/scope-system/components/forms/ContextItemSettingsForm.tsx",
+     "file": "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx",
      "line": 455,
      "detail": "<p>{FETCH_HINT_CONFIG[fetchHint].description}"
     },
     {
-     "file": "features/scope-system/components/forms/ContextItemSettingsForm.tsx",
+     "file": "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx",
      "line": 482,
      "detail": "<p>{SENSITIVITY_CONFIG[sensitivity].description}"
     },
     {
-     "file": "features/scope-system/components/NewScopeInline.tsx",
+     "file": "features/scopes/components/pages/NewScopeInline.tsx",
      "line": 395,
      "detail": "<p>{item.description}"
     },
     {
-     "file": "features/scope-system/components/ScopeDetailEditor.tsx",
+     "file": "features/scopes/components/pages/ScopeDetailEditor.tsx",
      "line": 357,
      "detail": "<span>{scope.description}"
     },
     {
-     "file": "features/scope-system/components/ScopeFieldInput.tsx",
+     "file": "features/scopes/components/pages/ScopeFieldInput.tsx",
      "line": 320,
      "detail": "<p>{row.description}"
     },
     {
-     "file": "features/scope-system/components/ScopeItemDetail.tsx",
+     "file": "features/scopes/components/pages/ScopeItemDetail.tsx",
      "line": 203,
      "detail": "<p>{item.description}"
     },
     {
-     "file": "features/scope-system/components/ScopesList.tsx",
+     "file": "features/scopes/components/pages/ScopesList.tsx",
      "line": 325,
      "detail": "<p>{scopeType.description}"
     },
     {
-     "file": "features/scope-system/components/ScopesList.tsx",
+     "file": "features/scopes/components/pages/ScopesList.tsx",
      "line": 761,
      "detail": "<p>{item.description}"
     },
     {
-     "file": "features/scope-system/components/ScopeTypeCard.tsx",
+     "file": "features/scopes/components/pages/ScopeTypeCard.tsx",
      "line": 65,
      "detail": "<p>{scopeType.description}"
     },
@@ -6088,16 +6088,16 @@
   "features/scheduling/components/detail/SpecCard.tsx": {"shared":false,"surfaces":[304,1185]},
   "features/scheduling/components/form/ScheduleForm.tsx": {"shared":false,"surfaces":[1186,1187]},
   "features/scheduling/components/list/ScheduleRow.tsx": {"shared":false,"surfaces":[1184]},
-  "features/scope-system/components/ContextItemHub.tsx": {"shared":false,"surfaces":[1076]},
-  "features/scope-system/components/ContextItemsHub.tsx": {"shared":false,"surfaces":[568,1058,1075]},
-  "features/scope-system/components/EditScopeValueSheet.tsx": {"shared":false,"surfaces":[518,1041,1071,1072,1073,1076]},
-  "features/scope-system/components/NewScopeInline.tsx": {"shared":false,"surfaces":[518,1041,1070]},
-  "features/scope-system/components/ScopeDetailEditor.tsx": {"shared":false,"surfaces":[518,1041,1071]},
-  "features/scope-system/components/ScopeFieldInput.tsx": {"shared":false,"surfaces":[518,1041,1071,1072,1073,1076]},
-  "features/scope-system/components/ScopeItemDetail.tsx": {"shared":false,"surfaces":[1072]},
-  "features/scope-system/components/ScopeTypeCard.tsx": {"shared":false,"surfaces":[]},
-  "features/scope-system/components/ScopesList.tsx": {"shared":false,"surfaces":[1070]},
-  "features/scope-system/components/forms/ContextItemSettingsForm.tsx": {"shared":true,"surfaces":[98,518,568,1041,1058,1070,1071,1072,1073,1075,1076,1077]},
+  "features/scopes/components/pages/ContextItemHub.tsx": {"shared":false,"surfaces":[1076]},
+  "features/scopes/components/pages/ContextItemsHub.tsx": {"shared":false,"surfaces":[568,1058,1075]},
+  "features/scopes/components/pages/EditScopeValueSheet.tsx": {"shared":false,"surfaces":[518,1041,1071,1072,1073,1076]},
+  "features/scopes/components/pages/NewScopeInline.tsx": {"shared":false,"surfaces":[518,1041,1070]},
+  "features/scopes/components/pages/ScopeDetailEditor.tsx": {"shared":false,"surfaces":[518,1041,1071]},
+  "features/scopes/components/pages/ScopeFieldInput.tsx": {"shared":false,"surfaces":[518,1041,1071,1072,1073,1076]},
+  "features/scopes/components/pages/ScopeItemDetail.tsx": {"shared":false,"surfaces":[1072]},
+  "features/scopes/components/pages/ScopeTypeCard.tsx": {"shared":false,"surfaces":[]},
+  "features/scopes/components/pages/ScopesList.tsx": {"shared":false,"surfaces":[1070]},
+  "features/scopes/components/pages/forms/ContextItemSettingsForm.tsx": {"shared":true,"surfaces":[98,518,568,1041,1058,1070,1071,1072,1073,1075,1076,1077]},
   "features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx": {"shared":true,"surfaces":[71,151,152,206,266,268,269,270,277,279,353,360,463,464,465,466,508,509,837,840,1062,1085,1089,1090]},
   "features/scopes/components/management/NewScopeInline.tsx": {"shared":false,"surfaces":[1053,1065,1069]},
   "features/scopes/components/reference/ContextValueInput.tsx": {"shared":true,"surfaces":[0,61,74,98,261,401,455,488,489,518,568,1041,1053,1058,1065,1069,1070,1071,1072,1073,1075,1076]},

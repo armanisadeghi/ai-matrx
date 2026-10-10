@@ -6,7 +6,7 @@
  * organization -> scope type -> scope (a specific instance, e.g. "Doe, John
  * v. CSV Pharmacy") -> context item.
  *
- * This is one level deeper than `features/scope-system/components/
+ * This is one level deeper than `features/scopes/components/pages/
  * ContextItemPicker.tsx`, which stops at the item *definition* (org -> scope
  * type -> item) for binding agent variables. Writing an actual cell value
  * needs the specific scope instance too, so this picker adds that missing

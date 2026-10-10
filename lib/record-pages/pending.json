@@ -1694,7 +1694,7 @@
   "features/page-extraction/components/ResultsTable.tsx",
   "features/projects/components/ProjectTaskList.tsx",
   "features/projects/components/ProjectsHub.tsx",
-  "features/scope-system/components/ScopesList.tsx",
+  "features/scopes/components/pages/ScopesList.tsx",
   "features/scopes/components/management/OrgScopeTypeSection.tsx",
   "features/tasks/components/TasksTableView.tsx"
  ],

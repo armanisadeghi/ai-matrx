@@ -474,7 +474,7 @@ NULL`. 181 of the 192 `internal` rows sit in personal or single-member orgs wher
     would give a **component** of a scope type its own identity — exactly what D193 forbids. So the
     destination is the all-orgs hub focused on the item, the same shape as `code_file`'s `?open=`
     and `code_folder`'s `?folder=`.
-  - `AllContextItemsHub` (`features/scope-system/components/ContextItemsHub.tsx`) resolves `?item=`
+  - `AllContextItemsHub` (`features/scopes/components/pages/ContextItemsHub.tsx`) resolves `?item=`
     to `pending | found | missing` and **waits for every org's scope types AND every type's items
     before judging**. That gate is load-bearing in _both_ directions: resolving `missing` early is
     the race that makes a working link look broken, and resolving `found` early is the race that

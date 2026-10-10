@@ -41,8 +41,8 @@ import { ContextValueInput } from "@/features/scopes/components/reference/Contex
 import { customComponentOf } from "@/features/scopes/utils/customComponent";
 import { isRecordsErr } from "@ai-matrx/records";
 import type { ContextField } from "@ai-matrx/records/scopes";
-import { cellWrite } from "@/features/scope-system/components/scope-detail-values";
-import { EditContextItemSheet } from "@/features/scope-system/components/EditContextItemSheet";
+import { cellWrite } from "@/features/scopes/components/pages/scope-detail-values";
+import { EditContextItemSheet } from "@/features/scopes/components/pages/EditContextItemSheet";
 
 interface NewScopeInlineProps {
   orgId: string;

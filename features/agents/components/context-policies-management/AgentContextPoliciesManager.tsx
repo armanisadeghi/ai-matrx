@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/official/InfoHint";
-import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
+import { ContextItemPicker } from "@/features/scopes/components/pages/ContextItemPicker";
 import { contextItemValueTypeToPolicyType } from "@ai-matrx/chat/agents/utils/context-item-policy-mapping";
 import {
   Select,

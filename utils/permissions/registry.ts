@@ -315,7 +315,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     // (/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]), which a
     // {id}-only template cannot build. Rather than invent a single-id route for
     // a COMPONENT of a scope type, the door is the all-orgs hub focused on the
-    // item (`?item=` — features/scope-system/components/ContextItemsHub.tsx),
+    // item (`?item=` — features/scopes/components/pages/ContextItemsHub.tsx),
     // which resolves it, scrolls to it and highlights it, and renders the
     // access gate when the caller cannot reach it. This was `''` under D138
     // until the focus param existed (2026-08-15). `entityRegistry.hrefFor`

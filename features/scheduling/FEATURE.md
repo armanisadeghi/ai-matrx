@@ -208,7 +208,7 @@ agent_runner_adapter.py` and writes results back with `claim_token`
 - **conversations** — `cx_conversation` is the deep-link target for
   `sch_run.output_ref.kind === 'conversation'`.
 - **window-panels** — v1.5 will register a Quick Schedule overlay.
-- **scope-system** — v1 is user-scoped only.
+- **scopes** — v1 is user-scoped only.
 
 ## Tests
 

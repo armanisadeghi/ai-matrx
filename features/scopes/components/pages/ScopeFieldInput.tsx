@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
+import { useScopeAutoSave } from "@/features/scopes/components/pages/hooks/useScopeAutoSave";
 import {
   cellDraft,
   hasCellValue,

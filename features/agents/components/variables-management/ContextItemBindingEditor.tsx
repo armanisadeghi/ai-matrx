@@ -14,7 +14,7 @@ import {
   ContextItemPicker,
   type ContextItemSelection,
   type ContextItemSource,
-} from "@/features/scope-system/components/ContextItemPicker";
+} from "@/features/scopes/components/pages/ContextItemPicker";
 import type {
   ContextItemBinding,
   VariableBinding,

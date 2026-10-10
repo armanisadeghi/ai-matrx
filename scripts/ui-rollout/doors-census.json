@@ -104,7 +104,7 @@
     "features/meet/components/manage/MeetingFormDialog.tsx:530 display-size input (`h-11 text-lg font-medium`) — a heading editor, not a control — stays on the package-root Input",
     "features/pdf-demo/components/PdfSourcePicker.tsx:158 Input type=\"file\" is not a field — stays on the package-root Input",
     "features/print/order/OrderFlow.tsx:109 dynamic Input type — stays on the package-root Input",
-    "features/scope-system/components/ScopeDetailEditor.tsx:252 display-size input (`text-xl font-bold h-auto py-1`) — a heading editor, not a control — stays on the package-root Input",
+    "features/scopes/components/pages/ScopeDetailEditor.tsx:252 display-size input (`text-xl font-bold h-auto py-1`) — a heading editor, not a control — stays on the package-root Input",
     "features/scopes/components/reference/ContextValueInput.tsx:302 dynamic Input type — stays on the package-root Input",
     "features/secrets/components/VaultBackupDialog.tsx:730 Input type=\"file\" is not a field — stays on the package-root Input",
     "features/secrets/components/VaultCreateDialog.tsx:1276 Input type=\"file\" is not a field — stays on the package-root Input",

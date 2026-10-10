@@ -11,7 +11,7 @@
     "features/marketing/seo/topical-map/linkins/PlanNodeTopicField.tsx",
     "features/hr/compliance/OrgLawRuleEditor.tsx",
     "components/hierarchy-filter/HierarchyFilterPill.tsx",
-    "features/scope-system/components/ScopeBreadcrumb.tsx",
+    "features/scopes/components/pages/ScopeBreadcrumb.tsx",
     "features/podcasts/generator/components/SpeakerCastEditor.tsx",
     "features/marketing/seo/topical-map/views/pages/bulk/IntentTargetPicker.tsx",
     "features/kg-suggestions/components/manager/SuggestionsFilterBar.tsx",

@@ -1482,7 +1482,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/scope-system/components/ScopesGrid.tsx",
+      "file": "features/scopes/components/pages/ScopesGrid.tsx",
       "line": 32,
       "column": 1,
       "symbol": "ScopesGrid",

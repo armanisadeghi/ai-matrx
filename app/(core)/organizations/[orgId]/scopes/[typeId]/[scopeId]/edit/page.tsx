@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useResolvedOrganization } from "@/features/organizations/hooks";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
 import { canManageSettings } from "@/features/organizations/types";
-import { ScopeEditView } from "@/features/scope-system/components/ScopeEditView";
+import { ScopeEditView } from "@/features/scopes/components/pages/ScopeEditView";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 

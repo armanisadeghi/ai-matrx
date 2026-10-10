@@ -192,7 +192,7 @@ A structured component (like Card — with title + description fields) flips one
 
 ## Related features
 
-- **Depends on:** `features/agents/` (the agent being invoked), `features/agent-context/` (broker resolution for scope), `features/scope-system/`
+- **Depends on:** `features/agents/` (the agent being invoked), `features/agent-context/` (broker resolution for scope), `features/scopes/`
 - **Depended on by:** Every surface that embeds AI — code editor, notes, agent-builder, user-built apps, context-menu consumers
 - **Cross-links:** `features/agents/docs/AGENT_VERSIONING.md`, `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`, `features/agents/agent-system-mental-model.md` §5
 

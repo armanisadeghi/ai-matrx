@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useScopeFieldRows } from "@/features/scope-system/hooks/useScopeFieldRows";
+import { useScopeFieldRows } from "@/features/scopes/components/pages/hooks/useScopeFieldRows";
 import { hasCellValue } from "./scope-detail-values";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
