@@ -37,6 +37,7 @@ import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { finishedWithoutAnswer, retryOf } from "@/features/applets-host/run-answer";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Failures only the Applet's owner can fix (the job was deleted, or is set up wrong). */
 const OWNER_FIXES = new Set(["job_unavailable", "job_misconfigured"]);
 
@@ -85,7 +86,7 @@ export function AppletRunOutput({
             </Link>
           ) : null}
         </span>
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
   const empty = finishedWithoutAnswer(run, streamedAnswer);

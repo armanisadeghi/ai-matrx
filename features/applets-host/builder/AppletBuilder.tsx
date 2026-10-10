@@ -70,6 +70,7 @@ import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { BuildAttachments } from "./BuildAttachments";
 import { attachedJobKeys, attachmentsContext, referenceResources, withReference, withoutReference, type BuildReference } from "./build-references";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // The preview (the Applet host, its frame and compiler) is needed only once a saved version exists, so it
 // loads then — never with the first screen. One edge, ssr:false (it mounts browser-only code), gated on
 // `saved` below (code-splitting skill, Method A).
@@ -616,7 +617,7 @@ export function AppletBuilder({
         </div>
         {phase.kind === "failed" ? (
           <div className="flex items-center gap-2">
-            <p className="text-sm text-destructive">{phase.why}</p>
+            <p className="text-sm text-destructive">{phase.why}<ErrorAlchemyMenu error={phase.why} /></p>
             {/* A run that ended without an answer is never a dead end: the same request, once more. */}
             {lastAsked && !lastError ? (
               <Button variant="outline" disabled={busy} onClick={() => void run(lastAsked, null)} data-applet-try-again="">
@@ -631,7 +632,7 @@ export function AppletBuilder({
           </p>
         ) : null}
         {conversationId ? null : <BuildHistory requests={session.record?.requests ?? []} />}
-        {lastError ? <p className="text-sm text-destructive" data-applet-error="">{lastError.message}</p> : null}
+        {lastError ? <p className="text-sm text-destructive" data-applet-error="">{lastError.message}<ErrorAlchemyMenu error={lastError.message} /></p> : null}
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">

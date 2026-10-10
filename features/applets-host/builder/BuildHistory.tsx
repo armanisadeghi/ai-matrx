@@ -7,6 +7,7 @@ import { Badge } from "@ai-matrx/design-system/controls";
 
 import { fixRowText, requestOutcome, type BuildEntry } from "./build-session";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function BuildHistory({ requests }: { requests: BuildEntry[] }) {
   if (requests.length === 0) return null;
   return (
@@ -17,7 +18,7 @@ export function BuildHistory({ requests }: { requests: BuildEntry[] }) {
           <li key={entry.id} className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1">
             <span className="min-w-0 flex-1 truncate" title={entry.error ? `${entry.text} — ${entry.error}` : entry.text}>
               {entry.fix ? fixRowText(entry) : entry.text}
-            </span>
+            <ErrorAlchemyMenu error={`${entry.text} — ${entry.error}`} /></span>
             <Badge tone={tone}>{label}</Badge>
           </li>
         );
