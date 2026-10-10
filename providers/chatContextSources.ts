@@ -3,8 +3,9 @@
 // The app's CONTEXT SOURCES and COMPUTE TARGETS, registered into `@ai-matrx/chat`
 // (P21 — ../aidream/apps/shared/chat/src/context/sources/scopes.tsx, ../aidream/apps/shared/chat/src/compute/targets.tsx).
 // The package reads scopes (the active selection, the tree, values, agent-context tasks) and
-// the sandbox platform through these registrations instead of importing app code; until
-// `@ai-matrx/scopes` exists (P17s1–s3) this file is where the app's scopes reach chat.
+// the sandbox platform through these registrations instead of importing app code. Scope DATA chat
+// reads itself through `@ai-matrx/records/scopes` (chat 0.8.0); the host hands over only its own
+// state (the selection, the holder's selectors/thunks/hooks) and UI.
 // Imported for its side effect by providers/ChatHostAdapter.tsx. Tests register the same
 // exports lazily in jest.setup.ts.
 
@@ -48,16 +49,12 @@ import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/co
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { useDrillPathEngine, useUniverse } from "@/features/scopes/components/active-context/quick-pick/engine";
-import { scopesService } from "@/features/scopes/service/scopesService";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import { readFavoriteIds, writeFavorite } from "@/features/scopes/service/favoriteOverlay";
 import { resolveEntityToken, tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { entityTitleFallback, fetchEntityTitles, getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
-import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
-import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
 import { MillerColumnsCore } from "@/features/scopes/components/active-context/miller-columns/MillerColumns";
@@ -129,7 +126,6 @@ registerChatScopes({
   useContextValues,
   useUniverse,
   useDrillPathEngine,
-  scopesService,
   associationsService,
   favoritesService,
   getAssociationsStore,
@@ -140,9 +136,6 @@ registerChatScopes({
   getCachedEntityTitle,
   entityTitleFallback,
   fetchEntityTitles,
-  referenceConfigFromItem,
-  buildScopeValuePayload,
-  slugifyKey,
   drillPathForScope: (organizations, scopeId) => {
     for (const organization of organizations) {
       for (const scopeType of organization.scope_types) {
