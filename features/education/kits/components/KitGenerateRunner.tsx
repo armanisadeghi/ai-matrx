@@ -21,7 +21,7 @@ import { useContentConverter } from "@/features/education/convert/useContentConv
 import { TARGET_CAPABILITY } from "@/features/education/convert/ConvertContentDialog";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
-import { useMaxCardsPerRun } from "@/features/flashcards/data/useMaxCardsPerRun";
+import { readMaxCardsPerRun } from "@/features/flashcards/data/useMaxCardsPerRun";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 import type { StudyKit } from "../kitService";
 import {
@@ -58,7 +58,6 @@ export function KitGenerateRun({
   const pdf = usePdfClient();
   const { normalizeSources } = useIngest();
   const { convert } = useContentConverter();
-  const cardLimit = useMaxCardsPerRun();
   const gen = useEntitlementGuard(TARGET_CAPABILITY[request.kind]);
   const coppa = useAiComplianceGate();
   const tabRun = useTabBoundRun(kitGenerateRunKey(kit), restoreKitGenerateRequest);
@@ -69,9 +68,11 @@ export function KitGenerateRun({
   const [card, setCard] = useState<RunCard>({ phase: "working", line: `Making ${what}…` });
 
   const perform = async (): Promise<void> => {
-    if (cardLimit.max === null && request.kind === "deck") {
-      throw new Error(cardLimit.error ?? "The most cards one run may make is still loading. Ask again in a moment.");
-    }
+    // The run starts the moment the chat applies, usually before any knob read has landed: wait for it here (the hook's
+    // first render is always "loading", which used to refuse every first run).
+    const maxCards = await readMaxCardsPerRun().catch((e: unknown) => {
+      throw new Error(`The most cards one run may make could not be read (${e instanceof Error ? e.message : String(e)}), so cards cannot be made right now. Reload the page to try again.`);
+    });
     const orgId = await ensureOrgId(kit.organizationId);
     setCard({ phase: "working", line: `Making ${what}…` });
     const outcome = await tabRun.track(request as unknown as Record<string, unknown>, (settle, saving) =>
@@ -80,7 +81,7 @@ export function KitGenerateRun({
         request,
         orgId,
         ctx: { dispatch, store, orgId },
-        maxCards: cardLimit.max ?? 50,
+        maxCards,
         coverage,
         recover: () =>
           recoverKitMaterial({ sourceType: kit.sourceType, sourceId: kit.sourceId, kitTitle: kit.title, sources: kit.sources, organizationId: kit.organizationId, normalizeSources, pdf }),
