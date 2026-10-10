@@ -130,7 +130,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
       }
       right={
         <div className={cn("flex items-center", className)}>
-          <PageCaptureButton size="icon" className="mr-1" />
+          <PageCaptureButton size="icon" />
           {file?.mimeType === "application/pdf" && (
             <PdfSurfaceSwitcher
               current="file-viewer"

@@ -283,11 +283,9 @@ export function FileTabsBody({
         )}
         <div className="ml-auto flex shrink-0 items-center">
           {kindActions.length > 0 ? (
-            <PreviewerActionBar
-              actions={kindActions}
-              compact={density === "compact"}
-              variant="inline"
-            />
+            // Icons only (named by their tooltips): labels would push the
+            // tabs out of a narrow row.
+            <PreviewerActionBar actions={kindActions} compact variant="inline" />
           ) : null}
           {trailing}
         </div>
