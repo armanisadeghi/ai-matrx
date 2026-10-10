@@ -71,13 +71,19 @@ function clickButton(host: HTMLElement, position: number) {
 describe("durable table view adapter", () => {
   let host: HTMLDivElement;
   let root: Root;
+  // The component holds a table's last listing for a minute (a woken table is not read again). Each test is
+  // a fresh visit: its clock starts past that window, so one test's listing never answers the next one's read.
+  let clock = 1_700_000_000_000;
   beforeEach(() => {
     jest.clearAllMocks();
+    clock += 10 * 60_000;
+    jest.spyOn(Date, "now").mockImplementation(() => clock);
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
   });
   afterEach(async () => {
+    jest.restoreAllMocks();
     await act(async () => { root.unmount(); });
     host.remove();
   });
@@ -143,5 +149,27 @@ describe("durable table view adapter", () => {
     expect(mockArchive).toHaveBeenCalledTimes(2);
     expect(host.querySelector('[data-testid="views"]')?.textContent).toBe("");
     expect(host.querySelector('[data-testid="error"]')?.textContent).toContain("Save the current layout as a new view or reload this page");
+  });
+  it("a table that wakes inside the window holds its list; past the window, or after a write, it reads again", async () => {
+    mockList.mockResolvedValue([view("a", "A")]);
+    mockCreate.mockResolvedValue(view("n", "New view"));
+    const mount = async () => {
+      await act(async () => { root.render(<TableSavedViews tableId="woken" snapshot={snapshot} defaultSnapshot={snapshot} onApply={jest.fn()} />); });
+    };
+    await mount();
+    expect(mockList).toHaveBeenCalledTimes(1);
+    await act(async () => { root.unmount(); });
+    root = createRoot(host);
+    clock += 30_000;
+    await mount();
+    expect(mockList).toHaveBeenCalledTimes(1);
+    expect(host.querySelector('[data-testid="views"]')?.textContent).toBe("A");
+    await act(async () => { clickButton(host, 0); });
+    expect(mockList).toHaveBeenCalledTimes(2);
+    await act(async () => { root.unmount(); });
+    root = createRoot(host);
+    clock += 61_000;
+    await mount();
+    expect(mockList).toHaveBeenCalledTimes(3);
   });
 });
