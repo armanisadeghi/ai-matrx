@@ -16,6 +16,7 @@ import { mergedConflictText } from "./announce";
 import type { ConflictChoice, WorkingCopyKind } from "./workingCopyKind";
 import { selectWorkingCopy } from "./workingCopySlice";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface WorkingCopyAlertProps<E> {
   kind: WorkingCopyKind<E>;
   id: string;
@@ -57,7 +58,7 @@ export function WorkingCopyAlert<E>({ kind, id, showFailure = true, className }:
         <button type="button" className={buttonClass} onClick={() => choose("theirs")}>
           Take theirs
         </button>
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
 
@@ -78,7 +79,7 @@ export function WorkingCopyAlert<E>({ kind, id, showFailure = true, className }:
         <button type="button" className={buttonClass} onClick={() => kind.discard(id)}>
           Discard
         </button>
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
 

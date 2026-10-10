@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useListDimensions, type ListDimensionValue } from "../useListDimensions";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export const ANY_DIMENSION_LABEL = "Any dimension";
 
 export interface EntityDimensionFilterProps {
@@ -174,7 +175,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
               </div>
             )}
             {!dims.loading && dims.error && (
-              <p className="px-2 py-1.5 type-secondary text-destructive">Dimensions could not load.</p>
+              <p className="px-2 py-1.5 type-secondary text-destructive">Dimensions could not load.<ErrorAlchemyMenu /></p>
             )}
             {!dims.loading && !dims.error && dims.dimensions.length === 0 && (
               <p className="px-2 py-1.5 type-secondary text-muted-foreground">No dimensions yet.</p>
