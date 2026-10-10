@@ -14,7 +14,7 @@ import {
 } from "./flashcards-set-parts";
 import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArtifactDebugPanel";
 import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { flashcardsPrinterLazy as flashcardsPrinter } from "@ai-matrx/print/flashcards-lazy";
 import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSearchParams } from "next/navigation";
