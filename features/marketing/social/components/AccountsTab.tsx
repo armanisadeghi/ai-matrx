@@ -252,7 +252,7 @@ export function AccountsTab() {
     () => [
       {
         id: "account",
-        width: 200,
+        width: 170,
         label: "Account",
         header: "Account",
         accessorFn: (r) =>
@@ -260,7 +260,7 @@ export function AccountsTab() {
         copyValue: (r) =>
           `${r.displayName} (${formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })})`,
         filter: "text",
-        minWidth: 200,
+        minWidth: 160,
         cell: (r) => {
           const href = brandAccountHref(brandSeg, r);
           const labels = accountLabels(r.displayName, r.handle, r.platform);
@@ -381,6 +381,21 @@ export function AccountsTab() {
         ),
       },
       {
+        id: "growth",
+        width: 64,
+        label: "30d growth",
+        header: "30d",
+        accessorFn: (r) => r.growth,
+        copyValue: (r) => formatGrowth(r.growth),
+        align: "right",
+        filter: "number",
+        cell: (r) => (
+          <span className="tabular-nums" title={r.growthNote}>
+            {formatGrowth(r.growth)}
+          </span>
+        ),
+      },
+      {
         id: "posts",
         width: 60,
         label: "Posts tracked",
@@ -461,21 +476,6 @@ export function AccountsTab() {
           const c = connectionOf(r);
           return c ? <Badge tone={c.tone}>{c.label}</Badge> : "Active";
         },
-      },
-      {
-        id: "growth",
-        width: 64,
-        label: "30d growth",
-        header: "30d",
-        accessorFn: (r) => r.growth,
-        copyValue: (r) => formatGrowth(r.growth),
-        align: "right",
-        filter: "number",
-        cell: (r) => (
-          <span className="tabular-nums" title={r.growthNote}>
-            {formatGrowth(r.growth)}
-          </span>
-        ),
       },
       {
         id: "refreshed",
@@ -646,6 +646,7 @@ export function AccountsTab() {
           if (href) router.push(href);
           else setSummaryRow(r);
         })}
+        frameHeight="fill"
         mobileCardsBreakpoint="md"
         mobileCards={(r, _i, controls) => <AccountCard row={r} controls={controls} connection={connectionOf(r)} />}
         isLoading={accounts.isLoading}

@@ -104,10 +104,12 @@ export default async function ResearchTopicLayout({
           >
             <ChevronLeft className="h-4 w-4" />
           </Link>
-          <span className="text-sm font-medium text-foreground truncate min-w-0">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground sm:flex-none">
             {topic.name}
           </span>
-          <IntentBadge label={intentLabel} className="shrink-0" />
+          <span className="hidden shrink-0 sm:contents">
+            <IntentBadge label={intentLabel} className="shrink-0" />
+          </span>
           <IntelligenceIndicator
             feature="research"
             mandateKeys={Object.values(ROLE_MANDATE_KEYS)}

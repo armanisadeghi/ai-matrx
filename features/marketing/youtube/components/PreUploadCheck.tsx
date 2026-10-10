@@ -196,7 +196,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
         </div>
 
         <div className="flex min-w-0 flex-col gap-2">
-          <div className="flex items-start gap-3">
+          <div className="flex flex-col gap-2">
             <ThumbnailAtMobileSize
               src={draft.thumbnailUrl.trim() || null}
               alt={
@@ -206,7 +206,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
               }
               caption="Actual size in the mobile feed"
             />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               {/* 🚨 THE KNOB'S DEFAULT ANNOUNCES ITSELF (law 4). While the ladder
                   is being asked, the screen says which posture it is acting on
                   rather than flickering between two different rule sets. */}

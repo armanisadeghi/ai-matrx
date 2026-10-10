@@ -49,6 +49,17 @@ export function AccountInsights({ trackedAccountId, platform }: { trackedAccount
     );
   }
   if (!summary) return null;
+  const hasData = INSIGHT_METRICS.some((m) => summary.values[m.id] !== null);
+  if (!insights.isLoading && !insights.isError && !hasData) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="min-h-9 text-sm text-muted-foreground" data-testid="private-insights-empty">
+          No private stats yet — they appear after the first sync
+        </p>
+        <TopOwnPosts trackedAccountId={trackedAccountId} />
+      </div>
+    );
+  }
   const shown = INSIGHT_METRICS.filter((m) => HEADLINE.has(m.id) || summary.values[m.id] !== null);
   return (
     <div className="flex flex-col gap-4">
@@ -62,7 +73,7 @@ export function AccountInsights({ trackedAccountId, platform }: { trackedAccount
               key={m.id}
               label={m.label}
               value={v === null ? null : formatCompact(v)}
-              hint={insights.isError ? "Couldn't load" : v === null ? "Not available" : m.kind === "flow" ? "Last 30 days" : undefined}
+              hint={insights.isError ? "Couldn't load" : v === null ? "—" : m.kind === "flow" ? "Last 30 days" : undefined}
               loading={insights.isLoading}
               title={summary.latestDate ? `Through ${summary.latestDate}` : undefined}
             />

@@ -438,16 +438,7 @@ export function SiteAnalyticsPanel({
 
       {data && data.dataThrough === null && !windowQuery.isLoading ? (
         <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-          <p className="text-xs font-medium text-foreground">
-            Google Analytics has never returned a day for this site
-          </p>
-          <p className="text-xs leading-5 text-muted-foreground">
-            Two things cause this, and both are fixable: the site has no Google
-            Analytics 4 property bound yet, or the Google Analytics Data API is
-            switched off in the Google Cloud project the connection uses — it has
-            been off before, and while it is off every sync returns nothing
-            without failing loudly.
-          </p>
+          <p className="text-xs font-medium text-foreground">No Google Analytics days yet</p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <Link href={integrationsHref}>

@@ -230,7 +230,7 @@ describe("refreshSummary", () => {
   });
   it("names the reuse window when nothing was fetched", () => {
     const reused = { ...base, trace: { ...base.trace, reused: true, cost_credits: 0 }, list_trace: [], pages_walked: 0, posts_upserted: 0, notes: ["Refreshed within the last 12h; served from the shared cache."] };
-    expect(refreshSummary(reused)).toBe("Refreshed within the last 12h; served from the shared cache.");
+    expect(refreshSummary(reused)).toBe("Up to date (refreshed in the last 12 hours)");
   });
 });
 
