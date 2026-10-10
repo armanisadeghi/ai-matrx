@@ -58,7 +58,10 @@ export function SocialsShell({ children }: { children: ReactNode }) {
   const base = marketingRoutes.brandSocials(brand.seg);
   const modes = SOCIALS_TABS.map((tab) => ({ name: tab.label, href: `${base}/${tab.id}`, icon: TAB_ICONS[tab.id] }));
   // Account / post detail belong to the Accounts tab.
-  const segment = pathname.startsWith(`${base}/`) ? pathname.slice(base.length + 1).split("/")[0] : "";
+  // Read from the address itself: the brand may be addressed by key or by id (until the canonical redirect lands), and a
+  // prefix compare against one form misreads the other as the Accounts tab, drawing this shell's header over Studio's own.
+  const afterSocials = pathname.split("/socials/")[1];
+  const segment = afterSocials ? afterSocials.split("/")[0] : "";
   const activeTab = SOCIALS_TABS.find((t) => t.id === segment)?.id ?? "accounts";
 
   const fullBleed = activeTab === "studio";

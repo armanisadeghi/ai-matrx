@@ -83,7 +83,7 @@ export function UntrackedAccount({ platform, propertyId }: { platform: string; p
   return (
     <div className="flex flex-col gap-3 p-3" data-testid="untracked-account">
     <div className="flex min-h-9 flex-wrap items-center gap-2">
-      <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
+      <Button variant="quiet" className="matrx-tap-area" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
       <PlatformMark platform={row.platform} size={28} />
       <div className="flex min-w-0 flex-col leading-tight">
         <span className="truncate text-sm font-semibold text-foreground">{labels.primary}</span>

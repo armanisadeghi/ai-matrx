@@ -22,6 +22,7 @@
 import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
 import { BOARD_TOKEN } from "../persistence/boardsService";
 import { cn } from "@/lib/utils";
@@ -148,6 +149,7 @@ export function UserBoard({
   /** A focus for this board (`presets/`): what the Add menu, Start panel and agent offer. None = every type. */
   preset?: BoardPreset;
 }) {
+  const isMobile = useIsMobile();
   const guestTypes = guest ? BOARD_ITEM_TYPES.filter((t) => t.guestSafe) : BOARD_ITEM_TYPES;
   const presetTypes = resolvePresetTypes(preset, guestTypes);
   const addableTypes = presetTypes.featured;
@@ -837,7 +839,8 @@ export function UserBoard({
           <BoardViewport
             initialCamera={viewerCamera ?? doc.camera}
             fitOnMount={viewerCamera === null && (doc.nodes.length > 0 || doc.shapes.length > 0 || doc.groups.length > 0)}
-            insets={{ top: 72, bottom: 56 }}
+            // On a phone the zoom HUD and the assists bubble float over the bottom edge: framing leaves room for both.
+            insets={{ top: 72, bottom: isMobile ? 104 : 56 }}
             wheelMode={wheelMode}
             onStore={setStore}
             onEmptyDoubleClick={(at) => {

@@ -81,7 +81,7 @@ export function GatedCaptureOffer({
 
   if (target.brandId && !canEdit) return null;
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div className="flex flex-col gap-1">
       {compact ? null : (
         <p className="text-xs text-muted-foreground">Your own browser can still get it. Only your organization sees it.</p>
       )}

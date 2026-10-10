@@ -428,7 +428,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     <div className="flex flex-col gap-3">
       <ProfileAgentSurface row={p} posts={list} />
       <div className="flex min-h-9 flex-wrap items-center gap-2">
-        <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
+        <Button variant="quiet" className="matrx-tap-area" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
         {p.avatar_url || p.avatar_file_id ? (
           <span className="relative block h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted">
             <SocialImage
@@ -452,7 +452,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         ) : (
           <Badge tone="warning">Not tracked</Badge>
         )}
-        <span className="ml-auto flex min-w-0 items-center gap-1">
+        <span className="ml-auto flex flex-wrap items-center gap-1">
           {!canEdit ? null : tracked.data ? (
             <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}

@@ -737,7 +737,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   <Badge variant="outline">{current.industry}</Badge>
                 ) : null}
                 {socialProperties.length > 0 ? (
-                  <span className="ml-1 inline-flex items-center gap-2">
+                  <span className="ml-1 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1">
                     {socialProperties.slice(0, 8).map((property) => {
                       const accountRow = (socialAccounts.data ?? []).find((r) => r.propertyId === property.id);
                       const href = accountRow

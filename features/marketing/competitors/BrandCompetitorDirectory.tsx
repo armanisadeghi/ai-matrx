@@ -66,6 +66,7 @@ import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
 import { SocialAccountField } from "@/features/marketing/social/components/SocialAccountInput";
 import { parseSocialAccount } from "@/features/marketing/social/link";
 import type { SocialPlatform } from "@/features/marketing/social/types";
+import { PlatformMark } from "@/features/marketing/social/components/PlatformMark";
 import { useCanEditSocial } from "@/features/marketing/social/useCanEditSocial";
 import { CompetitorDetail } from "./CompetitorDetail";
 import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competitor-detail";
@@ -338,34 +339,41 @@ export function BrandCompetitorDirectory() {
             ) : null}
           </span>
         ),
-        width: 220,
+        width: 200,
       },
     ];
-    for (const platform of platforms) {
+    // One column for every platform: a column per platform pushed Posts and Top outlier behind a sideways scroll.
+    // Each account is its own link (platform mark + followers); the column sorts by total followers.
+    if (platforms.length > 0) {
       cols.push({
-        id: `followers_${platform}`,
-        header: PLATFORM_LABEL[platform] ?? platform,
-        accessorFn: (row) => accountsOn(row, platform).reduce((s, a) => s + (a.followers ?? 0), 0),
-        cell: (row) => {
-          const accounts = accountsOn(row, platform);
-          if (accounts.length === 0) return <span className="text-muted-foreground">—</span>;
-          return (
-            <span className="flex flex-col">
-              {accounts.map((a) => (
-                <Link
-                  key={a.trackedAccountId}
-                  href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`}
-                  className="matrx-tap-area flex min-w-0 items-baseline gap-1 hover:underline"
-                  title={formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}
-                >
-                  <span className="shrink-0">{compact(a.followers)}</span>
-                  <span className="truncate text-[11px] text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>
-                </Link>
-              ))}
+        id: "followers",
+        header: "Followers",
+        accessorFn: (row) => row.accounts.reduce((sum, a) => sum + (a.followers ?? 0), 0),
+        cell: (row) =>
+          row.accounts.length === 0 ? (
+            <span className="text-muted-foreground">—</span>
+          ) : (
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              {[...row.accounts]
+                .sort((x, y) => platforms.indexOf(x.platform) - platforms.indexOf(y.platform))
+                .map((a) => {
+                  const handle = formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl });
+                  return (
+                    <Link
+                      key={a.trackedAccountId}
+                      href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`}
+                      className="matrx-tap-area inline-flex items-center gap-1 whitespace-nowrap hover:underline"
+                      title={`${PLATFORM_LABEL[a.platform] ?? a.platform} ${handle}`}
+                      aria-label={`${PLATFORM_LABEL[a.platform] ?? a.platform} ${handle}, ${compact(a.followers)} followers`}
+                    >
+                      <PlatformMark platform={a.platform} size={14} />
+                      {compact(a.followers)}
+                    </Link>
+                  );
+                })}
             </span>
-          );
-        },
-        width: 130,
+          ),
+        width: 240,
       });
     }
     cols.push(
@@ -395,7 +403,7 @@ export function BrandCompetitorDirectory() {
             </Link>
           );
         },
-        width: 110,
+        width: 100,
       },
       {
         id: "socials-actions",
@@ -403,7 +411,7 @@ export function BrandCompetitorDirectory() {
         sortable: false,
         filter: false,
         customActions: (row) => <RowSocialActions row={row} brand={{ id: brand.id, organizationId: brand.organizationId }} />,
-        width: 200,
+        width: 180,
       },
     );
     return cols;
