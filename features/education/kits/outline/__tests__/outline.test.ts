@@ -1,5 +1,6 @@
 import {
   isOutlineStale,
+  leastCoveredSections,
   outlineRunSources,
   outlineSectionsFromRows,
   sectionGroupText,
@@ -95,5 +96,14 @@ describe("coverage counting", () => {
     expect(cov.max).toBe(2);
     // Gaps for a deck = the sections with the fewest cards.
     expect(gapSections(sections, countsOf(cov, "cards")).map((s) => s.id)).toEqual(["sec-b"]);
+  });
+});
+
+describe("a top-up of n over more than n sections", () => {
+  it("aims at the n least-covered sections, in outline order", () => {
+    const secs = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+    const counts = new Map([["a", 3], ["b", 0], ["c", 1], ["d", 0]]);
+    expect(leastCoveredSections(secs, counts, 2).map((s) => s.id)).toEqual(["b", "d"]);
+    expect(leastCoveredSections(secs, counts, 9).map((s) => s.id)).toEqual(["a", "b", "c", "d"]);
   });
 });

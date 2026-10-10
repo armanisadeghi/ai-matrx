@@ -50,6 +50,8 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { readArtifactOrigins, type ArtifactOrigin } from "@/features/education/convert/lineage";
 import { recordLineageForSources } from "@/features/education/convert/recordSourceLineage";
 import { announceLineage } from "@/features/education/convert/announceLineage";
+import { leastCoveredSections, readKitOutline, readOutlineGroups } from "@/features/education/kits/outline/outlineService";
+import { readExistingKitItems } from "@/features/education/convert/existingItems";
 import type { ConvertProgress } from "@/features/education/convert/types";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
@@ -152,7 +154,10 @@ export function AddMoreCardsButton({
   variant = "outline",
   initialOpen = false,
   extraDrafts,
+  kitId,
 }: {
+  /** The study kit this deck belongs to: the run covers its Outline and dedupes kit-wide. */
+  kitId?: string;
   /** Open the dialog on mount (a host that loaded the deck on the press). */
   initialOpen?: boolean;
   /** Material to preselect beside the deck's own (a kit's Sources). */
@@ -233,6 +238,7 @@ export function AddMoreCardsButton({
           deckOrganizationId={deckOrganizationId}
           existingCards={existingCards}
           extraDrafts={extraDrafts}
+          kitId={kitId}
           tabRun={tabRun}
           redo={redo}
           onClose={() => {
@@ -252,12 +258,14 @@ function AddMoreCardsDialog({
   deckOrganizationId,
   existingCards,
   extraDrafts,
+  kitId,
   tabRun,
   redo,
   onClose,
   onAdded,
 }: {
   extraDrafts?: readonly SourceDraft[];
+  kitId?: string;
   setId: string;
   deckName?: string;
   deckOrganizationId?: string | null;
@@ -363,13 +371,23 @@ function AddMoreCardsDialog({
           );
         }
         setStatus(`Making ${cardCount(plannedCount, "new")}…`);
+        // A kit's deck (living-kit W2): cover the kit's Outline section by
+        // section, and never repeat a card any deck of the kit holds.
+        const kitItems = kitId ? await readExistingKitItems(kitId, "cards") : [];
+        const kitCards = kitItems.map((c) => ({ front: c.text, back: c.answer }));
+        const sections = kitId ? await readKitOutline(kitId) : [];
+        const perSection = new Map<string, number>();
+        for (const c of kitItems) if (c.sectionId) perSection.set(c.sectionId, (perSection.get(c.sectionId) ?? 0) + 1);
+        const aimed = leastCoveredSections(sections, perSection, safeCount);
+        const outline = kitId && aimed.length > 0 ? await readOutlineGroups(kitId, aimed.map((s) => s.id)) : null;
         const made = await generateCardsFromSources({
           resolved,
           count: safeCount,
           difficulty: "medium",
           depth: "recall",
           title: deckName?.trim() || "Your deck",
-          existingCards,
+          existingCards: [...existingCards, ...kitCards],
+          outline,
           steer: { instruction, cardKinds },
           batchId,
           ctx: {

@@ -97,8 +97,13 @@ export function useKitOutline(kit: StudyKit | null): KitOutlineState {
       setSections(read);
       setReadError(null);
       if (kitId) {
-        const found = await lookupKitOutlineRun(dispatch, kitId).catch(() => null);
-        if (isLive() && found?.active) setRunId(found.runId);
+        try {
+          const found = await lookupKitOutlineRun(dispatch, kitId, kit.organizationId);
+          if (isLive() && found?.active) setRunId(found.runId);
+        } catch (e) {
+          // Loud, and the outline still renders: only the reattach is missing.
+          console.error("[useKitOutline] could not look up the outline run:", e);
+        }
       }
       if (read.length === 0) {
         setStale(false);
@@ -163,7 +168,9 @@ export function useKitOutline(kit: StudyKit | null): KitOutlineState {
     }
   };
 
-  const last = activity.length > 0 ? activity[activity.length - 1] : null;
+  // The status line reads progress words only — a warning's payload is the
+  // server's JSON, never a sentence for this line.
+  const last = [...activity].reverse().find((a) => (a.kind === "progress" || a.kind === "phase") && a.text && !a.text.trimStart().startsWith("{")) ?? null;
   const failedRun = over && status !== "completed" ? runErrorWords(runFailure) ?? "The outline could not be built." : null;
   return {
     sections,

@@ -51,6 +51,7 @@ import type { NewCardInput } from "./types";
 import { resolveKitTitle, NAMER_SAMPLE_CHARS } from "@/features/education/onboard/kitTitle";
 import { sectionRunTitle } from "@/features/education/convert/coverage";
 import { foldSteer, type GenerationSteer } from "@/features/education/convert/steering";
+import type { OutlineGroups } from "@/features/education/kits/outline/outlineService";
 import {
   BATCH_KEY,
   OUTLINE_SECTION_KEY,
@@ -295,6 +296,14 @@ export interface CardsFromSourcesInput
   };
   /** Groups the cards this run makes, so "Undo last add" can find exactly them. */
   batchId?: string;
+  /**
+   * A kit's outline as generation groups (living-kit decision 4): when set,
+   * the run covers these sections — each section's cited text + key facts —
+   * instead of the Sources' raw text, and every card carries its section
+   * (`topic` + `metadata.outline_section_id`). Citations still name the
+   * Sources' chunks (`### Chunk <id>`), so grounding resolves as before.
+   */
+  outline?: OutlineGroups | null;
 }
 
 /**
@@ -401,6 +410,7 @@ export async function generateCardsFromSources({
   existingCards = [],
   steer,
   batchId,
+  outline,
   ctx,
 }: CardsFromSourcesInput): Promise<CardsFromSourcesOutcome> {
   const sources = resolved.sources.filter((s) => s.text.trim().length > 0);
@@ -425,14 +435,15 @@ export async function generateCardsFromSources({
   const covered = await segmentedGenerate<NewCardInput>({
     ctx,
     source: {
-      text: sources.map((s) => s.text).join("\n\n"),
+      text: (outline ? outline.groups : sources).map((s) => s.text).join("\n\n"),
       title,
     },
     targetKind: "deck",
     options: { count, difficulty },
     // THE EVERY-SOURCE RULE: each Source is planned on its own and earns at
-    // least one card (never folded into a neighbour and skipped).
-    groups: sources.map((s) => ({ label: s.label, text: s.text })),
+    // least one card (never folded into a neighbour and skipped). With an
+    // outline, each SECTION is a group instead (and earns at least one card).
+    groups: outline ? outline.groups : sources.map((s) => ({ label: s.label, text: s.text })),
     mandateKey: FC_MANDATES.generateFromSource,
     surfaceKey: "flashcards-create-from-source",
     sourceFeature: "education-flashcards",
@@ -473,15 +484,19 @@ export async function generateCardsFromSources({
   // Nothing dropped silently: a Source no kept card came from is named.
   const unusedSources = [
     ...resolved.sources.filter((s) => !s.text.trim()),
-    ...(sources.length > 1
+    ...(sources.length > 1 && !outline
       ? sources.filter((_, g) => !covered.items.some((c) => covered.groupOf(c) === g))
       : []),
   ];
+  const grounded = covered.items.map((c) => {
+    const card = groundCard(c, owners, fallback);
+    if (!outline) return card;
+    const g = covered.groupOf(c);
+    const section = g === undefined ? undefined : outline.sections[g];
+    return section ? stampRunCards([card], { sections: [section] })[0] : card;
+  });
   return {
-    cards: stampRunCards(
-      covered.items.map((c) => groundCard(c, owners, fallback)),
-      { batchId, sections: steer?.sections },
-    ),
+    cards: stampRunCards(grounded, { batchId, sections: outline ? undefined : steer?.sections }),
     sources,
     unusedSources,
     gapNote: coverageNote(covered.gapNote, unusedSources, count, sources.length),

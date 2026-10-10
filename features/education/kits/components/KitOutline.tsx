@@ -223,9 +223,12 @@ export function kitSourceDrafts(sources: readonly KitSource[]): SourceDraft[] {
 export function KitMemberAddMore({
   artifact,
   sources,
+  kitId,
   onAdded,
 }: {
   artifact: GeneratedArtifact;
+  /** The kit record id (a `scope` kit), when it has one. */
+  kitId?: string;
   sources: readonly KitSource[];
   onAdded: () => void;
 }) {
@@ -242,6 +245,7 @@ export function KitMemberAddMore({
         deckOrganizationId={deck.set.organization_id}
         existingCards={deck.cards.map((c) => ({ front: c.front, back: c.back ?? "" }))}
         extraDrafts={drafts}
+        kitId={kitId}
         initialOpen
         label="Add more"
         onAdded={onAdded}

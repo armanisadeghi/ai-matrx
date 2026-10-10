@@ -893,6 +893,7 @@ export function KitHub({
                           <KitMemberAddMore
                             artifact={artifact}
                             sources={kit.sources}
+                            kitId={kit.sourceType === KIT_TOKEN ? kit.sourceId : undefined}
                             onAdded={() => {
                               reload();
                               outline.reload();

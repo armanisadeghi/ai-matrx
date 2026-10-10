@@ -297,13 +297,21 @@ function parseRun(value: unknown): KitOutlineRun | null {
 }
 
 /** The latest (active or finished) outline run for this kit, or null. */
-export async function lookupKitOutlineRun(dispatch: AppDispatch, kitId: string): Promise<KitOutlineRun | null> {
+export async function lookupKitOutlineRun(
+  dispatch: AppDispatch,
+  kitId: string,
+  organizationId: string | undefined,
+): Promise<KitOutlineRun | null> {
+  // The run lives in the KIT's organization's copy of the workflow, so the
+  // lookup names it (a GET otherwise goes out with no organization and the
+  // server cannot tell which copy to read).
   const result = await dispatch(
     callApi({
       path: SYSTEM_RUNS_PATH,
       method: "GET",
       pathParams: { key: KIT_OUTLINE_WORKFLOW_KEY } as never,
       queryParams: { subject: kitOutlineSubject(kitId) },
+      ...(organizationId ? { scopeOverrides: { organization_id: organizationId } } : {}),
     }),
   );
   if (result.error) throw new Error(result.error.message || "Could not check the outline's progress.");
@@ -374,4 +382,23 @@ export async function readOutlineGroups(kitId: string, onlyIds?: readonly string
     sections,
     groups: sections.map((s) => ({ label: s.title, text: sectionGroupText(s, chunks.get(s.id) ?? []) })),
   };
+}
+
+/**
+ * At most `n` sections, the least covered first (outline order breaks ties) —
+ * a top-up of n items over more than n sections must still make n, so it aims
+ * at the sections that hold the fewest.
+ */
+export function leastCoveredSections<S extends { id: string }>(
+  sections: readonly S[],
+  countBySection: ReadonlyMap<string, number>,
+  n: number,
+): S[] {
+  if (sections.length <= n) return [...sections];
+  return sections
+    .map((s, i) => ({ s, i, c: countBySection.get(s.id) ?? 0 }))
+    .sort((a, b) => a.c - b.c || a.i - b.i)
+    .slice(0, Math.max(1, n))
+    .sort((a, b) => a.i - b.i)
+    .map((x) => x.s);
 }
