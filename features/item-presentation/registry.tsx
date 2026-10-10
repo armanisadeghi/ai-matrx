@@ -57,6 +57,7 @@ import { refinePartyDetail } from "@/features/crm/party-detail";
 import { refineResearchTemplateDetail } from "@/features/research/admin/template-detail";
 import { partyKindWord } from "@/features/crm/party-words";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { readPickList } from "@/features/data-tables/pick-lists/doors";
 
 export interface ItemTypeConfig {
   /** Stable key — the enum value. */
@@ -232,7 +233,7 @@ async function fetchRow(
 //
 // A table and a list live in the record store. A table names its OWN organization
 // (`locateTable` → `custom.where_id_opens`) and is read through the data seam; a list
-// through the list door (`get_user_list_with_items`). Loaded on demand: the registry
+// through the list door (`custom.pick_list_get`). Loaded on demand: the registry
 // reaches every surface, the seam does not need to.
 
 type StoreRow = { id: string; name: string | null; description: string | null };
@@ -251,9 +252,7 @@ async function readCustomTable(id: string): Promise<StoreRow | "unopenable"> {
 }
 
 async function readStoreList(client: SupabaseClient, id: string): Promise<StoreRow | "unopenable"> {
-  const { data, error } = await client.rpc("get_user_list_with_items", { p_list_id: id });
-  if (error) throw new Error(error.message);
-  const doc = (data ?? null) as { list_name?: string | null; description?: string | null } | null;
+  const doc = (await readPickList(client, id)) as { list_name?: string | null; description?: string | null } | null;
   if (!doc) return "unopenable";
   return { id, name: doc.list_name ?? null, description: doc.description ?? null };
 }

@@ -1118,6 +1118,10 @@ const SaveTemplateDialog = lazyOverlay(
     })),
   { ssr: false },
 );
+const AccessSetupWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/access-setup/AccessSetupWindow"),
+  { ssr: false },
+);
 const ShareModalWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ShareModalWindow"),
   { ssr: false },
@@ -1639,6 +1643,9 @@ export default function OverlayController() {
     saveTemplateDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "saveTemplateDialog"),
     ),
+    accessSetupWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "accessSetupWindow"),
+    ),
     shareModalWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareModalWindow"),
     ),
@@ -2070,6 +2077,9 @@ export default function OverlayController() {
     saveTemplateDialog: useAppSelector((s) =>
       selectOverlayData(s, "saveTemplateDialog"),
     ) as Record<string, unknown> | null,
+    accessSetupWindow: useAppSelector((s) =>
+      selectOverlayData(s, "accessSetupWindow"),
+    ),
     shareModalWindow: useAppSelector((s) =>
       selectOverlayData(s, "shareModalWindow"),
     ) as Record<string, unknown> | null,
@@ -7431,6 +7441,30 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* accessSetupWindow */}
+      {(() => {
+        const isOpen = isOpenById.accessSetupWindow;
+        const data = dataById.accessSetupWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const headType = typeof data?.headType === "string" ? data.headType : null;
+        if (!headType) {
+          console.error("[window-panels] Refused to render People involved without a record type.");
+          return null;
+        }
+        return (
+          <AccessSetupWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "accessSetupWindow" }))
+            }
+            headType={headType}
+            recordId={typeof data?.recordId === "string" ? data.recordId : null}
+            cycleId={typeof data?.cycleId === "string" ? data.cycleId : null}
+            recordName={typeof data?.recordName === "string" ? data.recordName : null}
+          />
+        );
+      })()}
       {/* shareModalWindow */}
       {(() => {
         const isOpen = isOpenById.shareModalWindow;

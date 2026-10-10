@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T21:53:05.728Z",
+  "generated_at": "2026-10-10T22:27:10.806Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -79,6 +79,36 @@
       "filename": "accesssetup_g_the_review_doors_answer_from_the_setup.sql",
       "checksum": "ab5cb8839659c660d8c704bfdcb5030363915973c6970c6dd1191a98b0807eb5",
       "applied_at": "2026-10-10 18:51:20.201346+00"
+    },
+    "migrations/campaign/accesssetup_h2_only_setup_changers_confirm.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_h2_only_setup_changers_confirm.sql",
+      "checksum": "79980dc85f1b0e42399d898ba667a1ef09684645f7867e980cfdb097d136f7a6",
+      "applied_at": "2026-10-10 22:27:09.779206+00"
+    },
+    "migrations/campaign/accesssetup_h_one_row_per_role_subject_hr_calibrates_seats_memo.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_h_one_row_per_role_subject_hr_calibrates_seats_memo.sql",
+      "checksum": "3090281abe511dca36bf78d4a4c7331e404e455e713375e43217b11f25fe5197",
+      "applied_at": "2026-10-10 22:10:04.102458+00"
+    },
+    "migrations/campaign/accesssetup_h_the_setup_panel_reads_and_confirms.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_h_the_setup_panel_reads_and_confirms.sql",
+      "checksum": "06c6929aee204548db37276f4182456ff68ca74a132a97dce2681b2cc5af4eee",
+      "applied_at": "2026-10-10 22:08:08.547279+00"
+    },
+    "migrations/campaign/accesssetup_i_set_forms_and_cells_ask_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_i_set_forms_and_cells_ask_once.sql",
+      "checksum": "35c2dad90df8e945f20ca5939fbc1030160f55e8972bbb3a1135c4ff3fb75033",
+      "applied_at": "2026-10-10 22:14:22.378293+00"
+    },
+    "migrations/campaign/accesssetup_j_memo_hits_answer_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_j_memo_hits_answer_first.sql",
+      "checksum": "bbf0a4cbcc86943997d4fd7b2b6ac9714b45570bc09415a02763e6af52c11983",
+      "applied_at": "2026-10-10 22:18:45.497257+00"
     },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",

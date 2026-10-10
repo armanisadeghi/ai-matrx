@@ -133,6 +133,7 @@ import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
 import markdownSamplesReducer from "@/lib/redux/slices/markdownSamples/slice";
 import userMarkdownSamplesReducer from "@/lib/redux/slices/userMarkdownSamples/slice";
 import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
+import accessSetupReducer from "@/features/access-setup/redux/accessSetupSlice";
 
 const moduleReducers = Object.keys(moduleSchemas).reduce<
   Record<string, Reducer>
@@ -332,6 +333,9 @@ export const slimReducerMap = {
   // Canonical diff system — pinned "comparison base" for the pick-two
   // compare flow (components/diff). See components/diff/FEATURE.md.
   diffCompare: diffCompareReducer,
+
+  // People involved (access setup) panel — features/access-setup/FEATURE.md.
+  accessSetup: accessSetupReducer,
 };
 
 /**

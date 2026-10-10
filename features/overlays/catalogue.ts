@@ -1007,6 +1007,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: false,
   },
+  accessSetupWindow: {
+    label: "People Involved",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   shareModalWindow: {
     label: "Share Modal Window",
     instanceMode: "singleton",

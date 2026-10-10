@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { HR_ORG_PARAM } from "@/features/hr/constants";
 import { hrHref, hrPerformanceHref } from "@/features/hr/routes";
-import { Check, CircleDot, RotateCcw, Send, Ban } from "lucide-react";
+import { Check, CircleDot, RotateCcw, Send, Ban, Users } from "lucide-react";
 import { Badge, Button, EmptyState, Select } from "@ai-matrx/design-system/controls";
 import { TextInputDialog } from "@ai-matrx/design-system";
 
@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { toast } from "@/lib/toast";
+import { useOpenAccessSetupWindow } from "@/features/overlays/openers/accessSetupWindow";
 
 import { AnswerForm } from "./AnswerForm";
 import { AnswerReadout, Comparison } from "./Comparison";
@@ -43,6 +44,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const [newManager, setNewManager] = useState<{ employmentId: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  const openPeopleInvolved = useOpenAccessSetupWindow();
 
   useEffect(() => {
     let live = true;
@@ -90,6 +92,17 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
       ]}
       record={{ name: review?.employeeName ?? "Review" }}
       status={review ? { label: statusLabel(review.status), tone: statusTone(review.status) } : undefined}
+      actions={
+        review
+          ? [
+              {
+                label: "People involved",
+                icon: Users,
+                onPress: () => openPeopleInvolved({ headType: "hr_review", recordId: reviewId, recordName: review.employeeName }),
+              },
+            ]
+          : undefined
+      }
     />
     <HrPageState loading={detail === null && error === null} error={error ? new Error(error) : null} onRetry={reload} operation="This review" variant="panel" requireEmployer={false}>
       {detail && review && template ? (

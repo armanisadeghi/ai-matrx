@@ -123,6 +123,16 @@ jest.mock("@ai-matrx/records-ui", () => ({
 }));
 const STORE_WRITES: Array<{ door: string; args: unknown }> = [];
 const STORE_CLIENT = {
+  // `custom.pick_list_get`: a list with its choices, the door every pick-list read goes through.
+  pickListGet: jest.fn(async () => ({
+    ok: true,
+    data: {
+      list_id: STORE_LIST,
+      list_name: "Hygiene Visit Types",
+      organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b",
+      items_grouped: { Routine: [{ id: "c1", label: "Recall cleaning", description: null, help_text: null }] },
+    },
+  })),
   recordWrite: jest.fn(async (args: unknown) => {
     STORE_WRITES.push({ door: "recordWrite", args });
     return { ok: true, data: "new-choice" };
@@ -136,6 +146,7 @@ const STORE_CLIENT = {
 };
 const CLIENT_CONFIGS: unknown[] = [];
 jest.mock("@ai-matrx/records/core", () => ({
+  supabaseDataSource: () => ({}),
   createRecordsClient: (config: unknown) => {
     CLIENT_CONFIGS.push(config);
     return STORE_CLIENT;
@@ -286,20 +297,6 @@ test("E. an agent's choice writes land as Records of the list's Table, in the li
   STORE_WRITES.length = 0;
   CLIENT_CONFIGS.length = 0;
   olderReads.length = 0;
-  (client.rpc as jest.Mock).mockImplementation(async (fn: string) => {
-    if (fn === "get_user_list_with_items") {
-      return {
-        data: {
-          list_id: STORE_LIST,
-          list_name: "Hygiene Visit Types",
-          organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b",
-          items_grouped: { Routine: [{ id: "c1", label: "Recall cleaning", description: null, help_text: null }] },
-        },
-        error: null,
-      };
-    }
-    throw new Error(`unexpected rpc ${fn}`);
-  });
   // The list manager draws the list (and, with it, the versions of its choices).
   const { getListWithItems } = await import("../service");
   await getListWithItems(STORE_LIST);
@@ -315,6 +312,7 @@ test("E. an agent's choice writes land as Records of the list's Table, in the li
     { door: "recordWrite", args: { table_id: STORE_LIST, data: { name: "Perio maintenance", group_name: "Routine" } } },
     { door: "recordUpdate", args: { record_id: "c1", patch: { name: "Recall cleaning (6 months)", help_text: null }, expectedVersion: 3 } },
   ]);
-  expect(CLIENT_CONFIGS.every((c) => (c as { organizationId?: string }).organizationId === "11f4e747-c13a-49c7-81a3-66e6391f8a9b")).toBe(true);
+  // The read door takes no organization (the list carries its own); every WRITE client is in the list's.
+  expect(CLIENT_CONFIGS.filter((c) => (c as { organizationId?: string | null }).organizationId !== null).every((c) => (c as { organizationId?: string }).organizationId === "11f4e747-c13a-49c7-81a3-66e6391f8a9b")).toBe(true);
   expect(olderReads).toEqual([]);
 });
