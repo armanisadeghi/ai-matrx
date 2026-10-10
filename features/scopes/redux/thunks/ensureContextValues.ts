@@ -12,114 +12,56 @@ import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
-const inFlight = new Map<string, Promise<void>>();
+// No host in-flight map: a second ask while a read is out asks the same door with the same
+// arguments, and the records client sends that read once (its own in-flight dedupe).
 
 export function ensureContextValues(
   scopeId: string,
   opts: { refresh?: boolean } = {},
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const { refresh = false } = opts;
     const entry = getState().contextValues.byScope[scopeId];
-
-    if (!refresh) {
-      if (entry?.status === "ready") return;
-      if (entry?.status === "loading") {
-        const p = inFlight.get(scopeId);
-        if (p) return p;
-      }
-    }
-
+    if (!opts.refresh && entry?.status === "ready") return;
     dispatch(contextValuesActions.valuesFetchPending({ scopeId }));
-
-    // A named function, not an IIFE: its finally reads `promise`, which is
-    // assigned before the first await resumes.
-    const run = async (): Promise<void> => {
-      try {
-        const res = await scopeDoors().values([scopeId], { readFileText: readScopeFileText });
-        if (!res.ok) {
-          dispatch(
-            contextValuesActions.valuesFetchRejected({
-              scopeId,
-              error: res.error.message,
-            }),
-          );
-        } else {
-          dispatch(
-            contextValuesActions.valuesFetchFulfilled({
-              scopeId,
-              values: res.data,
-            }),
-          );
-        }
-      } finally {
-        if (inFlight.get(scopeId) === promise) inFlight.delete(scopeId);
-      }
-    };
-    const promise = run();
-
-    inFlight.set(scopeId, promise);
-    return promise;
+    const res = await scopeDoors().values([scopeId], { readFileText: readScopeFileText });
+    if (!res.ok) {
+      dispatch(contextValuesActions.valuesFetchRejected({ scopeId, error: res.error.message }));
+      return;
+    }
+    dispatch(contextValuesActions.valuesFetchFulfilled({ scopeId, values: res.data }));
   };
 }
 
 /**
  * THE VALUES OF MANY SCOPES IN ONE READ (lane STORE-READ-PERF-5). A screen that shows several
  * scopes at once — a scope type's page, a type's preview card — asks this once for all of them
- * instead of `ensureContextValues` once per scope: on the store path that was one
- * `custom.context_values` call per scope (~57 on a type page, each paying the door's fixed cost,
- * 500/503s under load). One `scopesService.listContextValuesForScopes` read answers every scope
- * not already loaded or loading (the store door takes 200 a call, so up to 200 scopes are ONE
- * request), and each scope's entry is filled exactly as its own read would have filled it — a scope
- * with no values is ready with none. While the read is in flight, `ensureContextValues(scopeId)`
- * for any of these scopes waits for it instead of asking again.
+ * instead of `ensureContextValues` once per scope. One `scopeDoors().values` read answers every
+ * scope not already read (the store door takes 200 a call, so up to 200 scopes are ONE request),
+ * and each scope's entry is filled exactly as its own read would have filled it — a scope with no
+ * values is ready with none.
  */
 export function ensureContextValuesForScopes(
   scopeIds: readonly string[],
   opts: { refresh?: boolean } = {},
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const { refresh = false } = opts;
     const byScope = getState().contextValues.byScope;
-    const wanted = [...new Set(scopeIds.filter(Boolean))].filter((id) => {
-      if (refresh) return true;
-      const status = byScope[id]?.status;
-      return status !== "ready" && !(status === "loading" && inFlight.has(id));
-    });
-    if (wanted.length === 0) {
-      await Promise.all(scopeIds.map((id) => inFlight.get(id)).filter(Boolean));
+    const wanted = [...new Set(scopeIds.filter(Boolean))].filter(
+      (id) => opts.refresh || byScope[id]?.status !== "ready",
+    );
+    if (wanted.length === 0) return;
+    for (const scopeId of wanted) dispatch(contextValuesActions.valuesFetchPending({ scopeId }));
+    const res = await scopeDoors().values(wanted, { readFileText: readScopeFileText });
+    if (!res.ok) {
+      for (const scopeId of wanted) {
+        dispatch(contextValuesActions.valuesFetchRejected({ scopeId, error: res.error.message }));
+      }
       return;
     }
-
-    for (const scopeId of wanted) {
-      dispatch(contextValuesActions.valuesFetchPending({ scopeId }));
+    const grouped = new Map<string, ContextValue[]>(wanted.map((id) => [id, []]));
+    for (const value of res.data) grouped.get(value.scope_id)?.push(value);
+    for (const [scopeId, values] of grouped) {
+      dispatch(contextValuesActions.valuesFetchFulfilled({ scopeId, values }));
     }
-
-    // A named function, not an IIFE: its finally reads `promise`, which is
-    // assigned before the first await resumes.
-    const run = async (): Promise<void> => {
-      try {
-        const res = await scopeDoors().values(wanted, { readFileText: readScopeFileText });
-        if (!res.ok) {
-          for (const scopeId of wanted) {
-            dispatch(contextValuesActions.valuesFetchRejected({ scopeId, error: res.error.message }));
-          }
-          return;
-        }
-        const grouped = new Map<string, ContextValue[]>(wanted.map((id) => [id, []]));
-        for (const value of res.data) grouped.get(value.scope_id)?.push(value);
-        for (const [scopeId, values] of grouped) {
-          dispatch(contextValuesActions.valuesFetchFulfilled({ scopeId, values }));
-        }
-      } finally {
-        for (const scopeId of wanted) {
-          if (inFlight.get(scopeId) === promise) inFlight.delete(scopeId);
-        }
-      }
-    };
-    const promise = run();
-
-    for (const scopeId of wanted) inFlight.set(scopeId, promise);
-    return promise;
   };
 }

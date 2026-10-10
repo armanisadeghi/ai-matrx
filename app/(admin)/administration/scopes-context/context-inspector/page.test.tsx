@@ -86,8 +86,12 @@ jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () =>
     }),
   };
 });
+// A type's fields come from the holder's catalog (`readScopeTypeFields`, a thunk).
+jest.mock("@/features/scopes/redux/contextItemCatalog", () => ({
+  ...jest.requireActual("@/features/scopes/redux/contextItemCatalog"),
+  readScopeTypeFields: (typeId: string) => () => (async () => [])(typeId),
+}));
 jest.mock("@/features/scopes/components/context-assignment/data", () => ({
-  fetchTypeItems: jest.fn(async () => []),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));

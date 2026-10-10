@@ -29,7 +29,6 @@ jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () =>
   useUniverse: () => fixture,
 }));
 jest.mock("@/features/scopes/components/context-assignment/data", () => ({
-  fetchTypeItems: jest.fn(async () => []),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
   fetchProjectTasks: jest.fn(async () => []),

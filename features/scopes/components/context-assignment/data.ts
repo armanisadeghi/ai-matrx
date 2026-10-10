@@ -10,16 +10,19 @@
 //     refreshed only when a structural mutation fires
 //     (`refreshScopeTreeAfterMutation`). Components read it via `useScopeTree`.
 //
-//   • Engagement data (the user's tasks, a type's context items) is fetched
-//     lazily when a component mounts/opens — through THIS module, which is
-//     module-scoped: a short TTL cache + in-flight dedup shared by every
+//   • Engagement data (the user's projects and tasks, entity tag lists) is
+//     fetched lazily when a component mounts/opens — through THIS module, which
+//     is module-scoped: a short TTL cache + in-flight dedup shared by every
 //     instance on the page. Fifty fields rendered at once produce at most one
 //     request per key per TTL window, never a request storm.
+//
+//   • A scope type's context FIELDS are never cached here: they are scope data,
+//     held by the Redux catalog (`readScopeTypeFields` / `listScopeTypeItems`),
+//     which shows a refused read instead of an empty list.
 //
 // If you are adding a read to any ContextAssignment component, add it here —
 // never fetch directly from the component.
 
-import type { ContextField } from "@ai-matrx/records/scopes";
 import { getUserProjects } from "@/features/projects/service";
 import {
   getProjectTasks,
@@ -95,16 +98,6 @@ export async function fetchAssignableTasks(): Promise<AssignableTask[]> {
       orgId: (t as { organization_id?: string | null }).organization_id ?? null,
       status: (t as { status?: string | null }).status ?? null,
     }));
-  });
-}
-
-/** Context items defined on a scope type — used by slot pickers. */
-export async function fetchTypeItems(
-  scopeTypeId: string,
-): Promise<ContextField[]> {
-  return cached(`items:${scopeTypeId}`, async () => {
-    const r = await scopesService.listContextItems(scopeTypeId);
-    return r.ok ? r.data.items : [];
   });
 }
 
@@ -189,10 +182,7 @@ export async function fetchProjectTasks(
   });
 }
 
-export function invalidateAssignableData(
-  kind?: "projects" | "tasks" | "items" | "bulk",
-  id?: string,
-): void {
+export function invalidateAssignableData(kind?: "projects" | "tasks" | "bulk"): void {
   if (!kind) {
     cache.clear();
     return;
@@ -201,10 +191,6 @@ export function invalidateAssignableData(
   if (kind === "tasks") {
     cache.delete("tasks");
     for (const k of [...cache.keys()]) if (k.startsWith("tasks:project:")) cache.delete(k);
-  }
-  if (kind === "items") {
-    if (id) cache.delete(`items:${id}`);
-    else for (const k of [...cache.keys()]) if (k.startsWith("items:")) cache.delete(k);
   }
   if (kind === "bulk") {
     for (const k of [...cache.keys()]) if (k.startsWith("bulk:")) cache.delete(k);

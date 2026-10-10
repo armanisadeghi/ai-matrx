@@ -15,33 +15,23 @@ import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
-/** Status bookkeeping only: one read per type while it is loading. */
-const inFlight = new Map<string, Promise<void>>();
-
+/**
+ * Fill the catalog for one type unless it is already ready. No host in-flight map: two screens asking
+ * at once ask the same door with the same arguments, and the records client sends that read once
+ * (its own in-flight dedupe). The door answers each type's fields in their order (`sort`, then label),
+ * so the holder stores them as answered.
+ */
 export function ensureScopeTypeItems(scopeTypeId: string, opts: { refresh?: boolean } = {}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const entry = getState().scopesTree.contextItemsByTypeId[scopeTypeId];
-    if (!opts.refresh) {
-      if (entry?.status === "ready") return;
-      const p = entry?.status === "loading" ? inFlight.get(scopeTypeId) : undefined;
-      if (p) return p;
-    }
+    if (!opts.refresh && entry?.status === "ready") return;
     dispatch(scopesActions.contextItemsFetchPending({ scopeTypeId }));
-    const promise = (async () => {
-      try {
-        const res: RecordsResult<ContextField[]> =
-          scopeTypeId === SYSTEM_ITEMS_KEY ? await scopeDoors().systemItems() : await scopeDoors().fields([scopeTypeId]);
-        if (!res.ok) {
-          dispatch(scopesActions.contextItemsFetchRejected({ scopeTypeId, error: res.error.message }));
-          return;
-        }
-        const items = [...res.data].sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label));
-        dispatch(scopesActions.contextItemsFetchFulfilled({ scopeTypeId, items }));
-      } finally {
-        inFlight.delete(scopeTypeId);
-      }
-    })();
-    inFlight.set(scopeTypeId, promise);
-    return promise;
+    const res: RecordsResult<ContextField[]> =
+      scopeTypeId === SYSTEM_ITEMS_KEY ? await scopeDoors().systemItems() : await scopeDoors().fields([scopeTypeId]);
+    if (!res.ok) {
+      dispatch(scopesActions.contextItemsFetchRejected({ scopeTypeId, error: res.error.message }));
+      return;
+    }
+    dispatch(scopesActions.contextItemsFetchFulfilled({ scopeTypeId, items: res.data }));
   };
 }

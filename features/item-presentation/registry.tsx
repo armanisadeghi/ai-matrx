@@ -548,10 +548,26 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-indigo-500/20",
     },
     open: { kind: "context_item" },
-    // A context field is a column of its scope type's Table; the records package has no
-    // read-by-field-id door yet, so the card says it could not load rather than guessing.
-    enrich: async () => {
-      throw new Error("A context field cannot be looked up by id yet.");
+    // A context field is a column of its scope type's Table, read by id in whichever of the
+    // person's organizations holds it (`client.scopes.field`); a refusal is the card's error.
+    enrich: async (_s, id) => {
+      const [{ scopeDoors }, { readMemberOrganizationRows }] = await Promise.all([
+        import("@/features/scopes/service/scopeDoors"),
+        import("@/features/organizations/service/memberOrganizationRows"),
+      ]);
+      const member = await readMemberOrganizationRows();
+      if (!member.ok) throw new Error(member.error.message);
+      const res = await scopeDoors().field(id, [...member.roleByOrgId.keys()]);
+      if (!res.ok) {
+        if (res.error.code === "not_found") return { notFound: true };
+        throw new Error(res.error.message);
+      }
+      const field = res.data;
+      return {
+        name: clip(field.label, 80),
+        about: clip(field.description),
+        details: [{ label: "Kind", value: field.kind }],
+      };
     },
   },
   image: {

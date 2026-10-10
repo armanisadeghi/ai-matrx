@@ -39,6 +39,7 @@ import { makeSelectScopeTypeLabelMapForOrg } from "@/features/scopes/redux/selec
 import {
   listScopeTypeItems,
   selectAllContextItems,
+  selectItemsErrorForType,
   selectLoadedCatalogTypeIds,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
@@ -115,6 +116,7 @@ registerChatScopes({
   makeSelectScopeTypeLabelMapForOrg,
   selectAllContextItems,
   selectLoadedCatalogTypeIds,
+  selectItemsErrorForType,
   selectTaskById,
   listScopeTypeItems,
   ensureContextValues,

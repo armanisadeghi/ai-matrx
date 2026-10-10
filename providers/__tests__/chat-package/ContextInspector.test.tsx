@@ -96,15 +96,19 @@ jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () =>
     }),
   };
 });
-jest.mock("@/features/scopes/components/context-assignment/data", () => ({
-  fetchTypeItems: jest.fn(async (typeId: string) =>
+// A type's fields come from the holder's catalog (`readScopeTypeFields`, a thunk).
+jest.mock("@/features/scopes/redux/contextItemCatalog", () => ({
+  ...jest.requireActual("@/features/scopes/redux/contextItemCatalog"),
+  readScopeTypeFields: (typeId: string) => () => (async (typeId: string) =>
     typeId === "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e"
       ? [
           { id: "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d", key: "contact_phone", label: "Contact Phone" },
           { id: "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e", key: "industry", label: "Industry" },
         ]
       : [],
-  ),
+  )(typeId),
+}));
+jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));

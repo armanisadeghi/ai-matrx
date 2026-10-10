@@ -8,11 +8,19 @@
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/features/scopes/components/context-assignment/data", () => ({
-  fetchTypeItems: jest.fn(async () => [
+// A type's fields come from the holder's catalog (`readScopeTypeFields`, a thunk).
+jest.mock("@/features/scopes/redux/contextItemCatalog", () => ({
+  ...jest.requireActual("@/features/scopes/redux/contextItemCatalog"),
+  readScopeTypeFields: (typeId: string) => () => (async () => [
     { id: "item-phone", key: "contact_phone", label: "Contact Phone" },
     { id: "item-industry", key: "industry", label: "Industry" },
-  ]),
+  ])(typeId),
+}));
+jest.mock("@/lib/redux/hooks", () => ({
+  ...jest.requireActual("@/lib/redux/hooks"),
+  useAppDispatch: () => (a: unknown) => (typeof a === "function" ? (a as (d: unknown, g: unknown) => unknown)(() => undefined, () => ({})) : a),
+}));
+jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
   fetchProjectTasks: jest.fn(async () => []),
