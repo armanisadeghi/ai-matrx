@@ -725,13 +725,6 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         fail "Cannot push to GitHub ($REMOTE/$BRANCH) — nothing was released."
     fi
     ship_mark "pushed ${RELEASE_SHA:0:9} as ${RELEASE_COMMIT_MSG}"
-    # Surface mirror: a manifest in this release must have its ui.ui_surface rows (agents refuse
-    # to send without one). Idempotent soft-only sync of exactly the drifted manifests, from the
-    # committed candidate, seconds after the push and minutes before the build is live.
-    # A failure is an ERROR finding, never a stop.
-    if ! ( cd "$REPO_ROOT" && SURFACE_SYNC_SHA="$RELEASE_SHA" pnpm -s exec tsx scripts/check-release-surface-registration.ts --apply ) >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1; then
-        ship_finding "ERROR" "Surface mirror" "UNSYNCED — ${NEW_TAG} ships a surface manifest whose ui.ui_surface rows are missing or stale; agent sends on it will fail" "pnpm exec tsx scripts/check-release-surface-registration.ts --apply"
-    fi
     # --while-paused: the push landed, so nothing can refuse this release now.
     [[ -n "$WHILE_PAUSED_SHA" ]] && ship_start_migrations
 
@@ -887,6 +880,16 @@ bash "$SCRIPT_DIR/worktree-janitor.sh" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 |
 # the push, like every other check (it used to sit in front of the commit).
 if ! bash "$SCRIPT_DIR/release-stage.sh" --self-test >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1; then
     SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Git" "release-stage self-test failed — --ship may carry foreign edits" "pnpm check:ship-stage:self-test"
+fi
+
+# ── Surface mirror: THE RELEASE APPLIES THE SYNC (2026-10-10) ────────────────
+# A manifest in this release must have its ui.ui_surface rows (every agent send from a surface
+# with no row fails "not registered in ui.ui_surface"). This runs in the after-push phase (the
+# build takes minutes to go live), from the COMMITTED candidate, and syncs ONLY the manifests the
+# full mirror check names as missing/stale: idempotent, transactional, soft-delete only. A
+# failure is an ERROR finding, never a stop.
+if ! ( cd "$REPO_ROOT" && SURFACE_SYNC_SHA="$RELEASE_SHA" pnpm -s exec tsx scripts/check-release-surface-registration.ts --apply ) >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1; then
+    SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "ERROR" "Surface mirror" "UNSYNCED — ${NEW_TAG} ships a surface manifest whose ui.ui_surface rows are missing or stale; agent sends on it will fail" "pnpm exec tsx scripts/check-release-surface-registration.ts --apply"
 fi
 
 # ── Checks: ONE parallel runner, ONE table, findings as JSON (scripts/checks/run.mjs)
