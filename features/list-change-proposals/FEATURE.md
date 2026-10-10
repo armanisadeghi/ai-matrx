@@ -59,6 +59,8 @@ item whose `reference_source` is `{container_type:"table_template", template_id,
 
 ## Change log
 
+- `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): `applyListChange` reads the scope dataset provision as `RecordsResult` (`isRecordsErr`).
+
 - **2026-10-02** — Third kind of list: `{kind:"flashcard_deck", set_id}` — one row per card
   (`front`, `back`), read and written through `fcService`; `update` only (add/remove refused in
   words). Every `update` row now shows each patched column as current → proposed (rich text, so

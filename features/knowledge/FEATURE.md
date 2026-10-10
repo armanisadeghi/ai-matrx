@@ -129,6 +129,8 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 ## Change log
 
+- `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): favorites and association results use `isAssociationsRpcErr` from `@ai-matrx/associations` (was `isScopesRpcErr`).
+
 - **2026-09-30** — V5-B: the Sources page (`/knowledge/library`) archives and restores through the one archive — each row's menu (Open · Archive / Restore), bulk Archive / Restore, and THE ARCHIVED-ITEMS LAW filter (`?archived=`, every read and count honours it; `applySourcesArchiveAxis`). The Source page has Archive with Undo. "Attached to" also reads decks made from a Source's file or transcript, and a web page a person adds now is listed now, not at its cached fetch time (DB: `docproc.source_list_facts`, `docproc._source_captured_at_of`). Test: `features/sources/__tests__/sourcesArchiveAxis.test.ts`.
 
 - **2026-09-30** — Showcase headline uses separate source-flow and system lines, balanced paragraph wrapping, and a compact phone subtitle. Verified on localhost at desktop and phone widths with an independent visual review.

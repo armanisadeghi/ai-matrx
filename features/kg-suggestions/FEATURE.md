@@ -78,9 +78,10 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
   keep its explicit user filter, and every accept flow must assert ownership
   before creating a scope, tagging a source, or writing a context value. Never
   rely on platform-admin access or organization membership for this feature.
-- **`set_context_value` is the ONLY ctx-value write path.** Accepting a Stage-B
-  value goes through `scopesService.setContextValue` (the SECURITY DEFINER RPC).
-  Never insert/update `ctx_context_item_values` directly.
+- **The holder's `setContextValue` thunk is the ONLY scope-value write path.** Accepting a Stage-B
+  value dispatches it with a `ContextValueWrite` (`scope_id`, `field_id`, the field's `kind`,
+  `value`, `source_type: "ai_enriched"`); the field's kind decides how the suggested text becomes the
+  cell (`suggestionCell`). Never write a value any other way.
 - **Heavy-hitter accept is fully FE-owned, source-tagging is degraded in v1.**
   There's no server "plan" anymore. `useHeavyHitterAccept` creates the scope
   (`createScope` thunk → `create_scope` RPC) and tags ONLY the suggestion's own
@@ -110,6 +111,8 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
 ---
 
 ## Change Log
+
+- 2026-10-09 — Scopes cutover (lane SCOPES-WEB-CONSUMERS): accepting a suggestion goes through the holder (`setContextValue` with a `ContextValueWrite`, `setEntityScopes`); `acceptValueSuggestion` / `acceptAssociationSuggestion` take the `dispatch`; the resolved target reads `{ field, current }` (package `ContextField` / `ContextValue`); results are `RecordsResult` (`isRecordsErr`). `scopeStore` is gone.
 
 - 2026-10-02 — The global inbox is a `kg-suggestions` canvas tab; the `kgSuggestionsDrawer` overlay, its opener and `useIsPreviewingSource` are deleted.
 

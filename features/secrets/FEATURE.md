@@ -414,6 +414,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): favorite results use `isAssociationsRpcErr` from `@ai-matrx/associations`.
+
 - `2026-10-07` — `parseCsvFile` moved to `csv-import-file.ts`: the CSV worker reached the module that starts it, and that cycle hung every main/manage/demos Turbopack build from v0.4.2931 at the 45-minute limit. Guard: `pnpm check:worker-cycles`.
 
 - `2026-09-28` — Passkey approval for turning on filling in a browser (`/vault/approve-browser`), the equal alternative to the password; Browsers dialog copy says what re-enabling takes; vault calls surface the server's own refusal sentence instead of "Vault request failed (N)".

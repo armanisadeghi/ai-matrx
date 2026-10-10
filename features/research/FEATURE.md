@@ -121,6 +121,8 @@ via `<Cost>`/`useCostDisplay` (`components/cost/`, points for everyone); never `
 
 ## Change log
 
+- `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): association results use `AssociationsRpcResult` from `@ai-matrx/associations` (was `ScopesRpcResult`).
+
 - 2026-09-29 — Keyword source previews show a stable canonical loaded-row receipt; their fade clears the footer while Show all/less and source doors remain unchanged.
 
 - 2026-09-28 — The topic's agent surface is one host, `components/shell/ResearchTopicSurfaceHost.tsx`
