@@ -30,7 +30,6 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 | `every-record-view-has-custom-fields.test.ts` | G1: the record-view census (`scripts/record-pages/`), its generated map and shrink-only ledger (`lib/record-pages/`); live half = safety-net check `custom-fields.walk-every-record-view` |
 | `grid-agent-context/`, `page-capture/`, `record-chat/`, `row-agent-action/`, `row-change-agent/` | What a table, a row or a visible view hands to agents and chat |
 | `typedAnswers.ts` | What a stranger typed on a public door (form, booking, portal), turned into values once |
-| `test-bench/` | Route-existence facts read from the build tree |
 | `__tests__/` | Behaviour tests for the host code |
 
 Routes outside this directory: `app/(core)/data/`, `app/(core)/data/page.tsx` (redirects to `/data`),

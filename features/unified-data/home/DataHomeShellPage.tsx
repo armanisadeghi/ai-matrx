@@ -24,7 +24,7 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { ORG_FILTER_PARAM } from "@/features/unified-data/hub/dataHomeScope";
+import { ALL_ORGANIZATIONS, ORG_FILTER_PARAM, dataHomeOrganizationHref } from "@/features/unified-data/hub/dataHomeScope";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
@@ -32,6 +32,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
+import { DataHomeMapBar } from "@/features/unified-data/map/DataHomeMapBar";
 import { DataHomeMap } from "@/features/unified-data/map/DataHomeMap";
 import { useDataHomeShowPlatformTables } from "./useDataHomeMarks";
 import type { DataHomeMaking } from "./DataHomeRoute";
@@ -79,7 +80,11 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   // THE MAP (lane TABLE-MAP): the same tables as cards and lines. `?map=1` keeps it linkable and
   // leaves the list's own filters alone; it follows the organization filter and the platform switch.
   const mapOn = searchParams.get(MAP_PARAM) === "1";
-  const [showPlatformTables] = useDataHomeShowPlatformTables();
+  const [showPlatformTables, setShowPlatformTables] = useDataHomeShowPlatformTables();
+  const setOrganizationFilter = useCallback(
+    (id: string | null) => router.replace(dataHomeOrganizationHref("/data", new URLSearchParams(searchParams.toString()), id ?? ALL_ORGANIZATIONS)),
+    [router, searchParams],
+  );
   const toggleMap = useCallback(() => {
     const next = new URLSearchParams(searchParams.toString());
     if (mapOn) next.delete(MAP_PARAM);
@@ -103,19 +108,19 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
-                  { icon: "FileInput", label: "Import from Notion", onPress: making.importFromNotion },
-                  { icon: mapOn ? "List" : "Network", label: mapOn ? "List" : "Map", onPress: toggleMap },
-                  {
-                    icon: "LayoutTemplate",
-                    label: "Start from a template",
-                    onPress: () => router.push(TEMPLATE_GALLERY_HREF),
-                  },
                   // THE INBOX OPENS IN PLACE (2026-10-05): the one inbox window the bell opens.
                   // Mounted under the list it made /data scroll twice — the page and the table.
                   {
                     icon: "Inbox",
                     label: "Inbox",
                     onPress: () => dispatch(openOverlay({ overlayId: "workInboxWindow" })),
+                  },
+                  { icon: mapOn ? "List" : "Network", label: mapOn ? "List" : "Map", onPress: toggleMap },
+                  { icon: "FileInput", label: "Import from Notion", onPress: making.importFromNotion },
+                  {
+                    icon: "LayoutTemplate",
+                    label: "Start from a template",
+                    onPress: () => router.push(TEMPLATE_GALLERY_HREF),
                   },
                 ],
               }
@@ -143,7 +148,18 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
           >
             <div className="min-h-0 flex-1">
               {mapOn ? (
-                <DataHomeMap dataSource={dataSource} organizationFilter={organizationId} showPlatformTables={showPlatformTables} />
+                <div className="flex h-full min-h-0 flex-col">
+                  <DataHomeMapBar
+                    organizations={myOrganizations.map((o) => ({ id: o.id, name: o.name }))}
+                    organizationId={organizationId}
+                    onOrganization={setOrganizationFilter}
+                    showPlatformTables={showPlatformTables}
+                    onShowPlatformTables={setShowPlatformTables}
+                  />
+                  <div className="min-h-0 flex-1">
+                    <DataHomeMap dataSource={dataSource} organizationFilter={organizationId} showPlatformTables={showPlatformTables} />
+                  </div>
+                </div>
               ) : (
                 <DataHomeList dataSource={dataSource} />
               )}

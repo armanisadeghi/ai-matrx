@@ -2414,11 +2414,6 @@
       "source": "app/(core)/data/pages/[pageId]/page.tsx"
     },
     {
-      "pattern": "/data/try-everything",
-      "status": "live",
-      "source": "app/(core)/data/try-everything/page.tsx"
-    },
-    {
       "pattern": "/decisions",
       "status": "live",
       "source": "app/(core)/decisions/page.tsx"

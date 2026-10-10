@@ -11,6 +11,13 @@ import * as doors from "@/features/unified-data/hub/doors";
 
 export const RECORD_COUNT_DEBOUNCE_MS = 120;
 
+/**
+ * Tables counted per call. The door counts every table's visible rows inside ONE statement, so an
+ * organization with hundreds of big tables hit the statement timeout at 500 (359 tables, 2026-10-09)
+ * and every cell stayed `—`. Small calls, one after another per organization, stay under it.
+ */
+export const RECORD_COUNT_CHUNK = 25;
+
 export interface RecordCountStore {
   /** The count, or undefined while it is not known. */
   get: (tableId: string) => number | undefined;
@@ -39,20 +46,27 @@ export function createRecordCountStore(
     pending.clear();
     for (const [organizationId, idSet] of batches) {
       const ids = [...idSet];
-      for (let i = 0; i < ids.length; i += doors.TABLE_ROW_COUNTS_MAX) {
-        const chunk = ids.slice(i, i + doors.TABLE_ROW_COUNTS_MAX);
-        void ask(organizationId, chunk)
-          .then((answer) => {
-            if (answer.ok) {
-              for (const row of answer.data) counts.set(row.table_id, Number(row.visible_rows));
-            }
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            chunk.forEach((id) => inFlight.delete(id));
-            notify();
-          });
-      }
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += RECORD_COUNT_CHUNK) chunks.push(ids.slice(i, i + RECORD_COUNT_CHUNK));
+      // One organization's chunks go one after another (a burst of heavy counts is what timed out);
+      // organizations go side by side.
+      void chunks.reduce<Promise<void>>(
+        (before, chunk) =>
+          before.then(() =>
+            ask(organizationId, chunk)
+              .then((answer) => {
+                if (answer.ok) {
+                  for (const row of answer.data) counts.set(row.table_id, Number(row.visible_rows));
+                }
+              })
+              .catch(() => undefined)
+              .finally(() => {
+                chunk.forEach((id) => inFlight.delete(id));
+                notify();
+              }),
+          ),
+        Promise.resolve(),
+      );
     }
   };
 

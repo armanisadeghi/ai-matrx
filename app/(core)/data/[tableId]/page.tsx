@@ -7,6 +7,8 @@
 // hydration (lane SSR-ROWS-3): a server seed that lands first draws the rows in the server's HTML;
 // otherwise the browser's own answer draws them, and nothing waited for the server.
 
+import { notFound } from "next/navigation";
+
 import { PrimedTablePage } from "@/features/unified-data/page-seed/PrimedTablePages";
 import { addressAsksThePlainOpening, readTablePage } from "@/features/unified-data/page-seed/tablePageSeed.server";
 
@@ -18,6 +20,9 @@ export default async function UnifiedDataTableRoute({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [{ tableId }, address] = await Promise.all([params, searchParams ?? Promise.resolve<Record<string, string | string[] | undefined>>({})]);
+  // A table id is a uuid. Anything else (a stale address such as /data/try-everything) is "not found",
+  // never a raw database error from asking the store about it.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tableId)) notFound();
   // Lane SSR-ROWS: the grid's first page is asked too when the address opens the plain table and the
   // person's knob `data/server_rows` is on, so the rows are in the HTML the server sends. Development
   // only: `?server_rows=1` turns it on for this one request; production never reads it.

@@ -26,12 +26,4 @@ describe("production routes come from the build tree", () => {
     const missing = fromTree.filter((r) => !fromDisk.has(r));
     expect(missing).toEqual([]);
   });
-
-  it("does this build serve the portal and public-form addresses — answered from the tree", async () => {
-    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
-    const { routesInThisBuild } = await import("@/features/unified-data/test-bench/routesInThisBuild");
-    const answer = await routesInThisBuild();
-    expect(answer.portal.there).toBe(true);
-    expect(answer.publicForm.there).toBe(true);
-  });
 });

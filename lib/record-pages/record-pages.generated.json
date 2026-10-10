@@ -1907,10 +1907,6 @@
    "file": "app/(core)/data/pages/[pageId]/page.tsx",
    "pending": true
   },
-  "route:/data/try-everything": {
-   "file": "app/(core)/data/try-everything/page.tsx",
-   "pending": true
-  },
   "route:/decisions": {
    "file": "app/(core)/decisions/page.tsx",
    "pending": true

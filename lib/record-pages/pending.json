@@ -425,7 +425,6 @@
   "route:/data",
   "route:/data",
   "route:/data/[tableId]",
-  "route:/data/try-everything",
   "route:/decisions",
   "route:/decisions/review",
   "route:/detail",
