@@ -1,20 +1,15 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
- * Context reference cells — client-side parse/validate mirror of the DB path
- * (`context.parse_reference_fence` / `context.validate_reference_value`).
+ * Context reference cells — UI LABELS AND CHECKS ONLY.
  *
- * A `value_type="reference"` context item's cell is ALWAYS a canonical
- * ```matrx kind:"reference" fence stored in `value_text` — never a bare uuid,
- * never the legacy `value_reference_id` / `value_reference_type` columns
- * (those stay read-only for the handful of pre-existing cells written before
- * this module existed; see `features/scopes/FEATURE.md`).
+ * A reference / document field's cell is the package's `references` (`ContextReference[]`); for
+ * display and editing it is the canonical ```matrx reference fence (`referenceFence(references)`).
+ * The one write an edit becomes (`contextValueWrite`) and the fence's inverse (`referencesFromFence`)
+ * are `@ai-matrx/records/scopes`'s, never this file's.
  *
- * This is UX-only: it lets `ContextValueInput` / `ReferenceValuePicker` reject
- * an invalid selection before round-tripping to the server. The RPC
- * (`context.write_context_value` → `validate_reference_value`) is the
- * authoritative check and re-validates everything here, plus the
- * `allowed_scope_type_ids` filter (which needs a DB lookup and is not
- * duplicated client-side).
+ * What lives here: the type labels, the reference-config narrowing, the plain-text summaries, and a
+ * UX-only check that lets `ContextValueInput` / `ReferenceValuePicker` reject an invalid selection
+ * before the store's own write door re-validates it.
  */
 
 import {
@@ -30,10 +25,7 @@ import {
 import { referenceFallbackLabel } from "@/features/matrx-envelope/referenceResolvers";
 import {
   referenceFence,
-  type ContextField,
-  type ContextReference,
   type ContextValue,
-  type ContextValueWrite,
 } from "@ai-matrx/records/scopes";
 
 /**
@@ -124,7 +116,7 @@ export interface ParsedReferenceCell {
   items: ReferenceItem[];
 }
 
-/** Parse a cell's `value_text` into `{ type, items }`, or `null` if not a reference fence. */
+/** Parse a reference fence into `{ type, items }`, or `null` if it is not one. */
 export function parseReferenceCellValue(
   valueText: string | null | undefined,
 ): ParsedReferenceCell | null {
@@ -170,34 +162,6 @@ export function cellEditorValue(cell: ContextCellLike | null | undefined): unkno
   if (!cell) return null;
   if (isReferenceKind(cell.kind)) return cell.references.length > 0 ? referenceFence(cell.references) : null;
   return cell.value ?? null;
-}
-
-/** The things a reference fence points at, as `ContextReference`s (the inverse of `referenceFence`). */
-export function referencesFromFence(text: string | null | undefined): ContextReference[] {
-  const parsed = parseReferenceCellValue(text ?? null);
-  if (!parsed) return [];
-  return parsed.items.flatMap((raw): ContextReference[] => {
-    const item = raw as { id?: string; file_id?: string; label?: string; type?: string };
-    if (item.file_id) return [{ id: item.id ?? item.file_id, type: "file", file_id: item.file_id, ...(item.label ? { label: item.label } : {}) }];
-    if (!item.id) return [];
-    return [{ id: item.id, type: item.type ?? parsed.type, ...(item.label ? { label: item.label } : {}) }];
-  });
-}
-
-/**
- * THE one write a person's edit becomes: the editor's value for this field as a `ContextValueWrite`
- * (a reference/document field's fence becomes `references`; `null`/"" clears).
- */
-export function contextValueWrite(
-  field: Pick<ContextField, "id" | "kind">,
-  scopeId: string,
-  edited: unknown,
-): ContextValueWrite {
-  const base = { scope_id: scopeId, field_id: field.id, kind: field.kind, source_type: "manual" } as const;
-  if (isReferenceKind(field.kind)) {
-    return { ...base, references: typeof edited === "string" ? referencesFromFence(edited) : [] };
-  }
-  return { ...base, value: edited === "" ? null : (edited ?? null) };
 }
 
 /**

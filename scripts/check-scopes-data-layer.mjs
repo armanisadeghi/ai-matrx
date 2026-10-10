@@ -48,6 +48,16 @@ const DEPRECATED_ROW = new RegExp(`Database\\[["']deprecated["']\\]\\[["']Tables
 const SUPABASE_IMPORT = /from\s+["']@\/utils\/supabase\/(client|server)["']/;
 const RAW_CALL = /\.(rpc|schema|from)\(/;
 
+// (review 2) A scope field/value is HELD by the Redux holder only: a module-level Map/cache in a file
+// that handles scope fields or values, outside features/scopes/redux/, is a second cache.
+const MODULE_CACHE = /^(?:export\s+)?(?:const|let)\s+\w+\s*(?::[^=]+)?=\s*new\s+(?:Map|WeakMap)\b/m;
+const SCOPE_DATA = /\b(ContextField|ContextValue)\b|scopeDoors\(\)\.(fields|values)\(/;
+// (review 6) A value's encoding (the door's value_* slots, the reference fence a write carries, the
+// one write an edit becomes) is spoken only by @ai-matrx/records/scopes.
+// (A reference fence for DISPLAY/EDITING — `referenceFence`, the picker's fence — is allowed; the
+// write it becomes is the package's `contextValueWrite`.)
+const VALUE_ENCODING = /\bvalue_(text|number|boolean|date|timestamp|time|json|document_url)\b|function\s+(contextValueWrite|referencesFromFence)\b/;
+
 function isTest(path) {
   return /(__tests__|\.test\.|\.spec\.)/.test(path);
 }
@@ -63,6 +73,10 @@ export function findings(path, text) {
       if (line >= 0) out.push(`${path}:${line + 1}: calls .rpc/.schema/.from — scope data goes through scopeDoors()`);
     }
   }
+  if (!path.startsWith("features/scopes/redux/") && MODULE_CACHE.test(text) && SCOPE_DATA.test(text)) {
+    out.push(`${path}: keeps a module-level Map beside scope fields/values — the Redux holder is the one cache`);
+  }
+  if (VALUE_ENCODING.test(text)) out.push(`${path}: encodes a scope value (value_* slot / fence write) — only @ai-matrx/records/scopes may`);
   if (DOOR_STRING.test(text)) out.push(`${path}: names a custom.context_* door — only @ai-matrx/records may`);
   if (ARCHIVED_READ.test(text)) out.push(`${path}: reads an archived scope table in "context" (moved to deprecated)`);
   if (DEPRECATED_ROW.test(text)) out.push(`${path}: types a row of an archived scope table (Database["deprecated"])`);
@@ -89,6 +103,10 @@ function selfTest() {
     ["features/item-presentation/plant.ts", 'fetchRow(s, "scope_types", id, "label", map, "context");\n', true],
     ["features/agent-context/plant.ts", 'type R = Database["deprecated"]["Tables"]["context_items"]["Row"];\n', true],
     ["features/scopes/service/scopeDoors.ts", 'import { supabase } from "@/utils/supabase/client";\n', false],
+    ["features/scopes/components/plant-cache.ts", 'import type { ContextField } from "x";\nconst cache = new Map<string, ContextField[]>();\n', true],
+    ["features/scopes/redux/holder-cache.ts", 'import type { ContextField } from "x";\nconst cache = new Map<string, ContextField[]>();\n', false],
+    ["features/tasks/plant-value.ts", 'const payload = { value_text: fence };\n', true],
+    ["features/scopes/utils/plant-write.ts", 'export function contextValueWrite(f, s, v) {}\n', true],
     ["features/scopes/redux/thunks/clean.ts", 'const r = await scopeDoors().tree(ids);\nArray.from(x);\n', false],
   ];
   let bad = 0;

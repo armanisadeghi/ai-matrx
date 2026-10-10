@@ -3,13 +3,12 @@
 /**
  * features/scopes/components/reference/ContextValueInput.tsx
  *
- * THE canonical value-entry switch for a context-item cell. Given a
- * `value_type` (+ optional custom component), renders exactly one control and
+ * THE canonical value-entry switch for a context field's cell. Given the
+ * field's `kind` (+ optional custom component), renders exactly one control and
  * reports changes as a plain `unknown` echo of what the caller already stores
  * (a string for text/number/boolean/date/document/json-as-text/reference
  * fences, a structured object for custom Smart-Input components) — the same
- * write shape preserves the field kind and value
- * column. Callers own persistence (auto-save debounce, or an explicit Save
+ * write shape preserves the field kind. Callers own persistence (auto-save debounce, or an explicit Save
  * button); this component only owns "what does the input look like".
  *
  * `onChange` fires on every interaction (keystroke, toggle, add/remove).

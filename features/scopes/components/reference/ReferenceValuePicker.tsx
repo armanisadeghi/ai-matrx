@@ -46,7 +46,7 @@ export interface ReferenceValuePickerProps {
   "aria-labelledby"?: string;
   "aria-describedby"?: string;
   config: ReferenceItemConfig;
-  /** The cell's raw `value_text` (a ```matrx fence), or null when unset. */
+  /** The cell as its ```matrx reference fence (`referenceFence(references)`), or null when unset. */
   value: string | null;
   onChange: (nextFenceOrNull: string | null) => void;
   /** The scope this cell lives on — resolves the org for the `scope` picker. */

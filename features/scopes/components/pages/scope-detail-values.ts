@@ -10,12 +10,12 @@ import {
   referenceFence,
   type ContextField,
   type ContextFieldKind,
-  type ContextReference,
   type ContextValue,
   type ContextValueWrite,
   type ScopeFieldValue,
 } from "@ai-matrx/records/scopes";
-import { cellEditorValue, contextValueWrite } from "@/features/scopes/utils/referenceCell";
+import { cellEditorValue } from "@/features/scopes/utils/referenceCell";
+import { contextValueWrite } from "@ai-matrx/records/scopes";
 
 /** Kinds whose cell is a list of things it points at. */
 export function isReferenceKind(kind: ContextFieldKind): boolean {
@@ -77,21 +77,9 @@ export function cellWrite(
   draft: unknown,
   changeSummary?: string,
 ): ContextValueWrite {
-  const base = {
-    scope_id: scopeId,
-    field_id: field.id,
-    kind: field.kind,
-    source_type: "manual",
-    ...(changeSummary ? { change_summary: changeSummary } : {}),
-  };
-  if (isReferenceKind(field.kind)) {
-    // The picker edits a fence; a caller holding the things already passes them as they are.
-    const references = Array.isArray(draft)
-      ? (draft as ContextReference[])
-      : contextValueWrite(field, scopeId, draft).references ?? [];
-    return { ...base, references };
-  }
-  return { ...base, value: draftAsCell(field.kind, draft) };
+  // The package's one write; this file only reads a typed text draft as its kind first.
+  const raw = isReferenceKind(field.kind) ? draft : draftAsCell(field.kind, draft);
+  return contextValueWrite(field, scopeId, raw, changeSummary ? { change_summary: changeSummary } : {});
 }
 
 function draftAsCell(kind: ContextFieldKind, draft: unknown): unknown {

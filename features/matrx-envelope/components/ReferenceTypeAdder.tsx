@@ -17,7 +17,7 @@
  * Extracted from `features/scopes/components/reference/ReferenceValuePicker.tsx`
  * (2026-07-25) when the messaging attach button needed the same pickers —
  * ReferenceValuePicker still owns the cell semantics (max_items, one type per
- * cell, fence <-> value_text); this owns only "let the user pick items of type
+ * cell, fence <-> references); this owns only "let the user pick items of type
  * T". Never fork a second search list.
  */
 
