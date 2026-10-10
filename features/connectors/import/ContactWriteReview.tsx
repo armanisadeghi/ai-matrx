@@ -11,6 +11,7 @@ import type { GoogleConnectionSummary } from "@/features/marketing/google/types"
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { ContactSearchResultPending } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Preview = components["schemas"]["GoogleContactEditPreview"];
 type Result = components["schemas"]["GoogleContactEditResult"];
 type Admission = components["schemas"]["ContactWriteAdmission"];
@@ -166,6 +167,6 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
       <p>Google confirmed: {nameText(confirmed)}</p>
       <Button variant="outline" disabled={busy} onClick={() => void review(reverse, true)}>Preview reverse edit</Button>
     </div> : null}
-    {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+    {error ? <p role="alert" className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
   </section>;
 }

@@ -243,7 +243,7 @@ function RowStatus({ health }: { health: ConnectorProductHealth }) {
       return (
         <span className={cn(base, "text-warning")}>
           Not working
-          <ErrorAlchemyMenu />
+          <ErrorAlchemyMenu input={{ message: "This connection is not working." }} />
         </span>
       );
     case "account_unusable":
