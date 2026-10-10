@@ -83,9 +83,7 @@
     "packages/**/*.ts",
     "packages/**/*.tsx",
     ".next-preview/types/**/*.ts",
-    ".next-preview/dev/types/**/*.ts",
-    ".next-b3/types/**/*.ts",
-    ".next-b3/dev/types/**/*.ts"
+    ".next-preview/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",

@@ -1,5 +1,7 @@
 // scripts/cls-routes-walk.mjs — cold-load layout shift for /data, /messages, /meetings as admin and member (headless).
-//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--max=0.01] [--verbose]
+//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--chat=default|open|closed] [--max=0.01] [--verbose]
+// --chat=open|closed seeds the shell chat dock's remembered state (cookies) per route family, as a returning person has it;
+// "default" is a first visit with no cookie.
 // Signs in through `pnpm dev-login` (never types a password). Prints each shift entry's nodes
 // (selector, previousRect, currentRect). Exits 1 when any route/seat run exceeds --max (default 0.01).
 import { chromium } from "playwright";
@@ -8,9 +10,10 @@ import { execSync } from "node:child_process";
 const args = process.argv.slice(2);
 const opt = (k, d) => args.find((a) => a.startsWith(`--${k}=`))?.split("=")[1] ?? d;
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 2);
-const routes = opt("routes", "/data,/messages,/meetings").split(",");
+const routes = opt("routes", "/data,/messages,/meetings,/agents,/marketing").split(",");
 const seats = opt("seats", "admin,member").split(",");
 const widths = opt("widths", "390,1024,1440").split(",").map(Number);
+const chatMode = opt("chat", "default");
 const MAX = Number(opt("max", "0.01"));
 const verbose = args.includes("--verbose");
 const browser = await chromium.launch({ headless: true });
@@ -34,6 +37,14 @@ for (const seat of seats) {
     const out = [];
     for (let i = 0; i < runs; i++) {
       const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, storageState: state });
+      if (chatMode !== "default") {
+        const host = new URL(origin).hostname;
+        const family = (route.split("/").filter(Boolean)[0] ?? "home");
+        await ctx.addCookies([
+          { name: `canvas-workspace:page:${family}:chat`, value: chatMode === "open" ? "side" : "side:closed", domain: host, path: "/" },
+          { name: "side-panel:canvas-chat:width", value: "484", domain: host, path: "/" },
+        ]);
+      }
       const page = await ctx.newPage();
       await page.addInitScript(() => {
         window.__cls = 0; window.__shifts = [];

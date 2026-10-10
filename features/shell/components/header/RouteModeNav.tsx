@@ -167,7 +167,8 @@ export function RouteModeNav({
   // overlap the title and then snap to icons once hydrated. It holds its place unseen until then:
   // the first look is the measured one (SSR ZERO LAYOUT SHIFT — no labelled-then-icons flip).
   const [measured, setMeasured] = useState(false);
-  const revealQueued = useRef(false);
+  const measuredRef = useRef(false);
+  const revealRaf = useRef(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -253,9 +254,18 @@ export function RouteModeNav({
       // effect first runs, so a pill revealed on the first answer showed "full" (341px) for a frame
       // and then collapsed to icons (208px) when the follow-up measurement landed (/meetings at
       // 1440px). The reveal waits two frames; the observers above settle the variant meanwhile.
-      if (!revealQueued.current) {
-        revealQueued.current = true;
-        requestAnimationFrame(() => requestAnimationFrame(() => setMeasured(true)));
+      // Every compute restarts the wait, so the reveal lands only once the geometry has stopped
+      // moving: revealing in the same frame RouteHeader's inset lands reads as a shift to the
+      // layout-shift observer (the cell becomes visible AND moves).
+      if (!measuredRef.current) {
+        if (revealRaf.current) cancelAnimationFrame(revealRaf.current);
+        revealRaf.current = requestAnimationFrame(() => {
+          revealRaf.current = requestAnimationFrame(() => {
+            revealRaf.current = 0;
+            measuredRef.current = true;
+            setMeasured(true);
+          });
+        });
       }
       setLayout((prev) =>
         prev.variant === next.variant &&
@@ -290,6 +300,8 @@ export function RouteModeNav({
     return () => {
       ro.disconnect();
       mo.disconnect();
+      if (revealRaf.current) cancelAnimationFrame(revealRaf.current);
+      revealRaf.current = 0;
     };
     // Keyed on WHAT the items are, not on the array's identity. Callers build
     // this list inline, so a parent that re-renders often — a live agent run, a
@@ -349,9 +361,13 @@ export function RouteModeNav({
       ref={cellRef}
       className={cn(
         "relative flex w-full min-w-0 justify-center",
-        !measured && "[&>*:not(:first-child)]:invisible",
+        // The whole cell (its own box included) is unseen until measured: the layout-shift
+        // observer reports the cell's box moving when RouteHeader's inset lands, even with
+        // every child hidden. Hidden measurers still measure (visibility keeps layout).
+        !measured && "invisible",
       )}
       data-route-nav-inflow={inflow ? "" : undefined}
+      data-route-nav-pending={measured ? undefined : ""}
     >
       {/* Hidden measurers — always at natural width, never affect layout.
           `w-max` on EACH measurer is load-bearing: they are block-level

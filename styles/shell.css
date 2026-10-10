@@ -3082,6 +3082,14 @@ html[data-board-embed] .shell-main {
   margin-right: 0 !important;
 }
 
+/* A ROUTE NAV NOT YET MEASURED (SSR ZERO LAYOUT SHIFT, 2026-10-10).
+   The inset's box moves (e.g. 341px -> 208px at 1440px) when RouteHeader writes its
+   flank geometry; the layout-shift observer counts that box even with every child
+   hidden. The inset itself is unseen until the nav has measured and settled. */
+[data-route-header-inset]:has([data-route-nav-pending]) {
+  visibility: hidden;
+}
+
 /* THE RIGHT SET ON A PHONE (page-pass shared defects, 2026-09-27).
    Search / Agents / Canvas / Inbox sit in `.shell-header-secondary`; below
    768px (`useIsMobile`) they fold into ONE control, `.shell-header-overflow`
