@@ -19,7 +19,7 @@ export type ReviewStatus =
   | "cancelled";
 
 export type ReviewSeat = "employee" | "manager" | "hr" | "skip_level" | string;
-export type ResponseRole = "self" | "manager";
+export type ResponseRole = "self" | "manager" | "peer";
 
 export interface RatingPoint {
   value: number;
@@ -32,7 +32,7 @@ export interface TemplateItem {
   label: string;
 }
 
-export type TemplateQuestionType = "responsibilities" | "narrative_list" | "rating" | "text";
+export type TemplateQuestionType = "responsibilities" | "narrative_list" | "rating" | "text" | "goal_review";
 
 export interface TemplateQuestion {
   key: string;
@@ -116,12 +116,37 @@ export interface ResponseView {
   version: number | null;
   /** Present only when the door let this seat read the answers. */
   answers: ReviewAnswers | null;
+  /** A peer's name, present only when the door allowed it (never when peer feedback is anonymous). */
+  respondentName: string | null;
+}
+
+export interface ReviewGoal {
+  goalId: string;
+  title: string;
+  status: string;
+  progress: number;
+  dueOn: string | null;
+  /** The key the answers use for this goal: `goals.<goalId>`. */
+  answerKey: string;
+}
+
+export interface PeerNomination {
+  nominationId: string;
+  peerEmploymentId: string;
+  peerName: string;
+  status: "pending" | "approved" | "declined" | string;
+  /** Only the manager and HR see whether the peer has answered. */
+  responseStatus: string | null;
 }
 
 export interface ReviewDetail {
   review: ReviewSummary;
   template: TemplateSnapshot;
   responses: ResponseView[];
+  goals: ReviewGoal[];
+  peerNominations: PeerNomination[];
+  peerFeedbackSharedAt: string | null;
+  peerAnonymous: boolean;
 }
 
 export interface CycleSummary {
@@ -219,7 +244,7 @@ export function parseTemplate(raw: unknown): TemplateSnapshot {
     const questions: TemplateQuestion[] = recs(s.questions).flatMap((q) => {
       const qKey = str(q.key);
       const type = str(q.type);
-      if (!qKey || (type !== "responsibilities" && type !== "narrative_list" && type !== "rating" && type !== "text")) return [];
+      if (!qKey || (type !== "responsibilities" && type !== "narrative_list" && type !== "rating" && type !== "text" && type !== "goal_review")) return [];
       return [
         {
           key: qKey,
@@ -318,7 +343,7 @@ export function parseReviewDetail(raw: Rec): ReviewDetail | null {
   if (!review) return null;
   const responses: ResponseView[] = recs(raw.responses).flatMap((r) => {
     const role = str(r.role);
-    if (role !== "self" && role !== "manager") return [];
+    if (role !== "self" && role !== "manager" && role !== "peer") return [];
     return [
       {
         role,
@@ -328,10 +353,32 @@ export function parseReviewDetail(raw: Rec): ReviewDetail | null {
         isMine: r.is_mine === true,
         version: num(r.version),
         answers: r.visible === true ? parseAnswers(r.answers) ?? emptyAnswers() : null,
+        respondentName: str(r.respondent_name),
       },
     ];
   });
-  return { review, template: parseTemplate(raw.template), responses };
+  const rv = isRec(raw.review) ? raw.review : {};
+  const goals: ReviewGoal[] = recs(raw.goals).flatMap((g) => {
+    const goalId = str(g.goal_id);
+    return goalId
+      ? [{ goalId, title: str(g.title) ?? "Goal", status: str(g.status) ?? "on_track", progress: num(g.progress) ?? 0, dueOn: str(g.due_on), answerKey: str(g.answer_key) ?? `goals.${goalId}` }]
+      : [];
+  });
+  const peerNominations: PeerNomination[] = recs(raw.peer_nominations).flatMap((n) => {
+    const nominationId = str(n.nomination_id);
+    return nominationId
+      ? [{ nominationId, peerEmploymentId: str(n.peer_employment_id) ?? "", peerName: str(n.peer_name) ?? "Colleague", status: str(n.status) ?? "pending", responseStatus: str(n.response_status) }]
+      : [];
+  });
+  return {
+    review,
+    template: parseTemplate(raw.template),
+    responses,
+    goals,
+    peerNominations,
+    peerFeedbackSharedAt: str(rv.peer_feedback_shared_at),
+    peerAnonymous: rv.peer_anonymous !== false,
+  };
 }
 
 export function parseCycleSummary(c: Rec): CycleSummary | null {

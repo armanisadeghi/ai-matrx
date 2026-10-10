@@ -20,12 +20,15 @@ import { toast } from "@/lib/toast";
 import { AnswerForm } from "./AnswerForm";
 import { AnswerReadout, Comparison } from "./Comparison";
 import { ReviewExtras } from "./ReviewExtras";
-import { acknowledgeReview, cancelReview, getReview, reopenReview, setOverallRating, shareReview, type StdResult } from "./service";
+import { acknowledgeReview, cancelReview, getReview, reopenReview, replaceManager, setOverallRating, shareReview, type StdResult } from "./service";
+import { PeersPanel } from "./PeersPanel";
+import { peerLabel, submittedPeerResponses } from "./peers";
+import { EmploymentPicker } from "@/features/hr/people/relations/components/EmploymentPicker";
 import { formatDay, nextStep, periodLabel, ratingLabel, statusLabel, statusTone } from "./status";
 import type { ResponseView, ReviewDetail } from "./types";
 
 const NONE = "__none";
-type Dialog = "share" | "acknowledge" | "reopen" | "cancel" | null;
+type Dialog = "share" | "acknowledge" | "reopen" | "cancel" | "replace" | null;
 
 export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const [detail, setDetail] = useState<ReviewDetail | null>(null);
@@ -33,6 +36,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const [tick, setTick] = useState(0);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [comment, setComment] = useState("");
+  const [newManager, setNewManager] = useState<{ employmentId: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
@@ -68,6 +72,9 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const template = detail?.template;
   const selfR: ResponseView | undefined = detail?.responses.find((r) => r.role === "self");
   const mgrR: ResponseView | undefined = detail?.responses.find((r) => r.role === "manager");
+  const isPeer = review?.mySeat === "peer";
+  const myPeer = detail?.responses.find((r) => r.role === "peer" && r.isMine);
+  const peers = detail ? submittedPeerResponses(detail.responses).filter((r) => !r.isMine) : [];
 
   return (
     <>
@@ -97,6 +104,26 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
               </p>
             </header>
 
+            {isPeer ? (
+              myPeer?.status === "submitted" && myPeer.answers ? (
+                <AnswerReadout template={template} answers={myPeer.answers} goals={detail.goals} title="Your feedback, sent" />
+              ) : (
+                <AnswerForm
+                  key={`peer-${myPeer?.version ?? 0}`}
+                  reviewId={reviewId}
+                  role="peer"
+                  template={template}
+                  goals={detail.goals}
+                  initialAnswers={myPeer?.answers ?? null}
+                  initialVersion={myPeer?.version ?? null}
+                  canSubmit={review.cycleStatus === "open"}
+                  subjectName={review.employeeName}
+                  onSubmitted={reload}
+                  onConflict={reload}
+                />
+              )
+            ) : (
+            <>
             <Timeline review={review} />
             <ReviewExtras detail={detail} />
 
@@ -110,6 +137,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
                 initialVersion={selfR?.version ?? null}
                 canSubmit={review.can.submit_self}
                 subjectName={review.employeeName}
+                goals={detail.goals}
                 onSubmitted={reload}
                 onConflict={reload}
               />
@@ -124,6 +152,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
                 initialVersion={mgrR?.version ?? null}
                 canSubmit={review.can.submit_manager}
                 subjectName={review.employeeName}
+                goals={detail.goals}
                 onSubmitted={reload}
                 onConflict={reload}
               />
@@ -132,21 +161,26 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
             {/* Finished answers this person may read. The door decides: a hidden half has no answers. */}
             {!review.can.save_self && !review.can.save_manager ? (
               selfR?.answers && mgrR?.answers ? (
-                <Comparison template={template} self={selfR.answers} manager={mgrR.answers} employeeName={review.employeeName} managerName={review.managerName} />
+                <Comparison template={template} self={selfR.answers} manager={mgrR.answers} employeeName={review.employeeName} managerName={review.managerName} goals={detail.goals} />
               ) : selfR?.answers ? (
-                <AnswerReadout template={template} answers={selfR.answers} title={selfR.isMine ? "Your self review" : `${review.employeeName}'s self review`} />
+                <AnswerReadout template={template} answers={selfR.answers} title={selfR.isMine ? "Your self review" : `${review.employeeName}'s self review`} goals={detail.goals} />
               ) : mgrR?.answers ? (
-                <AnswerReadout template={template} answers={mgrR.answers} title={`${review.managerName}'s review`} />
+                <AnswerReadout template={template} answers={mgrR.answers} title={`${review.managerName}'s review`} goals={detail.goals} />
               ) : (
                 <EmptyState icon={<CircleDot />} title="Nothing to read yet" line="Each side stays private until both are submitted" />
               )
             ) : (
               <>
-                {review.can.save_manager && selfR?.answers ? <AnswerReadout template={template} answers={selfR.answers} title={`${review.employeeName}'s self review`} /> : null}
+                {review.can.save_manager && selfR?.answers ? <AnswerReadout template={template} answers={selfR.answers} title={`${review.employeeName}'s self review`} goals={detail.goals} /> : null}
               </>
             )}
 
-            {review.can.set_overall || review.can.share || review.can.acknowledge || review.can.reopen || review.can.cancel ? (
+            <PeersPanel detail={detail} onChanged={reload} />
+            {peers.map((r, i) => (
+              <AnswerReadout key={`${r.role}-${i}`} template={template} answers={r.answers!} goals={detail.goals} title={`Peer feedback: ${peerLabel(r, i)}`} />
+            ))}
+
+            {review.can.set_overall || review.can.share || review.can.acknowledge || review.can.reopen || review.can.cancel || review.can.replace_manager ? (
               <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-3">
                 {review.can.set_overall ? (
                   <Select
@@ -171,6 +205,11 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
                     Reopen
                   </Button>
                 ) : null}
+                {review.can.replace_manager ? (
+                  <Button variant="outline" disabled={busy} onClick={() => setDialog("replace")}>
+                    Change manager
+                  </Button>
+                ) : null}
                 {review.can.cancel ? (
                   <Button icon={<Ban />} variant="outline" disabled={busy} onClick={() => setDialog("cancel")}>
                     Cancel review
@@ -178,8 +217,26 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
                 ) : null}
               </div>
             ) : null}
+            </>
+            )}
           </div>
 
+          <ConfirmDialog
+            open={dialog === "replace"}
+            onOpenChange={(o) => {
+              if (!o) {
+                setDialog(null);
+                setNewManager(null);
+              }
+            }}
+            title="Change this review's manager"
+            description={`The new manager writes the review and shares it. ${review.managerName} loses access to it. This only works before the manager submits.`}
+            confirmLabel="Change manager"
+            confirmDisabled={newManager === null}
+            busy={busy}
+            content={<EmploymentPicker value={newManager?.employmentId ?? null} onChange={(id) => id === null && setNewManager(null)} onChosen={setNewManager} placeholder="Search for the new manager" />}
+            onConfirm={() => (newManager ? act(() => replaceManager(reviewId, newManager.employmentId), "Manager changed") : undefined)}
+          />
           <ConfirmDialog
             open={dialog === "share"}
             onOpenChange={(o) => !o && setDialog(null)}

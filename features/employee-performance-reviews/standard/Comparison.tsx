@@ -8,10 +8,24 @@ import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { SectionCard } from "@/features/employee-performance-reviews/components/review-form-components";
 
 import { averageRatings, rankRatingDeltas } from "./deltas";
-import type { ReviewAnswers, TemplateSnapshot } from "./types";
+import type { ReviewAnswers, ReviewGoal, TemplateSnapshot } from "./types";
 
-function Side({ title, answers, template, qKey, type }: { title: string; answers: ReviewAnswers; template: TemplateSnapshot; qKey: string; type: string }) {
+function Side({ title, answers, template, qKey, type, goals = [] }: { title: string; answers: ReviewAnswers; template: TemplateSnapshot; qKey: string; type: string; goals?: ReviewGoal[] }) {
   void template;
+  if (type === "goal_review") {
+    return (
+      <div className="min-w-0 space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+        {goals.length === 0 ? <p className="text-sm text-muted-foreground">No goals in this period</p> : null}
+        {goals.map((g) => (
+          <div key={g.goalId} className="text-sm">
+            <span className="font-medium">{g.title}</span>: {answers.ratings[g.answerKey] ?? "not rated"}
+            {answers.texts[g.answerKey] ? <p className="text-muted-foreground">{answers.texts[g.answerKey]}</p> : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
   const list = answers.lists[qKey] ?? [];
   const text = answers.texts[qKey] ?? "";
   return (
@@ -44,12 +58,14 @@ export function Comparison({
   manager,
   employeeName,
   managerName,
+  goals = [],
 }: {
   template: TemplateSnapshot;
   self: ReviewAnswers;
   manager: ReviewAnswers;
   employeeName: string;
   managerName: string;
+  goals?: ReviewGoal[];
 }) {
   const deltas = rankRatingDeltas(template, self, manager);
   const avg = averageRatings(deltas);
@@ -96,8 +112,8 @@ export function Comparison({
           .map((q) => (
             <SectionCard key={q.key} badge={index + 1} title={q.label}>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Side title={employeeName} answers={self} template={template} qKey={q.key} type={q.type} />
-                <Side title={managerName} answers={manager} template={template} qKey={q.key} type={q.type} />
+                <Side title={employeeName} answers={self} template={template} qKey={q.key} type={q.type} goals={goals} />
+                <Side title={managerName} answers={manager} template={template} qKey={q.key} type={q.type} goals={goals} />
               </div>
             </SectionCard>
           )),
@@ -107,7 +123,7 @@ export function Comparison({
 }
 
 /** One person's finished answers, read-only (their own submitted half, or the shared manager review). */
-export function AnswerReadout({ template, answers, title }: { template: TemplateSnapshot; answers: ReviewAnswers; title: string }) {
+export function AnswerReadout({ template, answers, title, goals = [] }: { template: TemplateSnapshot; answers: ReviewAnswers; title: string; goals?: ReviewGoal[] }) {
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">{title}</p>
@@ -126,7 +142,7 @@ export function AnswerReadout({ template, answers, title }: { template: Template
                   ))}
                 </div>
               ) : (
-                <Side key={q.key} title={q.label} answers={answers} template={template} qKey={q.key} type={q.type} />
+                <Side key={q.key} title={q.label} answers={answers} template={template} qKey={q.key} type={q.type} goals={goals} />
               ),
             )}
           </div>

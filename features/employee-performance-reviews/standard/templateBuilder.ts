@@ -4,7 +4,7 @@
 // carries the `__kind` the door (hr._rev_template_problems) validates, and every key is derived
 // from a label here — a person never types a key. Pure, so it can be proven.
 
-import type { TemplateQuestionType } from "./types";
+import type { RatingPoint, TemplateQuestionType, TemplateSnapshot } from "./types";
 
 export const KIND = {
   section: "performance_review_template_section",
@@ -17,6 +17,8 @@ export const KIND = {
 export interface DraftItem {
   id: string;
   label: string;
+  /** Kept from a loaded template, so editing a label never renames the key old answers use. */
+  key?: string;
 }
 export interface DraftQuestion {
   id: string;
@@ -26,15 +28,18 @@ export interface DraftQuestion {
   minItems: number;
   maxItems: number;
   items: DraftItem[];
+  key?: string;
 }
 export interface DraftSection {
   id: string;
+  key?: string;
   title: string;
   description: string;
   questions: DraftQuestion[];
 }
 export interface DraftPoint {
   id: string;
+  key?: string;
   value: number;
   label: string;
 }
@@ -59,8 +64,12 @@ export function slug(label: string): string {
     .slice(0, 48);
 }
 
-/** A key from `label`, made unique among `taken` by a numeric suffix. Empty labels yield "" (the door says so). */
-export function uniqueKey(label: string, taken: Set<string>): string {
+/** A key from `label`, made unique among `taken` by a numeric suffix. Empty labels yield "" (the door says so). A kept key wins. */
+export function uniqueKey(label: string, taken: Set<string>, keep?: string): string {
+  if (keep) {
+    taken.add(keep);
+    return keep;
+  }
   const base = slug(label);
   if (!base) return "";
   let key = base;
@@ -81,8 +90,8 @@ export function keyDraft(draft: TemplateDraft): KeyedDraft {
   const sectionKeys = new Map<string, string>();
   const questionKeys = new Map<string, string>();
   for (const s of draft.sections) {
-    sectionKeys.set(s.id, uniqueKey(s.title, sectionTaken));
-    for (const q of s.questions) questionKeys.set(q.id, uniqueKey(q.label, questionTaken));
+    sectionKeys.set(s.id, uniqueKey(s.title, sectionTaken, s.key));
+    for (const q of s.questions) questionKeys.set(q.id, uniqueKey(q.label, questionTaken, q.key));
   }
   return { sectionKeys, questionKeys };
 }
@@ -98,7 +107,7 @@ export function buildSections(draft: TemplateDraft): Array<Record<string, unknow
       const base = { __kind: KIND.question, key: questionKeys.get(q.id) ?? "", type: q.type, label: q.label.trim(), required: q.required };
       if (q.type === "rating") {
         const taken = new Set<string>();
-        return { ...base, items: q.items.map((i) => ({ __kind: KIND.item, key: uniqueKey(i.label, taken), label: i.label.trim() })) };
+        return { ...base, items: q.items.map((i) => ({ __kind: KIND.item, key: uniqueKey(i.label, taken, i.key), label: i.label.trim() })) };
       }
       if (q.type === "narrative_list" || q.type === "responsibilities") {
         return { ...base, min_items: q.minItems, max_items: q.maxItems };
@@ -113,7 +122,7 @@ export function buildRatingScale(points: DraftPoint[]): Record<string, unknown> 
   return {
     __kind: KIND.scale,
     key: "custom",
-    points: points.map((p) => ({ __kind: KIND.point, value: p.value, key: uniqueKey(p.label, taken), label: p.label.trim() })),
+    points: points.map((p) => ({ __kind: KIND.point, value: p.value, key: uniqueKey(p.label, taken, p.key), label: p.label.trim() })),
   };
 }
 
@@ -183,5 +192,36 @@ export function starterDraft(): TemplateDraft {
       { id: draftId(), title: "Goals", description: "", questions: [{ id: draftId(), type: "text", label: "Goals for the next period", required: false, minItems: 0, maxItems: 0, items: [] }] },
     ],
     points: DEFAULT_POINTS.map((p) => ({ id: draftId(), ...p })),
+  };
+}
+
+/** An existing template, loaded back into the editor with every key kept. */
+export function draftFromSnapshot(
+  snap: TemplateSnapshot,
+  meta: { templateId: string; name: string; description: string | null; isDefault: boolean },
+): TemplateDraft {
+  const point = (p: RatingPoint): DraftPoint => ({ id: draftId(), key: p.key, value: p.value, label: p.label });
+  return {
+    templateId: meta.templateId,
+    name: meta.name,
+    description: meta.description ?? "",
+    isDefault: meta.isDefault,
+    sections: snap.sections.map((s) => ({
+      id: draftId(),
+      key: s.key,
+      title: s.title,
+      description: s.description ?? "",
+      questions: s.questions.map((q) => ({
+        id: draftId(),
+        key: q.key,
+        type: q.type,
+        label: q.label,
+        required: q.required,
+        minItems: q.minItems ?? 0,
+        maxItems: q.maxItems ?? 5,
+        items: q.items.map((i) => ({ id: draftId(), key: i.key, label: i.label })),
+      })),
+    })),
+    points: snap.ratingPoints.map(point),
   };
 }

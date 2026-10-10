@@ -6,16 +6,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck, Plus } from "lucide-react";
+import { ClipboardCheck, Plus, Target } from "lucide-react";
 import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import { hrPerformanceCycleHref, hrPerformanceReviewHref } from "@/features/hr/routes";
+import { hrPerformanceCycleHref, hrPerformanceGoalsHref, hrPerformanceReviewHref } from "@/features/hr/routes";
 
 import { NewCycleDialog } from "./NewCycleDialog";
-import { listCycles, listMyReviews } from "./service";
+import { listCycles, listMyReviews, myPeerRequests, type PeerRequest } from "./service";
 import { dueOn, formatDay, nextStep, periodLabel, statusLabel, statusTone } from "./status";
 import type { CycleSummary, ReviewSummary } from "./types";
 
@@ -29,6 +29,7 @@ const SEAT_LABEL: Record<string, string> = {
 function useReviewsData(organizationId: string | null) {
   const [reviews, setReviews] = useState<ReviewSummary[] | null>(null);
   const [cycles, setCycles] = useState<CycleSummary[] | null>(null);
+  const [requests, setRequests] = useState<PeerRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -43,6 +44,8 @@ function useReviewsData(organizationId: string | null) {
         return;
       }
       setReviews(mine.data);
+      // Peer requests are a separate door; a failure here must not hide the reviews, and "none" is the common answer.
+      void myPeerRequests().then((p) => live && p.ok && setRequests(p.data));
       if (!organizationId) {
         setCycles(null);
         return;
@@ -59,14 +62,14 @@ function useReviewsData(organizationId: string | null) {
     };
   }, [organizationId, tick]);
 
-  return { reviews, cycles, error, reload };
+  return { reviews, cycles, requests, error, reload };
 }
 
 export function StandardHome() {
   const hr = useHrContext();
   const org = hr.active?.organization_id ?? null;
   const orgRef = hr.orgRef;
-  const { reviews, cycles, error, reload } = useReviewsData(org);
+  const { reviews, cycles, requests, error, reload } = useReviewsData(org);
   const [creating, setCreating] = useState(false);
 
   const reviewColumns: MatrxColumnDef<ReviewSummary>[] = [
@@ -125,6 +128,35 @@ export function StandardHome() {
     { id: "out", header: "Outstanding", accessorFn: (c) => c.outstandingCount, filter: "number", width: 120 },
   ];
 
+  const requestColumns: MatrxColumnDef<PeerRequest>[] = [
+    {
+      id: "employee",
+      header: "Feedback on",
+      accessorFn: (r) => r.employeeName,
+      filter: "text",
+      width: 240,
+      frozen: true,
+      cell: (r) => (
+        <Link className="hover:underline" href={hrPerformanceReviewHref(r.reviewId, orgRef)}>
+          {r.employeeName}
+        </Link>
+      ),
+    },
+    { id: "cycle", header: "Cycle", accessorFn: (r) => r.cycleName, filter: "text", width: 220 },
+    { id: "due", header: "Due", accessorFn: (r) => r.dueOn, filter: "date", width: 130, cell: (r) => formatDay(r.dueOn) },
+    { id: "status", header: "Status", accessorFn: (r) => (r.responseStatus === "submitted" ? "Sent" : "To do"), filter: "text", width: 110, cell: (r) => <Badge tone={r.responseStatus === "submitted" ? "success" : "warning"}>{r.responseStatus === "submitted" ? "Sent" : "To do"}</Badge> },
+  ];
+  const requestCopy: MatrxDataTableCopyConfig<PeerRequest> = {
+    label: "feedback request",
+    listLabel: "feedback requests (this view)",
+    location: "Performance",
+    rowKind: "peer-feedback-request",
+    listKind: "peer-feedback-request-list",
+    rowDescription: "One request to give peer feedback: who it is about, the cycle and the due date.",
+    listDescription: "The peer feedback requests you have received, as currently shown.",
+    humanRow: (r) => [`Feedback on: ${r.employeeName}`, `Cycle: ${r.cycleName}`, `Due: ${formatDay(r.dueOn)}`].join("\n"),
+  };
+
   const reviewCopy: MatrxDataTableCopyConfig<ReviewSummary> = {
     label: "performance review",
     listLabel: "performance reviews (this view)",
@@ -152,6 +184,9 @@ export function StandardHome() {
     <HrPageState loading={loading} error={error ? new Error(error) : null} onRetry={reload} operation="Performance reviews" employerScope="all" variant="table">
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
         <div className="m-3 space-y-6">
+          <Button asChild variant="outline" icon={<Target />}>
+            <Link href={hrPerformanceGoalsHref(orgRef)}>Goals</Link>
+          </Button>
           <section aria-label="My reviews">
             {reviews && reviews.length > 0 ? (
               <MatrxDataTable<ReviewSummary>
@@ -171,6 +206,24 @@ export function StandardHome() {
               <EmptyState icon={<ClipboardCheck />} title="No reviews yet" line="Reviews you are in, or write, appear here" />
             )}
           </section>
+
+          {requests.length > 0 ? (
+            <section aria-label="Feedback requested">
+              <MatrxDataTable<PeerRequest>
+                tableId="hr/performance/feedback-requested"
+                data={requests}
+                columns={requestColumns}
+                getRowId={(r) => r.reviewId}
+                pageSize={0}
+                density="condensed"
+                viewTabs={false}
+                toolbar={{ title: "Feedback requested", searchPlaceholder: "Search requests" }}
+                detail={{ enabled: false }}
+                copy={requestCopy}
+                emptyState={{ title: "No requests" }}
+              />
+            </section>
+          ) : null}
 
           {org && cycles !== null ? (
             <section aria-label="Review cycles">

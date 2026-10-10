@@ -17,7 +17,8 @@ import { toast } from "@/lib/toast";
 import { problemMessage } from "./messages";
 import { createDraftSaver, type DraftSaver } from "./draftSaver";
 import { saveResponse, submitResponse } from "./service";
-import type { AnswerProblem, ResponseRole, ReviewAnswers, TemplateQuestion, TemplateSnapshot } from "./types";
+import { GOAL_STATUS_LABEL, type GoalStatus } from "./goals";
+import type { AnswerProblem, ResponseRole, ReviewAnswers, ReviewGoal, TemplateQuestion, TemplateSnapshot } from "./types";
 import { emptyAnswers } from "./types";
 
 const AUTOSAVE_MS = 1200;
@@ -42,6 +43,7 @@ export function AnswerForm({
   initialVersion,
   canSubmit,
   subjectName,
+  goals = [],
   onSubmitted,
   onConflict,
 }: {
@@ -52,6 +54,8 @@ export function AnswerForm({
   initialVersion: number | null;
   canSubmit: boolean;
   subjectName: string;
+  /** The employee's goals overlapping the cycle, for a "review of goals" question. */
+  goals?: ReviewGoal[];
   onSubmitted: () => void;
   onConflict: () => void;
 }) {
@@ -117,7 +121,7 @@ export function AnswerForm({
       toast.error(r.problems && r.problems.length > 0 ? "A few answers are still missing. They are marked below." : r.message);
       return;
     }
-    toast.success(role === "self" ? "Self review submitted" : "Your review is submitted");
+    toast.success(role === "self" ? "Self review submitted" : role === "peer" ? "Feedback sent" : "Your review is submitted");
     onSubmitted();
   };
 
@@ -146,6 +150,38 @@ export function AnswerForm({
           surfaceName="hr-standard-performance-review"
           getApplicationScope={scope}
         />
+      );
+    }
+    if (q.type === "goal_review") {
+      if (goals.length === 0) return <p className="text-sm text-muted-foreground">No goals overlap this review period.</p>;
+      return (
+        <div className="space-y-3">
+          {goals.map((g) => {
+            const value = answers.ratings[g.answerKey];
+            return (
+              <div key={g.goalId} className="space-y-2 rounded-md border border-border p-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{g.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {GOAL_STATUS_LABEL[g.status as GoalStatus] ?? g.status} · {Math.round(g.progress)}%
+                  </span>
+                </div>
+                <RatingScale value={isRatingValue(value) ? value : undefined} onSelect={(v) => change({ ...answers, ratings: { ...answers.ratings, [g.answerKey]: v } })} />
+                <ProTextarea
+                  value={answers.texts[g.answerKey] ?? ""}
+                  onChange={(e) => change({ ...answers, texts: { ...answers.texts, [g.answerKey]: e.target.value } })}
+                  placeholder="Comment on this goal"
+                  minHeight={64}
+                  maxHeight={320}
+                  surfaceName="hr-standard-performance-review"
+                  getApplicationScope={scope}
+                  enableTextStats={false}
+                  className="min-h-[64px] resize-y text-base sm:text-sm"
+                />
+              </div>
+            );
+          })}
+        </div>
       );
     }
     if (q.type === "rating") {
@@ -191,7 +227,7 @@ export function AnswerForm({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={role === "self" ? "info" : "primary"}>{role === "self" ? "Your self review" : `Your review of ${subjectName}`}</Badge>
+        <Badge tone={role === "manager" ? "primary" : "info"}>{role === "self" ? "Your self review" : role === "peer" ? `Your feedback on ${subjectName}` : `Your review of ${subjectName}`}</Badge>
         <span aria-live="polite" className="text-xs text-muted-foreground">
           {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : saveState === "error" ? "Not saved" : "Saves as you type"}
         </span>
@@ -245,7 +281,7 @@ export function AnswerForm({
       {canSubmit ? (
         <div className="flex justify-end">
           <Button variant="primary" disabled={submitting} onClick={() => void submit()}>
-            {role === "self" ? "Submit self review" : "Submit your review"}
+            {role === "self" ? "Submit self review" : role === "peer" ? "Send feedback" : "Submit your review"}
           </Button>
         </div>
       ) : null}

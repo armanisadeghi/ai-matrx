@@ -429,6 +429,10 @@ export function hrPerformanceCycleHref(cycleId: string, org: HrOrgRef): string {
 export function hrPerformanceReviewHref(reviewId: string, org: HrOrgRef): string {
   return hrUrl(`/hr/performance/reviews/${encodeURIComponent(reviewId)}`, org);
 }
+/** Goals: mine and my team's. */
+export function hrPerformanceGoalsHref(org: HrOrgRef): string {
+  return hrUrl("/hr/performance/goals", org);
+}
 /** The 360 review trial's list (a separate process from the standard review). */
 export function hrPerformance360Href(org: HrOrgRef): string {
   return hrUrl("/hr/performance/360", org);

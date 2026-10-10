@@ -10,10 +10,10 @@ import { buildPrintDocument, openPrintWindow } from "@ai-matrx/print/core";
 
 import { REVIEW_REPORT_STYLES } from "../review-report";
 import { formatDay, periodLabel, ratingLabel } from "./status";
-import type { ReviewAnswers, ReviewDetail, TemplateQuestion, TemplateSnapshot } from "./types";
+import type { ReviewAnswers, ReviewDetail, ReviewGoal, TemplateQuestion, TemplateSnapshot } from "./types";
 
 export interface ReportTrack {
-  role: "self" | "manager";
+  role: "self" | "manager" | "peer";
   label: string;
   answers: ReviewAnswers;
 }
@@ -25,6 +25,7 @@ export interface ReportModel {
   period: string;
   template: TemplateSnapshot;
   tracks: ReportTrack[];
+  goals: ReviewGoal[];
   overall: string | null;
   calibrated: string | null;
   acknowledgedOn: string | null;
@@ -36,7 +37,9 @@ export function buildReportModel(detail: ReviewDetail): ReportModel {
   const tracks: ReportTrack[] = [];
   for (const r of responses) {
     if (!r.visible || !r.answers) continue;
-    tracks.push({ role: r.role, label: r.role === "self" ? `${review.employeeName}'s self review` : `${review.managerName}'s review`, answers: r.answers });
+    // A peer's words appear only under the name the door sent; an anonymous peer is "A peer".
+    const label = r.role === "self" ? `${review.employeeName}'s self review` : r.role === "manager" ? `${review.managerName}'s review` : `Peer feedback from ${r.respondentName ?? "a peer"}`;
+    tracks.push({ role: r.role, label, answers: r.answers });
   }
   return {
     employeeName: review.employeeName,
@@ -45,6 +48,7 @@ export function buildReportModel(detail: ReviewDetail): ReportModel {
     period: periodLabel(review.periodStart, review.periodEnd),
     template,
     tracks,
+    goals: detail.goals,
     overall: review.overallRating ? ratingLabel(template.ratingPoints, review.overallRating) : null,
     calibrated: review.calibratedRating ? ratingLabel(template.ratingPoints, review.calibratedRating) : null,
     acknowledgedOn: review.acknowledgedAt ? formatDay(review.acknowledgedAt) : null,
@@ -68,6 +72,13 @@ export function buildReportMarkdown(m: ReportModel): string {
         if (q.type === "rating") {
           out.push(`**${q.label}**`, "");
           for (const i of q.items) out.push(`- ${i.label}: ${t.answers.ratings[`${q.key}.${i.key}`] ?? "not rated"}`);
+          out.push("");
+        } else if (q.type === "goal_review") {
+          if (m.goals.length === 0) out.push("_No goals in this period_");
+          for (const g of m.goals) {
+            const note = (t.answers.texts[g.answerKey] ?? "").trim();
+            out.push(`- ${g.title}: ${t.answers.ratings[g.answerKey] ?? "not rated"}${note ? ` (${note})` : ""}`);
+          }
           out.push("");
         } else if (q.type === "text") {
           out.push(textOf(t.answers, q) || "_Nothing written_", "");
@@ -98,6 +109,11 @@ export function buildReportHtml(m: ReportModel): string {
             if (q.type === "rating") {
               const rows = q.items.map((i) => `<div class="pr-rating-item"><span>${escapeHtml(i.label)}</span><span class="pr-rating-value">${t.answers.ratings[`${q.key}.${i.key}`] ?? "—"}</span></div>`).join("");
               return `<section class="pr-rating-category"><div class="pr-rating-category-head">${escapeHtml(q.label)}</div>${rows}</section>`;
+            }
+            if (q.type === "goal_review") {
+              return m.goals.length === 0
+                ? '<p class="pr-empty">No goals in this period</p>'
+                : `<section class="pr-rating-category">${m.goals.map((g) => `<div class="pr-rating-item"><span>${escapeHtml(g.title)}${t.answers.texts[g.answerKey] ? ` — ${escapeHtml(t.answers.texts[g.answerKey]!)}` : ""}</span><span class="pr-rating-value">${t.answers.ratings[g.answerKey] ?? "—"}</span></div>`).join("")}</section>`;
             }
             if (q.type === "text") {
               const text = textOf(t.answers, q);

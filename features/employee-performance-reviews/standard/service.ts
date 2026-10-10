@@ -10,6 +10,7 @@ import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
 import { refusalMessage } from "./messages";
+import { parseGoalHistory, parseGoals, parseTeam, type Goal, type GoalHistoryEntry, type TeamMember } from "./goals";
 import {
   isRec,
   parseCalibration,
@@ -20,6 +21,7 @@ import {
   parseProblems,
   parseReviewDetail,
   parseReviewSummary,
+  parseTemplate,
   parseTemplateList,
   type AnswerProblem,
   type CalibrationData,
@@ -29,6 +31,7 @@ import {
   type LaunchResult,
   type ResponseRole,
   type TemplateRow,
+  type TemplateSnapshot,
   type ReviewAnswers,
   type ReviewDetail,
   type ReviewSummary,
@@ -53,7 +56,7 @@ const fail = (reason: string, message: string, extra?: { problems?: AnswerProble
 
 type HrFunctions = Database["hr"]["Functions"];
 /** Every review door, taken from the generated hr Functions: a renamed or removed door is a type error. */
-export type ReviewDoor = Extract<keyof HrFunctions, `hr_review_${string}`>;
+export type ReviewDoor = Extract<keyof HrFunctions, `hr_review_${string}` | `hr_goal_${string}`>;
 
 type Envelope = Record<string, unknown>;
 
@@ -62,11 +65,18 @@ type Envelope = Record<string, unknown>;
  * `args` is the generated signature of THAT door, so a drifted argument is a type error.
  * Raw driver text never reaches the screen: it goes to the console, the person gets a fixed sentence.
  */
-export async function callDoor<D extends ReviewDoor>(door: D, args: HrFunctions[D]["Args"]): Promise<StdResult<Envelope>> {
+export function callDoor<D extends ReviewDoor>(door: D, args: HrFunctions[D]["Args"]): Promise<StdResult<Envelope>> {
+  return settle(door, () => supabase.schema(REVIEW_DOOR_SCHEMA).rpc(door, args));
+}
+
+async function settle(
+  door: string,
+  run: () => PromiseLike<{ data: unknown; error: { message?: string; code?: string } | null }>,
+): Promise<StdResult<Envelope>> {
   let data: unknown = null;
   let error: { message?: string; code?: string } | null = null;
   try {
-    ({ data, error } = await supabase.schema(REVIEW_DOOR_SCHEMA).rpc(door, args));
+    ({ data, error } = await run());
   } catch (thrown) {
     console.error(`[hr-review] ${door} did not reach the server`, thrown);
     return fail("transport", TRANSPORT_MESSAGE);
@@ -289,4 +299,167 @@ export async function calibrateReview(reviewId: string, ratingKey: string, note:
     ...(note ? { p_note: note } : {}),
   });
   return r.ok ? { ok: true, data: true } : r;
+}
+
+// ── wave 3: goals ────────────────────────────────────────────────────────────────────────────
+
+export async function listGoals(employmentId: string): Promise<StdResult<{ goals: Goal[]; canEdit: boolean }>> {
+  const r = await callDoor("hr_goal_list", { p_employment_id: employmentId });
+  return r.ok ? { ok: true, data: { goals: parseGoals(r.data.goals), canEdit: r.data.can_edit === true } } : r;
+}
+
+export async function listTeamGoals(managerEmploymentId: string): Promise<StdResult<TeamMember[]>> {
+  const r = await callDoor("hr_goal_list_team", { p_manager_employment_id: managerEmploymentId });
+  return r.ok ? { ok: true, data: parseTeam(r.data) } : r;
+}
+
+export interface GoalInput {
+  goalId?: string | null;
+  employmentId: string;
+  title: string;
+  description: string;
+  measure: string;
+  targetValue: string;
+  currentValue: string;
+  unit: string;
+  startOn: string;
+  dueOn: string;
+  status: string;
+  parentGoalId: string | null;
+}
+
+/** Blank text clears the field (the door treats an empty string as null); numbers go as numbers. */
+export function goalPayload(g: GoalInput): Record<string, unknown> {
+  const n = (v: string) => (v.trim() === "" ? null : Number(v));
+  return {
+    ...(g.goalId ? { goal_id: g.goalId } : { employment_id: g.employmentId }),
+    title: g.title.trim(),
+    description: g.description.trim(),
+    measure: g.measure.trim(),
+    target_value: n(g.targetValue),
+    current_value: n(g.currentValue),
+    unit: g.unit.trim(),
+    start_on: g.startOn,
+    due_on: g.dueOn,
+    status: g.status,
+    parent_goal_id: g.parentGoalId ?? "",
+  };
+}
+
+export async function saveGoal(input: GoalInput): Promise<StdResult<{ goalId: string }>> {
+  const r = await callDoor("hr_goal_save", { p_payload: goalPayload(input) });
+  if (!r.ok) return r;
+  return typeof r.data.goal_id === "string" ? { ok: true, data: { goalId: r.data.goal_id } } : unreadable("The saved goal");
+}
+
+export async function updateGoalProgress(
+  goalId: string,
+  input: { currentValue: number | null; progress: number | null; status: string | null; note: string | null },
+): Promise<StdResult<{ progress: number; status: string; history: GoalHistoryEntry[] }>> {
+  const r = await callDoor("hr_goal_update_progress", {
+    p_goal_id: goalId,
+    ...(input.currentValue !== null ? { p_current_value: input.currentValue } : {}),
+    ...(input.progress !== null ? { p_progress: input.progress } : {}),
+    ...(input.status ? { p_status: input.status } : {}),
+    ...(input.note ? { p_note: input.note } : {}),
+  });
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    data: { progress: typeof r.data.progress === "number" ? r.data.progress : 0, status: typeof r.data.status === "string" ? r.data.status : "on_track", history: parseGoalHistory(r.data.history) },
+  };
+}
+
+export async function archiveGoal(goalId: string): Promise<StdResult<{ childrenKept: number }>> {
+  const r = await callDoor("hr_goal_archive", { p_goal_id: goalId });
+  return r.ok ? { ok: true, data: { childrenKept: typeof r.data.children_kept === "number" ? r.data.children_kept : 0 } } : r;
+}
+
+// ── wave 3: peers ────────────────────────────────────────────────────────────────────────────
+
+export interface PeerNominateResult {
+  nominated: Array<{ peerName: string; status: string }>;
+  refused: Array<{ employmentId: string; reason: string }>;
+}
+
+const list = (v: unknown): Array<Record<string, unknown>> => (Array.isArray(v) ? v.filter(isRec) : []);
+
+export async function nominatePeers(reviewId: string, employmentIds: string[]): Promise<StdResult<PeerNominateResult>> {
+  const r = await callDoor("hr_review_peer_nominate", { p_review_id: reviewId, p_employment_ids: employmentIds });
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    data: {
+      nominated: list(r.data.nominations).map((n) => ({ peerName: typeof n.peer_name === "string" ? n.peer_name : "Colleague", status: typeof n.status === "string" ? n.status : "pending" })),
+      refused: list(r.data.refused).map((n) => ({ employmentId: typeof n.employment_id === "string" ? n.employment_id : "", reason: typeof n.reason === "string" ? n.reason : "refused" })),
+    },
+  };
+}
+
+export async function decidePeers(reviewId: string, nominationIds: string[], approve: boolean): Promise<StdResult<true>> {
+  const r = await callDoor("hr_review_peer_approve", { p_review_id: reviewId, p_nomination_ids: nominationIds, p_approve: approve });
+  return r.ok ? { ok: true, data: true } : r;
+}
+
+export async function sharePeerFeedback(reviewId: string, share: boolean): Promise<StdResult<true>> {
+  const r = await callDoor("hr_review_peer_share", { p_review_id: reviewId, p_share: share });
+  return r.ok ? { ok: true, data: true } : r;
+}
+
+export interface PeerRequest {
+  reviewId: string;
+  employeeName: string;
+  cycleName: string;
+  cycleStatus: string;
+  dueOn: string | null;
+  responseStatus: string;
+}
+
+export async function myPeerRequests(): Promise<StdResult<PeerRequest[]>> {
+  const r = await settle("hr_review_peer_requests_mine", () => supabase.schema(REVIEW_DOOR_SCHEMA).rpc("hr_review_peer_requests_mine"));
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    data: list(r.data.requests).flatMap((x) =>
+      typeof x.review_id === "string"
+        ? [
+            {
+              reviewId: x.review_id,
+              employeeName: typeof x.employee_name === "string" ? x.employee_name : "Colleague",
+              cycleName: typeof x.cycle_name === "string" ? x.cycle_name : "Review cycle",
+              cycleStatus: typeof x.cycle_status === "string" ? x.cycle_status : "open",
+              dueOn: typeof x.due_on === "string" ? x.due_on : null,
+              responseStatus: typeof x.response_status === "string" ? x.response_status : "not_started",
+            },
+          ]
+        : [],
+    ),
+  };
+}
+
+/** Whether this employer has turned peer feedback on (knob standard_review_peers_enabled). */
+export async function readPeersEnabled(organizationId: string, userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.schema("platform").rpc("knob_resolve", {
+      p_feature: "hr.performance",
+      p_key: "standard_review_peers_enabled",
+      p_organization_id: organizationId,
+      p_user_id: userId,
+    });
+    if (error) return false;
+    const v = isRec(data) && "value" in data ? data.value : data;
+    return v === true || v === "true";
+  } catch {
+    return false;
+  }
+}
+
+// ── wave 3: full template editing ───────────────────────────────────────────────────────────
+
+export async function getTemplate(templateId: string): Promise<StdResult<{ snapshot: TemplateSnapshot; version: number }>> {
+  const r = await callDoor("hr_review_template_get", { p_template_id: templateId });
+  if (!r.ok) return r;
+  const t = isRec(r.data.template) ? r.data.template : null;
+  if (!t) return unreadable("The template");
+  return { ok: true, data: { snapshot: parseTemplate(t), version: typeof t.version === "number" ? t.version : 1 } };
 }

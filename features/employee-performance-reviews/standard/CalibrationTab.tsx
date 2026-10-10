@@ -6,9 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Button, Field, Select } from "@ai-matrx/design-system/controls";
+import { Button, Select } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
+import { ProInput } from "@/components/official/ProInput";
 import { hrPerformanceReviewHref, type HrOrgRef } from "@/features/hr/routes";
 import { toast } from "@/lib/toast";
 
@@ -123,7 +124,7 @@ export function CalibrationTab({ cycleId, orgRef, open }: { cycleId: string; org
       filter: "text",
       width: 260,
       cell: (r) => (
-        <Field
+        <ProInput
           aria-label={`Calibration note for ${r.employeeName}`}
           placeholder="Why"
           disabled={!open}

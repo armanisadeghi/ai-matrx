@@ -11,16 +11,18 @@ import { Badge, Button, EmptyState, Field, Select } from "@ai-matrx/design-syste
 import { Switch } from "@ai-matrx/design-system";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
+import { ProInput } from "@/components/official/ProInput";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { toast } from "@/lib/toast";
 
 import { templateProblemMessage } from "./messages";
-import { archiveTemplate, listTemplates, saveTemplate } from "./service";
+import { archiveTemplate, getTemplate, listTemplates, saveTemplate } from "./service";
 import { formatDay } from "./status";
 import {
   buildMetadataPayload,
   buildTemplatePayload,
+  draftFromSnapshot,
   draftId,
   keyDraft,
   starterDraft,
@@ -36,6 +38,7 @@ const TYPE_OPTIONS: Array<{ value: TemplateQuestionType; label: string }> = [
   { value: "responsibilities", label: "Responsibilities list" },
   { value: "text", label: "Free text" },
   { value: "rating", label: "Rating" },
+  { value: "goal_review", label: "Review of goals" },
 ];
 
 export function TemplatesPanel() {
@@ -62,6 +65,15 @@ export function TemplatesPanel() {
       live = false;
     };
   }, [organizationId, tick]);
+
+  const openExisting = useCallback(async (t: TemplateRow) => {
+    const r = await getTemplate(t.templateId);
+    if (!r.ok) {
+      toast.error(r.message);
+      return;
+    }
+    setEditing({ metadataOnly: false, draft: draftFromSnapshot(r.data.snapshot, { templateId: t.templateId, name: t.name, description: t.description, isDefault: t.isDefault }) });
+  }, []);
 
   const columns: MatrxColumnDef<TemplateRow>[] = useMemo(
     () => [
@@ -90,19 +102,14 @@ export function TemplatesPanel() {
               icon={<Pencil />}
               variant="quiet"
               aria-label={`Edit ${t.name}`}
-              onClick={() =>
-                setEditing({
-                  metadataOnly: true,
-                  draft: { ...starterDraft(), templateId: t.templateId, name: t.name, description: t.description ?? "", isDefault: t.isDefault },
-                })
-              }
+              onClick={() => void openExisting(t)}
             />
             <Button icon={<Archive />} variant="quiet" aria-label={`Archive ${t.name}`} onClick={() => setArchiving(t)} />
           </div>
         ),
       },
     ],
-    [],
+    [openExisting],
   );
   const copy: MatrxDataTableCopyConfig<TemplateRow> = {
     label: "review template",
@@ -235,7 +242,7 @@ function TemplateEditor({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Field aria-label="Template name" placeholder="Annual performance review" value={draft.name} onChange={(e) => patch({ name: e.target.value })} className="max-w-sm" />
+        <ProInput aria-label="Template name" placeholder="Annual performance review" value={draft.name} onChange={(e) => patch({ name: e.target.value })} className="max-w-sm" />
         <label className="flex items-center gap-2 text-sm">
           <Switch checked={draft.isDefault} onCheckedChange={(v) => patch({ isDefault: v })} aria-label="Default for new cycles" />
           Default for new cycles
@@ -249,7 +256,7 @@ function TemplateEditor({
           </Button>
         </div>
       </div>
-      <Field aria-label="Description" placeholder="Who this template is for" value={draft.description} onChange={(e) => patch({ description: e.target.value })} />
+      <ProInput aria-label="Description" placeholder="Who this template is for" value={draft.description} onChange={(e) => patch({ description: e.target.value })} />
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -261,15 +268,13 @@ function TemplateEditor({
         </p>
       ))}
 
-      {metadataOnly ? (
-        <p className="text-sm text-muted-foreground">Questions are fixed once saved. Make a new template to change them.</p>
-      ) : (
+      {metadataOnly ? null : (
         <>
           {draft.sections.map((s, si) => (
             <div key={s.id} className="space-y-2 rounded-md border border-border bg-card p-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Field aria-label={`Section ${si + 1} title`} placeholder="Section title" value={s.title} onChange={(e) => setSection(s.id, { title: e.target.value })} className="max-w-sm" />
-                <Field aria-label={`Section ${si + 1} description`} placeholder="Description (optional)" value={s.description} onChange={(e) => setSection(s.id, { description: e.target.value })} className="min-w-48 flex-1" />
+                <ProInput aria-label={`Section ${si + 1} title`} placeholder="Section title" value={s.title} onChange={(e) => setSection(s.id, { title: e.target.value })} className="max-w-sm" />
+                <ProInput aria-label={`Section ${si + 1} description`} placeholder="Description (optional)" value={s.description} onChange={(e) => setSection(s.id, { description: e.target.value })} className="min-w-48 flex-1" />
                 <Button icon={<Trash2 />} variant="quiet" removes aria-label={`Remove section ${s.title || si + 1}`} onClick={() => patch({ sections: draft.sections.filter((x) => x.id !== s.id) })} />
               </div>
               {at(keys.sectionKeys.get(s.id)).map((p, i) => (
@@ -281,7 +286,7 @@ function TemplateEditor({
                 <div key={q.id} className="space-y-2 rounded-md border border-border p-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <Select<TemplateQuestionType> aria-label="Question type" value={q.type} options={TYPE_OPTIONS} onValueChange={(type) => setQuestion(s.id, q.id, { type, items: type === "rating" && q.items.length === 0 ? [{ id: draftId(), label: "" }] : q.items })} />
-                    <Field aria-label="Question label" placeholder="Question" value={q.label} onChange={(e) => setQuestion(s.id, q.id, { label: e.target.value })} className="min-w-48 flex-1" />
+                    <ProInput aria-label="Question label" placeholder="Question" value={q.label} onChange={(e) => setQuestion(s.id, q.id, { label: e.target.value })} className="min-w-48 flex-1" />
                     <label className="flex items-center gap-2 text-sm">
                       <Switch checked={q.required} onCheckedChange={(v) => setQuestion(s.id, q.id, { required: v })} aria-label="Required" />
                       Required
@@ -304,7 +309,7 @@ function TemplateEditor({
                     <div className="space-y-1">
                       {q.items.map((it) => (
                         <div key={it.id} className="flex items-center gap-2">
-                          <Field aria-label="Item to rate" placeholder="Item to rate" value={it.label} onChange={(e) => setQuestion(s.id, q.id, { items: q.items.map((x) => (x.id === it.id ? { ...x, label: e.target.value } : x)) })} className="max-w-sm" />
+                          <ProInput aria-label="Item to rate" placeholder="Item to rate" value={it.label} onChange={(e) => setQuestion(s.id, q.id, { items: q.items.map((x) => (x.id === it.id ? { ...x, label: e.target.value } : x)) })} className="max-w-sm" />
                           <Button icon={<Trash2 />} variant="quiet" removes aria-label="Remove item" onClick={() => setQuestion(s.id, q.id, { items: q.items.filter((x) => x.id !== it.id) })} />
                         </div>
                       ))}
@@ -338,7 +343,7 @@ function TemplateEditor({
             {draft.points.map((p) => (
               <div key={p.id} className="flex items-center gap-2">
                 <Field type="number" aria-label="Point number" value={String(p.value)} onChange={(e) => setPoint(p.id, { value: Number(e.target.value) })} className="w-20" />
-                <Field aria-label="Point label" placeholder="Label" value={p.label} onChange={(e) => setPoint(p.id, { label: e.target.value })} className="max-w-xs" />
+                <ProInput aria-label="Point label" placeholder="Label" value={p.label} onChange={(e) => setPoint(p.id, { label: e.target.value })} className="max-w-xs" />
                 <Button icon={<Trash2 />} variant="quiet" removes aria-label={`Remove point ${p.label}`} onClick={() => patch({ points: draft.points.filter((x) => x.id !== p.id) })} />
               </div>
             ))}

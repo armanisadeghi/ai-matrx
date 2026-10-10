@@ -36,6 +36,7 @@ const REFUSALS: Record<string, string> = {
   calibration_required: "HR has to record a calibrated rating before this review can be shared. Ask HR to calibrate it.",
   comment_not_enabled: "This employer has turned acknowledgment comments off. Acknowledge without a comment.",
   template_invalid: "This template has problems. They are marked below.",
+  review_closed_to_peers: "Peer feedback can no longer be requested on this review.",
   not_performance_review_answers: "The answers could not be read. Reload the review and try again.",
 };
 
@@ -50,6 +51,15 @@ const VALIDATION_FIELDS: Record<string, string> = {
   answers: "The answers could not be saved. Reload the review and try again.",
   rating: "That is not a rating on this review's scale.",
   reason: "Say why. A reason is required.",
+  employment_id: "Choose whose goal this is.",
+  title: "Give the goal a title.",
+  status: "Pick a status for the goal.",
+  values: "A number or date in the goal is not valid.",
+  progress: "Progress must be between 0 and 100.",
+  due_on: "The due date cannot be before the start date.",
+  parent_goal_id: "That goal cannot be aligned under this one.",
+  cycle_id: "That review cycle is not available.",
+  approve: "Choose approve or decline.",
 };
 
 export interface Refusal {
@@ -61,6 +71,7 @@ export interface Refusal {
 /** The sentence for a refused door. Unknown reasons are still said, with the reason named. */
 export function refusalMessage(r: Refusal): string {
   if (r.reason === "validation") {
+    if (r.detail === "alignment_loop") return "That would make the goal support itself. Pick a goal that is not below this one.";
     return (r.field && VALIDATION_FIELDS[r.field]) || r.detail || "Something in what you entered is not valid.";
   }
   return REFUSALS[r.reason] ?? `The server refused this (${r.reason}).`;
@@ -123,4 +134,17 @@ const TEMPLATE_PROBLEMS: Record<string, string> = {
 /** One template problem (`{ at, problem }`) said in words; never the bare code. */
 export function templateProblemMessage(problem: string): string {
   return TEMPLATE_PROBLEMS[problem] ?? `This part is not valid (${problem}).`;
+}
+
+const PEER_REFUSALS: Record<string, string> = {
+  is_a_party: "is already part of this review and cannot also be a peer.",
+  not_active: "is not an active employee right now.",
+  peer_has_no_login: "has no sign-in yet, so they cannot be asked.",
+  already_nominated: "was already nominated.",
+  not_in_organization: "does not work for this employer.",
+};
+
+/** One refused peer nomination, by name: "Marcus Webb has no sign-in yet…". */
+export function peerRefusalMessage(name: string | null, reason: string): string {
+  return `${name ?? "This person"} ${PEER_REFUSALS[reason] ?? `could not be nominated (${reason}).`}`;
 }

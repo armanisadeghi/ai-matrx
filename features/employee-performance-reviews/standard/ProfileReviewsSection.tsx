@@ -12,6 +12,7 @@ import { Badge, EmptyState } from "@ai-matrx/design-system/controls";
 import { hrPerformanceReviewHref, type HrOrgRef } from "@/features/hr/routes";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 
+import { GoalsView } from "./GoalsView";
 import { reviewHistory } from "./service";
 import { formatDay, periodLabel, statusLabel, statusTone } from "./status";
 import type { HistoryRow } from "./types";
@@ -61,6 +62,7 @@ export function ProfileReviewsSection({ employmentId, org }: { employmentId: str
           ))}
         </ul>
       )}
+      {employmentId ? <GoalsView employmentId={employmentId} title="Goals" /> : null}
     </section>
   );
 }

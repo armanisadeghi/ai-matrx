@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { hrPerformanceCycleHref, type HrOrgRef } from "@/features/hr/routes";
 import { useHrKnobs } from "@/features/hr/settings/hooks/useHrKnobs";
+import { ProInput } from "@/components/official/ProInput";
 import { toast } from "@/lib/toast";
 
 import { createCycle, listTemplates } from "./service";
@@ -118,7 +119,7 @@ function NewCycleForm({
           <DialogDescription>You choose who is reviewed on the next screen.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          <Field aria-label="Cycle name" placeholder="H2 2026 performance review" value={form.name} onChange={set("name")} />
+          <ProInput aria-label="Cycle name" placeholder="H2 2026 performance review" value={form.name} onChange={set("name")} />
           {templates.length > 0 ? (
             <Select
               aria-label="Template"
