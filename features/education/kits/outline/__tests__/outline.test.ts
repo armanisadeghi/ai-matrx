@@ -1,5 +1,7 @@
 import {
   isOutlineStale,
+  isRunStalled,
+  OUTLINE_STALL_AFTER_MS,
   leastCoveredSections,
   outlineRunSources,
   outlineSectionsFromRows,
@@ -105,5 +107,19 @@ describe("a top-up of n over more than n sections", () => {
     const counts = new Map([["a", 3], ["b", 0], ["c", 1], ["d", 0]]);
     expect(leastCoveredSections(secs, counts, 2).map((s) => s.id)).toEqual(["b", "d"]);
     expect(leastCoveredSections(secs, counts, 9).map((s) => s.id)).toEqual(["a", "b", "c", "d"]);
+  });
+});
+
+describe("stall honesty", () => {
+  const base = { startedAtMs: 1000, eventCount: 0 };
+  it("a pending run with no events past the threshold is stalled", () => {
+    expect(isRunStalled({ ...base, status: "pending", nowMs: 1000 + OUTLINE_STALL_AFTER_MS })).toBe(true);
+  });
+  it("is not stalled before the threshold", () => {
+    expect(isRunStalled({ ...base, status: "pending", nowMs: 1000 + OUTLINE_STALL_AFTER_MS - 1 })).toBe(false);
+  });
+  it("is not stalled once events arrived or the run is running", () => {
+    expect(isRunStalled({ ...base, eventCount: 3, status: "pending", nowMs: 1e9 })).toBe(false);
+    expect(isRunStalled({ ...base, status: "running", nowMs: 1e9 })).toBe(false);
   });
 });

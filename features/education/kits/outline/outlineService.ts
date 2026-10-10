@@ -37,6 +37,27 @@ export const KIT_OUTLINE_SOURCE_FEATURE = "education-kit-outline";
  */
 const SYSTEM_RUNS_PATH = "/workflows/system/{key}/runs" as keyof paths;
 
+/**
+ * How long a started outline run may sit pending with no events before the
+ * card says "Not started yet" and offers Retry. A named constant, not a
+ * platform.feature_knob row: the knob reader raises on a missing row and needs
+ * a seeded migration; a detached run emits its first event within seconds, so
+ * 45s is generous. Change it here.
+ */
+export const OUTLINE_STALL_AFTER_MS = 45_000;
+
+/** Pure: has a started run produced nothing for too long? */
+export function isRunStalled(input: {
+  status: string | null;
+  eventCount: number;
+  startedAtMs: number;
+  nowMs: number;
+  thresholdMs?: number;
+}): boolean {
+  const waiting = input.status === null || input.status === "pending" || input.status === "queued";
+  return waiting && input.eventCount === 0 && input.nowMs - input.startedAtMs >= (input.thresholdMs ?? OUTLINE_STALL_AFTER_MS);
+}
+
 /** The subject one kit's outline runs are filed under. */
 export function kitOutlineSubject(kitId: string): string {
   return `kit:${kitId}`;
@@ -341,7 +362,9 @@ export async function startKitOutline(
       body: {
         subject: kitOutlineSubject(input.kitId),
         source_feature: KIT_OUTLINE_SOURCE_FEATURE,
-        mode: "queued",
+        // "detached": the server runs it in-process. "queued" waits for a workflow
+        // worker that is not deployed, so the run would sit pending forever.
+        mode: "detached",
         inputs: {
           kit_id: input.kitId,
           audience: input.audience ?? "",

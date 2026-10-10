@@ -76,7 +76,8 @@ export function KitOutlineCard({
   const openRunWindow = useOpenWorkflowRunWindow();
   const { sections, activeRunId } = outline;
   const has = (sections?.length ?? 0) > 0;
-  const building = activeRunId !== null || outline.starting;
+  const stalled = outline.stalled && !outline.starting;
+  const building = (activeRunId !== null && !stalled) || outline.starting;
 
   const onBuild = async () => {
     if (has) {
@@ -115,6 +116,14 @@ export function KitOutlineCard({
           </Button>
         </span>
       </div>
+      {stalled ? (
+        <p className="mt-2 flex items-center gap-2 type-secondary text-muted-foreground" role="status">
+          Not started yet
+          <Button variant="outline" icon={<RefreshCw />} onClick={() => void outline.build(onMoved)}>
+            Retry
+          </Button>
+        </p>
+      ) : null}
       {building ? (
         <p className="mt-2 truncate type-secondary text-muted-foreground" role="status">
           {outline.progress ? `Building · ${outline.progress}` : "Building · reading your sources"}
@@ -123,6 +132,11 @@ export function KitOutlineCard({
       {outline.runError ? (
         <p className="mt-2 type-secondary text-destructive" role="alert">
           {outline.runError} <ErrorAlchemyMenu error={outline.runError} />
+          {has ? null : (
+            <Button variant="outline" icon={<RefreshCw />} disabled={building} onClick={() => void outline.build(onMoved)}>
+              Rebuild
+            </Button>
+          )}
         </p>
       ) : null}
       {outline.readError ? (

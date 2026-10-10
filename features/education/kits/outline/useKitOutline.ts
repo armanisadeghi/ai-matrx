@@ -27,6 +27,7 @@ import { kitCoverage, type KitCoverage } from "./coverage";
 import {
   builtByRunOf,
   isOutlineStale,
+  isRunStalled,
   kitOutlineInputs,
   lookupKitOutlineRun,
   outlineSectionsFromRows,
@@ -47,6 +48,8 @@ export interface KitOutlineState {
   activeRunId: string | null;
   /** The run's latest step words, for the one status line. */
   progress: string | null;
+  /** The run was started but nothing has happened for too long ("Not started yet"). */
+  stalled: boolean;
   /** Why the last build failed (server words), until the next build. */
   runError: string | null;
   starting: boolean;
@@ -83,6 +86,24 @@ export function useKitOutline(kit: StudyKit | null): KitOutlineState {
   const activity = useAppSelector(selectRunActivity(runId ?? ""));
   const runFailure = useAppSelector(selectRunError(runId ?? ""));
   const over = runId !== null && runIsOver(status);
+
+  // Stall honesty: a run that is still pending with no events after the
+  // threshold is "Not started yet", never "Building" forever.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    setStartedAt(runId ? Date.now() : null);
+  }, [runId]);
+  useEffect(() => {
+    if (!runId || over) return;
+    const t = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(t);
+  }, [runId, over]);
+  const stalled =
+    runId !== null &&
+    !over &&
+    startedAt !== null &&
+    isRunStalled({ status, eventCount: activity.length, startedAtMs: startedAt, nowMs: now });
 
   const artifactKey = (kit?.artifacts ?? []).map((a) => a.artifactId).join(",");
   const sourceKey = (kit?.sources ?? []).map((s) => `${s.type}:${s.id}`).join(",");
@@ -179,6 +200,7 @@ export function useKitOutline(kit: StudyKit | null): KitOutlineState {
     coverage,
     activeRunId: runId && !over ? runId : null,
     progress: last?.text ?? null,
+    stalled,
     runError: startError ?? failedRun,
     starting,
     build,
