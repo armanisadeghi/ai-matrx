@@ -113,7 +113,7 @@ export function SocialProviderCard() {
           <Row icon={Database} label="Status" detail={caps.isError ? "Status unavailable" : "Loading…"} />
         ) : seesVendor ? (
           providers.map(([name, status]) => (
-            <Row key={name} icon={Database} label={providerName(name)} detail={status === "ready" ? "Ready" : status} />
+            <Row key={name} icon={Database} label={providerName(name)} detail={status === "ready" ? "Ready" : "Not configured"} title={status === "ready" ? undefined : status} />
           ))
         ) : (
           <Row icon={Database} label="Status" detail={ready.length ? "Ready" : "Not configured"} />
@@ -141,15 +141,22 @@ export function SocialProviderCard() {
               ? "Loading…"
               : credits.isError
                 ? "Spend unavailable"
-                : formatSpend(credits.data?.spend, credits.data?.spend_error, (usd) => format(usd))
+                : formatSpend(credits.data?.spend ? { ...credits.data.spend, platform: null } : credits.data?.spend, credits.data?.spend_error, (usd) => format(usd))
           }
         />
+        {credits.data?.spend?.platform ? (
+          <Row
+            icon={Receipt}
+            label="Platform spend this month"
+            detail={formatSpend({ ...credits.data.spend, platform: null, organization: credits.data.spend.platform }, null, (usd) => format(usd))}
+          />
+        ) : null}
       </div>
       {covered.length ? (
-        <p className="mt-3 text-[11px] text-muted-foreground">{covered.map(platformLabel).join(" · ")}</p>
+        <p className="mt-3 text-xs text-muted-foreground">{covered.map(platformLabel).join(" · ")}</p>
       ) : null}
       {unsupported.length ? (
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           Not supported yet: {unsupported.map(platformLabel).join(" · ")}
         </p>
       ) : null}
@@ -157,13 +164,13 @@ export function SocialProviderCard() {
   );
 }
 
-function Row({ icon: Icon, label, detail }: { icon: typeof Database; label: string; detail: string }) {
+function Row({ icon: Icon, label, detail, title }: { icon: typeof Database; label: string; detail: string; title?: string }) {
   return (
     <div className="flex items-center gap-2.5 px-3 py-2.5">
       <Icon className="h-4 w-4 shrink-0 text-primary" />
       <div className="min-w-0">
         <p className="text-xs font-medium">{label}</p>
-        <p className="truncate text-[10px] text-muted-foreground" title={detail}>
+        <p className="truncate text-xs text-muted-foreground" title={title ?? detail}>
           {detail}
         </p>
       </div>

@@ -18,6 +18,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   scrapecreators: "ScrapeCreators",
   ensembledata: "EnsembleData",
   apify: "Apify",
+  grok_x: "Grok (X)",
 };
 
 export function providerName(provider: string): string {
