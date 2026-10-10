@@ -1,4 +1,4 @@
-import { addVital, effectiveRate, isSampled, loadIsSampled, readStoredRouteRates, ROUTE_RATES_STORAGE_KEY, routeRateFor, routeRatesOf, writeStoredRouteRates, readStoredRate, RATE_STORAGE_KEY, writeStoredRate, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
+import { addVital, readFirstHiddenTime, effectiveRate, isSampled, loadIsSampled, readStoredRouteRates, ROUTE_RATES_STORAGE_KEY, routeRateFor, routeRatesOf, writeStoredRouteRates, readStoredRate, RATE_STORAGE_KEY, writeStoredRate, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
 
 describe("routeTemplate", () => {
   it("names dynamic params instead of their values", () => {
@@ -100,5 +100,36 @@ describe("per-route sample rates (quiet routes report every load)", () => {
     const blocked = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
     expect(readStoredRouteRates(blocked)).toEqual({});
     expect(() => writeStoredRouteRates(blocked, { "/a": 1 })).not.toThrow();
+  });
+});
+
+describe("hidden-start and restored loads", () => {
+  it("a load that started hidden is dropped whole; a visible one is kept", () => {
+    const b = new Map<VitalName, VitalSample>();
+    addVital(b, { name: "LCP", value: 900, navigationType: "navigate" }, "/a", { firstHiddenTime: 0 });
+    expect(b.size).toBe(0);
+    addVital(b, { name: "LCP", value: 900, navigationType: "navigate" }, "/a", { firstHiddenTime: Infinity });
+    expect(b.size).toBe(1);
+  });
+  it("drops bfcache and discarded-tab restores, keeps an activated prerender", () => {
+    const b = new Map<VitalName, VitalSample>();
+    addVital(b, { name: "LCP", value: 10, navigationType: "back-forward-cache" }, "/a");
+    addVital(b, { name: "INP", value: 10, navigationType: "restore" }, "/a");
+    addVital(b, { name: "FCP", value: 10, navigationType: "prerender" }, "/a");
+    expect([...b.keys()]).toEqual(["FCP"]);
+  });
+  it("a first byte that arrived after the page was hidden is a deferred request, not a slow server", () => {
+    const b = new Map<VitalName, VitalSample>();
+    addVital(b, { name: "TTFB", value: 150000 }, "/a", { firstHiddenTime: 2000, activationStart: 0 });
+    expect(b.size).toBe(0);
+    addVital(b, { name: "TTFB", value: 150 }, "/a", { firstHiddenTime: 2000, activationStart: 0 });
+    expect(b.get("TTFB")?.value).toBe(150);
+  });
+  it("readFirstHiddenTime: a hidden entry wins, a hidden document means since the start, a prerender is not hidden", () => {
+    const perf = (e: unknown[]) => ({ getEntriesByType: () => e }) as never;
+    expect(readFirstHiddenTime({ visibilityState: "visible" }, perf([{ name: "hidden", startTime: 1500 }]))).toBe(1500);
+    expect(readFirstHiddenTime({ visibilityState: "hidden" }, perf([]))).toBe(0);
+    expect(readFirstHiddenTime({ visibilityState: "hidden", prerendering: true }, perf([]))).toBe(Infinity);
+    expect(readFirstHiddenTime({ visibilityState: "visible" }, perf([]))).toBe(Infinity);
   });
 });

@@ -201,18 +201,69 @@ export function loadIsSampled(
   return isSampled(draw, effectiveRate(pathname, rate, readStoredRouteRates(storage)));
 }
 
+/** web-vitals navigation types that are NOT this page load's own numbers: soft navigations are another route's, a bfcache restore or a discarded-tab restore measures a different moment. */
+export const DROPPED_NAVIGATION_TYPES: readonly string[] = ["soft-navigation", "back-forward-cache", "restore"];
+
+/**
+ * When this page first became hidden, in ms since its time origin: 0 = it loaded in the background
+ * (or was activated hidden), Infinity = still visible. Same rule as the web-vitals library: a hidden
+ * `visibility-state` performance entry at/after activation wins; else a document that is hidden now
+ * (and is not merely prerendering) is assumed hidden since the start.
+ */
+export function readFirstHiddenTime(
+  doc: Pick<Document, "visibilityState"> & { prerendering?: boolean },
+  perf: Pick<Performance, "getEntriesByType"> | undefined,
+  activationStart = 0,
+): number {
+  if (!doc.prerendering) {
+    try {
+      const hidden = perf?.getEntriesByType("visibility-state").find((e) => e.name === "hidden" && e.startTime >= activationStart);
+      if (hidden) return hidden.startTime;
+    } catch {
+      // The entry type is not supported here; the visibility state below decides.
+    }
+  }
+  return doc.visibilityState === "hidden" && !doc.prerendering ? 0 : Infinity;
+}
+
+export interface VitalContext {
+  /** From `readFirstHiddenTime`, kept current by a visibilitychange listener. */
+  firstHiddenTime?: number;
+  /** Navigation timing `activationStart`: TTFB is measured from here for an activated prerender. */
+  activationStart?: number;
+}
+
+/**
+ * Whether a metric is this load's own, trustworthy number. A load that started hidden is dropped whole
+ * (background tabs are throttled and report absurd times); TTFB is also dropped if the page was hidden
+ * before the first byte arrived (the request was deferred, not slow); LCP/INP/CLS are already clipped by
+ * web-vitals itself at the first hidden time.
+ */
+export function metricIsKept(
+  metric: { name: string; value: number; navigationType?: string },
+  ctx: VitalContext = {},
+): boolean {
+  if (metric.navigationType && DROPPED_NAVIGATION_TYPES.includes(metric.navigationType)) return false;
+  const hidden = ctx.firstHiddenTime ?? Infinity;
+  if (hidden <= 0) return false;
+  if (metric.name === "TTFB" && (ctx.activationStart ?? 0) + metric.value >= hidden) return false;
+  return true;
+}
+
 /**
  * Collects one value per metric for this page load. LCP / FCP / TTFB keep their
  * first value; INP and CLS keep growing until the page is hidden, so the latest
- * wins. Soft navigations are another route's numbers and are not kept.
+ * wins. Soft navigations, bfcache / discarded-tab restores, hidden-start loads
+ * and TTFBs that outlasted the page being visible are not kept.
  */
 export function addVital(
   batch: Map<VitalName, VitalSample>,
   metric: { name: string; value: number; rating?: string; navigationType?: string },
   route: string,
+  ctx: VitalContext = {},
 ): void {
   if (!isVitalName(metric.name) || !Number.isFinite(metric.value) || metric.value < 0) return;
-  if (metric.navigationType === "soft-navigation") return;
+  if (!metricIsKept(metric, ctx)) return;
   if (batch.has(metric.name) && metric.name !== "INP" && metric.name !== "CLS") return;
   if (!batch.has(metric.name) && batch.size >= MAX_SAMPLES_PER_LOAD) return;
   batch.set(metric.name, {

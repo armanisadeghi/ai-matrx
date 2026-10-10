@@ -5,7 +5,7 @@
 // (no browser). Registers into the existing performance watch: watch pageprobe:<route> (perf_kind 'page', p95 budget),
 // sample source 'probe' through the service-only ops.perf_page_probe_report. --bundle instead reads the build's
 // .next/diagnostics/route-bundle-stats.json (first-load JS per route, gzip KB) and posts it through
-// ops.perf_page_bundle_report (sample source 'cli', never judged; first_load_js_kb lands on the watch).
+// ops.perf_page_bundle_report (first-load JS kb/bytes land in the watch's perf_subject ONLY: it writes no perf_sample, so a page sample's bytes is always HTML bytes and p50/p95 always TTFB).
 //
 // AUTH (sanctioned, no browser, no typed password): the probe seat's vaulted test credentials from env
 // (AI_MEMBER_USERNAME/AI_MEMBER_PASSWORD = test@test.com; --seat admin uses AI_ADMIN_*) go through Supabase Auth's
