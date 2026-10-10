@@ -56,6 +56,7 @@ import {
 } from "../service";
 import type { OrgAdminMember } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -187,7 +188,7 @@ export function TakeOverAccountDialog({
         {optionsError ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
             {optionsError}
-          </p>
+          <ErrorAlchemyMenu error={optionsError} /></p>
         ) : !mode ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Checking which take-over applies…
@@ -257,7 +258,7 @@ export function TakeOverAccountDialog({
             <div className="space-y-1.5">
               <Label htmlFor="takeover-purpose">Reason category</Label>
               {purposesError ? (
-                <p className="text-sm text-destructive">{purposesError}</p>
+                <p className="text-sm text-destructive">{purposesError}<ErrorAlchemyMenu error={purposesError} /></p>
               ) : (
                 <Select value={purpose} onValueChange={setPurpose} disabled={!purposes}>
                   <SelectTrigger id="takeover-purpose">
@@ -315,7 +316,7 @@ export function TakeOverAccountDialog({
             {refusal ? (
               <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
                 {refusal}
-              </p>
+              <ErrorAlchemyMenu error={refusal} /></p>
             ) : null}
           </div>
         ) : null}
