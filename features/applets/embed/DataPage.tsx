@@ -16,6 +16,7 @@ import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/rec
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { MakeMount } from "@/features/make/MakeMount";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function DataPage({ id }: { id: string }) {
   const userId = useAppSelector(selectUserId);
   const dataSource = useRecordsDataSource();
@@ -23,7 +24,7 @@ export function DataPage({ id }: { id: string }) {
   if (!userId) return <p className="text-xs text-muted-foreground">Sign in to see this page.</p>;
   if (where.state === "resolving") return <p className="text-xs text-muted-foreground">Opening the page…</p>;
   if (where.state === "not-given") return <p className="text-xs text-muted-foreground">This page has not been shared with you.</p>;
-  if (where.state === "unavailable") return <p className="text-xs text-destructive">{where.why}</p>;
+  if (where.state === "unavailable") return <p className="text-xs text-destructive">{where.why}<ErrorAlchemyMenu error={where.why} /></p>;
   return (
     <MakeMount organizationId={where.organizationId}>
       <PageScreen pageId={id} viewerUserId={userId} />

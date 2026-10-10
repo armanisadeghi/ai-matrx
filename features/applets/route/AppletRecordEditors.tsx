@@ -47,6 +47,7 @@ import {
 } from "@/features/applets/types";
 import type { Json } from "@/types/database.types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // ── shared ───────────────────────────────────────────────────────────────────
 
 function useSaveRecordPart(appId: string) {
@@ -157,7 +158,7 @@ function CatalogueGaps({ catalogue, error }: { catalogue: AppletCatalogue | null
   return (
     <p className="text-xs text-destructive" role="alert">
       Some options could not be read: {gaps.join("; ")}
-    </p>
+    <ErrorAlchemyMenu /></p>
   );
 }
 
