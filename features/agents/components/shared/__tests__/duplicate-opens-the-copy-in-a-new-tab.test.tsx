@@ -20,9 +20,16 @@ const state = {
 };
 const duplicateAgent = jest.fn((id: string) => ({ type: "test/duplicate", id }));
 
+// The duplicate dialog navigates with the app router; the walk under test only opens a new tab.
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), refresh: jest.fn() }),
+  usePathname: () => "/agents",
+}));
 jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve("copy-9") }),
-  useAppSelector: (select: (s: unknown) => unknown) => select(null),
+  // The real store (withAppStore below): the surface-config selectors the dialog reads need real state.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  useAppSelector: (select: (s: unknown) => unknown) => require("react-redux").useSelector(select),
 }));
 jest.mock("@ai-matrx/chat/host/identity", () => ({ selectUserId: () => state.userId }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({

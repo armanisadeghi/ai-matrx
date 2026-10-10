@@ -37,7 +37,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import notesReducer, { updateNoteLabel, upsertNotesFromServer } from "../redux/slice";
-import { selectAllFolders, selectAllNotesList, selectFolderReferences } from "../redux/selectors";
+import { selectAllFolders, selectAllNotesList, selectFolderReferences, selectSidebarNotesList } from "../redux/selectors";
 import { getReduxSyncDelay, type NoteRecord } from "../redux/notes.types";
 import { NoteSidebarRow } from "../components/NoteSidebarRow";
 import { createCoalescedCommit } from "@/lib/working-copy/coalescedCommit";
@@ -183,5 +183,26 @@ describe("a save of one note never re-renders the rest of the sidebar", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it("hands the sidebar the SAME list while the newest note is typed and saved", () => {
+    let state = seed(30);
+    // note-0 becomes the newest (what a first save of the open note does)…
+    state = notesReducer(state, upsertNotesFromServer({ upserts: [{ note: { ...serverNote(0, "2026-10-10T00:00:00Z") }, fetchStatus: "full" as const }] }) as Action) as SliceState;
+    const list = selectSidebarNotesList(asRoot(state));
+    // …then ten more saves: body, updated_at, a rebuilt tags array and the auto-label all move.
+    for (let i = 1; i <= 10; i++) {
+      state = notesReducer(
+        state,
+        upsertNotesFromServer({
+          upserts: [{ note: { ...serverNote(0, `2026-10-10T00:00:${String(i).padStart(2, "0")}Z`), content: `typed ${i}`, tags: [] }, fetchStatus: "full" as const }],
+        }) as Action,
+      ) as SliceState;
+      state = notesReducer(state, updateNoteLabel({ id: noteId(0), label: `typed ${i}` }) as Action) as SliceState;
+      expect(selectSidebarNotesList(asRoot(state))).toBe(list);
+    }
+    // A DIFFERENT note jumping ahead in time re-orders "Modified": a new list.
+    state = notesReducer(state, upsertNotesFromServer({ upserts: [{ note: { ...serverNote(9, "2026-10-11T00:00:00Z") }, fetchStatus: "full" as const }] }) as Action) as SliceState;
+    expect(selectSidebarNotesList(asRoot(state))).not.toBe(list);
   });
 });

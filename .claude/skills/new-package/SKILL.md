@@ -142,11 +142,3 @@ Package README (external consumer guide) + `FEATURE.md` beside the code · a row
 [`STATUS.md`](/projects/npm-package-extraction/STATUS.md) board ·
 close/open the register rows you touched. Commit and push everything — unpushed work
 doesn't exist.
-
-## Change log
-
-- **2026-08-30** — Created at Arman's request as the trigger for package creation/growth,
-  distilling the typescript-package-standard policy + campaign rulings C1–C31 into the
-  ordered runbook (census → design doc → approval → build → gates → release → C9 adoption
-  → paper trail).
-- **2026-10-08** — Host-build law (Step 4) + host build-cost gate (Step 5) after icons 0.3.5's per-icon `import()` map doubled the frontend build.

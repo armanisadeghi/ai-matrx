@@ -17,7 +17,8 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { listForSources, setTargets },
 }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({
-  getAssociationsStore: () => ({ invalidate }),
+  // `services` is read at import time by commentsService (via thunks → scopesService → taskService).
+  getAssociationsStore: () => ({ invalidate, services: { comments: {} } }),
 }));
 
 import { configureStore } from "@reduxjs/toolkit";

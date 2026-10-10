@@ -8,7 +8,7 @@ timestamp: 2026-10-09T00:00:00Z
 
 # create-agent — the factory route (our coding agents; read before step 6)
 
-Owner ruling (Arman, 2026-10-09): our own agents are held tougher than people, because an agent
+Our own agents are held tougher than people, because an agent
 that lacks the data now will not have it later. The server enforces it: with knob
 `agent_factory.proof_policy_agents` = `require_samples` (the default), a build started from the
 `agent_author` / Agent Service / people-MCP `agents` / custom-action doors with fewer than 3 usable

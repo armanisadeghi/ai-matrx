@@ -450,7 +450,7 @@ export function NoteMetadataBar({
           document.body,
         )}
 
-      <CreateFolderDialog
+      {createFolderOpen && <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
@@ -459,7 +459,7 @@ export function NoteMetadataBar({
           .map((candidate) => candidate.name)}
         description="Create a folder and assign this note to it immediately."
         confirmLabel="Create & Assign"
-      />
+      />}
     </>
   );
 }

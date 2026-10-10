@@ -61,7 +61,7 @@ jest.mock("@ai-matrx/records/react", () => ({
   useTable: () => ({ data: { name: "Coding Accounts" }, error: null, loading: false }),
   useRecordsClient: () => ({ config: {}, recordUpdate: async () => ({ ok: true }) }),
 }));
-jest.mock("@ai-matrx/design-system", () => ({ Button: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ...jest.requireActual("@ai-matrx/design-system"), Button: () => null }));
 jest.mock("@ai-matrx/agents/mandates", () => ({
   ...jest.requireActual("@ai-matrx/agents/mandates"),
   MANDATE_KEYS: { data__page_guidance: "data.page_guidance" },

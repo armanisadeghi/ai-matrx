@@ -8,10 +8,10 @@
 // recent, grouped folder list) — folder-mode drag/drop is preserved via the
 // draggable wrapper props.
 
-import { memo } from "react";
+import { memo, useSyncExternalStore } from "react";
 import { FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ItemRow } from "@ai-matrx/design-system/item";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
@@ -49,6 +49,29 @@ interface NoteSidebarRowProps {
   onCreateFolder: (noteId: string) => void;
 }
 
+// ── One minute tick, for rows whose time label still changes by the minute ──
+let currentMinute = Math.floor(Date.now() / 60_000);
+const minuteListeners = new Set<() => void>();
+let minuteTimer: ReturnType<typeof setInterval> | null = null;
+function subscribeMinute(listener: () => void): () => void {
+  minuteListeners.add(listener);
+  if (!minuteTimer) {
+    minuteTimer = setInterval(() => {
+      currentMinute = Math.floor(Date.now() / 60_000);
+      for (const notify of minuteListeners) notify();
+    }, 60_000);
+  }
+  return () => {
+    minuteListeners.delete(listener);
+    if (minuteListeners.size === 0 && minuteTimer) {
+      clearInterval(minuteTimer);
+      minuteTimer = null;
+    }
+  };
+}
+const noTick = () => () => {};
+const readMinute = () => currentMinute;
+
 /**
  * Memoised on purpose (NoteSidebar is a React Compiler skip, so nothing above
  * it memoises): every save of the open note replaces the notes map, and an
@@ -60,7 +83,7 @@ interface NoteSidebarRowProps {
  * Guard: features/notes/__tests__/sidebar-rows-skip-unrelated-saves.test.tsx.
  */
 export const NoteSidebarRow = memo(function NoteSidebarRow({
-  note,
+  note: listNote,
   instanceId,
   isActive,
   isOpenTab,
@@ -78,6 +101,13 @@ export const NoteSidebarRow = memo(function NoteSidebarRow({
   onCreateFolder,
 }: NoteSidebarRowProps) {
   const dispatch = useAppDispatch();
+  // The sidebar's list keeps a record's previous body while it is typed
+  // (selectSidebarNotesList); the row shows and acts on the LIVE record.
+  const note = useAppSelector((state) => state.notes.notes[listNote.id] as NoteRecord | undefined) ?? listNote;
+  // "5m" → "6m": only a note edited in the last hour ticks, so a long list
+  // never re-renders every row at once on the minute.
+  const editedRecently = note.updated_at ? Date.now() - Date.parse(note.updated_at) < 3_600_000 : false;
+  useSyncExternalStore(editedRecently ? subscribeMinute : noTick, readMinute, readMinute);
 
   const menuCtx = {
     instanceId,

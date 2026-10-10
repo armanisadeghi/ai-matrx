@@ -800,6 +800,10 @@ export function useAssistClearance(active: boolean): void {
       const el = node instanceof Element ? node : node?.parentElement ?? null;
       return Boolean(el && (lastBox?.contains(el) || el.closest(DOCK_SELECTOR)));
     };
+    const insideEditor = (node: Node | null) => {
+      const el = node instanceof Element ? node : node?.parentElement ?? null;
+      return Boolean(el?.closest('[contenteditable="true"], .cm-content'));
+    };
     const onScroll = (e: Event) => {
       if (insideDock(e.target as Node | null)) return;
       scheduleSettled();
@@ -820,6 +824,12 @@ export function useAssistClearance(active: boolean): void {
           continue;
         }
         if (insideDock(m.target)) continue;
+        // Typing in an editor rewrites its nodes on every keystroke; the pass
+        // after it (elementsFromPoint over a page holding a long notes list)
+        // cost 100–170 ms each time the person paused (the Write-mode typing
+        // sweep, 2026-10-10). Text growing inside an editor moves nothing under
+        // the dock that a scroll or resize would not report.
+        if (insideEditor(m.target)) continue;
         // Toasts appearing, stacking and leaving change nothing under the dock.
         if (m.target instanceof Element && m.target.closest(TRANSIENT_OVERLAY_SELECTOR)) continue;
         later = true;

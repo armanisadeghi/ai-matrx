@@ -869,7 +869,9 @@ export function NoteContentEditor({
       </UnbindSurfaceContext.Provider>
 
 
-      <MoveNoteDialog
+      {/* Mounted only while open: the editor re-renders as the person types,
+          and a closed dialog (its folder list included) re-rendered with it. */}
+      {moveDialogOpen && <MoveNoteDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         onConfirm={handleMoveConfirm}
@@ -878,24 +880,24 @@ export function NoteContentEditor({
         noteName={noteLabel}
         currentFolder={noteExists ? noteFolderReference(noteExists) : null}
         availableFolders={availableFolderReferences}
-      />
+      />}
 
-      <CreateFolderDialog
+      {createFolderOpen && <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
         existingFolders={availableFolderReferences.map((folder) => folder.name)}
         description="Create a folder and move this note into it immediately."
         confirmLabel="Create & Move"
-      />
+      />}
 
-      <ShareModal
+      {shareDialogOpen && <ShareModal
         isOpen={shareDialogOpen}
         onClose={() => setShareDialogOpen(false)}
         resourceType="note"
         resourceId={noteId}
         resourceName={noteLabel}
-      />
+      />}
     </SurfaceRuntimeProvider>
   );
 }

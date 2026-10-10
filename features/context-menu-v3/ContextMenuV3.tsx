@@ -172,6 +172,52 @@ export function warmMenuContent(): Promise<unknown> {
   return menuContentWarm;
 }
 
+// ── The one selectionchange listener ────────────────────────────────────────
+interface SelectionTracker {
+  owner: () => HTMLElement | null;
+  locked: () => boolean;
+  set: (text: string) => void;
+}
+const selectionTrackers = new Set<SelectionTracker>();
+/** Trackers told they own the selection last time — the only ones to clear next time. */
+let selectionHolders = new Set<SelectionTracker>();
+
+function onDocumentSelectionChange(): void {
+  const selection = window.getSelection();
+  const anchor = selection?.anchorNode ?? null;
+  const active = document.activeElement;
+  const field = active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement ? active : null;
+  const holders = new Set<SelectionTracker>();
+  if (anchor || field) {
+    for (const tracker of selectionTrackers) {
+      const owner = tracker.owner();
+      if (!owner) continue;
+      if ((anchor != null && owner.contains(anchor)) || (field != null && owner.contains(field))) holders.add(tracker);
+    }
+  }
+  for (const tracker of selectionHolders) {
+    if (!holders.has(tracker) && !tracker.locked()) tracker.set("");
+  }
+  if (holders.size > 0) {
+    // A collapsed selection (a caret — every keystroke in an editor) has no
+    // text. `toString()` is not free: it serializes like innerText and forces
+    // a synchronous layout of the whole page (2026-09-26).
+    const text = !selection || selection.isCollapsed ? "" : selection.toString().trim();
+    for (const tracker of holders) if (!tracker.locked()) tracker.set(text);
+  }
+  selectionHolders = holders;
+}
+
+function trackSelection(tracker: SelectionTracker): () => void {
+  if (selectionTrackers.size === 0) document.addEventListener("selectionchange", onDocumentSelectionChange);
+  selectionTrackers.add(tracker);
+  return () => {
+    selectionTrackers.delete(tracker);
+    selectionHolders.delete(tracker);
+    if (selectionTrackers.size === 0) document.removeEventListener("selectionchange", onDocumentSelectionChange);
+  };
+}
+
 /** Schedules the warm-up for an idle moment (never during the page's own load work). */
 function useWarmMenuContentWhenIdle(): void {
   useEffect(() => {
@@ -376,8 +422,17 @@ export function ContextMenuV3({
   const [openTarget, setOpenTarget] = useState<HTMLElement | null>(null);
   // Bumps when a registered record's rows change (a rename) — an argument of
   // the heading read below, so it is re-read.
+  // Only an OPEN menu listens: a closed one reads the rows fresh at its next
+  // open anyway. Every mounted menu listening re-rendered every sidebar row and
+  // folder header each time a new note's auto-label moved while typing — O(notes)
+  // work per label change (the Write-mode freeze sweep, 2026-10-10).
+  const anyMenuOpen = menuOpen || dropdownOpen || sheetOpen || paletteOpen;
+  const subscribeWhileOpen = useCallback(
+    (listener: () => void) => (anyMenuOpen ? subscribeRecordMenus(listener) : () => {}),
+    [anyMenuOpen],
+  );
   const recordRevision = useSyncExternalStore(
-    subscribeRecordMenus,
+    subscribeWhileOpen,
     recordMenusRevision,
     recordMenusRevision,
   );
@@ -458,39 +513,15 @@ export function ContextMenuV3({
   // O(document) main-thread work per selection event: a browser-freeze
   // amplifier (2026-07 /notes freeze class).
   useEffect(() => {
-    const handleSelection = () => {
-      if (selectionLocked.current) return;
-      const owner = selectionOwnerRef.current;
-      const selection = window.getSelection();
-
-      const anchor = selection?.anchorNode ?? null;
-      const active = document.activeElement;
-      const ownsSelection =
-        owner != null &&
-        ((anchor != null && owner.contains(anchor)) ||
-          ((active instanceof HTMLTextAreaElement ||
-            active instanceof HTMLInputElement) &&
-            owner.contains(active)));
-
-      if (!ownsSelection) {
-        // Not ours — clear cheaply, WITHOUT serializing the selection.
-        // (setState with an unchanged value bails out, so non-owning
-        // instances do zero re-renders after the first clear.)
-        setSelectedText("");
-        return;
-      }
-
-      // A collapsed selection (a caret — every keystroke in an editor) has no
-      // text. `toString()` is not free: it serializes like innerText and forces
-      // a synchronous layout of the whole page, which on a studio beside a
-      // megabyte preview cost ~25 ms per keystroke (2026-09-26).
-      const text =
-        !selection || selection.isCollapsed ? "" : selection.toString().trim();
-      setSelectedText(text);
-    };
-    document.addEventListener("selectionchange", handleSelection);
-    return () =>
-      document.removeEventListener("selectionchange", handleSelection);
+    // ONE document listener for every instance (selectionTracker below): a
+    // selection change walks up from the anchor to the instances that own it,
+    // so a keystroke costs O(depth), not O(mounted menus) — /notes mounts one
+    // per sidebar row and folder header (the Write-mode freeze sweep, 2026-10-10).
+    return trackSelection({
+      owner: () => selectionOwnerRef.current,
+      locked: () => selectionLocked.current,
+      set: setSelectedText,
+    });
   }, []);
 
   useEffect(() => {

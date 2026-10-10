@@ -10,16 +10,17 @@
  * uncluttered.
  *
  *   Plain — raw text; variables highlighted, click to type (was Edit + Plain View)
+ *   Write — the rich editor over the same text; saves the exact bytes unless edited
  *   Split — raw text left, the formatted result live right
  *   Read  — the formatted text (was Matrx Preview)
  *
  * Visual contract:
  *   - trigger: icon of the current mode + a small chevron-down, nothing else
- *   - menu: three items, each labeled and prefixed with its mode icon
+ *   - menu: four items, each labeled and prefixed with its mode icon
  *   - same component everywhere so the surface looks identical across roles
  */
 
-import { Columns, Eye, FileText, ChevronDown } from "lucide-react";
+import { Columns, Eye, FileText, ChevronDown, PenLine } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +38,9 @@ import { cn } from "@/lib/utils";
  * "edit" is Plain while the text box has the caret (a click on the highlighted
  * text enters it; leaving returns to "plain") — one shared mode, two states.
  */
-export type MessageViewMode = "edit" | "plain" | "split" | "preview";
+export type MessageViewMode = "edit" | "plain" | "write" | "split" | "preview";
 
-type SharedMode = "plain" | "split" | "preview";
+type SharedMode = "plain" | "write" | "split" | "preview";
 
 const MODE_META: Record<
   SharedMode,
@@ -54,6 +55,11 @@ const MODE_META: Record<
     label: "Plain",
     description: "Raw text with variables highlighted.",
   },
+  write: {
+    icon: PenLine,
+    label: "Write",
+    description: "Formatted editing; keeps the exact text.",
+  },
   split: {
     icon: Columns,
     label: "Split",
@@ -66,7 +72,7 @@ const MODE_META: Record<
   },
 };
 
-const MODE_ORDER: SharedMode[] = ["plain", "split", "preview"];
+const MODE_ORDER: SharedMode[] = ["plain", "write", "split", "preview"];
 
 /** The shared mode a view state belongs to. */
 export function sharedModeOf(viewMode: MessageViewMode): SharedMode {

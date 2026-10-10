@@ -88,10 +88,12 @@ it("every notes host opens the canvas tab — none mounts its own history panel"
   for (const file of [
     "features/notes/components/NotesView.tsx",
     "features/notes/components/NoteRecordTools.tsx",
-    "features/notes/components/NoteViewControls.tsx",
   ]) {
     expect(read(file)).toContain("useNoteHistoryTab(");
   }
+  // NoteViewControls is NoteModeSwitch + NoteRecordTools since 2026-10-09: its
+  // Versions button is NoteRecordTools' (checked above).
+  expect(read("features/notes/components/NoteViewControls.tsx")).toContain("<NoteRecordTools");
   expect(read("features/notes/components/NoteTabItem.tsx")).toMatch(/useToolOpener\(\(id: string\) => noteHistoryInput\(id, note\?\.label\)\)/);
   for (const file of [
     "features/notes/components/NotesView.tsx",
@@ -164,6 +166,8 @@ it("every Versions and Outline tap button shows pressed through the system's pre
     // aria-pressed, overridden by the group's glyph colour) — RED before.
     expect(source).not.toContain('className={history.isVisible ? "text-primary" : undefined}');
     expect(source).not.toContain('className={outlineOpen ? "text-primary" : undefined}');
-    expect(source).toContain("pressed={history.isVisible}");
   }
+  // The Versions TAP button lives in NoteRecordTools (the /notes header opens
+  // history from its "…" menu, a menu item, not a tap button).
+  expect(readFileSync(join(repo, "features/notes/components/NoteRecordTools.tsx"), "utf8")).toContain("pressed={history.isVisible}");
 });
