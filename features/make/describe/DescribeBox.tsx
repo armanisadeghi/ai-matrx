@@ -62,6 +62,7 @@ import {
 
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { keepRun, keptRun, newRequestKey, stampOf } from "./runStore";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // What the person reads when a step fails — plain, no internal words; the reason is in the console.
 const WRITTEN_WRONG = "That did not come out right. Try again, or say it a little differently.";
 const STOPPED = "That stopped before it finished. Try again.";
@@ -426,7 +427,7 @@ export function DescribeBox() {
               Remove what was made
             </Link>
           ) : null}
-        </div>
+        <ErrorAlchemyMenu /></div>
       ) : null}
     </section>
   );

@@ -70,6 +70,7 @@ import { InstalledOneOffs, TemplateGallerySection } from "./gallery/TemplateGall
 import { DescribeBox } from "./describe/DescribeBox";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -318,7 +319,7 @@ function ReadFailed({ read }: { read: { why: string; retry: () => void } }) {
       <Button variant="outline" onClick={read.retry}>
         Try again
       </Button>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 
@@ -570,7 +571,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
         add={{ label: search.trim() ? `New table “${search.trim()}”` : "New table", onAdd: () => void makeTable(), disabled: making }}
       />
       {making ? <Skeleton className="h-6 w-48" /> : null}
-      {refused ? <p className="text-sm text-destructive">{refused}</p> : null}
+      {refused ? <p className="text-sm text-destructive">{refused}<ErrorAlchemyMenu /></p> : null}
       {askOrganization && !activeOrganizationId ? (
         <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New tables" description={SAVED_WHERE_CHOSEN} compact />
       ) : null}

@@ -67,6 +67,7 @@ import {
   wordFor,
 } from "./catalogue";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The preview page's address for one card. */
 export const templatePreviewHref = (id: string) => `/templates/${encodeURIComponent(id)}`;
 
@@ -260,7 +261,7 @@ function Failed({ why, retry }: { why: string; retry: () => void }) {
       <Button variant="outline" onClick={retry}>
         Try again
       </Button>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 
@@ -592,7 +593,7 @@ export function TemplatePreview({
         {upgradeWhy ? (
           <p className="text-sm text-destructive" role="alert" data-make-template-upgrade-refused="">
             {upgradeWhy}
-          </p>
+          <ErrorAlchemyMenu error={upgradeWhy} /></p>
         ) : null}
         {run.phase === "refused" ? (
           <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-refused="">
@@ -600,10 +601,10 @@ export function TemplatePreview({
             <Button variant="outline" onClick={() => void go(run.door, run.door === "template_install" ? templateId : (installId ?? ""))}>
               Try again
             </Button>
-          </div>
+          <ErrorAlchemyMenu /></div>
         ) : null}
         {run.phase === "removed" ? <p className="text-sm text-muted-foreground" data-make-template-removed="">Removed — everything it made is in Trash</p> : null}
-        {run.phase === "removed" && agentNote ? <p className="text-sm text-destructive" role="alert" data-make-template-agent-archive-failed="">{agentNote}</p> : null}
+        {run.phase === "removed" && agentNote ? <p className="text-sm text-destructive" role="alert" data-make-template-agent-archive-failed="">{agentNote}<ErrorAlchemyMenu /></p> : null}
         {run.phase === "installed" ? (
           <Landing
             made={made}
@@ -705,7 +706,7 @@ function KeepOneOff({ templateId, kept }: { templateId: string; kept: () => void
       <Button variant="outline" onClick={() => void keep()} disabled={busy} data-make-template-keep="">
         Save as my template
       </Button>
-      {why ? <span className="text-sm text-destructive" role="alert">{why}</span> : null}
+      {why ? <span className="text-sm text-destructive" role="alert">{why}<ErrorAlchemyMenu error={why} /></span> : null}
     </>
   );
 }
@@ -729,7 +730,7 @@ function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: st
       <Button variant="quiet" onClick={() => setConfirm(true)} data-make-template-archive="">
         Archive template
       </Button>
-      {why ? <span className="text-sm text-destructive" role="alert">{why}</span> : null}
+      {why ? <span className="text-sm text-destructive" role="alert">{why}<ErrorAlchemyMenu error={why} /></span> : null}
       <ConfirmDialog
         open={confirm}
         onOpenChange={(open) => !open && setConfirm(false)}
@@ -810,7 +811,7 @@ export function Landing({
         <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-agent="failed">
           <span className="text-destructive">{`The assistant was not added — ${agent.why}`}</span>
           {retryAgent ? <RetryAt retryAt={agent.retryAt ?? null} retry={retryAgent} /> : null}
-        </div>
+        <ErrorAlchemyMenu /></div>
       ) : null}
       <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((m) => (
