@@ -136,7 +136,7 @@ describe("buildScopeDisplayItems", () => {
           color: "",
           max_assignments_per_entity: null,
           sort_order: 0,
-          parent_type_id: null,
+          created_by: null,
           default_variable_keys: [],
           slug: null,
           description: "",
