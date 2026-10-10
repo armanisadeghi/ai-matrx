@@ -554,7 +554,7 @@ export function KnobOverridesAdmin({
             <span className="text-muted-foreground"> — decided by {probe.answer.decidedBy}</span>
           </span>
         )}
-        {probe.error && <span className="text-destructive">Could not resolve: {probe.error}</span>}
+        {probe.error && <span className="text-destructive">Could not resolve: {probe.error}<ErrorAlchemyMenu error={probe.error} /></span>}
       </div>
     </div>
   );

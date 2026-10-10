@@ -43,6 +43,7 @@ import { WindowPicker } from "./explorer/WindowPicker";
 import { buildBillingSpendWindowScope } from "./spend-surface-scope";
 import { readExplorerUrlState, resolveWindow, WINDOW_PRESETS, writeExplorerUrlState } from "./windows";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Mirrors the database's cap on a spend window. */
 const WINDOW_DAY_CAP = 92;
 
@@ -170,7 +171,7 @@ function SpendOrganizationFilter({
         {options === null ? (
           <div className="px-2 py-1.5 text-xs text-muted-foreground">Reading organizations…</div>
         ) : failed ? (
-          <div className="px-2 py-1.5 text-xs text-destructive">Organizations could not be read.</div>
+          <div className="px-2 py-1.5 text-xs text-destructive">Organizations could not be read.<ErrorAlchemyMenu /></div>
         ) : options.length === 0 ? (
           <div className="px-2 py-1.5 text-xs text-muted-foreground">No organization batched in this window.</div>
         ) : (

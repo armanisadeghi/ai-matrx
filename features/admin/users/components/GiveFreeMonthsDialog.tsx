@@ -35,6 +35,7 @@ import { applyFreeMonths, fetchFreeTimeKnobs } from "../service/coupons";
 import { monthsLabel, refusalText, validateMonths, type FreeMonthsResult } from "../lib/coupons";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface FreeMonthsPerson {
   id: string;
   label: string;
@@ -150,14 +151,14 @@ export function GiveFreeMonthsDialog({
                     {r.has_live_subscription ? " · pays" : ""}
                   </span>
                 ) : (
-                  <span className="shrink-0 type-secondary text-destructive">{refusalText(r)}</span>
+                  <span className="shrink-0 type-secondary text-destructive">{refusalText(r)}<ErrorAlchemyMenu /></span>
                 )}
               </li>
             ))}
           </ul>
         ) : (
           <div className="space-y-3">
-            {loadError && <p className="type-body text-destructive">{loadError}</p>}
+            {loadError && <p className="type-body text-destructive">{loadError}<ErrorAlchemyMenu error={loadError} /></p>}
             {initialPeople.length === 0 && (
               <div className="space-y-2">
                 <UserSearchField
@@ -218,7 +219,7 @@ export function GiveFreeMonthsDialog({
                 value={months}
                 onChange={(e) => setMonths(e.target.value)}
               />
-              {monthsError && <span className="text-destructive">{monthsError}</span>}
+              {monthsError && <span className="text-destructive">{monthsError}<ErrorAlchemyMenu error={monthsError} /></span>}
             </label>
             <label className="block space-y-1 text-xs text-muted-foreground">
               <span>Note (optional)</span>

@@ -932,7 +932,7 @@ export function CatalogEntryEditor({
                     <p className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <ShieldQuestion className="h-3.5 w-3.5" /> <span>Artifact probe
                       blocked by CORS — verify reachability another way
-                      <ErrorAlchemyMenu /></span>
+                      <ErrorAlchemyMenu input={{ message: "Artifact probe blocked by CORS — verify reachability another way" }} /></span>
                     </p>
                   ) : null}
                 </div>

@@ -26,6 +26,7 @@ import {
 } from "../enterpriseCustom";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function CustomCell({
   period,
   saved,
@@ -198,7 +199,7 @@ export function EnterpriseCustomLimitsEditor({
         ) : null}
       </div>
       {error ? (
-        <p className="type-secondary text-destructive">{error}</p>
+        <p className="type-secondary text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>
       ) : !values ? (
         <div className="flex h-12 items-center gap-2 type-secondary text-muted-foreground">
           <Spinner size="xs" className="text-current" /> Reading custom values

@@ -45,6 +45,7 @@ import {
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { readOf } from "@ai-matrx/design-system";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 type Timeframe = "7d" | "30d" | "90d" | "all";
 
 const TIMEFRAME_DAYS: Record<Exclude<Timeframe, "all">, number> = {
@@ -562,6 +563,7 @@ export function UserAcquisitionTableClient() {
           </Button>
         </div>
       ) : null}
+      {counted.error ? <ErrorNotice size="compact" title="Counts unavailable" message={counted.error} /> : null}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-8">
         {(
           [
@@ -580,7 +582,6 @@ export function UserAcquisitionTableClient() {
             label={label}
             value={value ?? null}
             loading={counted.loading}
-            title={counted.error ?? undefined}
           />
         ))}
       </div>

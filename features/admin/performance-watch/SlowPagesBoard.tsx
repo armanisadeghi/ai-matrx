@@ -62,6 +62,11 @@ function VitalCell({ metric, value, n, minN }: { metric: "LCP" | "INP" | "TTFB";
   );
 }
 
+/** The label for why a page was flagged slow — a reason code, not a failure. */
+function slowReasonLabel(flag: { why: keyof typeof PAGE_WHY_LABELS }): string {
+  return PAGE_WHY_LABELS[flag.why];
+}
+
 export function SlowPagesBoard({
   rows,
   minN,
@@ -180,10 +185,13 @@ export function SlowPagesBoard({
         return (
           <div className="flex flex-wrap items-center gap-1">
             {flags.map((f, i) => {
+              const reasonLabel = slowReasonLabel(f);
               const body = (
-                <Badge variant="outline" className="border-warning/50 text-warning" title={f.detail}>
-                  {PAGE_WHY_LABELS[f.why]}
-                </Badge>
+                <span title={f.detail}>
+                  <Badge variant="outline" className="border-warning/50 text-warning">
+                    {reasonLabel}
+                  </Badge>
+                </span>
               );
               return f.watch_id ? (
                 <button

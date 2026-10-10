@@ -923,7 +923,7 @@ function CheckDetail({
               <span className="text-foreground sm:col-span-2 lg:col-span-4">
                 Failed — this check names no items one by one, so its headline is the finding to fix:{" "}
                 {row.unitemizedFailure}
-              </span>
+              <ErrorAlchemyMenu error={row.unitemizedFailure} /></span>
             ) : null}
             {row.brokenReasons.length ? (
               <span className="text-destructive sm:col-span-2 lg:col-span-4">

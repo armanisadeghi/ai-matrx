@@ -45,7 +45,6 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 
@@ -173,7 +172,6 @@ function DataClassPanel({ row }: { row: EntityTypeRow }) {
       {/* Class change rewrites access policies; migration must pass per-identity access delta. List scope is the harmless half. */}
       <p className="text-[11px] text-muted-foreground">
         Changes only through a migration.
-        <ErrorAlchemyMenu />
       </p>
     </div>
   );

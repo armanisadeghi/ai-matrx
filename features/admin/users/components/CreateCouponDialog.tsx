@@ -47,6 +47,7 @@ import { USERS_ADMIN_LOCATION } from "../constants";
 import { freeTimePlans, planOptionLabel } from "./GiveFreeMonthsDialog";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface PickedPerson {
   id: string;
   label: string;
@@ -221,7 +222,7 @@ export function CreateCouponDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            {loadError && <p className="type-body text-destructive">{loadError}</p>}
+            {loadError && <p className="type-body text-destructive">{loadError}<ErrorAlchemyMenu error={loadError} /></p>}
             <div className="grid grid-cols-2 gap-2">
               <Select value={kind} onValueChange={(v) => setKind(v as CouponKind)}>
                 <SelectTrigger aria-label="Kind">
@@ -252,7 +253,7 @@ export function CreateCouponDialog({
               <label className="block space-y-1 text-xs text-muted-foreground">
                 <span>Months</span>
                 <Input type="number" min={1} max={knobs?.maxMonths} value={months} onChange={(e) => setMonths(e.target.value)} />
-                {monthsError && <span className="text-destructive">{monthsError}</span>}
+                {monthsError && <span className="text-destructive">{monthsError}<ErrorAlchemyMenu error={monthsError} /></span>}
               </label>
               <label className="block space-y-1 text-xs text-muted-foreground">
                 <span>How many</span>
@@ -265,7 +266,7 @@ export function CreateCouponDialog({
                   title={recipients.length > 0 ? "One per recipient" : undefined}
                   onChange={(e) => setCount(e.target.value)}
                 />
-                {batchError && <span className="text-destructive">{batchError}</span>}
+                {batchError && <span className="text-destructive">{batchError}<ErrorAlchemyMenu error={batchError} /></span>}
               </label>
               <label className="block space-y-1 text-xs text-muted-foreground">
                 <span>Expires</span>

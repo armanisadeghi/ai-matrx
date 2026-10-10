@@ -22,6 +22,7 @@ import {
   type ApprovalStatus,
 } from "./spendApprovals";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const DOT: Record<ApprovalStatus, string> = {
   waiting: "bg-warning",
   approved: "bg-success",
@@ -63,7 +64,7 @@ export function RunApprovalCell({
   // Optimistic status for this cell; cleared when the shared index is replaced or the write is refused.
   const [optimistic, setOptimistic] = useState<ApprovalStatus | null>(null);
   useEffect(() => setOptimistic(null), [index]);
-  if (error) return <span className="text-xs text-destructive" title={error}>Unavailable</span>;
+  if (error) return <span className="text-xs text-destructive" title={error}>Unavailable<ErrorAlchemyMenu error={error} /></span>;
   if (!index) return <span className="inline-block h-4 w-14 animate-pulse rounded bg-muted/50" />;
   if (hit && hit.can_decide) {
     return (

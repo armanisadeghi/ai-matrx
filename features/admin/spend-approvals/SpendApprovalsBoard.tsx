@@ -114,7 +114,7 @@ function HistoryList({ id }: { id: string }) {
       live = false;
     };
   }, [id]);
-  if (error) return <div className="text-xs text-destructive">{error}</div>;
+  if (error) return <div className="text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></div>;
   if (!events) return <div className="h-12 animate-pulse rounded bg-muted/50" />;
   return (
     <ol className="flex max-h-48 flex-col gap-1 overflow-y-auto text-xs">

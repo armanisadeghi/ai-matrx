@@ -16,6 +16,7 @@ import { supabase } from "@/utils/supabase/client";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type { SpendWindowDays } from "./agentSpend";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface ProtectedAccountRun {
   email: string;
   driver: string;
@@ -100,7 +101,7 @@ export function ProtectedAccountRunsButton({ days }: { days: SpendWindowDays }) 
         <DialogContent size="2xl" height="tall">
           <DialogTitle>Runs on protected accounts, {days} days</DialogTitle>
           {error ? (
-            <div className="text-sm text-destructive">{error}</div>
+            <div className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></div>
           ) : (
             <div className="min-h-0 flex-1">
               <MatrxDataTable

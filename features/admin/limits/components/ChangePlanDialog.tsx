@@ -46,6 +46,7 @@ import { isEnterpriseAudience } from "../enterpriseCustom";
 import { EnterpriseCustomLimitsEditor } from "./EnterpriseCustomLimitsEditor";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const DEFAULT_CHOICE = "__default__";
 
 export type ChangePlanSubject =
@@ -158,7 +159,7 @@ export function ChangePlanDialog({
         </DialogHeader>
         <div className="space-y-3">
           {loadError ? (
-            <p className="type-body text-destructive">{loadError}</p>
+            <p className="type-body text-destructive">{loadError}<ErrorAlchemyMenu error={loadError} /></p>
           ) : (
             <Select value={choice} onValueChange={setChoice} disabled={!plans}>
               <SelectTrigger aria-label="Plan">
@@ -191,7 +192,7 @@ export function ChangePlanDialog({
                 value={months}
                 onChange={(e) => setMonths(e.target.value)}
               />
-              {monthsError && <span className="text-destructive">{monthsError}</span>}
+              {monthsError && <span className="text-destructive">{monthsError}<ErrorAlchemyMenu error={monthsError} /></span>}
             </label>
           )}
           {subject?.kind === "organization" && choiceIsEnterprise && (
