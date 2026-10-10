@@ -1217,7 +1217,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       </main>
 
       <BrandEditorDialog
-        open={editorOpen}
+        open={editorOpen && canEdit}
         onOpenChange={setEditorOpen}
         brand={current}
       />
