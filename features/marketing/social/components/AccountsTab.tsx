@@ -14,7 +14,10 @@ import Link from "next/link";
 import { SocialConnectionsPanel } from "@/features/social-connections/SocialConnectionsPanel";
 import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
 import { useRouter } from "next/navigation";
-import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { parseCreateAccounts, parseUpdateAccounts } from "../agent-writes";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import { createSocialAccountsScope, SOCIAL_ACCOUNTS_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-social-accounts.manifest";
 import { useMemo, useState } from "react";
@@ -92,6 +95,7 @@ export function AccountsTab() {
     progress,
     setBusyRow,
     trackOwn,
+    trackOwnRow,
     trackAllOwn,
     costText,
     confirmSpend,
@@ -465,7 +469,59 @@ export function AccountsTab() {
               })),
             },
     );
-  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_ACCOUNTS_SURFACE_NAME, getScope: surfaceScope, isEditable: false });
+  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_ACCOUNTS_SURFACE_NAME, getScope: surfaceScope, isEditable: true });
+
+  // Agent writes: Track an account (the Track dialog's handle-or-link save), Track as Own, Stop
+  // tracking, role change and Refresh — the same saves as the buttons, each approved on a card
+  // first; anything that spends points names them before it runs (confirmSpend).
+  const declined = (what: string) => new Error(`The person declined the points to ${what}.`);
+  useSurfaceWriteHandlers(
+    SOCIAL_ACCOUNTS_SURFACE_NAME,
+    collectionWriteHandlers(
+      {
+        plural: "accounts",
+        singular: "account",
+        create: {
+          parse: (value) => parseCreateAccounts(value),
+          run: async (plan) => {
+            if (!(await confirmSpend("track", 1, { title: `Track ${plan.label}?`, confirmLabel: "Track" }))) throw declined(`track ${plan.label}`);
+            const result = await trackAccount(
+              { handleOrUrl: plan.handleOrUrl, platform: plan.platform, role: plan.role, brandId, pages: 1 },
+              { organizationId },
+            );
+            await invalidate();
+            return { id: result.tracked_account_id, name: result.created ? plan.label : `${plan.label} (already tracked)` };
+          },
+          nameOf: (plan) => plan.label,
+          refusalFor: (err, savedSoFar) =>
+            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
+        },
+        update: {
+          parse: (value) => parseUpdateAccounts(value, rows),
+          run: async (plan) => {
+            const { row } = plan;
+            if (plan.tracked === false && row.trackedAccountId) await untrackAccount(row.trackedAccountId, { organizationId });
+            if (plan.tracked === true) {
+              if (!(await confirmSpend("track", 1, { title: `Track ${plan.label} as Own?`, confirmLabel: "Track" }))) throw declined(`track ${plan.label}`);
+              if ((await trackOwnRow(row)) !== "ok") throw new Error(`${plan.label} could not be tracked.`);
+            }
+            if (plan.role && row.trackedAccountId) await setTrackedRole(row.trackedAccountId, plan.role);
+            if (plan.refresh && row.profileId) {
+              if (!(await confirmSpend("profile_page", 1, { title: `Refresh ${plan.label}?`, confirmLabel: "Refresh" }))) throw declined(`refresh ${plan.label}`);
+              await refreshProfile(row.profileId, { pages: 1 }, { organizationId });
+            }
+            await invalidate();
+            return { id: row.rowId, name: plan.label };
+          },
+          nameOf: (plan) => plan.label,
+          changedOf: (plan) => plan.changed,
+          refusalFor: (err, savedSoFar) =>
+            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+  );
 
   return (
     <>
