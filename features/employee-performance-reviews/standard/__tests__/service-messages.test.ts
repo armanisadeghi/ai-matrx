@@ -82,3 +82,19 @@ describe("a refused door is a visible message", () => {
     expect(rpc.mock.calls[0]![1]).not.toHaveProperty("p_expected_version");
   });
 });
+
+describe("raw driver text never reaches the person", () => {
+  it("a thrown network error and a database error both become fixed sentences", async () => {
+    const { TRANSPORT_MESSAGE, SERVICE_MESSAGE } = await import("../service");
+    const spy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+    rpc.mockRejectedValue(new Error("TypeError: Failed to fetch https://db.example/rest/v1"));
+    const a = await submitResponse("r1", "self");
+    rpc.mockResolvedValue({ data: null, error: { code: "XX000", message: "relation hr.review does not exist" } });
+    const b = await submitResponse("r1", "self");
+    expect(a).toMatchObject({ ok: false, message: TRANSPORT_MESSAGE });
+    expect(b).toMatchObject({ ok: false, message: SERVICE_MESSAGE });
+    expect(JSON.stringify([a, b])).not.toMatch(/fetch|relation|XX000/i);
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+});

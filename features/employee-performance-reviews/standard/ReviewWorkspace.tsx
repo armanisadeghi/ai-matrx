@@ -14,6 +14,7 @@ import { TextInputDialog } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HrPageState } from "@/features/hr/shared/HrStates";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { toast } from "@/lib/toast";
 
 import { AnswerForm } from "./AnswerForm";
@@ -68,14 +69,22 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   const mgrR: ResponseView | undefined = detail?.responses.find((r) => r.role === "manager");
 
   return (
+    <>
+    <RecordPageHeader
+      backHref="/hr/performance"
+      parents={[
+        { label: "HR", href: "/hr" },
+        { label: "Performance", href: "/hr/performance" },
+      ]}
+      record={{ name: review?.employeeName ?? "Review" }}
+      status={review ? { label: statusLabel(review.status), tone: statusTone(review.status) } : undefined}
+    />
     <HrPageState loading={detail === null && error === null} error={error ? new Error(error) : null} onRetry={reload} operation="This review" variant="panel" requireEmployer={false}>
       {detail && review && template ? (
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
           <div className="mx-auto max-w-4xl space-y-4 p-3">
             <header className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-lg font-semibold">{review.employeeName}</h1>
-                <Badge tone={statusTone(review.status)}>{statusLabel(review.status)}</Badge>
                 {review.overallRating ? <Badge tone="primary">{ratingLabel(template.ratingPoints, review.overallRating)}</Badge> : null}
               </div>
               <p className="text-sm text-muted-foreground">
@@ -225,6 +234,7 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
         </div>
       ) : null}
     </HrPageState>
+    </>
   );
 }
 

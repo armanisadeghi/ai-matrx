@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import { ReviewWorkspace } from "@/features/employee-performance-reviews/standard/ReviewWorkspace";
 import { HrLoading } from "@/features/hr/shared/HrStates";
-import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 export const metadata = { title: "Performance review" };
 
@@ -13,14 +12,6 @@ export default async function HrPerformanceReviewWorkspacePage({ params }: { par
   const { reviewId } = await params;
   return (
     <>
-      <RecordPageHeader
-        backHref="/hr/performance"
-        parents={[
-          { label: "HR", href: "/hr" },
-          { label: "Performance", href: "/hr/performance" },
-        ]}
-        record={{ name: "Review" }}
-      />
       <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
         <ReviewWorkspace reviewId={reviewId} />
       </Suspense>

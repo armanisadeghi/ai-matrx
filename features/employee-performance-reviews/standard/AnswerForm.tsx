@@ -15,7 +15,8 @@ import { isRatingValue } from "@/features/employee-performance-reviews/schema";
 import { toast } from "@/lib/toast";
 
 import { problemMessage } from "./messages";
-import { saveResponse, submitResponse, type StdResult } from "./service";
+import { createDraftSaver, type DraftSaver } from "./draftSaver";
+import { saveResponse, submitResponse } from "./service";
 import type { AnswerProblem, ResponseRole, ReviewAnswers, TemplateQuestion, TemplateSnapshot } from "./types";
 import { emptyAnswers } from "./types";
 
@@ -61,40 +62,25 @@ export function AnswerForm({
   const [submitting, setSubmitting] = useState(false);
   const labels = useMemo(() => labelMap(template), [template]);
 
-  const latest = useRef(answers);
-  const version = useRef<number | null>(initialVersion);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const chain = useRef<Promise<StdResult<unknown> | null>>(Promise.resolve(null));
-  const dirty = useRef(false);
-  const everSaved = useRef(initialVersion !== null);
-
-  const persist = useCallback((): Promise<StdResult<unknown> | null> => {
-    const run = chain.current.then(async (): Promise<StdResult<unknown> | null> => {
-      if (!dirty.current && everSaved.current) return null;
-      dirty.current = false;
-      setSaveState("saving");
-      const r = await saveResponse(reviewId, role, latest.current, version.current);
-      if (r.ok) {
-        version.current = r.data.version;
-        everSaved.current = true;
-        setSaveError(null);
-        setSaveState(dirty.current ? "saving" : "saved");
-      } else {
-        dirty.current = true;
-        setSaveState("error");
-        setSaveError(r.message);
-        if (r.reason === "version_conflict") onConflict();
-      }
-      return r;
-    });
-    chain.current = run;
-    return run;
-  }, [reviewId, role, onConflict]);
+  const [conflict, setConflict] = useState(false);
+  const saver = useRef<DraftSaver | null>(null);
+  if (saver.current === null) {
+    saver.current = createDraftSaver(
+      (a, v) => saveResponse(reviewId, role, a, v),
+      { answers, version: initialVersion },
+      (st) => {
+        setSaveState(st.status === "conflict" ? "error" : st.status);
+        setSaveError(st.status === "conflict" ? null : st.error);
+        setConflict(st.status === "conflict");
+      },
+    );
+  }
+  const persist = useCallback(() => saver.current!.flush(), []);
 
   const change = useCallback(
     (next: ReviewAnswers) => {
-      latest.current = next;
-      dirty.current = true;
+      saver.current!.edit(next);
       setAnswers(next);
       setProblems([]);
       if (timer.current) clearTimeout(timer.current);
@@ -105,10 +91,10 @@ export function AnswerForm({
 
   useEffect(
     () => () => {
-      // Leaving with an unsaved edit: save it now rather than lose it.
+      // Leaving with an unsaved edit: save it now rather than lose it (a conflict keeps it unsaved, said on screen).
       if (timer.current) {
         clearTimeout(timer.current);
-        if (dirty.current) void persist();
+        if (saver.current!.hasUnsaved()) void persist();
       }
     },
     [persist],
@@ -210,6 +196,19 @@ export function AnswerForm({
           {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : saveState === "error" ? "Not saved" : "Saves as you type"}
         </span>
       </div>
+      {conflict ? (
+        <div role="alert" className="space-y-2 rounded-md border border-border bg-card p-3 text-sm">
+          <p>This review was changed somewhere else while you were writing. Your text is still here.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onConflict}>
+              Load latest
+            </Button>
+            <Button variant="primary" onClick={() => void saver.current!.keepMine()}>
+              Keep mine
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {saveError ? (
         <p role="alert" className="text-sm text-destructive">
           {saveError}

@@ -6,6 +6,7 @@
 // Every wrapper returns `StdResult<T>` and never throws: a refusal, a transport failure and an
 // unreadable answer all arrive as `{ ok:false, message }` with a sentence a person can act on.
 
+import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
 import { refusalMessage } from "./messages";
@@ -46,44 +47,34 @@ const fail = (reason: string, message: string, extra?: { problems?: AnswerProble
   ...extra,
 });
 
-export type ReviewDoor =
-  | "hr_review_template_ensure_default"
-  | "hr_review_cycle_create"
-  | "hr_review_cycle_launch"
-  | "hr_review_cycle_list"
-  | "hr_review_cycle_get"
-  | "hr_review_list_mine"
-  | "hr_review_get"
-  | "hr_review_save_response"
-  | "hr_review_submit_response"
-  | "hr_review_set_overall"
-  | "hr_review_share"
-  | "hr_review_acknowledge"
-  | "hr_review_reopen"
-  | "hr_review_cancel"
-  | "hr_review_replace_manager"
-  | "hr_review_history"
-  | "hr_review_cycle_close";
+type HrFunctions = Database["hr"]["Functions"];
+/** Every review door, taken from the generated hr Functions: a renamed or removed door is a type error. */
+export type ReviewDoor = Extract<keyof HrFunctions, `hr_review_${string}`>;
 
 type Envelope = Record<string, unknown>;
 
-/** Calls a door and returns its OK envelope, or the refusal said in words. Never throws. */
-export async function callDoor(door: ReviewDoor, args: Record<string, unknown>): Promise<StdResult<Envelope>> {
+/**
+ * Calls a door and returns its OK envelope, or the refusal said in words. Never throws.
+ * `args` is the generated signature of THAT door, so a drifted argument is a type error.
+ * Raw driver text never reaches the screen: it goes to the console, the person gets a fixed sentence.
+ */
+export async function callDoor<D extends ReviewDoor>(door: D, args: HrFunctions[D]["Args"]): Promise<StdResult<Envelope>> {
   let data: unknown = null;
   let error: { message?: string; code?: string } | null = null;
   try {
-    ({ data, error } = (await supabase.schema(REVIEW_DOOR_SCHEMA).rpc(door as never, args as never)) as {
-      data: unknown;
-      error: { message?: string; code?: string } | null;
-    });
+    ({ data, error } = await supabase.schema(REVIEW_DOOR_SCHEMA).rpc(door, args));
   } catch (thrown) {
-    return fail("transport", `The review could not reach the server. Check your connection and try again. (${thrown instanceof Error ? thrown.message : String(thrown)})`);
+    console.error(`[hr-review] ${door} did not reach the server`, thrown);
+    return fail("transport", TRANSPORT_MESSAGE);
   }
   // PGRST106: the `hr` schema is not exposed to the Data API yet. Said plainly, never a blank page.
   if (error && (error.code === "PGRST106" || /only the following schemas are exposed/i.test(error.message ?? ""))) {
     return fail("schema_not_exposed", "Performance reviews are not reachable yet. They will open as soon as the service is switched on.");
   }
-  if (error) return fail("transport", `The review service did not answer: ${error.message ?? "unknown error"}.`);
+  if (error) {
+    console.error(`[hr-review] ${door} failed`, error);
+    return fail("transport", SERVICE_MESSAGE);
+  }
   if (!isRec(data)) return fail("unreadable", "The review service answered something unreadable. Reload and try again.");
   if (data.ok !== true) {
     const reason = typeof data.reason === "string" ? data.reason : "refused";
@@ -96,6 +87,9 @@ export async function callDoor(door: ReviewDoor, args: Record<string, unknown>):
   }
   return { ok: true, data };
 }
+
+export const TRANSPORT_MESSAGE = "The review could not reach the server. Check your connection and try again.";
+export const SERVICE_MESSAGE = "The review service could not complete that. Try again in a moment.";
 
 const unreadable = (what: string) => fail("unreadable", `${what} came back in a shape this page cannot read. Reload and try again.`);
 
