@@ -17,6 +17,7 @@
  * doors answer who sees and changes what.
  */
 
+import { askTableByMandate } from "@/features/data-tables/records-ui-host/askTable";
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -32,6 +33,7 @@ import {
   type AgentBuildAsk,
   type OpenRecordsAsk,
   type RecordsUiHost,
+  type TableAskRequest,
 } from "@ai-matrx/records-ui";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -72,6 +74,8 @@ export interface RecordsUiPorts {
   onAskForOne: (ask: AgentBuildAsk) => void;
   openRecords: (ask: OpenRecordsAsk) => void;
   runAgentAction: (target: RowAgentActionTarget) => void;
+  /** The table's Ask box, answered by the `table.ask` mandate (`askTable.ts`). */
+  askTable?: RecordsUiHost["askTable"];
   /** The table's organization — the record chat files its conversation there. */
   organizationId: string | null;
   /** "Link a record…" on a store record: the one record picker, pointed at that record. */
@@ -155,6 +159,7 @@ export function recordsUiHostFor({ ports, merged, gridContext, rights }: Records
     onAskForOne: ports.onAskForOne,
     openRecords: ports.openRecords,
     runAgentAction: ports.runAgentAction,
+    ...(ports.askTable ? { askTable: ports.askTable } : {}),
     share: recordStoreShare,
     // "This organization is archived" on every refusal that names one: an owner (or super admin) gets
     // "Restore organization" (the one iam.organization_restore door), everyone else is told who can.
@@ -357,7 +362,13 @@ export function useRecordsUiPorts({
     [dataSource, launchMandate, organizationId, userId],
   );
 
-  return { members, onAskForOne, openRecords, runAgentAction, organizationId, linkRecord };
+  /** THE TABLE'S ASK BOX: the `table.ask` mandate, run headless (`askTable.ts`). */
+  const askTable = useCallback(
+    (ask: TableAskRequest) => askTableByMandate({ launchMandate, organizationId, ask }),
+    [launchMandate, organizationId],
+  );
+
+  return { members, onAskForOne, openRecords, runAgentAction, askTable, organizationId, linkRecord };
 }
 
 /**
