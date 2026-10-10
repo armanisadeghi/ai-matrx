@@ -399,6 +399,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-10-10 (SCOPES-REVIEW-FIXES, `@ai-matrx/records` 0.98.0): no private field cache — pickers read the holder's catalog (`readScopeTypeFields`) and show a refused read where the fields go; `ensureScopeTypeItems`/`ensureContextValues` keep no in-flight map and no host sort (the records client dedupes identical reads; the door orders fields); the context-item card reads `scopes.field(id, member orgs)`; the one value write is the package's `contextValueWrite` (`referenceCell.ts` is labels/checks only); `unwrapRecords` and `mapThrownError` are the package's (host `mapPgError` deleted); `resolveContextCell` returns refusals; suggestion items are `joinFieldValues` rows; `assembleOrganizations` is the one host tree join; the edit sheet has its Description box again. Guard `check:scopes-data-layer` now fails on a module-level cache of scope fields/values outside `redux/` and on `value_*` encoding outside the package.
+
 - 2026-10-09 (SCOPES-SILENT-FAILURES): `ReferenceConfigFields` says a refused table-templates read in the template field's own error slot (the store's `RecordsError.message`) instead of showing an empty list; the rest of the form stays usable. Test: `components/reference/__tests__/reference-config-template-refusal.test.tsx`.
 - 2026-10-09 (SCOPES-CLEANUP): `@ai-matrx/records` 0.97.6 — `client.scopes.systemItems()` answers
   `SystemContextField[]` (a `ContextField` of `SYSTEM_CONTEXT_TYPE_ID` + `item_class`, decoded in the package's
