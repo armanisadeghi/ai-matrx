@@ -43,17 +43,12 @@ export function NoteModeSwitch({
     label: (
       <>
         <Icon className="h-3.5 w-3.5" />
-        <span
-          className={
-            labels === "container"
-              ? "hidden @[26rem]:inline"
-              : labels === "none"
-                ? "sr-only"
-                : undefined
-          }
-        >
-          {label}
-        </span>
+        {/* No label node at all when icons-only: a zero-width flex item still takes
+            the segment's 4px gap and pushed the glyph off-centre (the segment already
+            carries `ariaLabel` + `title` for assistive tech). */}
+        {labels !== "none" && (
+          <span className={labels === "container" ? "hidden @[26rem]:inline" : undefined}>{label}</span>
+        )}
       </>
     ),
   }));

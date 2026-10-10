@@ -184,13 +184,13 @@ export default function MobileNotesView({
         <PageHeader>
           <div className="flex items-center gap-1.5 h-full w-full">
             {/* Back */}
-            <ChevronLeftTapButton onClick={handleBack} ariaLabel="Back to notes" />
+            <ChevronLeftTapButton variant="transparent" onClick={handleBack} ariaLabel="Back to notes" />
 
             {/* Title — the header names the record; it takes the free space */}
             {/* Two lines before it ever truncates: "Clinic int…" told the
                 person nothing (page-pass 2026-09-28). */}
             <span
-              className="min-w-0 flex-1 line-clamp-2 break-words text-sm font-medium leading-tight text-foreground"
+              className="min-w-0 flex-1 line-clamp-2 break-words px-[3px] text-sm font-medium leading-tight text-foreground"
               title={noteDisplayLabel(selectedNote)}
             >
               {noteDisplayLabel(selectedNote)}
