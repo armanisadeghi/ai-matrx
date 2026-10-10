@@ -91,6 +91,12 @@ export default async function AppShell({
   // hydration, so a wide viewport reserves the width in CSS from the first paint (no shift, no animation).
   const chatWideDefault = chatAvailable && !chatInitial && chatHome.defaultOpen === null && chatWidth !== undefined;
   const domainPanel = isDomainPanelPath(pathname);
+  // A remembered, explicitly-open docked chat folds the domain panel on a mid-width screen
+  // (ShellChatDock does it after hydration). The server cannot see the width, so this tiny
+  // script, parsed right after the checkbox, applies the same fold before first paint —
+  // otherwise the panel slides shut ~1.8s after load (CLS 1.6 on /marketing).
+  const foldDomainPanelBeforePaint =
+    domainPanel && chatAvailable && chatInitial?.open === true && chatInitial.placement === "side";
   const toggleChecked = shellToggleChecked(
     domainPanel,
     sidebarExpanded,
@@ -121,6 +127,14 @@ export default async function AppShell({
             aria-hidden="true"
             defaultChecked={toggleChecked}
           />
+          {foldDomainPanelBeforePaint ? (
+            <script
+              dangerouslySetInnerHTML={{
+                __html:
+                  '(function(){try{if(matchMedia("(min-width:1024px) and (max-width:1599px)").matches){var e=document.getElementById("shell-sidebar-toggle");if(e)e.checked=false}}catch(_){}})()',
+              }}
+            />
+          ) : null}
           <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
           <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
           <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
