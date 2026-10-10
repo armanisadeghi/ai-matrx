@@ -37,7 +37,7 @@ function joinTitle(label: string, cost: string | null): string {
 }
 
 const ICON_BUTTON =
-  "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground";
+  "matrx-tap-area inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground";
 
 export function BrandSocialProfilesCard({
   brandId,
@@ -233,7 +233,7 @@ function SocialRow({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
       {href ? (
-        <Link href={href} aria-label={`Open ${labels.primary}`} className="shrink-0">
+        <Link href={href} aria-label={`Open ${labels.primary}`} className="matrx-tap-area shrink-0">
           {avatarNode}
         </Link>
       ) : (
@@ -243,7 +243,7 @@ function SocialRow({
       <div className="flex min-w-[200px] flex-1 flex-col leading-tight">
         <span className="flex min-w-0 items-center gap-1.5">
           {href ? (
-            <Link href={href} className="min-w-0 truncate hover:underline">
+            <Link href={href} className="matrx-tap-area min-w-0 truncate hover:underline">
               {name}
             </Link>
           ) : (

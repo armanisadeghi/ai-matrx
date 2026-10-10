@@ -719,7 +719,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   href={externalHref(current.website_url)}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex max-w-full items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
+                  className="matrx-tap-area inline-flex max-w-full items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
                 >
                   <span className="truncate">{current.website_url}</span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -737,7 +737,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   <Badge variant="outline">{current.industry}</Badge>
                 ) : null}
                 {socialProperties.length > 0 ? (
-                  <span className="ml-1 inline-flex items-center gap-1">
+                  <span className="ml-1 inline-flex items-center gap-2">
                     {socialProperties.slice(0, 8).map((property) => {
                       const accountRow = (socialAccounts.data ?? []).find((r) => r.propertyId === property.id);
                       const href = accountRow
@@ -755,7 +755,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           href={href}
                           title={title}
                           aria-label={title}
-                          className="transition-transform hover:scale-110"
+                          className="matrx-tap-area inline-flex shrink-0 transition-transform hover:scale-110"
                         >
                           <PropertyKindMark kind={property.kind} size={24} />
                         </Link>
@@ -767,7 +767,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           rel="noreferrer"
                           title={title}
                           aria-label={title}
-                          className="transition-transform hover:scale-110"
+                          className="matrx-tap-area inline-flex shrink-0 transition-transform hover:scale-110"
                         >
                           <PropertyKindMark kind={property.kind} size={24} />
                         </a>

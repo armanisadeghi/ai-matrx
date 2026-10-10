@@ -496,7 +496,7 @@ export function SectionCard({
           {action && "href" in action ? (
             <Link
               href={action.href}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+              className="matrx-tap-area inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-primary"
             >
               {action.label}
               <ArrowRight className="h-3 w-3" />
@@ -505,7 +505,7 @@ export function SectionCard({
             <button
               type="button"
               onClick={action.onClick}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+              className="matrx-tap-area inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-primary"
             >
               {action.label}
               <Plus className="h-3 w-3" />
