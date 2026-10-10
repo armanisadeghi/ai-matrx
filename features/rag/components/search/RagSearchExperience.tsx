@@ -1486,7 +1486,7 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne }) {
       {errors.map((e) => (
         <p key={e.section} className="type-secondary text-destructive">
           {e.section.replace(/_/g, " ")} could not be searched — {e.message}
-        </p>
+        <ErrorAlchemyMenu error={e.message} /></p>
       ))}
     </div>
   );

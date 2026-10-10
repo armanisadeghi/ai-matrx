@@ -67,6 +67,7 @@ import { ConversationEmbed } from "@/features/knowledge/hub/embeds/ConversationE
 import { messageRangeOfPart } from "@/features/education/trust/recordCitation";
 import { useDocumentPassage } from "@/features/education/trust/useDocumentPassage";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
 const PdfPreview = dynamic(
   () => import("@/features/pdf/components/viewer/PdfPreview"),
@@ -144,7 +145,7 @@ function DocumentCitationBody(props: SourceInspectorPaneProps) {
     return (
       <div role="alert" className="p-3 type-body text-muted-foreground">
         This document could not be opened.
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
   const lines = doc.body.split("\n");
@@ -398,7 +399,7 @@ function PageSourceInspector({
                   {cited.error && !citationHasPage ? (
                     <p role="alert" className="shrink-0 border-b border-border px-3 py-1.5 type-secondary text-warning">
                       {cited.error}
-                    </p>
+                    <ErrorAlchemyMenu error={cited.error} /></p>
                   ) : null}
                   <div className="min-h-0 flex-1">
                     <ChunksOnPage
