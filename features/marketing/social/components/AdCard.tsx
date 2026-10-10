@@ -21,7 +21,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { isLikelyWinner, runLabel } from "../ads";
+import { adFormatLabel, isLikelyWinner, runLabel } from "../ads";
 import { AD_LIBRARY_LABELS, isAdLibrary, type AdCardModel } from "../types";
 
 export function libraryLabel(library: string): string {
@@ -79,7 +79,7 @@ export function AdCard({ ad, onOpen, onSave, onTrack, isNew, className }: AdCard
           />
         ) : (
           <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-            {libraryLabel(ad.library)} · {ad.format}
+            {libraryLabel(ad.library)} · {adFormatLabel(ad.format)}
           </span>
         )}
         <span className="absolute left-1.5 top-1.5 flex gap-1">
@@ -88,21 +88,21 @@ export function AdCard({ ad, onOpen, onSave, onTrack, isNew, className }: AdCard
           </Badge>
           {isNew ? <Badge tone="primary">New</Badge> : null}
         </span>
-        <span className="absolute right-1.5 top-1.5 rounded bg-card/90 px-1 text-[11px] text-foreground">{libraryLabel(ad.library)}</span>
+        <span className="absolute right-1.5 top-1.5 rounded bg-card/90 px-1 text-xs text-foreground">{libraryLabel(ad.library)}</span>
         {run ? (
           <span className="absolute bottom-1.5 left-1.5 flex gap-1">
-            <span className="rounded bg-black/65 px-1 text-[11px] tabular-nums text-white" title={ad.startedAt ?? undefined}>
+            <span className="rounded bg-black/65 px-1 text-xs tabular-nums text-white" title={ad.startedAt ?? undefined}>
               {run}
             </span>
             {winner ? (
-              <span className="rounded bg-black/65 px-1 text-[11px] text-white" title={`${run} — still running`}>
+              <span className="rounded bg-black/65 px-1 text-xs text-white" title={`${run} — still running`}>
                 Likely winner
               </span>
             ) : null}
           </span>
         ) : null}
         {ad.removed ? (
-          <span className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-[11px] text-white">Removed</span>
+          <span className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-xs text-white">Removed</span>
         ) : null}
       </button>
 
@@ -166,10 +166,10 @@ export function AdCard({ ad, onOpen, onSave, onTrack, isNew, className }: AdCard
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <p className="line-clamp-2 min-h-[2lh] text-[11px] text-muted-foreground" title={ad.body || ad.headline}>
+        <p className="line-clamp-2 min-h-[2lh] text-xs text-muted-foreground" title={ad.body || ad.headline}>
           {copy || "No copy"}
         </p>
-        <div className="flex min-w-0 items-center justify-between gap-1 text-[11px] text-muted-foreground">
+        <div className="flex min-w-0 items-center justify-between gap-1 text-xs text-muted-foreground">
           <span className="truncate">{ad.cta || "—"}</span>
           {ad.landingUrl ? (
             <a
@@ -184,7 +184,7 @@ export function AdCard({ ad, onOpen, onSave, onTrack, isNew, className }: AdCard
           ) : null}
         </div>
         {where ? (
-          <p className="truncate text-[11px] text-muted-foreground" title={where}>
+          <p className="truncate text-xs text-muted-foreground" title={where}>
             {where}
           </p>
         ) : null}

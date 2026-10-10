@@ -20,6 +20,7 @@ import {
   Chip,
   EmptyState,
   Field,
+  RegionSkeleton,
   SegmentedControl,
   Select,
   Tabs,
@@ -30,7 +31,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useSocialSpend } from "../cost";
-import { filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
+import { adFormatLabel, filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
 import { socialKeys, useAdvertiserAds, useInvalidateSocial, useTrackedAdvertisers } from "../hooks";
 import { searchAds, socialErrorCode, socialErrorMessage } from "../server";
 import { archiveTrackedAdvertiser, readAdRows, saveTrackedAdvertiser } from "../service";
@@ -98,7 +99,7 @@ function AdFilters({
   sort: AdSort;
   setSort: (v: AdSort) => void;
 }) {
-  const options: SelectOption[] = [{ value: "all", label: "All formats" }, ...formats.map((f) => ({ value: f, label: f }))];
+  const options: SelectOption[] = [{ value: "all", label: "All formats" }, ...formats.map((f) => ({ value: f, label: adFormatLabel(f) }))];
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Chip asChild label="Active only" pressed={activeOnly}>
@@ -291,7 +292,7 @@ function TrackedAdvertisers() {
   const [openId, setOpenId] = useState<string | null>(null);
   const current = tracked.data?.find((t) => t.viewId === openId) ?? null;
 
-  if (tracked.isPending) return <p className="p-3 text-xs text-muted-foreground">Loading…</p>;
+  if (tracked.isPending) return <RegionSkeleton shape="cards" count={3} />;
   if (tracked.isError) {
     return (
       <div className="flex flex-col items-start gap-2">
@@ -349,8 +350,8 @@ function AdvertiserCard({ advertiser, onOpen }: { advertiser: TrackedAdvertiser;
         <span>{ads.isPending ? "—" : active} active</span>
         <span>{ads.isPending ? "—" : fresh} new</span>
       </span>
-      <span className="text-[11px] text-muted-foreground">
-        {formatMix(list).map((m) => `${m.count} ${m.format}`).join(" · ")}
+      <span className="text-xs text-muted-foreground">
+        {formatMix(list).map((m) => `${m.count} ${adFormatLabel(m.format)}`).join(" · ")}
       </span>
     </button>
   );
@@ -457,7 +458,7 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
       ) : null}
 
       {adsQuery.isPending ? (
-        <p className="p-3 text-xs text-muted-foreground">Loading…</p>
+        <RegionSkeleton shape="cards" count={4} />
       ) : list.length === 0 ? (
         <div className="flex min-h-[30vh] items-center justify-center">
           <EmptyState icon={<Radar className="h-5 w-5" />} title="No ads yet" line="Look again to fetch this advertiser's ads" />
@@ -486,7 +487,7 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
               <ul className="text-muted-foreground">
                 {mix.map((m) => (
                   <li key={m.format} className="flex justify-between tabular-nums">
-                    <span>{m.format}</span>
+                    <span>{adFormatLabel(m.format)}</span>
                     <span>{m.count}</span>
                   </li>
                 ))}

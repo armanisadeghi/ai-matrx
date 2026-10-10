@@ -137,6 +137,15 @@ export interface MixCount {
 }
 
 /** Format mix of a set of ads (Spyder's video / image / carousel summary). */
+/** A format as a person reads it: provider codes (DCO, EVENT) become words. */
+const AD_FORMAT_WORDS: Record<string, string> = { dco: "Dynamic creative", dpa: "Catalog", event: "Event", multi_images: "Multi-image" };
+export function adFormatLabel(format: string): string {
+  const key = format.trim().toLowerCase();
+  if (AD_FORMAT_WORDS[key]) return AD_FORMAT_WORDS[key];
+  const spaced = key.replace(/[_-]+/g, " ");
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : "Other";
+}
+
 export function formatMix(ads: readonly Pick<AdCardModel, "format">[]): MixCount[] {
   const counts = new Map<string, number>();
   for (const a of ads) counts.set(a.format || "other", (counts.get(a.format || "other") ?? 0) + 1);

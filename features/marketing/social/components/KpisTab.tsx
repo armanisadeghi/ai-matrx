@@ -185,16 +185,10 @@ export function KpisTab() {
       </div>
 
       {goalRows.length === 0 ? (
-        <EmptyState
-          icon={<Target className="h-5 w-5" />}
-          title="No goals"
-          line="Set a target for followers, views or cadence"
-          action={
-            <Button variant="outline" icon={<Plus />} onClick={() => setCreating(true)}>
-              New goal
-            </Button>
-          }
-        />
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Target className="h-4 w-4" aria-hidden />
+          No goals yet. New goal sets a target for followers, views or cadence.
+        </p>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {goalRows.map((goal) => (
@@ -363,7 +357,7 @@ function GoalTile({
           />
         ) : null}
       </div>
-      <div className="flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
+      <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground">
         <span className="truncate">
           {KPI_PERIODS.find((p) => p.value === goal.period)?.label ?? "Custom"} · {measured.accounts}{" "}
           {measured.accounts === 1 ? "account" : "accounts"}
@@ -404,9 +398,13 @@ function OwnTrend({
           <PlatformMark platform={account.platform} size={16} />
           <span className="truncate">{formatSocialHandle({ platform: account.platform, handle: account.handle, url: account.profileUrl }) || accountLabels(account.displayName, account.handle, account.platform).primary}</span>
         </span>
-        <Badge tone={growth.fraction === null ? "neutral" : growth.fraction >= 0 ? "success" : "destructive"}>
-          <span title={growth.note}>{formatGrowth(growth.fraction)}</span>
-        </Badge>
+        {growth.fraction === null ? (
+          <span className="text-xs text-muted-foreground">{growth.note || "Not enough history for growth"}</span>
+        ) : (
+          <Badge tone={growth.fraction >= 0 ? "success" : "destructive"}>
+            <span title={growth.note}>{formatGrowth(growth.fraction)}</span>
+          </Badge>
+        )}
       </div>
       <MetricChart points={points} label="Followers" />
     </div>
