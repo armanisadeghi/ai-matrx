@@ -47,6 +47,7 @@ import { readThreadLink } from "@/components/mardown-display/blocks/data-events/
 import { useDirectiveFence } from "@/features/matrx-envelope/directiveFence";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const NO_MESSAGES: readonly MessageRecord[] = [];
 
 function CommentReplyLine({ handle, body, conversationId, streaming }: { handle: string; body: string; conversationId: string | null; streaming: boolean }) {
@@ -104,7 +105,7 @@ function CommentReplyLine({ handle, body, conversationId, streaming }: { handle:
   // after the turn and a fresh ledger read, no receipt for the handle means nothing was written.
   if (messageId && !link && askedDone) {
     return (
-      <span
+      <span data-error-box
         className="inline-flex items-center gap-1.5 type-secondary text-foreground"
         data-comment-reply={handle}
         data-comment-reply-state="failed"
@@ -112,7 +113,7 @@ function CommentReplyLine({ handle, body, conversationId, streaming }: { handle:
       >
         <TriangleAlert className="h-3 w-3 shrink-0 text-destructive" aria-hidden />
         Couldn&apos;t post reply to {handle}: it was not saved
-      </span>
+      <ErrorAlchemyMenu /></span>
     );
   }
   const open = () => {

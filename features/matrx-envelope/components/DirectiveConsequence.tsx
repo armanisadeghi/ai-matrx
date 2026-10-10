@@ -58,6 +58,7 @@ import {
 import { createdLabel } from "@/features/scopes/service/recordFacts";
 import { getOrganization } from "@/features/organizations/service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /**
  * The live name of `{noun, id}`. While it is being read, `name` is null and
  * `loading` is true — a caller shows a neutral placeholder, NEVER the id
@@ -356,9 +357,9 @@ function ReadingLine({ noun, many }: { noun: string; many: boolean }) {
 /** Said plainly when a read failed — the person still decides. */
 function UnreadLine() {
   return (
-    <p className="text-muted-foreground" data-directive-question-unread="">
+    <p data-error-box className="text-muted-foreground" data-directive-question-unread="">
       Current values couldn&apos;t be read.
-    </p>
+    <ErrorAlchemyMenu /></p>
   );
 }
 

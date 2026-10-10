@@ -626,7 +626,7 @@ function WriteStep({
       const message = `The server did not publish the fields for this action on ${type.label}, so it cannot be filled in here.`;
       return (
         <p className="text-sm text-amber-700 dark:text-amber-300">
-          {message} <ErrorAlchemyMenu error={message} />
+          {message} <ErrorAlchemyMenu input={{ message }} />
         </p>
       );
     }
