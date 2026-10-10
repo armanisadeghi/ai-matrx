@@ -94920,17 +94920,41 @@ export type Database = {
       }
       agent_test_account_ids: { Args: never; Returns: string[] }
       ai_latency_filter_options: {
-        Args: { p_from: string; p_stage?: string; p_to: string }
+        Args: {
+          p_from: string
+          p_group?: string
+          p_stage?: string
+          p_to: string
+        }
         Returns: {
           kind: string
           n: number
           value: string
         }[]
       }
+      ai_latency_headline: {
+        Args: {
+          p_agent_id?: string
+          p_from: string
+          p_group?: string
+          p_organization_id?: string
+          p_route?: string
+          p_server_task_id?: string
+          p_stage?: string
+          p_to: string
+        }
+        Returns: {
+          metric: string
+          n: number
+          p50: number
+          p90: number
+        }[]
+      }
       ai_latency_report: {
         Args: {
           p_agent_id?: string
           p_from: string
+          p_group?: string
           p_organization_id?: string
           p_route?: string
           p_server_task_id?: string
@@ -94946,6 +94970,7 @@ export type Database = {
           route: string
         }[]
       }
+      ai_latency_route_pattern: { Args: { p_route: string }; Returns: string }
       ai_usage_names: {
         Args: { p_ids: Json; p_organization_id: string }
         Returns: Json
