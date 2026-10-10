@@ -22,6 +22,7 @@
 import {
   Archive,
   ArchiveRestore,
+  ArrowUpFromLine,
   Bell,
   Blocks,
   CalendarClock,
@@ -46,6 +47,7 @@ import {
   Pencil,
   Settings,
   Share2,
+  Split,
   Star,
   StarOff,
   Upload,
@@ -95,6 +97,8 @@ export const OBJECT_ACTION_ICONS: Record<ObjectActionIcon, LucideIcon> = {
   "git-merge": GitMerge,
   lock: Lock,
   "lock-open": LockOpen,
+  "arrow-up-from-line": ArrowUpFromLine,
+  split: Split,
 };
 
 function toCommand(action: ObjectAction): ItemMenuCommand {
