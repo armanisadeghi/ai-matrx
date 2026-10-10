@@ -25,7 +25,7 @@ import path from "node:path";
 // the app registry must register every one of both.
 const MANIFEST_DIRS = [
   path.resolve(__dirname, ".."),
-  path.resolve(__dirname, "../../../../../aidream/apps/shared/chat/src/surfaces/manifests"),
+  path.resolve(__dirname, "../../../../node_modules/@ai-matrx/chat/dist/surfaces/manifests"),
 ];
 
 type ManifestLike = { surfaceName: string; values: unknown[] };
@@ -42,7 +42,7 @@ function isManifest(value: unknown): value is ManifestLike {
 function declaredInFiles(): Array<{ file: string; surfaceName: string }> {
   const out: Array<{ file: string; surfaceName: string }> = [];
   for (const dir of MANIFEST_DIRS) {
-    for (const name of readdirSync(dir).filter((f) => f.endsWith(".manifest.ts"))) {
+    for (const name of readdirSync(dir).filter((f) => f.endsWith(".manifest.ts") || f.endsWith(".manifest.js"))) {
       const file = path.relative(path.resolve(__dirname, "../../../.."), path.join(dir, name));
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require(path.join(dir, name)) as Record<string, unknown>;
@@ -67,7 +67,7 @@ describe("W-51: every manifest reaches the chat package", () => {
     const declared = declaredInFiles();
     expect(declared.length).toBeGreaterThan(200);
     // the package's own manifests are part of the census, not skipped
-    expect(declared.filter(({ file }) => file.startsWith("../aidream/apps/shared/chat/")).length).toBeGreaterThanOrEqual(10);
+    expect(declared.filter(({ file }) => file.startsWith("node_modules/@ai-matrx/chat/")).length).toBeGreaterThanOrEqual(10);
     const missing = declared
       .filter(({ surfaceName }) => !seam.getManifest(surfaceName))
       .map(({ file, surfaceName }) => `${file}: ${surfaceName}`);
