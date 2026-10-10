@@ -597,6 +597,7 @@ export function UserAcquisitionTableClient() {
         />
         {view === "list" && listCap ? (
           <span className="text-xs text-muted-foreground">
+            {/* read-gate-exempt: shown only when listCap exists, which only a successful list sets */}
             Newest {formatCount(listCap.loaded)} of {formatCount(listCap.total)} guests listed
           </span>
         ) : null}

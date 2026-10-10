@@ -222,7 +222,7 @@ export function ProjectRecordWorkspace({
     done: 0,
   });
 
-  const { members } = useProjectMembers(project.id);
+  const { members, error: membersError } = useProjectMembers(project.id);
   const { role, canManageSettings } = useProjectUserRole(project.id);
   const { projects: siblingProjects } = useUserProjects();
 
@@ -458,7 +458,7 @@ export function ProjectRecordWorkspace({
                     />
                     <Stat
                       icon={<Users className="h-4 w-4" />}
-                      value={members.length}
+                      value={membersError ? "–" : members.length}
                       label={members.length === 1 ? "member" : "members"}
                     />
                   </div>

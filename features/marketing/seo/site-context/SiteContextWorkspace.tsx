@@ -192,6 +192,7 @@ function GoalsSection({ brandId, brandRoute }: { brandId: string | null; brandRo
   return (
     <SectionCard
       title="Goals"
+      // read-gate-exempt: badge renders only once goals.data exists
       headerExtra={goals.data ? <Badge>{total} active</Badge> : null}
       action={{ label: "Open initiatives", href: marketingRoutes.brandInitiatives(brandRoute) }}
     >
@@ -329,6 +330,7 @@ function PageRolesSection({
   return (
     <SectionCard
       title="Key pages"
+      // read-gate-exempt: badge renders only once pages.data exists
       headerExtra={pages.data ? <Badge>{total > shown ? `${shown} of ${total}` : total}</Badge> : null}
       action={{ label: "Open pages", href: marketingRoutes.website(brandRoute, siteId, "/pages") }}
     >
@@ -402,6 +404,7 @@ function CompetitorsSection({ siteId, brandRoute }: { siteId: string; brandRoute
       headerExtra={
         competitors.data ? (
           <span className="flex items-center gap-1">
+            {/* read-gate-exempt: renders only once competitors.data exists */}
             <Badge>{kept.length}</Badge>
             {ignored ? <Badge data-testid="competitors-ignored">{ignored} ignored</Badge> : null}
           </span>

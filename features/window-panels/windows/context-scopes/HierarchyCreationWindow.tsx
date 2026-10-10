@@ -143,6 +143,7 @@ export default function HierarchyCreationWindow({
       {capReached && organizationCap.cap !== null ? (
         <div className="flex flex-1 min-h-0 flex-col items-center justify-center p-4">
           <OrganizationCapReached
+            // read-gate-exempt: rendered only when cap !== null, which only a successful cap read sets
             count={organizationCap.count}
             cap={organizationCap.cap}
             onNavigate={onClose}

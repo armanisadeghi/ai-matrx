@@ -295,6 +295,7 @@ export default function PageCleanupReview() {
           className="text-xs tabular-nums text-muted-foreground"
           data-testid="decided-count"
         >
+          {/* read-gate-exempt: counts the decisions made on this screen (local state) */}
           {decidedCount} of {PAGE_CLEANUP_ROWS.length} decided
         </span>
         <div className="ml-auto flex items-center gap-2">
@@ -350,6 +351,7 @@ export default function PageCleanupReview() {
           </div>
         ) : sections.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
+            {/* read-gate-exempt: decisions fall back to the browser copy and the store notice says why; sections are filtered local items */}
             No pages match these filters.
           </div>
         ) : (

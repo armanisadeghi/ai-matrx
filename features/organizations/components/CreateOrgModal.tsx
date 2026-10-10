@@ -235,6 +235,7 @@ export function CreateOrgModal({
             <DialogTitle>Create New Organization</DialogTitle>
           </DialogHeader>
           <OrganizationCapReached
+            // read-gate-exempt: rendered only when cap !== null, which only a successful cap read sets
             count={organizationCap.count}
             cap={organizationCap.cap}
             onNavigate={onClose}

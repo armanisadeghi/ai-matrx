@@ -217,7 +217,7 @@ export function AutomationLimitsSection({
           const red = required && showMissing && !((parsed[k] ?? 0) > 0);
           const def = status?.defaults[k];
           const basis = status?.guardrails.basis?.[k];
-          const defText = def != null ? `Default ${toDisplay(k, def)}${unitFor(k) ? ` ${unitFor(k)}` : ""}` : "No default";
+          const defText = def != null ? `Default ${toDisplay(k, def)}${unitFor(k) ? ` ${unitFor(k)}` : ""}` : status && !error ? "No default" : "";
           const hint = clip(basis ? `${basis}` : defText);
           const inputId = `limit-${kind}-${id}-${k}`;
           return (

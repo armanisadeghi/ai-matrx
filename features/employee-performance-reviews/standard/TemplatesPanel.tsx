@@ -157,6 +157,7 @@ export function TemplatesPanel() {
           emptyState={{ title: "No templates yet" }}
         />
       ) : rows ? (
+        // read-gate-exempt: rows is set only by a successful read; the failure shows above
         <EmptyState
           icon={<ClipboardCheck />}
           title="No templates yet"

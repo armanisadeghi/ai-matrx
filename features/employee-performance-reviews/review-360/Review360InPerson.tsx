@@ -20,6 +20,7 @@ export function Review360InPersonPage({ reviewId }: { reviewId: string }) {
   return (
     <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
       {!org ? (
+        // read-gate-exempt: org comes from the HR context, not a read
         <EmptyState icon={<ClipboardCheck />} title="Pick an employer first" />
       ) : (
         <Review360Host organizationId={org}>

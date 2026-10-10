@@ -626,6 +626,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
             {sourceActionProblem ? <p className="type-secondary text-muted-foreground">{sourceActionProblem} <ErrorAlchemyMenu error={sourceActionProblem} /></p> : null}
             {actionKind === "reschedule" ? <div className="grid gap-2 sm:grid-cols-2"><Input aria-label="New start" placeholder="2026-10-08T09:00:00-07:00" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /><Input aria-label="New end" placeholder="2026-10-08T10:00:00-07:00" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></div> : null}
             {actionKind === "rsvp" ? <label className="grid gap-1 text-xs font-medium text-muted-foreground">My response
+              {/* read-gate-exempt: form control wording; nothing is read */}
               <select className="min-h-11 rounded-md border border-input bg-background px-3 text-sm" value={responseStatus} onChange={(event) => setResponseStatus(event.target.value as typeof responseStatus)}><option value="">Choose a response</option><option value="accepted">Accept</option><option value="declined">Decline</option><option value="tentative">Tentative</option><option value="needsAction">No response</option></select>
             </label> : null}
             <label className="grid gap-1 text-xs font-medium text-muted-foreground">Guest notifications

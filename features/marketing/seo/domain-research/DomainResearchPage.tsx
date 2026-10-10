@@ -286,6 +286,7 @@ export function DomainResearchPage() {
                           onRefresh={() => void competitors.buy(true)}
                           busy={competitors.running}
                         >
+                          {/* read-gate-exempt: seeds come from the page address, not from a read */}
                           <Badge tone="neutral" title={seeds.join(", ")}>
                             From top {seeds.length} keywords
                           </Badge>

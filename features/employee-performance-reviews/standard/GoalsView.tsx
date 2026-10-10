@@ -145,6 +145,7 @@ export function GoalsView({
           emptyState={{ title: "No goals yet" }}
         />
       ) : goals ? (
+        // read-gate-exempt: goals is set only by a successful read; the failure shows above
         <EmptyState
           icon={<Target />}
           title="No goals yet"

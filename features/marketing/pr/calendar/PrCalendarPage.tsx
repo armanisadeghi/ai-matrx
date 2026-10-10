@@ -154,6 +154,7 @@ export function PrCalendarPage() {
             {plan ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Planned {new Date(plan.generatedAt).toLocaleString()} · window {formatDay(plan.windowStart)} –{" "}
+                {/* read-gate-exempt: plan exists only after a successful read */}
                 {formatDay(plan.windowEnd)} · {plan.feedSize} sourced moments considered, {plan.droppedCount} dropped
                 as not worth pitching
               </p>

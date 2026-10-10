@@ -2238,6 +2238,7 @@ export function AgentSettingsCore({
                   Response format is{" "}
                   <code className="font-mono">json_schema</code>, but{" "}
                   {outputSchema == null
+                    // read-gate-exempt: wording about the local schema value; nothing is read
                     ? "no output schema is set"
                     : "the output schema has issues"}
                   . Open the{" "}

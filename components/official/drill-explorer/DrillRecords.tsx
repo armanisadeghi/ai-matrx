@@ -284,6 +284,7 @@ export function DrillRecords({
       <div data-drill-explorer-records-header className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-4 py-1 type-secondary text-muted-foreground">
         {total !== null ? (
           <span data-drill-explorer-records-count className="font-medium text-foreground">
+            {/* read-gate-exempt: rendered only when total is known, which only a successful read sets */}
             {`${formatCount(total)} ${pluralNoun(noun, total)}`}
           </span>
         ) : null}

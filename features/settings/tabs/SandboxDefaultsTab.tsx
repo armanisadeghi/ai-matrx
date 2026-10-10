@@ -68,6 +68,7 @@ export default function SandboxDefaultsTab() {
       {missing.length > 0 && (
         <SettingsCallout tone="error" title="Sandbox defaults are not set up yet">
           <span role="alert">
+            {/* read-gate-exempt: this callout is itself the missing-settings error */}
             {missing.length} of {SANDBOX_DEFAULT_KEYS.length} settings are missing.
             <ErrorAlchemyMenu
               error={`Sandbox default knobs missing from the register: ${missing

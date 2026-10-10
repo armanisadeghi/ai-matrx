@@ -89,6 +89,7 @@ function Lists({ onPick }: { onPick: Pick }) {
           </div>
         ) : null}
         {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}<ErrorAlchemyMenu /></div> : null}
+        {/* read-gate-exempt: rows stays null when the read fails; failed shows above */}
         {rows && !shown.length ? <div className="px-3 py-2 type-body text-muted-foreground">No Applets</div> : null}
         {shown.map((a) => (
           <Button variant="quiet" icon={<AppWindow size={15} />} key={a.id} onClick={() => onPick(a)} data-applet-option={a.id}>

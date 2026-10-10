@@ -137,6 +137,7 @@ export function PageHistory({
                   {i === 0 ? <span className="type-secondary text-muted-foreground">Current</span> : null}
                 </div>
               ))}
+              {/* read-gate-exempt: rows stays null when the read fails; the error notice shows above */}
               {rows && !rows.length ? <p className="px-3 type-body text-muted-foreground">No saved versions</p> : null}
             </div>
             <div className="spaces-history-actions">

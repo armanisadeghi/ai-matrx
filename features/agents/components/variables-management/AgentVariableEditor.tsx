@@ -500,6 +500,7 @@ export function AgentVariableEditor({
       <div className="min-w-0 space-y-1.5 border-t border-border pt-3">
         <Label className="text-sm font-medium">Default Value</Label>
         <p className="type-secondary text-muted-foreground">
+          {/* read-gate-exempt: help wording chosen by the variable's own binding; nothing is read */}
           {isDataBound || isBound ? "Used when the filled value is empty" : "Pre-fills it at run time; blank for none"}
         </p>
         {readonly ? (

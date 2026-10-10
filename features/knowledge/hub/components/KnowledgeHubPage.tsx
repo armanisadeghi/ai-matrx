@@ -1963,6 +1963,7 @@ export function KnowledgeHubPage({
         </div>
         {isMobile ? <>
           <div className="flex w-full items-center justify-between gap-2">
+            {/* read-gate-exempt: resultCount is null whenever any section's read is loading or failed — gated where it is derived */}
             <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">{resultCount}</span>
             {!trashView && <Button variant="outline" icon={<Settings2 />} onClick={() => setMobileToolsOpen(true)}>View options</Button>}
           </div>

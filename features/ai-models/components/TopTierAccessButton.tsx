@@ -37,6 +37,7 @@ export default function TopTierAccessButton() {
         <Button icon={<Gem />} variant="quiet" title="Who may run MAX models">
           MAX access
           <span className="inline-block min-w-[2ch] text-center tabular-nums">
+            {/* read-gate-exempt: a failed read renders ! on this very figure */}
             {holders ? holders.length : error ? "!" : "·"}
           </span>
         </Button>

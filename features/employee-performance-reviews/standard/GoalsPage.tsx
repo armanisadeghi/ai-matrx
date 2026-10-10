@@ -46,6 +46,7 @@ export function GoalsPage() {
           {me ? (
             <GoalsView employmentId={me} title="My goals" alignable={teamGoals} onLoaded={setMine} reloadKey={tick} />
           ) : (
+            // read-gate-exempt: me comes from the HR context (employment), not a read
             <EmptyState icon={<Target />} title="You have no active employment here" line="Goals belong to an employee" />
           )}
           {teamError ? (

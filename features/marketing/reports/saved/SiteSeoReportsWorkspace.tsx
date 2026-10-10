@@ -77,6 +77,7 @@ export function SiteSeoReportsWorkspace() {
               Saved reports
               {total > shown ? (
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {/* read-gate-exempt: a failed read is drawn by InlineQueryError in this workspace */}
                   {shown} of {total}
                 </span>
               ) : null}

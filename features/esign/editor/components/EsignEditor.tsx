@@ -535,6 +535,7 @@ export function EsignEditor(props: EsignEditorProps) {
           void onFiles(e.dataTransfer.files);
         }}
       >
+        {/* read-gate-exempt: empty drop zone before any document is chosen; nothing is read */}
         <EmptyState
           icon={<Upload />}
           title="Add a PDF to sign"

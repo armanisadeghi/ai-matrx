@@ -240,6 +240,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
                 </span>
               ) : (
                 <span className="text-muted-foreground">
+                  {/* read-gate-exempt: label from the file record already in the store */}
                   {file?.organizationId ? "An organization you are not a member of" : "No organization"}
                 </span>
               )

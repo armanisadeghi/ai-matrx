@@ -130,10 +130,12 @@ export function AgentSaveStatus({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-500" />
+              {/* read-gate-exempt: dialog wording after a completed save; nothing is read */}
               No Model Selected
             </AlertDialogTitle>
             <AlertDialogDescription>
               Your agent was saved, but{" "}
+              {/* read-gate-exempt: dialog wording after a completed save; nothing is read */}
               <strong>no model has been selected</strong>. A model is required
               for the agent to run. Would you like to select one now?
             </AlertDialogDescription>

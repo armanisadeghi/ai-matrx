@@ -96,7 +96,7 @@ function ScopePicker({ onPick, onCancel }: PickerProps) {
 
 /** A new scope tile before its scope exists: choose its type, then the canonical new-scope form. */
 function ScopeDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
-  const { types, settled } = useScopeTree();
+  const { types, settled, error } = useScopeTree();
   const [typeId, setTypeId] = useState<string | null>(null);
   const chosen = types.find((t) => t.id === typeId) ?? null;
   if (!settled) {
@@ -110,7 +110,7 @@ function ScopeDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
     return (
       <div className="flex h-full flex-col gap-2 overflow-y-auto bg-card p-4">
         <p className="type-title text-foreground">What kind of scope?</p>
-        {types.length === 0 ? (
+        {types.length === 0 && !error ? (
           <p className="type-body text-muted-foreground">
             You have no scope types yet. Define one on the Scopes page, then start a scope here.
           </p>

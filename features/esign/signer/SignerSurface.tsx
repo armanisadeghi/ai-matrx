@@ -851,6 +851,7 @@ export function SignerSurface({
         logoUrl={load.organization.logo_url}
         mode={guideMode}
         remaining={remaining}
+        // read-gate-exempt: rendered only once the session load succeeded; a refused load shows its own phase
         total={units.total.length}
         saveState={saveState}
         compact={compact}

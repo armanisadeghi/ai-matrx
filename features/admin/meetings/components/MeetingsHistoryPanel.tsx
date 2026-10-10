@@ -271,6 +271,7 @@ export function MeetingsHistoryPanel({
       </div>
       {rows.length < total ? (
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          {/* read-gate-exempt: shown only while rows < total, both from a successful page read */}
           Showing {formatCount(rows.length)} of {formatCount(total)} matching meetings.
           <Button type="button" variant="outline" disabled={loading} onClick={() => void loadMore()}>
             Load {formatCount(Math.min(HISTORY_PAGE_SIZE, total - rows.length))} more

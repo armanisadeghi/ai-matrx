@@ -38,6 +38,7 @@ export function CandidateListCell({
   const title = bad
     ? `${cell.runs_failed} failed, ${cell.runs_regressed} worse than live.`
     : cell.stalled
+      // read-gate-exempt: tooltip wording from the cell's own counters; nothing is read
       ? "No new run for a while."
       : cell.open_count > 1
         ? `${cell.open_count} candidates open; this is the one collecting.`

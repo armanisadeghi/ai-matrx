@@ -4,6 +4,7 @@
 // to receive, see delivery health. CRUD is direct against the files schema
 // (owner RLS); delivery runs DB-side (files.webhook_* pipeline).
 
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { copyNotify } from "@/lib/clipboard/copy-notify";
 import { useCallback, useEffect, useState } from "react";
@@ -369,6 +370,7 @@ const WEBHOOK_LANES = withStandardLanes(WEBHOOK_SCOPES, { lanes: WEBHOOK_LANE_SU
 
 export function WebhooksManager() {
   const [webhooks, setWebhooks] = useState<Webhook[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   // The list header: lane (`?scope=`, opens on All via `lists.landing_tab/webhooks`) and the
   // organization filter (`?org_filter=`). Never the active organization.
   const [lane, setLane] = useLaneParam("webhooks", WEBHOOK_LANES);
@@ -408,8 +410,9 @@ export function WebhooksManager() {
       const [rows, lanes] = await Promise.all([listWebhooks(), listWebhookLanes()]);
       setWebhooks(rows);
       setLaneRows(lanes);
+      setLoadError(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load webhooks");
+      setLoadError(e instanceof Error ? e.message : "Failed to load webhooks");
       setWebhooks([]);
       setLaneRows(null);
     }
@@ -626,6 +629,8 @@ export function WebhooksManager() {
             />
           ))}
         </div>
+      ) : loadError ? (
+        <ReadFailure error={loadError} what="webhooks" onRetry={() => void reload()} />
       ) : shown.length === 0 && webhooks !== null && webhooks.length > 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           No webhooks in {scopeKindLabel(lane)}

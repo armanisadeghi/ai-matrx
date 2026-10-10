@@ -35,6 +35,7 @@ export function ClipsGallery({
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Clips</h2>
         <div className="flex items-center gap-2">
           <span className="text-[11px] tabular-nums text-muted-foreground">
+            {/* read-gate-exempt: shown only when clips.data exists; the failed read is drawn below */}
             {clips.data ? `${clips.data.length} made` : ""}
           </span>
           {activeSiteId && organizationId ? (

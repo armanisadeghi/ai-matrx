@@ -1173,6 +1173,7 @@ export function SourcesPage() {
         {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
             <span title="Includes recaptures; the number of distinct Sources may be smaller.">
+              {/* read-gate-exempt: shown only with rows and a total, which only a successful page read provides */}
               {formatCount(total)} matching capture records
             </span>
             <Button

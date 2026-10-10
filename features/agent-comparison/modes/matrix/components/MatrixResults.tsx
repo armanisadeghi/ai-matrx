@@ -137,6 +137,7 @@ export function MatrixResults({
                     <div className="flex items-center gap-1.5">
                       <span className="truncate">{r.label || "—"}</span>
                       {used != null && (
+                        // read-gate-exempt: badge wording from the result's own tool-use flag; nothing is read
                         <Badge tone={used ? "warning" : "neutral"}>{used ? "tools" : "no tools"}</Badge>
                       )}
                     </div>

@@ -311,6 +311,7 @@ export function ClassesHome() {
           (never gone for good: the archived-items-law reveal half). */}
       {archived.length > 0 && (
         <ArchivedDisclosure
+          // read-gate-exempt: a failed classes read draws ReadFailure instead of this list
           count={archived.length}
           open={showArchived}
           onOpenChange={setShowArchived}

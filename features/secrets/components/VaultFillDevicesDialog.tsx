@@ -100,6 +100,7 @@ export function VaultFillDevicesDialog({
           )}
           {devices !== null && devices.length === 0 && (
             <p className="rounded-lg border border-border p-3 text-sm text-muted-foreground">
+              {/* read-gate-exempt: devices stays null when the read fails; the error shows above */}
               No browser can fill saved passwords yet. Turn filling on from the
               Vault tab of the AI Matrx extension in the browser you use.
             </p>

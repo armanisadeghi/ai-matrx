@@ -243,6 +243,7 @@ export function CustomTablesAdmin() {
           <AlertDescription className="text-xs">
             <div className="mb-1 flex items-center justify-between gap-2 font-medium">
               <span>
+                {/* read-gate-exempt: counts the refusals returned by the archive just run */}
                 {refusals.length} {refusals.length === 1 ? "table was" : "tables were"} not archived
               </span>
               <Button icon={<X />} variant="quiet" aria-label="Dismiss" onClick={() => setRefusals([])} />
@@ -311,6 +312,7 @@ export function CustomTablesAdmin() {
         onOpenChange={(open) => {
           if (!running) setConfirming(open);
         }}
+        // read-gate-exempt: counts the tables the admin selected
         title={`Archive ${count} ${tablesWord}?`}
         description={`${count} ${tablesWord} and every record in them go to Trash, where each can be restored.`}
         confirmLabel={running ? `Archiving ${running.done} of ${running.total}…` : `Archive ${count} ${tablesWord}`}

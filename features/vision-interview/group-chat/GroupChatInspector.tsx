@@ -388,6 +388,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
   );
 
   if (state.status === "loading") return <Skeleton shape="block" height="lg" className="m-2" />;
+  // read-gate-exempt: missing is its own answer; the error status is drawn on the next line
   if (state.status === "missing") return <p className="px-3 py-2 type-secondary text-muted-foreground">No group chat in this room yet</p>;
   if (state.status === "error") return <p className="px-3 py-2 type-secondary text-destructive">{state.message}<ErrorAlchemyMenu error={state.message} /></p>;
 

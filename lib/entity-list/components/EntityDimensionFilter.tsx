@@ -160,6 +160,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                       </div>
                     ) : values.length === 0 ? (
+                      // read-gate-exempt: values is undefined until the dimension read answers
                       <p className="py-1 pl-8 type-secondary text-muted-foreground">No values yet.</p>
                     ) : (
                       values.map((v) => (

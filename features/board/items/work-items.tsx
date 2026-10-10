@@ -255,6 +255,7 @@ function BoardChatList({
       serverSearch={false}
       showGroupingToggle={false}
       titleFirst
+      // read-gate-exempt: ids is null until the board's chat read answers; the component returns before this
       emptyState={<p className="px-2 py-1 text-xs text-muted-foreground">No chats on this board yet</p>}
       headerSlot={
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">

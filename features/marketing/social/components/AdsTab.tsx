@@ -347,6 +347,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
 
       {meta ? (
         <div className="flex min-h-5 flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+          {/* read-gate-exempt: counts the ads of the search just run, not a read that can fail */}
           <span>{ads.length} ads</span>
           {asked ? <span>{libraryLabel(asked.library)}</span> : null}
           {typeof country === "string" ? <span title="The country the provider searched">Country {country}</span> : null}

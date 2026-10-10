@@ -55,6 +55,7 @@ export function SavedTab({
   if (problem) return <p role="alert" className="text-sm text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p>;
   if (!items) return <RegionSkeleton shape="rows" count={2} aria-label="Loading saved signatures" />;
   if (items.length === 0) {
+    // read-gate-exempt: problem returns two lines above; items stays null when the read fails
     return <EmptyState icon={<PenLine />} title="Nothing saved yet" line="Adopt one and keep it for next time." />;
   }
 

@@ -76,6 +76,7 @@ export function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean 
     ? page.title || "Untitled"
     : reading
       ? ""
+      // read-gate-exempt: label for a link whose page is absent; the reading state is checked above
       : (missingPageLabel ?? (trashed ? "Page in Trash" : "No access to this page"));
   return (
     <Link

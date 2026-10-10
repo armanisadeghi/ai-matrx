@@ -166,6 +166,7 @@ export function CreateCouponDialog({
         <DialogHeader>
           <DialogTitle>{created ? "Coupons made" : "New coupons"}</DialogTitle>
           <DialogDescription>
+            {/* read-gate-exempt: counts the coupons this dialog just created */}
             {created
               ? created[0]?.kind === "new_account"
                 ? "Links show only now. Copy or send them before closing."

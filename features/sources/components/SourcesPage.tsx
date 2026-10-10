@@ -1297,6 +1297,7 @@ export function SourcesPage() {
         {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
             <span title="Sources are listed newest first, a page at a time. A page read again is one Source.">
+              {/* read-gate-exempt: shown only with rows and a total, which only a successful page read provides */}
               Showing the newest {formatCount(visibleRows.length)} Sources — more available
             </span>
             <Button

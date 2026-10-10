@@ -223,6 +223,7 @@ export function RecordChangeApprovalCard({
   if (!objectOrganizationId && object.state === "unavailable") {
     return (
       <p className="text-xs leading-relaxed text-muted-foreground">
+        {/* read-gate-exempt: this sentence IS the unavailable-state message of the failed read */}
         {wait.notDone} The record store could not say which organization this change belongs to, so
         no decision is offered here. {object.why}
       </p>

@@ -485,6 +485,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
               aria-label="Select all"
               onClick={() => setChecked(allChecked ? new Set() : new Set(groups.map((g) => g.key)))}
             />
+            {/* read-gate-exempt: counts the groups the person ticked */}
             <span className="ml-1 mr-auto text-xs font-medium text-foreground">{idsOf(checkedGroups).length} selected</span>
             {triage && tab !== "done" ? (
               <Button icon={<Check />} type="button" variant="quiet" onClick={() => bulk("done")}> Done

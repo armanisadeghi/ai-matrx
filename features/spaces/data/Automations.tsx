@@ -187,6 +187,7 @@ function RunHistory({ automationId, limit }: { automationId: string; limit: numb
   }, [client, automationId, limit]);
   if (problem) return <p className="type-secondary text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p>;
   if (!runs) return <div aria-busy="true" className="h-6" />;
+  // read-gate-exempt: problem returned above; runs stays null when the read fails
   if (runs.length === 0) return <p className="type-secondary text-muted-foreground">No runs yet</p>;
   return (
     <ol className="flex flex-col gap-1" data-testid="spaces-automation-runs">
@@ -451,6 +452,7 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
         </div>
       ) : (
         <>
+          {/* read-gate-exempt: problem returns above; the list only exists after the read answered */}
           {list.length === 0 ? <p className="type-secondary text-muted-foreground">No automations</p> : null}
           {list.map((a) => (
             <div key={a.id} className="flex flex-col gap-1" data-testid="spaces-automation-row" data-archived={a.archived_at ? "true" : undefined}>

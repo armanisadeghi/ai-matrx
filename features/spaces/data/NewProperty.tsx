@@ -2,6 +2,7 @@
 // features/spaces/data/NewProperty.tsx — Notion's "New property" (D8): a compact panel inside the view
 // menu, never a dialog. Name, a searchable type list; a type click makes the column — two clicks.
 // The column goes through the table's own door (custom.field_declare); Formula / Rollup open records-ui's column panel on that kind.
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { fieldDeclarationFor, tokenFor, type NewFieldSpec } from "@ai-matrx/records/core";
 import { FieldEditor, type PickableFieldType } from "@ai-matrx/records-ui";
@@ -211,7 +212,8 @@ function RelationTarget({ tableId, busy, onBack, onPick }: { tableId: string; bu
         {choices.map((t) => (
           <MenuRow key={t.id} icon={<Database size={15} />} label={t.id === tableId ? `${t.name} (this database)` : t.name} onClick={() => !busy && onPick({ id: t.id, name: t.name })} />
         ))}
-        {!tables.loading && choices.length === 0 ? <p className="px-2 py-2 type-secondary text-muted-foreground">No databases</p> : null}
+        {tables.error ? <ErrorNotice title="Databases could not be read" message={tables.error.message} size="compact" /> : null}
+        {!tables.loading && !tables.error && choices.length === 0 ? <p className="px-2 py-2 type-secondary text-muted-foreground">No databases</p> : null}
       </div>
     </div>
   );

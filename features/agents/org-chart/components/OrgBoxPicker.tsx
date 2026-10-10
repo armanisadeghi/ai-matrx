@@ -11,7 +11,7 @@ import { Briefcase, Plus, UsersRound } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrgPositions } from "@/features/agents/redux/orchestras/selectors";
+import { selectOrgPositions, selectOrgPositionsStatus } from "@/features/agents/redux/orchestras/selectors";
 import { createOrgPosition, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
 import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
@@ -83,6 +83,7 @@ export function OrgBoxPicker({
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const positions = useAppSelector(selectOrgPositions);
+  const positionsStatus = useAppSelector(selectOrgPositionsStatus);
   // A new position is a WRITE, so it lands in the organization being worked in —
   // shown, and chosen right here when none is (never a silent wait on a gate).
   const writeOrgId = useAppSelector(selectOrganizationId);
@@ -197,7 +198,7 @@ export function OrgBoxPicker({
             {tab === "team" &&
               (teams === null ? (
                 <p className="p-3 type-body text-muted-foreground">Loading teams…</p>
-              ) : teams.length === 0 ? (
+              ) : teams.length === 0 && !loadError ? (
                 <p className="p-3 type-body text-muted-foreground">No teams yet. Create one in organization settings.</p>
               ) : (
                 teams
@@ -225,7 +226,7 @@ export function OrgBoxPicker({
                       onPick={() => onPick(boxId("position", p.id))}
                     />
                   ))}
-                {positions.length === 0 && (
+                {positions.length === 0 && positionsStatus === "ready" && (
                   <p className="p-3 type-body text-muted-foreground">No positions yet. Name the first one below.</p>
                 )}
               </>

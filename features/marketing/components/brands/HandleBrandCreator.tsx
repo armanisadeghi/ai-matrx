@@ -564,6 +564,7 @@ export function HandleBrandCreator({
     );
     return (
       <div className="grid gap-3" data-testid="handle-brand-track">
+        {/* read-gate-exempt: the figures describe the brand just created, not a read */}
         <p className="text-sm text-foreground">
           {created.brand.name} is created with{" "}
           {created.properties.filter((p) => p.propertyId).length} account

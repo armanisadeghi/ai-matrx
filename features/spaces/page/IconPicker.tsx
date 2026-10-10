@@ -133,6 +133,7 @@ export function IconPicker({
                   <Button variant="quiet" icon={<SpaceIcon media={{ icon: name }} size={20} />} key={name} title={words(name)} aria-label={words(name)} data-selected={current === name ? "true" : undefined} onClick={() => pick({ icon: name })} className="aspect-square" />
                 );
               })}
+              {/* read-gate-exempt: names is the typed-query filter over the icon catalogue; no record read */}
               {names.length === 0 ? <p className="col-span-12 py-6 text-center type-body text-muted-foreground">No results</p> : null}
             </div>
           </div>

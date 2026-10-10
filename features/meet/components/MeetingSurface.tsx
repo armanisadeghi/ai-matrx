@@ -217,6 +217,7 @@ function MeetingSurfaceBody({
         const reason = (thrown as { reason?: string | null }).reason ?? null;
         const message =
           reason === "not_found"
+            // read-gate-exempt: this maps the read's own refusal reason to its message
             ? "No meeting matches that link."
             : sentence.length > 0
               ? sentence.charAt(0).toUpperCase() + sentence.slice(1)

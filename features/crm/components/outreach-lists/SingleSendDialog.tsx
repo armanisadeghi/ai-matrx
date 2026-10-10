@@ -417,6 +417,7 @@ export function SingleSendDialog({
                 <span className="text-muted-foreground">From:</span>{" "}
                 {draft.from_address || (
                   <span className="text-amber-700 dark:text-amber-300" data-testid="single-send-no-mailbox">
+                    {/* read-gate-exempt: the draft has no from address; templates and mailbox read failures show their own notices */}
                     No mailbox yet. Review works; sending needs one.{" "}
                     <Link className="font-medium underline" href="/crm/sending-identities">
                       Connect a mailbox

@@ -219,6 +219,7 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
       <ConfirmDialog
         open={rerunAllConfirm}
         onOpenChange={(o) => !o && setRerunAllConfirm(false)}
+        // read-gate-exempt: counts the cells of the battle on screen
         title={`Re-run all ${cellCount} cells?`}
         description={`Spends ${cellCount} new runs. The ${completed} finished results are replaced; their conversations stay in history.`}
         confirmLabel="Re-run all"
@@ -233,6 +234,7 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
         open={archiveConfirm}
         onOpenChange={(o) => !o && setArchiveConfirm(false)}
         title="Archive this battle?"
+        // read-gate-exempt: counts the conversations of the battle on screen
         description={`Archives the battle and its ${conversationCount} conversations, earlier attempts included. Restore them from Trash.`}
         confirmLabel="Archive"
         variant="destructive"

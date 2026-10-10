@@ -90,6 +90,7 @@ export function Review360SideBySide({
   }, [client, reviewId]);
 
   if (!data) return <div className="h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading the review" />;
+  // read-gate-exempt: this is the read's own refusal, drawn with the refusal's message
   if (!data.ok) return <EmptyState icon={<ClipboardCheck />} title="This review is not open to you" line={data.message} />;
   const { doc, self, manager } = data.data;
 

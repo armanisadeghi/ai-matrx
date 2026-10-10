@@ -17,6 +17,7 @@
  * rows that are already in the trash (the lifecycle invariant).
  */
 
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArchiveRestore,
@@ -60,15 +61,17 @@ export function LibraryTrashSheet({
   onMutated,
 }: LibraryTrashSheetProps) {
   const [rows, setRows] = useState<TrashRow[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await ragDb(supabase).rpc("fn_list_library_trash");
     if (error) {
-      toast.error(`Failed to load trash: ${error.message}`);
+      setLoadError(`Failed to load trash: ${error.message}`);
       setRows([]);
       return;
     }
+    setLoadError(null);
     setRows((data ?? []) as unknown as TrashRow[]);
   }, []);
 
@@ -173,6 +176,8 @@ export function LibraryTrashSheet({
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
+          ) : loadError ? (
+            <ReadFailure error={loadError} what="Trash" onRetry={() => void load()} />
           ) : rows.length === 0 ? (
             <div className="type-body text-muted-foreground py-10 text-center">
               Trash is empty.

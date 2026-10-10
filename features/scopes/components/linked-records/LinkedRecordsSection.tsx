@@ -139,7 +139,7 @@ export function LinkedRecordsSection({ token, id, title, className, backLinksSho
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
             <Link2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             Linked
-            {links.length > 0 ? <span className="text-xs font-normal text-muted-foreground">{links.length}</span> : null}
+            {links.length > 0 && !error ? <span className="text-xs font-normal text-muted-foreground">{links.length}</span> : null}
           </h3>
           <button
             type="button"

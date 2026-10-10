@@ -463,6 +463,7 @@ export function LoadFromLibraryDialog({
           ) : null}
           {phase.kind === "quiet" ? (
             <p className="type-body text-muted-foreground">
+              {/* read-gate-exempt: phase is the outcome of an import just run, not a read that can fail */}
               {phase.sent} items sent, no test case written yet. Refresh in a
               minute or open the Library.
             </p>

@@ -1204,6 +1204,7 @@ export function CrmListPage({
           )}
           {grouped && list.ceiling !== null && (
             <div className="mt-2 text-xs text-muted-foreground">
+              {/* read-gate-exempt: shown only when the list answered with a ceiling */}
               Grouped over the first {list.ceiling.toLocaleString()} of {list.total.toLocaleString()} records
             </div>
           )}

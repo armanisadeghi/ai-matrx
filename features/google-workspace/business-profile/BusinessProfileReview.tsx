@@ -398,6 +398,7 @@ function BusinessProfileReviewBodyInner({
               </Button>
             ))
           ) : (
+            // read-gate-exempt: shown only for a preview that already returned
             <Empty label="No accounts were returned for this page." />
           )}
         </Page>
@@ -451,6 +452,7 @@ function BusinessProfileReviewBodyInner({
               </div>
             ))
           ) : (
+            // read-gate-exempt: shown only for a preview that already returned
             <Empty label="No locations were returned for this page." />
           )}
         </Page>
@@ -508,6 +510,7 @@ function BusinessProfileReviewBodyInner({
               </article>
             ))
           ) : (
+            // read-gate-exempt: shown only for a preview that already returned
             <Empty label="No reviews were returned for this page." />
           )}
         </Page>

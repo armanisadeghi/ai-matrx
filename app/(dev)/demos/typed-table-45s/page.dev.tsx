@@ -85,6 +85,7 @@ function ReorderBoard() {
       <div className="flex items-center gap-3 type-body">
         <span className="font-medium">Supply reorder points</span>
         <span className="text-muted-foreground">table {status ?? "…"}</span>
+        {/* read-gate-exempt: dev demo; the table status shows beside this figure */}
         <span className="text-muted-foreground">{total ?? 0} rows</span>
         <Button variant="outline" disabled={busy !== null} onClick={async () => { for (const s of SAMPLE) await save(s); }} className="ml-auto">
           Add 3 sample items

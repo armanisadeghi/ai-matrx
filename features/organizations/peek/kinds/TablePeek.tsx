@@ -115,8 +115,10 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
       ) : (
         <>
           {view.description ? <PeekField label="Description">{view.description}</PeekField> : null}
+          {/* read-gate-exempt: fields come from the table-details read that succeeded */}
           <PeekField label={`Columns (${view.fields.length})`}>
             {view.fields.length === 0 ? (
+              // read-gate-exempt: fields come from the table-details read that succeeded; the row read error is drawn below
               <span className="text-muted-foreground">No columns yet.</span>
             ) : (
               view.fields.map((f) => f.label).join(", ")

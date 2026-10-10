@@ -1673,6 +1673,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         {!listPending && listIsEmpty && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-8">
             <StickyNote className="w-10 h-10 mb-3 opacity-40" />
+            {/* read-gate-exempt: listIsEmpty requires listStatus === loaded; a failed list draws listError above */}
             <p className="text-xs font-medium">No notes yet</p>
             <p className="text-xs mt-1 text-center">
               Click "New Note" below to get started

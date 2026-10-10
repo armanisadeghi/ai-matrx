@@ -848,6 +848,7 @@ export function OrgChart<T>({
                     {n.collapsed ? (
                       <>
                         <ChevronDown className="h-3 w-3" />
+                        {/* read-gate-exempt: descendant count computed from the chart already on screen */}
                         {n.descendantCount}
                       </>
                     ) : (

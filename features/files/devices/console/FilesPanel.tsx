@@ -437,6 +437,7 @@ export function FilesPanel({ client, live, blocked, path, onPathChange, visible 
             </SwipeRow>
           ))}
         </div>
+        {/* read-gate-exempt: shown only when listing.data exists; a failed listing is drawn above */}
         {listing.data?.truncated ? <p className="px-1 pt-2 text-xs text-muted-foreground">First {entries.length} items</p> : null}
       </div>
 

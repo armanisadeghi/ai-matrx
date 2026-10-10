@@ -881,6 +881,7 @@ function AiColumnPicker({
   if (columns.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
+        {/* read-gate-exempt: columns come from the table definition already loaded by the builder */}
         No column on this table is filled by AI yet. Set one up from the column&apos;s menu first.
       </p>
     );

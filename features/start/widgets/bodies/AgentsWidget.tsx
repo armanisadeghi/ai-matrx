@@ -99,6 +99,7 @@ export function AgentsWidget({ size }: StartWidgetBodyProps) {
           href: gone || denied ? null : `/agents/${encodeURIComponent(id)}`,
           icon: AGENT_ICON,
           tone: gone || denied ? "muted" : "default",
+          // read-gate-exempt: gone and denied are the read's per-row answers, labelled here
           meta: gone ? "Removed" : denied ? "No access" : null,
           action:
             gone || denied ? (

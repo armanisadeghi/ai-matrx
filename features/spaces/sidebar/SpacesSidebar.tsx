@@ -312,6 +312,7 @@ function TreeRow({
           kids.map((k) => <TreeRow key={k.id} space={k} depth={depth + 1} expanded={expanded} toggle={toggle} currentId={currentId} drag={drag} setDrag={setDrag} />)
         ) : (
           <div className="spaces-row-empty" style={{ paddingLeft: 8 + (depth + 1) * 12 + 22 }}>
+            {/* read-gate-exempt: children come from pages already loaded into the tree */}
             No pages inside
           </div>
         )
@@ -383,6 +384,7 @@ function TrashPopover() {
             </div>
           ))}
           {!trashLoaded ? <RegionSkeleton shape="rows" count={4} aria-label="Reading Trash" /> : null}
+          {/* read-gate-exempt: trashLoaded turns true only after the Trash read answered; a failed read toasts and stays unloaded */}
           {trashLoaded && list.length === 0 ? <p className="py-6 text-center type-body text-muted-foreground">No pages in Trash</p> : null}
         </div>
       </PopoverContent>
@@ -478,6 +480,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
               Sign in to see your pages
             </Link>
           ) : spaces.access === "no-access" ? (
+            // read-gate-exempt: access state from the session, not a read that can fail
             <div className="spaces-row-empty">No access to these pages</div>
           ) : spaces.loadError ? (
             <button type="button" className="spaces-row-empty spaces-row-error" onClick={spaces.retryLoad}>

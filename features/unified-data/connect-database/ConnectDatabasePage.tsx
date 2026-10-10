@@ -141,10 +141,12 @@ export function ConnectDatabasePage() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-medium text-foreground">{answer.label}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
+                      {/* read-gate-exempt: answer exists only after the probe succeeded; failures show above */}
                       {answer.tables.length === 1 ? "1 table" : `${answer.tables.length.toLocaleString()} tables`}
                     </span>
                   </div>
                   {answer.tables.length === 0 ? (
+                    // read-gate-exempt: answer exists only after the probe succeeded; failures show above
                     <p className="text-sm text-muted-foreground">This user can read no tables here.</p>
                   ) : (
                     <>

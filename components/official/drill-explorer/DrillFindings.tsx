@@ -170,6 +170,7 @@ export function DrillFindings({
                   <span className="min-w-0 truncate">{finding.label}</span>
                   {answer.state === "answered" && answer.count > 0 ? (
                     <span data-drill-explorer-finding-count className="rounded bg-muted px-1.5 type-meta font-medium tabular-nums text-muted-foreground">
+                      {/* read-gate-exempt: rendered only when the answer state is answered */}
                       {formatCount(answer.count)}
                     </span>
                   ) : null}

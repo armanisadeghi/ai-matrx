@@ -140,6 +140,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
 
         <RowGroup title="Data">
           {sources.length === 0 ? (
+            // read-gate-exempt: sources come from the applet record already loaded by the route
             <EmptyState icon={<SettingsIcon />} title="No data" />
           ) : (
             sources.map((source) => {

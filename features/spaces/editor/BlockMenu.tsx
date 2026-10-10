@@ -141,6 +141,7 @@ export function makeBlockMenu(actions: BlockMenuActions) {
             aria-label="Search actions"
           />
         </div>
+        {/* read-gate-exempt: none filters the static action list by the typed query; nothing is read */}
         {none ? <p className="spaces-block-menu-empty">No results</p> : null}
         {shows("Ask AI") ? (
           <C.Generic.Menu.Item className="bn-menu-item" icon={<AGENT_ICON size={I} />} onClick={actions.askAi}>

@@ -189,6 +189,7 @@ export default function MessagesShowcase() {
             <div className="showcase-transcript" key={`${category}:${search}`}>
               {examples.length === 0 && (
                 <div className="mx-msg__empty">
+                  {/* read-gate-exempt: showcase filters its bundled examples; nothing is read */}
                   <h3>No matching examples</h3>
                   <p>Try another search.</p>
                 </div>

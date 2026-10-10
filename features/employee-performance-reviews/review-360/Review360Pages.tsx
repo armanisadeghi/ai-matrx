@@ -53,6 +53,7 @@ const day = (iso: unknown) => (typeof iso === "string" && iso ? new Date(iso).to
 
 export function Review360ListPage() {
   const org = useOrg();
+  // read-gate-exempt: org comes from the HR context, not a read
   if (!org) return <Shell><EmptyState icon={<ClipboardCheck />} title="Pick an employer first" /></Shell>;
   return (
     <Review360Host organizationId={org}>
@@ -171,6 +172,7 @@ function ReviewList({ org }: { org: string }) {
 
 export function Review360ReviewPage({ reviewId }: { reviewId: string }) {
   const org = useOrg();
+  // read-gate-exempt: org comes from the HR context, not a read
   if (!org) return <Shell><EmptyState icon={<ClipboardCheck />} title="Pick an employer first" /></Shell>;
   return (
     <Review360Host organizationId={org}>

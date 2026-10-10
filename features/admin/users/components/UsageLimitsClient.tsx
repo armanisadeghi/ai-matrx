@@ -424,7 +424,7 @@ export function UsageLimitsClient() {
                   >
                     {s.label}
                     <span className="ml-1 tabular-nums text-muted-foreground">
-                      {population.filter((row) => rowInSegment(row, s.id)).length}
+                      {error ? "–" : population.filter((row) => rowInSegment(row, s.id)).length}
                     </span>
                   </Button>
                 ))}

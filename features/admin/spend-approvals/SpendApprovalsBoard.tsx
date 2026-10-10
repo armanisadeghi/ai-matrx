@@ -817,6 +817,7 @@ export function SpendApprovalsBoard({
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && !bulkBusy && setBulk(null)}
+          // read-gate-exempt: counts the rows the admin selected for this bulk action
           title={
             bulk.decision === "reset"
               ? `Reset tracking for ${bulk.rows.length} ${bulk.rows.length === 1 ? "approval" : "approvals"}?`

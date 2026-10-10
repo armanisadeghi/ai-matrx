@@ -64,6 +64,7 @@ function SyncedView({ sourceId, ctx }: { sourceId: string; ctx: Ctx }) {
             <RefreshCw size={12} strokeWidth={2} />
             Synced block
           </span>
+          {/* read-gate-exempt: count is null until the read succeeds */}
           {count !== null && count > 0 ? <span className="spaces-synced-count">Editing in {count} {count === 1 ? "page" : "pages"}</span> : null}
           <button
             type="button"

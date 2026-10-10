@@ -736,6 +736,7 @@ export function LeaveQueueSurface() {
       <TextInputDialog
         open={bulkReasonOpen}
         onOpenChange={setBulkReasonOpen}
+        // read-gate-exempt: counts the requests the manager selected for this denial
         title={`Deny ${bulkIds.length} ${bulkIds.length === 1 ? "request" : "requests"}`}
         description="Every person you deny reads this reason. The engine refuses a denial without one."
         multiline

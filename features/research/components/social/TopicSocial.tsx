@@ -255,6 +255,7 @@ export default function TopicSocial() {
         <Section
           icon={UserRound}
           title="Profiles"
+          // read-gate-exempt: handles come from the topic subject record, not a read of their own
           count={handles.length}
           action={
             brandId === null && handles.length > 0 ? (
@@ -371,6 +372,7 @@ export default function TopicSocial() {
                 ))}
               </dl>
               <p className="type-meta tabular-nums text-muted-foreground">
+                {/* read-gate-exempt: a missing figure renders a dash */}
                 {voice.sampleCount ?? "—"} posts · {voice.wordCount ?? "—"} words
                 {voice.confidence !== null && ` · confidence ${Math.round(voice.confidence * 100)}%`}
               </p>

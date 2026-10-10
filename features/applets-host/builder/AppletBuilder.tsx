@@ -663,6 +663,7 @@ export function AppletBuilder({
             ) : null}
             {saved.toMake.length ? (
               <div className="flex flex-col gap-1" data-applet-new-tables="">
+                {/* read-gate-exempt: counts tables the saved plan will create; it is the plan itself */}
                 <span className="text-xs font-medium">Using it creates {saved.toMake.length === 1 ? "1 table" : `${saved.toMake.length} tables`}</span>
                 {saved.toMake.map((t) => (
                   <div key={t.alias} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
@@ -736,6 +737,7 @@ export function AppletBuilder({
         ) : shownStep ? (
           <BuildStep step={shownStep} />
         ) : (
+          // read-gate-exempt: placeholder before the first build step exists; build errors show above
           <EmptyState icon={<AppWindow />} title="Your Applet shows here" line="Say what you want, then Build." />
         )}
       </div>

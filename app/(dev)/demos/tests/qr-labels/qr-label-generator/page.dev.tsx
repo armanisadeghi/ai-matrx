@@ -190,6 +190,7 @@ const QRLabelsPage = () => {
             <CardHeader>
               <CardTitle>Preview &amp; Print</CardTitle>
               <CardDescription>
+                {/* read-gate-exempt: counts the labels the person is building in local state */}
                 {labels.length} labels · {template.stockCode} · {perPage} per sheet · {pageCount}{' '}
                 sheet{pageCount === 1 ? '' : 's'}
               </CardDescription>
@@ -231,6 +232,7 @@ const QRLabelsPage = () => {
                           Prev
                         </Button>
                         <span>
+                          {/* read-gate-exempt: page numbers from local pagination state */}
                           Sheet {pageIndex + 1} / {pageCount}
                         </span>
                         <Button
@@ -274,6 +276,7 @@ const QRLabelsPage = () => {
                     ))}
                     {!labels.length && (
                       <p className="text-sm text-muted-foreground">
+                        {/* read-gate-exempt: labels is local state the person is building; nothing is read */}
                         No labels yet — add some in Manual Entry or CSV Upload.
                       </p>
                     )}
