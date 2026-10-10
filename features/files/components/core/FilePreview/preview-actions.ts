@@ -10,10 +10,10 @@
 "use client";
 
 import {
+  AppWindow,
   Copy,
   Download,
   Edit3,
-  ExternalLink,
   FileText,
   FileOutput,
   Maximize2,
@@ -101,7 +101,8 @@ export function buildPreviewActions(
     actions.push({
       id: "open-in-route",
       label: openInRoute.label,
-      icon: ExternalLink,
+      // Not ExternalLink: hosts already use that for "open this file's page".
+      icon: AppWindow,
       onClick: openInRoute.onClick,
       primary: true,
     });
