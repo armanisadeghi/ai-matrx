@@ -1,5 +1,5 @@
 // scripts/cls-routes-walk.mjs — cold-load layout shift for /data, /messages, /meetings as admin and member (headless).
-//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=1440,1024,390] [--max=0.01] [--verbose]
+//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--max=0.01] [--verbose]
 // Signs in through `pnpm dev-login` (never types a password). Prints each shift entry's nodes
 // (selector, previousRect, currentRect). Exits 1 when any route/seat run exceeds --max (default 0.01).
 import { chromium } from "playwright";
@@ -10,7 +10,7 @@ const opt = (k, d) => args.find((a) => a.startsWith(`--${k}=`))?.split("=")[1] ?
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 2);
 const routes = opt("routes", "/data,/messages,/meetings").split(",");
 const seats = opt("seats", "admin,member").split(",");
-const widths = opt("widths", "1440").split(",").map(Number);
+const widths = opt("widths", "390,1024,1440").split(",").map(Number);
 const MAX = Number(opt("max", "0.01"));
 const verbose = args.includes("--verbose");
 const browser = await chromium.launch({ headless: true });

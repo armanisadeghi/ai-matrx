@@ -9,9 +9,9 @@ import { join } from "node:path";
 
 const root = join(__dirname, "..", "..", "..");
 
-it("the lane count pill's min width is three digits PLUS its horizontal padding", () => {
+it("the lane count pill's min width is four characters PLUS its horizontal padding", () => {
   const src = readFileSync(join(root, "lib/entity-list/components/EntityScopeTabs.tsx"), "utf8");
-  expect(src).toContain("min-w-[calc(3ch+0.5rem)]");
+  expect(src).toContain("min-w-[calc(4ch+0.5rem)]");
   expect(src).not.toMatch(/min-w-\[3ch\]/);
 });
 
@@ -21,4 +21,9 @@ it("the messages kind strip never wraps or shrinks and its kind chips hold room 
   expect(rule).toContain("flex-wrap: nowrap");
   expect(rule).toContain("flex: 0 0 auto");
   expect(css).toMatch(/\.mx-msg__chip:nth-child\(-n \+ 2\) \{\s*min-width: 77px/);
+});
+
+import { compactCount } from "../components/EntityScopeTabs";
+it("no lane count is wider than the four-character slot", () => {
+  expect([0, 7, 1833, 9999, 10000, 12345, 999999, 1200000].map(compactCount)).toEqual(["0", "7", "1833", "9999", "10k", "12k", "999k", "1m"]);
 });
