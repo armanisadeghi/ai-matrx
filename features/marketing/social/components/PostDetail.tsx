@@ -81,6 +81,7 @@ import { PlatformMark } from "./PlatformMark";
 import { PostMedia, guessAspect } from "./PostMedia";
 import { usePostActions } from "./usePostActions";
 import { postScopeValues } from "@/features/board/items/social-tile-values";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { socialPostKind, postTranscriptKind } from "../kind-models";
 import { useSocialSpend } from "../cost";
 import {
@@ -119,7 +120,7 @@ function LabelRow({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function TranscriptTab({ postId, organizationId }: { postId: string; organizationId: string }) {
+function TranscriptTab({ postId, organizationId, canEdit }: { postId: string; organizationId: string; canEdit: boolean }) {
   const transcript = usePostTranscript(postId);
   const client = useQueryClient();
   const { pointsText } = useSocialSpend(organizationId);
@@ -147,10 +148,14 @@ function TranscriptTab({ postId, organizationId }: { postId: string; organizatio
     return (
       <div className="flex flex-col items-start gap-2 py-1">
         <p className="text-xs text-muted-foreground">No transcript yet.</p>
-        <Button variant="outline" onClick={() => void fetchIt()} disabled={busy}>
-          {busy ? "Transcribing…" : "Get transcript"}
-        </Button>
-        <CostLine text={pointsText("transcript")} />
+        {canEdit ? (
+          <>
+            <Button variant="outline" onClick={() => void fetchIt()} disabled={busy}>
+              {busy ? "Transcribing…" : "Get transcript"}
+            </Button>
+            <CostLine text={pointsText("transcript")} />
+          </>
+        ) : null}
       </div>
     );
   }
@@ -340,7 +345,7 @@ function BreakdownRows({ analysis }: { analysis: PostAnalysisRow }) {
   );
 }
 
-function BreakdownTab({ postId, organizationId }: { postId: string; organizationId: string }) {
+function BreakdownTab({ postId, organizationId, canEdit }: { postId: string; organizationId: string; canEdit: boolean }) {
   const analysis = usePostAnalysis(organizationId, postId);
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -377,10 +382,14 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
       ) : (
         <>
           <p className="text-xs text-muted-foreground">Hook, format, audio and call to action.</p>
-          <Button variant="outline" onClick={() => void run()} disabled={busy}>
-            {busy ? "Analyzing…" : "Run breakdown"}
-          </Button>
-          <CostLine text="Uses AI, billed in points" />
+          {canEdit ? (
+            <>
+              <Button variant="outline" onClick={() => void run()} disabled={busy}>
+                {busy ? "Analyzing…" : "Run breakdown"}
+              </Button>
+              <CostLine text="Uses AI, billed in points" />
+            </>
+          ) : null}
         </>
       )}
       {state === "failed" ? (
@@ -493,6 +502,7 @@ export function PostDetailBody({
   onTitle?: (title: string) => void;
 }) {
   const detail = usePostDetail(postId);
+  const canEdit = useCanEditSocial(brandSeg);
   const collections = useSwipeCollections(organizationId);
   const client = useQueryClient();
   const { pointsText } = useSocialSpend(organizationId);
@@ -571,6 +581,7 @@ export function PostDetailBody({
 
   const actions = (
     <div className="flex flex-wrap items-center gap-1">
+      {canEdit ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" icon={<Bookmark />} disabled={busy}>
@@ -588,11 +599,13 @@ export function PostDetailBody({
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
+      ) : null}
       <Button variant="outline" icon={<ExternalLink />} asChild>
         <a href={post.url} target="_blank" rel="noreferrer noopener">
           Original
         </a>
       </Button>
+      {canEdit ? (
       <Button
         variant="quiet"
         icon={<RefreshCw />}
@@ -603,6 +616,7 @@ export function PostDetailBody({
           .join(" · ")}
         aria-label="Refresh numbers"
       />
+      ) : null}
       {host === "canvas" && onSwitchHost ? (
         <Button variant="quiet" icon={<PanelRightClose />} onClick={onSwitchHost} title="Open as a floating panel">
           Panel
@@ -727,7 +741,7 @@ export function PostDetailBody({
               </p>
             </div>
           ) : null}
-          {tab === "transcript" ? <TranscriptTab postId={postId} organizationId={organizationId} /> : null}
+          {tab === "transcript" ? <TranscriptTab postId={postId} organizationId={organizationId} canEdit={canEdit} /> : null}
           {tab === "metrics" ? (
             <MetricsTab
               postId={postId}
@@ -736,7 +750,7 @@ export function PostDetailBody({
               velocity={stat?.velocity_24h == null ? null : Number(stat.velocity_24h)}
             />
           ) : null}
-          {tab === "breakdown" ? <BreakdownTab postId={postId} organizationId={organizationId} /> : null}
+          {tab === "breakdown" ? <BreakdownTab postId={postId} organizationId={organizationId} canEdit={canEdit} /> : null}
         </div>
       </div>
     </div>

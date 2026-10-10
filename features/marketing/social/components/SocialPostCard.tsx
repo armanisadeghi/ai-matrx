@@ -36,6 +36,7 @@ import { formatDuration, openPostLabel, postedLabel, postedTitle } from "../mapp
 import { NO_VIEWS_TEXT, countLabel, outlierBadgeModel } from "../outlier";
 import type { PostCardModel } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { PostCardMenuItems } from "./PostCardMenuItems";
 import { postThumbnailDoor } from "../server";
 import { PlatformMark } from "./PlatformMark";
@@ -79,6 +80,7 @@ export interface SocialPostCardProps {
 
 export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, accountHref, hideOutlier, className }: SocialPostCardProps) {
   const brand = useMarketingBrandOptional();
+  const canEdit = useCanEditSocial(brand?.seg);
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
   // A post that reports no views (a carousel on some platforms) has no multiple to explain: no badge, no views stat.
@@ -202,7 +204,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
               {brand ? (
                 <PostCardMenuItems post={post} brandSeg={brand.seg} organizationId={brand.organizationId} hasSaveHandler={Boolean(onSave)} />
               ) : null}
-              {onSave ? (
+              {onSave && canEdit ? (
                 <DropdownMenuItem onSelect={() => onSave(post)}>
                   <Bookmark className="mr-2 h-4 w-4" />
                   Save to swipe file

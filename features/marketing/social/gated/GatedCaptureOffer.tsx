@@ -20,6 +20,7 @@ import { CloudCaptureButton } from "./CloudCaptureButton";
 import { GuidedCaptureButton } from "./GuidedCaptureButton";
 import { startBackgroundCapture } from "./backgroundCapture";
 import type { GuidedCaptureTarget } from "./guidedApi";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { useGuidedJob } from "./useGuidedJob";
 import type { CaptureHandoff } from "@/features/capture-ladder/types";
 
@@ -44,6 +45,8 @@ export function GatedCaptureOffer({
   const [job, setJob] = useState<CaptureHandoff | null>(null);
   const [line, setLine] = useState<{ text: string; failed: boolean; install?: boolean } | null>(null);
   const { view } = useGuidedJob(job?.id ?? null, job);
+  // A capture writes to the brand's record: only editors are offered it. A target with no brand (the Board) is not a brand page.
+  const canEdit = useCanEditSocial(undefined, target.brandId);
 
   useEffect(() => {
     if (view?.phase === "done" || view?.phase === "saved_unread") onCaptured?.();
@@ -76,6 +79,7 @@ export function GatedCaptureOffer({
   }, [noticeText, noticeFailed]); // eslint-disable-line react-hooks/exhaustive-deps
   const inline = !onNotice;
 
+  if (target.brandId && !canEdit) return null;
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {compact ? null : (

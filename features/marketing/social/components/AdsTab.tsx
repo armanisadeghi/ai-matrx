@@ -206,7 +206,7 @@ function AdFilters({
 // ---------------------------------------------------------------------------
 
 function AdsSearch({ onTracked }: { onTracked: () => void }) {
-  const { organizationId, brandId } = useSocials();
+  const { organizationId, brandId, canEdit } = useSocials();
   const { costText, confirmSpend, agentCostText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const [library, setLibrary] = useState<AdLibrary>("meta");
@@ -337,9 +337,11 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           onChange={(e) => setText(e.target.value)}
           className="min-w-48 flex-1"
         />
-        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={costText("ads_search") ?? undefined} aria-busy={busy}>
-          Search
-        </Button>
+        {canEdit ? (
+          <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={costText("ads_search") ?? undefined} aria-busy={busy}>
+            Search
+          </Button>
+        ) : null}
       </form>
 
       {meta ? (
@@ -380,11 +382,11 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {shown.map((ad) => (
-                <AdCard key={ad.adId} ad={ad} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={setSaveAd} onTrack={trackAdvertiser} />
+                <AdCard key={ad.adId} ad={ad} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={canEdit ? setSaveAd : undefined} onTrack={canEdit ? trackAdvertiser : undefined} />
               ))}
             </div>
           )}
-          {meta?.has_more && meta.cursor && asked ? (
+          {canEdit && meta?.has_more && meta.cursor && asked ? (
             <div>
               <Button variant="outline" disabled={busy} title={costText("ads_search") ?? undefined} onClick={() => void run(asked, meta.cursor ?? undefined)}>
                 {busy ? "Loading…" : "Load more"}
@@ -534,7 +536,7 @@ function AdvertiserCard({ advertiser, onOpen }: { advertiser: TrackedAdvertiser;
 }
 
 function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser; onBack: () => void }) {
-  const { organizationId, brandId } = useSocials();
+  const { organizationId, brandId, canEdit } = useSocials();
   const { costText, confirmSpend } = useSocialSpend(organizationId);
   const client = useQueryClient();
   const invalidate = useInvalidateSocial();
@@ -612,17 +614,21 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
         <span className="truncate text-sm font-medium text-foreground">{def.advertiser}</span>
         <span className="text-xs text-muted-foreground">{libraryLabel(def.library)}</span>
         <span className="flex-1" />
-        {fresh.size > 0 ? (
+        {canEdit && fresh.size > 0 ? (
           <Button variant="outline" onClick={() => void markSeen()}>
             Mark {fresh.size} seen
           </Button>
         ) : null}
-        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={costText("ads_search") ?? undefined} aria-busy={busy} onClick={() => void lookAgain()}>
-          Look again
-        </Button>
-        <Button variant="quiet" onClick={() => void stop()}>
-          Stop tracking
-        </Button>
+        {canEdit ? (
+          <>
+            <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={costText("ads_search") ?? undefined} aria-busy={busy} onClick={() => void lookAgain()}>
+              Look again
+            </Button>
+            <Button variant="quiet" onClick={() => void stop()}>
+              Stop tracking
+            </Button>
+          </>
+        ) : null}
       </div>
 
       {error ? (
@@ -652,7 +658,7 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
             />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {shown.map((ad) => (
-                <AdCard key={ad.adId} ad={ad} isNew={fresh.has(ad.adId)} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={setSaveAd} />
+                <AdCard key={ad.adId} ad={ad} isNew={fresh.has(ad.adId)} onOpen={ad.libraryUrl ? openLibrary : undefined} onSave={canEdit ? setSaveAd : undefined} />
               ))}
             </div>
           </div>

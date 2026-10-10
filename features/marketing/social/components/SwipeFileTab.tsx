@@ -98,7 +98,7 @@ function chip(active: boolean) {
 }
 
 export function SwipeFileTab() {
-  const { brandId, organizationId } = useSocials();
+  const { brandId, organizationId, canEdit } = useSocials();
   const { costText, agentCostText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const collections = useAllSwipeCollections();
@@ -449,6 +449,7 @@ export function SwipeFileTab() {
               </span>
               <span className="tabular-nums">{counts.get(c.id) ?? 0}</span>
             </button>
+            {canEdit ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" aria-label={`${c.name} actions`} className="mr-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground">
@@ -467,13 +468,16 @@ export function SwipeFileTab() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            ) : null}
           </div>
         ))}
-        <div className="pt-1">
-          <Button variant="quiet" icon={<FolderPlus />} onClick={() => setNameDialog({ mode: "create" })}>
-            New collection
-          </Button>
-        </div>
+        {canEdit ? (
+          <div className="pt-1">
+            <Button variant="quiet" icon={<FolderPlus />} onClick={() => setNameDialog({ mode: "create" })}>
+              New collection
+            </Button>
+          </div>
+        ) : null}
         {archived.length || showArchived ? (
           <div className="pt-2">
             <Button variant="quiet" onClick={() => setShowArchived(!showArchived)} meta={String(archived.length)}>
@@ -515,20 +519,26 @@ export function SwipeFileTab() {
               Clear
             </Button>
           ) : null}
-          <Button variant="primary" icon={<Link2 />} onClick={() => setLinkOpen(true)}>
-            Save link
-          </Button>
+          {canEdit ? (
+            <Button variant="primary" icon={<Link2 />} onClick={() => setLinkOpen(true)}>
+              Save link
+            </Button>
+          ) : null}
         </div>
 
         {selected.size > 0 ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5" role="toolbar" aria-label="Bulk actions">
             <span className="text-xs tabular-nums text-foreground">{selected.size} selected</span>
-            <Button variant="outline" icon={<Bookmark />} onClick={() => setBulkSaveOpen(true)} disabled={bulkBusy}>
-              Add to collection
-            </Button>
-            <Button variant="outline" onClick={() => void bulkTranscribe()} disabled={bulkBusy}>
-              {bulkBusy ? "Working…" : "Transcribe"}
-            </Button>
+            {canEdit ? (
+              <>
+                <Button variant="outline" icon={<Bookmark />} onClick={() => setBulkSaveOpen(true)} disabled={bulkBusy}>
+                  Add to collection
+                </Button>
+                <Button variant="outline" onClick={() => void bulkTranscribe()} disabled={bulkBusy}>
+                  {bulkBusy ? "Working…" : "Transcribe"}
+                </Button>
+              </>
+            ) : null}
             <Button variant="quiet" onClick={() => setSelected(new Set())}>
               Clear selection
             </Button>

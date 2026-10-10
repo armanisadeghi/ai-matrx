@@ -130,7 +130,7 @@ function platformLabel(p: string): string {
 }
 
 export function OutliersTab() {
-  const { brandId, brandSeg, organizationId, openTrack } = useSocials();
+  const { brandId, brandSeg, organizationId, openTrack, canEdit } = useSocials();
   const data = useBrandSocialData(organizationId, brandId);
   const watchlists = useWatchlists(brandId);
   const lists = watchlists.data ?? [];
@@ -553,9 +553,11 @@ export function OutliersTab() {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-2">
         <p className="text-sm text-foreground">Track accounts first</p>
-        <Button variant="primary" icon={<Plus />} onClick={openTrack}>
-          Track account
-        </Button>
+        {canEdit ? (
+          <Button variant="primary" icon={<Plus />} onClick={openTrack}>
+            Track account
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -634,10 +636,12 @@ export function OutliersTab() {
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant={modified || !active ? "outline" : "quiet"} icon={<Plus />} onClick={() => setNaming(true)}>
-          Save as watchlist
-        </Button>
-        {active ? (
+        {canEdit ? (
+          <Button variant={modified || !active ? "outline" : "quiet"} icon={<Plus />} onClick={() => setNaming(true)}>
+            Save as watchlist
+          </Button>
+        ) : null}
+        {active && canEdit ? (
           <>
             <Button
               variant="outline"
@@ -695,10 +699,10 @@ export function OutliersTab() {
               accountHref={accountHref(brandSeg, item.post)}
               isNew={item.state === "new"}
               onOpen={() => openPost(item)}
-              onSave={setSavePost}
+              onSave={canEdit ? setSavePost : undefined}
               extraActions={[
                 { id: "why", label: "Why it worked", onSelect: () => openPost(item, "breakdown") },
-                ...(active
+                ...(active && canEdit
                   ? [
                       item.state === "dismissed"
                         ? { id: "restore", label: "Restore", onSelect: () => void writeStates([item], "seen") }
@@ -721,7 +725,7 @@ export function OutliersTab() {
           rowActions={(r) => [
             { id: "open", icon: ExternalLink, label: "Open post", onClick: () => openPost(r) },
             { id: "why", icon: Lightbulb, label: "Why it worked", onClick: () => openPost(r, "breakdown") },
-            { id: "save", icon: Bookmark, label: "Save to swipe file", onClick: () => setSavePost(r.post) },
+            ...(canEdit ? [{ id: "save", icon: Bookmark, label: "Save to swipe file", onClick: () => setSavePost(r.post) }] : []),
           ]}
         />
       )}

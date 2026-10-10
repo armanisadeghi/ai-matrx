@@ -69,6 +69,7 @@ import {
 import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseline } from "../outlier";
 import { useSocialSpend } from "../cost";
 import { refreshProfile, socialErrorCode, socialErrorMessage, trackAccount } from "../server";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
 import { CapturedFromBrowser, browserCapturesKey } from "../gated/CapturedFromBrowser";
 import { capturePollInterval, enrichWithCaptures, fetchBrowserCaptures, knownPostKeys } from "../gated/browserCaptures";
@@ -329,6 +330,7 @@ function ProfileAgentSurface({
 export function AccountDetail({ platform, profileId }: { platform: string; profileId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
+  const canEdit = useCanEditSocial();
   const invalidate = useInvalidateSocial();
   const profile = useProfile(profileId);
   const tracked = useTrackedForProfile(brand.organizationId, profileId);
@@ -451,7 +453,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
           <Badge tone="warning">Not tracked</Badge>
         )}
         <span className="ml-auto flex min-w-0 items-center gap-1">
-          {tracked.data ? (
+          {!canEdit ? null : tracked.data ? (
             <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}
             </Button>

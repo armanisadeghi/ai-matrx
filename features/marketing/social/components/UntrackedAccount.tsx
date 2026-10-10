@@ -22,6 +22,7 @@ import { findCachedAccount } from "../account-lookup";
 import { readProfile, readProfilePosts } from "../service";
 import { formatCompact } from "../outlier";
 import { profileAvatarDoor } from "../server";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { useOpenPost } from "../useOpenPost";
 import { isSocialPlatform } from "../types";
 import { SocialImage } from "./SocialImage";
@@ -34,6 +35,7 @@ import { trackableOwn, useTrackOwn } from "./useTrackOwn";
 export function UntrackedAccount({ platform, propertyId }: { platform: string; propertyId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
+  const canEdit = useCanEditSocial();
   const accounts = useBrandSocialAccounts(brand.id);
   const { busyRow, progress, trackOwn, pointsText } = useTrackOwn(brand.organizationId, brand.id);
   const row = (accounts.data ?? []).find((r) => r.propertyId === propertyId) ?? null;
@@ -91,7 +93,7 @@ export function UntrackedAccount({ platform, propertyId }: { platform: string; p
       </div>
       <Badge tone="warning">Not tracked</Badge>
       <span className="ml-auto flex items-center gap-1">
-        {trackableOwn(row) ? (
+        {!canEdit ? null : trackableOwn(row) ? (
           <Button
             variant="outline"
             icon={busy ? <Loader2 className="animate-spin" /> : <Plus />}
@@ -115,7 +117,7 @@ export function UntrackedAccount({ platform, propertyId }: { platform: string; p
         ) : null}
       </span>
     </div>
-    <p className="text-sm text-muted-foreground">Tracking adds post history, growth and outliers.</p>
+    {canEdit ? <p className="text-sm text-muted-foreground">Tracking adds post history, growth and outliers.</p> : null}
     {cached.isLoading ? <RegionSkeleton shape="cards" count={1} aria-label="Checking what we know about this account" /> : null}
     {preview ? (
       <section aria-label="Public profile" className="flex flex-col gap-3">

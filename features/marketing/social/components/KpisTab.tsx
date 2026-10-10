@@ -125,7 +125,7 @@ function toKpiAccounts(accounts: readonly AccountRow[]): KpiAccount[] {
 }
 
 export function KpisTab() {
-  const { brandId, organizationId, openTrack } = useSocials();
+  const { brandId, organizationId, openTrack, canEdit } = useSocials();
   const data = useBrandSocialData(organizationId, brandId);
   const goals = useKpiGoals(organizationId, brandId);
   const invalidate = useInvalidateSocial();
@@ -340,15 +340,17 @@ export function KpisTab() {
     <div className="matrx-touch-targets flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedControl aria-label="View" value={view} onValueChange={setView} data={VIEW_OPTIONS} />
-        <Button variant="primary" icon={<Plus />} className="ml-auto" onClick={() => setCreating(true)}>
-          New goal
-        </Button>
+        {canEdit ? (
+          <Button variant="primary" icon={<Plus />} className="ml-auto" onClick={() => setCreating(true)}>
+            New goal
+          </Button>
+        ) : null}
       </div>
 
       {goalRows.length === 0 ? (
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Target className="h-4 w-4" aria-hidden />
-          No goals yet. New goal sets a target for followers, views or cadence.
+          No goals yet. Set a target to track.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -360,6 +362,7 @@ export function KpisTab() {
               posts={posts}
               accountRows={accounts}
               now={now}
+              canEdit={canEdit}
               onEdit={() => setEditing(goal)}
               onPause={() => void setStatus(goal, goal.status === "paused" ? "active" : "paused")}
               onRemove={() => void remove(goal)}
@@ -381,7 +384,7 @@ export function KpisTab() {
                   : "Add an account to start tracking"
             }
             action={
-              ownState.kind === "trackable" ? (
+              !canEdit ? null : ownState.kind === "trackable" ? (
                 <Button
                   variant="primary"
                   icon={<UserPlus />}
@@ -446,6 +449,7 @@ function GoalTile({
   accountRows,
   posts,
   now,
+  canEdit,
   onEdit,
   onPause,
   onRemove,
@@ -455,6 +459,7 @@ function GoalTile({
   accountRows: AccountRow[];
   posts: BrandPost[];
   now: number;
+  canEdit: boolean;
   onEdit: () => void;
   onPause: () => void;
   onRemove: () => void;
@@ -534,6 +539,7 @@ function GoalTile({
           {KPI_PERIODS.find((p) => p.value === goal.period)?.label ?? "Custom"} · {measured.accounts}{" "}
           {measured.accounts === 1 ? "account" : "accounts"}
         </span>
+        {canEdit ? (
         <span className="flex shrink-0 items-center">
           <Button variant="quiet" icon={<Pencil />} aria-label="Edit goal" onClick={onEdit} />
           <Button
@@ -544,6 +550,7 @@ function GoalTile({
           />
           <Button variant="quiet" icon={<Trash2 />} aria-label="Remove goal" onClick={onRemove} />
         </span>
+        ) : null}
       </div>
     </div>
   );

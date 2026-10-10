@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { accountHref } from "../account-href";
 import { useSocialSpend } from "../cost";
 import type { PostCardModel } from "../types";
+import { useCanEditSocial } from "../useCanEditSocial";
 import { usePostActions } from "./usePostActions";
 
 function CostTail({ text }: { text: string | null }) {
@@ -42,6 +43,7 @@ export function PostCardMenuItems({
   });
   const { pointsText } = useSocialSpend(organizationId);
   const href = accountHref(brandSeg, post);
+  const canEdit = useCanEditSocial(brandSeg);
 
   const run = (fn: () => Promise<string>) => () =>
     void fn().then(
@@ -59,12 +61,14 @@ export function PostCardMenuItems({
           </Link>
         </DropdownMenuItem>
       ) : null}
-      {hasSaveHandler ? null : (
+      {!canEdit || hasSaveHandler ? null : (
         <DropdownMenuItem disabled={actions.busy === "save"} onSelect={run(actions.saveToSwipe)}>
           <Bookmark className="mr-2 h-4 w-4" />
           Save to swipe file
         </DropdownMenuItem>
       )}
+      {!canEdit ? null : (
+        <>
       <DropdownMenuItem disabled={actions.busy === "transcript"} onSelect={run(actions.transcript)}>
         <FileText className="mr-2 h-4 w-4" />
         Get transcript
@@ -75,6 +79,8 @@ export function PostCardMenuItems({
         Run breakdown
         <CostTail text="AI points" />
       </DropdownMenuItem>
+        </>
+      )}
     </>
   );
 }

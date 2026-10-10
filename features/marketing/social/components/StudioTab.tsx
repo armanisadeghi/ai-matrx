@@ -31,7 +31,7 @@ import { useSocials } from "./SocialsContext";
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
 
 export function StudioTab() {
-  const { brandId, brandSeg, organizationId } = useSocials();
+  const { brandId, brandSeg, organizationId, canEdit } = useSocials();
   const brandName = useMarketingBrand().name;
   const client = useQueryClient();
   const key = ["marketing", "social", "studio-boards", organizationId, brandId] as const;
@@ -73,12 +73,12 @@ export function StudioTab() {
 
   // First open: a brand with no Studio board gets one (the database holds it to one).
   useEffect(() => {
-    if (boards.data && !boards.data.some((b) => b.canonical) && !started.current) {
+    if (canEdit && boards.data && !boards.data.some((b) => b.canonical) && !started.current) {
       started.current = true;
       void add(`${brandName} Studio`, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boards.data]);
+  }, [boards.data, canEdit]);
 
   const list = boards.data ?? [];
   // Opens on the brand's Studio board (listed first), whatever else was opened last.
@@ -100,7 +100,7 @@ export function StudioTab() {
     // While the offer shows, look again: an account tile added from the Add menu must take the offer away.
     refetchInterval: (q) => (q.state.data === true ? 4_000 : false),
   });
-  const offerAccounts = shape.data === true && ownSeeds.length > 0;
+  const offerAccounts = canEdit && shape.data === true && ownSeeds.length > 0;
 
   async function addAccounts() {
     if (!currentId) return;
@@ -132,6 +132,9 @@ export function StudioTab() {
       </div>
     );
   }
+  if (!current && boards.data && !canEdit) {
+    return <p className="p-4 text-sm text-muted-foreground">No Studio board yet.</p>;
+  }
   if (!current) return <RegionSkeleton />;
 
   const menu = (
@@ -142,10 +145,12 @@ export function StudioTab() {
           {shortBoardTitle(b.title, brandName)}
         </DropdownMenuItem>
       ))}
-      <DropdownMenuItem disabled={busy} onSelect={() => void add(`${brandName} board ${list.length + 1}`, false)}>
-        <Plus className="mr-2 h-4 w-4" />
-        New board
-      </DropdownMenuItem>
+      {canEdit ? (
+        <DropdownMenuItem disabled={busy} onSelect={() => void add(`${brandName} board ${list.length + 1}`, false)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New board
+        </DropdownMenuItem>
+      ) : null}
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>
         <Link href={marketingRoutes.brandSocials(brandSeg)}>
