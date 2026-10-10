@@ -410,7 +410,7 @@ export function MeetingsHome() {
               </Select>
             ) : null}
             {tab === "upcoming" && planning.loaded ? (
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <label className="flex h-7 min-w-[140px] items-center gap-1.5 text-xs text-muted-foreground">
                 <Switch
                   checked={planning.showExternalEvents}
                   onCheckedChange={(v) => void toggleExternal(v)}
@@ -420,8 +420,8 @@ export function MeetingsHome() {
               </label>
             ) : tab === "upcoming" ? (
               // The switch's slot, held while the planning read lands: on a phone this bar wraps, and
-              // the switch arriving moved the zone label to another line (CLS 0.069 at 390px).
-              <div aria-hidden="true" className="invisible flex items-center gap-1.5 text-xs">
+              // the switch arriving moved the zone label to another line (CLS 0.069 at 390px). Both states are the same 28px tall (the real switch row is h-7): the slot's old 20px made the sticky bar oscillate 8px each time the planning read flipped loaded.
+              <div aria-hidden="true" className="invisible flex h-7 min-w-[140px] items-center gap-1.5 text-xs">
                 <span className="inline-block h-5 w-9" />
                 Calendar events
               </div>
