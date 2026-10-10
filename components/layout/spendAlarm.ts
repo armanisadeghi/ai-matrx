@@ -75,3 +75,31 @@ export function nameSpendAlarm(alarm: SpendAlarm, names: ReadonlyMap<string, str
     link: alarm.link && alarm.link.endsWith("/administration/billing") ? ACCOUNT_LINK_BASE + id : alarm.link,
   };
 }
+
+/** The platform's agent and test seats (mirrors `platform.agent_test_account_ids()`): alarms are for real people. */
+export function isAgentSeat(person: { email: string | null; appMetadata: unknown }): boolean {
+  const meta = asRecord(person.appMetadata);
+  if (meta && meta.test_fixture !== undefined && meta.test_fixture !== null) return true;
+  const email = (person.email ?? "").toLowerCase();
+  return email === "admin@admin.com" || email === "test@test.com";
+}
+
+const CLOSED_KEY = "matrx:spendAlarmClosed";
+
+/** Alarm keys closed for this browser session by this person; storage trouble reads as none. */
+export function readClosedAlarms(userId: string): string[] {
+  try {
+    const raw = JSON.parse(window.sessionStorage.getItem(CLOSED_KEY) ?? "null") as { userId?: string; keys?: unknown } | null;
+    return raw && raw.userId === userId && Array.isArray(raw.keys) ? raw.keys.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeClosedAlarms(userId: string, keys: string[]): void {
+  try {
+    window.sessionStorage.setItem(CLOSED_KEY, JSON.stringify({ userId, keys }));
+  } catch {
+    /* private mode / quota: the close still holds in memory for this page */
+  }
+}

@@ -1,5 +1,5 @@
 import type { SystemAnnouncement } from "@/types/feedback.types";
-import { nameSpendAlarm, sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
+import { isAgentSeat, readClosedAlarms, writeClosedAlarms, nameSpendAlarm, sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
 
 const base = {
   id: "a1",
@@ -57,5 +57,21 @@ describe("nameSpendAlarm", () => {
   it("leaves the row alone when no name resolves", () => {
     const alarm = toSpendAlarm(row)!;
     expect(nameSpendAlarm(alarm, new Map())).toBe(alarm);
+  });
+});
+
+describe("agent seats and session close", () => {
+  it("agent and test seats are not people", () => {
+    expect(isAgentSeat({ email: "admin@admin.com", appMetadata: {} })).toBe(true);
+    expect(isAgentSeat({ email: "Test@Test.com", appMetadata: null })).toBe(true);
+    expect(isAgentSeat({ email: "x@y.com", appMetadata: { test_fixture: { expires: "z" } } })).toBe(true);
+    expect(isAgentSeat({ email: "arman@armansadeghi.com", appMetadata: {} })).toBe(false);
+  });
+  it("a close is remembered per person for the session, and a bumped alarm is a new key", () => {
+    window.sessionStorage.clear();
+    writeClosedAlarms("u1", ["a1:1"]);
+    expect(readClosedAlarms("u1")).toEqual(["a1:1"]);
+    expect(readClosedAlarms("u1")).not.toContain("a1:2");
+    expect(readClosedAlarms("u2")).toEqual([]);
   });
 });

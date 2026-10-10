@@ -17,7 +17,16 @@ import { getActiveAnnouncements } from "@/actions/feedback.actions";
 import { SystemAnnouncement } from "@/types/feedback.types";
 import SystemAnnouncementBanner from "./SystemAnnouncementBanner";
 import SpendAlarmPanel from "./SpendAlarmPanel";
-import { nameSpendAlarm, sortSpendAlarms, toSpendAlarm, type SpendAlarm } from "./spendAlarm";
+import {
+  isAgentSeat,
+  nameSpendAlarm,
+  readClosedAlarms,
+  sortSpendAlarms,
+  toSpendAlarm,
+  writeClosedAlarms,
+  type SpendAlarm,
+} from "./spendAlarm";
+import { selectUserAppMetadata, selectUserEmail, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fetchUserDisplayNames } from "@/features/mandates/notes";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
@@ -26,6 +35,14 @@ export default function AnnouncementProviderImpl() {
   const dispatch = useAppDispatch();
   const [fetched, setFetched] = useState<SystemAnnouncement[]>([]);
   const [currentAnnouncementIndex] = useState(0);
+  const userId = useAppSelector(selectUserId);
+  const email = useAppSelector(selectUserEmail);
+  const appMetadata = useAppSelector(selectUserAppMetadata);
+  const seat = isAgentSeat({ email, appMetadata });
+  const [closed, setClosed] = useState<string[]>([]);
+  useEffect(() => {
+    if (userId) setClosed(readClosedAlarms(userId));
+  }, [userId]);
   const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
   const viewedAnnouncements = useAppSelector(
     (state) => state.userPreferences.system.viewedAnnouncements,
@@ -66,6 +83,16 @@ export default function AnnouncementProviderImpl() {
     return { announcements: plain, alarms: sortSpendAlarms(found.map((a) => nameSpendAlarm(a, names))) };
   }, [fetched, viewedAnnouncements, names]);
 
+  const shown = useMemo(
+    () => (seat ? [] : alarms.filter((a) => !closed.includes(a.ackKey))),
+    [alarms, closed, seat],
+  );
+  const closeForSession = () => {
+    const keys = [...new Set([...closed, ...alarms.map((a) => a.ackKey)])];
+    setClosed(keys);
+    if (userId) writeClosedAlarms(userId, keys);
+  };
+
   const acknowledge = (keys: string[]) => {
     dispatch(
       setModulePreferences({
@@ -80,9 +107,10 @@ export default function AnnouncementProviderImpl() {
   return (
     <>
       <SpendAlarmPanel
-        alarms={alarms}
+        alarms={shown}
         onAcknowledge={(key) => acknowledge([key])}
-        onAcknowledgeAll={() => acknowledge(alarms.map((a) => a.ackKey))}
+        onAcknowledgeAll={() => acknowledge(shown.map((a) => a.ackKey))}
+        onClose={closeForSession}
       />
       {currentAnnouncement ? (
         <SystemAnnouncementBanner

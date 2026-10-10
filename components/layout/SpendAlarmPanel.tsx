@@ -18,25 +18,26 @@ interface SpendAlarmPanelProps {
   alarms: SpendAlarm[];
   onAcknowledge: (ackKey: string) => void;
   onAcknowledgeAll: () => void;
+  /** X, Escape or the backdrop: hide for this browser session; nothing is marked reviewed. */
+  onClose: () => void;
 }
 
 /**
  * The loud sign-in surface for spend alarms (Arman, 2026-10-09). A modal over the
- * page: it adds no layout, so nothing shifts, and it stays until each alarm is
- * acknowledged. Delivery is the existing super-admin announcement rail.
+ * page: it adds no layout, so nothing shifts, and it closes for the session on X, Escape or the
+ * backdrop and returns for a new or bumped alarm; only Acknowledge marks one reviewed. Delivery is the existing super-admin announcement rail.
  */
 export default function SpendAlarmPanel({
   alarms,
   onAcknowledge,
   onAcknowledgeAll,
+  onClose,
 }: SpendAlarmPanelProps) {
   const errors = alarms.filter((a) => a.severity === "error").length;
   return (
-    <Dialog open={alarms.length > 0}>
+    <Dialog open={alarms.length > 0} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className="max-w-2xl border-destructive/60"
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
