@@ -362,6 +362,15 @@ export function ContextTree({
           });
           if (!sOpen) continue;
           const items = data.itemsByType[t.id];
+          const refused = data.itemsError?.[t.id];
+          if (refused && !items) {
+            out.push({
+              key: `${sKey}:refused`,
+              depth: 3,
+              label: refused,
+              tone: "text-destructive",
+            });
+          }
           if (items && items.length === 0) {
             out.push({
               key: `${sKey}:none`,

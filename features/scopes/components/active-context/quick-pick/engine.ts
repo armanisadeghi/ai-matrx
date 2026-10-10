@@ -28,11 +28,11 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { readScopeTypeFields } from "@/features/scopes/redux/contextItemCatalog";
 import {
   fetchAssignableProjects,
   fetchAssignableTasks,
   fetchProjectTasks,
-  fetchTypeItems,
   type AssignableProject,
   type AssignableTask,
 } from "@/features/scopes/components/context-assignment/data";
@@ -551,6 +551,7 @@ export function useTypeItems(typeId: string | null): {
   error: string | null;
   retry: () => void;
 } {
+  const dispatch = useAppDispatch();
   const d = useDrafts();
   const [state, setState] = useState<{
     forType: string | null;
@@ -572,7 +573,7 @@ export function useTypeItems(typeId: string | null): {
     }
     let alive = true;
     setState({ forType: typeId, status: "loading", items: [], error: null });
-    fetchTypeItems(typeId)
+    dispatch(readScopeTypeFields(typeId))
       .then((rows) => {
         if (!alive) return;
         setState({
@@ -650,14 +651,15 @@ export function useProjectTasks(projectId: string | null): {
 }
 
 /** Items for SEVERAL scope types at once — Miller's OR-merged items column
- *  (multiple selected scopes can span multiple types). Cached + deduped by
- *  the same data.ts layer underneath. */
+ *  (multiple selected scopes can span multiple types). Read from the holder's
+ *  catalog (`readScopeTypeFields`); a refused read is the hook's `error`. */
 export function useItemsForTypes(typeIds: string[]): {
   status: "idle" | "loading" | "ready" | "error";
   itemsByType: Record<string, ItemLite[]>;
   error: string | null;
   retry: () => void;
 } {
+  const dispatch = useAppDispatch();
   const d = useDrafts();
   const key = [...new Set(typeIds)].sort().join(",");
   const [state, setState] = useState<{
@@ -679,7 +681,7 @@ export function useItemsForTypes(typeIds: string[]): {
     const real = ids.filter((t) => !t.startsWith("draft:"));
     Promise.all(
       real.map((t) =>
-        fetchTypeItems(t).then(
+        dispatch(readScopeTypeFields(t)).then(
           (rows) =>
             [
               t,

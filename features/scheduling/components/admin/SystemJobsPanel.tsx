@@ -1,0 +1,1445 @@
+// Scheduling admin › System jobs — the recurring SERVER jobs (kind=tool) that
+// aidream runs on a schedule, controllable from this console per Arman's
+// 2026-08-28 ruling: view, edit interval/config, enable/disable — the ask to
+// him is a URL where he flips the switch, and this page is that URL.
+//
+// 2026-08-29 (Arman: "we definitely agree that we need to have that"): the
+// DATABASE's own scheduled jobs — pg_cron, SQL running inside Postgres — join
+// this page as a second section with the same control surface (view, edit
+// schedule, enable/disable). No run-now there on purpose: pg_cron has no
+// run-once primitive and several jobs are destructive purges. The human
+// register for what each DB job feeds: common-docs/operations/db-scheduled-jobs.md.
+//
+// Data path: the aidream `/scheduling/admin/system-tasks` admin endpoints
+// (schedulerClient — same base URL + Supabase-JWT Bearer auth as every other
+// aidream call in this console; the server side admin-gates the routes).
+// These are NOT the viewer's own sch_task rows — they are platform system
+// jobs, so nothing here goes through the Supabase-direct admin service.
+//
+// Two server-side facts the UI must surface loudly:
+//   - handler_registered=false → the job exists but no code is registered to
+//     run it; the server REFUSES enabling it, and that refusal is shown
+//     verbatim.
+//   - handler_gate_pending → the handler is waiting on an approval gate.
+
+"use client";
+
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, Loader2, Pencil, Play, Power } from "lucide-react";
+import cronstrue from "cronstrue";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
+import { PencilTapButton, PlayTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@ai-matrx/design-system/controls";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { recordToast, toast } from "@/lib/toast";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  AUTOMATION_LEAD_COLUMNS,
+  automationCostColumns,
+} from "@/features/scheduling/components/costs/AutomationCostColumns";
+import { useAutomationCosts } from "@/features/scheduling/components/costs/AutomationCostTable";
+import { automationCostDetailHref } from "@/features/scheduling/service/automationCosts";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import {
+  listDbJobs,
+  listSystemTasks,
+  patchDbJob,
+  patchSystemTask,
+  runSystemTaskNow,
+} from "@/features/scheduling/service/schedulerClient";
+import type {
+  DbJobPatchRequest,
+  DbJobResponse,
+  SystemTaskPatchRequest,
+  SystemTaskResponse,
+  SystemTaskTaxonomyNode,
+} from "@/features/scheduling/service/schedulerApi.types";
+import {
+  humanizeRelative,
+  humanizeTrigger,
+} from "@/features/scheduling/utils/triggerHumanize";
+import type { TriggerType } from "@/features/scheduling/types";
+import {
+  definedOnly,
+  useAdminSchedulingScopeSlice,
+} from "@/features/scheduling/lib/admin-scheduling-scope";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import {
+  OrganizationContextNotice,
+  OrganizationRequiredNotice,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@ai-matrx/design-system";
+
+// The trigger types humanizeTrigger knows. A system trigger's `type` arrives
+// as a plain string on this wire (defensive contract), so an unknown value
+// renders as itself rather than crashing the humanizer's exhaustive switch.
+const KNOWN_TRIGGER_TYPES: ReadonlySet<string> = new Set([
+  "one-shot",
+  "interval",
+  "heartbeat",
+  "cron",
+  "context-match",
+  "event",
+  "manual",
+  "dependency",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function identityValue(task: SystemTaskResponse, key: string): string | null {
+  const value: unknown = task;
+  return isRecord(value) && typeof value[key] === "string" ? value[key] : null;
+}
+
+function cadenceText(t: SystemTaskResponse): string {
+  const trig = t.trigger;
+  if (!trig) return "No trigger";
+  if (!KNOWN_TRIGGER_TYPES.has(trig.type)) return trig.type;
+  return humanizeTrigger(trig.type as TriggerType, trig.config ?? {});
+}
+
+/** Plain-English reading of a cron expression, or null when it can't be. */
+function cronHint(expression: string): string | null {
+  if (!expression.trim()) return null;
+  try {
+    return cronstrue.toString(expression, { verbose: false });
+  } catch {
+    return null;
+  }
+}
+
+function lastRunTone(
+  status: string | undefined,
+): "secondary" | "destructive" | "outline" {
+  if (!status) return "outline";
+  if (status === "failed" || status === "cancelled") return "destructive";
+  if (status === "success") return "secondary";
+  return "outline";
+}
+
+function taxonomyNodeLabel(
+  node: SystemTaskTaxonomyNode,
+  nodes: SystemTaskTaxonomyNode[],
+): string {
+  const byId = new Map(nodes.map((candidate) => [candidate.id, candidate]));
+  const names: string[] = [];
+  const seen = new Set<string>();
+  let current: SystemTaskTaxonomyNode | undefined = node;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    names.push(current.name);
+    current = current.parent_id ? byId.get(current.parent_id) : undefined;
+  }
+  return names.reverse().join(" / ");
+}
+
+export function SystemJobsPanel({ lane }: { lane: "system" | "support" }) {
+  const support = lane === "support";
+  const { organizationId, canLoad, organizationRequired, organizationState } =
+    useOrganizationRequired();
+  const [rows, setRows] = useState<SystemTaskResponse[]>([]);
+  // What each job costs and how it behaves — the shared automation rollup
+  // (scheduler.automation_cost_rollup), keyed by the job's sch_task id.
+  const { rows: costRows, error: costError } = useAutomationCosts(null);
+  const costById = new Map(costRows.map((c) => [c.automation_id, c]));
+  const jobCostColumns = automationCostColumns<SystemTaskResponse>((r) => costById.get(r.id), "admin");
+  const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /** Task ids with an in-flight mutation, so a row can't double-fire. */
+  const [busy, setBusy] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState<SystemTaskResponse | null>(null);
+
+  // ── Database jobs (pg_cron) — the second section ──────────────────────────
+  const [dbRows, setDbRows] = useState<DbJobResponse[]>([]);
+  const [dbTaxonomyNodes, setDbTaxonomyNodes] = useState<
+    SystemTaskTaxonomyNode[]
+  >([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [dbFetching, setDbFetching] = useState(false);
+  const [dbLoadError, setDbLoadError] = useState<string | null>(null);
+  const [dbBusy, setDbBusy] = useState<Set<number>>(new Set());
+  const [editingDbJob, setEditingDbJob] = useState<DbJobResponse | null>(null);
+
+  // Clicked row for each pane's context menu — STATE, not a ref, so a
+  // row-dependent label/availability re-renders before the menu opens.
+  const [clickedJob, setClickedJob] = useState<SystemTaskResponse | null>(null);
+  const [clickedDbJob, setClickedDbJob] = useState<DbJobResponse | null>(null);
+
+  useAdminSchedulingScopeSlice(support ? "support" : "system_jobs", () =>
+    definedOnly(support ? {} : {
+      system_job_count: loading ? undefined : rows.length,
+      system_job_enabled_count: loading
+        ? undefined
+        : rows.filter((r) => r.enabled).length,
+      system_jobs_load_error:
+        loadError ??
+        (organizationRequired
+          ? "No organization is selected — every scheduling request is refused before the wire."
+          : undefined),
+      db_job_count: dbLoading ? undefined : dbRows.length,
+      db_job_active_count: dbLoading
+        ? undefined
+        : dbRows.filter((r) => r.active).length,
+      db_jobs_load_error: dbLoadError ?? undefined,
+    }),
+  );
+
+  const load = useCallback(() => listSystemTasks(support).then((res) => {
+    setRows(Array.isArray(res?.tasks) ? res.tasks : []);
+    setTaxonomyNodes(Array.isArray(res?.taxonomy_nodes) ? res.taxonomy_nodes : []);
+    setLoadError(null);
+  }).catch((err: unknown) => {
+    setLoadError(isOrganizationRequiredError(err) ? null : err instanceof Error ? err.message : String(err));
+  }).finally(() => {
+    setLoading(false);
+    setFetching(false);
+  }), [support, setRows, setTaxonomyNodes, setLoadError, setLoading, setFetching]);
+
+  const loadDb = useCallback(() => listDbJobs().then((res) => {
+    setDbRows(Array.isArray(res?.jobs) ? res.jobs : []);
+    setDbTaxonomyNodes(Array.isArray(res?.taxonomy_nodes) ? res.taxonomy_nodes : []);
+    setDbLoadError(null);
+  }).catch((err: unknown) => {
+    setDbLoadError(isOrganizationRequiredError(err) ? null : err instanceof Error ? err.message : String(err));
+  }).finally(() => {
+    setDbLoading(false);
+    setDbFetching(false);
+  }), [setDbRows, setDbTaxonomyNodes, setDbLoadError, setDbLoading, setDbFetching]);
+
+  useEffect(() => {
+    // Redux organization context hydrates after the first client render. Both
+    // transports correctly refuse an organization-less request before the
+    // wire, so wait for admission and rerun whenever the selected org changes.
+    if (!canLoad) return;
+    // State is updated by the network completion; initial loading is set
+    // when the component mounts, and explicit retries set their busy flags.
+    void load();
+    if (!support) void loadDb();
+  }, [canLoad, load, loadDb, organizationId, support]);
+
+  const markBusy = (id: string, on: boolean) =>
+    setBusy((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const applyPatched = (updated: SystemTaskResponse) =>
+    setRows((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+
+  const toggleEnabled = async (t: SystemTaskResponse) => {
+    if (busy.has(t.id)) return;
+    if (!t.enabled) {
+      // Enabling starts REAL recurring server work — always confirm.
+      const ok = await confirm({
+        title: `Enable "${t.title}"?`,
+        description: `${support ? `Customer: ${identityValue(t, "owner_name") ?? identityValue(t, "owner_user_id")}; organization: ${identityValue(t, "organization_name") ?? identityValue(t, "organization_id")}. ` : ""}This starts real recurring server work (${t.tool_name}${
+          t.trigger ? `, ${cadenceText(t).toLowerCase()}` : ""
+        }). It will keep running on its schedule until disabled.`,
+        confirmLabel: "Enable",
+      });
+      if (!ok) return;
+    }
+    markBusy(t.id, true);
+    try {
+      const updated = await patchSystemTask(t.id, { enabled: !t.enabled });
+      applyPatched(updated);
+      toast.success(
+        updated.enabled
+          ? `${updated.title} enabled`
+          : `${updated.title} disabled`,
+      );
+    } catch (err) {
+      // The server refuses enabling a task with no registered handler — its
+      // message reaches the admin verbatim.
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markBusy(t.id, false);
+    }
+  };
+
+  const runNow = async (t: SystemTaskResponse) => {
+    if (busy.has(t.id)) return;
+    markBusy(t.id, true);
+    try {
+      await runSystemTaskNow(t.id);
+      toast.success(`${t.title} queued to run now`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markBusy(t.id, false);
+    }
+  };
+
+  const saveEdit = async (taskId: string, body: SystemTaskPatchRequest) => {
+    markBusy(taskId, true);
+    try {
+      const updated = await patchSystemTask(taskId, body);
+      applyPatched(updated);
+      setEditing(null);
+      recordToast.success(
+        { type: "system-task", id: taskId, title: updated.title },
+        `${updated.title} updated`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markBusy(taskId, false);
+    }
+  };
+
+  // No useMemo: the React Compiler is on repo-wide, and these cells close over
+  // live handlers (`busy`, toggleEnabled, runNow) that must stay fresh.
+  const columns: MatrxColumnDef<SystemTaskResponse>[] = [
+    {
+      id: "title",
+      accessorKey: "title",
+      header: "Job",
+      width: 240,
+      cell: (r) => (
+        <Link
+          href={automationCostDetailHref("scheduled_task", r.id)}
+          className="block truncate font-medium text-primary hover:underline"
+          title={r.title}
+        >
+          {r.title}
+        </Link>
+      ),
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      width: 260,
+      hidden: true,
+      cell: (r) => (
+        <span className="block truncate type-secondary text-muted-foreground" title={r.description ?? undefined}>
+          {r.description ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "tool_name",
+      accessorKey: "tool_name",
+      header: "Tool",
+      width: 200,
+      cell: (r) => (
+        <span
+          className="font-mono type-secondary truncate"
+          title={r.tool_name ?? undefined}
+        >
+          {r.tool_name ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "classification",
+      accessorFn: (r) =>
+        (r.taxonomy_path ?? []).map((node) => node.name).join(" / "),
+      header: "Classification",
+      width: 260,
+      cell: (r) => (
+        <span className="flex min-w-0 items-center gap-1 type-secondary">
+          {(r.taxonomy_path ?? []).map((node, index) => (
+            <span key={node.id} className="flex min-w-0 items-center gap-1">
+              {index > 0 && (
+                <span className="text-muted-foreground" aria-hidden="true">
+                  /
+                </span>
+              )}
+              <Link
+                href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
+                className="truncate text-primary underline-offset-2 hover:underline"
+                title={`Open ${node.level}: ${node.name}`}
+              >
+                {node.name}
+              </Link>
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
+      id: "state",
+      header: "State",
+      accessorFn: (r) => (r.enabled ? "Enabled" : "Disabled"),
+      filter: "select",
+      width: 90,
+      cell: (r) => {
+        const metadata = "metadata" in r && isRecord(r.metadata) ? r.metadata : {};
+        const suspension = metadata.auto_suspended;
+        const reason = isRecord(suspension) && typeof suspension.reason === "string" ? suspension.reason : null;
+        const overridesApproval = isRecord(suspension) && typeof suspension.overriding_approval === "string";
+        return <span className={`type-secondary ${r.enabled ? "" : "text-muted-foreground"}`}>
+          {r.enabled ? "Enabled" : metadata.approval_pending ? "Awaiting approval" : reason ? "Paused automatically" : "Disabled"}
+          {!r.enabled && overridesApproval && <span className="block">Overriding approval</span>}
+          {!r.enabled && reason && <span className="block">{reason}</span>}
+        </span>;
+      },
+    },
+    {
+      id: "handler",
+      header: "Handler",
+      accessorFn: (r) =>
+        r.handler_registered === false ? "Missing" : r.handler_gate_pending ? "Gate pending" : "Registered",
+      filter: "select",
+      width: 120,
+      cell: (r) =>
+        r.handler_registered === false ? (
+          <span
+            className="inline-flex items-center gap-1 whitespace-nowrap type-secondary text-destructive"
+            title="No handler is registered on the server for this tool; enabling will be refused."
+          >
+            <AlertTriangle className="h-3 w-3" /> Missing
+          </span>
+        ) : r.handler_gate_pending ? (
+          <span className="whitespace-nowrap type-secondary text-warning" title="Registered, waiting on a pending approval gate.">
+            Gate pending
+          </span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">Registered</span>
+        ),
+    },
+    {
+      id: "cadence",
+      header: "Cadence",
+      accessorFn: (r) => cadenceText(r),
+      width: 220,
+      cell: (r) => {
+        const trig = r.trigger;
+        if (!trig) {
+          return (
+            <span className="type-secondary text-muted-foreground">No trigger</span>
+          );
+        }
+        if (trig.type === "cron") {
+          const expr = String(
+            (trig.config as Record<string, unknown> | null)?.expression ?? "",
+          );
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block truncate type-secondary" tabIndex={0}>
+                  {cadenceText(r)}
+                  {trig.enabled === false ? " (trigger off)" : ""}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <code>{expr || "No cron expression"}</code>
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+        return (
+          <span className="block truncate type-secondary">
+            {cadenceText(r)}
+            {trig.enabled === false && (
+              <span className="ml-1 text-muted-foreground">(trigger off)</span>
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      id: "next_due",
+      header: "Next due",
+      accessorFn: (r) => r.trigger?.next_due_at ?? "",
+      width: 120,
+      cell: (r) => (
+        <span className="type-secondary">
+          {r.enabled && r.trigger?.next_due_at
+            ? humanizeRelative(r.trigger.next_due_at)
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "last_run",
+      header: "Last run status",
+      accessorFn: (r) => r.last_run?.status ?? "",
+      filter: "select",
+      width: 130,
+      cell: (r) => {
+        const run = r.last_run;
+        if (!run?.status) return <span className="type-secondary text-muted-foreground">Never</span>;
+        const tone = lastRunTone(run.status);
+        return (
+          <span className="flex items-center gap-1.5 whitespace-nowrap" title={run.error_message ?? undefined}>
+            <span
+              aria-hidden
+              className={`size-1.5 shrink-0 rounded-full ${tone === "destructive" ? "bg-destructive" : tone === "secondary" ? "bg-success" : "bg-muted-foreground/60"}`}
+            />
+            <span className="type-secondary">{run.status}</span>
+            {run.error_message && <ErrorAlchemyMenu error={run.error_message} />}
+          </span>
+        );
+      },
+    },
+    {
+      id: "last_run_at",
+      header: "Last run at",
+      accessorFn: (r) => r.last_run?.finished_at ?? r.last_run?.started_at ?? "",
+      filter: "date",
+      width: 110,
+      cell: (r) => {
+        const when = r.last_run?.finished_at ?? r.last_run?.started_at;
+        return when ? (
+          <span className="type-secondary" title={when}>{humanizeRelative(when)}</span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">—</span>
+        );
+      },
+    },
+  ];
+
+  // Right-click menu for the system-jobs pane — page-local identity (a
+  // scheduling.system-jobs job is not shown anywhere else), so the section is
+  // inline rather than a registered SECTIONS.md builder. Every item delegates
+  // to the row-button handler above — no new write path.
+  const resolveJobContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+    setClickedJob(row);
+    if (!row) return null;
+    return {
+      content: [
+        `Title: ${row.title}`,
+        `Tool: ${row.tool_name}`,
+        `Classification: ${(row.taxonomy_path ?? []).map((node) => node.name).join(" / ")}`,
+        ...(support ? [`Customer: ${identityValue(row, "owner_name") ?? ""} (${identityValue(row, "owner_user_id") ?? ""})`, `Organization: ${identityValue(row, "organization_name") ?? ""} (${identityValue(row, "organization_id") ?? ""})`] : []),
+        `State: ${row.enabled ? "enabled" : "disabled"}`,
+        `Cadence: ${cadenceText(row)}`,
+      ].join("\n"),
+    };
+  };
+
+  const jobMenuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "job-toggle-enabled",
+      label: clickedJob?.enabled ? "Disable" : "Enable",
+      icon: Power,
+      disabled: !clickedJob || busy.has(clickedJob.id),
+      onSelect: () => clickedJob && void toggleEnabled(clickedJob),
+    },
+    {
+      kind: "item",
+      id: "job-edit",
+      label: "Edit…",
+      icon: Pencil,
+      disabled: !clickedJob || busy.has(clickedJob.id),
+      onSelect: () => clickedJob && setEditing(clickedJob),
+    },
+    {
+      kind: "item",
+      id: "job-run-now",
+      label: "Run now",
+      icon: Play,
+      disabled:
+        !clickedJob ||
+        busy.has(clickedJob.id) ||
+        clickedJob.handler_registered === false,
+      description:
+        clickedJob?.handler_registered === false
+          ? "No handler registered — nothing would run"
+          : undefined,
+      onSelect: () => clickedJob && void runNow(clickedJob),
+    },
+  ];
+
+  // ── Database jobs (pg_cron) handlers + columns ────────────────────────────
+
+  const markDbBusy = (jobid: number, on: boolean) =>
+    setDbBusy((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(jobid);
+      else next.delete(jobid);
+      return next;
+    });
+
+  const applyDbPatched = (updated: DbJobResponse) =>
+    setDbRows((prev) =>
+      prev.map((r) =>
+        r.jobid === updated.jobid
+          ? // The PATCH wire does not echo last_run — keep the one we have.
+            { ...r, ...updated, last_run: r.last_run }
+          : r,
+      ),
+    );
+
+  const toggleDbActive = async (j: DbJobResponse) => {
+    if (dbBusy.has(j.jobid)) return;
+    const name = j.jobname ?? `job ${j.jobid}`;
+    // Both directions state their consequence: these are the database's own
+    // maintenance jobs — pruning, refreshes, partition provisioning.
+    const ok = await confirm({
+      title: j.active ? `Disable "${name}"?` : `Enable "${name}"?`,
+      description: j.active
+        ? `This stops real database maintenance. "${name}" (${j.schedule}) will no longer run, and whatever it maintains — pruning, refreshes, partitions — stops with it until re-enabled.`
+        : `This starts real recurring database work: "${name}" will run ${j.schedule} inside Postgres until disabled.`,
+      confirmLabel: j.active ? "Disable" : "Enable",
+    });
+    if (!ok) return;
+    markDbBusy(j.jobid, true);
+    try {
+      const updated = await patchDbJob(j.jobid, { active: !j.active });
+      applyDbPatched(updated);
+      recordToast.success(
+        { type: "db-job", id: String(j.jobid), title: name },
+        `${name} ${updated.active ? "enabled" : "disabled"}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markDbBusy(j.jobid, false);
+    }
+  };
+
+  const saveDbEdit = async (jobid: number, body: DbJobPatchRequest) => {
+    markDbBusy(jobid, true);
+    try {
+      const updated = await patchDbJob(jobid, body);
+      applyDbPatched(updated);
+      setEditingDbJob(null);
+      toast.success(`${updated.jobname ?? `job ${jobid}`} updated`);
+    } catch (err) {
+      // cron.alter_job's own validation error reaches the admin verbatim.
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markDbBusy(jobid, false);
+    }
+  };
+
+  const dbColumns: MatrxColumnDef<DbJobResponse>[] = [
+    {
+      id: "jobname",
+      accessorFn: (r) => r.jobname ?? String(r.jobid),
+      header: "Job",
+      width: 220,
+      cell: (r) => (
+        <span className="font-medium truncate" title={r.jobname ?? undefined}>
+          {r.jobname ?? `job ${r.jobid}`}
+        </span>
+      ),
+    },
+    {
+      id: "schedule",
+      accessorKey: "schedule",
+      header: "Schedule",
+      width: 200,
+      cell: (r) => {
+        const hint = cronHint(r.schedule);
+        const label =
+          hint ??
+          (/^\s*\d+\s+seconds?\s*$/i.test(r.schedule)
+            ? `Every ${r.schedule.trim()}`
+            : r.schedule);
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="type-secondary line-clamp-2" tabIndex={0}>
+                {label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <code>{r.schedule}</code>
+              <p>Uses the database scheduler timezone.</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      id: "classification",
+      // A job the Feature Registry does not know (made straight in the database,
+      // or filed under a retired node) arrives with an empty path; it is listed
+      // as Unregistered and Edit is where it gets classified.
+      accessorFn: (r) =>
+        r.taxonomy_path.length === 0
+          ? "Unregistered"
+          : r.taxonomy_path.map((node) => node.name).join(" / "),
+      header: "Classification",
+      width: 260,
+      cell: (r) =>
+        r.taxonomy_path.length === 0 ? (
+          <span
+            className="type-secondary text-warning"
+            title="No Feature Registry classification. Choose one with Edit."
+          >
+            Unregistered
+          </span>
+        ) : (
+          <span className="flex min-w-0 items-center gap-1 type-secondary">
+            {r.taxonomy_path.map((node, index) => (
+              <span key={node.id} className="flex min-w-0 items-center gap-1">
+                {index > 0 && (
+                  <span className="text-muted-foreground" aria-hidden="true">
+                    /
+                  </span>
+                )}
+                <Link
+                  href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
+                  className="truncate text-primary underline-offset-2 hover:underline"
+                  title={`Open ${node.level}: ${node.name}`}
+                >
+                  {node.name}
+                </Link>
+              </span>
+            ))}
+          </span>
+        ),
+    },
+    {
+      id: "state",
+      header: "State",
+      accessorFn: (r) => (r.active ? "Active" : "Inactive"),
+      filter: "select",
+      width: 110,
+      cell: (r) => (
+        <Badge
+          variant={r.active ? "secondary" : "outline"}
+          className="text-[10px]"
+        >
+          {r.active ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      id: "last_run",
+      header: "Last run",
+      accessorFn: (r) => r.last_run?.status ?? "",
+      width: 170,
+      cell: (r) => {
+        const run = r.last_run;
+        if (!run?.status) {
+          return <span className="type-secondary text-muted-foreground">Never</span>;
+        }
+        const failed = run.status === "failed";
+        const when = run.end_time ?? run.start_time;
+        return (
+          <span
+            className="flex items-center gap-1.5"
+            title={run.return_message ?? undefined}
+          >
+            <Badge
+              variant={failed ? "destructive" : "secondary"}
+              className="text-[10px]"
+            >
+              {run.status}
+            </Badge>
+            <span className="type-secondary text-muted-foreground">
+              {when ? humanizeRelative(when) : ""}
+            </span>
+            {failed && (
+              <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      id: "command",
+      accessorKey: "command",
+      header: "Command",
+      width: 280,
+      cell: (r) => (
+        <span className="font-mono type-secondary truncate block" title={r.command}>
+          {r.command}
+        </span>
+      ),
+    },
+  ];
+
+  const renderDbRowActions = (j: DbJobResponse) => {
+    const isBusy = dbBusy.has(j.jobid);
+    return (
+      <>
+        <TapTargetButtonTransparent
+          ariaLabel={
+            isBusy
+              ? "Updating database job"
+              : j.active
+                ? "Disable database job"
+                : "Enable database job"
+          }
+          disabled={isBusy}
+          onClick={() => void toggleDbActive(j)}
+        >
+          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
+        </TapTargetButtonTransparent>
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel="Edit database job"
+          disabled={isBusy}
+          onClick={() => setEditingDbJob(j)}
+        />
+      </>
+    );
+  };
+
+  // Right-click menu for the pg_cron pane — same rationale as the system-jobs
+  // pane above: page-local identity, every item delegates to the row-button
+  // handler already defined.
+  const resolveDbJobContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id
+      ? (dbRows.find((r) => String(r.jobid) === id) ?? null)
+      : null;
+    setClickedDbJob(row);
+    if (!row) return null;
+    return {
+      content: [
+        `Job: ${row.jobname ?? row.jobid}`,
+        `Schedule: ${row.schedule}`,
+        `Classification: ${row.taxonomy_path.map((node) => node.name).join(" / ")}`,
+        `State: ${row.active ? "active" : "inactive"}`,
+        `Command: ${row.command}`,
+      ].join("\n"),
+    };
+  };
+
+  const dbJobMenuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "db-job-toggle-active",
+      label: clickedDbJob?.active ? "Disable" : "Enable",
+      icon: Power,
+      disabled: !clickedDbJob || dbBusy.has(clickedDbJob.jobid),
+      onSelect: () => clickedDbJob && void toggleDbActive(clickedDbJob),
+    },
+    {
+      kind: "item",
+      id: "db-job-edit",
+      label: "Edit…",
+      icon: Pencil,
+      disabled: !clickedDbJob || dbBusy.has(clickedDbJob.jobid),
+      onSelect: () => clickedDbJob && setEditingDbJob(clickedDbJob),
+    },
+  ];
+
+  // The alchemy capture (lane ALCHEMY-BUTTON): both job lists, the open job, both load errors.
+  // Called before the organization early returns below: a hook after an early return renders
+  // fewer hooks on the refusal path and crashes the page ("Rendered fewer hooks than expected").
+  usePageCapture(() =>
+    adminPageCapture({
+      title: support ? "Schedule support" : "System jobs",
+      route: support ? "/administration/automation/scheduling/support" : "/administration/automation/scheduling/system-jobs",
+      selection: {
+        Organization: { id: organizationId ?? null, name: null },
+        "Open server job": clickedJob ? { id: clickedJob.id, name: clickedJob.title ?? null } : null,
+        "Open database job": clickedDbJob ? { id: String(clickedDbJob.jobid), name: clickedDbJob.jobname ?? null } : null,
+      },
+      errors: [loadError, dbLoadError],
+      sections: [
+        { id: "server-jobs", title: "Server jobs", role: "data", value: rows, brief: `${rows.length} server jobs` },
+        { id: "database-jobs", title: "Database jobs", role: "data", value: dbRows, brief: `${dbRows.length} database jobs` },
+      ],
+    }),
+  );
+
+  // Nothing here can load without an organization, and the refusal happens
+  // before the wire — so the screen says exactly that, with the picker, rather
+  // than printing the transport's sentence into an empty-table caption.
+  // A read that FAILED says so and offers Retry, never the picker-backed
+  // refusal — nobody read this person's memberships (R37).
+  if (organizationState === "unavailable") {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+        <OrganizationContextNotice state="unavailable" what={support ? "Customer schedules" : "System jobs"} />
+      </div>
+    );
+  }
+  if (organizationRequired) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+        <OrganizationRequiredNotice
+          what={support ? "Customer schedules" : "System jobs"}
+          onRetry={() => {
+            setLoading(true);
+            setDbLoading(true);
+            void load();
+            if (!support) void loadDb();
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
+      <div className="flex items-center justify-end gap-2">
+        {costError && (
+          <span className="text-xs text-destructive">
+            Costs unavailable: {costError}
+            <ErrorAlchemyMenu error={costError} />
+          </span>
+        )}
+        <PageCaptureButton />
+      </div>
+      <div
+        className="min-h-0 flex-1 basis-3/5"
+        data-surface-value="system_job_count"
+      >
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveJobContext}
+          extraSections={[
+            { id: "system-job-row", label: "Job", items: jobMenuItems },
+          ]}
+        >
+          <MatrxDataTable
+            urlState={{ id: support ? "scheduling-support-jobs" : "scheduling-system-jobs" }}
+            data={rows}
+            columns={[
+              ...columns.slice(0, 1),
+              ...(support ? [{ id: "customer", header: "Customer", accessorFn: (r: SystemTaskResponse) => identityValue(r, "owner_name") ?? identityValue(r, "owner_user_id") ?? "Unknown customer", cell: (r: SystemTaskResponse) => <span title={identityValue(r, "owner_user_id") ?? undefined}>{identityValue(r, "owner_name") ?? identityValue(r, "owner_user_id") ?? "Unknown customer"}</span> }, { id: "organization", header: "Organization", accessorFn: (r: SystemTaskResponse) => identityValue(r, "organization_name") ?? identityValue(r, "organization_id") ?? "No organization", cell: (r: SystemTaskResponse) => <span title={identityValue(r, "organization_id") ?? undefined}>{identityValue(r, "organization_name") ?? identityValue(r, "organization_id") ?? "No organization"}</span> }] : []),
+              ...jobCostColumns.slice(0, AUTOMATION_LEAD_COLUMNS),
+              ...columns.slice(1),
+              ...jobCostColumns.slice(AUTOMATION_LEAD_COLUMNS),
+            ]}
+            getRowId={(r) => r.id}
+            rowActions={(r) => {
+              const isBusy = busy.has(r.id);
+              return [
+                {
+                  id: "toggle",
+                  icon: Power,
+                  label: r.enabled ? "Disable job" : "Enable job",
+                  tooltip: r.enabled ? "Disable job" : "Enable job",
+                  loading: isBusy,
+                  disabled: isBusy,
+                  onClick: () => void toggleEnabled(r),
+                },
+                { id: "edit", icon: Pencil, label: "Edit job", tooltip: "Edit job", disabled: isBusy, onClick: () => setEditing(r) },
+                {
+                  id: "run",
+                  icon: Play,
+                  label: "Run job now",
+                  tooltip: r.handler_registered === false ? "No handler registered — nothing would run." : "Run job now",
+                  disabled: isBusy || r.handler_registered === false,
+                  onClick: () => void runNow(r),
+                },
+              ];
+            }}
+            isLoading={loading}
+            isFetching={fetching}
+            pageSize={50}
+
+            read={readOf({ loading, error: loadError }, { what: support ? "customer schedules" : "system jobs", onRetry: () => { setFetching(true); void load(); } })}
+            emptyState={{
+              title: support ? "No customer schedules" : "No system jobs",
+              description: support ? "No customer or organization tool schedules are registered." : "The server has not registered any recurring system jobs yet.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search title, tool, classification…",
+              refresh: { onRefresh: () => { setFetching(true); return load(); }, label: support ? "Refresh customer schedules" : "Refresh system jobs" },
+            }}
+            copy={{
+              label: support ? "Customer schedule" : "System job",
+              listLabel: support ? "Customer schedules (this view)" : "System jobs (this view)",
+              location: support ? "/administration/automation/scheduling/support" : "/administration/automation/scheduling/system-jobs",
+              rowKind: "system-job",
+              listKind: support ? "customer-schedules" : "system-jobs",
+              humanRow: (r) =>
+                [
+                  `Title: ${r.title}`,
+                  `Tool: ${r.tool_name}`,
+                  `Classification: ${(r.taxonomy_path ?? []).map((node) => node.name).join(" / ")}`,
+                  `State: ${r.enabled ? "enabled" : "disabled"}`,
+                  `Cadence: ${cadenceText(r)}`,
+                  `Next due: ${humanizeRelative(r.trigger?.next_due_at ?? null)}`,
+                  `Last run: ${r.last_run?.status ?? "never"}`,
+                ].join("\n"),
+              rowAttributes: (r) => ({
+                id: r.id,
+                enabled: r.enabled,
+                taxonomy_node_id: r.taxonomy_node_id,
+              }),
+            }}
+          />
+        </NonEditableContextMenu>
+      </div>
+
+      {!support && <div
+        className="min-h-0 flex-1 basis-2/5"
+        data-surface-value="db_job_count"
+      >
+        <div className="mb-1.5">
+          <h2 className="type-title">Database jobs (pg_cron)</h2>
+          {/* pg_cron jobs: no Run now — several are destructive purges and pg_cron has no run-once. */}
+        </div>
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveDbJobContext}
+          extraSections={[
+            { id: "db-job-row", label: "Job", items: dbJobMenuItems },
+          ]}
+        >
+          <MatrxDataTable
+            urlState={{ id: "scheduling-db-jobs" }}
+            data={dbRows}
+            columns={[...(dbColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderDbRowActions(r) }]}
+            getRowId={(r) => String(r.jobid)}
+            isLoading={dbLoading}
+            isFetching={dbFetching}
+            pageSize={25}
+
+            read={readOf({ loading: dbLoading, error: dbLoadError }, { what: "database jobs", onRetry: () => { setDbFetching(true); void loadDb(); } })}
+            emptyState={{ title: "No database jobs", description: "The database has no pg_cron jobs registered." }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search job, classification, command…",
+              refresh: { onRefresh: loadDb, label: "Refresh database jobs" },
+            }}
+            copy={{
+              label: "Database job",
+              listLabel: "Database jobs (this view)",
+              location: "/administration/automation/scheduling/system-jobs",
+              rowKind: "db-job",
+              listKind: "db-jobs",
+              humanRow: (r) =>
+                [
+                  `Job: ${r.jobname ?? r.jobid}`,
+                  `Schedule: ${r.schedule}`,
+                  `Classification: ${r.taxonomy_path.map((node) => node.name).join(" / ")}`,
+                  `State: ${r.active ? "active" : "inactive"}`,
+                  `Last run: ${r.last_run?.status ?? "never"}`,
+                  `Command: ${r.command}`,
+                ].join("\n"),
+              rowAttributes: (r) => ({
+                jobid: r.jobid,
+                active: r.active,
+                taxonomy_node_id: r.taxonomy_node_id,
+              }),
+            }}
+          />
+        </NonEditableContextMenu>
+      </div>}
+
+      {editing && (
+        <SystemJobEditDialog
+          task={editing}
+          taxonomyNodes={taxonomyNodes}
+          saving={busy.has(editing.id)}
+          onClose={() => setEditing(null)}
+          onSave={(body) => void saveEdit(editing.id, body)}
+        />
+      )}
+
+      {editingDbJob && (
+        <DbJobEditDialog
+          job={editingDbJob}
+          taxonomyNodes={dbTaxonomyNodes}
+          saving={dbBusy.has(editingDbJob.jobid)}
+          onClose={() => setEditingDbJob(null)}
+          onSave={(body) => void saveDbEdit(editingDbJob.jobid, body)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Edit dialog ──────────────────────────────────────────────────────────────
+//
+// Changes the trigger (interval seconds OR cron expression + tz) and the
+// tool's variables_args. Sends ONLY what changed: `trigger` when the cadence
+// was touched, `variables_args` when the args JSON was touched — the PATCH
+// contract treats every field as optional.
+
+function SystemJobEditDialog({
+  task,
+  taxonomyNodes,
+  saving,
+  onClose,
+  onSave,
+}: {
+  task: SystemTaskResponse;
+  taxonomyNodes: SystemTaskTaxonomyNode[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (body: SystemTaskPatchRequest) => void;
+}) {
+  const initialConfig = (task.trigger?.config ?? {}) as Record<string, unknown>;
+  const initialType =
+    task.trigger?.type === "cron" ? ("cron" as const) : ("interval" as const);
+  const [type, setType] = useState<"interval" | "cron">(initialType);
+  const [everySeconds, setEverySeconds] = useState(() =>
+    initialType === "interval" && initialConfig.every_seconds != null
+      ? String(initialConfig.every_seconds)
+      : "",
+  );
+  const [expression, setExpression] = useState(() =>
+    initialType === "cron" && typeof initialConfig.expression === "string"
+      ? initialConfig.expression
+      : "",
+  );
+  const [tz, setTz] = useState(() =>
+    initialType === "cron" && typeof initialConfig.tz === "string"
+      ? initialConfig.tz
+      : "",
+  );
+  const [argsText, setArgsText] = useState(() => JSON.stringify(task.variables_args ?? {}, null, 2));
+  const [argsTouched, setArgsTouched] = useState(false);
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(task.taxonomy_node_id);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const hint = type === "cron" ? cronHint(expression) : null;
+
+  const submit = () => {
+    setFormError(null);
+    const body: SystemTaskPatchRequest = {};
+
+    if (!taxonomyNodeId) {
+      setFormError("Choose a Domain, Feature, or Sub-feature.");
+      return;
+    }
+    if (taxonomyNodeId !== task.taxonomy_node_id) {
+      body.taxonomy_node_id = taxonomyNodeId;
+    }
+
+    if (type === "interval") {
+      const secs = Number(everySeconds);
+      if (!Number.isFinite(secs) || secs <= 0 || !Number.isInteger(secs)) {
+        setFormError("Interval must be a positive whole number of seconds.");
+        return;
+      }
+      body.trigger = { type: "interval", config: { every_seconds: secs } };
+    } else {
+      if (!expression.trim()) {
+        setFormError("Cron expression is required.");
+        return;
+      }
+      if (!cronHint(expression)) {
+        setFormError(
+          "That cron expression does not parse (5 fields: minute hour day-of-month month day-of-week).",
+        );
+        return;
+      }
+      const config: Record<string, unknown> = {
+        expression: expression.trim(),
+      };
+      if (tz.trim()) config.tz = tz.trim();
+      body.trigger = { type: "cron", config };
+    }
+
+    if (argsTouched) {
+      const text = argsText.trim();
+      if (text) {
+        try {
+          const parsed: unknown = JSON.parse(text);
+          if (
+            parsed === null ||
+            typeof parsed !== "object" ||
+            Array.isArray(parsed)
+          ) {
+            setFormError("Args must be a JSON object.");
+            return;
+          }
+          body.variables_args = parsed as Record<string, unknown>;
+        } catch {
+          setFormError("Args is not valid JSON.");
+          return;
+        }
+      } else {
+        body.variables_args = {};
+      }
+    }
+
+    onSave(body);
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit {task.title}</DialogTitle>
+          <DialogDescription>
+            <span className="type-secondary">{humanizeIdentifier(task.tool_name)}</span> — change
+            when it runs and what it runs with. Enable/disable lives on the row.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Classification</Label>
+            <Select value={taxonomyNodeId} onValueChange={setTaxonomyNodeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a registry node" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxonomyNodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id}>
+                    {taxonomyNodeLabel(node, taxonomyNodes)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="type-secondary text-muted-foreground">
+              Canonical Feature Registry identity; the job cannot exist by name
+              alone.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Trigger type</Label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as "interval" | "cron")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="interval">Interval</SelectItem>
+                <SelectItem value="cron">Cron</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {type === "interval" ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="system-job-every-seconds">Every (seconds)</Label>
+              <Input
+                id="system-job-every-seconds"
+                inputMode="numeric"
+                value={everySeconds}
+                onChange={(e) => setEverySeconds(e.target.value)}
+                placeholder="900"
+              />
+              {Number(everySeconds) > 0 && (
+                <p className="type-secondary text-muted-foreground">
+                  {humanizeTrigger("interval", {
+                    every_seconds: Number(everySeconds),
+                  })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="system-job-cron">Cron expression</Label>
+                <Input mono
+                  id="system-job-cron"
+                  value={expression}
+                  onChange={(e) => setExpression(e.target.value)}
+                  placeholder="0 9 * * 1-5"
+                />
+                <p className="type-secondary text-muted-foreground">
+                  {hint ??
+                    "5 fields: minute hour day-of-month month day-of-week."}
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="system-job-tz">Timezone (IANA, optional)</Label>
+                <Input
+                  id="system-job-tz"
+                  value={tz}
+                  onChange={(e) => setTz(e.target.value)}
+                  placeholder="America/Los_Angeles"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="system-job-args">Args (JSON object)</Label>
+            <Textarea mono
+              id="system-job-args"
+              rows={4}
+              value={argsText}
+              onChange={(e) => {
+                setArgsText(e.target.value);
+                setArgsTouched(true);
+              }}
+              placeholder="Leave untouched to keep the current args. {} clears them."
+            />
+            <p className="type-secondary text-muted-foreground">
+              {/* Untouched values keep server args; only an explicit edit replaces them. */}
+              Editing replaces the current args; it never merges.
+            </p>
+          </div>
+
+          {formError && (
+            <ErrorNotice size="inline" className="type-secondary" message={formError} />
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={submit} disabled={saving}>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── DB job edit dialog ───────────────────────────────────────────────────────
+//
+// pg_cron takes either a 5-field cron expression (UTC) or an interval string
+// like "30 seconds". cron.alter_job validates server-side and its refusal
+// reaches the admin verbatim, so the client only pre-validates the obvious.
+
+function DbJobEditDialog({
+  job,
+  taxonomyNodes,
+  saving,
+  onClose,
+  onSave,
+}: {
+  job: DbJobResponse;
+  taxonomyNodes: SystemTaskTaxonomyNode[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (body: DbJobPatchRequest) => void;
+}) {
+  const [schedule, setSchedule] = useState(job.schedule);
+  // An unclassified job has no node (null on the wire); the Select shows its placeholder.
+  const savedNodeId = job.taxonomy_node_id ?? undefined;
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(savedNodeId);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const hint = cronHint(schedule);
+  const looksLikeInterval = /^\s*\d+\s+seconds?\s*$/i.test(schedule);
+
+  const submit = () => {
+    setFormError(null);
+    const next = schedule.trim();
+    if (!next) {
+      setFormError("Schedule is required.");
+      return;
+    }
+    if (!taxonomyNodeId) {
+      setFormError("Choose a Domain, Feature, or Sub-feature.");
+      return;
+    }
+    if (next === job.schedule && taxonomyNodeId === savedNodeId) {
+      onClose();
+      return;
+    }
+    onSave({
+      ...(next !== job.schedule ? { schedule: next } : {}),
+      ...(taxonomyNodeId !== savedNodeId
+        ? { taxonomy_node_id: taxonomyNodeId }
+        : {}),
+    });
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit {job.jobname ?? `job ${job.jobid}`}</DialogTitle>
+          <DialogDescription>
+            Change when this database job runs. Active/inactive lives on the
+            row.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Classification</Label>
+            <Select value={taxonomyNodeId} onValueChange={setTaxonomyNodeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a registry node" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxonomyNodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id}>
+                    {taxonomyNodeLabel(node, taxonomyNodes)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="type-secondary text-muted-foreground">
+              Canonical Feature Registry identity; the job cannot exist by name
+              alone.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="db-job-schedule">Schedule</Label>
+            <Input mono
+              id="db-job-schedule"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+              placeholder="0 3 * * *  or  30 seconds"
+            />
+            <p className="type-secondary text-muted-foreground">
+              {hint ??
+                (looksLikeInterval
+                  ? `Every ${schedule.trim().toLowerCase()}`
+                  : "5-field cron (minute hour day-of-month month day-of-week, UTC) or an interval like “30 seconds”.")}
+            </p>
+          </div>
+
+          <div className="rounded-md bg-muted/50 p-2">
+            <p className="font-mono type-meta break-all text-muted-foreground">
+              {job.command}
+            </p>
+          </div>
+
+          {formError && (
+            <ErrorNotice size="inline" className="type-secondary" message={formError} />
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={submit} disabled={saving}>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
