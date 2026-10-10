@@ -8,7 +8,8 @@
 -- Seats (organization "admin's Workspace" 884d1ce8-…): admin@admin.com = HR owner AND Elena Marquez's
 -- manager (a party is a party first, so the blind rule binds him); test@test.com = Elena Marquez;
 -- an outsider = any account holding no employment in that organization.
--- RED before hr_rev_01/02 (the doors do not exist); GREEN after.
+-- RED before hr_rev_01/02 (the doors do not exist) and before hr_rev_03 (the employee's step close
+-- raises owner_only); GREEN after. Also proves a sibling flow: a corrective-action acknowledgment.
 -- Ends with an error whose text is 'HR_REV PROOF: ALL PASS' (rolled back) or names the failed checks.
 do $proof$
 declare
@@ -282,6 +283,27 @@ begin
   v_j := hr.hr_review_reopen(v_rev, 'late correction');
   if (v_j ->> 'reason') is distinct from 'cycle_not_open' then v_fail := array_append(v_fail, 'closed cycle did not lock the review: ' || v_j::text); end if;
   reset role;
+
+  -- ================= sibling flow (hr_rev_03): a corrective-action acknowledgment decided by the
+  -- subject, not the launcher, closes its step and writes the acknowledgment
+  perform set_config('request.jwt.claims', json_build_object('sub', c_hr, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  v_j := public.hr_corrective_action_issue(jsonb_build_object('employment_id', c_eemp, 'level', 'verbal',
+           'summary', 'Two missed client-ledger reconciliations in September; discussed expectations for the close calendar.',
+           'acknowledgement_kind', 'esign'));
+  reset role;
+  if not coalesce((v_j ->> 'ok')::boolean, false) or (v_j ->> 'workflow_instance_id') is null then
+    v_fail := array_append(v_fail, 'sibling: corrective action not issued with a workflow: ' || v_j::text);
+  else
+    v_x := v_j;
+    perform set_config('request.jwt.claims', json_build_object('sub', c_emp, 'role', 'authenticated')::text, true);
+    set local role authenticated;
+    v_j := public.hr_corrective_action_acknowledge((v_x ->> 'corrective_action_id')::uuid, jsonb_build_object('kind', 'esign'));
+    reset role;
+    if not coalesce((v_j ->> 'ok')::boolean, false) or (v_j ->> 'employee_acknowledged_at') is null then
+      v_fail := array_append(v_fail, 'sibling: corrective-action acknowledgment by the subject did not close: ' || v_j::text);
+    end if;
+  end if;
 
   if cardinality(v_fail) > 0 then
     raise exception 'HR_REV PROOF FAILED: %', array_to_string(v_fail, '; ');
