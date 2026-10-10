@@ -91,6 +91,8 @@ import {
   propertyPublicUrl,
   toPropertyKind,
 } from "@/features/marketing/components/shared/PropertyKindMark";
+import { useAccess } from "@/utils/permissions/access";
+import { canEditAccess } from "@/utils/permissions/access-core";
 import { BrandSocialProfilesCard } from "@/features/marketing/components/brands/BrandSocialProfilesCard";
 import { PersonBrandAvatar, PersonFollowerTotal } from "@/features/marketing/components/brands/PersonBrandAvatar";
 import { BRAND_KIND_COPY, brandKindCopy, isPersonBrand } from "@/features/marketing/lib/brand-kind";
@@ -280,8 +282,8 @@ function BusinessFactRow({
 }: {
   fact: BusinessFact;
   compact?: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const value = factValueText(fact);
   const factLabel =
@@ -312,12 +314,16 @@ function BusinessFactRow({
         })}
         json={() => fact}
       />
-      <RowActionButton title="Edit fact" onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" />
-      </RowActionButton>
-      <RowActionButton title="Delete fact" destructive onClick={onDelete}>
-        <Trash2 className="h-3.5 w-3.5" />
-      </RowActionButton>
+      {onEdit ? (
+        <RowActionButton title="Edit fact" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" />
+        </RowActionButton>
+      ) : null}
+      {onDelete ? (
+        <RowActionButton title="Delete fact" destructive onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </RowActionButton>
+      ) : null}
     </div>
   );
   if (compact) {
@@ -361,6 +367,11 @@ function BusinessFactRow({
 export function BrandWorkspace({ brandId }: { brandId: string }) {
   const router = useRouter();
   const brand = useBrand(brandId);
+  // What the viewer may DO is the record's own access answer (not the active
+  // organization, not "can the page load"): write controls show only at
+  // editor level or above. RLS stays the boundary.
+  const brandAccess = useAccess("web_brand", brandId);
+  const canEdit = canEditAccess(brandAccess.level);
   const deleteMutation = useDeleteBrand();
   const deleteSiteMutation = useDeleteSite();
   const deletePropertyMutation = useDeleteProperty();
@@ -433,6 +444,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const socialProperties = (properties.data ?? []).filter(
     (property) => property.kind !== "website",
   );
+  // The brand's public website: the website property (readable by anyone who
+  // can read the brand), else the URL typed on the brand itself.
+  const publicWebsiteUrl =
+    (properties.data ?? []).find((property) => property.kind === "website" && property.url)?.url ||
+    current.website_url ||
+    null;
   const factRows = facts.data ?? [];
   const assetRows = assets.data ?? [];
 
@@ -770,20 +787,24 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   </Link>
                 </Button>
               ) : null}
-              <Button
-                icon={<Pencil />}
-                variant="outline"
-                onClick={() => setEditorOpen(true)}
-              >
-                Edit brand
-              </Button>
-              <Button
-                icon={<Trash2 />}
-                variant="quiet"
-                onClick={() => setConfirmingDelete(true)}
-              >
-                Delete
-              </Button>
+              {canEdit ? (
+                <>
+                  <Button
+                    icon={<Pencil />}
+                    variant="outline"
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    Edit brand
+                  </Button>
+                  <Button
+                    icon={<Trash2 />}
+                    variant="quiet"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    Delete
+                  </Button>
+                </>
+              ) : null}
             </div>
           </section>
 
@@ -812,15 +833,29 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
           <SectionCard
             title="Websites"
             copy={websitesCopy}
-            action={{
-              label: "Add site",
-              href: marketingRoutes.newSite(brandId),
-            }}
+            action={
+              canEdit
+                ? { label: "Add site", href: marketingRoutes.newSite(brandId) }
+                : undefined
+            }
           >
-            {websiteSites.length === 0 ? (
+            {websiteSites.length === 0 && !canEdit && publicWebsiteUrl ? (
+              // A viewer who cannot read the managed site still sees the
+              // brand's public website, as a plain link.
+              <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+                <a
+                  href={publicWebsiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate font-medium text-foreground hover:underline"
+                >
+                  {linkLabelOf(publicWebsiteUrl)}
+                </a>
+              </div>
+            ) : websiteSites.length === 0 ? (
               <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-xs text-muted-foreground">
                 <p>{overviewCopy.websitesEmpty}</p>
-                {current.website_url ? (
+                {canEdit && current.website_url ? (
                   <Button
                     variant="outline"
                     disabled={createSite.isPending}
@@ -886,19 +921,23 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       >
                         <ListTree className="h-3.5 w-3.5" />
                       </RowActionButton>
-                      <RowActionButton
-                        title="Edit site"
-                        onClick={() => setEditingSite(site)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </RowActionButton>
-                      <RowActionButton
-                        title="Delete site"
-                        destructive
-                        onClick={() => setDeletingSite(site)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </RowActionButton>
+                      {canEdit ? (
+                        <>
+                          <RowActionButton
+                            title="Edit site"
+                            onClick={() => setEditingSite(site)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                          <RowActionButton
+                            title="Delete site"
+                            destructive
+                            onClick={() => setDeletingSite(site)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </RowActionButton>
+                        </>
+                      ) : null}
                     </div>
                   </li>
                 ))}
@@ -912,6 +951,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               brandSeg={marketingSeg(current)}
               organizationId={current.organization_id}
               properties={socialProperties}
+              canEdit={canEdit}
               copy={socialsCopy}
               onAdd={() => setPropertyEditor({ open: true, property: null })}
               onEdit={(property) => setPropertyEditor({ open: true, property })}
@@ -922,10 +962,14 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               title={overviewCopy.factsTitle}
               className="lg:col-span-2"
               copy={factsCopy}
-              action={{
-                label: overviewCopy.factsAdd,
-                onClick: () => setFactEditor({ open: true, fact: null }),
-              }}
+              action={
+                canEdit
+                  ? {
+                      label: overviewCopy.factsAdd,
+                      onClick: () => setFactEditor({ open: true, fact: null }),
+                    }
+                  : undefined
+              }
             >
               {factRows.length === 0 ? (
                 <p className="px-4 py-2.5 text-xs text-muted-foreground">
@@ -941,8 +985,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                             <BusinessFactRow
                               key={fact.id}
                               fact={fact}
-                              onEdit={() => setFactEditor({ open: true, fact })}
-                              onDelete={() => setDeletingFact(fact)}
+                              onEdit={canEdit ? () => setFactEditor({ open: true, fact }) : undefined}
+                              onDelete={canEdit ? () => setDeletingFact(fact) : undefined}
                             />
                           ))}
                         </ul>
@@ -978,8 +1022,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                               key={fact.id}
                               fact={fact}
                               compact
-                              onEdit={() => setFactEditor({ open: true, fact })}
-                              onDelete={() => setDeletingFact(fact)}
+                              onEdit={canEdit ? () => setFactEditor({ open: true, fact }) : undefined}
+                              onDelete={canEdit ? () => setDeletingFact(fact) : undefined}
                             />
                           ))}
                         </ul>
@@ -1032,10 +1076,14 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </Link>
               </Button>
             }
-            action={{
-              label: "Add asset",
-              onClick: () => setAssetEditor({ open: true, asset: null }),
-            }}
+            action={
+              canEdit
+                ? {
+                    label: "Add asset",
+                    onClick: () => setAssetEditor({ open: true, asset: null }),
+                  }
+                : undefined
+            }
           >
             {(assets.data ?? []).length === 0 ? (
               <p className="px-4 py-2.5 text-xs text-muted-foreground">No confirmed assets yet.</p>
@@ -1133,21 +1181,25 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                             })}
                             json={() => asset}
                           />
-                          <RowActionButton
-                            title="Edit asset"
-                            onClick={() =>
-                              setAssetEditor({ open: true, asset })
-                            }
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </RowActionButton>
-                          <RowActionButton
-                            title="Delete asset"
-                            destructive
-                            onClick={() => setDeletingAsset(asset)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </RowActionButton>
+                          {canEdit ? (
+                            <>
+                              <RowActionButton
+                                title="Edit asset"
+                                onClick={() =>
+                                  setAssetEditor({ open: true, asset })
+                                }
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </RowActionButton>
+                              <RowActionButton
+                                title="Delete asset"
+                                destructive
+                                onClick={() => setDeletingAsset(asset)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </RowActionButton>
+                            </>
+                          ) : null}
                         </div>
                       </div>
                       <p className="truncate border-t border-border px-2 py-1 text-[10px] font-medium text-muted-foreground">

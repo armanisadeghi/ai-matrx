@@ -44,6 +44,7 @@ export function BrandSocialProfilesCard({
   brandSeg,
   organizationId,
   properties,
+  canEdit,
   copy,
   onAdd,
   onEdit,
@@ -54,6 +55,8 @@ export function BrandSocialProfilesCard({
   organizationId: string;
   /** The brand's non-website properties: edit / delete act on these by id. */
   properties: readonly BrandProperty[];
+  /** The viewer's editor-level access to the brand: write and tracking controls show only then. */
+  canEdit: boolean;
   copy?: React.ComponentProps<typeof SectionCard>["copy"];
   onAdd: () => void;
   onEdit: (property: BrandProperty) => void;
@@ -73,10 +76,10 @@ export function BrandSocialProfilesCard({
       title="Social profiles"
       copy={copy}
       className="lg:col-span-2"
-      action={{ label: "Add property", onClick: onAdd }}
+      action={canEdit ? { label: "Add property", onClick: onAdd } : undefined}
       headerExtra={
         <>
-          {untracked.length > 1 ? (
+          {canEdit && untracked.length > 1 ? (
             <Button
               variant="outline"
               icon={<UserPlus />}
@@ -127,13 +130,19 @@ export function BrandSocialProfilesCard({
                 progress={busyRow === row.rowId ? progress : null}
                 trackTitle={joinTitle("Track as Own", costText("track", 1))}
                 onTrack={() => void trackOwn(row)}
-                onEdit={property ? () => onEdit(property) : undefined}
-                onDelete={property ? () => onDelete(property) : undefined}
+                canEdit={canEdit}
+                onEdit={canEdit && property ? () => onEdit(property) : undefined}
+                onDelete={canEdit && property ? () => onDelete(property) : undefined}
               />
             );
           })}
           {extras.map((p) => (
-            <ExtraRow key={p.id} property={p} onEdit={() => onEdit(p)} onDelete={() => onDelete(p)} />
+            <ExtraRow
+              key={p.id}
+              property={p}
+              onEdit={canEdit ? () => onEdit(p) : undefined}
+              onDelete={canEdit ? () => onDelete(p) : undefined}
+            />
           ))}
         </ul>
       )}
@@ -160,6 +169,7 @@ function SocialRow({
   progress,
   trackTitle,
   onTrack,
+  canEdit,
   onEdit,
   onDelete,
 }: {
@@ -172,6 +182,7 @@ function SocialRow({
   progress: string | null;
   trackTitle: string;
   onTrack: () => void;
+  canEdit: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
@@ -243,7 +254,7 @@ function SocialRow({
           ) : null}
           {tracked ? (
             <Badge tone="success">Tracked</Badge>
-          ) : (
+          ) : !canEdit ? null : (
             <span title={hasReadings ? "Read once when the brand was set up. Track it to keep these numbers current." : undefined}>
               <Badge tone="warning">Not tracked</Badge>
             </span>
@@ -287,7 +298,7 @@ function SocialRow({
           <Button variant="outline" asChild>
             <Link href={href}>Open</Link>
           </Button>
-        ) : canTrack ? (
+        ) : !canEdit ? null : canTrack ? (
           <Button
             variant="outline"
             icon={busy ? <Loader2 className="animate-spin" /> : <UserPlus />}
@@ -362,8 +373,8 @@ function ExtraRow({
   onDelete,
 }: {
   property: BrandProperty;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const href = property.url || null;
   return (
@@ -381,18 +392,22 @@ function ExtraRow({
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         ) : null}
-        <button type="button" title="Edit property" aria-label="Edit property" onClick={onEdit} className={ICON_BUTTON}>
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          title="Delete property"
-          aria-label="Delete property"
-          onClick={onDelete}
-          className={`${ICON_BUTTON} hover:!bg-destructive/10 hover:!text-destructive-ink`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        {onEdit ? (
+          <button type="button" title="Edit property" aria-label="Edit property" onClick={onEdit} className={ICON_BUTTON}>
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+        {onDelete ? (
+          <button
+            type="button"
+            title="Delete property"
+            aria-label="Delete property"
+            onClick={onDelete}
+            className={`${ICON_BUTTON} hover:!bg-destructive/10 hover:!text-destructive-ink`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </span>
     </li>
   );

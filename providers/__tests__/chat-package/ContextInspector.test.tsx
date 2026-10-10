@@ -105,8 +105,7 @@ jest.mock("@/features/scopes/redux/contextItemCatalog", () => ({
           { id: "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d", key: "contact_phone", label: "Contact Phone" },
           { id: "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e", key: "industry", label: "Industry" },
         ]
-      : [],
-  )(typeId),
+      : [])(typeId),
 }));
 jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchAssignableProjects: jest.fn(async () => []),
