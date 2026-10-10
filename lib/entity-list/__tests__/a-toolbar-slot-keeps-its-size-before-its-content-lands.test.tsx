@@ -35,16 +35,16 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-function Slot({ reserve }: { reserve: boolean }) {
-  const slot = useReservedSlot("data-home", "tabs", reserve, undefined);
+function Slot({ reserve, surface = "data-home" }: { reserve: boolean; surface?: string }) {
+  const slot = useReservedSlot(surface, "tabs", reserve, undefined);
   return <div data-slot="" ref={slot.ref} style={slot.style} />;
 }
 
-async function mount(reserve: boolean) {
+async function mount(reserve: boolean, surface?: string) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  await act(async () => root.render(<Slot reserve={reserve} />));
+  await act(async () => root.render(<Slot reserve={reserve} surface={surface} />));
   return { container, slot: container.querySelector("[data-slot]") as HTMLElement, root };
 }
 
@@ -63,9 +63,19 @@ it("reserves nothing when the surface is not showing its table, or nothing was e
   expect(off.slot.style.minWidth).toBe("");
   await act(async () => off.root.unmount());
   window.localStorage.clear();
-  const none = await mount(true);
+  const none = await mount(true, "a-surface-with-no-first-visit-size");
   expect(none.slot.style.minWidth).toBe("");
   await act(async () => none.root.unmount());
+});
+
+it("a FIRST visit to /data reserves the slot's typical size, so a cold browser's first frame is already final (CLS 0.068 -> 0.002)", async () => {
+  const { slot, root } = await mount(true); // nothing in localStorage
+  expect([slot.style.minWidth, slot.style.minHeight]).toEqual(["117px", "31px"]);
+  await act(async () => root.unmount());
+  document.body.innerHTML = '<div id="slot"></div><script id="s"></script>';
+  new Function("document", reserveSlotScript("data-home", "controls"))({ currentScript: document.getElementById("s") });
+  const slot2 = document.getElementById("slot") as HTMLElement;
+  expect([slot2.style.minWidth, slot2.style.minHeight]).toEqual(["147px", "34px"]);
 });
 
 it("remembers what the content measures once it lands", async () => {
@@ -90,6 +100,8 @@ it("the server's first frame is reserved too: the inline script sets the remembe
 
 it("the inline script is silent when nothing was remembered", () => {
   document.body.innerHTML = '<div id="slot"></div><script id="s"></script>';
-  new Function("document", reserveSlotScript("data-home", "tabs"))({ currentScript: document.getElementById("s") });
+  new Function("document", reserveSlotScript("a-surface-with-no-first-visit-size", "tabs"))({
+    currentScript: document.getElementById("s"),
+  });
   expect((document.getElementById("slot") as HTMLElement).getAttribute("style")).toBeNull();
 });

@@ -130,16 +130,27 @@
   font-size: 11px;
   line-height: 16px;
 }
-/* The People | Agents | All | Unread strip is ONE row at every count (no layout shift ever): the
-   counts arrive after the first frame, and a wrapping strip jumped a line (32px) each time they
-   did. The kind chips hold room for their count badge; the strip scrolls rather than wraps. */
+/* The People | Agents | All | Unread strip is ONE row of one height at every count (no layout
+   shift ever): the counts arrive after the first frame, and a wrapping strip jumped a line (32px)
+   each time they did. The strip never shrinks (flex-shrink 0 — scroll alone let the column squeeze
+   it 42 -> 24px), the kind chips hold room for their count badge, and the strip scrolls sideways
+   rather than wraps. Compact padding keeps all four chips on screen in the 319px list. */
 .messages-native .mx-msg__list-kinds {
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  gap: 4px;
+  padding: 8px 10px;
 }
-.messages-native .mx-msg__list-kinds > .mx-msg__chip:not(.mx-msg__list-unread) {
-  min-width: 76px;
+.messages-native .mx-msg__list-kinds > .mx-msg__chip {
+  padding-inline: 6px;
+}
+.messages-native .mx-msg__list-kinds > .mx-msg__chip:nth-child(-n + 2) {
+  min-width: 77px;
+}
+.messages-native .mx-msg__list-kinds > .mx-msg__chip:nth-child(3) {
+  min-width: 70px;
 }
 .messages-native .mx-msg__chip > svg {
   flex: 0 0 auto;

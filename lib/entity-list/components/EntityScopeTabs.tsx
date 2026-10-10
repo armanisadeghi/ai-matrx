@@ -169,7 +169,7 @@ function CountPill({ n, active, pending }: { n: number | null; active: boolean; 
   // Counted nothing and not reading (a failed or unknowable count): no pill, never a stand-in forever.
   if (n === null && !pending) return null;
   // ONE FIXED-WIDTH SLOT (STABLE-2, /data home: the lane tabs widened 36px each when their counts
-  // landed): the pill is three digits wide before the number is real and after, so a count arriving
+  // landed): the pill is three digits wide PLUS its own px-1 (border-box: 3ch alone left 3 digits 8px wider) before the number is real and after, so a count arriving
   // moves nothing. Absent, never dishonest: until the number is real the slot is an empty shape,
   // no digit in it.
   return (
@@ -177,7 +177,7 @@ function CountPill({ n, active, pending }: { n: number | null; active: boolean; 
       data-scope-count={n === null ? "pending" : "ready"}
       aria-hidden={n === null ? true : undefined}
       className={cn(
-        "inline-block min-w-[3ch] rounded px-1 text-center type-meta font-semibold tabular-nums",
+        "inline-block min-w-[calc(3ch+0.5rem)] rounded px-1 text-center type-meta font-semibold tabular-nums",
         active ? "bg-primary-foreground/20" : "bg-muted-foreground/15",
         n === null && "animate-pulse",
       )}
