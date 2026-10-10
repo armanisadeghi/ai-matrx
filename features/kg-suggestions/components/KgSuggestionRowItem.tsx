@@ -455,7 +455,7 @@ export function KgSuggestionRowItem({
 
   // ── Slot-fill: the rich decision card. ──
   const targetItem = target?.target_item ?? null;
-  const currentValue = targetItem?.current ?? null;
+  const currentValue = targetItem?.value ?? null;
   const currentDisplay = formatCurrentValue(currentValue);
   const suggestedDisplay = row.suggested_value ?? "—";
   const slotLabel =
@@ -852,7 +852,7 @@ function FieldRow({
   item: ResolvedSuggestionItem;
   isTarget: boolean;
 }) {
-  const value = formatCurrentValue(item.current);
+  const value = formatCurrentValue(item.value);
   return (
     <div
       className={cn(

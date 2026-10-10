@@ -94,6 +94,7 @@ export function EditScopeTypeSheet({
   const [labelSingular, setLabelSingular] = useState("");
   const [labelPlural, setLabelPlural] = useState("");
   const [icon, setIcon] = useState("Folder");
+  const [description, setDescription] = useState("");
   const [color, setColor] = useState("blue");
   const [items, setItems] = useState<ItemDraft[]>([]);
   /** The saved field whose full editor (kind, sensitivity, tags, …) is open. */
@@ -108,6 +109,7 @@ export function EditScopeTypeSheet({
     singular: `${uid}-singular`,
     plural: `${uid}-plural`,
     icon: `${uid}-icon`,
+    description: `${uid}-description`,
     slug: `${uid}-slug`,
     sortOrder: `${uid}-sort-order`,
     maxAssignments: `${uid}-max-assignments`,
@@ -122,6 +124,7 @@ export function EditScopeTypeSheet({
     setLabelSingular(scopeType.label_singular);
     setLabelPlural(scopeType.label_plural);
     setIcon(scopeType.icon || "Folder");
+    setDescription(scopeType.description ?? "");
     setColor(scopeType.color || "blue");
     setSortOrder(scopeType.sort_order);
     setSlug("");
@@ -217,6 +220,7 @@ export function EditScopeTypeSheet({
         trimmedSingular !== scopeType.label_singular ||
         trimmedPlural !== scopeType.label_plural ||
         (icon || "Folder") !== scopeType.icon ||
+        description !== (scopeType.description ?? "") ||
         color !== scopeType.color ||
         !!trimmedSlug ||
         sortOrder !== scopeType.sort_order ||
@@ -229,6 +233,7 @@ export function EditScopeTypeSheet({
             label_singular: trimmedSingular,
             label_plural: trimmedPlural,
             icon: icon || "Folder",
+            description,
             color,
             slug: trimmedSlug || undefined,
             sort_order: sortOrder,
@@ -362,6 +367,22 @@ export function EditScopeTypeSheet({
             <Label className="text-xs">Color</Label>
             <ScopeColorPicker value={color} onChange={setColor} disabled={busy} />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={ids.description} className="text-xs">
+            Description (optional)
+          </Label>
+          <ProTextarea
+            id={ids.description}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            minHeight={64}
+            maxHeight={600}
+            autoGrow
+            disabled={busy}
+            enableTextStats={false}
+          />
         </div>
 
         {/* Rapid-add context items list */}

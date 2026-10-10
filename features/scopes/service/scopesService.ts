@@ -67,6 +67,7 @@ import type {
   ScopeTypeWithScopes,
   ScopeWithType,
 } from "@ai-matrx/records/scopes";
+import { joinFieldValues } from "@ai-matrx/records/scopes";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
 
@@ -272,55 +273,13 @@ export const scopesService = {
         Object.entries(projectScopesRes.data),
       );
 
-      // Group scope_types and projects per org.
-      const scopeTypesByOrg = new Map<string, ScopeTypeWithScopes[]>();
-      for (const node of treeTypes) {
-        const list = scopeTypesByOrg.get(node.organization_id) ?? [];
-        list.push(node);
-        scopeTypesByOrg.set(node.organization_id, list);
-      }
-
-      const projectsByOrg = new Map<string, ProjectNode[]>();
-      for (const p of projectsRes.data ?? []) {
-        if (!p.organization_id) continue;
-        const list = projectsByOrg.get(p.organization_id) ?? [];
-        list.push({
-          id: p.id,
-          organization_id: p.organization_id,
-          name: p.name,
-          slug: p.slug,
-          scope_ids: projectScopes.get(p.id) ?? [],
-        });
-        projectsByOrg.set(p.organization_id, list);
-      }
-
-      const viewerId = requireUserId();
-      const organizations: OrgNode[] = (orgsRes.data ?? [])
-        // An archived organization is closed. It must not be offered as a
-        // place to work; it is reached through the organizations page's
-        // archive disclosure and restored there.
-        .filter((row) => !("archived_at" in row) || !row.archived_at)
-        .map((row) => ({
-          id: row.id,
-          name: row.name,
-          abbreviation: row.abbreviation,
-          logo_url: row.logo_url ?? null,
-          slug: row.slug,
-          // The stored classification, never a guess from the name.
-          is_test_fixture:
-            !!row.settings &&
-            typeof row.settings === "object" &&
-            "test_fixture" in (row.settings as Record<string, unknown>),
-          created_by: row.created_by ?? null,
-          is_own: !!row.created_by && row.created_by === viewerId,
-          role: (roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
-          scope_types: scopeTypesByOrg.get(row.id) ?? [],
-          projects: projectsByOrg.get(row.id) ?? [],
-        }));
-
-      // Stable ordering: personal first, then alpha.
-      organizations.sort((a, b) => {
-        return a.name.localeCompare(b.name);
+      const organizations = assembleOrganizations({
+        orgRows: orgsRes.data ?? [],
+        roleByOrgId,
+        viewerId: requireUserId(),
+        scopeTypes: treeTypes,
+        projects: projectsRes.data ?? [],
+        projectScopes,
       });
 
       return ok({
@@ -538,13 +497,19 @@ export const scopesService = {
       doors.values([args.scopeId], { readFileText: readScopeFileText }),
       doors.scopes([args.scopeId]),
     ]);
+    // A refused scope or field read is the refusal, never a cell with no names.
     if (!valueRes.ok) return valueRes;
-    const scope = scopeRes.ok ? scopeRes.data[0] : undefined;
-    const fieldRes = scope ? await doors.fields([scope.scope_type_id]) : null;
-    const field = fieldRes?.ok ? fieldRes.data.find((f) => f.id === args.contextItemId) : undefined;
+    if (!scopeRes.ok) return scopeRes;
+    const scope = scopeRes.data[0];
+    let itemName: string | null = null;
+    if (scope) {
+      const fieldRes = await doors.fields([scope.scope_type_id]);
+      if (!fieldRes.ok) return fieldRes;
+      itemName = fieldRes.data.find((f) => f.id === args.contextItemId)?.label ?? null;
+    }
     return ok({
       scopeName: scope?.name ?? null,
-      itemName: field?.label ?? null,
+      itemName,
       value: valueRes.data.find((v) => v.field_id === args.contextItemId) ?? null,
     });
   },
@@ -597,11 +562,11 @@ export const scopesService = {
       if (!valuesStore.ok) return valuesStore;
       const scopeType = scope.scope_type;
       if (!scopeType) return err("not_found", "That scope's type could not be read.");
-      const valueByField = new Map(valuesStore.data.map((v) => [v.field_id, v]));
-      const items: ResolvedSuggestionItem[] = [...itemsStore.data]
-        .filter((f) => f.status !== "archived")
-        .sort((a, b) => a.sort - b.sort)
-        .map((field) => ({ field, current: valueByField.get(field.id) ?? null }));
+      // The package's join: the type's fields (in their order) beside this scope's values.
+      const items: ResolvedSuggestionItem[] = joinFieldValues(
+        itemsStore.data.filter((f) => f.status !== "archived"),
+        Object.fromEntries(valuesStore.data.map((v) => [v.field_id, v])),
+      );
       const targetItem = args.contextItemId
         ? (items.find((it) => it.field.id === args.contextItemId) ?? null)
         : null;
@@ -1005,4 +970,68 @@ async function bulkEntityScopeIds(
 async function fetchScopeDisplays(scopeIds: string[]): Promise<RecordsResult<ScopeWithType[]>> {
   if (scopeIds.length === 0) return ok([]);
   return scopeDoors().scopes(scopeIds);
+}
+
+/**
+ * THE ONE HOST JOIN of the scope tree: the person's organizations (host rows), each with the
+ * package's scope types of that organization and its projects (host rows) with their scope tags.
+ * Pure: no read. Scope types are the package's shapes, held as answered; projects are not scope data.
+ */
+export function assembleOrganizations(input: {
+  orgRows: ReadonlyArray<{
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo_url: string | null;
+    slug: string;
+    settings: unknown;
+    created_by: string | null;
+    archived_at: string | null;
+  }>;
+  roleByOrgId: ReadonlyMap<string, string>;
+  viewerId: string;
+  scopeTypes: readonly ScopeTypeWithScopes[];
+  projects: ReadonlyArray<{ id: string; organization_id: string | null; name: string; slug: string | null }>;
+  projectScopes: ReadonlyMap<string, string[]>;
+}): OrgNode[] {
+  const scopeTypesByOrg = new Map<string, ScopeTypeWithScopes[]>();
+  for (const node of input.scopeTypes) {
+    const list = scopeTypesByOrg.get(node.organization_id) ?? [];
+    list.push(node);
+    scopeTypesByOrg.set(node.organization_id, list);
+  }
+  const projectsByOrg = new Map<string, ProjectNode[]>();
+  for (const p of input.projects) {
+    if (!p.organization_id) continue;
+    const list = projectsByOrg.get(p.organization_id) ?? [];
+    list.push({
+      id: p.id,
+      organization_id: p.organization_id,
+      name: p.name,
+      slug: p.slug,
+      scope_ids: input.projectScopes.get(p.id) ?? [],
+    });
+    projectsByOrg.set(p.organization_id, list);
+  }
+  return (
+    input.orgRows
+      // An archived organization is closed: never offered as a place to work.
+      .filter((row) => !row.archived_at)
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        abbreviation: row.abbreviation,
+        logo_url: row.logo_url ?? null,
+        slug: row.slug,
+        // The stored classification, never a guess from the name.
+        is_test_fixture:
+          !!row.settings && typeof row.settings === "object" && "test_fixture" in (row.settings as Record<string, unknown>),
+        created_by: row.created_by ?? null,
+        is_own: !!row.created_by && row.created_by === input.viewerId,
+        role: (input.roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
+        scope_types: scopeTypesByOrg.get(row.id) ?? [],
+        projects: projectsByOrg.get(row.id) ?? [],
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  );
 }

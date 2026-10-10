@@ -10,6 +10,7 @@ import type {
   ContextField,
   ContextValue,
   Scope,
+  ScopeFieldValue,
   ScopeTypeWithScopes,
 } from "@ai-matrx/records/scopes";
 import { isRecordsErr } from "@ai-matrx/records";
@@ -212,10 +213,8 @@ export type ContextSourceType =
 // The org → type → scope → field path behind a knowledge-graph suggestion, every field of the scope's
 // type and the value each holds now (so a suggestion that would overwrite a person's value shows).
 
-export interface ResolvedSuggestionItem {
-  field: ContextField;
-  current: ContextValue | null;
-}
+/** One field of the scope's type beside the value it holds now (the package's `joinFieldValues` row). */
+export type ResolvedSuggestionItem = ScopeFieldValue;
 
 export interface ResolvedSuggestionTarget {
   org: { id: string; name: string; slug: string };
