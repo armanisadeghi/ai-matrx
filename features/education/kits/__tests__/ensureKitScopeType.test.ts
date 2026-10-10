@@ -5,16 +5,12 @@ const mockReadScopeTypes = jest.fn();
 const mockCreateScopeType = jest.fn();
 const mockCreateScope = jest.fn();
 
-jest.mock("@/features/scopes/service/storeScopeReads", () => ({
-  readScopeTypes: (...a: unknown[]) => mockReadScopeTypes(...a),
-  readScopesById: jest.fn(),
-  readTypeScopesPage: jest.fn(),
-}));
-jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: {
-    createScopeType: (...a: unknown[]) => mockCreateScopeType(...a),
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => ({
+    types: (...a: unknown[]) => mockReadScopeTypes(...a),
+    createType: (...a: unknown[]) => mockCreateScopeType(...a),
     createScope: (...a: unknown[]) => mockCreateScope(...a),
-  },
+  }),
 }));
 
 import { createKitScope } from "../kitScope";
@@ -24,8 +20,8 @@ const ORG_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCreateScope.mockResolvedValue({ data: { id: "kit-1" } });
-  mockCreateScopeType.mockResolvedValue({ data: { id: "own-type" } });
+  mockCreateScope.mockResolvedValue({ ok: true, data: { id: "kit-1", name: "Chapter 3", organization_id: ORG_A } });
+  mockCreateScopeType.mockResolvedValue({ ok: true, data: { id: "own-type" } });
 });
 
 describe("ensureKitScopeType via createKitScope", () => {
@@ -35,8 +31,8 @@ describe("ensureKitScopeType via createKitScope", () => {
       data: { types: [{ id: "other-org-type", slug: "study-kit", organization_id: ORG_B }] },
     });
     await createKitScope(ORG_A, "Chapter 3");
-    expect(mockCreateScopeType).toHaveBeenCalledWith(expect.objectContaining({ org_id: ORG_A, slug: "study-kit" }));
-    expect(mockCreateScope).toHaveBeenCalledWith(expect.objectContaining({ org_id: ORG_A, type_id: "own-type" }));
+    expect(mockCreateScopeType).toHaveBeenCalledWith(ORG_A, expect.objectContaining({ slug: "study-kit" }));
+    expect(mockCreateScope).toHaveBeenCalledWith(ORG_A, "own-type", expect.anything());
   });
 
   it("reuses the org's own type without creating one", async () => {
@@ -49,6 +45,6 @@ describe("ensureKitScopeType via createKitScope", () => {
     });
     await createKitScope(ORG_A, "Chapter 3");
     expect(mockCreateScopeType).not.toHaveBeenCalled();
-    expect(mockCreateScope).toHaveBeenCalledWith(expect.objectContaining({ type_id: "mine" }));
+    expect(mockCreateScope).toHaveBeenCalledWith(ORG_A, "mine", expect.anything());
   });
 });

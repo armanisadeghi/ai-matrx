@@ -22,16 +22,18 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
     remove: jest.fn(),
   },
 }));
-jest.mock("@/features/scopes/service/storeScopeReads", () => ({
-  readScopesById: (...args: unknown[]) => mockReadScopesById(...args),
-  readScopeTypes: (...args: unknown[]) => mockReadScopeTypes(...args),
-  readTypeScopesPage: (...args: unknown[]) => mockReadTypeScopesPage(...args),
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => ({
+    scopes: (...args: unknown[]) => mockReadScopesById(...args),
+    types: (...args: unknown[]) => mockReadScopeTypes(...args),
+    typeScopesPage: (...args: unknown[]) => mockReadTypeScopesPage(...args),
+  }),
 }));
 jest.mock("@/features/organizations/organizationsIAmIn", () => ({
   organizationsIAmIn: async () => new Set(["org-1", "org-2"]),
 }));
-jest.mock("@/features/scopes/service/scopeStore", () => ({ scopeStore: {} }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn() }));
+jest.mock("@/features/files/api/files", () => ({ getFileMetadata: jest.fn() }));
 jest.mock("@/features/education/library/service", () => ({
   fetchEducationLibraryPage: (...args: unknown[]) => mockFetchEducationLibraryPage(...args),
 }));
@@ -115,10 +117,12 @@ describe("multi-source study kits", () => {
 
   it("lists a kit that has Sources and no aids yet", async () => {
     mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
+    // The one batched read is refused by the door, so it falls back to one organization at a time.
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: false, error: { code: "door", message: "refused" } });
     mockReadScopeTypes.mockResolvedValueOnce({ ok: true, data: { types: [{ id: "t-1", slug: "study-kit" }, { id: "t-2", slug: "class" }], counts: null } });
     // An organization the person is listed in but may not read is skipped, not fatal.
-    mockReadScopeTypes.mockResolvedValueOnce({ ok: false, error: { code: "forbidden_org", message: "not a member" } });
-    mockReadTypeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }], total: 1, nextOffset: null } });
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: false, error: { code: "door", message: "not a member" } });
+    mockReadTypeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }], total: 1, next_offset: null } });
     mockListForEntity.mockResolvedValue({
       ok: true,
       data: { edges: [edge({ otherType: "file", otherId: "f-pdf", metadata: { kitSource: true, title: "Chapter 3.pdf" }, createdAt: "2026-10-07T00:00:02Z" })] },

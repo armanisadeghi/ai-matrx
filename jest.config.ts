@@ -138,6 +138,7 @@ const config: Config = {
     ],
   },
   setupFiles: ["<rootDir>/jest.setup.ts", "<rootDir>/jest.chat-host.setup.ts", "<rootDir>/jest.rich-content-host.setup.ts"],
+  setupFilesAfterEnv: ["<rootDir>/jest.chat-ui-deferred.setup.ts"],
   // CSS / static assets have no Jest loader. Without these, a side-effect
   // import like `@xyflow/react/dist/style.css` reaches ts-jest, gets parsed
   // as TypeScript, and dies with `SyntaxError: Unexpected token '.'` —
@@ -256,6 +257,9 @@ const config: Config = {
     "/.wt/",
     "/.matrx/",
     "/.coldwalk",
+    // Playwright scenarios (its testDir is an env-overridable expression, which
+    // playwrightGateDirs cannot read): they need a running meet stack, not Jest.
+    "/tests/meet-scenarios/",
     // This is an explicit Playwright gate that requires a running app and
     // Chromium; Jest owns the unit suite and must not attempt to load it.
     "/features/content-ir/sandbox/browser/",

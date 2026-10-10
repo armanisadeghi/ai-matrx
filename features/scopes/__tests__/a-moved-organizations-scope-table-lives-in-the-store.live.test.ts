@@ -41,7 +41,7 @@ const holder: { client?: SupabaseClient; userId: string } = { userId: "" };
 jest.mock("@/utils/supabase/client", () => {
   // A module read at LOAD time (`supabase.auth` in lib/supabase/authRetry) sees the proxy; every
   // call after sign-in reaches the signed-in client.
-  const proxy = new Proxy({}, { get: (_t, k) => (holder.client as unknown as Record<string | symbol, unknown>)?.[k] });
+  const proxy = (require("@/tests/helpers/liveSupabaseProxy") as typeof import("@/tests/helpers/liveSupabaseProxy")).liveSupabaseProxy(holder);
   return { supabase: proxy, createClient: () => holder.client };
 });
 jest.mock("@/utils/auth/getUserId", () => ({

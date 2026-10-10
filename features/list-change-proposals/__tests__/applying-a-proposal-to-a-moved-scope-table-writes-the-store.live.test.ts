@@ -36,7 +36,7 @@ const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 
 const holder: { client?: SupabaseClient; userId: string } = { userId: "" };
 jest.mock("@/utils/supabase/client", () => {
-  const proxy = new Proxy({}, { get: (_t, k) => (holder.client as unknown as Record<string | symbol, unknown>)?.[k] });
+  const proxy = (require("@/tests/helpers/liveSupabaseProxy") as typeof import("@/tests/helpers/liveSupabaseProxy")).liveSupabaseProxy(holder);
   return { supabase: proxy, createClient: () => holder.client };
 });
 jest.mock("@/utils/auth/getUserId", () => ({

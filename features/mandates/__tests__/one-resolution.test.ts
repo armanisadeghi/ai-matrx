@@ -375,6 +375,9 @@ describe("the org-switch action drops cached entries", () => {
 
   it("evicts on sign-out (organization becomes null)", async () => {
     await resolveMandate(KEY);
+    // Sign-out clears the selected organization, and the package keeps only entries that
+    // belong to the CURRENTLY selected organization — so the harness must reflect that.
+    selectedOrg = null;
     dispatchOrgChange(null);
     // The next signed-in user must never be served the previous one's verdict
     // out of a module-level Map.

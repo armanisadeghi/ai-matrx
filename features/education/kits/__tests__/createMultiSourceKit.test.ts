@@ -30,12 +30,13 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
     },
   },
 }));
-jest.mock("@/features/scopes/service/storeScopeReads", () => ({
-  readScopesById: (...a: unknown[]) => mockReadScopesById(...a),
-  readScopeTypes: (...a: unknown[]) => mockReadScopeTypes(...a),
-}));
-jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: { createScope: (...a: unknown[]) => mockCreateScope(...a), createScopeType: jest.fn(), deleteScope: (...a: unknown[]) => mockDeleteScope(...a) },
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => ({
+    scopes: (...a: unknown[]) => mockReadScopesById(...a),
+    types: (...a: unknown[]) => mockReadScopeTypes(...a),
+    createScope: (...a: unknown[]) => mockCreateScope(...a),
+    archiveScope: (...a: unknown[]) => mockDeleteScope(...a),
+  }),
 }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn().mockResolvedValue(undefined) }));
 jest.mock("@/features/education/library/service", () => ({
@@ -55,8 +56,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAdd.mockResolvedValue({ ok: true, data: {} });
   mockReadScopeTypes.mockResolvedValue({ ok: true, data: { types: [{ id: "t1", slug: "study-kit", organization_id: ORG }] } });
-  mockCreateScope.mockResolvedValue({ data: { id: KIT } });
-  mockDeleteScope.mockResolvedValue({ data: {} });
+  mockCreateScope.mockResolvedValue({ ok: true, data: { id: KIT, name: "Photosynthesis", organization_id: ORG } });
+  mockDeleteScope.mockResolvedValue({ ok: true, data: {} });
   mockReadScopesById.mockResolvedValue({ ok: true, data: [{ id: KIT, name: "Photosynthesis", organization_id: ORG }] });
   mockListForEntity.mockResolvedValue({ ok: true, data: { edges: [] } });
   mockFetchEducationLibraryPage.mockResolvedValue({ rows: [], total: 0 });
