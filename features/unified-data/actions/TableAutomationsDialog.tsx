@@ -8,7 +8,7 @@
 
 import { useFields } from "@ai-matrx/records/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { AutomationsPanel } from "@/features/spaces/data/Automations";
+import { AutomationsDoor } from "@/features/spaces/data/AutomationsDoor";
 
 export function TableAutomationsDialog({
   tableId,
@@ -26,7 +26,7 @@ export function TableAutomationsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogTitle>Automations</DialogTitle>
-        <AutomationsPanel tableId={tableId} organizationId={organizationId} fields={fields} />
+        <AutomationsDoor tableId={tableId} organizationId={organizationId} fields={fields} />
       </DialogContent>
     </Dialog>
   );
