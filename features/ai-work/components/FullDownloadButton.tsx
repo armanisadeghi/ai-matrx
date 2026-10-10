@@ -9,6 +9,7 @@ import {
   type FullDownloadResult,
 } from "@/features/ai-work/lib/fullDownload";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type State =
   | { phase: "idle" }
   | { phase: "working" }
@@ -77,7 +78,7 @@ export function FullDownloadButton({
       {state.phase === "failed" ? (
         <p className="max-w-sm truncate text-right text-xs text-amber-700 dark:text-amber-400" title={state.message}>
           {state.message}
-        </p>
+        <ErrorAlchemyMenu error={state.message} /></p>
       ) : null}
       {state.phase === "done" ? (
         <ul className="max-w-sm space-y-1 text-right text-xs text-muted-foreground" aria-live="polite">
@@ -109,7 +110,7 @@ function FullDownloadOutcome({ result }: { result: FullDownloadResult }) {
   return (
     <span className="text-amber-700 dark:text-amber-400" title={clip(step.reasons.join(" "))}>
       {name}: not available
-    </span>
+    <ErrorAlchemyMenu error={clip(step.reasons.join(" "))} /></span>
   );
 }
 

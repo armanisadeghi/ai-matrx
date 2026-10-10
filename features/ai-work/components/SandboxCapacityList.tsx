@@ -15,6 +15,7 @@ import { getUserMessage } from "@/lib/api/errors";
 import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
 import type { SandboxCapacityRefusal, SandboxOccupant } from "@/features/ai-work/lib/ownPlan";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function occupantLabel(o: SandboxOccupant): string {
   return o.template === "aidream"
     ? "Coding sandbox"
@@ -95,6 +96,6 @@ export function SandboxCapacityList({
           <li className="py-1.5 text-xs text-muted-foreground">A slot is free now.</li>
         )}
       </ul>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
