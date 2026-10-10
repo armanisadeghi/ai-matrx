@@ -163,7 +163,7 @@ series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test
 
 ## Player, watchlist memory, goals (SI-FIX-SOCIALS-2)
 
-- `PostMedia` (PostDetail): YouTube = official embed, never "Fetch"; other platforms = stored mp4 via the playback door. Frame sized by the real aspect ratio; the drawer is a fixed width.
+- `PostMedia` (PostDetail): YouTube = official embed, never "Fetch"; other platforms use the authenticated playback door for archived media. Saved images/videos render in source order in `SavedPostGallery` (the provider thumbnail is not a slide), with keyboard/arrow controls and authenticated video playback/download. Frame sized by the real aspect ratio; the drawer is a fixed width.
 - Outliers: the last watchlist is kept in the URL (`?watchlist=`) and per brand in this browser; posts have "Save to swipe file" (card menu and table row action).
 - KPIs: goals are editable (`GoalDialog`, `updateKpiGoal`); with no tracked own accounts the empty state offers "Track own accounts" (`useTrackOwn`, shared with the Accounts tab).
 - Swipe: both save dialogs carry the note + tags editor (`NoteTagsFields`, shared with the item sheet).

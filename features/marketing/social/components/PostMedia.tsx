@@ -14,7 +14,7 @@
  *             YouTube embed, started automatically.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Play, RotateCw } from "lucide-react";
 
@@ -26,6 +26,7 @@ import { fetchPlaybackUrl, ingestPost, listPostMedia, postThumbnailDoor, socialE
 import type { PostMediaRef } from "../types";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
+import { SavedPostGallery, savedPostSlides } from "./SavedPostGallery";
 
 /** Aspect ratio (w/h) a post's player starts with, before the poster or the video reports its own. */
 export function guessAspect(format: string, platform: string): number {
@@ -82,7 +83,7 @@ export function PostMedia({
   const client = useQueryClient();
   const embed = platform === "youtube";
   const wantsVideo = isVideoPost(format, platform);
-  const mediaKey = useMemo(() => ["marketing", "social", "media", postId] as const, [postId]);
+  const mediaKey = ["marketing", "social", "media", postId, organizationId] as const;
   const media = useQuery({
     queryKey: mediaKey,
     queryFn: ({ signal }) => listPostMedia(postId, { organizationId, signal }),
@@ -199,6 +200,10 @@ export function PostMedia({
   }
 
   const working = stage.kind === "working";
+  const slides = savedPostSlides(media.data ?? []);
+  if (!embed && slides.length > 0 && (slides.length > 1 || !wantsVideo)) {
+    return <Frame ratio={ratio} fill={fill}><SavedPostGallery key={postId} files={slides} organizationId={organizationId} onRatio={setRatio} fill={fill} /></Frame>;
+  }
 
   if (embed && embedding) {
     return (
@@ -261,6 +266,9 @@ export function PostMedia({
       ) : (
         <PosterPlaceholder platform={platform} format={format} />
       )}
+      {!canPlay && !media.isPending && slides.length === 0 ? (
+        <a href={postUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 left-2 rounded bg-black/75 px-2 py-1 text-xs text-white underline">Cover only · Open original</a>
+      ) : null}
       {working ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 px-4 text-center text-white" aria-live="polite">
           <Loader2 className="h-6 w-6 animate-spin" aria-hidden />

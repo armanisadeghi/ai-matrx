@@ -1,3 +1,55 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      scripts/rehearse-migration.ts
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at scripts/rehearse-migration.ts
+  Both grew from the same COMMON version: commit d2e837fd35, 2026-10-10 07:11.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-10 09:07  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-10 09:12  4ebce7e45d  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-10 09:06  e1e5755ccc  "DB runner: brief-lock class (short writer-blocking DDL runs mid-day when rehearsed); row guards skip archive bookkeeping applied (b1-b3)"
+  LOCAL's latest change is 0m AFTER GITHUB's latest change.
+
+SIZE: common version 1149 lines, LOCAL 1173 lines, GITHUB 1170 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 19 lines and removed 1 lines.
+  GITHUB added 16 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 14 of the 16 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: m.totalMs, measuredAt: new Date().toISOString() }, null, 2
+      | console.log(`${TAG.ok}brief-lock transaction measured ${C.bold}${m.totalMs} ms${C.reset} on the clone, bound to these bytes.`);
+  GITHUB has 14 of the 19 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | // REAL WALL TIME: the sum of the statements' own execution times. The pg_locks sampling between statements is
+      | // not part of the lock a writer waits behind, so it is not counted.
+      | const wall = m.statements.reduce((a, st) => a + st.ms, 0);
+      | JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: wall, measuredAt: new Date().toISOString() }, null, 2) + "
+      | console.log(`${TAG.ok}brief-lock statements measured ${C.bold}${wall} ms wall${C.reset} on the clone, bound to these bytes.`);
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show e1e5755ccccb:'scripts/rehearse-migration.ts') <(git show 4ebce7e45dd5:'scripts/rehearse-migration.ts')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 4ebce7e45dd5:'scripts/rehearse-migration.ts'
+  GITHUB: git show e1e5755ccccb:'scripts/rehearse-migration.ts'
+
+---------------- LOCAL VERSION BELOW ----------------
 /**
  * `pnpm db:rehearse <file.sql> --target clone` - RULE 27 IN ONE COMMAND, MEASURED.
  * ===========================================================================
@@ -320,15 +372,18 @@ function recordBriefLockMeasurement(
   m: Awaited<ReturnType<typeof measure>>,
 ): void {
   if (!briefLockDeclared(sql)) return;
+  // REAL WALL TIME: the sum of the statements' own execution times. The pg_locks sampling between statements is
+  // not part of the lock a writer waits behind, so it is not counted.
+  const wall = m.statements.reduce((a, st) => a + st.ms, 0);
   const sha = sha256OfBytes(sql);
   const out = briefLockMeasurementPath(filePath, sha);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(
     out,
-    JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: m.totalMs, measuredAt: new Date().toISOString() }, null, 2) + "\n",
+    JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: wall, measuredAt: new Date().toISOString() }, null, 2) + "\n",
     "utf8",
   );
-  console.log(`${TAG.ok}brief-lock transaction measured ${C.bold}${m.totalMs} ms${C.reset} on the clone, bound to these bytes.`);
+  console.log(`${TAG.ok}brief-lock statements measured ${C.bold}${wall} ms wall${C.reset} on the clone, bound to these bytes.`);
 }
 
 /**

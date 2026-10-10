@@ -1,3 +1,52 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      scripts/lib/migration-target.ts
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at scripts/lib/migration-target.ts
+  Both grew from the same COMMON version: commit d2e837fd35, 2026-10-10 07:11.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-10 09:07  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-10 09:12  4ebce7e45d  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-10 09:06  e1e5755ccc  "DB runner: brief-lock class (short writer-blocking DDL runs mid-day when rehearsed); row guards skip archive bookkeeping applied (b1-b3)"
+  LOCAL's latest change is 0m AFTER GITHUB's latest change.
+
+SIZE: common version 3504 lines, LOCAL 3589 lines, GITHUB 3589 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 60 lines and removed 0 lines.
+  GITHUB added 60 lines and removed 0 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 58 of the 60 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | export const BRIEF_LOCK_MAX_MS = 30_000;
+      | `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of measure pass (the measure pass sam
+  GITHUB has 58 of the 60 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | export const BRIEF_LOCK_MAX_MS = 10_000;
+      | `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of statement wall time. ` +
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show e1e5755ccccb:'scripts/lib/migration-target.ts') <(git show 4ebce7e45dd5:'scripts/lib/migration-target.ts')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 4ebce7e45dd5:'scripts/lib/migration-target.ts'
+  GITHUB: git show e1e5755ccccb:'scripts/lib/migration-target.ts'
+
+---------------- LOCAL VERSION BELOW ----------------
 /**
  * `--target branch|production` — WHICH database a migration is allowed to land on.
  *
@@ -1749,7 +1798,7 @@ export function policyDdlOneTableVerdict(
 //       under BRIEF_LOCK_MAX_MS for the whole transaction.
 // It then runs under the runner's lock_timeout with its bounded rolled-back-whole retry, never waiting
 // indefinitely and never holding a lock while it waits. Anything missing stays window-class.
-export const BRIEF_LOCK_MAX_MS = 30_000;
+export const BRIEF_LOCK_MAX_MS = 10_000;
 const HEADER_BRIEF_LOCK_RE = /^\s*--\s*brief-lock:\s*\S/i;
 export function briefLockDeclared(rawSql: string): boolean {
   return rawSql.split("\n", 40).some((line) => HEADER_BRIEF_LOCK_RE.test(line));
@@ -1816,7 +1865,7 @@ export function briefLockVerdict(
     return {
       exempt: false,
       refusal:
-        `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of measure pass (the measure pass samples pg_locks after every statement, so the real lock is several times shorter). ` +
+        `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of statement wall time. ` +
         `Writers would wait that long; it waits for the window.`,
     };
   }

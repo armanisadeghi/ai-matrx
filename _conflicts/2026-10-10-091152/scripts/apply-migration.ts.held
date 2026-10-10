@@ -1,3 +1,56 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      scripts/apply-migration.ts
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at scripts/apply-migration.ts
+  Both grew from the same COMMON version: commit d2e837fd35, 2026-10-10 07:11.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-10 09:07  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-10 09:12  4ebce7e45d  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-10 09:06  e1e5755ccc  "DB runner: brief-lock class (short writer-blocking DDL runs mid-day when rehearsed); row guards skip archive bookkeeping applied (b1-b3)"
+  LOCAL's latest change is 0m AFTER GITHUB's latest change.
+
+SIZE: common version 5538 lines, LOCAL 5606 lines, GITHUB 5606 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 48 lines and removed 0 lines.
+  GITHUB added 48 lines and removed 0 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 44 of the 48 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | const BRIEF_LOCK_MAX_MS_LABEL = "30 s of measure pass, which samples pg_locks after every statement and overstates the real lock by several 
+      | const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(45_000));
+      | console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 45 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
+      | `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 45 s rehearsal, a non-clone ` +
+  GITHUB has 44 of the 48 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | const BRIEF_LOCK_MAX_MS_LABEL = "10 s of statement wall time";
+      | const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(15_000));
+      | console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 15 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
+      | `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 15 s rehearsal, a non-clone ` +
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show e1e5755ccccb:'scripts/apply-migration.ts') <(git show 4ebce7e45dd5:'scripts/apply-migration.ts')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 4ebce7e45dd5:'scripts/apply-migration.ts'
+  GITHUB: git show e1e5755ccccb:'scripts/apply-migration.ts'
+
+---------------- LOCAL VERSION BELOW ----------------
 #!/usr/bin/env npx tsx
 /**
  * `pnpm db:apply <migrations/file.sql>` — THE ONE WAY matrx-frontend applies a
@@ -283,7 +336,7 @@ const LOCK_TIMEOUT = "2s";
 const STATEMENT_TIMEOUT = "600s";
 /** A contaminated pooler session is repaired in-transaction; see identity check. */
 const POOLER_ATTEMPTS = 5;
-const BRIEF_LOCK_MAX_MS_LABEL = "30 s of measure pass, which samples pg_locks after every statement and overstates the real lock by several times";
+const BRIEF_LOCK_MAX_MS_LABEL = "10 s of statement wall time";
 
 const C = {
   reset: "\x1b[0m",
@@ -3297,9 +3350,9 @@ create or replace trigger "probe_i" before insert on custom.record for each row 
     return 1;
   }
   // RED-8  rehearsed but long (12 s): refused.
-  const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(45_000));
+  const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(15_000));
   if (bl8.exempt || !bl8.refusal || !/stops at/.test(bl8.refusal)) {
-    console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 45 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
+    console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 15 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
     return 1;
   }
   // RED-9  rehearsed against production, not the clone: refused.
@@ -3328,7 +3381,7 @@ create or replace trigger "probe_i" before insert on custom.record for each row 
     return 1;
   }
   console.log(
-    `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 45 s rehearsal, a non-clone ` +
+    `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 15 s rehearsal, a non-clone ` +
       `measurement, a drop trigger and an unclaimed file all stay window-class; a 2.1 s rehearsed trigger DDL runs mid-day${C.reset}`,
   );
 
