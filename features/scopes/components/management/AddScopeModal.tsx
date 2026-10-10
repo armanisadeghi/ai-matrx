@@ -381,7 +381,7 @@ export function AddScopeModal({
             )}
             Advanced settings
             <span className="text-xs text-muted-foreground font-normal">
-              parent, sort order, max, default variables
+              sort order, max, default variables
             </span>
           </button>
         </div>
