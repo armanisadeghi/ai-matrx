@@ -14,7 +14,7 @@
 import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { updateScope } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import {

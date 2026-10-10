@@ -19,7 +19,7 @@ import type { Scope as Scope } from "@ai-matrx/records/scopes";
 import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeAdvancedSectionProps {

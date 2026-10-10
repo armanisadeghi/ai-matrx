@@ -43,7 +43,7 @@ import {
 } from "@/features/kg-suggestions/types";
 import { createScope } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 
 export interface PromoteHeavyHitterArgs {
   /** The heavy-hitter row to promote. */

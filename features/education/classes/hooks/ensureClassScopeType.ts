@@ -12,7 +12,7 @@ import {
 } from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 
 export interface ClassScopeTypeSeed {
   labelSingular: string;

@@ -37,7 +37,7 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 
 interface ScopeEditViewProps {
   orgId: string;

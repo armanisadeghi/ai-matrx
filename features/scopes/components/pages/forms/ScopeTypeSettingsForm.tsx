@@ -19,7 +19,7 @@ import {
   deleteScopeType,
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface ScopeTypeSettingsFormProps {

@@ -23,7 +23,7 @@ import {
   createScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { toast } from "@/lib/toast";
 
 const NONE_VALUE = "__none__";

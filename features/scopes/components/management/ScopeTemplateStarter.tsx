@@ -36,7 +36,7 @@ import {
   createScope,
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 
 type LucideIcon = React.ComponentType<{
   className?: string;

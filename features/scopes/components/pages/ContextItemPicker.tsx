@@ -87,7 +87,7 @@ import {
 import {
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
 const EMPTY_LIST: never[] = [];

@@ -23,7 +23,7 @@ import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import type { Scope } from "@ai-matrx/records/scopes";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import {
   CLASS_PART_EDGE_ROLE,
   CLASS_PART_SCOPE_TYPE_SEED,

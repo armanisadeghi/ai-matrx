@@ -20,7 +20,7 @@ import {
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import type { Scope } from "@ai-matrx/records/scopes";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import {

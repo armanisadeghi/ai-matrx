@@ -7,7 +7,6 @@
 // Server components use `serverScopeDoors()` from `./scopeDoors.server`.
 
 import { asRecordsDataSource, createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
-import type { RecordsResult } from "@ai-matrx/records";
 import type { ScopeDoors } from "@ai-matrx/records/scopes";
 import { supabase } from "@/utils/supabase/client";
 import { readFileText } from "@/features/unified-data/recordsFiles";
@@ -38,10 +37,4 @@ export function scopeRecordsClient(): RecordsClient {
 /** Opens the whole text of a value kept as a file, as the person (hand to `scopeDoors().values`). */
 export function readScopeFileText(fileId: string): Promise<string> {
   return readFileText({ fileId });
-}
-
-/** A door's answer, or throw its refusal (the store's sentence) — for `createAsyncThunk` bodies. */
-export function unwrapRecords<T>(result: RecordsResult<T>): T {
-  if (result.ok) return result.data;
-  throw new Error(result.error.message);
 }

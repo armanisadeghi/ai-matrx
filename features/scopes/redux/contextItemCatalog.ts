@@ -27,7 +27,7 @@ import { createAsyncThunk, createSelector, weakMapMemoize } from "@reduxjs/toolk
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { sameSlug, type ContextField, type ContextFieldSpec } from "@ai-matrx/records/scopes";
-import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
+import { unwrapRecords } from "@ai-matrx/records";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import {
   createContextItem as createContextItemDoor,
