@@ -57,6 +57,7 @@ jest.mock("@/utils/supabase/client", () => ({
           select: () => page,
           order: () => page,
           is: () => page,
+          eq: () => page,
           range: async () => ({
             data: name === "platform" ? KNOB_ROWS : [],
             error: null,

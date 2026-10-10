@@ -10,12 +10,16 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "user-1",
+  // The organization filter in the lane header reads who is signed in; the first-client shell has no session yet.
+  selectAuthReady: () => false,
+  selectAccessToken: () => null,
 }));
 
 jest.mock("../redux/selectors", () => ({
   selectActiveSessionId: () => null,
   selectAllSessions: () => [{ id: "session-1" }],
   selectFetchStatus: () => "success",
+  selectSessionsLane: () => null,
 }));
 
 jest.mock("@/features/shell/components/header/templates/MobilePanelShell", () => ({
