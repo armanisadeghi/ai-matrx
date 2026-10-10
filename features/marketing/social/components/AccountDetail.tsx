@@ -73,6 +73,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 import { TRACKED_ROLE_LABELS, isSocialPlatform, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
+import { AccountInsights } from "./AccountInsights";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { useOpenPost } from "../useOpenPost";
@@ -496,6 +497,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         />
         <KpiTile label="Posts tracked" value={posts.isLoading ? null : String(list.length)} loading={posts.isLoading} />
       </div>
+
+      {role === "own" && tracked.data ? <AccountInsights trackedAccountId={tracked.data.id} /> : null}
 
       {refreshLine?.failed &&
       (socialErrorCode(refreshLine.error) === "social_not_found" ||

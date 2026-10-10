@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { Lock, Pause, Pencil, Play, Plus, Target, Trash2, UserPlus, Users } from "lucide-react";
+import { Pause, Pencil, Play, Plus, Target, Trash2, UserPlus, Users } from "lucide-react";
 
 import {
   Badge,
@@ -80,6 +80,7 @@ import { MetricChart } from "./MetricChart";
 import { PlatformMark } from "./PlatformMark";
 import { useSocials } from "./SocialsContext";
 import { useTrackOwn } from "./useTrackOwn";
+import { OwnInsightsTable } from "./OwnInsightsTable";
 import { ownTrackingState } from "../own-accounts";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
@@ -337,7 +338,7 @@ export function KpisTab() {
         <BenchmarkTable accounts={accounts} posts={posts} snapshots={snapshots} now={now} />
       ) : null}
 
-      {view === "own" ? <OwnChannel /> : null}
+      {view === "own" ? <OwnChannel accounts={accountRows.data ?? []} loading={accountRows.isLoading} /> : null}
 
       <GoalDialog
         open={creating || editing !== null}
@@ -651,17 +652,12 @@ function BenchmarkTable({
 // Own channel (private stats)
 // ---------------------------------------------------------------------------
 
-function OwnChannel() {
-  const { brandId } = useSocials();
+function OwnChannel({ accounts, loading }: { accounts: readonly AccountRow[]; loading: boolean }) {
+  const { brandId, brandSeg, organizationId } = useSocials();
   return (
     <div className="flex flex-col gap-3">
       <BrandChannelPanel brandId={brandId} />
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
-        <Lock className="h-4 w-4 shrink-0" />
-        <span>Instagram, TikTok, LinkedIn</span>
-        <Badge tone="neutral">Coming with platform approvals</Badge>
-        <span className="text-xs">Connect to see private stats</span>
-      </div>
+      <OwnInsightsTable accounts={accounts} organizationId={organizationId} brandSeg={brandSeg} loading={loading} />
     </div>
   );
 }
