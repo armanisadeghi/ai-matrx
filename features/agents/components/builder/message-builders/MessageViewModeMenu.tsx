@@ -4,23 +4,22 @@
  * MessageViewModeMenu
  *
  * Single-icon dropdown that switches between the SHARED editor modes (the same
- * names and icons as the content editor and Notes: Plain / Split / Read) for
+ * names and icons as the content editor and Notes: Write / Raw / Read) for
  * any message in the agent builder (system, user, assistant). Sits beside the
  * role label rather than in the action-icon row, keeping the toolbar
  * uncluttered.
  *
- *   Plain — raw text; variables highlighted, click to type (was Edit + Plain View)
+ *   Raw (key "plain") — the exact text in a textarea
  *   Write — the rich editor over the same text; saves the exact bytes unless edited
- *   Split — raw text left, the formatted result live right
  *   Read  — the formatted text (was Matrx Preview)
  *
  * Visual contract:
  *   - trigger: icon of the current mode + a small chevron-down, nothing else
- *   - menu: four items, each labeled and prefixed with its mode icon
+ *   - menu: three items, each labeled and prefixed with its mode icon
  *   - same component everywhere so the surface looks identical across roles
  */
 
-import { Columns, Eye, FileText, ChevronDown, PenLine } from "lucide-react";
+import { Eye, FileText, ChevronDown, PenLine } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,9 +37,9 @@ import { cn } from "@/lib/utils";
  * "edit" is Plain while the text box has the caret (a click on the highlighted
  * text enters it; leaving returns to "plain") — one shared mode, two states.
  */
-export type MessageViewMode = "edit" | "plain" | "write" | "split" | "preview";
+export type MessageViewMode = "edit" | "plain" | "write" | "preview";
 
-type SharedMode = "plain" | "write" | "split" | "preview";
+type SharedMode = "plain" | "write" | "preview";
 
 const MODE_META: Record<
   SharedMode,
@@ -52,18 +51,13 @@ const MODE_META: Record<
 > = {
   plain: {
     icon: FileText,
-    label: "Plain",
-    description: "Raw text with variables highlighted.",
+    label: "Raw",
+    description: "The exact text, as typed.",
   },
   write: {
     icon: PenLine,
     label: "Write",
     description: "Formatted editing; keeps the exact text.",
-  },
-  split: {
-    icon: Columns,
-    label: "Split",
-    description: "Raw text left, the formatted result right.",
   },
   preview: {
     icon: Eye,
@@ -72,7 +66,21 @@ const MODE_META: Record<
   },
 };
 
-const MODE_ORDER: SharedMode[] = ["plain", "write", "split", "preview"];
+/** The agent builder's prompt boxes offer exactly these, in this order: Write, Raw, Read. */
+export const MESSAGE_MODE_ORDER: readonly SharedMode[] = ["write", "plain", "preview"];
+
+/** Labels as shown in the menu, in order (the contract the test pins). */
+export const MESSAGE_MODE_LABELS: readonly string[] = MESSAGE_MODE_ORDER.map(
+  (m) => MODE_META[m].label,
+);
+
+/** The mode a prompt box opens in. One line to flip: "plain" (Raw) -> "write". */
+export const DEFAULT_MESSAGE_VIEW_MODE: MessageViewMode = "plain";
+
+/** The formatting toolbar and Insert menu show in Write and Raw, never Read. */
+export function showsTextTools(viewMode: MessageViewMode): boolean {
+  return viewMode !== "preview";
+}
 
 /** The shared mode a view state belongs to. */
 export function sharedModeOf(viewMode: MessageViewMode): SharedMode {
@@ -118,7 +126,7 @@ export function MessageViewModeMenu({
       </Tooltip>
 
       <DropdownMenuContent align="start" sideOffset={4} className="w-52">
-        {MODE_ORDER.map((mode) => {
+        {MESSAGE_MODE_ORDER.map((mode) => {
           const meta = MODE_META[mode];
           const Icon = meta.icon;
           const active = mode === activeMode;

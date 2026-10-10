@@ -46,6 +46,8 @@ import { HighlightedText } from "@/features/agents/components/variables-manageme
 import { MessageItemButtons } from "@/features/agents/components/builder/message-builders/MessageItemButtons";
 import {
   MessageViewModeMenu,
+  DEFAULT_MESSAGE_VIEW_MODE,
+  showsTextTools,
   type MessageViewMode,
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
 import {
@@ -59,7 +61,6 @@ import type {
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { PromptInsertMenu } from "@ai-matrx/rich-editor/format/PromptInsertMenu";
 import { PromptFixReview } from "@ai-matrx/rich-editor/format/PromptFixReview";
@@ -129,7 +130,7 @@ export function MessageItem({
 }: MessageItemProps) {
   const dispatch = useAppDispatch();
 
-  const [viewMode, setViewMode] = useState<MessageViewMode>("plain");
+  const [viewMode, setViewMode] = useState<MessageViewMode>(DEFAULT_MESSAGE_VIEW_MODE);
   const isEditing = viewMode === "edit";
   const setIsEditing = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -543,15 +544,6 @@ export function MessageItem({
     }
   }, []);
 
-  // Split's own text box (MatrxSplit carries the formatting layer itself):
-  // only the cursor-insert helpers need to see it.
-  const handleSplitTextareaRef = useCallback(
-    (el: HTMLTextAreaElement | null) => {
-      textareaRef.current = el;
-    },
-    [],
-  );
-
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (!scrollContainerRef?.current) {
@@ -774,7 +766,7 @@ export function MessageItem({
             onToggle={messageFlags.onToggle}
           />
         </div>
-        {(viewMode === "write" || viewMode === "edit" || viewMode === "split") && (
+        {showsTextTools(viewMode) && (
           <PromptFormatButtons
             mode={viewMode === "write" ? "write" : "textarea"}
             writeRef={writeRef}
@@ -782,6 +774,7 @@ export function MessageItem({
           />
         )}
         <div className="flex items-center gap-1">
+{showsTextTools(viewMode) && (
         <PromptInsertMenu
           onAddVariable={() => goToBuilderSection("variables")}
           onAddContextItem={() => goToBuilderSection("context")}
@@ -810,6 +803,7 @@ export function MessageItem({
                 : null;
           }}
         />
+)}
         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <MessageItemButtons
             hasVariableSupport={hasVariableSupport}
@@ -863,22 +857,6 @@ export function MessageItem({
                 : "User message / example input..."
             }
           />
-        ) : viewMode === "split" ? (
-          <div style={{ height: "320px" }}>
-            <MatrxSplit
-              imagePolicy="other"
-              value={currentText}
-              onChange={handleTextChange}
-              textareaRef={handleSplitTextareaRef}
-              placeholder={
-                message.role === "assistant"
-                  ? "Assistant response / example output..."
-                  : "User message / example input..."
-              }
-              textareaClassName="text-xs"
-              allowFullScreenEditor={false}
-            />
-          </div>
         ) : viewMode === "preview" ? (
           <div
             className="cursor-text"

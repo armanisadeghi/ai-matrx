@@ -72,17 +72,18 @@ export const TEXT_ENTRY_SURFACES: Record<string, SurfaceKeeping> = {
   "features/masterwork/components/detail/RulebookSourcesPanel.tsx": {
     kind: "door",
     module: "features/masterwork/components/detail/RulebookSourcesPanel.tsx",
-    opens: "features/documents/components/DocumentEditor.tsx",
-    // The editor autosaves on a 2.5s debounce, flushes that debounce the
-    // moment the page is hidden or unmounted, warns before an unload that
-    // would outrun it, and says so out loud when it cannot save at all.
-    // Whole registration calls, not bare words: a substring like
-    // "beforeunload" also matches the comment explaining it, so the first
-    // version of this row went green over a listener that had been deleted.
+    opens: "features/documents/document-model/documentModels.ts",
+    // The document editor holds its document's working copy through the shared
+    // document model (features/documents/document-model): the model owns the
+    // one coalesced save (2.5s debounce) and flushes it the moment the page is
+    // hidden or unloaded, warning before an unload that would outrun it. A
+    // save the editor cannot make says so out loud on its status pill ("Save
+    // failed") and on Save now. Whole registration calls, not bare words: a
+    // substring like "beforeunload" also matches the comment explaining it,
+    // so the first version of this row went green over a deleted listener.
     keptBy: [
-      'addEventListener("pagehide"',
-      'addEventListener("beforeunload"',
-      "announceUnsaveable(",
+      'window.addEventListener("pagehide"',
+      'window.addEventListener("beforeunload"',
     ],
     why:
       'The panel itself types only a document NAME before handing off. Its ' +

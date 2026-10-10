@@ -38,3 +38,11 @@ export const makeSelectItemsStatusForType = () =>
       (scopeTypeId && slice.contextItemsByTypeId[scopeTypeId]?.status) ||
       emptyEntry.status,
   );
+
+export const makeSelectItemsErrorForType = () =>
+  createSelector(
+    selectScopesSlice,
+    (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
+    (slice, scopeTypeId): string | null =>
+      (scopeTypeId && slice.contextItemsByTypeId[scopeTypeId]?.error) || null,
+  );
