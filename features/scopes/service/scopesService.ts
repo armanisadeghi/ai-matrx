@@ -30,6 +30,7 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { getOrganization } from "@/features/organizations/service";
 import { adoptProjectOrganization, listProjectSummariesInOrganizations } from "@/features/projects/service";
 import { adoptTaskOrganization, listProjectTaskIds, listTaskSummaries } from "@/features/tasks/services/taskService";
@@ -42,12 +43,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { associationRefusal } from "@/features/scopes/service/associationResult";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { forgetMemberOrganizationRows, readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
-import {
-  err,
-  mapPgError,
-  mapPgErrorPair,
-  ok,
-} from "@/features/scopes/service/rpcResult";
+import { err, ok } from "@/features/scopes/service/rpcResult";
 import type {
   OrgNode,
   ProjectNode,
@@ -171,7 +167,7 @@ export const scopesService = {
       if (!provisioned.ok) return provisioned;
       return ok({ datasetId: provisioned.data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
   // ──────────────────────────────────────────────────────────────────
@@ -207,7 +203,7 @@ export const scopesService = {
         // Her memberships and organization rows: the ONE shared read (`memberOrganizationRows.ts`).
         const member = await readMemberOrganizationRows();
         if (!member.ok) {
-          return { read: false as const, failed: err(...mapPgErrorPair(member.error)) };
+          return { read: false as const, failed: { ok: false as const, error: mapThrownError(member.error, "scopesService") } };
         }
         const roleByOrgId = member.roleByOrgId;
         const orgIds = [...roleByOrgId.keys()];
@@ -227,7 +223,7 @@ export const scopesService = {
         try {
           projectsRes = { data: await listProjectSummariesInOrganizations(orgIds) };
         } catch (e) {
-          return { read: false as const, failed: { ok: false as const, error: mapPgError(e) } };
+          return { read: false as const, failed: { ok: false as const, error: mapThrownError(e, "scopesService") } };
         }
         return { read: true as const, roleByOrgId, orgsRes, projectsRes };
       });
@@ -287,7 +283,7 @@ export const scopesService = {
         fetched_at: new Date().toISOString(),
       });
     } catch (e) {
-      const mapped = mapPgError(e);
+      const mapped = mapThrownError(e, "scopesService");
       return { ok: false, error: mapped };
     }
   },
@@ -351,7 +347,7 @@ export const scopesService = {
       };
       return ok({ organization });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -406,7 +402,7 @@ export const scopesService = {
 
       return ok({ tasks });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -441,7 +437,7 @@ export const scopesService = {
 
       return ok({ projects: orphans });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -595,7 +591,7 @@ export const scopesService = {
         items,
       });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -676,7 +672,7 @@ export const scopesService = {
 
       return ok({ entities });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -716,7 +712,7 @@ export const scopesService = {
       }
       return ok(out);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -734,7 +730,7 @@ export const scopesService = {
         .map((e) => e.otherId);
       return ok({ scope_ids });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -753,7 +749,7 @@ export const scopesService = {
       if (!res.ok) return res;
       return ok({ byEntity: res.data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -786,7 +782,7 @@ export const scopesService = {
       if (!disp.ok) return disp;
       return ok({ scopes: disp.data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -844,7 +840,7 @@ export const scopesService = {
         });
       return ok({ tags });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -886,7 +882,7 @@ export const scopesService = {
       const didUpdate = await adopt(entityId, orgId);
       return ok({ organization_id: didUpdate ? orgId : null });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 
@@ -923,7 +919,7 @@ export const scopesService = {
       if (!res.ok) return res;
       return ok({ types: res.data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "scopesService") };
     }
   },
 

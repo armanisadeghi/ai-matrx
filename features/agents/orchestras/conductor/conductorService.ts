@@ -8,16 +8,12 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { type RecordsResult } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import { createAgentFromTemplate } from "@/features/agents/agent-creators/templates/templateService";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import {
-  ok,
-  err,
-  mapPgError,
-  mapPgErrorPair,
-} from "@/features/scopes/service/rpcResult";
+import { ok, err } from "@/features/scopes/service/rpcResult";
 import type { Database } from "@/types/database.types";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import {
@@ -208,12 +204,12 @@ export const conductorService = {
         .from("definition")
         .select(MEMBER_CONFIG_COLUMNS)
         .in("id", memberIds);
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
       return ok(
         (Array.isArray(data) ? data : []) as unknown as MemberConfigRow[],
       );
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 
@@ -228,7 +224,7 @@ export const conductorService = {
         .select("messages")
         .eq("id", agentId)
         .single();
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
       const messages = (data?.messages ??
         []) as unknown as AgentDefinitionMessage[];
       const sys = messages.find((m) => m.role === "system");
@@ -237,7 +233,7 @@ export const conductorService = {
         text?.type === "text" && AVAILABLE_AGENTS_RE.test(text.text ?? "");
       return ok(Boolean(has));
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 
@@ -257,7 +253,7 @@ export const conductorService = {
         .select("messages")
         .eq("id", conductorId)
         .single();
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
 
       const messages = (data?.messages ??
         []) as unknown as AgentDefinitionMessage[];
@@ -306,10 +302,10 @@ export const conductorService = {
           .select("id"),
         { action: "save", noun: "agent" },
       );
-      if (upErr) return err(...mapPgErrorPair(upErr));
+      if (upErr) return { ok: false as const, error: mapThrownError(upErr, "conductorService") };
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 
@@ -325,10 +321,10 @@ export const conductorService = {
           .select("id"),
         { action: "rename", noun: "agent" },
       );
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 
@@ -359,10 +355,10 @@ export const conductorService = {
           .select("id"),
         { action: "save", noun: "agent" },
       );
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 
@@ -381,7 +377,7 @@ export const conductorService = {
         .select("messages")
         .eq("id", conductorId)
         .single();
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "conductorService") };
 
       const messages = (data?.messages ??
         []) as unknown as AgentDefinitionMessage[];
@@ -432,10 +428,10 @@ export const conductorService = {
           .select("id"),
         { action: "save", noun: "agent" },
       );
-      if (upErr) return err(...mapPgErrorPair(upErr));
+      if (upErr) return { ok: false as const, error: mapThrownError(upErr, "conductorService") };
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "conductorService") };
     }
   },
 };

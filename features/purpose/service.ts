@@ -22,9 +22,10 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { type RecordsResult } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
-import { err, mapPgError, mapPgErrorPair, ok } from "@/features/scopes/service/rpcResult";
+import { err, ok } from "@/features/scopes/service/rpcResult";
 import type { Json } from "@/types/database.types";
 
 /** Engram §4.5 grounding: human-authored · AI-drafted-human-verified · AI-only. */
@@ -131,14 +132,14 @@ export const purposeService = {
         p_safe_conditions: args.safeConditions ?? undefined,
         p_position: args.position ?? 0,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "purposeService") };
       const row = (Array.isArray(data) ? data[0] : data) as PurposeRow | null;
       if (!row) {
         return err("internal", "upsert_unit_purpose returned no purpose row");
       }
       return ok(rowToPurpose(row));
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "purposeService") };
     }
   },
 
@@ -154,12 +155,12 @@ export const purposeService = {
         p_unit_id: unitId,
         p_position: position,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "purposeService") };
       const row = (Array.isArray(data) ? data[0] : data) as PurposeRow | null;
       // A row-returning function with no match yields one all-NULL row.
       return ok(row && row.id ? rowToPurpose(row) : null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "purposeService") };
     }
   },
 
@@ -174,7 +175,7 @@ export const purposeService = {
         .schema("platform")
         .from("v_unit_purpose_coverage")
         .select("*");
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "purposeService") };
       return ok(
         (data ?? []).map((r) => ({
           unitType: r.unit_type ?? "",
@@ -188,7 +189,7 @@ export const purposeService = {
         })),
       );
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "purposeService") };
     }
   },
 
@@ -209,7 +210,7 @@ export const purposeService = {
         .limit(limit);
       if (unitType) query = query.eq("unit_type", unitType);
       const { data, error } = await query;
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "purposeService") };
       return ok(
         (data ?? []).map((r) => ({
           unitType: r.unit_type ?? "",
@@ -219,7 +220,7 @@ export const purposeService = {
         })),
       );
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "purposeService") };
     }
   },
 
@@ -236,7 +237,7 @@ export const purposeService = {
         .from("v_purpose_orphaned")
         .select("*")
         .limit(limit);
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "purposeService") };
       return ok(
         (data ?? []).map((r) => ({
           purposeId: r.purpose_id ?? "",
@@ -248,7 +249,7 @@ export const purposeService = {
         })),
       );
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "purposeService") };
     }
   },
 };

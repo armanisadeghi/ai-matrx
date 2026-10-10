@@ -16,10 +16,11 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { isRecordsErr, type RecordsResult } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ok, err, mapPgError, mapPgErrorPair } from "@/features/scopes/service/rpcResult";
+import { ok, err } from "@/features/scopes/service/rpcResult";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { fromAssociations } from "@/features/scopes/service/associationResult";
 import type { Json } from "@/types/database.types";
@@ -125,11 +126,11 @@ export const orchestrasService = {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("orchestra_list");
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "orchestrasService") };
       const rows = (Array.isArray(data) ? data : []) as unknown as OrchestraListRow[];
       return ok(rows.map(rowToSummary));
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "orchestrasService") };
     }
   },
 

@@ -17,14 +17,10 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import {
-  err,
-  mapPgErrorPair,
-  mapPgError,
-  ok,
-} from "@/features/scopes/service/rpcResult";
+import { err, ok } from "@/features/scopes/service/rpcResult";
 import type { RecordsResult } from "@ai-matrx/records";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
@@ -155,11 +151,11 @@ export const invitationsService = {
         p_target_type: targetType,
         p_target_id: targetId,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       const rows = (Array.isArray(data) ? data : []) as InvListRow[];
       return ok({ invitations: rows.map(toInvitation) });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -180,12 +176,12 @@ export const invitationsService = {
       const { data, error } = await supabase.rpc("inv_get_by_token", {
         p_token: token,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       const rows = (Array.isArray(data) ? data : []) as InvPartialRow[];
       const row = rows[0];
       return ok({ invitation: row ? toInvitation(row) : null });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -198,11 +194,11 @@ export const invitationsService = {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("inv_for_me");
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       const rows = (Array.isArray(data) ? data : []) as InvPartialRow[];
       return ok({ invitations: rows.map(toInvitation) });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -236,12 +232,12 @@ export const invitationsService = {
         p_invited_user_id: args.invitedUserId ?? undefined,
         ...(args.expiresAt ? { p_expires_at: args.expiresAt } : {}),
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       if (!data) return err("internal", "inv_create returned no invitation");
       // Sanctioned cast — DB-shape-guarded above (_InvCreateCheck).
       return ok({ invitation: toInvitation(data as unknown as InvCreateRow) });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -262,7 +258,7 @@ export const invitationsService = {
       const { data, error } = await supabase.rpc("inv_accept", {
         p_token: token,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       const rows = (Array.isArray(data) ? data : []) as InvAcceptRow[];
       const row = rows[0];
       if (!row) {
@@ -277,7 +273,7 @@ export const invitationsService = {
         },
       });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -292,10 +288,10 @@ export const invitationsService = {
       const { error } = await supabase.rpc("inv_revoke", {
         p_invitation_id: invitationId,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 
@@ -317,13 +313,13 @@ export const invitationsService = {
         p_invitation_id: invitationId,
         ...(expiresAt ? { p_expires_at: expiresAt } : {}),
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "invitationsService") };
       if (!data || typeof data !== "string") {
         return err("internal", "inv_resend returned no token");
       }
       return ok({ token: data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "invitationsService") };
     }
   },
 };

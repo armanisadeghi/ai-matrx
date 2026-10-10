@@ -17,15 +17,11 @@
 
 "use client";
 
+import { mapThrownError } from "@ai-matrx/records/core";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
-import {
-  err,
-  mapPgErrorPair,
-  mapPgError,
-  ok,
-} from "@/features/scopes/service/rpcResult";
+import { err, ok } from "@/features/scopes/service/rpcResult";
 import type { RecordsResult } from "@ai-matrx/records";
 import type { Json } from "@/types/database.types";
 
@@ -273,11 +269,11 @@ export const membershipsService = {
           p_container_id: containerId,
         }),
       );
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       const rows = (Array.isArray(data) ? data : []) as MbrListRow[];
       return ok({ members: rows.map(toMembership) });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 
@@ -301,13 +297,13 @@ export const membershipsService = {
           p_container_id: containerId,
         }),
       );
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       const rows = (Array.isArray(data) ? data : []) as MbrListWithUsersRow[];
       return ok({
         members: rows.map((r) => toMembershipWithUser(r, containerType)),
       });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 
@@ -347,7 +343,7 @@ export const membershipsService = {
               .order("id", { ascending: true })
               .range(from, from + FOR_USER_PAGE - 1),
           );
-          if (error) return err(...mapPgErrorPair(error));
+          if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
           const page = (Array.isArray(data) ? data : []) as MbrForUserRow[];
           rows.push(...page);
           if (page.length < FOR_USER_PAGE) break;
@@ -361,7 +357,7 @@ export const membershipsService = {
         });
         return result;
       } catch (e) {
-        return { ok: false, error: mapPgError(e) };
+        return { ok: false, error: mapThrownError(e, "membershipsService") };
       } finally {
         forUserInflight.delete(key);
       }
@@ -392,11 +388,11 @@ export const membershipsService = {
           ...(containerType ? { p_container_type: containerType } : {}),
         }),
       );
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       const rows = (Array.isArray(data) ? data : []) as MbrListRow[];
       return ok({ members: rows.map(toMembership) });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 
@@ -438,7 +434,7 @@ export const membershipsService = {
               p_container_ids: slice,
             }),
           );
-          if (error) return err(...mapPgErrorPair(error));
+          if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
           rows.push(...((Array.isArray(data) ? data : []) as MbrCountRow[]));
         }
         const result = ok({
@@ -454,7 +450,7 @@ export const membershipsService = {
         });
         return result;
       } catch (e) {
-        return { ok: false, error: mapPgError(e) };
+        return { ok: false, error: mapThrownError(e, "membershipsService") };
       } finally {
         countsInflight.delete(key);
       }
@@ -494,7 +490,7 @@ export const membershipsService = {
         // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
         p_metadata: args.metadata ?? {},
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       if (!data || typeof data !== "string") {
         return err("internal", "mbr_add returned no membership id");
       }
@@ -502,7 +498,7 @@ export const membershipsService = {
       invalidateCountsCache(args.containerType);
       return ok({ id: data });
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 
@@ -528,11 +524,11 @@ export const membershipsService = {
         p_user_id: args.userId,
         p_role: args.role,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       invalidateForUserCache(args.containerType);
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 
@@ -563,12 +559,12 @@ export const membershipsService = {
         p_container_id: args.containerId,
         p_user_id: args.userId,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (error) return { ok: false as const, error: mapThrownError(error, "membershipsService") };
       invalidateForUserCache(args.containerType);
       invalidateCountsCache(args.containerType);
       return ok(null);
     } catch (e) {
-      return { ok: false, error: mapPgError(e) };
+      return { ok: false, error: mapThrownError(e, "membershipsService") };
     }
   },
 };
