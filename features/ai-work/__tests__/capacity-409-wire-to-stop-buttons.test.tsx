@@ -26,15 +26,17 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 jest.mock("@/features/entitlements/usage-gate/usageRead", () => ({
   readUsageSnapshot: jest.fn(async () => null),
 }));
-jest.mock("@/lib/redux/store-singleton", () => ({
-  getStore: () => ({
+jest.mock("@/lib/redux/store-singleton", () => {
+  const fake = {
     getState: () => ({
       appContext: { organization_id: "884d1ce8-0000-4000-8000-000000000000", orgBootstrapResolved: true },
       userAuth: { id: "u1" },
     }),
     dispatch: jest.fn(),
-  }),
-}));
+    subscribe: () => () => {},
+  };
+  return { getStore: () => fake, getStoreSingleton: () => fake };
+});
 const submit = jest.fn(async () => ({ admitted: true }));
 jest.mock("@/lib/sandbox/useSandboxLifecycleSubmission", () => ({
   useSandboxLifecycleSubmission: () => ({ submit }),
@@ -75,7 +77,6 @@ describe("cap-full 409 on the wire", () => {
       () => null,
       (e: unknown) => e,
     );
-    console.log("CAUSE", cause instanceof Error ? cause.constructor.name : typeof cause, JSON.stringify(cause), (cause as {details?: unknown})?.details);
     const refusal = capacityRefusalOf(cause);
     expect(refusal?.occupants).toHaveLength(2);
 
