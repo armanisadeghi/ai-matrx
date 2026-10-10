@@ -397,16 +397,7 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
   // Wrapped (never read at registration — Object.assign would load the real component now),
   // so a package component that draws ErrorAlchemyMenu/ErrorNotice shows the app's, not the
   // "is not set up here" stand-in.
-  // STOPGAP (delete once the @ai-matrx/chat fix ships: host/ui-slots must not pull the store,
-  // mandates/service or host/db at import time). Until then, importing ui-slots HERE caches those
-  // modules before a test's own jest.mock("@ai-matrx/chat/host/db") runs, so the mock never
-  // applies (`client.auth.getClaims is not a function`). The registration is queued and run in a
-  // beforeAll by jest.chat-ui-deferred.setup.ts, i.e. after the suite's mocks are in place.
-  const deferChatUiRegistration = (fn: () => void) => {
-    const g = globalThis as { __deferredChatUi?: Array<() => void> };
-    (g.__deferredChatUi ??= []).push(fn);
-  };
-  deferChatUiRegistration(() => {
+  {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const uiSeam = require("@ai-matrx/chat/host/ui-slots") as typeof import("@ai-matrx/chat/host/ui-slots");
     const reactForUi = require("react") as typeof import("react");
@@ -428,7 +419,7 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
       invalidateMandateCatalogueCache: () => require("@/features/mandates/catalogue").invalidateMandateCatalogueCache(),
       /* eslint-enable @typescript-eslint/no-require-imports */
     });
-  });
+  }
   const scopes = lazy({
       "@/features/scopes/redux/selectors/active-context": [
         "selectActiveOrganizationId", "selectActiveOrganizationName", "selectActiveProjectId",

@@ -10,6 +10,7 @@
  * never a stub. A suite that registers its own slot afterwards simply overrides it.
  */
 import { createElement } from "react";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 
 type Slots = Record<string, unknown>;
 const load = (): Slots => require("@/providers/chatAppDataRegistration").chatAppDataSlots;
@@ -26,9 +27,4 @@ for (const name of COMPONENTS) {
   Lazy.displayName = `LazyChatHost(${name})`;
   lazy[name] = Lazy;
 }
-// STOPGAP (delete with the one in jest.setup.ts once @ai-matrx/chat's ui-slots stops pulling the
-// store/host-db at import): queued, run in a beforeAll by jest.chat-ui-deferred.setup.ts.
-((globalThis as { __deferredChatUi?: Array<() => void> }).__deferredChatUi ??= []).push(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  (require("@ai-matrx/chat/host/ui-slots") as typeof import("@ai-matrx/chat/host/ui-slots")).registerChatUi(lazy as never);
-});
+registerChatUi(lazy as never);

@@ -138,7 +138,6 @@ const config: Config = {
     ],
   },
   setupFiles: ["<rootDir>/jest.setup.ts", "<rootDir>/jest.chat-host.setup.ts", "<rootDir>/jest.rich-content-host.setup.ts"],
-  setupFilesAfterEnv: ["<rootDir>/jest.chat-ui-deferred.setup.ts"],
   // CSS / static assets have no Jest loader. Without these, a side-effect
   // import like `@xyflow/react/dist/style.css` reaches ts-jest, gets parsed
   // as TypeScript, and dies with `SyntaxError: Unexpected token '.'` —
