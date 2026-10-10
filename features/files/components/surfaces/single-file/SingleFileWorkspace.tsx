@@ -6,10 +6,15 @@
  * Versions) — driven by `SingleFileSurfaceHost`'s view state, so the tab and
  * page an agent opens are the tab and page the person sees.
  *
- * Rendered by the `/files/f/[fileId]` page (under its route header) and by a
- * File tile on a Board (with `toolbar`: the file's own name menu and action
- * buttons, since a tile has no route header). Must sit inside a
- * `SingleFileSurfaceHost`.
+ * Two layouts of the SAME working area (must sit inside a
+ * `SingleFileSurfaceHost`):
+ *   - `layout="page"` — the `/files/f/[fileId]` page, under its route header
+ *     (which names the file and carries its actions): the side control rail
+ *     and the full tab strip.
+ *   - `layout="tile"` — a small host that names the file in its OWN header (a
+ *     Board tile: `BoardItemType.TitleField`): ONE row — the tabs as a menu,
+ *     the kind's actions, View controls (the rail's panel in a popover) and
+ *     the file's Copy link / Download / More. The file is never named twice.
  */
 
 "use client";
@@ -20,20 +25,21 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { FileTabsBody } from "../FileTabsBody";
 import { FileViewerControlsProvider } from "../FileViewerControlsContext";
-import { FileViewerControlRail } from "./FileViewerControlRail";
-import { SingleFileActionButtons, SingleFileNameLabel } from "./SingleFileActions";
+import {
+  FileViewerControlRail,
+  FileViewerControlsButton,
+} from "./FileViewerControlRail";
+import { SingleFileActionButtons } from "./SingleFileActions";
 import { useSingleFileView } from "./SingleFileSurfaceHost";
 
 export interface SingleFileWorkspaceProps {
-  /** Show the file's name menu + action buttons above the tabs (Board tile). */
-  toolbar?: boolean;
-  density?: "compact" | "comfortable";
+  /** `page`: side rail + tab strip under a route header. `tile`: one compact row. */
+  layout?: "page" | "tile";
   className?: string;
 }
 
 export function SingleFileWorkspace({
-  toolbar = false,
-  density = "comfortable",
+  layout = "page",
   className,
 }: SingleFileWorkspaceProps) {
   const { fileId, activeTab, setActiveTab, pageNumber, setPageNumber } =
@@ -47,27 +53,43 @@ export function SingleFileWorkspace({
   return (
     <FileViewerControlsProvider>
       <div className={cn("flex h-full min-h-0 flex-col overflow-hidden bg-card", className)}>
-        {toolbar ? (
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-1 py-0.5">
-            <SingleFileNameLabel fileId={fileId} className="min-w-0 flex-1" />
-            <SingleFileActionButtons fileId={fileId} className="shrink-0" />
+        {layout === "tile" ? (
+          <FileTabsBody
+            fileId={fileId}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            pageNumber={pageNumber}
+            onPageChange={setPageNumber}
+            density="compact"
+            tabs="menu"
+            trailing={
+              <>
+                <FileViewerControlsButton
+                  activeTab={activeTab}
+                  previewKind={previewKind}
+                />
+                <SingleFileActionButtons fileId={fileId} />
+              </>
+            }
+            className="min-h-0 flex-1"
+          />
+        ) : (
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            {/* Only renders a column when the current tab + kind has controls. */}
+            <FileViewerControlRail activeTab={activeTab} previewKind={previewKind} />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <FileTabsBody
+                fileId={fileId}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                pageNumber={pageNumber}
+                onPageChange={setPageNumber}
+                density="comfortable"
+                className="min-h-0 flex-1"
+              />
+            </div>
           </div>
-        ) : null}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Only renders a column when the current tab + kind has controls. */}
-          <FileViewerControlRail activeTab={activeTab} previewKind={previewKind} />
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <FileTabsBody
-              fileId={fileId}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              pageNumber={pageNumber}
-              onPageChange={setPageNumber}
-              density={density}
-              className="min-h-0 flex-1"
-            />
-          </div>
-        </div>
+        )}
       </div>
     </FileViewerControlsProvider>
   );

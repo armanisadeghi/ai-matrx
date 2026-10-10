@@ -4,8 +4,9 @@
  * The file's OWN controls from the single-file page's top bar — its name (with
  * the full right-click menu and lineage chip) and its action buttons (Copy
  * share link, Download, Open in new tab, More actions). Extracted so the page
- * header (`SingleFileTopBar`) and a Board tile (`SingleFileWorkspace` with
- * `toolbar`) render the same controls; route navigation (back, breadcrumb,
+ * header (`SingleFileTopBar`) and a Board tile (the name in the tile header via
+ * `FileTileTitle`, the buttons in `SingleFileWorkspace layout="tile"`) render
+ * the same controls; route navigation (back, breadcrumb,
  * Show files) stays in the page header only.
  */
 
@@ -38,16 +39,19 @@ import { FileLineageChip } from "../FileLineageChip";
 /** Icon + name + lineage, inside the file's canonical right-click menu. */
 export function SingleFileNameLabel({
   fileId,
+  showIcon = true,
   className,
 }: {
   fileId: string;
+  /** Off where the host already draws an icon beside the name (a Board tile header). */
+  showIcon?: boolean;
   className?: string;
 }) {
   const file = useAppSelector((s) => selectFileById(s, fileId));
   return (
     <FileRightClickMenu fileId={fileId}>
       <div className={cn("flex min-w-0 items-center gap-2 px-1", className)}>
-        {file ? (
+        {file && showIcon ? (
           <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
         ) : null}
         <span

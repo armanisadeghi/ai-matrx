@@ -9,12 +9,19 @@
  *   - Edit             → font size, word-wrap, minimap, tab size
  *   - any other        → nothing (rail collapses to a thin spacer)
  *
- * Rendered as a fixed-width column. When no controls are appropriate
- * (e.g. Info tab, generic preview), `null` collapses the rail entirely
- * in the parent shell so the body claims the full width.
+ * Rendered as a fixed-width column on the page (`layout="page"`), or behind
+ * one "View controls" button in the compact workspace (`layout="tile"`, a
+ * Board tile) — the same panels either way. When no controls are appropriate
+ * (e.g. Info tab, generic preview), `null` collapses the rail entirely so the
+ * body claims the full width.
  */
 
 "use client";
+
+import { createContext, useContext, type ComponentType } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 
 import type { FileTab } from "@/features/files/components/surfaces/FileTabsBody";
 import type { PreviewKind } from "@/features/files/utils/preview-capabilities";
@@ -27,51 +34,97 @@ export interface FileViewerControlRailProps {
   previewKind: PreviewKind | null;
 }
 
+const EDITABLE_KINDS: ReadonlyArray<PreviewKind> = [
+  "text",
+  "code",
+  "markdown",
+  "data",
+  "svg",
+  "html",
+];
+
 /**
- * Returns the rail element for the current tab + preview kind, or `null`
- * when no controls apply (so the parent shell can collapse the column).
+ * The control panel for the current tab + preview kind, or `null` when no
+ * controls apply. ONE dispatch for both layouts: the page's side rail and the
+ * compact workspace's "View" popover render the same panel.
  */
+export function viewerControlsFor(
+  activeTab: FileTab,
+  previewKind: PreviewKind | null,
+): ComponentType | null {
+  if (activeTab === "preview") {
+    if (previewKind === "image") return ImagePreviewControls;
+    if (previewKind === "html") return HtmlPreviewControls;
+    // PDF, video, audio, markdown, code, data, text, svg, generic — their
+    // bodies already carry inline toolbars sized for full-width.
+    return null;
+  }
+  // Editor controls only make sense when the file is text-editable; other
+  // kinds' Edit tabs carry their own toolbars.
+  if (activeTab === "edit" && previewKind && EDITABLE_KINDS.includes(previewKind)) {
+    return EditControls;
+  }
+  // Document / Analysis / Share / Info / Versions render their own controls.
+  return null;
+}
+
+/** The side rail for the current tab + kind; `null` collapses the column. */
 export function FileViewerControlRail({
   activeTab,
   previewKind,
 }: FileViewerControlRailProps) {
-  if (activeTab === "preview") {
-    if (previewKind === "image") return <ImagePreviewControls />;
-    if (previewKind === "html") return <HtmlPreviewControls />;
-    // PDF, video, audio, markdown, code, data, text, svg, generic — their
-    // bodies already carry inline toolbars sized for full-width. We can
-    // promote them to the rail as a follow-up, but doing it now would
-    // require gutting and re-wiring each previewer's existing toolbar
-    // for marginal UX gain on this PR.
-    return null;
-  }
-
-  if (activeTab === "edit") {
-    // Editor controls only make sense when the file is text-editable.
-    // For non-editable kinds the Edit tab shows a "Coming soon" hint
-    // and the rail has nothing useful to surface.
-    const editableKinds: ReadonlyArray<PreviewKind> = [
-      "text",
-      "code",
-      "markdown",
-      "data",
-      "svg",
-      "html",
-    ];
-    if (previewKind && editableKinds.includes(previewKind)) {
-      return <EditControls />;
-    }
-    return null;
-  }
-
-  // Document / Analysis / Share / Info / Versions — no shell-level
-  // controls. Each of those tabs renders its own filters / actions
-  // inline already.
-  return null;
+  const Controls = viewerControlsFor(activeTab, previewKind);
+  return Controls ? <Controls /> : null;
 }
+
+/**
+ * The same panel behind one icon button — the compact workspace (a Board
+ * tile) has no room for a 176px rail beside a small preview. Absent when the
+ * tab + kind has no controls.
+ */
+export function FileViewerControlsButton({
+  activeTab,
+  previewKind,
+}: FileViewerControlRailProps) {
+  const Controls = viewerControlsFor(activeTab, previewKind);
+  if (!Controls) return null;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        {/* Same trigger shape as the file's More actions menu. */}
+        <span>
+          <TapTargetButton
+            icon={<SlidersHorizontal className="h-4 w-4" />}
+            ariaLabel="View controls"
+          />
+        </span>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-52 p-0">
+        <ControlRailLayoutContext.Provider value="popover">
+          <Controls />
+        </ControlRailLayoutContext.Provider>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Where a panel is drawn: the side rail, or inside the View popover. */
+const ControlRailLayoutContext = createContext<"rail" | "popover">("rail");
 
 /** Visual chrome shared by every rail panel — fixed width, padded, top-down. */
 export function ControlRailFrame({ children }: { children: React.ReactNode }) {
+  const layout = useContext(ControlRailLayoutContext);
+  if (layout === "popover") {
+    // Same sections, no column: the popover is the frame.
+    return (
+      <div
+        className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto px-2 py-3"
+        aria-label="Viewer controls"
+      >
+        {children}
+      </div>
+    );
+  }
   return (
     <aside
       className="flex h-full w-44 shrink-0 flex-col gap-3 overflow-y-auto border-r border-border bg-muted/20 px-2 py-3"

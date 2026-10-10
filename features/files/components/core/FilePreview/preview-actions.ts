@@ -183,3 +183,25 @@ export function buildPreviewActions(
 
   return actions;
 }
+
+/**
+ * The actions that belong to the file's KIND (open in its studio, extract
+ * text, convert, edit) — not the file's own actions (download, copy link,
+ * open, rename, trash), which a host with file chrome already shows.
+ * `withEdit: false` drops Edit for a host whose Edit tab already offers it.
+ */
+const KIND_ACTION_IDS: ReadonlySet<string> = new Set([
+  "extract-text",
+  "open-in-route",
+  "convert-to-pdf",
+  "edit",
+]);
+
+export function kindPreviewActions(
+  actions: readonly PreviewerAction[],
+  { withEdit }: { withEdit: boolean },
+): PreviewerAction[] {
+  return actions.filter(
+    (a) => KIND_ACTION_IDS.has(a.id) && (withEdit || a.id !== "edit"),
+  );
+}

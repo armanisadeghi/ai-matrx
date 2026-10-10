@@ -13,6 +13,11 @@
  *   - `?tab=…` deep-link parsing + `cloud-files:open-preview-tab` event
  *     wiring so the URL and external triggers can drive tab selection.
  *
+ * The tab row also carries the file KIND's actions (Open in Image Studio,
+ * Extract text, …) and a host's `trailing` controls, so no host stacks an
+ * action bar under the tabs; `tabs="menu"` folds the seven tabs into one
+ * menu for a small host (a Board tile).
+ *
  * What does NOT live here:
  *   - The header bar (filename, action buttons, breadcrumb) — each shell
  *     owns its own chrome. Compact side panel vs full-page page chrome
@@ -27,12 +32,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Atom,
+  ChevronDown,
   Edit3,
   FileSearch,
   Gem,
   History,
   Info,
   Share2,
+  type LucideIcon,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -43,7 +50,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { selectFileById } from "@/features/files/redux/selectors";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
+import { PreviewerActionBar } from "@/features/files/components/core/FilePreview/PreviewerActionBar/PreviewerActionBar";
+import { kindPreviewActions } from "@/features/files/components/core/FilePreview/preview-actions";
+import { usePreviewActions } from "@/features/files/components/core/FilePreview/usePreviewActions";
 import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
 import { CloudFileInlineEditor } from "@/features/files/components/core/FileEditor/CloudFileInlineEditor";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
@@ -66,6 +83,38 @@ const ALL_TABS: readonly FileTab[] = [
   "share",
   "info",
   "versions",
+];
+
+interface FileTabDef {
+  tab: FileTab;
+  label: string;
+  icon: LucideIcon;
+  title?: string;
+}
+
+const FILE_TAB_DEFS: readonly FileTabDef[] = [
+  { tab: "preview", label: "Preview", icon: Gem },
+  { tab: "edit", label: "Edit", icon: Edit3 },
+  {
+    tab: "document",
+    label: "Knowledge",
+    icon: FileSearch,
+    title: `Knowledge index view (Knowledge: pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage)`,
+  },
+  {
+    tab: "analysis",
+    label: "Analysis",
+    icon: Atom,
+    title: "AI-powered analysis of this file",
+  },
+  {
+    tab: "share",
+    label: "Share",
+    icon: Share2,
+    title: "Visibility, share links, people & groups",
+  },
+  { tab: "info", label: "Info", icon: Info },
+  { tab: "versions", label: "Versions", icon: History },
 ];
 
 export function isFileTab(value: string | null): value is FileTab {
@@ -93,6 +142,14 @@ export interface FileTabsBodyProps {
   initialTab?: FileTab;
   /** Visual size of the tab strip. */
   density?: "compact" | "comfortable";
+  /**
+   * `strip` (default): every tab in a row. `menu`: one button naming the
+   * current tab, the rest in its menu — for a small host (a Board tile)
+   * where seven tabs would fill the row.
+   */
+  tabs?: "strip" | "menu";
+  /** The host's own controls, at the end of the tab row (a tile's file actions). */
+  trailing?: React.ReactNode;
   className?: string;
 }
 
@@ -104,9 +161,16 @@ export function FileTabsBody({
   onTabChange,
   initialTab,
   density = "compact",
+  tabs = "strip",
+  trailing,
   className,
 }: FileTabsBodyProps) {
   const searchParams = useSearchParams();
+  // The kind's actions live in the tab row; the file's own (download, copy
+  // link, more) are the host header's, and Edit is a tab here.
+  const kindActions = kindPreviewActions(usePreviewActions(fileId), {
+    withEdit: false,
+  });
 
   // Citation deep-links: a search hit or chat reference can route to
   // `/files/f/<id>?tab=document&page=12&chunk=<chunk_id>`. We read the
@@ -192,65 +256,41 @@ export function FileTabsBody({
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      {/* Tabs strip — `compact` is the default (PreviewPane sizing);
-       * `comfortable` adds a hair more padding for the dedicated shell. */}
-      <div
-        className="flex shrink-0 items-center gap-0 overflow-x-auto border-b border-border bg-card"
-        role="tablist"
-        aria-label="File tabs"
-      >
-        <TabButton
-          icon={<Gem className="h-3.5 w-3.5" />}
-          label="Preview"
-          active={activeTab === "preview"}
-          onClick={() => setActiveTab("preview")}
-          density={density}
-        />
-        <TabButton
-          icon={<Edit3 className="h-3.5 w-3.5" />}
-          label="Edit"
-          active={activeTab === "edit"}
-          onClick={() => setActiveTab("edit")}
-          density={density}
-        />
-        <TabButton
-          icon={<FileSearch className="h-3.5 w-3.5" />}
-          label="Knowledge"
-          active={activeTab === "document"}
-          onClick={() => setActiveTab("document")}
-          density={density}
-          title={`Knowledge index view (Knowledge: pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage)`}
-        />
-        <TabButton
-          icon={<Atom className="h-3.5 w-3.5" />}
-          label="Analysis"
-          active={activeTab === "analysis"}
-          onClick={() => setActiveTab("analysis")}
-          density={density}
-          title="AI-powered analysis of this file"
-        />
-        <TabButton
-          icon={<Share2 className="h-3.5 w-3.5" />}
-          label="Share"
-          active={activeTab === "share"}
-          onClick={() => setActiveTab("share")}
-          density={density}
-          title="Visibility, share links, people & groups"
-        />
-        <TabButton
-          icon={<Info className="h-3.5 w-3.5" />}
-          label="Info"
-          active={activeTab === "info"}
-          onClick={() => setActiveTab("info")}
-          density={density}
-        />
-        <TabButton
-          icon={<History className="h-3.5 w-3.5" />}
-          label="Versions"
-          active={activeTab === "versions"}
-          onClick={() => setActiveTab("versions")}
-          density={density}
-        />
+      {/* Tab row — the tabs (a strip, or one menu in a small host), then the
+       * kind's own actions (open in studio, extract text, …) and the host's
+       * trailing controls, in ONE row: no action bar under the tabs. */}
+      <div className="flex shrink-0 items-center border-b border-border bg-card">
+        {tabs === "menu" ? (
+          <FileTabMenu activeTab={activeTab} onSelect={setActiveTab} />
+        ) : (
+          <div
+            className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto"
+            role="tablist"
+            aria-label="File tabs"
+          >
+            {FILE_TAB_DEFS.map((def) => (
+              <TabButton
+                key={def.tab}
+                icon={<def.icon className="h-3.5 w-3.5" />}
+                label={def.label}
+                active={activeTab === def.tab}
+                onClick={() => setActiveTab(def.tab)}
+                density={density}
+                title={def.title}
+              />
+            ))}
+          </div>
+        )}
+        <div className="ml-auto flex shrink-0 items-center">
+          {kindActions.length > 0 ? (
+            <PreviewerActionBar
+              actions={kindActions}
+              compact={density === "compact"}
+              variant="inline"
+            />
+          ) : null}
+          {trailing}
+        </div>
       </div>
 
       {/* Body — a tab mounts on FIRST activation and then stays mounted
@@ -282,6 +322,7 @@ export function FileTabsBody({
                 fileId={fileId}
                 pageNumber={pageNumber}
                 onPageChange={onPageChange}
+                actionBar="none"
                 className="h-full w-full"
               />
             </PreviewErrorBoundary>
@@ -481,6 +522,48 @@ function ComingSoon({
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
     </div>
+  );
+}
+
+/** The tabs as one menu: the current tab names the button. */
+function FileTabMenu({
+  activeTab,
+  onSelect,
+}: {
+  activeTab: FileTab;
+  onSelect: (tab: FileTab) => void;
+}) {
+  const current =
+    FILE_TAB_DEFS.find((d) => d.tab === activeTab) ?? FILE_TAB_DEFS[0];
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`File tab: ${current.label}`}
+          className="flex min-w-0 shrink items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent max-lg:min-h-11"
+        >
+          <current.icon className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{current.label}</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuRadioGroup
+          value={activeTab}
+          onValueChange={(v) => {
+            if (isFileTab(v)) onSelect(v);
+          }}
+        >
+          {FILE_TAB_DEFS.map((def) => (
+            <DropdownMenuRadioItem key={def.tab} value={def.tab}>
+              <def.icon className="mr-2 h-4 w-4" />
+              {def.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

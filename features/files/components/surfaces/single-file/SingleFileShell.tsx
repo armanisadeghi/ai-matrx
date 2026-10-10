@@ -148,7 +148,7 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
         )}
       >
         <SingleFileTopBar fileId={fileId} />
-        <SingleFileWorkspace density="comfortable" className="flex-1" />
+        <SingleFileWorkspace layout="page" className="flex-1" />
       </div>
     </SingleFileSurfaceHost>
   );

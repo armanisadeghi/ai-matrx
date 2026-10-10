@@ -40,6 +40,7 @@ import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/
 import { NotePickerInline } from "@/features/notes/components/NotePickerPopover";
 import { SingleFileSurfaceHost } from "@/features/files/components/surfaces/single-file/SingleFileSurfaceHost";
 import { SingleFileWorkspace } from "@/features/files/components/surfaces/single-file/SingleFileWorkspace";
+import { SingleFileNameLabel } from "@/features/files/components/surfaces/single-file/SingleFileActions";
 import { FILE_SURFACE_NAME } from "@/features/surfaces/manifests/file.manifest";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
@@ -48,7 +49,7 @@ import { NoteItemBody, NoteTileTitle } from "./NoteItemBody";
 import { AGENT_FORM_PLACEHOLDER_TITLE, AgentFormItemBody } from "./AgentFormItemBody";
 import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
-import { entityComments, type BoardItemType, type HeaderActionProps, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
+import { entityComments, type BoardItemType, type HeaderActionProps, type ItemBodyProps, type PickerProps, type PlacedItem, type TitleFieldProps } from "./types";
 import { useBoardChats } from "./board-chats";
 import { ConnectedSourceChips, useConnectedChatContext } from "./connected-sources";
 import {
@@ -425,10 +426,11 @@ function FileSurfaceHost({ source, children }: { source: NodeSource; children: R
 }
 
 /**
- * The file page's own working area: the file's name menu and actions, the
- * per-tab control rail and all seven tabs (Preview, Edit, Knowledge,
- * Analysis, Share, Info, Versions). Route navigation (back, breadcrumb, Show
- * files) is the page's, not the file's, so it is not here.
+ * The file page's own working area in its compact tile layout: ONE row — the
+ * seven tabs as a menu, the kind's actions, View controls and the file's
+ * Copy link / Download / More — over the preview. The tile header names the
+ * file (`FileTileTitle`), so the body never names it again. Route navigation
+ * (back, breadcrumb, Show files) is the page's, not the file's.
  */
 function FileBody({ source, title, onSource }: ItemBodyProps) {
   const fileId = fileIdOf(source);
@@ -446,7 +448,24 @@ function FileBody({ source, title, onSource }: ItemBodyProps) {
       </div>
     );
   }
-  return <SingleFileWorkspace toolbar density="compact" className="h-full" />;
+  return <SingleFileWorkspace layout="tile" className="h-full" />;
+}
+
+/**
+ * The File tile's header title: the file's own name with its right-click menu
+ * and lineage chip once the file is in the store; the plain tile title until
+ * then. The header draws the type icon, so the name carries none.
+ */
+function FileTileTitle({ source, title }: TitleFieldProps) {
+  const fileId = fileIdOf(source);
+  const loaded = useAppSelector((state) => (fileId ? selectFileById(state, fileId) !== undefined : false));
+  if (!fileId || !loaded) return <p className="truncate text-sm font-medium text-foreground">{title}</p>;
+  // Clipped: in a narrow header the name shrinks, never paints over the chips beside it.
+  return (
+    <div className="flex min-w-0 overflow-hidden">
+      <SingleFileNameLabel fileId={fileId} showIcon={false} className="-ml-1 min-w-0" />
+    </div>
+  );
 }
 
 function FilePicker({ onPick, onCancel }: PickerProps) {
@@ -614,6 +633,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 800, h: 600 },
     matches: (s: NodeSource) => fileIdOf(s) !== null || isEntity(s, "file"),
     Body: FileBody,
+    TitleField: FileTileTitle,
     bringIn: { label: "File", Picker: FilePicker },
     record: { place: fileItem, searchToken: "file" },
     href: (s) => {

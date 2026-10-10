@@ -430,7 +430,8 @@ function FileFrameBody({ fileId, onBack }: FileFrameBodyProps) {
         className="flex-1 overflow-hidden"
         data-surface-value="active_file_id"
       >
-        <FilePreview fileId={fileId} className="h-full w-full" />
+        {/* The header's Actions sheet holds the file's own actions. */}
+        <FilePreview fileId={fileId} actionBar="kind" className="h-full w-full" />
       </div>
       <MobileFileActionSheet
         open={actionsOpen}

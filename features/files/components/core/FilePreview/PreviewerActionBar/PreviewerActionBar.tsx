@@ -38,12 +38,16 @@ export interface PreviewerAction {
 export interface PreviewerActionBarProps {
   actions: PreviewerAction[];
   compact?: boolean;
+  /** `bar` (default): its own row under a border. `inline`: buttons only,
+   * placed inside a host's existing row (the file tab row). */
+  variant?: "bar" | "inline";
   className?: string;
 }
 
 export function PreviewerActionBar({
   actions,
   compact = false,
+  variant = "bar",
   className,
 }: PreviewerActionBarProps) {
   if (actions.length === 0) return null;
@@ -61,7 +65,9 @@ export function PreviewerActionBar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-background/80 px-2 py-1",
+        variant === "bar"
+          ? "flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-background/80 px-2 py-1"
+          : "flex shrink-0 items-center gap-0.5 px-1",
         className,
       )}
     >

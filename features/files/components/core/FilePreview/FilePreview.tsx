@@ -10,15 +10,8 @@
 
 "use client";
 
-import { useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { extractErrorMessage } from "@/utils/errors";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
-import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
-import { buildPdfExtractorHref } from "@/features/pdf/surfaces/hrefs";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
@@ -29,12 +22,10 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { isBrowserRenderableImageMime } from "@/features/files/utils/file-types";
-import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
-import { useOptionalCanvas } from "@ai-matrx/canvas/react";
-import { openCloudFileEditor } from "@/features/files/canvas/cloudFileEditorKind";
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
 import { PreviewerActionBar } from "./PreviewerActionBar/PreviewerActionBar";
-import { buildPreviewActions } from "./preview-actions";
+import { kindPreviewActions } from "./preview-actions";
+import { usePreviewActions } from "./usePreviewActions";
 import { PreviewerSwitch } from "./PreviewerSwitch";
 
 // ---------------------------------------------------------------------------
@@ -72,7 +63,14 @@ export interface FilePreviewProps {
   /** Optional controlled 1-based page for PDF files. */
   pageNumber?: number;
   onPageChange?: (pageNumber: number) => void;
-  /** Signed URL expiry. Default 1h. */
+  /**
+   * The action row above the preview. `all` (default): every action — for a
+   * host with no file chrome of its own. `kind`: only the kind's actions (open
+   * in studio, extract text, edit) — the host already shows the file's own
+   * Download / Copy link / More. `none`: no row — the host places the actions
+   * itself (`FileTabsBody` puts the kind actions in its tab row).
+   */
+  actionBar?: "all" | "kind" | "none";
 }
 
 export function FilePreview({
@@ -80,17 +78,22 @@ export function FilePreview({
   className,
   pageNumber,
   onPageChange,
+  actionBar: actionBarMode = "all",
 }: FilePreviewProps) {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  // Edit opens the file's editor as a canvas tab beside this preview.
-  const canvas = useOptionalCanvas();
   // Canonical file UUID only — hydrate when the row isn't already in the
   // Files tree (system/crawl artifacts, deep links, floating preview).
   const ensure = useEnsureCloudFile(fileId);
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const actions = useFileActions(fileId);
-  const existingPdfExtraction = useExistingPdfExtraction();
+  const previewActions = usePreviewActions(fileId);
+  const barActions =
+    actionBarMode === "all"
+      ? previewActions
+      : actionBarMode === "kind"
+        ? kindPreviewActions(previewActions, { withEdit: true })
+        : [];
+  const actionBar =
+    barActions.length > 0 ? <PreviewerActionBar actions={barActions} /> : null;
 
   // Inline preview URL resolution.
   //
@@ -159,139 +162,12 @@ export function FilePreview({
     ? assetLoading || Boolean(privateImageFileId && authenticatedImage.loading)
     : false;
 
-  const capability = useMemo(() => {
-    if (!file) return null;
-    return getPreviewCapability(file.fileName, file.mimeType, file.fileSize);
-  }, [file]);
+  const capability = file
+    ? getPreviewCapability(file.fileName, file.mimeType, file.fileSize)
+    : null;
 
   // Per-type action bar wiring. PDF editing belongs to the canonical
   // Analysis Studio; other editable kinds keep their existing editor host.
-  const actionBar = useMemo(() => {
-    if (!file || !capability) return null;
-    // Virtual sources surface an "Open in <feature>" handoff in the action
-    // bar when the adapter declares `openInRoute`. The handoff is secondary
-    // — the primary experience is the inline preview the adapter mounts via
-    // `inlinePreview`.
-    let openInRoute: { label: string; onClick: () => void } | undefined;
-    if (file.source.kind === "virtual") {
-      const adapter = getVirtualSource(file.source.adapterId);
-      const route = adapter?.openInRoute?.({
-        id: file.source.virtualId,
-        kind: "file",
-        name: file.fileName,
-        parentId: null,
-        mimeType: file.mimeType ?? undefined,
-      });
-      if (route && adapter) {
-        openInRoute = {
-          label: `Open in ${adapter.label}`,
-          onClick: () => router.push(route),
-        };
-      }
-    }
-    // PDF files: take THIS document to the extractor (resolve the linked
-    // processed_documents row via the canonical bridge). The old behavior
-    // opened the floating extractor window with no document context —
-    // the user landed nowhere near the file they were looking at.
-    if (
-      !openInRoute &&
-      capability.previewKind === "pdf" &&
-      file.source.kind !== "virtual"
-    ) {
-      openInRoute = {
-        label: "Open in PDF Extractor",
-        onClick: () => {
-          void resolvePdfSurfaceIds({ fileId }).then((ids) => {
-            router.push(buildPdfExtractorHref(ids));
-          });
-        },
-      };
-    }
-    // Image files get a shortcut to the full-screen Image Studio Edit mode.
-    // The Edit tab inside this viewer mounts the same Filerobot shell, but
-    // the full-page route gives the user dramatically more canvas + the
-    // AI sidecar gets the room it needs.
-    if (
-      !openInRoute &&
-      capability.previewKind === "image" &&
-      file.source.kind !== "virtual"
-    ) {
-      openInRoute = {
-        label: "Open in Image Studio",
-        onClick: () =>
-          router.push(`/images/edit/${encodeURIComponent(fileId)}`),
-      };
-    }
-    const previewActions = buildPreviewActions({
-      file,
-      previewKind: capability.previewKind,
-      onDownload: () => actions.download(),
-      onCopyLink: () => {
-        void actions.copyShareUrl();
-      },
-      onOpenFullView: () => router.push(`/files/f/${fileId}`),
-      onRename: () => requestRename("file", fileId),
-      onDelete: () => void actions.delete(),
-      onEdit:
-        capability.previewKind === "pdf"
-          ? () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`)
-          : () => void openCloudFileEditor(canvas, fileId, file.fileName),
-      openInRoute,
-      onExtractText:
-        capability.previewKind === "pdf" && file.source.kind !== "virtual"
-          ? async () => {
-              const toastId = toast.loading("Starting PDF extraction…");
-              try {
-                const documentId = await existingPdfExtraction.extract(fileId);
-                toast.success("PDF text is ready", {
-                  id: toastId,
-                  action: {
-                    label: "Open extraction",
-                    onClick: () =>
-                      router.push(`/knowledge/sources/${encodeURIComponent(documentId)}`),
-                  },
-                });
-              } catch (error: unknown) {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "PDF extraction failed",
-                  { id: toastId },
-                );
-              }
-            }
-          : undefined,
-      // Office → PDF: server renders via LibreOffice, persists a NEW pdf
-      // asset, and we take the user straight to it.
-      onConvertToPdf:
-        capability.previewKind === "office"
-          ? async () => {
-              const toastId = toast.loading("Converting to PDF…");
-              try {
-                const { convertOfficeToPdf } =
-                  await import("@/features/files/api/office");
-                const ref = await convertOfficeToPdf(fileId);
-                toast.success("PDF ready", { id: toastId });
-                router.push(`/files/f/${ref.file_id}`);
-              } catch (err) {
-                toast.error(
-                  extractErrorMessage(err) || "Couldn't convert to PDF",
-                  { id: toastId },
-                );
-              }
-            }
-          : undefined,
-    });
-    return <PreviewerActionBar actions={previewActions} />;
-  }, [
-    file,
-    capability,
-    actions,
-    router,
-    fileId,
-    dispatch,
-    existingPdfExtraction,
-  ]);
 
   // Deep links can create a partial Redux record before the canonical render
   // fields arrive. The record's presence is not proof that its empty

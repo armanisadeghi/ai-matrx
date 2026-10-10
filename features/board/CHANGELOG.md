@@ -1,5 +1,9 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — File tile: one header, one row
+
+- **The File tile names its file once and keeps the picture big:** the tile header shows the file's name with its right-click menu and lineage (`TitleField: FileTileTitle` in `items/work-items.tsx`); the body is `SingleFileWorkspace layout="tile"` — ONE row (the seven tabs as a menu, the kind's actions, View controls in a popover, Copy link / Download / More) instead of a second name row, a tab strip, an action bar and a 176px side rail. Details: `features/files/FEATURE.md` change log.
+
 ## 2026-10-09 — Last four live-verification defects (ld41)
 
 - **Send to back / Bring to front show at once on a selected tile:** a selected tile was drawn at z 7 whatever its place in the order, so it stayed above tiles that were now in front of it until deselect. `useTileLift` (`components/BoardTile.tsx`) lifts the selection AND every tile in front of it above the drawings, at `7 + its place in the order` (`TileLayersContext`, provided by `UserBoard`); selected tiles stay above drawings, never above a tile in front of them. The marquee rose to z 100000 so a long order never hides it.
