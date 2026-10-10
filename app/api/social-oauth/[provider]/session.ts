@@ -1,8 +1,20 @@
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 
-export const SOCIAL_PROVIDERS = ["discord", "twitch", "snapchat"] as const;
+export const SOCIAL_PROVIDERS = ["linkedin", "discord", "twitch", "snapchat", "mastodon", "bluesky"] as const;
 export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
 export const SOCIAL_SETTINGS_RETURN = "/user-settings/integrations";
+
+/** Production and agent-owned localhost previews are the only OAuth callback mounts. */
+export function isSocialCallbackOrigin(origin: string, provider?: SocialProvider): boolean {
+  try {
+    const url = new URL(origin);
+    return url.origin === "https://www.aimatrx.com" ||
+      url.origin === "http://localhost:3000" ||
+      (url.protocol === "http:" && url.hostname.endsWith(".localhost") && url.port === "3001");
+  } catch {
+    return false;
+  }
+}
 
 export function isSocialProvider(value: string): value is SocialProvider {
   return (SOCIAL_PROVIDERS as readonly string[]).includes(value);

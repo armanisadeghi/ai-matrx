@@ -1,0 +1,54 @@
+/** @jest-environment node */
+import { NextRequest } from "next/server";
+import { GET } from "./route";
+import { socialAuthorizeUrl } from "@/features/social-connections/customer-service";
+import { sendMatrxRequest } from "@ai-matrx/agents/matrx";
+import { cookies } from "next/headers";
+
+jest.mock("next/headers", () => ({ cookies: jest.fn() }));
+jest.mock("@ai-matrx/agents/matrx", () => ({
+  buildMatrxRequestUrl: (origin: string, path: string) => origin + path,
+  sendMatrxRequest: jest.fn(),
+}));
+jest.mock("@/lib/api/organization-context", () => ({
+  requireOrganizationContext: (value: string) => value,
+  applyOrganizationContextHeader: (headers: Record<string, string>, organization: string) => ({ ...headers, "x-organization-id": organization }),
+}));
+jest.mock("@/utils/supabase/server", () => ({ createClient: async () => ({ auth: { getSession: async () => ({ data: { session: { access_token: "test-matrx-session" } } }) } }) }));
+jest.mock("@/utils/supabase/resolveUser", () => ({ getClaimsUser: async () => ({ data: { user: { id: "test-customer" } } }) }));
+jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
+jest.mock("@/utils/supabase/claimsUser", () => ({ getClaimsUser: jest.fn() }));
+jest.mock("@/lib/api/resolve-service-url", () => ({ resolveServiceBaseUrl: () => "https://server.app.matrxserver.com" }));
+
+const origin = "https://www.aimatrx.com";
+const organizationId = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+const connectionId = "00000000-0000-4000-8000-000000000001";
+const transport = jest.mocked(sendMatrxRequest);
+const setCookie = jest.fn();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { location: { origin } } });
+  jest.mocked(cookies).mockResolvedValue({ set: setCookie } as unknown as Awaited<ReturnType<typeof cookies>>);
+  transport.mockResolvedValue(new Response(JSON.stringify({ authorization_url: "https://www.linkedin.com/oauth/v2/authorization?state=bound-state" }), { status: 200 }));
+});
+
+test("reconnect carries the selected connection through the UI URL and posted consent request", async () => {
+  const url = socialAuthorizeUrl("linkedin", organizationId, undefined, undefined, connectionId);
+  const response = await GET(new NextRequest(url), { params: Promise.resolve({ provider: "linkedin" }) });
+  expect(response.status).toBe(307);
+  expect(response.headers.get("location")).toContain("www.linkedin.com/oauth/v2/authorization");
+  expect(transport).toHaveBeenCalledTimes(1);
+  const request = transport.mock.calls[0][1];
+  const body = JSON.parse(String(request?.body));
+  expect(body).toMatchObject({ connection_id: connectionId, redirect_uri: origin + "/api/social-oauth/linkedin/callback" });
+  expect(body.browser_proof_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(setCookie).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.objectContaining({ httpOnly: true, secure: true }));
+});
+
+test("connect another account starts unbound consent", async () => {
+  const url = socialAuthorizeUrl("linkedin", organizationId);
+  await GET(new NextRequest(url), { params: Promise.resolve({ provider: "linkedin" }) });
+  const body = JSON.parse(String(transport.mock.calls[0][1]?.body));
+  expect(body).not.toHaveProperty("connection_id");
+});

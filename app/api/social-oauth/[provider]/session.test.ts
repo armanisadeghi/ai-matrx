@@ -1,4 +1,4 @@
-import { parseSocialBrowserSession, safeSocialReturn } from "./session";
+import { isSocialCallbackOrigin, parseSocialBrowserSession, safeSocialReturn } from "./session";
 
 describe("social OAuth browser session", () => {
   test("refuses external return paths", () => {
@@ -11,6 +11,11 @@ describe("social OAuth browser session", () => {
     expect(parseSocialBrowserSession(JSON.stringify({
       state: "csrf-state", browserProof: "browser-proof", returnUrl: "/user-settings/integrations", backendOrigin: "https://server.app.matrxserver.com", createdAt: Date.now(),
     }))).toBeNull();
+  });
+
+  test("accepts the agent-owned preview origin but no arbitrary callback host", () => {
+    expect(isSocialCallbackOrigin("http://s59474d09.localhost:3001")).toBe(true);
+    expect(isSocialCallbackOrigin("https://attacker.invalid")).toBe(false);
   });
 
   test("accepts a complete, recent browser session", () => {
