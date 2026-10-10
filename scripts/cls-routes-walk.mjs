@@ -1,5 +1,5 @@
 // scripts/cls-routes-walk.mjs — cold-load layout shift for /data, /messages, /meetings as admin and member (headless).
-//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--chat=default|open|closed] [--max=0.01] [--verbose]
+//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--chat=default|open|closed] [--max=0.01] [--nav-runs=5] [--verbose]
 // --chat=open|closed seeds the shell chat dock's remembered state (cookies) per route family, as a returning person has it;
 // "default" is a first visit with no cookie. Client navigation (e.g. /chat/new to /notes with a real click) is covered by the chat-dock
 // instant-on-navigation rule. After the cold loads, a client-navigation case per seat/width opens /chat/new, then clicks the
@@ -17,6 +17,7 @@ const seats = opt("seats", "admin,member").split(",");
 const widths = opt("widths", "390,1024,1440").split(",").map(Number);
 const chatMode = opt("chat", "default");
 const MAX = Number(opt("max", "0.01"));
+const NAV_RUNS = Number(opt("nav-runs", "5"));
 const verbose = args.includes("--verbose");
 const browser = await chromium.launch({ headless: true });
 let bad = false;
@@ -92,7 +93,9 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
   await bp.waitForTimeout(3000);
   const state = await boot.storageState();
   await boot.close();
-  for (const width of widths.filter((w) => w >= 1024)) for (let attempt = 0; attempt < 3; attempt++) try {
+  for (const width of widths.filter((w) => w >= 1024)) {
+  const navRuns = [];
+  for (let run = 0; run < NAV_RUNS; run++) for (let attempt = 0; attempt < 3; attempt++) try {
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, storageState: state });
     const page = await ctx.newPage();
     await page.goto(`${origin}/chat/new`, { timeout: 240_000 });
@@ -107,13 +110,13 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
     const link = page.locator('a[href="/notes"]:visible').first();
     await link.waitFor({ state: "attached", timeout: 30_000 }).catch(() => {});
     const box = await link.boundingBox().catch(() => null);
-    if (!box) { console.log(`${seat} ${width}px client-nav /chat/new -> /notes: SKIPPED (no visible /notes link; open the nav)`); await ctx.close(); break; }
+    if (!box) { console.log(`${seat} ${width}px client-nav /chat/new -> /notes: SKIPPED (no visible /notes link; open the nav)`); await ctx.close(); run = NAV_RUNS; break; }
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForURL(/\/notes(\?|$)/, { timeout: 60_000 }).catch(() => {});
     await page.waitForTimeout(9000);
     const r = await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname }));
-    console.log(`${seat} ${width}px client-nav /chat/new -> /notes: CLS = ${r.cls.toFixed(4)} (landed ${r.url})`);
+    navRuns.push(r.cls);
     if (r.url !== "/notes" || r.cls > MAX) bad = true;
     if (r.cls > MAX || verbose) console.log(JSON.stringify(r.shifts, null, 1));
     await ctx.close();
@@ -121,6 +124,8 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
   } catch (e) {
     // A dev server that recompiles mid-click destroys the page context: retry the case.
     if (attempt >= 2) throw e;
+  }
+  if (navRuns.length) console.log(`${seat} ${width}px client-nav /chat/new -> /notes: CLS per run = ${navRuns.map((c) => c.toFixed(4)).join(", ")} (every run must be <= ${MAX})`);
   }
 }
 await browser.close();

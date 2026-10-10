@@ -452,6 +452,17 @@
   transition: none !important;
 }
 
+/* A click on an in-app link to a page with a different chat dock width (ShellChatWidthInstant): the first
+   track takes the target page's width at once, inside the click's own window, and the route commit changes
+   nothing. A domain panel being left folds to the strip in the same step. */
+.shell-root[data-shell-nav-pending] {
+  grid-template-columns: calc(var(--shell-sidebar-w) + var(--shell-nav-chat-w, 0px)) 1fr !important;
+  transition: none !important;
+}
+.shell-root[data-shell-nav-pending] .shell-sidebar {
+  width: var(--shell-sidebar-w);
+}
+
 /* The shell chat opens at this width on a wide screen with no remembered choice (see ShellChatDock's
    wideDefault, SHELL_CHAT_WIDE_QUERY). It opens after hydration, so the first paint reserves its room here;
    the dock's own published --shell-chat-w (inline) takes over without a change in value. */
