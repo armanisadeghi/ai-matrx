@@ -21,6 +21,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  useSurfaceClientTools,
+  useSurfaceRuntimeRegistration,
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bookmark, ExternalLink, PanelRightClose, RefreshCw } from "lucide-react";
 
@@ -72,6 +76,14 @@ import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
 import { PostMedia, guessAspect } from "./PostMedia";
+import { usePostActions } from "./usePostActions";
+import { postScopeValues } from "@/features/board/items/social-tile-values";
+import { socialPostKind, postTranscriptKind } from "../kind-models";
+import {
+  SOCIAL_POST_CLIENT_TOOLS,
+  SOCIAL_POST_SURFACE_NAME,
+  createSocialPostScope,
+} from "@/features/surfaces/manifests/social-tiles.manifest";
 
 export { guessAspect };
 
@@ -306,6 +318,54 @@ function Stat({ label, value, sub, title }: { label: string; value: React.ReactN
   );
 }
 
+
+/**
+ * Publishes the post this body shows as the agent surface `matrx-user/social-post` (the same values and
+ * actions a board's post tile gives), from the state already rendered. Mounted only once the post is read.
+ */
+function PostAgentSurface({
+  data,
+  postId,
+  organizationId,
+  brandSeg,
+  host,
+}: {
+  data: NonNullable<ReturnType<typeof usePostDetail>["data"]>;
+  postId: string;
+  organizationId: string;
+  brandSeg: string;
+  host: PostHost;
+}) {
+  const router = useRouter();
+  const transcript = usePostTranscript(postId);
+  const kind = socialPostKind({
+    post: data.post,
+    stat: data.stat,
+    handle: data.profile?.handle ?? null,
+    transcript: postTranscriptKind(postId, transcript.data ?? null),
+  });
+  const actions = usePostActions({
+    postId,
+    organizationId,
+    hasTranscript: Boolean(transcript.data?.text),
+    openDetail: () => {
+      if (host !== "page") router.push(`/marketing/${brandSeg}/socials/post/${postId}`);
+    },
+  });
+  const values = createSocialPostScope(postScopeValues(kind));
+  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_POST_SURFACE_NAME, getScope: () => values, isEditable: false });
+  useSurfaceClientTools(SOCIAL_POST_SURFACE_NAME, {
+    [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => actions.transcript(),
+    [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => actions.breakdown(),
+    [SOCIAL_POST_CLIENT_TOOLS.saveToSwipe]: () => actions.saveToSwipe(),
+    [SOCIAL_POST_CLIENT_TOOLS.openDetail]: () => {
+      actions.openDetail();
+      return host === "page" ? "Already on the post's full page." : "Opened the post's full page.";
+    },
+  });
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Body
 // ---------------------------------------------------------------------------
@@ -448,6 +508,7 @@ export function PostDetailBody({
         host === "page" ? "" : "h-full overflow-y-auto @[34rem]:overflow-hidden",
       )}
     >
+      <PostAgentSurface data={detail.data} postId={postId} organizationId={organizationId} brandSeg={brandSeg} host={host} />
       <div
         className={cn(
           "grid gap-3 p-3",

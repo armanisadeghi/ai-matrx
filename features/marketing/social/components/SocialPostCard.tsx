@@ -19,6 +19,7 @@
  * card, so there is nothing in it to reuse for a thumbnail card.
  */
 
+import Link from "next/link";
 import { Bookmark, Copy, ExternalLink, MoreHorizontal } from "lucide-react";
 
 import {
@@ -66,14 +67,18 @@ export interface SocialPostCardProps {
   isNew?: boolean;
   /** Compact density: thumbnail + badge + views only. */
   compact?: boolean;
+  /** The creator's account route; present -> the @handle is a link to it. */
+  accountHref?: string | null;
+  /** Hide the outlier badge where a multiple means nothing (a swipe file holds posts saved for any reason). */
+  hideOutlier?: boolean;
   className?: string;
 }
 
-export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, className }: SocialPostCardProps) {
+export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, accountHref, hideOutlier, className }: SocialPostCardProps) {
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
   // A post that reports no views (a carousel on some platforms) has no multiple to explain: no badge, no views stat.
-  const hideBadge = badge.text === NO_VIEWS_TEXT;
+  const hideBadge = hideOutlier || badge.text === NO_VIEWS_TEXT;
   const stats = [countLabel(post.views, "view"), compact ? null : countLabel(post.likes, "like")].filter(Boolean).join(" · ");
   const absolute = post.postedAt ? new Date(post.postedAt).toLocaleString() : "";
 
@@ -135,12 +140,27 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
       <div className={cn("flex min-w-0 flex-col gap-0.5 px-2 py-1.5", compact && "py-1")}>
         {compact ? null : (
           <p className="truncate text-xs font-medium text-foreground" title={post.hookLine}>
-            {post.hookLine || "No caption"}
+            {onOpen ? (
+              <button type="button" className="max-w-full truncate text-left hover:underline" onClick={() => onOpen(post)}>
+                {post.hookLine || "No caption"}
+              </button>
+            ) : (
+              post.hookLine || "No caption"
+            )}
           </p>
         )}
         <div className="flex min-w-0 items-center justify-between gap-1 text-[11px] text-muted-foreground">
           <span className="truncate" title={absolute}>
-            {compact ? "" : `${post.handle ? `@${post.handle} · ` : ""}${relativeAge(post.postedAt)}`}
+            {compact ? null : post.handle ? (
+              accountHref ? (
+                <Link href={accountHref} className="text-foreground underline-offset-2 hover:underline" data-clickable="">
+                  @{post.handle}
+                </Link>
+              ) : (
+                `@${post.handle}`
+              )
+            ) : null}
+            {compact ? "" : `${post.handle ? " · " : ""}${relativeAge(post.postedAt)}`}
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

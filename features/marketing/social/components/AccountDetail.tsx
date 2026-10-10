@@ -11,6 +11,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import {
+  useSurfaceClientTools,
+  useSurfaceRuntimeRegistration,
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { profileScopeValues } from "@/features/board/items/social-tile-values";
+import {
+  SOCIAL_PROFILE_CLIENT_TOOLS,
+  SOCIAL_PROFILE_SURFACE_NAME,
+  createSocialProfileScope,
+} from "@/features/surfaces/manifests/social-tiles.manifest";
+import { outlierRowKindFromCard, socialProfileKind } from "../kind-models";
 import { ArrowLeft, ExternalLink, Plus, RefreshCw } from "lucide-react";
 
 import {
@@ -69,6 +80,7 @@ import { SocialPostCard } from "./SocialPostCard";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 import { profileAvatarDoor } from "../server";
 import { SocialImage } from "./SocialImage";
+import { UntrackedAccount } from "./UntrackedAccount";
 
 type InnerTab = "posts" | "outliers" | "growth";
 const INNER_TABS = [
@@ -279,6 +291,32 @@ function GrowthPanel({ profileId }: { profileId: string }) {
   );
 }
 
+const TOP_OUTLIERS_SHOWN = 8;
+
+/** Publishes this account as the agent surface `matrx-user/social-profile` (the board tile's values and action). */
+function ProfileAgentSurface({
+  row,
+  posts,
+}: {
+  row: NonNullable<ReturnType<typeof useProfile>["data"]>;
+  posts: readonly PostCardModel[];
+}) {
+  const outliers = [...posts]
+    .filter((c) => c.outlierScore !== null)
+    .sort((a, b) => (b.outlierScore ?? 0) - (a.outlierScore ?? 0))
+    .slice(0, TOP_OUTLIERS_SHOWN)
+    .flatMap((c) => {
+      const r = outlierRowKindFromCard(c);
+      return r ? [r] : [];
+    });
+  const values = createSocialProfileScope(profileScopeValues(socialProfileKind(row), outliers));
+  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_PROFILE_SURFACE_NAME, getScope: () => values, isEditable: false });
+  useSurfaceClientTools(SOCIAL_PROFILE_SURFACE_NAME, {
+    [SOCIAL_PROFILE_CLIENT_TOOLS.openAccount]: () => "Already on this account's page.",
+  });
+  return null;
+}
+
 export function AccountDetail({ platform, profileId }: { platform: string; profileId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
@@ -345,6 +383,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   }
 
   if (profile.isLoading) return <RegionSkeleton shape="cards" count={2} />;
+  // No stored profile under this id: it may be a brand account nobody has tracked yet (its property id).
+  if (!profile.isError && !profile.data) return <UntrackedAccount platform={platform} propertyId={profileId} />;
   if (profile.isError || !profile.data) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
@@ -373,6 +413,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
 
   return (
     <div className="flex flex-col gap-3">
+      <ProfileAgentSurface row={p} posts={list} />
       <div className="flex min-h-9 flex-wrap items-center gap-2">
         <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
         {p.avatar_url || p.avatar_file_id ? (

@@ -14,6 +14,9 @@ import Link from "next/link";
 import { SocialConnectionsPanel } from "@/features/social-connections/SocialConnectionsPanel";
 import { CustomerAccountsPanel } from "@/features/social-connections/CustomerAccountsPanel";
 import { useRouter } from "next/navigation";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import { createSocialAccountsScope, SOCIAL_ACCOUNTS_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-social-accounts.manifest";
 import { useMemo, useState } from "react";
 import { Globe, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 
@@ -60,6 +63,7 @@ import {
 } from "../types";
 import { PersonOwnerChip } from "../../components/brands/PersonOwnerChip";
 import { socialRowOpen } from "../row-open";
+import { accountHref } from "../account-href";
 import { AccountSummary } from "./AccountSummary";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark } from "./PlatformMark";
@@ -72,18 +76,12 @@ const ROLE_OPTIONS: SelectOption<TrackedRole>[] = TRACKED_ROLES.map((r) => ({
   label: TRACKED_ROLE_LABELS[r],
 }));
 
-export function accountHref(
-  brandSeg: string,
-  row: Pick<AccountRow, "platform" | "profileId">,
-): string | null {
-  return row.profileId
-    ? `/marketing/${brandSeg}/socials/${row.platform}/${row.profileId}`
-    : null;
-}
+export { accountHref };
 
 export function AccountsTab() {
   const { brandId, brandSeg, organizationId, openTrack } = useSocials();
-  const brandKind = useMarketingBrand().kind;
+  const brand = useMarketingBrand();
+  const brandKind = brand.kind;
   const router = useRouter();
   const [showXConnections, setShowXConnections] = useState(false);
   const [summaryRow, setSummaryRow] = useState<AccountRow | null>(null);
@@ -406,6 +404,68 @@ export function AccountsTab() {
     [accounts.data],
   );
   const untrackedOwn = rows.filter(trackableOwn);
+
+  // The agent surface: built from the rows already on screen (never a fetch).
+  const surfaceScope = () =>
+    createSocialAccountsScope(
+      accounts.isError
+        ? {
+            accounts_loaded: false,
+            load_error: socialErrorMessage(accounts.error, "Could not read the accounts."),
+            brand_id: brandId,
+            brand_name: brand.name,
+            brand_kind: brandKind,
+          }
+        : accounts.isLoading
+          ? ({ accounts_loaded: false, brand_id: brandId, brand_name: brand.name, brand_kind: brandKind } as never)
+          : {
+              accounts_loaded: true,
+              brand_id: brandId,
+              brand_name: brand.name,
+              brand_kind: brandKind,
+              account_count: rows.length,
+              accounts_by_role: Object.fromEntries(
+                TRACKED_ROLES.map((r) => [r, rows.filter((x) => x.role === r).length]),
+              ),
+              untracked_own_count: untrackedOwn.length,
+              account_list: xmlList(
+                "accounts",
+                rows,
+                (r) =>
+                  xmlElement("account", {
+                    id: r.profileId ?? r.rowId,
+                    platform: r.platform,
+                    handle: r.handle,
+                    name: r.displayName,
+                    role: r.role,
+                    status: r.status,
+                    followers: r.followers,
+                    growth: r.growth === null ? null : formatGrowth(r.growth),
+                    posts: r.postsTracked,
+                    best_multiple: r.bestScore,
+                    has_page: accountHref(brandSeg, r) !== null,
+                  }),
+                { maxRows: 40, attrs: { brand: brand.name, total: rows.length } },
+              ),
+              accounts: rows.map((r) => ({
+                row_id: r.rowId,
+                profile_id: r.profileId,
+                platform: r.platform,
+                handle: r.handle,
+                display_name: r.displayName,
+                role: r.role,
+                status: r.status,
+                followers: r.followers,
+                growth: r.growth,
+                posts_tracked: r.postsTracked,
+                best_multiple: r.bestScore,
+                last_post_at: r.lastPostAt,
+                last_refreshed_at: r.lastRefreshedAt,
+                has_page: accountHref(brandSeg, r) !== null,
+              })),
+            },
+    );
+  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_ACCOUNTS_SURFACE_NAME, getScope: surfaceScope, isEditable: false });
 
   return (
     <>

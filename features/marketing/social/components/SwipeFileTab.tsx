@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Archive, Bookmark, FolderPlus, Link2, MoreHorizontal, RotateCcw, Tag } from "lucide-react";
 
-import { Button, EmptyState, SearchField, SegmentedControl, Select, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Button, EmptyState, RegionSkeleton, SearchField, SegmentedControl, Select, type SelectOption } from "@ai-matrx/design-system/controls";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
@@ -54,6 +54,7 @@ import { isAdLibrary, isSocialPlatform, type PostCardModel, type SwipeItem } fro
 import { AdCard, libraryLabel } from "./AdCard";
 import { useOpenPost } from "../useOpenPost";
 import { platformLabel } from "./PlatformMark";
+import { accountHref } from "../account-href";
 import { useSocials } from "./SocialsContext";
 import { SocialPostCard } from "./SocialPostCard";
 import { CollectionNameDialog, SaveLinkDialog, SaveToCollectionDialog } from "./SwipeDialogs";
@@ -225,7 +226,7 @@ export function SwipeFileTab() {
   }
 
   if (collections.isPending) {
-    return <p className="p-3 text-xs text-muted-foreground">Loading…</p>;
+    return <RegionSkeleton shape="cards" count={6} />;
   }
   if (collections.isError) {
     return (
@@ -393,7 +394,7 @@ export function SwipeFileTab() {
             />
           </div>
         ) : itemsQuery.isPending ? (
-          <p className="p-3 text-xs text-muted-foreground">Loading…</p>
+          <RegionSkeleton shape="cards" count={6} />
         ) : shown.length === 0 ? (
           <div className="flex min-h-[30vh] items-center justify-center">
             <EmptyState
@@ -421,7 +422,7 @@ export function SwipeFileTab() {
           </div>
         )}
         {itemsQuery.data && itemsQuery.data.missing > 0 ? (
-          <p className="text-[11px] text-muted-foreground">{itemsQuery.data.missing} saved items could not be read</p>
+          <p className="text-xs text-muted-foreground">{itemsQuery.data.missing} saved items could not be read</p>
         ) : null}
       </div>
 
@@ -488,6 +489,7 @@ function SwipeCell({
   onToggle: () => void;
   onOpen: () => void;
 }) {
+  const { brandSeg } = useSocials();
   const tags = itemTags(item, scope);
   const note = itemNote(item, scope);
   return (
@@ -504,6 +506,8 @@ function SwipeCell({
         {item.post ? (
           <SocialPostCard
             post={item.post}
+            accountHref={accountHref(brandSeg, item.post)}
+            hideOutlier
             onOpen={onOpen}
             extraActions={[{ id: "edit", label: "Note, tags and collections", onSelect: onOpen }]}
           />
@@ -511,7 +515,7 @@ function SwipeCell({
           <AdCard ad={item.ad} onOpen={onOpen} />
         ) : null}
         {note || tags.length ? (
-          <div className="flex min-w-0 flex-col gap-0.5 px-2 pb-1.5 pt-1 text-[11px] text-muted-foreground">
+          <div className="flex min-w-0 flex-col gap-0.5 px-2 pb-1.5 pt-1 text-xs text-muted-foreground">
             {note ? (
               <p className="line-clamp-2" title={note}>
                 {note}

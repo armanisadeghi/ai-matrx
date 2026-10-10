@@ -28,6 +28,8 @@ import {
 import { TextInputDialog } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { socialRowOpen } from "../row-open";
+import { accountHref } from "../account-href";
+import Link from "next/link";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -117,7 +119,7 @@ function platformLabel(p: string): string {
 }
 
 export function OutliersTab() {
-  const { brandId, organizationId, openTrack } = useSocials();
+  const { brandId, brandSeg, organizationId, openTrack } = useSocials();
   const data = useBrandSocialData(organizationId, brandId);
   const watchlists = useWatchlists(brandId);
   const lists = watchlists.data ?? [];
@@ -289,7 +291,20 @@ export function OutliersTab() {
       header: "Creator",
       accessorFn: (r) => r.post.handle ?? "",
       filter: "text",
-      cell: (r) => (r.post.handle ? `@${r.post.handle}` : "—"),
+      cell: (r) => {
+        const href = accountHref(brandSeg, r.post);
+        return r.post.handle ? (
+          href ? (
+            <Link href={href} className="hover:underline" data-clickable="">
+              @{r.post.handle}
+            </Link>
+          ) : (
+            `@${r.post.handle}`
+          )
+        ) : (
+          "—"
+        );
+      },
     },
     {
       id: "platform",
@@ -399,6 +414,8 @@ export function OutliersTab() {
     );
   }
 
+  const widest =
+    filter.windowDays === 90 && filter.minMultiple === 2 && filter.format === ALL && filter.platforms.length === 0 && filter.roles.length === 0;
   const modified = active ? !sameOutlierFilter(filter, active.filter) : !sameOutlierFilter(filter, DEFAULT_OUTLIER_FILTER);
 
   return (
@@ -491,14 +508,23 @@ export function OutliersTab() {
       </div>
 
       {items.length === 0 ? (
-        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-2">
-          <p className="text-sm text-foreground">No outliers in range</p>
-          <Button
-            variant="outline"
-            onClick={() => setFilter({ ...filter, windowDays: 90, minMultiple: 2, format: ALL, platforms: [], roles: [] })}
-          >
-            Widen window
-          </Button>
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-2 text-center">
+          <p className="text-sm text-foreground">{posts.length === 0 ? "No posts yet" : widest ? "No outliers" : "No outliers in range"}</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {posts.length === 0
+              ? "Tracked accounts show here once their posts are in."
+              : widest
+                ? `Nothing from the last ${filter.windowDays} days beats its creator's usual by ${filter.minMultiple}x.`
+                : `Nothing beats ${filter.minMultiple}x in the last ${filter.windowDays} days.`}
+          </p>
+          {posts.length > 0 && !widest ? (
+            <Button
+              variant="outline"
+              onClick={() => setFilter({ ...filter, windowDays: 90, minMultiple: 2, format: ALL, platforms: [], roles: [] })}
+            >
+              Widen window
+            </Button>
+          ) : null}
         </div>
       ) : view === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -506,6 +532,7 @@ export function OutliersTab() {
             <SocialPostCard
               key={item.post.postId}
               post={item.post}
+              accountHref={accountHref(brandSeg, item.post)}
               isNew={item.state === "new"}
               onOpen={() => openPost(item)}
               onSave={setSavePost}
