@@ -14,16 +14,16 @@
  * SUT: the real placement over the real registered manifests and navigation.
  */
 
-import { getManifest } from "@ai-matrx/chat/surfaces/runtime/registry";
+import { loadSurfaceBody } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { placeContextRow } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-hierarchy";
 
 const BRAND = "matrx-user/marketing-brand";
 
 describe("a value's place in the context list", () => {
-  it("a page value sits under the page's section and name, in the manifest's own group", () => {
+  it("a page value sits under the page's section and name, in the manifest's own group", async () => {
     const place = placeContextRow({ key: "brand_name", surfaceKey: BRAND, origin: "page" }, BRAND);
     expect(place.level.path).toEqual(["Marketing", "Marketing Brand Cockpit"]);
-    const declared = getManifest(BRAND)!;
+    const declared = (await loadSurfaceBody(BRAND))!;
     const group = declared.groups.find((g) => g.key === "brand_identity")!;
     expect(place.group).toEqual({ id: `${BRAND}:brand_identity`, label: group.label, order: group.sortOrder });
     expect(place.group?.label).toBe("Brand identity");
