@@ -55,16 +55,26 @@
 // `guestName` and no session (D6/D12), which is the only lane in the app that
 // legitimately has a Meet runtime without a user.
 //
+// 🚨 THE ENGINE LOADS AFTER FIRST PAINT (Method C, provider variant — code-splitting skill).
+// `<MeetProvider>` + `<IncomingCallHost>` are ~100 KB gzip and nothing renders until a call
+// arrives or a meeting opens, so they live in `MeetHostCore.tsx` behind ONE `dynamic()` and
+// mount once the page is idle. This shell owns the CONTEXT (`@ai-matrx/meet/host-slot`, a few
+// hundred bytes — the same global-slot object `useMeetHost()` reads) and renders its Provider
+// immediately: children mount at once and never remount; every `useMeetHost()` reader sees
+// `null` (inert — the state it already handles for a signed-out visitor) until the core
+// publishes the live host through `onHost`.
+//
 // Doctrine: the package's README (eleven rules) + `common-docs`
 // /systems/communications/meet/HANDOFF.md.
 
 "use client";
 
-import { useCallback, useRef, type ReactNode } from "react";
-import { MeetProvider } from "@ai-matrx/meet/react";
-import type { MeetDiagnostic } from "@ai-matrx/meet/react";
+import dynamic from "next/dynamic";
+import { useCallback, useRef, useState, type ReactNode } from "react";
+import { MeetHostContext } from "@ai-matrx/meet/host-slot";
+import type { MeetDiagnostic, MeetHost as MeetHostValue } from "@ai-matrx/meet/react";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { supabase } from "@/utils/supabase/client";
-import { IncomingCallHost } from "@ai-matrx/meet/react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveUserAvatarUrl,
@@ -126,19 +136,20 @@ export function useMeetMemberIdentity() {
   };
 }
 
+const MeetHostCore = dynamic(() => import("./MeetHostCore"), { ssr: false, loading: () => null });
+
 export function MeetHost({ children }: MeetHostProps) {
   const identity = useMeetMemberIdentity();
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  const idle = useIdleReady();
+  const [host, setHost] = useState<MeetHostValue | null>(null);
 
   return (
-    <MeetProvider {...identity} organizationId={organizationId}>
-      {/* Mount ONCE, high in the tree — a call rings on every surface. Mounted
-          DIRECTLY: since @ai-matrx/meet 0.2.1 it renders nothing on its own
-          while this provider is inert (which is every server render and every
-          signed-out visitor), so there is nothing for this app to guard. */}
-      <IncomingCallHost />
+    <MeetHostContext.Provider value={host}>
+      {/* A signed-out visitor (no organization) never loads the engine. */}
+      {idle && organizationId ? <MeetHostCore identity={identity} organizationId={organizationId} onHost={setHost} /> : null}
       {children}
-    </MeetProvider>
+    </MeetHostContext.Provider>
   );
 }
 
