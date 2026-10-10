@@ -8,7 +8,7 @@
  * uses to refresh the header after an edit. The old chrome (a second header bar
  * + an org-switcher sidebar with its own scroller) was removed — it created a
  * nested/dual-scroll and a redundant "Manage › General" nav. The pages
- * underneath (`OrgManage`, `ScopeManagerPage`) own their content + headers.
+ * underneath (`OrgManage`) own their content + headers.
  */
 
 import React from "react";
