@@ -49,7 +49,7 @@ function TableCardNode({ data }: NodeProps<Node<CardData>>) {
       <Handle type="target" position={Position.Left} className="!h-1.5 !w-1.5 !bg-muted-foreground" />
       <Handle type="source" position={Position.Right} className="!h-1.5 !w-1.5 !bg-muted-foreground" />
       <span className="truncate text-sm font-medium text-foreground">{card.name}</span>
-      <span className="text-xs text-muted-foreground">{count === undefined ? "—" : formatCount(count)} records</span>
+      <span className="text-xs text-muted-foreground">{card.kindWord} · {count === undefined ? "—" : formatCount(count)} records</span>
       <span className="mt-auto flex flex-col gap-0.5 text-xs text-muted-foreground">
         {card.keyColumns.map((c) => (
           <span key={c} className="truncate">

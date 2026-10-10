@@ -409,6 +409,43 @@ export function dataHomeCustomFields(
   );
 }
 
+/** One custom field of a standard table (`custom.custom_fields_on`). */
+export interface CustomFieldOnRow {
+  field_id: string;
+  field_key: string;
+  field_label: string;
+  field_type: string;
+  field_source: string | null;
+  field_required: boolean;
+  table_label: string;
+}
+
+/** The custom fields one organization added to one standard table (the row's organization, never the active one). */
+export function customFieldsOn(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  tableToken: string,
+): Promise<DoorAnswer<CustomFieldOnRow[]>> {
+  return call<CustomFieldOnRow[]>(dataSource, "custom_fields_on", {
+    p_organization_id: organizationId,
+    p_table_token: tableToken,
+  });
+}
+
+/** Add a custom field to a standard table (`custom.entity_field_declare`; an organization admin's — the store refuses otherwise). */
+export function declareCustomField(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  tableToken: string,
+  spec: { label: string; type: string },
+): Promise<DoorAnswer<string>> {
+  return call<string>(dataSource, "entity_field_declare", {
+    p_organization_id: organizationId,
+    p_token: tableToken,
+    p_spec: spec,
+  });
+}
+
 /** An archived Table of any organization the person belongs to (`custom.archived_tables_everywhere`). */
 export interface ArchivedEverywhereRow {
   id: string;

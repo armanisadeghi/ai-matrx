@@ -17,18 +17,10 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { createClient } from "@/utils/supabase/client";
+import { customFieldsOn, declareCustomField, doorFailureLine, type CustomFieldOnRow } from "@/features/unified-data/hub/doors";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-interface FieldRow {
-  field_id: string;
-  field_key: string;
-  field_label: string;
-  field_type: string;
-  field_required: boolean;
-  table_label: string;
-}
-
-type Read = { status: "loading" } | { status: "failed"; message: string } | { status: "ready"; rows: FieldRow[] };
+type Read = { status: "loading" } | { status: "failed"; message: string } | { status: "ready"; rows: CustomFieldOnRow[] };
 
 export function CustomFieldsSettingsPage({ token, organizationId }: { token: string; organizationId: string | null }) {
   const router = useRouter();
@@ -47,14 +39,10 @@ export function CustomFieldsSettingsPage({ token, organizationId }: { token: str
         if (live) setRead({ status: "failed", message: "This link names no organization." });
         return;
       }
-      const answered = await recordsDataSource(createClient()).rpc(
-        "custom_fields_on",
-        { p_organization_id: org, p_table_token: token },
-        { schema: "custom" },
-      );
+      const answered = await customFieldsOn(recordsDataSource(createClient()), org, token);
       if (!live) return;
-      if (answered.error) setRead({ status: "failed", message: answered.error.message ?? "The fields could not be read." });
-      else setRead({ status: "ready", rows: (answered.data ?? []) as FieldRow[] });
+      if (answered.ok) setRead({ status: "ready", rows: answered.data });
+      else setRead({ status: "failed", message: doorFailureLine(answered.error) });
     })().catch((e: unknown) => {
       if (live) setRead({ status: "failed", message: e instanceof Error ? e.message : "The fields could not be read." });
     });
@@ -67,14 +55,10 @@ export function CustomFieldsSettingsPage({ token, organizationId }: { token: str
     if (!org || !label.trim()) return;
     setAdding(true);
     setRefusal(null);
-    const answered = await recordsDataSource(createClient()).rpc(
-      "entity_field_declare",
-      { p_organization_id: org, p_token: token, p_spec: { label: label.trim(), type } },
-      { schema: "custom" },
-    );
+    const answered = await declareCustomField(recordsDataSource(createClient()), org, token, { label: label.trim(), type });
     setAdding(false);
-    if (answered.error) {
-      setRefusal(answered.error.message ?? "The field could not be added.");
+    if (!answered.ok) {
+      setRefusal(doorFailureLine(answered.error));
       return;
     }
     setLabel("");

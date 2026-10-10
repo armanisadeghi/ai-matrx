@@ -514,9 +514,9 @@ export interface EntityListConfig<TRow> {
 
   /**
    * GROUP BY — the table's own group control (MatrxDataTable `grouping`), offered over these
-   * columns. NEVER A DEFAULT: the choice lives in the address (`?group=<column>`) and the session
-   * only, so every visit starts flat — no knob, no preference, no config sets one (Arman,
-   * 2026-10-01: grouping by organization only when the person picks it). While grouped, the whole
+   * columns. The choice lives in the address (`?group=<column>`, `group=none` for "No groups") and the
+   * session only; a surface starts flat unless it declares `defaultColumnId` (the data home opens
+   * grouped by what each thing is, Arman 2026-10-10) — no knob, no preference (Arman, 2026-10-01). While grouped, the whole
    * result is ONE page, because the table counts what it holds and a 25-row page's group counts
    * would lie. Meant for in-hand corpora (a memory-style service); a server-paged list that opts in
    * pays one large read per grouped view.

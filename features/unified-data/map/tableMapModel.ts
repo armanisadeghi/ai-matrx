@@ -11,6 +11,8 @@ export interface MapTableInput {
   tableId: string;
   name: string;
   href: string;
+  /** What it is, in plain words (Table, Pick list …) — the data home's word for the row. */
+  kindWord?: string;
   organizationId: string | null;
   organizationName: string | null;
 }
@@ -19,6 +21,7 @@ export interface MapCard {
   id: string;
   name: string;
   href: string;
+  kindWord: string;
   organizationId: string;
   /** The first columns, in the table's own order. Never more than `KEY_COLUMNS`. */
   keyColumns: string[];
@@ -109,6 +112,7 @@ export function buildTableMap(allTables: readonly MapTableInput[], allFields: re
       id: t.tableId,
       name: t.name,
       href: t.href,
+      kindWord: t.kindWord ?? "Table",
       organizationId: orgId,
       keyColumns: own.filter((f) => !f.is_link).slice(0, KEY_COLUMNS).map((f) => f.field_label || f.field_key),
       linksOffMap: off,

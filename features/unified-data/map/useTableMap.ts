@@ -12,6 +12,7 @@ import type { RecordsDataSource } from "@ai-matrx/records";
 
 import * as doors from "@/features/unified-data/hub/doors";
 import { createDataHomeCorpus } from "@/features/unified-data/home/dataHomeCorpus";
+import { dataHomeKindWord } from "@/features/unified-data/home/dataHomeRows";
 import { createRecordCountStore } from "@/features/unified-data/home/dataHomeRecordCounts";
 import { buildTableMap, uniqueTables, type MapTableInput, type TableMap } from "./tableMapModel";
 
@@ -57,6 +58,7 @@ export function useTableMap(args: {
           tableId: r.tableId as string,
           name: r.name,
           href: r.href,
+          kindWord: dataHomeKindWord(r.kind),
           organizationId: r.organizationId,
           organizationName: r.organizationName,
         })));

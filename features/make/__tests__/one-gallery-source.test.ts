@@ -68,8 +68,9 @@ describe("G3 — /make has one gallery source: the catalogue door", () => {
 
   it("the gallery reads the catalogue door and installs through runTemplateDoor", () => {
     const gallery = codeOnly(files.find((f) => f.endsWith("TemplateGallery.tsx"))!);
-    expect(gallery).toMatch(/\.rpc\("templates"/);
-    expect(gallery).toMatch(/schema: "custom"/);
+    // The catalogue door is the package's (storeDoors(...).templates): the app file never says the schema.
+    expect(gallery).toMatch(/storeDoors\([^)]*\)\.templates\(|doors\.templates\(/);
+    expect(gallery).not.toMatch(/schema: "custom"|\.schema\("custom"\)/);
     expect(gallery).toMatch(/runTemplateDoor/);
   });
 });
