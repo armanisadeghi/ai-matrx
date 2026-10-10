@@ -94,6 +94,9 @@ export interface ConnectionSnapshot {
   configs: SocialProviderConfig[];
 }
 
+/** The hub providers that are social networks the module reads (one config read each; no chat or voice providers). */
+const SOCIAL_PLATFORM_PROVIDERS: CustomerSocialProvider[] = ["pinterest", "instagram", "facebook", "threads", "linkedin", "snapchat", "reddit"];
+
 const PROVIDERS = [...new Set([...CUSTOMER_SOCIAL_PROVIDERS, "x", "tiktok", "google"])];
 
 /** The person's own connections (personal grants span organizations) + the hub's provider configs. */
@@ -115,7 +118,7 @@ export async function loadConnectionSnapshot(organizationId: string): Promise<Co
       .in("provider", PROVIDERS)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
-    loadSocialConfigs(organizationId),
+    loadSocialConfigs(organizationId, SOCIAL_PLATFORM_PROVIDERS),
   ]);
   if (rows.error) throw rows.error;
   return {

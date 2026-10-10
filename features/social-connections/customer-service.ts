@@ -137,9 +137,10 @@ async function socialRequest(
 
 export async function loadSocialConfigs(
   organizationId: string,
+  providers: readonly CustomerSocialProvider[] = CUSTOMER_SOCIAL_PROVIDERS,
 ): Promise<SocialProviderConfig[]> {
   const results = await Promise.all(
-    CUSTOMER_SOCIAL_PROVIDERS.map(async (provider): Promise<SocialProviderConfig> => {
+    providers.map(async (provider): Promise<SocialProviderConfig> => {
       try {
         const config = await socialRequest(
           provider,
