@@ -323,6 +323,13 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require("@/features/surfaces/manifests/surface-section") as typeof import("@/features/surfaces/manifests/surface-section")).getSurfaceSection(surfaceName),
   });
+  // The loaded-value check reads declared names from the index, as the app
+  // registers it (providers/chat-surface-manifests.ts).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  (require("@ai-matrx/chat/surfaces/runtime/loaded-value-check") as typeof import("@ai-matrx/chat/surfaces/runtime/loaded-value-check")).registerLoadedValueDeclarations(
+    (surfaceName) =>
+      seam.getManifest(surfaceName) as unknown as ReturnType<import("@ai-matrx/chat/surfaces/runtime/loaded-value-check").LoadedValueDeclarationLookup>,
+  );
 }
 
 /**

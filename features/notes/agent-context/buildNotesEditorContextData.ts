@@ -1,9 +1,5 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import {
-  createNotesScope,
-  type NotesOpenTabSummaryEntry,
-  type NotesScopeAssignmentEntry,
-} from "@/features/surfaces/manifests/notes-editor.manifest";
+import { createNotesScope, type NotesOpenTabSummaryEntry, type NotesScopeAssignmentEntry } from "@/features/surfaces/manifests/notes-editor.surface";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import {
   countWords,

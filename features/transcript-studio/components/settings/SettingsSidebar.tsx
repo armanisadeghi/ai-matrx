@@ -13,7 +13,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
-import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.surface";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../../constants";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { toast } from "@/lib/toast";

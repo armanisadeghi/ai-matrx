@@ -47,7 +47,7 @@ import {
 } from "../service/assistantContextBuilder";
 import { buildSessionResourceContextEntries } from "../service/sessionResourceContext";
 import { ensureSurfaceConfig } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
-import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.surface";
 import {
   fetchProject,
   selectProjectById,

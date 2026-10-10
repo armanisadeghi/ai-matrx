@@ -61,9 +61,7 @@
 import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
-
-/** Canonical surface name for the Scribe studio. */
-export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "./transcript-scribe.surface";
 
 export const transcriptScribeManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_SURFACE,

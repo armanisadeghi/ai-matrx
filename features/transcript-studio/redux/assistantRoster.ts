@@ -21,7 +21,7 @@ import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../constants";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { verifyFastPathAgainstMandate } from "@ai-matrx/chat/mandates/fast-path-guard";
 import { selectSurfaceConfigEntry } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
-import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.surface";
 
 /**
  * The agent the assistant should use when nothing more specific applies.

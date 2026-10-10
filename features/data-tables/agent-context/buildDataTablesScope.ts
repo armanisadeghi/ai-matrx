@@ -13,10 +13,7 @@
  * missing at runtime.
  */
 
-import {
-  createDataTablesScope,
-  type DataTableColumnEntry,
-} from "@/features/surfaces/manifests/data-tables.manifest";
+import { createDataTablesScope, type DataTableColumnEntry } from "@/features/surfaces/manifests/data-tables.surface";
 import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { Json } from "@ai-matrx/alchemy/operate";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";

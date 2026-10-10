@@ -1,10 +1,5 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import {
-  createFilesScope,
-  type FilesFileSummary,
-  type FilesFolderSummary,
-  type FilesUploadSummary,
-} from "@/features/surfaces/manifests/files.manifest";
+import { createFilesScope, type FilesFileSummary, type FilesFolderSummary, type FilesUploadSummary } from "@/features/surfaces/manifests/files.surface";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type {
   CloudFileRecord,

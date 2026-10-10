@@ -87,15 +87,13 @@ import {
   TASKS_CONTEXT_MENU_PROPS,
 } from "@/features/tasks/agent-context/buildTasksContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { tasksManifest } from "@/features/surfaces/manifests/tasks.manifest";
-import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { useSurfaceBody } from "@ai-matrx/chat/surfaces/runtime/registry";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 import { SectionHeader, PropertyRow } from "./editorPrimitives";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
-// Canonical on-page labels (THE NAMING LAW) — byte-identical to the manifest.
-const L = surfaceValueLabels(tasksManifest);
+const TASKS_SURFACE_NAME = "matrx-user/tasks";
 
 export function TaskEditorBody({
   compact,
@@ -109,6 +107,11 @@ export function TaskEditorBody({
   const { copyText } = useClipboard({
     notify: copyNotify,
   });
+  // Canonical on-page label (THE NAMING LAW) — read from the lazily loaded
+  // manifest body; the same word holds the place until it arrives.
+  const { body: tasksBody } = useSurfaceBody(TASKS_SURFACE_NAME);
+  const subtasksLabel =
+    tasksBody?.values.find((v) => v.name === "subtasks")?.label ?? "Subtasks";
   const {
     taskId,
     task,
@@ -642,7 +645,7 @@ export function TaskEditorBody({
           <section data-surface-value="subtasks">
             <SectionHeader
               icon={CheckSquare}
-              label={L.subtasks}
+              label={subtasksLabel}
               count={subtasksRead.status === "error" ? undefined : subtasks.length}
               className="mb-1"
             />

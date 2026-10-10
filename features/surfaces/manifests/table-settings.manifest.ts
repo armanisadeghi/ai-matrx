@@ -28,14 +28,12 @@
 
 import type {
   SurfaceManifest,
-  SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
-
-export const TABLE_SETTINGS_SURFACE_NAME = "matrx-user/table-settings";
+import { TABLE_SETTINGS_SURFACE_NAME } from "./table-settings.surface";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -180,21 +178,3 @@ A row action is a button on every row. An update action sets, clears or calculat
   writeTargets,
   skipBaselineValues: true,
 };
-
-/** Type-safe payload for the panel's own values (records-ui `settingsAgent`, `recordsAgentPorts.tsx`). */
-export function createTableSettingsScope(values: {
-  has_unsaved_changes: boolean;
-  table_details_draft: Record<string, unknown>;
-}): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
-}
-
-/** Type-safe payload for the row actions' values (records-ui `RowActionsSection`, through the same port). */
-export function createTableSettingsRowActionsScope(values: {
-  saved_row_actions?: unknown[];
-  editing_row_action?: Record<string, unknown>;
-  editing_row_action_problems?: string[];
-  formula_language?: string;
-}): SurfaceScopePayload {
-  return values as SurfaceScopePayload;
-}

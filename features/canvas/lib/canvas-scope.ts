@@ -14,10 +14,7 @@
  * surface (mermaid-editor, html-page, working-document, scratchpad).
  */
 
-import {
-  createCanvasScope,
-  type CanvasOpenItemSummary,
-} from "@/features/surfaces/manifests/canvas.manifest";
+import { createCanvasScope, type CanvasOpenItemSummary } from "@/features/surfaces/manifests/canvas.surface";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   canvasItemRecord,

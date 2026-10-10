@@ -17,7 +17,7 @@ import { useEffect } from "react";
 import { CanvasColumn, useCanvas, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { announceSurfaceScopeChange } from "@ai-matrx/chat/surfaces/runtime/surface-chain";
-import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
+import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.surface";
 import { useCanvasSurfaceScope } from "./canvasSurfaceScope";
 import { canvasWriteHandlers } from "./canvasWriteHandlers";
 

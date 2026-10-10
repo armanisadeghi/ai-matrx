@@ -40,10 +40,7 @@ import {
   type PreviewVariantSpec,
 } from "@/features/files/api/assets";
 import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
-import {
-  IMAGE_STUDIO_SURFACE_NAME,
-  createImageStudioScope,
-} from "@/features/surfaces/manifests/image-studio.manifest";
+import { IMAGE_STUDIO_SURFACE_NAME, createImageStudioScope } from "@/features/surfaces/manifests/image-studio.surface";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import type { Visibility } from "@/features/files/types";

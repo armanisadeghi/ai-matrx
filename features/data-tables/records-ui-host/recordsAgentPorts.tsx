@@ -33,11 +33,7 @@ import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source
 
 import { ProTextareaAgentPanel } from "@/components/official/ProTextareaAgentPanel";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
-import {
-  createTableSettingsRowActionsScope,
-  createTableSettingsScope,
-  TABLE_SETTINGS_SURFACE_NAME,
-} from "@/features/surfaces/manifests/table-settings.manifest";
+import { createTableSettingsRowActionsScope, createTableSettingsScope, TABLE_SETTINGS_SURFACE_NAME } from "@/features/surfaces/manifests/table-settings.surface";
 
 const DATA_TABLES_SURFACE = "matrx-user/data-tables";
 const SOURCE_FEATURE = sourceFeatureFromSurfaceName(DATA_TABLES_SURFACE) ?? "udt";

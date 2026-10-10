@@ -20,7 +20,7 @@ import { useFields, useRecordsClient, useTable } from "@ai-matrx/records/react";
 import { saveTableDescription } from "@ai-matrx/records-ui";
 
 import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { createDataTablesScope } from "@/features/surfaces/manifests/data-tables.manifest";
+import { createDataTablesScope } from "@/features/surfaces/manifests/data-tables.surface";
 import { buildDataTablesScope } from "@/features/data-tables/agent-context/buildDataTablesScope";
 import { briefColumns } from "@/features/data-tables/agent-context/tableBrief";
 
