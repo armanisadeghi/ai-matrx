@@ -76,3 +76,16 @@ begin
   return jsonb_build_object('files', v_files, 'folders', v_folders, 'total', v_files + v_folders);
 end;
 $function$;
+
+-- The access decision, declared in data (provision_shape_guard: a SECURITY DEFINER function reaching COMMIT with none is refused). It always had the
+-- same one: EXECUTE is held by postgres and service_role only; no client ever calls it (the guard above refuses a seat whose uid is not p_user_id).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select 'public', 'count_user_files', pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'p_user_id is the person counted: a caller whose auth.uid() is set and differs is refused (42501); NULL p_user_id counts nothing. No entity-id argument.',
+       'pagespeed3_d_count_user_files_reads_the_shared_set_once.sql',
+       'server_only: service_role (operator and server jobs) counting one person''s listable files; EXECUTE is revoked from every client role, so no browser ever calls it',
+       false, false
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'count_user_files'
+   and not exists (select 1 from platform.client_callable_door d where d.schema_name = 'public' and d.function_name = 'count_user_files');
