@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { applyView, dismissView, type SandboxLifecycleView } from "@/lib/redux/slices/sandboxLifecycleSlice";
-import { classifyDurableSandboxLifecycleResponse, createSandboxLifecycleOperationAdapter, type SandboxLifecycleOperationAdapter } from "@/lib/sandbox/lifecycle-operation";
+import { classifyDurableSandboxLifecycleResponse, createSandboxLifecycleOperationAdapter, type DurableLifecycleResult, type SandboxLifecycleOperationAdapter } from "@/lib/sandbox/lifecycle-operation";
 import type { SandboxOperationReceipt } from "@/lib/durable-run/sandbox-operation-receipt";
 import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
 
@@ -34,6 +34,25 @@ const browserEnvironment: LifecycleControllerEnvironment = {
   removeEventListener: (name, listener) => window.removeEventListener(name, listener),
 };
 
+
+/**
+ * THE RECEIPT IS NOT THE ONLY WITNESS. The orchestrator's operation receipt can be unreadable
+ * (404 after it ages out, a 502 through the proxy, a dropped poll) while the box itself did stop —
+ * and "Could not confirm … check status" then contradicts what the person can see. The sandbox row
+ * is the second witness: `stopped` or `shutting_down` means the stop took.
+ */
+const STOP_CONFIRMED_STATUSES = new Set(["stopped", "shutting_down"]);
+const CONFIRM_STOP_ATTEMPTS = 6;
+const CONFIRM_STOP_DELAY_MS = 2_000;
+
+async function readInstanceStatusFromApi(rowId: string, signal?: AbortSignal): Promise<string | null> {
+  const response = await fetch(`/api/sandbox/${rowId}`, { signal });
+  if (!response.ok) return null;
+  const body: unknown = await response.json();
+  const status = (body as { instance?: { status?: unknown } } | null)?.instance?.status;
+  return typeof status === "string" ? status : null;
+}
+
 /** One receipt gets one bounded observer. It never owns server work or retries POST on its own. */
 export class SandboxLifecycleReceiptController {
   private stopped = false;
@@ -55,6 +74,10 @@ export class SandboxLifecycleReceiptController {
     onView: (view: SandboxLifecycleView) => void;
     environment?: LifecycleControllerEnvironment;
     silenceInitialTerminal?: boolean;
+    /** Reads the sandbox row's own status (default: GET /api/sandbox/<row>). Null = could not read. */
+    readInstanceStatus?: (rowId: string, signal?: AbortSignal) => Promise<string | null>;
+    /** Pause between instance-status reads while confirming a stop. */
+    confirmDelayMs?: number;
   }) {}
 
   start(): void {
@@ -79,7 +102,9 @@ export class SandboxLifecycleReceiptController {
       const response = await this.options.adapter.status(this.options.receipt, this.abort.signal);
       if (this.stopped || !this.options.isCurrent()) return;
       // GET status is never a first admission: a conflict cannot prove refusal.
-      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, true);
+      const classified = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, true);
+      if (this.stopped || !this.options.isCurrent()) return;
+      const result = await this.confirmedOrUnknown(classified);
       if (this.stopped || !this.options.isCurrent()) return;
       this.failures = 0;
       this.latestState = result.state;
@@ -94,11 +119,43 @@ export class SandboxLifecycleReceiptController {
       if (this.stopped || !this.options.isCurrent() || (error instanceof DOMException && error.name === "AbortError")) return;
       this.failures += 1;
       if (this.failures >= MAX_TRANSPORT_FAILURES) {
+        if (await this.confirmStopFromInstance()) {
+          if (this.stopped || !this.options.isCurrent()) return;
+          this.latestState = "success";
+          this.options.onView({ operation_id: this.options.receipt.operation_id, state: "success", message: "Stopped.", sandboxId: this.latestSandboxId, action: null, dismissed: false });
+          this.stop();
+          return;
+        }
+        if (this.stopped || !this.options.isCurrent()) return;
         this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: "check", dismissed: false });
         return;
       }
       this.schedule();
     } finally { this.performing = false; }
+  }
+
+
+  /** True only when the sandbox row itself shows the stop took; false when it cannot be confirmed. */
+  private async confirmStopFromInstance(): Promise<boolean> {
+    if (this.options.receipt.kind !== "stop") return false;
+    const read = this.options.readInstanceStatus ?? readInstanceStatusFromApi;
+    const delay = this.options.confirmDelayMs ?? CONFIRM_STOP_DELAY_MS;
+    for (let attempt = 0; attempt < CONFIRM_STOP_ATTEMPTS; attempt += 1) {
+      if (this.stopped || !this.options.isCurrent()) return false;
+      try {
+        const status = await read(this.options.receipt.row_id, this.abort?.signal);
+        if (status !== null && STOP_CONFIRMED_STATUSES.has(status)) return true;
+      } catch {
+        // A failed read is "not confirmed yet"; the loop is bounded and the warning stays honest.
+      }
+      if (attempt < CONFIRM_STOP_ATTEMPTS - 1) await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+    return false;
+  }
+
+  private async confirmedOrUnknown(result: DurableLifecycleResult): Promise<DurableLifecycleResult> {
+    if (result.state !== "unknown" || !(await this.confirmStopFromInstance())) return result;
+    return { state: "success", message: "Stopped.", sandbox_id: result.sandbox_id };
   }
 
   private schedule(): void {
@@ -121,14 +178,25 @@ export class SandboxLifecycleReceiptController {
     try {
       const response = await this.options.adapter[method](this.options.receipt, this.abort.signal);
       if (this.stopped || !this.options.isCurrent()) return;
-      const result = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
+      const classified = await classifyDurableSandboxLifecycleResponse(response, { row_id: this.options.receipt.row_id, operation_id: this.options.receipt.operation_id, kind: this.options.receipt.kind, graceful: this.options.receipt.graceful ?? true, sandbox_id: "" }, method === "admit" || this.options.receipt.observation !== "prepared");
+      if (this.stopped || !this.options.isCurrent()) return;
+      const result = await this.confirmedOrUnknown(classified);
       if (this.stopped || !this.options.isCurrent()) return;
       this.latestState = result.state;
       const terminal = isTerminalState(result.state);
       this.options.onView({ operation_id: this.options.receipt.operation_id, state: result.state, message: result.message, sandboxId: result.sandbox_id ?? null, action: terminal ? null : result.state === "attention" ? "recover" : result.state === "unknown" && method === "admit" ? "retry" : "check", dismissed: false });
       if (terminal) { this.stop(); return; }
       if (result.state === "pending") this.schedule();
-    } catch { if (!this.stopped && this.options.isCurrent()) this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: method === "admit" ? "retry" : "check", dismissed: false }); }
+    } catch {
+      if (this.stopped || !this.options.isCurrent()) return;
+      if (await this.confirmStopFromInstance()) {
+        if (this.stopped || !this.options.isCurrent()) return;
+        this.latestState = "success";
+        this.options.onView({ operation_id: this.options.receipt.operation_id, state: "success", message: "Stopped.", sandboxId: null, action: null, dismissed: false });
+        this.stop();
+        return;
+      }
+      if (!this.stopped && this.options.isCurrent()) this.options.onView({ operation_id: this.options.receipt.operation_id, state: "unknown", message: "Could not confirm this sandbox operation; check status.", sandboxId: null, action: method === "admit" ? "retry" : "check", dismissed: false }); }
     finally { this.performing = false; }
   }
 }

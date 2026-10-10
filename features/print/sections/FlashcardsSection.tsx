@@ -6,7 +6,7 @@
  */
 
 import { Printer } from "lucide-react";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { flashcardsPrinterLazy as flashcardsPrinter } from "@ai-matrx/print/flashcards-lazy";
 import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { Button } from "@/components/ui/button";
 import { SectionShell, StatusChip, announcePrintOutcome } from "@/features/print/components/shared";
