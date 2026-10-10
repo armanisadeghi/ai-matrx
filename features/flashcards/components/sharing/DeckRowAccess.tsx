@@ -13,6 +13,7 @@ import type { RowAccessChange } from "@/lib/row-access/columns";
 import { fcService } from "../../data/fcService";
 import type { FcSetRow } from "../../data/types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export type DeckRowAccessValue = Pick<FcSetRow, "shown_to" | "published_to_web">;
 
 /** Save a deck's row controls; throws a sentence a person can read. */
@@ -75,7 +76,7 @@ export function DeckRowAccessById({ setId }: { setId: string }) {
       live = false;
     };
   }, [setId]);
-  if (error) return <p className="text-sm text-destructive">Couldn&apos;t read this deck: {error}</p>;
+  if (error) return <p className="text-sm text-destructive">Couldn&apos;t read this deck: {error}<ErrorAlchemyMenu error={error} /></p>;
   if (!value) return <p className="text-sm text-muted-foreground">Loading…</p>;
   return <DeckRowAccess setId={setId} size="default" value={value} onChange={setValue} />;
 }

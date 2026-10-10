@@ -40,6 +40,7 @@ import { isNearDuplicateQA, looseKey } from "@/features/education/convert/segmen
 import { newBatchId } from "@/features/education/convert/steering";
 import { BATCH_KEY } from "@/features/education/kits/outline/types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const COUNTS = [5, 10, 20, 30] as const;
 
 export function GenerateCardsDialog({
@@ -192,7 +193,7 @@ export function GenerateCardsDialog({
                 ))}
               </div>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
             <EntitlementMeter capability="education.generate_cards" />
           </div>
         )}

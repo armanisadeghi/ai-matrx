@@ -88,6 +88,7 @@ import {
 } from "@/features/flashcards/data/cardRunRequest";
 import { useTabBoundRun, type TabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The top-up never offers "Just a topic": the cards come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 
@@ -526,7 +527,7 @@ function AddMoreCardsDialog({
         {cardLimit.error ? (
           <p role="alert" className="text-xs text-destructive">
             {cardLimit.error}
-          </p>
+          <ErrorAlchemyMenu error={cardLimit.error} /></p>
         ) : plannedShown !== null && shownCount !== null && plannedShown > shownCount ? (
           <p className="text-xs text-muted-foreground">{`One card per source: ${cardCount(plannedShown)}`}</p>
         ) : null}
@@ -579,7 +580,7 @@ function AddMoreCardsDialog({
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : redo && !busy ? (
         <p role="status" className="text-sm text-muted-foreground">
           {addMoreStoppedLine(redo.request.count)}

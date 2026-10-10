@@ -710,7 +710,7 @@ export function CreateDeckPage({
                       {cardLimit.error ? (
                         <p role="alert" className="text-[11px] text-destructive">
                           {cardLimit.error}
-                        </p>
+                        <ErrorAlchemyMenu error={cardLimit.error} /></p>
                       ) : countMax === null ? (
                         <p className="text-[11px] text-muted-foreground">Reading the most cards one run may make…</p>
                       ) : plannedShown !== null && shownCount !== null && plannedShown > shownCount ? (
