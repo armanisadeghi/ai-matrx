@@ -77,9 +77,9 @@ export function ConversationBattleColumn({
               <AlertTriangle className="mx-auto size-6 text-amber-500" />
               <div>
                 <div className="text-sm font-semibold">Fork created</div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p data-error-box className="mt-1 text-xs text-muted-foreground">
                   The chat was created but could not load into this column.
-                </p>
+                <ErrorAlchemyMenu /></p>
               </div>
               <button
                 type="button"

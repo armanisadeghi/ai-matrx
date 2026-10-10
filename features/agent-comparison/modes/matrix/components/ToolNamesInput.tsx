@@ -15,6 +15,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@ai-matrx/design-system/controls";
 import { loadAvailableTools, selectAllTools, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function ToolNamesInput({
   value,
   onChange,
@@ -87,7 +88,7 @@ export function ToolNamesInput({
               <div className="px-2 py-1.5 type-secondary text-muted-foreground">Loading tools…</div>
             )}
             {status === "failed" && (
-              <div className="px-2 py-1.5 type-secondary text-destructive">Tool list did not load</div>
+              <div className="px-2 py-1.5 type-secondary text-destructive">Tool list did not load<ErrorAlchemyMenu /></div>
             )}
             {candidates.map((t) => (
               <Button variant="quiet" key={t.id} onClick={() => add(t.name)} className="w-full">

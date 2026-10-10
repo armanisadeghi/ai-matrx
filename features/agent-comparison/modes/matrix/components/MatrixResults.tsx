@@ -36,6 +36,7 @@ import { Spinner } from "@/components/ui/loaders/Spinner";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { formatCount, formatDurationMs, formatPercent, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function tokens(n: number | null | undefined): string {
   if (n == null) return "—";
   // Rounded first: the matrix shows per-run AVERAGES, and a token count is whole.
@@ -352,7 +353,7 @@ function CellDetail({
           {cell ? "Re-run" : "Run"}
         </Button>
       </div>
-      {cell?.error && <div className="text-destructive break-words">{cell.error}</div>}
+      {cell?.error && <div className="text-destructive break-words">{cell.error}<ErrorAlchemyMenu error={cell.error} /></div>}
       {cell?.stalled && <div className="text-warning">Runner stopped responding</div>}
       {r && (
         <>

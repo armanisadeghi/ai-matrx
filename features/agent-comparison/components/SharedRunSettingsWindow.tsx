@@ -96,7 +96,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
           <SettingToggle
             id="shared-store"
             label="Store turn in DB"
-            description="When off, this turn is not saved to history."
+            description="When off, this turn is left out of history."
             checked={eff.store}
             onChange={(v) =>
               dispatch(broadcastRunSettings({ changes: { store: v } }))

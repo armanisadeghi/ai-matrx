@@ -33,6 +33,7 @@ import { MatrixToolbar } from "./MatrixToolbar";
 import { PatchEditor } from "./PatchEditor";
 import { Button } from "@ai-matrx/design-system/controls";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const POLL_MS = 2000;
 
 type Tab = "setup" | "results";
@@ -112,7 +113,7 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
               Dismiss
             </Button>
           )}
-        </div>
+        <ErrorAlchemyMenu /></div>
       )}
 
       <div className="flex items-center gap-1 h-10 px-3 border-b border-border shrink-0">
