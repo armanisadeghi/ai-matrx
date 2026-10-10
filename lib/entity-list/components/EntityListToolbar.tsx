@@ -440,7 +440,14 @@ export function EntityListToolbar<TRow>({
     // ONE LINE AT EVERY PANE WIDTH (owner, 2026-10-04: two rows, never clipped, never overlapping):
     // below 48rem of the pane the labels go, Columns moves into View, and the view tabs shrink and
     // scroll inside their own strip.
-    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-nowrap items-center gap-1.5 @3xl/list:gap-2">
+    <div
+      data-entity-list-toolbar=""
+      // A PHONE'S FIRST FRAME IS THIS DESKTOP ROW (the server cannot know the width; `usePhoneWidth`
+      // swaps in the phone row after hydration). The phone row is 44px tall (measured at 390px), so
+      // this one holds that height in a pane under 36rem (by the pane, not the viewport — the
+      // responsive contract) and the list below it never moves (/data at 390px, CLS 0.034).
+      className="matrx-tap-ring flex min-w-0 flex-nowrap items-center gap-1.5 @max-xl/list:min-h-[44px] @3xl/list:gap-2"
+    >
       {/* The table's saved-view tabs open the row, far left (`toolbar.tabsPortalInto`); the
           package draws them and scrolls its strip — this slot only places it, at the strip's own
           width (a 16rem cap let two tabs and their "+" run over the search, /research/topics). */}

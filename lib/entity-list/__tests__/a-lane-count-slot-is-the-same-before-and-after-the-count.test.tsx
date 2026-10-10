@@ -48,13 +48,13 @@ it("every lane holds a digit-free three-digit slot while counting, and the count
   waiting.forEach((pill) => {
     expect(pill.getAttribute("data-scope-count")).toBe("pending");
     expect(pill.textContent?.trim()).toBe("");
-    expect(pill.className).toMatch(/min-w-\[calc\(3ch\+0\.5rem\)\]/);
+    expect(pill.className).toMatch(/min-w-\[calc\(4ch\+0\.5rem\)\]/);
   });
   await act(async () => loading.root.unmount());
   document.body.innerHTML = "";
   const counted = await render(COUNTED, false);
   const ready = Array.from(counted.container.querySelectorAll<HTMLElement>("[data-scope-count]"));
   expect(ready.map((p) => p.textContent)).toEqual(expect.arrayContaining(["583", "2"]));
-  ready.forEach((pill) => expect(pill.className).toMatch(/min-w-\[calc\(3ch\+0\.5rem\)\]/));
+  ready.forEach((pill) => expect(pill.className).toMatch(/min-w-\[calc\(4ch\+0\.5rem\)\]/));
   await act(async () => counted.root.unmount());
 });
