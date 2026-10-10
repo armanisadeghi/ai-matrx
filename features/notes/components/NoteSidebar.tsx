@@ -262,7 +262,8 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
     listStatus === "idle" ||
     listStatus === "loading" ||
     (!sharedSettled && sharedStatus === "loading");
-  const [sharedOpen, setSharedOpen] = useState(true);
+  // Closed by default; it opens itself when the active note is a shared one.
+  const [sharedOpen, setSharedOpen] = useState(false);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
 
   // Collapsible "Recent" section (default mode) — open by default, paginated.

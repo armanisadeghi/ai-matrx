@@ -71,7 +71,8 @@ export default function MobileNotesList({
   // Bodies are matched by the database (list rows carry only a preview).
   const bodySearch = useNoteContentSearch(searchQuery);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [sharedOpen, setSharedOpen] = useState(true);
+  // Closed by default — the person opens it.
+  const [sharedOpen, setSharedOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const trashFetchedRef = useRef(false);
 
