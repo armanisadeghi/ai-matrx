@@ -34,6 +34,8 @@ vision: [.claude/skills/code-splitting/SKILL.md]
 | 11 | Do the generate workers slow compile? (A/B/A, cpus 8/1/8) | **done — no** | 4.7*/3.5/3.7 min (*high load); wall 316/263/256 s |
 | 12 | Compile cost of the one lazy Lucide catalog chunk | **done — negligible** | same chunks, RSS 25.4 vs 25.6 GB |
 | 13 | Turbopack persistent build cache | **measured, not shippable on Vercel's cache** | warm compile 71 s (vs 4-5 min), cold peak 39.2 GB, cache 6.7 GB + node_modules 3.4 GB vs 4.75 GB cap. Next lever if Arman wants it: keep the cache outside Vercel (download before, upload after) |
+| 14 | 20-hour hold check (2026-10-09 02:00 → 22:40) | **holding** | main median 7.4 min (6.0–9.8, 22 green), manage 3.4, demos 6.3. 3 failures, none build-config: a missing export (other lane), a Next canary panic while printing an error (code-frame `─` char boundary), one transient. Chunk creep 7,245 → 7,772 = product growth (82 commits, 4 pages; 6 new lazy imports all single front doors) |
+| 15 | Remaining levers, measured | **diminishing** | traced node_modules only 46 MB (output = compiled code); pre-build 16 s (kind-sandbox CSS 10 s: scans the whole app via globals.css, changes every commit, not cacheable); post-compile ~1.5 min is Next/Vercel internals. Only big lever: Turbopack persistent cache stored outside Vercel (warm compile 71 s) — est. net −1.5 min after ~2 min of cache transfer |
 | 5 | Keep going: per-package `import()` census (only icons fanned out; coding-sessions' 2,543 files are an unimported standalone UI) + cross-entry duplication census: records 1.55 MB duplicated across its entries, associations 340 KB, meet 220 KB | records/associations next — measure before restructuring | |
 
 ## 1. Vision
