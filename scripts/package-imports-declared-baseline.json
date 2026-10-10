@@ -116,12 +116,6 @@
   "features/war-room/hooks/useThreadEntitySelect.test.tsx": [
     "immer"
   ],
-  "features/whatsapp-clone/modals/ModalShell.tsx": [
-    "@radix-ui/react-visually-hidden"
-  ],
-  "features/whatsapp-clone/modals/media/TabbedGalleryModal.tsx": [
-    "@radix-ui/react-visually-hidden"
-  ],
   "jest.setup.ts": [
     "immer"
   ],
