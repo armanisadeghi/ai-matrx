@@ -19,12 +19,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { VariantResolvableKind } from "@/features/content-ir/variants/kind-variants";
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 
 /** JSON Schema `type` → the storage value type the resolver's last rung reads. */
 export function valueTypeFromJsonSchema(
   jsonSchema: Record<string, unknown> | null | undefined,
-): ContextValueType {
+): ContextFieldKind {
   const type = jsonSchema?.type;
   switch (type) {
     case "number":

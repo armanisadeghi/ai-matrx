@@ -29,7 +29,7 @@ import {
   type VariableCustomComponent,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { getComponentTypeMeta } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 
 // ---------------------------------------------------------------------------
 // The stored shape
@@ -382,7 +382,7 @@ export function validateKindVariants(
  * `reference` degrade to the flattening that bridge already documents.
  */
 const DEFAULT_COMPONENT_BY_VALUE_TYPE: Record<
-  ContextValueType,
+  ContextFieldKind,
   VariableComponentType
 > = {
   string: "textarea",
@@ -419,7 +419,7 @@ export interface VariantResolvableKind {
    * Storage value type of the kind's value, when known — drives the last
    * fallback. Absent means `string`.
    */
-  valueType?: ContextValueType | null;
+  valueType?: ContextFieldKind | null;
 }
 
 export type VariantResolutionSource =
@@ -567,7 +567,7 @@ export function resolveVariantComponent(
 /** The derived-default table, exposed for the round-trip test and for callers
  * that need the fallback component without a kind in hand. */
 export function defaultComponentForValueType(
-  valueType: ContextValueType | null | undefined,
+  valueType: ContextFieldKind | null | undefined,
 ): VariableComponentType {
   return DEFAULT_COMPONENT_BY_VALUE_TYPE[valueType ?? "string"];
 }

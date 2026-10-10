@@ -1,16 +1,15 @@
 /**
- * Bridge: the scopes/context-item vocabulary (`ContextValueType`) onto the
+ * Bridge: the scopes/context-item vocabulary (`ContextFieldKind`) onto the
  * shared format registry, so a context item and a data-table column that both
  * say "currency" format the SAME way through the SAME code.
  *
- * `ContextValueType` stays the storage vocabulary for `ctx_context_item_values`
- * (it decides which `value_*` column is written). This map only says how a
- * value of that type should be DISPLAYED.
+ * `ContextFieldKind` is the package vocabulary for a context field. This map
+ * only says how a value of that kind should be DISPLAYED.
  */
-import type { ContextValueType } from "@/features/agent-context/types";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 import type { FieldFormatId } from "@ai-matrx/design-system/field-formats";
 
-const MAP: Partial<Record<ContextValueType, FieldFormatId>> = {
+const MAP: Partial<Record<ContextFieldKind, FieldFormatId>> = {
   string: "text",
   number: "number",
   boolean: "boolean",
@@ -28,7 +27,7 @@ const MAP: Partial<Record<ContextValueType, FieldFormatId>> = {
 };
 
 export function contextValueTypeToFormat(
-  type: ContextValueType | null | undefined,
+  type: ContextFieldKind | null | undefined,
 ): FieldFormatId | null {
   if (!type) return null;
   return MAP[type] ?? null;

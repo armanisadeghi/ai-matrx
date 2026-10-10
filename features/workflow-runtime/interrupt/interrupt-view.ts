@@ -34,7 +34,7 @@
  *    person.
  */
 
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { formatDurationMs } from "@ai-matrx/kit/format";
@@ -211,7 +211,7 @@ export interface InterruptAnswerField {
   label: string;
   description: string;
   required: boolean;
-  valueType: ContextValueType;
+  valueType: ContextFieldKind;
   /** JSON Schema `enum` — the closed set of admissible values, if any. */
   options: string[];
   /** A registered content-IR kind the property declares, if any. */
@@ -305,7 +305,7 @@ export function coerceAnswerValues(
 const TRUE_WORDS = new Set(["true", "yes", "y", "on", "1"]);
 const FALSE_WORDS = new Set(["false", "no", "n", "off", "0"]);
 
-function coerceToValueType(valueType: ContextValueType, raw: unknown): unknown {
+function coerceToValueType(valueType: ContextFieldKind, raw: unknown): unknown {
   if (raw === null || raw === undefined) return raw;
   switch (valueType) {
     case "boolean": {
