@@ -31,9 +31,11 @@ const SUBJECT = /^spaces[:(]/;
 // @ai-matrx/records-ui renders a row's body Space through this entry. Add an entry only by owner decision.
 // "Import from Notion" for pages outside Spaces (Tables home, a table's ⋯ → Import; lane NOTION-DOOR): the
 // lazy shell `features/spaces/io/NotionImportDoor` (useOpenNotionImport) — the importer and its run state load only when opened.
+// A table's ⋯ → Built on it → Automations (lane AUTOMATIONS-DOOR): the lazy props-only shell
+// `features/spaces/data/AutomationsDoor` — the rule list/editor loads only when the dialog opens; no Spaces store needed.
 // The public web page of a published Space (`app/(link)/site/[slug]`, Notion Publish — phase 6, owner brief
 // 2026-10-07): the read-only page and the read of its one door.
-const ENTRY_POINTS = [/features\/spaces\/embed\/RecordBodySpace["'/]/, /features\/spaces\/embed\/useSpaceBuild["'/]/, /features\/spaces\/state\/templates["'/]/, /features\/spaces\/sidebar\/TemplateGalleryShell["'/]/, /features\/spaces\/public\/(?:PublicSpace|public-view)["'/]/, /features\/spaces\/spaces\.css["']/, /features\/spaces\/io\/NotionImportDoor["'/]/];
+const ENTRY_POINTS = [/features\/spaces\/embed\/RecordBodySpace["'/]/, /features\/spaces\/embed\/useSpaceBuild["'/]/, /features\/spaces\/state\/templates["'/]/, /features\/spaces\/sidebar\/TemplateGalleryShell["'/]/, /features\/spaces\/public\/(?:PublicSpace|public-view)["'/]/, /features\/spaces\/spaces\.css["']/, /features\/spaces\/io\/NotionImportDoor["'/]/, /features\/spaces\/data\/AutomationsDoor["'/]/];
 const IMPORT_INTO_FENCE = /(?:from\s+|import\s*\(\s*|require\s*\(\s*)["'](?:@\/features\/spaces(?:\/|["'])|[./]+(?:[^"']*\/)?features\/spaces(?:\/|["']))/;
 
 export function insideFence(path) {
@@ -122,6 +124,8 @@ function selfTest() {
   expect("the named entry point may be imported", judgeImports([{ path: "features/data-tables/records-ui-host/recordsUiHost.tsx", source: 'import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";' }]), 0);
   expect("the Notion import door may be imported", judgeImports([{ path: "features/unified-data/home/DataHomeRoute.tsx", source: 'import { useOpenNotionImport } from "@/features/spaces/io/NotionImportDoor";' }]), 0);
   expect("its heavy half and the importer may not", judgeImports([{ path: "features/unified-data/a.tsx", source: 'import D from "@/features/spaces/io/NotionImportDoorImpl";\nimport { useNotionImport } from "@/features/spaces/io/NotionImport";' }]), 1);
+  expect("the Automations door may be imported", judgeImports([{ path: "features/unified-data/actions/TableAutomationsDialog.tsx", source: 'import { AutomationsDoor } from "@/features/spaces/data/AutomationsDoor";' }]), 0);
+  expect("the Automations panel itself may not", judgeImports([{ path: "features/unified-data/actions/TableAutomationsDialog.tsx", source: 'import { AutomationsPanel } from "@/features/spaces/data/Automations";' }]), 1);
   expect("a sibling of the entry point may not", judgeImports([{ path: "features/data-tables/x.tsx", source: 'import { useRowBodySpace } from "@/features/spaces/embed/useRowBody";' }]), 1);
   expect("look-alike name is not the fence", judgeImports([{ path: "features/notes/c.tsx", source: 'import { Y } from "@/features/spaces-old/z";' }]), 0);
   expect("a spaces: commit may tighten the guard itself", judgeCommits([{ sha: "d".repeat(40), subject: "spaces: guard", files: ["scripts/check-spaces-fence.mjs", "features/spaces/a.ts"] }]), 0);
