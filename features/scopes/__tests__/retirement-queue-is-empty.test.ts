@@ -54,7 +54,16 @@ const ALLOWED = new Set([
   // Service-role admin CRUD for system_context_item (a server route, on the
   // chokepoint allowlist for that reason — not a duplicate client path).
   "app/api/admin/system-context/route.ts",
+  // `get_user_full_context` is the workspace hierarchy (organizations, projects, tasks, scope
+  // tags), not a scope door: its one caller moved to the hierarchy's own service (commit
+  // 6267359147, lane SCOPES-CLEANUP). Any OTHER door name in this file still fails below.
+  "features/agent-context/service/hierarchyService.ts",
 ]);
+
+/** The one door each allowed path may call (a path not listed here may call any door named above). */
+const ALLOWED_DOORS: Record<string, readonly string[]> = {
+  "features/agent-context/service/hierarchyService.ts": ["get_user_full_context"],
+};
 
 function* sources(dir: string): Generator<string> {
   if (!existsSync(dir)) return;
@@ -120,5 +129,17 @@ it("no file outside the service calls a scope door or reads system context items
     .filter((f) => !ALLOWED.has(f.path))
     .filter((f) => CALL_OF_A_DOOR.test(f.text) || READ_OF_SYSTEM_ITEMS.test(f.text))
     .map((f) => f.path);
+  expect(offenders).toEqual([]);
+});
+
+it("an allowed path calls only the door it is allowed", () => {
+  const offenders = allSources()
+    .filter((f) => ALLOWED_DOORS[f.path])
+    .flatMap((f) =>
+      [...f.text.matchAll(new RegExp(CALL_OF_A_DOOR.source, "g"))]
+        .map((m) => m[1]!)
+        .filter((door) => !ALLOWED_DOORS[f.path]!.includes(door))
+        .map((door) => `${f.path}: ${door}`),
+    );
   expect(offenders).toEqual([]);
 });
