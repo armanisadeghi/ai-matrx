@@ -10,7 +10,7 @@
 //     refreshed only when a structural mutation fires
 //     (`refreshScopeTreeAfterMutation`). Components read it via `useScopeTree`.
 //
-//   • Engagement data (the user's projects and tasks, entity tag lists) is
+//   • Engagement data (the user's projects and tasks) is
 //     fetched lazily when a component mounts/opens — through THIS module, which
 //     is module-scoped: a short TTL cache + in-flight dedup shared by every
 //     instance on the page. Fifty fields rendered at once produce at most one
@@ -18,7 +18,8 @@
 //
 //   • A scope type's context FIELDS are never cached here: they are scope data,
 //     held by the Redux catalog (`readScopeTypeFields` / `listScopeTypeItems`),
-//     which shows a refused read instead of an empty list.
+//     which shows a refused read instead of an empty list. A list row's scope
+//     tags are the holder's too (`ensureEntityScopesBulk` + `useRowScopes`).
 //
 // If you are adding a read to any ContextAssignment component, add it here —
 // never fetch directly from the component.
@@ -28,7 +29,6 @@ import {
   getProjectTasks,
   getUserTasks,
 } from "@/features/tasks/services/taskService";
-import { scopesService } from "@/features/scopes/service/scopesService";
 
 const TTL_MS = 60_000;
 
@@ -102,64 +102,6 @@ export async function fetchAssignableTasks(): Promise<AssignableTask[]> {
 }
 
 /**
- * Bulk per-entity scope assignments for LIST surfaces (file tables, note
- * lists): one query per visible page of rows, cached + deduped like
- * everything else here. Keyed by sorted id-set so scrolling back re-uses it.
- */
-export async function fetchEntityScopesBulk(
-  entityType: string,
-  entityIds: string[],
-): Promise<Record<string, string[]>> {
-  if (entityIds.length === 0) return {};
-  const key = `bulk:${entityType}:${[...entityIds].sort().join(",")}`;
-  return cached(key, async () => {
-    const r = await scopesService.getEntityScopesBulk(
-      entityType as Parameters<typeof scopesService.getEntityScopesBulk>[0],
-      entityIds,
-    );
-    return r.ok ? r.data.byEntity : {};
-  });
-}
-
-/* ── row-scope store: per-row context status for LIST surfaces ────────────
-   A tiny external store so table cells can read "this row's scope ids"
-   without prop-threading or per-row fetches. Lists call `primeEntityScopes`
-   once per visible page (one bulk query); cells subscribe via
-   useSyncExternalStore; saves write through with `setRowScopes`. */
-
-const rowScopeStore = new Map<string, string[]>();
-const rowScopeListeners = new Set<() => void>();
-const notifyRowScopes = () => rowScopeListeners.forEach((l) => l());
-
-export function primeEntityScopes(entityType: string, entityIds: string[]): void {
-  const missing = entityIds.filter((id) => !rowScopeStore.has(`${entityType}:${id}`));
-  if (missing.length === 0) return;
-  void fetchEntityScopesBulk(entityType, missing).then((byEntity) => {
-    for (const id of missing) {
-      rowScopeStore.set(`${entityType}:${id}`, byEntity[id] ?? []);
-    }
-    notifyRowScopes();
-  });
-}
-
-export function subscribeRowScopes(cb: () => void): () => void {
-  rowScopeListeners.add(cb);
-  return () => { rowScopeListeners.delete(cb); };
-}
-
-/** undefined = not yet loaded (render neutral, never amber-by-default). */
-export function getRowScopes(entityType: string, entityId: string): string[] | undefined {
-  return rowScopeStore.get(`${entityType}:${entityId}`);
-}
-
-/** Write-through after a save so every visible cell updates instantly. */
-export function setRowScopes(entityType: string, entityId: string, scopeIds: string[]): void {
-  rowScopeStore.set(`${entityType}:${entityId}`, scopeIds);
-  invalidateAssignableData("bulk");
-  notifyRowScopes();
-}
-
-/**
  * Drop cached engagement data after a mutation (e.g. a quick-add created a
  * real task, or a row's context was edited) so the next engagement refetches.
  * Pass nothing to clear all.
@@ -182,7 +124,7 @@ export async function fetchProjectTasks(
   });
 }
 
-export function invalidateAssignableData(kind?: "projects" | "tasks" | "bulk"): void {
+export function invalidateAssignableData(kind?: "projects" | "tasks"): void {
   if (!kind) {
     cache.clear();
     return;
@@ -191,8 +133,5 @@ export function invalidateAssignableData(kind?: "projects" | "tasks" | "bulk"): 
   if (kind === "tasks") {
     cache.delete("tasks");
     for (const k of [...cache.keys()]) if (k.startsWith("tasks:project:")) cache.delete(k);
-  }
-  if (kind === "bulk") {
-    for (const k of [...cache.keys()]) if (k.startsWith("bulk:")) cache.delete(k);
   }
 }

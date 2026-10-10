@@ -26,11 +26,15 @@ import {
   ContextSummaryChips,
   type ContextSummaryInput,
 } from "@/features/scopes/components/context-assignment/ContextSummaryChips";
-import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
+import { useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { cn } from "@/lib/utils";
 
-function fileOnSaved(fileId: string, afterSave?: () => void) {
+function fileOnSaved(
+  setRowScopes: ReturnType<typeof useSetRowScopes>,
+  fileId: string,
+  afterSave?: () => void,
+) {
   return (r: ContextAssignmentSaveResult) => {
     if (!r.ok) return;
     setRowScopes(
@@ -48,9 +52,10 @@ function useFileContextField(fileId: string, fileName: string) {
     entityId: fileId,
   });
 
+  const setRowScopes = useSetRowScopes();
   const onSaved = useMemo(
-    () => fileOnSaved(fileId, () => void entityScopes.refresh()),
-    [fileId, entityScopes.refresh],
+    () => fileOnSaved(setRowScopes, fileId, () => void entityScopes.refresh()),
+    [setRowScopes, fileId, entityScopes.refresh],
   );
 
   const summary: ContextSummaryInput = useMemo(

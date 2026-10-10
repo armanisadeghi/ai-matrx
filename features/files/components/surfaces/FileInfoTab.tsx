@@ -55,7 +55,7 @@ import { FileText } from "lucide-react";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { ContextSummaryChips } from "@/features/scopes/components/context-assignment/ContextSummaryChips";
-import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
+import { useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import Link from "next/link";
 
 export interface FileInfoTabProps {
@@ -557,6 +557,7 @@ function FileContextInfoRow({
   fileId: string;
   fileName: string;
 }) {
+  const setRowScopes = useSetRowScopes();
   const es = useEntityScopes({ entityType: "file", entityId: fileId });
   return (
     <div className="flex items-start gap-2">

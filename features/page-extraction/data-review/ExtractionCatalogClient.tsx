@@ -35,11 +35,9 @@ import {
   type ContextSelection,
 } from "@/features/scopes/components/context-assignment/ContextAssignmentField";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
-import {
-  fetchEntityScopesBulk,
-  primeEntityScopes,
-  setRowScopes,
-} from "@/features/scopes/components/context-assignment/data";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ensureEntityScopesBulk } from "@/features/scopes/redux/thunks/ensureEntityScopes";
+import { useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 
 import {
   listExtractionCatalog,
@@ -83,7 +81,18 @@ export function ExtractionCatalogClient() {
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [filterScopeIds, setFilterScopeIds] = useState<string[]>([]);
-  const [scopesByJob, setScopesByJob] = useState<Record<string, string[]>>({});
+  // Each job's scope tags, from the holder (one bulk read per load; a refusal is the row's).
+  const dispatch = useAppDispatch();
+  const entityScopesByKey = useAppSelector((s) => s.scopesTree.entityScopesByKey);
+  const setRowScopes = useSetRowScopes();
+  const scopesByJob = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const e of entries) {
+      const entry = entityScopesByKey[`${EXTRACTION_ENTITY_TYPE}:${e.jobId}`];
+      if (entry?.status === "ready") out[e.jobId] = entry.scope_ids;
+    }
+    return out;
+  }, [entries, entityScopesByKey]);
   const hasLoadedRef = useRef(false);
 
   // THE LIST HEADER: All | Mine | My team | My Orgs | Shared | Public + the organization filter.
@@ -104,16 +113,14 @@ export function ExtractionCatalogClient() {
       hasLoadedRef.current = true;
       setError(null);
       const ids = data.map((d) => d.jobId);
-      primeEntityScopes(EXTRACTION_ENTITY_TYPE, ids);
-      const byEntity = await fetchEntityScopesBulk(EXTRACTION_ENTITY_TYPE, ids);
-      setScopesByJob(byEntity);
+      await dispatch(ensureEntityScopesBulk(EXTRACTION_ENTITY_TYPE, ids, { refresh: true }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load extractions");
     } finally {
       setLoading(false);
       setIsFetching(false);
     }
-  }, [laneScope, laneOrgId]);
+  }, [laneScope, laneOrgId, dispatch]);
 
   useEffect(() => {
     // Start after the initial render commits so the loading transition does
@@ -215,7 +222,8 @@ export function ExtractionCatalogClient() {
       align: "center",
       cell: (row) => (
         <ContextStatusButton
-          knownScopeCount={(scopesByJob[row.jobId] ?? []).length}
+          // A row whose tags were not read lets the button read (and say) them itself.
+          knownScopeCount={scopesByJob[row.jobId]?.length}
           subject={{
             entityType: EXTRACTION_ENTITY_TYPE,
             entityId: row.jobId,
@@ -230,10 +238,6 @@ export function ExtractionCatalogClient() {
                 row.jobId,
                 result.selection.scopeIds,
               );
-              setScopesByJob((previous) => ({
-                ...previous,
-                [row.jobId]: result.selection.scopeIds,
-              }));
               toast.success("Scopes updated");
             }
           }}

@@ -4,16 +4,12 @@
 //
 // The per-row Context cell: amber shield = no context (the nudge), green =
 // assigned; click opens the official assignment popover for that file. Scope
-// ids come from the shared row-scope store, primed by FileTable with ONE bulk
+// ids come from the holder (`entityScopesByKey`), filled by FileTable with ONE bulk
 // query per visible page — this cell never fetches on its own.
 
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { FileText } from "lucide-react";
-import {
-  subscribeRowScopes,
-  getRowScopes,
-  setRowScopes,
-} from "@/features/scopes/components/context-assignment/data";
+import { useRowScopes, useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 
 export function FileContextCell({
@@ -23,15 +19,21 @@ export function FileContextCell({
   fileId: string;
   fileName: string;
 }) {
-  const scopeIds = useSyncExternalStore(
-    subscribeRowScopes,
-    () => getRowScopes("file", fileId),
-    () => undefined,
-  );
+  const entry = useRowScopes("file", fileId);
+  const setRowScopes = useSetRowScopes();
 
-  if (scopeIds === undefined) {
+  // A refused read says so (never an amber "no context" it does not know).
+  if (entry.status === "error") {
+    return (
+      <span className="text-xs text-destructive" title={entry.error ?? undefined}>
+        Not loaded
+      </span>
+    );
+  }
+  if (entry.status !== "ready") {
     return <span className="text-xs text-muted-foreground/50">…</span>;
   }
+  const scopeIds = entry.scope_ids;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>

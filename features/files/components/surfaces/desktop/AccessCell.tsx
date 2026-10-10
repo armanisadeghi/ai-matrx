@@ -11,11 +11,7 @@
 // cell never fetches on its own — the full, honest computation is
 // `entity_access_summary`, and that runs one entity at a time in the info panel.
 
-import { useSyncExternalStore } from "react";
-import {
-  subscribeRowScopes,
-  getRowScopes,
-} from "@/features/scopes/components/context-assignment/data";
+import { useRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import { AccessBadge } from "@/features/files/components/surfaces/desktop/AccessBadge";
 import { SharedAvatarStack } from "@/features/files/components/surfaces/desktop/SharedAvatarStack";
 import type { Visibility } from "@/features/files/types";
@@ -37,11 +33,9 @@ export function AccessCell({
   isShared,
   granteeIds,
 }: AccessCellProps) {
-  const scopeIds = useSyncExternalStore(
-    subscribeRowScopes,
-    () => getRowScopes(entityType, entityId),
-    () => undefined,
-  );
+  const entry = useRowScopes(entityType, entityId);
+  // Only a read scope count is shown; loading or refused leaves the badge without one.
+  const scopeIds = entry.status === "ready" ? entry.scope_ids : undefined;
 
   return (
     <div className="flex items-center gap-2">

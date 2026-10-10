@@ -26,7 +26,7 @@ jest.mock("@/features/files/hooks/useFolderContents", () => ({
 jest.mock("@/features/files/hooks/useFileSelection", () => ({
   useFileSelection: () => ({ selectedIds: [], isSelected: () => false, select: jest.fn(), clear: jest.fn() }),
 }));
-jest.mock("@/features/scopes/components/context-assignment/data", () => ({ primeEntityScopes: jest.fn() }));
+jest.mock("@/features/scopes/redux/thunks/ensureEntityScopes", () => ({ ensureEntityScopesBulk: jest.fn(() => ({ type: "test/noop" })) }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => ({ sortBy: "name", sortDir: "asc" }),

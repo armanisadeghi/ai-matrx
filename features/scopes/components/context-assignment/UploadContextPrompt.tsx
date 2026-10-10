@@ -22,6 +22,7 @@ import React from "react";
 import { UploadCloud } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { ensureEntityScopesBulk } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { associationsService } from "@/features/scopes/service/associationsService";
@@ -30,7 +31,6 @@ import {
   type ContextSelection,
 } from "./ContextAssignmentField";
 import { ContextSheet } from "./ContextSheet";
-import { invalidateAssignableData } from "./data";
 
 export interface UploadContextPromptProps {
   open: boolean;
@@ -108,7 +108,7 @@ export function UploadContextPrompt({
         if (!r.ok) return { ok: false, error: r.error.message };
       }
     }
-    invalidateAssignableData("bulk");
+    void dispatch(ensureEntityScopesBulk("file", fileIds, { refresh: true }));
     onAssigned?.(fileIds, sel);
     return { ok: true };
   }

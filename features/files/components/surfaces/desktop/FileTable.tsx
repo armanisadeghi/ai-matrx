@@ -58,7 +58,7 @@ import {
   setSort,
 } from "@/features/files/redux/slice";
 import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
-import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
+import { ensureEntityScopesBulk } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import type {
   AccessFilter,
   CloudFilePermission,
@@ -371,11 +371,13 @@ export function FileTable({
   const rowScopesNeeded = visibleIds.includes("context") || visibleIds.includes("access");
   useEffect(() => {
     if (!rowScopesNeeded || files.length === 0) return;
-    primeEntityScopes(
-      "file",
-      files.map((f) => f.id),
+    void dispatch(
+      ensureEntityScopesBulk(
+        "file",
+        files.map((f) => f.id),
+      ),
     );
-  }, [rowScopesNeeded, files]);
+  }, [rowScopesNeeded, files, dispatch]);
 
   const refreshRagStatuses = useCallback(() => {
     if (ragFileIds.length === 0) return;

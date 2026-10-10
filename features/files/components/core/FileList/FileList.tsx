@@ -26,7 +26,7 @@ import { moveFile } from "@/features/files/redux/thunks";
 import { setSort } from "@/features/files/redux/slice";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { useFileSelection } from "@/features/files/hooks/useFileSelection";
-import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
+import { ensureEntityScopesBulk } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { FileListRow } from "./FileListRow";
 import { FileListGridCell } from "./FileListGridCell";
 import type { SortBy } from "@/features/files/types";
@@ -87,8 +87,8 @@ export function FileList({
   useEffect(() => {
     if (!showContext) return;
     const ids = fileIdsKey ? fileIdsKey.split(",") : [];
-    if (ids.length) primeEntityScopes("file", ids);
-  }, [showContext, fileIdsKey]);
+    if (ids.length) void dispatch(ensureEntityScopesBulk("file", ids));
+  }, [showContext, fileIdsKey, dispatch]);
 
   // Ordered list for shift-click ranges.
   const orderedIds = useMemo(

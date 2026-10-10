@@ -12,7 +12,7 @@ import { RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { ContextAssignmentPopover } from "@/features/scopes/components/context-assignment/ContextAssignmentPopover";
-import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
+import { useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { isDocCleaned } from "../service/cleanOutcome";
@@ -96,6 +96,7 @@ function PdfFileContextRow({
   fileId: string;
   fileName: string;
 }) {
+  const setRowScopes = useSetRowScopes();
   const es = useEntityScopes({ entityType: "file", entityId: fileId });
   const n = es.scopeIds.length;
   const hasContext = n > 0;
