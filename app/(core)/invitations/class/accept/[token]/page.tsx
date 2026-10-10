@@ -10,6 +10,7 @@
 // this page preserved as the destination (invitationSignUpHref), and the token matches on
 // the invited email once they're signed in.
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, Check, GraduationCap, Loader2, Mail } from "lucide-react";
@@ -18,7 +19,6 @@ import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
 import { invitationsService } from "@/features/organizations/service/invitationsService";
 import type { Invitation } from "@/features/organizations/service/invitationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
@@ -72,7 +72,7 @@ export default function AcceptClassInvitationPage() {
 
       const result = await invitationsService.getByToken(token);
       if (cancelled) return;
-      if (isScopesRpcErr(result)) {
+      if (isRecordsErr(result)) {
         setError(unopenable);
         setLoading(false);
         return;
@@ -118,7 +118,7 @@ export default function AcceptClassInvitationPage() {
     if (!invitation) return;
     setAccepting(true);
     const result = await invitationsService.accept(token);
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       toast.error(result.error.message);
       setError(result.error.message);
       setAccepting(false);

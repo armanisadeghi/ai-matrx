@@ -26,9 +26,9 @@
 // (`accountOrganizationChoices.ts`); nothing else may read them to decide where
 // anything acts.
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { readAccountOrganizationChoices } from "@/lib/organizations/accountOrganizationChoices";
 import {
   classifyLinkOrganizationValue,
@@ -190,7 +190,7 @@ async function firstOrganization(
   orgs: ReadonlyArray<{ id: string; name: string }>,
 ): Promise<{ id: string; name: string } | null> {
   const result = await membershipsService.forUser("organization");
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isRecordsErr(result)) throw new Error(result.error.message);
   const live = new Map(orgs.map((o) => [o.id, o]));
   const oldest = result.data.memberships
     .filter((m) => m.status === "active" && live.has(m.containerId))

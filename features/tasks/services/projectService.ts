@@ -7,6 +7,7 @@
  * here any more (2026-09-17). For the richer org-scoped project surface, use
  * features/projects/service.ts instead.
  */
+import { isRecordsErr } from "@ai-matrx/records";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
@@ -14,7 +15,6 @@ import { projectsDb } from "@/utils/supabase/projectsDb";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
@@ -77,7 +77,7 @@ export async function ensureDefaultProject(): Promise<DatabaseProject | null> {
     // Check if user has any projects (membership via the canonical store).
     const membersResult = await membershipsService.forUser("project");
     if (
-      !isScopesRpcErr(membersResult) &&
+      !isRecordsErr(membersResult) &&
       membersResult.data.memberships.length > 0
     ) {
       return null;
@@ -104,7 +104,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
     // Every read here failing THROWS (RC-B12 r13): a failed membership read
     // used to drop every shared project silently and list only "mine".
     const membersResult = await membershipsService.forUser("project");
-    if (isScopesRpcErr(membersResult)) {
+    if (isRecordsErr(membersResult)) {
       console.error(
         "Error fetching project memberships:",
         membersResult.error.message,
@@ -163,7 +163,7 @@ export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
   const userId = requireUserId();
 
   const membersResult = await membershipsService.forUser("project");
-  const memberProjectIds = isScopesRpcErr(membersResult)
+  const memberProjectIds = isRecordsErr(membersResult)
     ? []
     : membersResult.data.memberships.map((m) => m.containerId);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { isRecordsErr } from "@ai-matrx/records";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Check, X, AlertCircle, Loader2, Puzzle, Mail, UserPlus } from 'lucide-react';
@@ -9,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from "@/lib/toast";
 import { acceptProjectInvitation, getProject } from '@/features/projects/service';
 import { invitationsService } from '@/features/organizations/service/invitationsService';
-import { isScopesRpcErr } from '@/features/scopes/types';
 import { supabase } from '@/utils/supabase/client';
 import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
@@ -81,7 +81,7 @@ export default function AcceptProjectInvitationPage() {
       const unopenable = `This invitation link isn't open for ${user.email ?? 'this account'}. It may have already been used or withdrawn, or it may have been sent to a different email address.`;
 
       const inviteResult = await invitationsService.getByToken(token);
-      if (isScopesRpcErr(inviteResult)) {
+      if (isRecordsErr(inviteResult)) {
         setError(unopenable);
         return;
       }

@@ -11,6 +11,7 @@
  * all projects' counts/preview (no per-card round-trips).
  */
 
+import { isRecordsErr } from "@ai-matrx/records";
 import React from "react";
 import Link from "next/link";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -57,7 +58,6 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
@@ -416,7 +416,7 @@ export function ProjectsHub({
           scope_ids: [scopeParam],
           entity_type: "project",
         });
-        if (isScopesRpcErr(res)) {
+        if (isRecordsErr(res)) {
           throw new Error(res.error.message);
         }
         if (!cancelled) {

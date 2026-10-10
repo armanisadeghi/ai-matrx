@@ -22,6 +22,7 @@
 // The public API (favorites / count / isPinned / pin / unpin / toggle / reorder)
 // is unchanged. React Compiler is on — no manual memoization.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { v5 as uuidv5 } from "uuid";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -37,7 +38,7 @@ import {
   selectFavoriteCount,
 } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr, type FavoriteKind } from "@/features/scopes/types";
+import { type FavoriteKind } from "@/features/scopes/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** Everything a callsite must supply to pin something. `pinnedAt` is stamped here. */
@@ -108,7 +109,7 @@ function writeCanonicalFavorite(
     .then((res) => {
       // strictNullChecks is off repo-wide, so `!res.ok` won't narrow the
       // union — use the shared guard (same reason it exists for scopesService).
-      if (isScopesRpcErr(res)) {
+      if (isAssociationsRpcErr(res)) {
         console.error(
           "[usePinned] user_entity_state favorite write failed",
           { item, ref, error: res.error },

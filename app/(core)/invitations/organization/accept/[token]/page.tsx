@@ -1,5 +1,6 @@
 "use client";
 
+import { isRecordsErr } from "@ai-matrx/records";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/features/organizations/service";
 import { invitationsService } from "@/features/organizations/service/invitationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
   Organization,
   OrganizationInvitationWithOrg,
@@ -108,7 +108,7 @@ export default function AcceptInvitationPage() {
       const unopenable = `This invitation link isn't open for ${user.email ?? "this account"}. It may have already been used or withdrawn, or it may have been sent to a different email address.`;
 
       const inviteResult = await invitationsService.getByToken(token);
-      if (isScopesRpcErr(inviteResult)) {
+      if (isRecordsErr(inviteResult)) {
         setError(unopenable);
         return;
       }

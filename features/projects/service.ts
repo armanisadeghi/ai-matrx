@@ -10,6 +10,7 @@
  * Mirrors features/organizations/service.ts
  */
 
+import { isRecordsErr } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, TablesUpdate } from "@/types/database.types";
 import { projectsDb } from "@/utils/supabase/projectsDb";
@@ -24,7 +25,6 @@ import {
   invitationsService,
   type Invitation,
 } from "@/features/organizations/service/invitationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   Project,
   ProjectWithRole,
@@ -308,7 +308,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     membershipsService.forUser("project"),
   ]);
 
-  if (isScopesRpcErr(membersResult)) {
+  if (isRecordsErr(membersResult)) {
     throw new Error(
       membersResult.error.message || "Could not read project memberships",
     );
@@ -324,7 +324,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   const countById = new Map<string, number>();
   if (projectIds.length > 0) {
     const countsResult = await membershipsService.counts("project", projectIds);
-    if (isScopesRpcErr(countsResult)) {
+    if (isRecordsErr(countsResult)) {
       throw new Error(
         countsResult.error.message || "Could not read project member counts",
       );
@@ -396,7 +396,7 @@ export async function getProjectMembers(
   projectId: string,
 ): Promise<ProjectMemberWithUser[]> {
   const result = await membershipsService.listWithUsers("project", projectId);
-  if (isScopesRpcErr(result)) {
+  if (isRecordsErr(result)) {
     console.error("Error fetching project members:", result.error.message);
     return [];
   }
@@ -431,7 +431,7 @@ async function lastOwnerGuard(
     "project",
     projectId,
   );
-  if (isScopesRpcErr(result)) return null;
+  if (isRecordsErr(result)) return null;
   const members = result.data.members;
   const owners = members.filter((m) => m.role === "owner");
   const target = members.find((m) => m.userId === userId);
@@ -461,11 +461,11 @@ export async function updateProjectMemberRole(
       role: newRole,
     });
 
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       return {
         success: false,
         error:
-          result.error.code === "forbidden_org"
+          result.error.code === "door"
             ? "Unable to update member role. You may not have permission."
             : result.error.message,
       };
@@ -494,11 +494,11 @@ export async function removeProjectMember(
       userId,
     });
 
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       return {
         success: false,
         error:
-          result.error.code === "forbidden_org"
+          result.error.code === "door"
             ? "Unable to remove member. You may not have permission."
             : result.error.message,
       };
@@ -535,7 +535,7 @@ export async function getProjectUserRole(
     const currentUserId = requireUserId();
 
     const result = await membershipsService.forUser("project");
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       throw new Error(
         result.error.message || "Could not read your role in this project",
       );
@@ -580,7 +580,7 @@ export async function inviteToProject(
       role,
     });
 
-    if (isScopesRpcErr(createResult)) {
+    if (isRecordsErr(createResult)) {
       return { success: false, error: createResult.error.message };
     }
 
@@ -661,7 +661,7 @@ export async function getProjectInvitations(
   projectId: string,
 ): Promise<ProjectInvitation[]> {
   const result = await invitationsService.listForTarget("project", projectId);
-  if (isScopesRpcErr(result)) {
+  if (isRecordsErr(result)) {
     console.error("Error fetching project invitations:", result.error.message);
     return [];
   }
@@ -672,7 +672,7 @@ export async function cancelProjectInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
   const result = await invitationsService.revoke(invitationId);
-  if (isScopesRpcErr(result)) {
+  if (isRecordsErr(result)) {
     console.error("Error cancelling project invitation:", result.error.message);
     return { success: false, error: result.error.message };
   }
@@ -691,7 +691,7 @@ export async function resendProjectInvitation(
 ): Promise<ResendProjectInvitationResult> {
   try {
     const resendResult = await invitationsService.resend(invitationId);
-    if (isScopesRpcErr(resendResult)) {
+    if (isRecordsErr(resendResult)) {
       return { success: false, error: resendResult.error.message };
     }
 
@@ -747,7 +747,7 @@ export async function acceptProjectInvitation(
     // The RPC is atomic: it creates the membership AND marks the invite
     // accepted in one transaction. No separate membership write needed.
     const acceptResult = await invitationsService.accept(token);
-    if (isScopesRpcErr(acceptResult)) {
+    if (isRecordsErr(acceptResult)) {
       return {
         success: false,
         error:
@@ -783,7 +783,7 @@ export async function getUserProjectInvitations(): Promise<
     requireUserId();
 
     const result = await invitationsService.forMe();
-    if (isScopesRpcErr(result)) {
+    if (isRecordsErr(result)) {
       console.error(
         "Error fetching user project invitations:",
         result.error.message,
