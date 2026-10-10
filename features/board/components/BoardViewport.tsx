@@ -882,7 +882,7 @@ export function BoardViewport({
           ref={marqueeRef}
           data-board-marquee
           aria-hidden
-          className="pointer-events-none absolute z-20 rounded-sm border border-primary bg-primary/10"
+          className="pointer-events-none absolute z-[100000] rounded-sm border border-primary bg-primary/10"
           style={{ display: "none" }}
         />
         {overlay}

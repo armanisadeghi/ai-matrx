@@ -44,7 +44,7 @@ import { type BoardDocument, type NodeSource } from "../board/document";
 import { BoardMenu } from "../components/BoardMenu";
 import { BoardSurface } from "../components/BoardSurface";
 import { BoardViewport } from "../components/BoardViewport";
-import { BoardTile } from "../components/BoardTile";
+import { BoardTile, TileLayersContext } from "../components/BoardTile";
 import { BoardFrameView } from "../components/BoardFrameView";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { SelectionToolbar } from "../components/SelectionToolbar";
@@ -165,6 +165,7 @@ export function UserBoard({
     shapes: doc.shapes,
   }));
   const layout = useBoardLayout(board);
+  const tileLayers = useMemo(() => new Map(layout.tileIds.map((tid, i) => [tid, i] as const)), [layout.tileIds]);
   // "On N boards": one read of every saved board's tiles (not for a meeting guest or an unsaved board).
   const reuseIndex = useReuseIndex(boardId, !guest);
   // Sticky notes' words are Notes in the person's "Sticky notes" folder, filed in this board's
@@ -903,16 +904,18 @@ export function UserBoard({
                 onRename={(id, next) => board.updateFrame(id, { title: next })}
               />
             ))}
-            {layout.tileIds.map((id) => (
-              <BoardItemTile
-                key={id}
-                id={id}
-                board={board}
-                boardRecord={boardId ? { id: boardId, title } : null}
-                itemSurfaces={itemSurfaces}
-                onThrow={onThrow}
-              />
-            ))}
+            <TileLayersContext.Provider value={tileLayers}>
+              {layout.tileIds.map((id) => (
+                <BoardItemTile
+                  key={id}
+                  id={id}
+                  board={board}
+                  boardRecord={boardId ? { id: boardId, title } : null}
+                  itemSurfaces={itemSurfaces}
+                  onThrow={onThrow}
+                />
+              ))}
+            </TileLayersContext.Provider>
             {/* Drawings render ABOVE tiles (frames < tiles < drawings), so a stroke over a tile stays visible. */}
             <ShapesLayer board={board} />
           </BoardViewport>

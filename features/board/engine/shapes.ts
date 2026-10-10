@@ -120,6 +120,39 @@ export const isBoxKind = (kind: ShapeKind): boolean =>
 /** The kinds drawn as a polygon inside their box. */
 export const isPolygonKind = (kind: ShapeKind): boolean => kind === "triangle" || kind === "diamond" || kind === "star";
 
+/**
+ * Where a closed shape's text sits: the largest box that stays inside the drawn outline. Rectangles
+ * and ovals keep the whole box; a triangle holds text in its lower middle, a diamond in its inner
+ * rhombus box, a star in the square inside its inner circle.
+ */
+export function shapeTextBox(kind: ShapeKind, box: Rect): Rect {
+  const at = (fx: number, fy: number, fw: number, fh: number): Rect => ({
+    x: box.x + box.w * fx,
+    y: box.y + box.h * fy,
+    w: box.w * fw,
+    h: box.h * fh,
+  });
+  if (kind === "triangle") return at(0.25, 0.52, 0.5, 0.44);
+  if (kind === "diamond") return at(0.25, 0.25, 0.5, 0.5);
+  if (kind === "star") return at(0.5 - 0.29 / 2, 0.5 - 0.29 / 2, 0.29, 0.29);
+  return box;
+}
+
+/**
+ * The font size that makes `text` fit a polygon's text box: the chosen size, shrunk (never below 8) until
+ * the estimated wrapped lines fit. An estimate (no measuring), so a typed label never spills the outline.
+ */
+export function fitTextSize(text: string, box: Rect, size: number, padding = 16): number {
+  const w = Math.max(1, box.w - padding);
+  const h = Math.max(1, box.h - padding);
+  for (let s = size; s > 8; s -= 1) {
+    const perLine = Math.max(1, Math.floor(w / (s * 0.6)));
+    const lines = text.split("\n").reduce((n, line) => n + Math.max(1, Math.ceil(line.length / perLine)), 0);
+    if (lines * s * 1.375 <= h) return s;
+  }
+  return 8;
+}
+
 /** A polygon shape's corners inside its box (a star is five points out of ten corners). */
 export function shapePolygon(kind: ShapeKind, box: Rect): Point[] | null {
   const cx = box.x + box.w / 2;

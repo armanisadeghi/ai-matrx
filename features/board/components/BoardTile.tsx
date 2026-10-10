@@ -23,7 +23,7 @@
  * off-screen, an image swaps to a thumbnail…).
  */
 
-import { Activity, type ReactNode, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Activity, createContext, type ReactNode, useContext, useSyncExternalStore, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -190,6 +190,7 @@ export function BoardTile({
   const paceTier = usePaceTier(id);
   // In the selection (alone or with others); `sole` = the only one (resize, the live tile).
   const selected = useIsSelected(id);
+  const lift = useTileLift(id, selected);
   const sole = useIsSoleSelected(id);
   const focused = useIsFocused(id);
   // Content receives input natively only while interacting (or focused).
@@ -635,8 +636,9 @@ export function BoardTile({
         top: rect.y,
         width: rect.w,
         height: rect.h,
-        // A selected tile rises above the drawings layer (z 6): the one you work in is never covered.
-        zIndex: selected ? 7 : undefined,
+        // The selection rises above the drawings layer (z 6) so the tile you work in is never covered —
+        // by its place in the order (`useTileLift`), so Send to back / Bring to front show at once.
+        zIndex: lift,
         ...(overview && !focused ? FACE_RADIUS : null),
         contentVisibility: culled && !focused ? "hidden" : "visible",
       }}
@@ -652,6 +654,37 @@ export function BoardTile({
       )}
     </div>
   );
+}
+
+/**
+ * Tile -> place in the board's order (0 = back). A host that mounts tiles in order provides it so a
+ * selected tile's lift respects Bring to front / Send to back.
+ */
+export const TileLayersContext = createContext<ReadonlyMap<string, number> | null>(null);
+
+/** First z-index above the drawings layer (z 6). */
+export const TILE_LIFT_BASE = 7;
+
+/**
+ * The z-index of a tile: undefined (natural order, under drawings) unless the selection lifts it. A
+ * selected tile rises above the drawings, and so does every tile in FRONT of it in the order — a
+ * selected tile is never drawn over a tile that is in front of it. Without a layer map (a host that
+ * does not provide one) the selected tile alone lifts.
+ */
+export function useTileLift(id: string, selected: boolean): number | undefined {
+  const store = useBoardCameraStore();
+  const layers = useContext(TileLayersContext);
+  const get = (): number | undefined => {
+    const mine = layers?.get(id);
+    if (mine === undefined) return selected ? TILE_LIFT_BASE : undefined;
+    let min = Infinity;
+    for (const s of store.getSelection()) {
+      const l = layers!.get(s);
+      if (l !== undefined && l < min) min = l;
+    }
+    return mine >= min ? TILE_LIFT_BASE + mine : undefined;
+  };
+  return useSyncExternalStore(store.subscribeSelection, get, get);
 }
 
 /** What the agent is doing to this item right now. */

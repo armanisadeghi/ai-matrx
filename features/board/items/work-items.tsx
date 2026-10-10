@@ -68,6 +68,7 @@ import {
   fileItem,
   noteItem,
   isEntity,
+  isNoteDraft,
   withChatList,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
@@ -588,9 +589,10 @@ export const WORK_ITEMS: BoardItemType[] = [
     },
     bringIn: { label: "Note from Notes", Picker: NotePicker },
     record: { place: noteItem, searchToken: "note" },
+    // A draft has no row until its first words: its page would be "couldn't find this note" (door law).
     href: (s) => {
       const id = entityId(s);
-      return id ? `/notes/${id}` : null;
+      return id && !isNoteDraft(s) ? `/notes/${id}` : null;
     },
     kindLabel: "note",
     // Checked 2026-10-02 (Write view): text kept, no second note, the next edit saves everything.

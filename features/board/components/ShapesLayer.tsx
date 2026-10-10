@@ -39,6 +39,9 @@ import {
   isBoxed,
   isCanvasText,
   isConnector,
+  isPolygonKind,
+  fitTextSize,
+  shapeTextBox,
   shapeColorCss,
   shapePolygon,
   strokeWidthOf,
@@ -182,7 +185,7 @@ function ShapeView({ shape, board, shapes }: { shape: BoardShape; board: AnyBoar
       >
         {body}
       </svg>
-      {text && <ShapeText box={box} shape={shape}>{text}</ShapeText>}
+      {text && <ShapeText box={shapeTextBox(shape.kind, box)} shape={shape} fit={isPolygonKind(shape.kind)}>{text}</ShapeText>}
     </>
   );
 }
@@ -197,8 +200,9 @@ function arrowHead(a: Point, b: Point, width: number): string {
   return `M ${l.x} ${l.y} L ${b.x} ${b.y} L ${r.x} ${r.y}`;
 }
 
-function ShapeText({ box, shape, children }: { box: Rect; shape: BoardShape; children: React.ReactNode }) {
+function ShapeText({ box, shape, fit, children }: { box: Rect; shape: BoardShape; fit?: boolean; children: React.ReactNode }) {
   const st = styleOf(shape);
+  const size = fit && typeof children === "string" ? fitTextSize(children, box, TEXT_SIZES[st.textSize]) : TEXT_SIZES[st.textSize];
   return (
     <div
       className="absolute flex max-w-none items-center overflow-hidden whitespace-pre-wrap break-words p-2 font-medium leading-snug"
@@ -207,7 +211,7 @@ function ShapeText({ box, shape, children }: { box: Rect; shape: BoardShape; chi
         top: box.y,
         width: box.w,
         height: box.h,
-        fontSize: TEXT_SIZES[st.textSize],
+        fontSize: size,
         textAlign: st.textAlign === "start" ? "left" : st.textAlign === "end" ? "right" : "center",
         justifyContent: st.textAlign === "start" ? "flex-start" : st.textAlign === "end" ? "flex-end" : "center",
         color: shapeColorCss(st.stroke),
@@ -347,7 +351,7 @@ function EndHandles({ shape, board, shapes }: { shape: BoardShape; board: AnyBoa
 function ShapeTextEditor({ shape, board }: { shape: BoardShape; board: AnyBoard }) {
   const store = useBoardCameraStore();
   const [value, setValue] = useState(shape.text ?? "");
-  const box = boundsOfPoints(shape.points);
+  const box = shapeTextBox(shape.kind, boundsOfPoints(shape.points));
   const st = styleOf(shape);
   const done = useRef(false);
   const latest = useRef({ value, shape });
@@ -397,7 +401,7 @@ function ShapeTextEditor({ shape, board }: { shape: BoardShape; board: AnyBoard 
         }}
         className="pointer-events-auto max-h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-medium leading-snug outline-none"
         style={{
-          fontSize: TEXT_SIZES[st.textSize],
+          fontSize: isPolygonKind(shape.kind) ? fitTextSize(value, box, TEXT_SIZES[st.textSize]) : TEXT_SIZES[st.textSize],
           textAlign: st.textAlign === "start" ? "left" : st.textAlign === "end" ? "right" : "center",
           color: shapeColorCss(st.stroke),
           fieldSizing: "content",

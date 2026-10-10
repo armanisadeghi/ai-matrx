@@ -122,3 +122,25 @@ describe("arrange shortcuts", () => {
     expect(key("KeyZ", { altKey: true })).toBeNull();
   });
 });
+
+describe("arrange by type: tight packing and clear of unselected content", () => {
+  it("a narrow tile beside a wide one of ANOTHER type is not pushed out to the wide width", () => {
+    const items = [t("s1", "sticky", 0, 0, 130, 130), t("s2", "sticky", 200, 0, 130, 130), t("n1", "note", 0, 400, 560, 620)];
+    const { placed } = arrangeByType(items, ["note", "sticky"], { columns: 2 });
+    const at = new Map(placed.map((p) => [p.id, p.rect]));
+    // Two stickies in one row: the gap between them is the standard gap, not a note's width.
+    expect(at.get("s2")!.x - (at.get("s1")!.x + 130)).toBeLessThanOrEqual(48);
+  });
+
+  it("arranging a selection never lands it on content that was not selected", () => {
+    const tiles = [
+      t("a", "note", 0, 0),
+      t("b", "chat", 400, 0),
+      t("keep", "task", 0, 260, 700, 400), // unselected, right under the selection
+    ];
+    const plan = planArrange({ tiles, frames: [] }, { kind: "by-type" }, ["note", "chat", "task"], ["a", "b"]);
+    const final = new Map(tiles.map((x) => [x.id, { ...x.rect }]));
+    for (const m of plan.moves) final.set(m.id, { ...final.get(m.id)!, x: m.x, y: m.y });
+    for (const id of ["a", "b"]) expect(overlaps(final.get(id)!, final.get("keep")!)).toBe(false);
+  });
+});

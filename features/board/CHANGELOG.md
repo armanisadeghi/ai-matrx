@@ -1,5 +1,13 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Last four live-verification defects (ld41)
+
+- **Send to back / Bring to front show at once on a selected tile:** a selected tile was drawn at z 7 whatever its place in the order, so it stayed above tiles that were now in front of it until deselect. `useTileLift` (`components/BoardTile.tsx`) lifts the selection AND every tile in front of it above the drawings, at `7 + its place in the order` (`TileLayersContext`, provided by `UserBoard`); selected tiles stay above drawings, never above a tile in front of them. The marquee rose to z 100000 so a long order never hides it.
+- **A draft Note offers no "Open in its own page":** the page of an unsaved note does not exist (`isNoteDraft` -> no `href`); the link appears once the note has its first words.
+- **Text in a triangle, diamond and star stays inside the outline:** `shapeTextBox` (inscribed box: triangle lower middle, diamond inner rhombus box, star the square in its inner circle) and `fitTextSize` (shrinks until the wrapped text fits), used by the label and its editor (`components/ShapesLayer.tsx`).
+- **Arrange -> By type packs tightly and lands clear:** each column is as wide as the widest item in THAT column of the block (not the whole board's widest tile: ~430 px gaps), and arranging a selection puts the result at the nearest free spot clear of everything not selected (`clearOfOthers`, `findFreeSpot`).
+- **Error Inspector `chat-host-slot-unregistered` ("host registered no scopes.scopesService"):** these are dev-only probes of the package's scopes proxies (bundler / React Refresh), not a missing host registration. The fix is `@ai-matrx/chat` aidream commit ab1792fe66; the latest published 0.7.31 (gitHead 49f70431f3) predates it, so nothing to update yet.
+
 ## 2026-10-09 — Full Board walk fixes (fw38 → pr39)
 
 - **Keyboard on load:** the board owns focus when it loads and keeps it against the shell chat composer's late autofocus until the person's first press (`engine/claim-load-focus.ts`, started by `BoardViewport`); ⌘A / Delete / ⌘Z work with no click. /chat is untouched (it has no board).

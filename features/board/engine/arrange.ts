@@ -6,6 +6,7 @@
  */
 
 import type { Rect } from "./camera";
+import { findFreeSpot } from "./placement";
 
 export type ArrangeLayout = "grid" | "row" | "column" | "tidy";
 export type AlignEdge = "left" | "center" | "right" | "top" | "middle" | "bottom";
@@ -248,15 +249,22 @@ export function arrangeByType(
     const at: Placed[] = [];
     let y = 0;
     let w = 0;
+    // A column is as wide as the widest item IN THAT COLUMN of this block — never as wide as the
+    // widest item of the whole board (a sticky beside a 560 px note sat 430 px from its neighbour).
+    const colW: number[] = [];
+    list.forEach((i, n) => {
+      const c = n % columns;
+      colW[c] = Math.max(colW[c] ?? 0, i.rect.w);
+    });
     for (let r = 0; r * columns < list.length; r++) {
       const row = list.slice(r * columns, r * columns + columns);
       let x = 0;
-      for (const i of row) {
+      row.forEach((i, c) => {
         at.push({ id: i.id, rect: { ...i.rect, x, y } });
-        // Frames keep their own width; tiles share one column width.
-        x += (key === FRAME_GROUP ? i.rect.w : cellW) + gap;
+        // Frames keep their own width; tiles share their column's width.
+        x += (key === FRAME_GROUP ? i.rect.w : colW[c]) + gap;
         w = Math.max(w, x - gap);
-      }
+      });
       y += Math.max(...row.map((i) => i.rect.h)) + gap;
     }
     return { key, ids: list.map((i) => i.id), at, w, h: y - gap };
@@ -323,7 +331,14 @@ export function planArrange(
   /** Arrange only these (a multi-selection): selected frames still carry the tiles inside them. */
   only?: readonly string[],
 ): { moves: { id: string; x: number; y: number }[]; frames: { group: string; rect: Rect }[] } {
-  if (only) scene = selectionScene(scene, only);
+  // What stays where it is: arranged results are placed clear of it.
+  let otherRects: Rect[] = [];
+  if (only) {
+    const inScope = selectionScene(scene, only);
+    const ids = new Set([...inScope.tiles, ...inScope.frames].map((p) => p.id));
+    otherRects = [...scene.tiles, ...scene.frames].filter((p) => !ids.has(p.id)).map((p) => p.rect);
+    scene = inScope;
+  }
   const { units, members } = boardUnits(scene);
   if (units.length === 0) return { moves: [], frames: [] };
   const groupOf = new Map(scene.tiles.map((t) => [t.id, t.group]));
@@ -361,5 +376,33 @@ export function planArrange(
       break;
     }
   }
+  if (only && (command.kind === "by-type" || command.kind === "frames-by-type")) {
+    const dx = clearOfOthers(placed, frames, otherRects);
+    if (dx) {
+      placed = placed.map((p) => ({ id: p.id, rect: { ...p.rect, x: p.rect.x + dx.x, y: p.rect.y + dx.y } }));
+      for (const f of frames) f.rect = { ...f.rect, x: f.rect.x + dx.x, y: f.rect.y + dx.y };
+    }
+  }
   return { moves: unitMoves(scene, placed, members), frames };
+}
+
+/**
+ * The shift that puts an arranged result clear of everything NOT being arranged (null when it
+ * already is): the nearest free spot of the result's bounding box to where it started.
+ */
+function clearOfOthers(
+  placed: readonly Placed[],
+  frames: readonly { rect: Rect }[],
+  others: readonly Rect[],
+): { x: number; y: number } | null {
+  const rects = [...placed.map((p) => p.rect), ...frames.map((f) => f.rect)];
+  if (rects.length === 0 || others.length === 0) return null;
+  const x0 = Math.min(...rects.map((r) => r.x));
+  const y0 = Math.min(...rects.map((r) => r.y));
+  const x1 = Math.max(...rects.map((r) => r.x + r.w));
+  const y1 = Math.max(...rects.map((r) => r.y + r.h));
+  const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  const spot = findFreeSpot(others, { w: box.w, h: box.h }, { x: box.x + box.w / 2, y: box.y + box.h / 2 }, DEFAULT_GAP);
+  const shift = { x: spot.x - box.x, y: spot.y - box.y };
+  return shift.x === 0 && shift.y === 0 ? null : shift;
 }
