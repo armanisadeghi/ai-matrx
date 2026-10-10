@@ -1142,7 +1142,8 @@ const nextConfig = {
     NEXT_PUBLIC_DEPLOYMENT_ID: process.env.VERCEL_DEPLOYMENT_ID,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    // ANTHROPIC_API_KEY removed 2026-10-09: nothing in the frontend calls Anthropic (every AI call
+    // goes through aidream, which records its cost), and `env` here inlines a value into bundles.
     CARTESIA_API_KEY: process.env.CARTESIA_API_KEY,
     NEWS_API_KEY: process.env.NEWS_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
