@@ -42,6 +42,10 @@
 
 **Invariant:** `AlchemyMenuContent` is reachable ONLY via the shell's `dynamic()` import. Static-importing it is an eslint error (`contextMenuV3StaticImportBan`). The shell carries zero data, zero submenus, zero modal code. The old `MenuContent` / `MobileMenuContent` renderers and `model/layouts.ts` were deleted in ALC-15 S3.
 
+## Nothing before first open
+
+Arman's rule: a menu is opened on ~1 in 149 page loads, so until the person first opens one the menu loads nothing, fetches nothing and runs no work. The shell: no idle warm-up of the menu body (it starts on the first right-click / right-mousedown, in parallel with the open); no selection listener, selection zone, widget handle or pointer listener until the surface is engaged (first pointer press, focus or open); the shortcut list (`fetchUnifiedMenu`, dynamically imported) loads only after a menu has been opened once on the page, so agent-shortcut key combos start working after the first open; the table shape reader loads only when an open lands on a `<table>`. Heavy actions (print, PDF, Word, TTS, diff) import on click. Guard: `__tests__/first-open-is-already-loaded.test.tsx`.
+
 ## Mobile — the package bottom sheet
 
 On a mobile viewport (`useIsMobile()`) the gesture (long-press 480 ms, cancelled on drag; a right-click; the selection toolbar's "AI and more"; a bar's ⋯) opens the Alchemy package's **bottom sheet** — the SAME model as desktop (`sheet(model)`), drill-down by path, so mobile can never drift from desktop (the old mobile renderer built its own list; ALC-15 ruling 6). Its verb strip is icon-only; a greyed verb explains itself on tap (touch has no tooltip).
