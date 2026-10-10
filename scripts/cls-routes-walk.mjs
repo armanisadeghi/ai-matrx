@@ -1,5 +1,5 @@
 // scripts/cls-routes-walk.mjs — cold-load layout shift for /data, /messages, /meetings as admin and member (headless).
-//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--max=0.01] [--verbose]
+//   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=1440,1024,390] [--max=0.01] [--verbose]
 // Signs in through `pnpm dev-login` (never types a password). Prints each shift entry's nodes
 // (selector, previousRect, currentRect). Exits 1 when any route/seat run exceeds --max (default 0.01).
 import { chromium } from "playwright";
@@ -10,6 +10,7 @@ const opt = (k, d) => args.find((a) => a.startsWith(`--${k}=`))?.split("=")[1] ?
 const runs = Number(args.find((a) => /^\d+$/.test(a)) ?? 2);
 const routes = opt("routes", "/data,/messages,/meetings").split(",");
 const seats = opt("seats", "admin,member").split(",");
+const widths = opt("widths", "1440").split(",").map(Number);
 const MAX = Number(opt("max", "0.01"));
 const verbose = args.includes("--verbose");
 const browser = await chromium.launch({ headless: true });
@@ -29,10 +30,10 @@ for (const seat of seats) {
   await bp.waitForTimeout(3000);
   const state = await boot.storageState();
   await boot.close();
-  for (const route of routes) {
+  for (const width of widths) for (const route of routes) {
     const out = [];
     for (let i = 0; i < runs; i++) {
-      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: state });
+      const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, storageState: state });
       const page = await ctx.newPage();
       await page.addInitScript(() => {
         window.__cls = 0; window.__shifts = [];
@@ -48,7 +49,7 @@ for (const seat of seats) {
       out.push(await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname })));
       await ctx.close();
     }
-    console.log(`${seat} ${route}: CLS per run = ${out.map((r) => r.cls.toFixed(4)).join(", ")} (landed ${out[0].url})`);
+    console.log(`${seat} ${width}px ${route}: CLS per run = ${out.map((r) => r.cls.toFixed(4)).join(", ")} (landed ${out[0].url})`);
     const worst = out.reduce((a, b) => (b.cls > a.cls ? b : a));
     if (worst.cls > MAX) bad = true;
     if (worst.cls > MAX || verbose) console.log(JSON.stringify(worst.shifts, null, 1));
