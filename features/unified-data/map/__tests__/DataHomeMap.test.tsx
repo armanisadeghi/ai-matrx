@@ -13,6 +13,7 @@ const tableRow = (id: string, name: string, org: string, orgName: string) => ({
   id: `table:${org}:${id}`,
   kind: "table",
   tableId: id,
+  itemId: id,
   name,
   href: `/data/${id}`,
   organizationId: org,
@@ -74,7 +75,8 @@ beforeEach(() => {
     tableRow("patients", "Patients", HARBOR, "Harbor Dental Group"),
     tableRow("visits", "Visits", HARBOR, "Harbor Dental Group"),
     tableRow("jobs", "Jobs", ROOFING, "Titanium Roofing"),
-    { ...tableRow("form1", "Intake form", HARBOR, "Harbor Dental Group"), kind: "form" },
+    { ...tableRow("form1", "Intake form", HARBOR, "Harbor Dental Group"), kind: "form", itemId: "the-form", tableId: "patients" },
+    { ...tableRow("status-list", "Status choices", HARBOR, "Harbor Dental Group"), kind: "list" },
   ];
 });
 afterEach(async () => {
@@ -97,13 +99,19 @@ describe("the data home map", () => {
     expect(mapFields).toHaveBeenCalledTimes(2);
     expect(new Set(mapFields.mock.calls.map((c) => c[1]))).toEqual(new Set([HARBOR, ROOFING]));
     const harbor = mapFields.mock.calls.find((c) => c[1] === HARBOR)!;
-    expect([...(harbor[2] as string[])].sort()).toEqual(["patients", "visits"]);
+    expect([...(harbor[2] as string[])].sort()).toEqual(["patients", "status-list", "visits"]);
   });
 
   it("maps tables only (a form is not a card) and groups them by organization", async () => {
     await mount();
     expect(host.querySelectorAll("[data-org]")).toHaveLength(2);
     expect(host.textContent).toContain("Patients");
+    expect(host.textContent).not.toContain("Intake form");
+  });
+
+  it("maps a table the app keeps (a choice list) as a card, so Show platform tables changes the map", async () => {
+    await mount();
+    expect(host.textContent).toContain("Status choices");
     expect(host.textContent).not.toContain("Intake form");
   });
 

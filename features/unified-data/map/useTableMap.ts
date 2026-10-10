@@ -15,6 +15,16 @@ import { createDataHomeCorpus } from "@/features/unified-data/home/dataHomeCorpu
 import { createRecordCountStore } from "@/features/unified-data/home/dataHomeRecordCounts";
 import { buildTableMap, type MapTableInput, type TableMap } from "./tableMapModel";
 
+/**
+ * A row that IS a table, whatever kind the store gives it. The tables the app keeps (a choice column's
+ * List, a scope, a booking page's table) come with their own kind word and are the ones "Show platform
+ * tables" brings in, so `kind === "table"` would drop exactly those. A form, portal or dashboard row
+ * carries its own id and merely points at a table, so its id differs from the table's.
+ */
+export function isATableRow(row: { tableId: string | null; itemId: string }): boolean {
+  return Boolean(row.tableId) && row.itemId === row.tableId;
+}
+
 export type TableMapState =
   | { status: "loading" }
   | { status: "failed"; message: string }
@@ -42,7 +52,7 @@ export function useTableMap(args: {
     (async () => {
       const rows = await corpus.load();
       const tables: MapTableInput[] = rows
-        .filter((r) => r.kind === "table" && !r.archived && r.tableId && (!organizationFilter || r.organizationId === organizationFilter))
+        .filter((r) => isATableRow(r) && !r.archived && r.tableId && (!organizationFilter || r.organizationId === organizationFilter))
         .map((r) => ({
           tableId: r.tableId as string,
           name: r.name,
