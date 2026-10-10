@@ -287,11 +287,12 @@ export function NoteMetadataBar({
           {tags.map((tag) => (
             <span
               key={tag}
-              className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 py-0 text-[0.625rem] text-foreground"
+              className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted pl-1.5 pr-1 py-0 text-[0.625rem] text-foreground"
             >
               {tag}
               <button
                 type="button"
+                aria-label={`Remove tag ${tag}`}
                 onClick={() => handleRemoveTag(tag)}
                 className="cursor-pointer text-muted-foreground hover:text-foreground [&_svg]:h-2.5 [&_svg]:w-2.5"
               >
