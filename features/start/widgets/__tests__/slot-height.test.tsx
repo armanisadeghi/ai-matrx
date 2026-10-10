@@ -117,7 +117,8 @@ describe("Start widget slots hold their height", () => {
     expect(loadedSlot.querySelector('[aria-busy="true"]')).toBeNull();
     expect(loadedSlot.style.height).toBe(loadingHeight);
     expect(loadedSlot.style.height).toBe(`${slotHeightPx(type, size)}px`);
-    expect(loadedSlot.querySelectorAll("li").length).toBeLessThanOrEqual(slotRows(type, size));
+    // The counts strip lays its tiles out across the row, not down it.
+    if (type !== "kpis") expect(loadedSlot.querySelectorAll("li").length).toBeLessThanOrEqual(slotRows(type, size));
   });
 
   it("the counts strip shows each configured count, and a zero shows its nudge", async () => {

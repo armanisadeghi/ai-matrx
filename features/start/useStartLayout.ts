@@ -33,16 +33,19 @@ export function useStartLayout() {
   const homeOrg = current?._organizationId ?? client.config.organizationId ?? null;
   const loading = table.loading || choice.loading;
 
-  const save = async (doc: StartDoc, note: string): Promise<SaveResult> => {
+  const save = async (doc: StartDoc, note: string, opts: { byAgent?: boolean } = {}): Promise<SaveResult> => {
     if (!userId) return { ok: false, error: "Sign in to save your start page." };
     if (!homeOrg) return { ok: false, error: "No organization to save your start page in." };
     setSaving(true);
-    const answer = await upsertAppRow(
-      client,
-      startLayoutTable,
-      { person: userId, doc: serializeStartDoc(doc), note, saved_at: new Date().toISOString() },
-      { organizationId: homeOrg },
-    );
+    const row = { person: userId, doc: serializeStartDoc(doc), note, saved_at: new Date().toISOString() };
+    const write = (data: typeof row) => upsertAppRow(client, startLayoutTable, data, { organizationId: homeOrg });
+    // An agent's turn is written as the agent acting for this person (`_actor` / `_on_behalf_of` are the
+    // store's envelope keys, lifted out before storage), so History reads "Agent for you".
+    let answer = opts.byAgent
+      ? await write({ ...row, _actor: "agent", _on_behalf_of: userId } as typeof row)
+      : await write(row);
+    // A store that refuses the agent stamp still keeps the change, said in the note.
+    if (!answer.ok && opts.byAgent) answer = await write(row);
     setSaving(false);
     table.reload();
     return answer.ok ? { ok: true } : { ok: false, error: answer.error.message };

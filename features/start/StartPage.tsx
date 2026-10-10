@@ -10,7 +10,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, History, Pencil, Plus, X } from "lucide-react";
+import { Check, History, MessageCircle, Pencil, Plus, X } from "lucide-react";
+import { isMandateKey } from "@ai-matrx/agents/mandates";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { RecordsMount } from "@ai-matrx/records-ui";
 
 import { RecordPageHeader, type RecordPageAction } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -28,6 +30,16 @@ import { defaultStartDoc } from "./widgets/defaultDoc";
 import { summarizeStartEdit } from "./widgets/editNote";
 import type { StartDoc } from "./widgets/types";
 import { WidgetNotice } from "./widgets/frame";
+import { describeStartWidget } from "./widgets/catalog";
+import { useStartAgentTools } from "./tools/useStartAgentTools";
+import { START_PAGE_SURFACE_NAME } from "@/features/surfaces/manifests/start-page.manifest";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+
+/**
+ * The Start page maintainer's mandate key — PROPOSED (lane START-PAGE, slice 2); the chair takes it through
+ * the Agent Factory. Until it is declared, the Chat door says the assistant is not set up yet.
+ */
+const START_MAINTAINER_KEY = "start_page.maintainer";
 
 export function StartPage() {
   const userId = useAppSelector(selectUserId);
@@ -54,9 +66,22 @@ function StartBody() {
   const [preview, setPreview] = useState<{ version: number; doc: StartDoc; seenVersion: number | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const history = useStartHistory(layout.recordId, panel?.kind === "history");
-
+  const openMandateWindow = useOpenMandateWindow();
   const editing = draft !== null;
-  const shown: StartDoc | null = draft ?? preview?.doc ?? layout.doc;
+  const agent = useStartAgentTools(START_PAGE_SURFACE_NAME, {
+    doc: layout.doc,
+    personEditing: editing,
+    save: (doc, note, opts) => layout.save(doc, note, opts),
+  });
+  const shown: StartDoc | null = draft ?? preview?.doc ?? agent.agentDoc ?? layout.doc;
+
+  const openChat = () => {
+    if (!isMandateKey(START_MAINTAINER_KEY)) {
+      toast.info("The Start page assistant is not set up yet");
+      return;
+    }
+    openMandateWindow({ initialMandateKey: START_MAINTAINER_KEY, mandateKeys: [START_MAINTAINER_KEY], surfaceName: START_PAGE_SURFACE_NAME });
+  };
 
   const startEdit = () => {
     if (!layout.doc) return;
@@ -100,6 +125,7 @@ function StartBody() {
         { label: "Done", icon: Check, primary: true, disabled: layout.saving, onPress: () => void finishEdit() },
       ]
     : [
+        { label: "Chat", icon: MessageCircle, onPress: openChat },
         { label: "History", icon: History, showLabel: true, disabled: !layout.recordId, onPress: () => setPanel(panel?.kind === "history" ? null : { kind: "history" }) },
         { label: "Edit", icon: Pencil, showLabel: true, disabled: !layout.doc || layout.loading, onPress: startEdit },
       ];
@@ -107,7 +133,13 @@ function StartBody() {
   const configuring = panel?.kind === "configure" && draft ? draft.widgets.find((w) => w.id === panel.id) : undefined;
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={START_PAGE_SURFACE_NAME}
+      getScope={() => ({
+        start_widgets: (shown?.widgets ?? []).map((w, position) => ({ ...w, describe: describeStartWidget(w), position })),
+        start_editing: editing,
+      })}
+    >
       <RecordPageHeader
         backHref="/"
         record={{ name: "Start" }}
@@ -178,6 +210,6 @@ function StartBody() {
           }}
         />
       ) : null}
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
