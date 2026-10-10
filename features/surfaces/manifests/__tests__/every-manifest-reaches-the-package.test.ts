@@ -85,7 +85,8 @@ describe("W-51: every manifest reaches the chat package", () => {
     for (const name of fromPackage) {
       const resolved = app.getManifest(name);
       expect(seam.getManifest(name)).toEqual(seam.toSurfaceIndexEntry(resolved!, app.getRawManifest(name)));
-      expect(await seam.loadSurfaceBody(name)).toBe(resolved);
+      // Step 2: the body resolves from its own file + parent chain — equal, not the same object.
+      expect(await seam.loadSurfaceBody(name)).toEqual(resolved);
       expect(seam.getSurfaceAncestry(name)).toEqual(app.getSurfaceAncestry(name));
       expect(seam.getSurfaceChildren(name)).toEqual(app.getSurfaceChildren(name));
     }
