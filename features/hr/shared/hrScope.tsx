@@ -31,6 +31,7 @@ import type {
 } from "../types";
 import { useHrContext } from "./useHrContext";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The employer a row belongs to — the org as a column/label, never a group heading. */
 export type HrRowEmployer = {
   organizationId: string;
@@ -217,7 +218,7 @@ export function HrUnavailableNotice({
   const names = unavailable.map((u) => u.employer.name).join(", ");
   const allDenied = unavailable.every((u) => u.kind === "denied");
   return (
-    <p
+    <p data-error-box
       role="status"
       className={cn(
         "rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground",
@@ -225,6 +226,6 @@ export function HrUnavailableNotice({
       )}
     >
       {allDenied ? `Not shown: ${names}` : `Could not read: ${names}`}
-    </p>
+    <ErrorAlchemyMenu /></p>
   );
 }
