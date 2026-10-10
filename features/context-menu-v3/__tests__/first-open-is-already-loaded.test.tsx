@@ -1,5 +1,5 @@
 /**
- * The first right-click after a page load draws at once.
+ * NOTHING BEFORE THE FIRST OPEN. (Replaces the old idle warm-up: a menu is opened on ~1 in 149 page loads.)
  *
  * THE DEFECT (G11A review, 2026-10-07): the menu engine is one lazy chunk that
  * was fetched only ON the first right-click, so the first open after a page
@@ -30,8 +30,8 @@ import { NonEditableContextMenu } from "../NonEditableContextMenu";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-describe("the first right-click", () => {
-  it("finds the menu engine already loaded: it is warmed when the page goes idle", async () => {
+describe("nothing before the first open", () => {
+  it("loads no menu engine at mount or when idle; the first right-click starts the load", async () => {
     const idle: IdleRequestCallback[] = [];
     window.requestIdleCallback = (cb: IdleRequestCallback) => idle.push(cb);
     window.cancelIdleCallback = () => undefined;
@@ -46,12 +46,18 @@ describe("the first right-click", () => {
         </NonEditableContextMenu>,
       );
     });
-    // Nothing loads during the page's own render…
+    // Nothing loads during the page's own render, and nothing is scheduled for idle.
     expect(engineLoaded).toBe(0);
-    expect(idle.length).toBeGreaterThan(0);
-    // …and once the browser is idle, the engine is in hand before any open.
+    expect(idle.length).toBe(0);
     await act(async () => {
-      for (const cb of idle) cb({ didTimeout: false, timeRemaining: () => 50 });
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(engineLoaded).toBe(0);
+    // The right-click is the engagement: the engine loads then.
+    await act(async () => {
+      host
+        .querySelector("p")!
+        .dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
       await new Promise((r) => setTimeout(r, 0));
     });
     expect(engineLoaded).toBe(1);

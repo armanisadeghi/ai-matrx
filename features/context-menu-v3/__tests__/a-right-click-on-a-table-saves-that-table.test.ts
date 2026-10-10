@@ -10,7 +10,7 @@
 import "@/features/rich-document/actions/handlers";
 import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "@/features/rich-document/test-utils/chatContext";
-import { tableTextAtTarget } from "../utils/table-at-target";
+import { preloadTableShape, tableTextAtTarget } from "../utils/table-at-target";
 
 const ANSWER = `<div>
   <ul><li>Apple</li><li>Strawberry</li><li>Orange</li></ul>
@@ -18,6 +18,8 @@ const ANSWER = `<div>
   <table><thead><tr><th>Fruit</th><th>Color</th></tr></thead>
   <tbody><tr><td>Apple</td><td>Red</td></tr><tr><td>Orange</td><td>Orange</td></tr></tbody></table>
 </div>`;
+
+beforeAll(() => preloadTableShape());
 
 it("reads the clicked table with its header and rows, and nothing from the list above it", () => {
   document.body.innerHTML = ANSWER;

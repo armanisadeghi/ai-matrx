@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
   const { data: { session } } = await supabase.auth.getSession();
   if (!user || !session?.access_token) return finish("sign_in");
   try {
-    const response = await sendMatrxRequest(buildMatrxRequestUrl(flow.backendOrigin, `/api/social-oauth/${provider}/complete`), {
+    const response = await sendMatrxRequest(buildMatrxRequestUrl(`${flow.backendOrigin.replace(/\/+$/, "")}/api`, `/api/social-oauth/${provider}/complete`), {
       method: "POST",
       headers: applyOrganizationContextHeader({ Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, flow.organizationId),
       body: JSON.stringify({ state, browser_proof: flow.browserProof, code: request.nextUrl.searchParams.get("code"), provider_error: request.nextUrl.searchParams.get("error"), ...(provider === "bluesky" ? { authorization_issuer: request.nextUrl.searchParams.get("iss") } : {}) }),

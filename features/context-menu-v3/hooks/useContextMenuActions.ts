@@ -74,6 +74,7 @@ import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalW
 import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
 import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
 import { toast } from "@/components/ui/use-toast";
+import { ensureBlockTemplate } from "../utils/ensure-block-template";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
@@ -944,16 +945,30 @@ export function useContextMenuActions(
   const handleContentBlockInsert = (
     entry: Extract<AgentMenuEntry, { entryType: "content_block" }>,
   ) => {
-    // The template passes through VERBATIM — placeholders like {{variable}}
-    // must reach the editor/clipboard unmangled.
-    const template = entry.template;
-    if (insertIntoEditor(insertTargets, template)) {
-      onContentInserted?.();
-      return;
-    }
-    // Read-only surface (or the insert target vanished): never a silent no-op —
-    // copy the block so the gesture still yields the text.
-    void kitCopyText(template).then((copied) => {
+    void (async () => {
+      // The menu payload carries no template; the first insert fetches it by id.
+      let template = entry.template;
+      if (!template) {
+        try {
+          template = await ensureBlockTemplate(entry.id, dispatch);
+        } catch (error) {
+          toast({
+            title: "Couldn't load that block",
+            description: error instanceof Error ? error.message : "Try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      // The template passes through VERBATIM — placeholders like {{variable}}
+      // must reach the editor/clipboard unmangled.
+      if (insertIntoEditor(insertTargets, template)) {
+        onContentInserted?.();
+        return;
+      }
+      // Read-only surface (or the insert target vanished): never a silent no-op —
+      // copy the block so the gesture still yields the text.
+      const copied = await kitCopyText(template);
       if (copied) {
         toast({
           title: "Copied to clipboard",
@@ -962,7 +977,7 @@ export function useContextMenuActions(
       } else {
         showManualCopy({ text: template });
       }
-    });
+    })();
   };
 
   const handleEntrySelect = (entry: AgentMenuEntry) => {

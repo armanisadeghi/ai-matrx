@@ -52,7 +52,11 @@ it("a component child gets the menu's own wrapper: right-click opens and the sel
     );
   });
   const text = host.querySelector<HTMLElement>('[data-testid="body-text"]')!;
-  // The zone registered on a real element that holds the text.
+  // The zone registers once the surface is engaged (first press), not at mount.
+  expect(zonesContaining(text.firstChild).length).toBe(0);
+  act(() => {
+    text.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+  });
   expect(zonesContaining(text.firstChild).length).toBe(1);
   // The right-click reaches the menu.
   act(() => {
@@ -77,5 +81,8 @@ it("an intrinsic element is slotted, adding no wrapper (a <tr> stays a direct ch
   });
   const row = host.querySelector('[data-testid="row"]')!;
   expect(row.parentElement?.tagName).toBe("TBODY");
+  act(() => {
+    row.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+  });
   expect(zonesContaining(row.firstChild).length).toBe(1);
 });

@@ -40,13 +40,31 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
   const handle = provider === "bluesky" ? request.nextUrl.searchParams.get("handle") : null;
   if (provider === "bluesky" && (!handle || handle.length > 253 || /[\/@]/.test(handle))) return finish("handle_required");
   try {
-    const response = await sendMatrxRequest(buildMatrxRequestUrl(backendOrigin, `/api/social-oauth/${provider}/authorize`), {
+    const response = await sendMatrxRequest(buildMatrxRequestUrl(`${backendOrigin.replace(/\/+$/, "")}/api`, `/api/social-oauth/${provider}/authorize`), {
       method: "POST",
       headers: applyOrganizationContextHeader({ Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, organizationId),
       body: JSON.stringify({ return_url: returnUrl, browser_proof_hash: createHash("sha256").update(browserProof).digest("hex"), redirect_uri: origin + socialCallbackPath(provider), ...(issuer ? { issuer } : {}), ...(handle ? { handle } : {}), ...(["linkedin", "bluesky", "facebook", "instagram", "threads"].includes(provider) && request.nextUrl.searchParams.get("connection_id") ? {connection_id: request.nextUrl.searchParams.get("connection_id")} : {}) }),
       signal: AbortSignal.timeout(30_000),
     });
     const started: unknown = await response.json().catch(() => null);
+    console.info(
+      "[social-oauth-start] backend-response=" +
+        JSON.stringify({
+          provider,
+          status: response.status,
+          ok: response.ok,
+          keys:
+            started && typeof started === "object"
+              ? Object.keys(started).sort()
+              : [],
+          authorizationUrlType:
+            started &&
+            typeof started === "object" &&
+            "authorization_url" in started
+              ? typeof started.authorization_url
+              : "absent",
+        }),
+    );
     if (!response.ok || !started || typeof started !== "object" || !("authorization_url" in started) || typeof started.authorization_url !== "string") return finish("unavailable");
     const authorization = new URL(started.authorization_url);
     // PAR keeps state inside the pushed request rather than the redirect URL.

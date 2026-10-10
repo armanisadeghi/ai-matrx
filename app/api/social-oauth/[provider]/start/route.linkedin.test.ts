@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 
 jest.mock("next/headers", () => ({ cookies: jest.fn() }));
 jest.mock("@ai-matrx/agents/matrx", () => ({
-  buildMatrxRequestUrl: (origin: string, path: string) => origin + path,
+  ...jest.requireActual("@ai-matrx/agents/matrx"),
   sendMatrxRequest: jest.fn(),
 }));
 jest.mock("@/lib/api/organization-context", () => ({
@@ -40,6 +40,9 @@ test("reconnect carries the selected connection through the UI URL and posted co
   expect(response.status).toBe(307);
   expect(response.headers.get("location")).toContain("www.linkedin.com/oauth/v2/authorization");
   expect(transport).toHaveBeenCalledTimes(1);
+  expect(transport.mock.calls[0][0]).toBe(
+    "https://server.app.matrxserver.com/api/social-oauth/linkedin/authorize",
+  );
   const request = transport.mock.calls[0][1];
   const body = JSON.parse(String(request?.body));
   expect(body).toMatchObject({ connection_id: connectionId, redirect_uri: origin + "/api/social-oauth/linkedin/callback" });

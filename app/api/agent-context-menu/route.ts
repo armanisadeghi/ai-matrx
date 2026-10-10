@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { contextMenuView } from "@/lib/supabase/shortcutStorage";
+import { contextMenuView, SHORTCUT_STORAGE_CUTOVER } from "@/lib/supabase/shortcutStorage";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -8,6 +8,9 @@ import { extractErrorMessage } from "@/utils/errors";
 function carriesSession(request: NextRequest): boolean {
   return request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
 }
+
+/** The slim views are newer than the generated types; reach them untyped. */
+type UntypedSchemaClient = { schema: (name: string) => { from: (name: string) => unknown } };
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,8 +31,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const placementType = searchParams.get("placement_type");
 
-    const builder = contextMenuView(supabase)
-      .select("*");
+    // `?for=menu` is the menu's own payload: only the placements it draws, no agent
+    // description, no content-block template (fetched by id at insert). Every other
+    // caller (lab, debug) keeps the full view.
+    const forMenu = searchParams.get("for") === "menu";
+    const source = forMenu
+      ? ((supabase as unknown as UntypedSchemaClient)
+          .schema(SHORTCUT_STORAGE_CUTOVER ? "mandate" : "agent")
+          .from("context_menu_slim_view") as ReturnType<typeof contextMenuView>)
+      : contextMenuView(supabase);
+    const builder = source.select("*");
     const { data, error } = placementType
       ? await builder.eq("placement_type", placementType)
       : await builder;

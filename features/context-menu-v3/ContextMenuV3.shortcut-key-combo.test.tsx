@@ -14,6 +14,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ReactReduxContext } from "react-redux";
 import { EditableContextMenu } from "./EditableContextMenu";
+import { NonEditableContextMenu } from "./NonEditableContextMenu";
 import { parseKeyCombo, eventMatchesCombo } from "./utils/key-combo";
 
 const mounted: Record<string, unknown>[] = [];
@@ -75,11 +76,19 @@ describe("an advertised key combo runs its shortcut", () => {
           <EditableContextMenu sourceFeature="notes" onTextReplace={() => undefined}>
             <textarea data-testid="editor" defaultValue="Ingrid Strand — crown seat prep" />
           </EditableContextMenu>
+          <NonEditableContextMenu sourceFeature="notes">
+            <p>Sibling surface</p>
+          </NonEditableContextMenu>
         </ReactReduxContext.Provider>,
       );
     });
     const editor = host.querySelector("textarea")!;
     editor.focus();
+    // Combos answer only after a menu has been opened once on the page (nothing loads before).
+    // (Opened on a sibling surface: the flag is page-wide, the editor's own shell stays closed.)
+    act(() => {
+      host.querySelector("p")!.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    });
     const ev = new KeyboardEvent("keydown", macAltShiftS);
     act(() => {
       editor.dispatchEvent(ev);

@@ -63,12 +63,11 @@ import type { ResolvedItem } from "@ai-matrx/alchemy/declare";
 import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./record-menu-registry";
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
-import { tableTextAtTarget } from "./utils/table-at-target";
+import { preloadTableShape, tableTextAtTarget } from "./utils/table-at-target";
 import { findComboMatch } from "./utils/key-combo";
 import { ReactReduxContext } from "react-redux";
 import type { AppStore } from "@/lib/redux/store";
 import { selectAllShortcutsArray } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
-import { fetchUnifiedMenu } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -218,18 +217,12 @@ function trackSelection(tracker: SelectionTracker): () => void {
   };
 }
 
-/** Schedules the warm-up for an idle moment (never during the page's own load work). */
-function useWarmMenuContentWhenIdle(): void {
-  useEffect(() => {
-    if (menuContentWarm) return;
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(() => void warmMenuContent(), { timeout: 4000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const id = window.setTimeout(() => void warmMenuContent(), 1500);
-    return () => window.clearTimeout(id);
-  }, []);
-}
+/**
+ * Set by the first open of ANY menu on the page. Nothing that is only useful to
+ * an opened menu (the shortcut list for key combos) loads before it: a menu is
+ * opened on ~1 in 149 page loads, so until then it costs nothing.
+ */
+let menuEverOpened = false;
 
 // One advertised key combo pressed → that shortcut runs through the SAME
 // engine and launch handler as its menu item; mounted for one press only.
@@ -389,7 +382,11 @@ export function ContextMenuV3({
   // counter so every open mounts a fresh engine over a fresh click target.
   const [menuPoint, setMenuPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [openSeq, setOpenSeq] = useState(0);
-  useWarmMenuContentWhenIdle();
+  // Nothing runs before the person engages this surface (first pointer press,
+  // focus or open). /notes mounts one shell per sidebar row; an idle shell owns
+  // no document listener, no selection zone and no widget handle.
+  const [engaged, setEngaged] = useState(false);
+  const engage = () => setEngaged(true);
 
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
@@ -476,7 +473,7 @@ export function ContextMenuV3({
         getApplicationScope,
       })
     : null;
-  const widgetHandleId = useOptionalWidgetHandle(widgetHandle);
+  const widgetHandleId = useOptionalWidgetHandle(engaged ? widgetHandle : null);
 
   // Effective contextData for THIS invocation: static prop + per-target merge,
   // minus the reserved `__entity` key (which is not a value — see below).
@@ -513,6 +510,7 @@ export function ContextMenuV3({
   // O(document) main-thread work per selection event: a browser-freeze
   // amplifier (2026-07 /notes freeze class).
   useEffect(() => {
+    if (!engaged) return;
     // ONE document listener for every instance (selectionTracker below): a
     // selection change walks up from the anchor to the instances that own it,
     // so a keystroke costs O(depth), not O(mounted menus) — /notes mounts one
@@ -522,21 +520,21 @@ export function ContextMenuV3({
       locked: () => selectionLocked.current,
       set: setSelectedText,
     });
-  }, []);
+  }, [engaged]);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-    };
-    document.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => document.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  // The pointer position (the ⋯ / selection fallback anchor) is read off the
+  // events this surface already receives — no page-wide mousemove listener.
+  const rememberPointer = (e: { clientX: number; clientY: number }) => {
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
 
   // ── Capture handlers ─────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     if (suppressed) return; // yield to the native menu (e.g. streaming)
     if (reachedThroughPortal(e)) return;
     if (e.button !== 2) return; // right-click only
+    // Engagement: start fetching the menu body now, in parallel with the open.
+    void warmMenuContent();
     // Must mirror the capture guard exactly. Capturing here would set
     // `selectionLocked` for a menu that is never going to open, and only
     // `handleMenuClose` clears it — so selection tracking would stay frozen
@@ -567,6 +565,11 @@ export function ContextMenuV3({
   // right-click path (mousedown then contextmenu) is deliberate — re-resolving
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
+    // Every open path passes through here: this is the first open on the page.
+    menuEverOpened = true;
+    engage();
+    // A table under the click: its shape reader loads now, ahead of "Save to a table".
+    if (target?.closest("table")) void preloadTableShape();
     const rowHit = resolveTableRowItem(target);
     const rowMenu = rowHit?.menu ?? null;
     setResolvedItem(rowHit?.item ?? null);
@@ -788,11 +791,17 @@ export function ContextMenuV3({
   // No `editable` flag: an editable menu often wraps a read-only preview too
   // (a note's split view), so the toolbar reads editing from the DOM (a text
   // field or contenteditable under the selection), never from the wrapper.
-  useSelectionZone(selectionOwner, {
-    // A suppressed menu (the text is streaming) keeps the toolbar away until it settles.
-    suppress: suppressed,
-    host: { [CONTEXT_MENU_SELECTION_HOST_KEY]: selectionHost },
-  });
+  // Registered only once the surface is engaged (a selection needs a press or focus first).
+  useSelectionZone(
+    selectionOwner,
+    engaged
+      ? {
+          // A suppressed menu (the text is streaming) keeps the toolbar away until it settles.
+          suppress: suppressed,
+          host: { [CONTEXT_MENU_SELECTION_HOST_KEY]: selectionHost },
+        }
+      : null,
+  );
 
   // ── Mobile triggers (no right-click on touch) ─────────────────────────────
   const clearLongPress = () => {
@@ -973,6 +982,8 @@ export function ContextMenuV3({
     const reg = paletteRegistry();
     const now = Date.now();
     if (e.type === "pointerdown") reg.pointerDown = { element: e.target as HTMLElement, at: now };
+    if (e.type === "pointerdown" || e.type === "focusin" || e.type === "focus") engage();
+    if (e.type === "pointerover" || e.type === "pointerdown") rememberPointer(e as unknown as React.PointerEvent);
     reg.seq += 1;
     reg[kind] = { id: paletteIdRef.current as symbol, element: e.target as HTMLElement, seq: reg.seq, at: now };
   };
@@ -1007,6 +1018,8 @@ export function ContextMenuV3({
     const native = e.nativeEvent as Event & { [KEY_RUN_CLAIMED]?: boolean };
     if (native[KEY_RUN_CLAIMED] || e.defaultPrevented || suppressed || e.repeat) return;
     if (reachedThroughPortal(e)) return;
+    // Until a menu has been opened once on this page, no key combo loads or runs anything.
+    if (!menuEverOpened) return;
     if (!store || (!e.altKey && !e.ctrlKey && !e.metaKey)) return;
     const matchOf = (event: KeyboardEvent) =>
       findComboMatch(
@@ -1049,8 +1062,8 @@ export function ContextMenuV3({
     if (!store || !isEditable || shortcutsLoaded.current) return null;
     if (!shortcutsLoad.current) {
       // Deduped + condition-gated in the thunk: one request page-wide.
-      shortcutsLoad.current = store
-        .dispatch(fetchUnifiedMenu({ scope, scopeId }))
+      shortcutsLoad.current = import("@ai-matrx/chat/agents/redux/agent-shortcuts/thunks")
+        .then(({ fetchUnifiedMenu }) => store.dispatch(fetchUnifiedMenu({ scope, scopeId })))
         .catch(() => undefined)
         .finally(() => {
           shortcutsLoaded.current = true;
@@ -1077,6 +1090,8 @@ export function ContextMenuV3({
     "data-content-source": contentSource ? contentSourceKey(contentSource) : undefined,
     onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {
       if (reachedThroughPortal(e)) return;
+      // A right-click IS engagement: fetch the menu body now, in parallel with the open.
+      void warmMenuContent();
       // CAPTURE: a read-only menu never steals a live text field's native menu.
       // It MARKS the gesture instead of stopping it: a stopPropagation here
       // also killed the field's OWN editable menu nested inside (every window
