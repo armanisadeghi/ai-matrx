@@ -14,7 +14,10 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: jest.fn() } }));
+const platformRpc = jest.fn();
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: { rpc: jest.fn(), schema: jest.fn(() => ({ rpc: (...a: unknown[]) => platformRpc(...a) })) },
+}));
 
 import { LIST_RPC_PAGE_ROWS, readListRpc, type ListRpcClient } from "../readListRpc";
 
@@ -67,6 +70,29 @@ describe("readListRpc — the one reader of facet and count RPCs", () => {
     const res = await readListRpc<Row>("x_list_facets", {}, { order: ["kind", "value"], client });
     expect(res).toEqual({ data: rows, error: null });
     expect(calls).toEqual([{ ordered: [], from: 0, to: LIST_RPC_PAGE_ROWS - 1 }]);
+  });
+
+  it("the public schema is ONE request however many rows: 3,072 rows are not paged", async () => {
+    const rows = rowsOf(3072, "org");
+    platformRpc.mockReset();
+    platformRpc.mockResolvedValue({ data: rows, error: null });
+    const res = await readListRpc<Row>("agx_list_scope_counts", { p_archived: "active" }, { order: ["kind", "value"] });
+    expect(res).toEqual({ data: rows, error: null });
+    expect(platformRpc).toHaveBeenCalledTimes(1);
+    expect(platformRpc).toHaveBeenCalledWith("list_rpc_once", { p_fn: "agx_list_scope_counts", p_args: { p_archived: "active" } });
+  });
+
+  it("the one-call reader's error and a non-list answer both reach the caller", async () => {
+    platformRpc.mockReset();
+    platformRpc.mockResolvedValueOnce({ data: null, error: { message: "denied", code: "42501" } });
+    expect(await readListRpc<Row>("wfx_list_scope_counts", {}, { order: ["kind", "value"] })).toEqual({
+      data: null,
+      error: { message: "denied", code: "42501" },
+    });
+    platformRpc.mockResolvedValueOnce({ data: { not: "a list" }, error: null });
+    const res = await readListRpc<Row>("wfx_list_facets", {}, { order: ["kind", "value"] });
+    expect(res.data).toBeNull();
+    expect(res.error?.code).toBe("incomplete_read");
   });
 
   it("past the 1,000-row cap it returns EVERY row — the facets after row 1,000 included", async () => {
