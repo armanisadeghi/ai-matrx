@@ -132,16 +132,17 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot,
         className={cn("@container flex h-full min-h-0 w-full min-w-0 flex-col bg-card", className)}
         onKeyDown={onKeyDown}
       >
-        <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border/40 px-1.5">
+        {/* Narrow (a phone, a thin tile): the modes wrap to their own line instead of being squeezed to nothing between the name and the tools. */}
+        <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-1.5 border-b border-border/40 px-1.5 @[34rem]:h-10 @[34rem]:flex-nowrap">
           {leadingSlot}
           {titleSlot ? (
             <div className="min-w-0 max-w-[12rem] shrink">{titleSlot}</div>
           ) : null}
-          {!titleSlot && title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[12rem] shrink-0" />}
+          {!titleSlot && title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[6.5rem] shrink @[34rem]:max-w-[12rem]" />}
           {/* The four modes never reach into the tools beside them: centred while
               they fit, start-aligned and scrollable below ~18rem (a narrow tile),
               so the capsule can not overlap the outline / versions group. */}
-          <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:[justify-content:safe_center] [&::-webkit-scrollbar]:hidden">
+          <div className="order-last flex w-full min-w-0 flex-none items-center justify-start overflow-x-auto @[34rem]:order-none @[34rem]:w-auto @[34rem]:flex-1 [scrollbar-width:none] @[18rem]:[justify-content:safe_center] [&::-webkit-scrollbar]:hidden">
             <NoteModeSwitch noteId={noteId} labels="container" />
             {editorMode !== "preview" && (
               <FormatButtons size="xs" className="ml-1 flex-1" resolve={() => formatTargetWithin(rootRef.current)} />

@@ -721,7 +721,7 @@ export function NotesView({
       )}
 
       {/* Center — view / style modes only */}
-      <div className="flex min-w-0 flex-1 items-center justify-center">
+      <div className="ml-[3px] flex min-w-0 flex-1 items-center justify-center">
         {headerNoteId && !narrowShowsList && (
           // Equal columns: the control's width never depends on which view
           // is selected (a bolder selected label used to nudge it sideways).
