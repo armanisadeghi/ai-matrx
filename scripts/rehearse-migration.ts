@@ -115,6 +115,8 @@ import {
   CAMPAIGN_DIRNAME,
   CAMPAIGN_SOURCE,
   policyDdlMeasurementPath,
+  briefLockMeasurementPath,
+  briefLockDeclared,
   policyDdlOneTableDeclared,
   policyStatementReasonOf,
   policyStatementTableOf,
@@ -309,6 +311,27 @@ async function measure(
     await sampler.end().catch(() => undefined);
   }
   return { statements: out, totalMs: Date.now() - t0, failedAt };
+}
+
+/** The hash-bound measurement behind the `-- brief-lock:` class: the whole measure-pass transaction, ms. */
+function recordBriefLockMeasurement(
+  filePath: string,
+  sql: string,
+  m: Awaited<ReturnType<typeof measure>>,
+): void {
+  if (!briefLockDeclared(sql)) return;
+  // REAL WALL TIME: the sum of the statements' own execution times. The pg_locks sampling between statements is
+  // not part of the lock a writer waits behind, so it is not counted.
+  const wall = m.statements.reduce((a, st) => a + st.ms, 0);
+  const sha = sha256OfBytes(sql);
+  const out = briefLockMeasurementPath(filePath, sha);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(
+    out,
+    JSON.stringify({ file: basename(filePath), sha256: sha, target: "clone", totalMs: wall, measuredAt: new Date().toISOString() }, null, 2) + "\n",
+    "utf8",
+  );
+  console.log(`${TAG.ok}brief-lock statements measured ${C.bold}${wall} ms wall${C.reset} on the clone, bound to these bytes.`);
 }
 
 /**
@@ -925,6 +948,7 @@ async function main(): Promise<number> {
     printMeasurement("MEASURE - up", upPath, m, upNamed);
     if (m.failedAt !== null) return 1;
     recordPolicyDdlMeasurement(upPath, upSql, m);
+    recordBriefLockMeasurement(upPath, upSql, m);
     console.log(
       `${TAG.ok}--measure-only: the measure pass ran and rolled back. ` +
         `${C.dim}Rule 27 was NOT run — this proves nothing about the file's inverse.${C.reset}`,
@@ -991,7 +1015,7 @@ async function main(): Promise<number> {
       const m = await measure(env, kind, fileSql, statementTimeout);
       const sm = printMeasurement(`MEASURE - ${kind}`, filePath, m, kind === "up" ? upNamed : downNamed);
       surprises.push(...sm.surprises);
-      if (kind === "up" && m.failedAt === null) recordPolicyDdlMeasurement(upPath, upSql, m);
+      if (kind === "up" && m.failedAt === null) { recordPolicyDdlMeasurement(upPath, upSql, m); recordBriefLockMeasurement(upPath, upSql, m); }
       measured[kind] = true;
       if (m.failedAt !== null) {
         console.error(

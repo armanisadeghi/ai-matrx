@@ -1738,6 +1738,91 @@ export function policyDdlOneTableVerdict(
   return { exempt: true, refusal: null, table, measuredMs: m.firstPolicyDdlToEndMs };
 }
 
+// ── THE BRIEF-LOCK CLASS (Arman, 2026-10-10: only long-lock or 10+ minute work waits for the 1-4 AM window) ──
+// Short DDL that blocks WRITERS for seconds (e.g. CREATE TRIGGER on the partitioned record store:
+// SHARE ROW EXCLUSIVE, readers and sign-in untouched) may run mid-day. Like the one-table policy
+// exemption, the runner PROVES it and a header only claims it:
+//   (a) the file declares `-- brief-lock: <why>`;
+//   (b) NONE of its window-class statements freezes sign-in (no DROP TRIGGER / policy DDL: those drag in the
+//       23 auth/storage/realtime relations) and none is ACCESS EXCLUSIVE;
+//   (c) a `pnpm db:rehearse --target clone` measure pass OF THESE EXACT BYTES is on record, hash-bound,
+//       under BRIEF_LOCK_MAX_MS for the whole transaction.
+// It then runs under the runner's lock_timeout with its bounded rolled-back-whole retry, never waiting
+// indefinitely and never holding a lock while it waits. Anything missing stays window-class.
+export const BRIEF_LOCK_MAX_MS = 10_000;
+const HEADER_BRIEF_LOCK_RE = /^\s*--\s*brief-lock:\s*\S/i;
+export function briefLockDeclared(rawSql: string): boolean {
+  return rawSql.split("\n", 40).some((line) => HEADER_BRIEF_LOCK_RE.test(line));
+}
+export interface BriefLockMeasurement {
+  readonly file: string;
+  readonly sha256: string;
+  readonly target: string;
+  /** The whole measure-pass transaction on the clone, ms. */
+  readonly totalMs: number;
+  readonly measuredAt: string;
+}
+export function briefLockMeasurementPath(migrationFilePath: string, sha: string): string {
+  return resolve(dirname(resolve(migrationFilePath)), "..", "measurements", `${sha}.brief.json`);
+}
+export function loadBriefLockMeasurement(migrationFilePath: string, sha: string): BriefLockMeasurement | null {
+  const path = briefLockMeasurementPath(migrationFilePath, sha);
+  if (!existsSync(path)) return null;
+  try {
+    const m = JSON.parse(readFileSync(path, "utf8")) as BriefLockMeasurement;
+    if (m.sha256 !== sha || typeof m.totalMs !== "number") return null;
+    return m;
+  } catch {
+    return null;
+  }
+}
+export interface BriefLockVerdict {
+  readonly exempt: boolean;
+  /** The sentence naming the missing proof. Null when the file never claimed the class. */
+  readonly refusal: string | null;
+  readonly measuredMs?: number;
+}
+export function briefLockVerdict(
+  rawSql: string,
+  migrationFilePath: string,
+  sites: readonly { why: string; table: string; mode: string; freezesSignIn?: boolean }[],
+  load: (file: string, sha: string) => BriefLockMeasurement | null = loadBriefLockMeasurement,
+): BriefLockVerdict {
+  if (!briefLockDeclared(rawSql)) return { exempt: false, refusal: null };
+  const bad = sites.filter((x) => x.freezesSignIn || x.mode === "ACCESS EXCLUSIVE");
+  if (bad.length > 0) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- brief-lock:\`, but ${bad.map((x) => `${x.why} on ${x.table}`).join(", ")} ` +
+        `freezes readers or sign-in, not just writers. The class covers writer-blocking DDL only.`,
+    };
+  }
+  const sha = sha256OfBytes(rawSql);
+  const m = load(migrationFilePath, sha);
+  if (!m) {
+    return {
+      exempt: false,
+      refusal:
+        `it declares \`-- brief-lock:\`, but there is NO measurement for these exact bytes (sha256 ` +
+        `${sha.slice(0, 12)}…). Run \`pnpm db:rehearse <file> --target clone\`, which writes ` +
+        `${briefLockMeasurementPath(migrationFilePath, sha)}.`,
+    };
+  }
+  if (m.target !== "clone") {
+    return { exempt: false, refusal: `its measurement was taken against "${m.target}", not the dev clone.` };
+  }
+  if (m.totalMs >= BRIEF_LOCK_MAX_MS) {
+    return {
+      exempt: false,
+      refusal:
+        `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of statement wall time. ` +
+        `Writers would wait that long; it waits for the window.`,
+    };
+  }
+  return { exempt: true, refusal: null, measuredMs: m.totalMs };
+}
+
 /** The maintenance window, Pacific, as HHMM. Same window every night job in `scripts/night/` uses. */
 export const WINDOW_CLASS_OPEN_HHMM = 100;
 export const WINDOW_CLASS_CLOSE_HHMM = 400;

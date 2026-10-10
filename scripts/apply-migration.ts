@@ -184,6 +184,7 @@ import {
   type Target,
   policyOnlyVerdict,
   windowClassVerdict,
+  briefLockVerdict,
   windowClassDeclaration,
   WINDOW_CLASS_GRANDFATHERED,
   DDL_LOCK_FOOTPRINT,
@@ -282,6 +283,7 @@ const LOCK_TIMEOUT = "2s";
 const STATEMENT_TIMEOUT = "600s";
 /** A contaminated pooler session is repaired in-transaction; see identity check. */
 const POOLER_ATTEMPTS = 5;
+const BRIEF_LOCK_MAX_MS_LABEL = "10 s of statement wall time";
 
 const C = {
   reset: "\x1b[0m",
@@ -1211,6 +1213,15 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       // regeneration, measured under 200 ms on the clone for THESE EXACT BYTES, may run at
       // midday. The runner proves both halves itself; the header alone proves nothing.
       const oneTable = policyDdlOneTableVerdict(sql, path, sites);
+      const briefLock = briefLockVerdict(sql, path, sites);
+      if (target === "production" && !isInsideWindow() && briefLock.refusal) {
+        console.error(
+          `${TAG.fail}${filename} claims the ${C.bold}\`-- brief-lock:\`${C.reset} class and does not have it:\n` +
+            `  ${briefLock.refusal}\n  ${C.dim}Nothing was applied and no ledger row was written. The class is VERIFIED, ` +
+            `never asserted.${C.reset}`,
+        );
+        return 1;
+      }
       if (target === "production" && !isInsideWindow() && oneTable.refusal) {
         console.error(
           `${TAG.fail}${filename} claims the ${C.bold}\`-- policy-ddl: one-table\`${C.reset} ` +
@@ -1226,6 +1237,11 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
           `${TAG.ok}policy-ddl: one-table ${C.dim}— ${oneTable.table}, measured ` +
             `${oneTable.measuredMs} ms first policy statement → end of transaction on the clone ` +
             `(ceiling ${POLICY_DDL_ONE_TABLE_MAX_MS} ms). Window waived, on the measurement.${C.reset}`,
+        );
+      } else if (target === "production" && !isInsideWindow() && briefLock.exempt) {
+        console.log(
+          `${TAG.ok}brief-lock ${C.dim}— rehearsed on the clone at ${briefLock.measuredMs} ms (ceiling ` +
+            `${BRIEF_LOCK_MAX_MS_LABEL}). Runs now under lock_timeout ${LOCK_TIMEOUT} with the bounded rolled-back-whole retry.${C.reset}`,
         );
       } else if (target === "production" && !isInsideWindow()) {
         const now = String(pacificHHMM()).padStart(4, "0");
@@ -3262,6 +3278,58 @@ create policy api_keys_read on iam.api_keys for select using (true);
     `${C.bold}policy-ddl GREEN-6${C.reset} ${C.dim}— declared + policy-only + one table + 89 ms ` +
       `measured on these exact bytes: the window is waived, and a file that never claims it just ` +
       `waits${C.reset}`,
+  );
+
+  // ── THE BRIEF-LOCK CLASS (Arman, 2026-10-10): short writer-blocking DDL runs mid-day when PROVED ──
+  const blFile = "migrations/campaign/brief_probe.sql";
+  const blBody = `-- brief-lock: seven guard triggers split into insert + update, seconds of writer wait
+-- window-class: CREATE OR REPLACE TRIGGER on the partitioned record store
+create or replace trigger "probe_i" before insert on custom.record for each row execute function custom._record_row_defaults();
+`;
+  const blSites = windowClassVerdict(blBody);
+  const blMeasure = (ms: number, target = "clone") => () => ({
+    file: "brief_probe.sql", sha256: sha256OfBytes(blBody), target, totalMs: ms, measuredAt: "2026-10-10T16:00:00.000Z",
+  });
+  // RED-7  claims the class, no rehearsal on record: refused.
+  const bl7 = briefLockVerdict(blBody, blFile, blSites, () => null);
+  if (bl7.exempt || !bl7.refusal || !/NO measurement/.test(bl7.refusal)) {
+    console.error(`${TAG.fail}--window-class-self-test RED-7 FAILED: a brief-lock claim with no rehearsal was not refused: ${JSON.stringify(bl7)}`);
+    return 1;
+  }
+  // RED-8  rehearsed but long (12 s): refused.
+  const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(15_000));
+  if (bl8.exempt || !bl8.refusal || !/stops at/.test(bl8.refusal)) {
+    console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 15 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
+    return 1;
+  }
+  // RED-9  rehearsed against production, not the clone: refused.
+  const bl9 = briefLockVerdict(blBody, blFile, blSites, blMeasure(900, "production"));
+  if (bl9.exempt || !bl9.refusal) {
+    console.error(`${TAG.fail}--window-class-self-test RED-9 FAILED: a non-clone measurement was accepted: ${JSON.stringify(bl9)}`);
+    return 1;
+  }
+  // RED-10  a drop trigger (freezes sign-in) can never be brief-lock, however fast it measured.
+  const dropBody = blBody + `drop trigger "probe" on custom.record;\n`;
+  const bl10 = briefLockVerdict(dropBody, blFile, windowClassVerdict(dropBody), blMeasure(100));
+  if (bl10.exempt || !bl10.refusal || !/freezes readers or sign-in/.test(bl10.refusal)) {
+    console.error(`${TAG.fail}--window-class-self-test RED-10 FAILED: a drop trigger was allowed as brief-lock: ${JSON.stringify(bl10)}`);
+    return 1;
+  }
+  // RED-11  a file that never claims the class is untouched: it waits for the window exactly as before.
+  const bl11 = briefLockVerdict(blBody.replace(/^-- brief-lock:.*\n/, ""), blFile, blSites, blMeasure(100));
+  if (bl11.exempt || bl11.refusal !== null) {
+    console.error(`${TAG.fail}--window-class-self-test RED-11 FAILED: an unclaimed file was judged: ${JSON.stringify(bl11)}`);
+    return 1;
+  }
+  // GREEN-7  declared, writer-blocking only, rehearsed on the clone under 10 s: allowed mid-day.
+  const bl12 = briefLockVerdict(blBody, blFile, blSites, blMeasure(2_100));
+  if (!bl12.exempt || bl12.refusal || bl12.measuredMs !== 2_100) {
+    console.error(`${TAG.fail}--window-class-self-test GREEN-7 FAILED: a rehearsed 2.1 s trigger DDL was not allowed: ${JSON.stringify(bl12)}`);
+    return 1;
+  }
+  console.log(
+    `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 15 s rehearsal, a non-clone ` +
+      `measurement, a drop trigger and an unclaimed file all stay window-class; a 2.1 s rehearsed trigger DDL runs mid-day${C.reset}`,
   );
 
   console.log(
