@@ -116,9 +116,13 @@ export function BrandIdentitySiteSurface({
     );
   }
 
+  const roomTitle = pathname.endsWith("/guidelines") ? "Guidelines" : "Knowledge";
   if (!site) {
     return (
       <div className="flex h-full items-center justify-center p-6 pt-[var(--shell-header-h)]">
+        <h1 className="sr-only">
+          {brand.name} · {roomTitle}
+        </h1>
         <NoWebsiteState
           brandId={brand.id}
           brandName={brand.name}
@@ -177,6 +181,11 @@ export function BrandIdentitySiteSurface({
         ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
           <MarketingSiteSurfaceProvider>
+            {roomTitle === "Knowledge" ? (
+              <h1 className="sr-only">
+                {brand.name} · {roomTitle}
+              </h1>
+            ) : null}
             {children}
           </MarketingSiteSurfaceProvider>
         </div>

@@ -216,7 +216,7 @@ export function StrategyBriefWorkspace({
         <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             <Compass className="size-4 text-muted-foreground" aria-hidden />
-            <span className="text-sm font-semibold capitalize">{noun}</span>
+            <h1 className="text-sm font-semibold capitalize">{noun}</h1>
             {current ? (
               <Badge variant="secondary">v{current.versionNo}</Badge>
             ) : null}
@@ -272,7 +272,7 @@ export function StrategyBriefWorkspace({
           <span className="text-foreground">
             {brandStrategy.data
               ? `Reads the ${brandKindCopy(brandKind).strategy.noun} (${brandStrategy.data.status === "confirmed" ? "confirmed" : brandStrategy.data.status === "auto_accepted" ? "accepted by lapse" : "not yet reviewed"}).`
-              : "This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the ${brandKindCopy(brandKind).strategy.noun} first for a better brief."}
+              : `This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the ${brandKindCopy(brandKind).strategy.noun} first for a better brief.`}
           </span>
           <Button asChild variant="quiet">
             <Link href={brandStrategyHref} target="_blank" rel="noopener noreferrer">

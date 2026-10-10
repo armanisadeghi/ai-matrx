@@ -230,14 +230,14 @@ function PersonaDialog({
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? onCancel() : undefined)}>
-      <DialogContent className="flex max-h-[85dvh] max-w-xl flex-col overflow-y-auto overscroll-contain">
+      <DialogContent className="matrx-touch-targets flex max-h-[85dvh] max-w-xl flex-col overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="text-base">{persona ? `Edit ${persona.name}` : `New ${audience.noun}`}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <Label className="text-xs">Name</Label>
-            <Input autoFocus aria-label={`${audience.noun} name`} value={name} onChange={(e) => setName(e.target.value)} placeholder={audience.namePlaceholder} />
+            <Input autoFocus aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder={audience.namePlaceholder} />
           </div>
           <div className="grid gap-1.5">
             <Label className="text-xs">Summary</Label>
@@ -269,9 +269,9 @@ function PersonaDialog({
               <ProTextarea aria-label={label} value={value} onChange={(e) => set(e.target.value)} rows={3} className="text-base sm:text-sm" />
             </div>
           ))}
-          <label className="flex items-center gap-2 text-sm text-foreground">
+          <label className="matrx-tap-area flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={primary} onChange={(e) => setPrimary(e.target.checked)} />
-            Primary persona
+            Primary {audience.noun}
           </label>
         </div>
         <DialogFooter className="pb-safe">

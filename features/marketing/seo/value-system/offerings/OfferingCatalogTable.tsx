@@ -454,8 +454,11 @@ export function OfferingCatalogTable({
         detail={{ enabled: false }}
 
         emptyState={{
-          title: "No offerings match",
-          description: "Clear a filter, or add what this business sells.",
+          title: rows.length === 0 ? "No offerings yet" : "No offerings match",
+          description:
+            rows.length === 0
+              ? "Add the first thing this brand sells."
+              : "Clear a filter, or add what this brand sells.",
         }}
         pageSize={0}
         zebra

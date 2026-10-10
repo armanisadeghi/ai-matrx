@@ -20,6 +20,7 @@ import {
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -139,19 +140,21 @@ export function BrandOfferingsEditor() {
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain pt-[var(--shell-header-h)]">
       <header className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-3 py-2.5 sm:px-4">
         <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <h1
+            className="flex items-center gap-2 text-base font-semibold text-foreground"
+            title={brandKindCopy(brand).offeringsLine(brand.name)}
+          >
             <Package className="h-4 w-4 text-muted-foreground" />
             Offerings
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {brandKindCopy(brand).offeringsLine(brand.name)}{" "}
             <Link
               href={marketingRoutes.newSite(brand.id)}
               className="underline underline-offset-2"
             >
               Add a website
             </Link>{" "}
-            to see where each one earns search traffic.
+            to see where each offering earns search traffic.
           </p>
         </div>
         {offerings.length === 0 ? (
@@ -195,7 +198,15 @@ export function BrandOfferingsEditor() {
                 });
               },
               onAddChild: (node) => setDraft({ ...NEW_DRAFT, parentId: node.offering.id }),
-              onRemove: (node) => remove.mutate(node.offering),
+              onRemove: async (node) => {
+                const ok = await confirm({
+                  title: `Remove "${node.offering.name}"?`,
+                  description: "It leaves this brand's offerings and every site that offers it.",
+                  variant: "destructive",
+                  confirmLabel: "Remove",
+                });
+                if (ok) remove.mutate(node.offering);
+              },
             }}
             onToggle={(id) =>
               setCollapsed((current) => {
