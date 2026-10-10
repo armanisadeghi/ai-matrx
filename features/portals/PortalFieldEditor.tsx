@@ -143,7 +143,7 @@ export function PortalFieldEditor({
           <Button type="button" variant="outline" onClick={() => router.refresh()}>
             {RELOAD_LABEL}
           </Button>
-        </div>
+        <ErrorAlchemyMenu error={refusal.message} /></div>
       ) : refusal ? (
         <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <p className="font-medium text-destructive">{refusal.message}</p>
