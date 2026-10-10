@@ -284,6 +284,12 @@ function measure(isPhone) {
           h = Math.max(h, parseFloat(ring.height) || 0);
         }
       }
+      // The design-system control's invisible ::after ring is its hit area.
+      const after = getComputedStyle(el, "::after");
+      if (after.content && after.content !== "none" && after.position === "absolute") {
+        w = Math.max(w, parseFloat(after.width) || 0);
+        h = Math.max(h, parseFloat(after.height) || 0);
+      }
       if ((h < 44 || w < 44) && smallTargets.length < 15) smallTargets.push(`${describe(el)} ${Math.round(w)}x${Math.round(h)}`);
     }
   }
