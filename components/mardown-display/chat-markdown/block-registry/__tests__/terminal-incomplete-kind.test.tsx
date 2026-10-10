@@ -64,7 +64,9 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
     React.createElement("div", { "data-record-chrome": true }),
 }));
 
+// The app's domain dispatch reads the engine's tables (BLOCK_DISPATCH, its classification) when it loads.
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
+  ...jest.requireActual("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch"),
   registerBlockDispatch: () => undefined,
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},

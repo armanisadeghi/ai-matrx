@@ -46,7 +46,16 @@ const rpc = jest.fn(async (fn: string, args: Record<string, unknown>) => {
   }
   return { data: [], error: null };
 });
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (fn: string, args: Record<string, unknown>) => jest.requireActual("@/lib/entity-list/testing/pagedRpcDouble").asPagedRpc(rpc(fn, args)) } }));
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: {
+    rpc: (fn: string, args: Record<string, unknown>) => jest.requireActual("@/lib/entity-list/testing/pagedRpcDouble").asPagedRpc(rpc(fn, args)),
+    // Facet and count reads go through `platform.list_rpc_once` (one request, every row); the double
+    // unwraps it so the assertions still see the list function and its arguments.
+    schema: () => ({
+      rpc: (_once: string, wrapped: { p_fn: string; p_args: Record<string, unknown> }) => rpc(wrapped.p_fn, wrapped.p_args),
+    }),
+  },
+}));
 
 import { useTranscriptList, type TranscriptListState } from "@/features/knowledge/hub/transcripts/useTranscriptList";
 
