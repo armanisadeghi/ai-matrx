@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T06:18:50.451Z",
+  "generated_at": "2026-10-10T06:12:08.871Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4088,11 +4088,11 @@
       "checksum": "23835347c38be848a8ca3668fef60460b612e4373b4b5111e516612a52c470db",
       "applied_at": "2026-10-10 04:39:29.151175+00"
     },
-    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
+    "migrations/campaign/hr_rev_04_standard_review_knobs.sql": {
       "source": "matrx-frontend",
-      "filename": "hr_rev_05_standard_review_wave2.sql",
-      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
-      "applied_at": "2026-10-10 06:18:44.291274+00"
+      "filename": "hr_rev_04_standard_review_knobs.sql",
+      "checksum": "ae7cd7e798335a7e0d1bee77d0b0d2935fa1fb158837db709f6b2b6d7f3a18b7",
+      "applied_at": "2026-10-10 06:12:07.080956+00"
     },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
@@ -5503,6 +5503,36 @@
       "filename": "pagespeed3_a_files_row_is_probed_by_a_cached_plan.sql",
       "checksum": "63a39cc8fde81cb70daf98732d9ec35e9eeba8d29e177a2e1b4b106313539d3c",
       "applied_at": "2026-10-10 05:06:50.196418+00"
+    },
+    "migrations/campaign/pagespeed3_b_get_org_file_list_folders_walked_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_b_get_org_file_list_folders_walked_once.sql",
+      "checksum": "d4c211d0c5f6001629cc5d1e0bd734a161f28f64db1b6c6a0cd3d74380bceb0f",
+      "applied_at": "2026-10-10 05:32:18.703107+00"
+    },
+    "migrations/campaign/pagespeed3_c_search_files_reads_the_shared_set_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_c_search_files_reads_the_shared_set_once.sql",
+      "checksum": "83bb13d235508945ce5c82597256139efce44ee358ed3361272257343085e0da",
+      "applied_at": "2026-10-10 05:33:06.509136+00"
+    },
+    "migrations/campaign/pagespeed3_d_count_user_files_reads_the_shared_set_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_d_count_user_files_reads_the_shared_set_once.sql",
+      "checksum": "67e5dba97ce30377c196acbed8932c2da8476acfb0c5eee6f1347358392fc149",
+      "applied_at": "2026-10-10 05:37:21.225081+00"
+    },
+    "migrations/campaign/pagespeed3_e2_list_rpc_once_reads_argument_types_in_order.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_e2_list_rpc_once_reads_argument_types_in_order.sql",
+      "checksum": "86b8865e6f625599d96b3b6fd6ceb60b6567b91c95a3e275f82e66c3c8b1fc19",
+      "applied_at": "2026-10-10 05:46:46.523114+00"
+    },
+    "migrations/campaign/pagespeed3_e_a_count_or_facet_call_runs_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed3_e_a_count_or_facet_call_runs_once.sql",
+      "checksum": "952c07d4cb59bdfe7c76404b0466c1cd8cef4b1c1a93d4a09063b96a3d4489d1",
+      "applied_at": "2026-10-10 05:44:41.860215+00"
     },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",
@@ -10537,6 +10567,12 @@
       "filename": "writeperf4_the_field_set_is_read_once_per_row_down.sql",
       "checksum": "faa8f0c7ba79f6453a6127a85cdf4549ca35ceb45a87cf6e5bee8ce5368ff7c6",
       "applied_at": "2026-09-22 09:33:14.786775+00"
+    },
+    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_rev_05_standard_review_wave2.sql",
+      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
+      "applied_at": "2026-10-10 06:18:44.291274+00"
     }
   }
 }
