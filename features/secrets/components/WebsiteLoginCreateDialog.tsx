@@ -6,6 +6,8 @@
  * new item so the caller can carry on with it selected.
  */
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@ai-matrx/design-system/controls";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { useVault, useVaultDefinitions } from "../vault-hooks";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
@@ -25,8 +27,26 @@ export function WebsiteLoginCreateDialog({
   onSaved: (item: VaultItem) => void | Promise<void>;
 }) {
   const vault = useVault({ kind: "mine" });
-  const { definitions } = useVaultDefinitions();
-  if (!definitions.some((d) => d.key === WEBSITE_LOGIN_DEFINITION_KEY)) return null;
+  const { definitions, loading, error } = useVaultDefinitions();
+  if (!definitions.some((d) => d.key === WEBSITE_LOGIN_DEFINITION_KEY)) {
+    // Never a button that opens nothing: while the form's definition loads (or if it cannot) say so.
+    if (!open) return null;
+    return (
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent className="matrx-touch-targets max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{loading ? "Opening the login form" : "Couldn't open the login form"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {loading ? "One moment." : (error ?? "Website logins are not available on this account.")}
+          </p>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
   return (
     <VaultCreateDialog
       open={open}

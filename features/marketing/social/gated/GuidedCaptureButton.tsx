@@ -29,7 +29,7 @@ export function GuidedCaptureButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="outline" icon={<MonitorSmartphone />} onClick={() => setOpen(true)}>
+      <Button className="shrink-0" variant="outline" icon={<MonitorSmartphone />} onClick={() => setOpen(true)}>
         {label}
       </Button>
       <GuidedCaptureDialog

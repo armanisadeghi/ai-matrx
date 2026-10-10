@@ -120,7 +120,7 @@ export function CloudCaptureButton({
             className="w-48"
           />
         ) : null}
-        <Button variant="outline" icon={<Cloud />} onClick={() => void start()} disabled={busy || running}>
+        <Button className="shrink-0" variant="outline" icon={<Cloud />} onClick={() => void start()} disabled={busy || running}>
           {busy ? "Starting…" : "Capture in the cloud"}
         </Button>
         {view ? (

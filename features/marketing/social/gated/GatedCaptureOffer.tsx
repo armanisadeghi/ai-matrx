@@ -71,7 +71,7 @@ export function GatedCaptureOffer({
         <p className="text-xs text-muted-foreground">Your own browser can still get it. Only your organization sees it.</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" icon={<Globe />} onClick={() => void background()} disabled={busy || (view !== null && !view.terminal)}>
+        <Button className="shrink-0" variant="outline" icon={<Globe />} onClick={() => void background()} disabled={busy || (view !== null && !view.terminal)}>
           {busy ? "Starting…" : "Capture with my browser"}
         </Button>
         <GuidedCaptureButton

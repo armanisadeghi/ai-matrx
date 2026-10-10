@@ -107,9 +107,9 @@ export function GuidedCaptureDialog({
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="matrx-touch-targets max-w-md">
         <DialogHeader>
-          <DialogTitle>Take me there</DialogTitle>
+          <DialogTitle>{platformLabel ? `Capture ${platformLabel} in your browser` : "Capture in your browser"}</DialogTitle>
         </DialogHeader>
 
         {(stage.kind === "intro" ||
@@ -121,9 +121,9 @@ export function GuidedCaptureDialog({
             {stage.kind === "no_extension" && (
               <p role="status" className="text-amber-600">
                 {stage.sentence}{" "}
-                <a className="underline" href={EXTENSION_SETUP_ROUTE}>
+                <Link className="underline" href={EXTENSION_SETUP_ROUTE}>
                   Add the extension
-                </a>
+                </Link>
               </p>
             )}
             {stage.kind === "error" && (

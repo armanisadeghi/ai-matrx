@@ -91,7 +91,7 @@ export function CaptureOfferDialog({
   const failure = error ? describeSocialFailure(error) : null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="matrx-touch-targets max-w-md">
         <DialogHeader>
           <DialogTitle>{failure ? failure.title : `Capture ${label ?? "this page"} with your browser`}</DialogTitle>
         </DialogHeader>
