@@ -825,57 +825,17 @@ export const primaryNavItems: ShellNavItem[] = [
         guestHidden: true,
       },
       {
-        // THE BOARD — boards work like every saved record: `/board` is the LIST (recents
-        // first), one opens at `/board/<id>`. Every item a board supports is one click away:
-        // `/board?add=<item key>` starts it on the board the person opened last (or a new one).
-        // Keys = BOARD_ITEM_TYPES; features/board/__tests__/board-menu-items.test.ts holds them.
-        // A sub-area because the add rows alone are twenty: grouped under the Add menu's section names
-        // (`BOARD_SECTIONS`, features/board/items/types.ts), in the same order.
+        // THE BOARD — `/board` is the LIST (recents first); one opens at `/board/<id>`. What a board can
+        // hold is added from the board's own Add menu (features/board/home/AddMenu), never from this
+        // menu (Arman, 2026-10-09 follow-up: the 27 add rows were clutter in a home menu).
         label: "Board",
         href: "/board",
         iconName: "LayoutGrid",
         description: "Your boards — every feature side by side",
         color: "teal",
+        profileMenu: true,
+        dashboard: true,
         guestHidden: true,
-        children: [
-          {
-            label: "Boards",
-            href: "/board",
-            iconName: "LayoutGrid",
-            exact: true,
-            description: "Every board you made: open one, or start a new one",
-            color: "teal",
-            profileMenu: true,
-            dashboard: true,
-            guestHidden: true,
-          },
-          { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Notes & docs", actionItem: true, guestHidden: true },
-          { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Notes & docs", actionItem: true, guestHidden: true },
-          { label: "File", href: "/board?add=file", iconName: "File", group: "Files & media", actionItem: true, guestHidden: true },
-          { label: "Web page", href: "/board?add=web-page", iconName: "Globe", group: "Files & media", actionItem: true, guestHidden: true },
-          { label: "Image", href: "/board?add=image", iconName: "Image", group: "Files & media", actionItem: true, guestHidden: true },
-          { label: "Page", href: "/board?add=page", iconName: "AppWindow", group: "Files & media", actionItem: true, guestHidden: true },
-          { label: "Table", href: "/board?add=data-table", iconName: "Database", group: "Data", actionItem: true, guestHidden: true },
-          { label: "Record", href: "/board?add=record", iconName: "Rows3", group: "Data", actionItem: true, guestHidden: true },
-          { label: "Pick list", href: "/board?add=list", iconName: "ListChecks", group: "Data", actionItem: true, guestHidden: true },
-          { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "AI", actionItem: true, guestHidden: true },
-          { label: "Agent form", href: "/board?add=agent-form", iconName: "Webhook", group: "AI", actionItem: true, guestHidden: true },
-          { label: "Task", href: "/board?add=task", iconName: "ListTodo", group: "Work", actionItem: true, guestHidden: true },
-          { label: "Project", href: "/board?add=project", iconName: "FolderKanban", group: "Work", actionItem: true, guestHidden: true },
-          { label: "Scope", href: "/board?add=scope", iconName: "Tag", group: "Work", actionItem: true, guestHidden: true },
-          { label: "War Room", href: "/board?add=war-room", iconName: "UsersRound", group: "Meetings", actionItem: true, guestHidden: true },
-          { label: "Meeting", href: "/board?add=meeting", iconName: "Video", group: "Meetings", actionItem: true, guestHidden: true },
-          { label: "Meeting notes", href: "/board?add=meeting_part", iconName: "NotebookPen", group: "Meetings", actionItem: true, guestHidden: true },
-          { label: "Workflow run", href: "/board?add=workflow-run", iconName: "Workflow", group: "Research & learning", actionItem: true, guestHidden: true },
-          { label: "Research", href: "/board?add=research", iconName: "FlaskConical", group: "Research & learning", actionItem: true, guestHidden: true },
-          { label: "Flashcard deck", href: "/board?add=fc_set", iconName: "Layers", group: "Research & learning", actionItem: true, guestHidden: true },
-          { label: "Study kit", href: "/board?add=study-kit", iconName: "NotebookTabs", group: "Research & learning", actionItem: true, guestHidden: true },
-          { label: "Social post", href: "/board?add=social-post", iconName: "Share2", group: "Web & social", actionItem: true, guestHidden: true },
-          { label: "Social profile", href: "/board?add=social-profile", iconName: "Share2", group: "Web & social", actionItem: true, guestHidden: true },
-          { label: "Outlier feed", href: "/board?add=social-outlier-feed", iconName: "TrendingUp", group: "Web & social", actionItem: true, guestHidden: true },
-          { label: "Ad", href: "/board?add=social-ad", iconName: "Megaphone", group: "Web & social", actionItem: true, guestHidden: true },
-          { label: "Swipe collection", href: "/board?add=social-swipe-collection", iconName: "Images", group: "Web & social", actionItem: true, guestHidden: true },
-        ],
       },
       {
         // Every page built from tables (a dashboard record whose presentation is a page).
@@ -1251,7 +1211,7 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Pages, notes, documents, workbooks, maps and signatures",
+    description: "Notes, documents, workbooks, maps",
     color: "amber",
     children: [
       {
@@ -1366,7 +1326,7 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Tables, kits, pick lists, shapes and scopes",
+    description: "Tables, pick lists, shapes and scopes",
     color: "cyan",
     children: [
       ...DATA_NAV_CHILDREN,
@@ -1588,7 +1548,7 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Your own computer, through the desktop app",
+    description: "Your computer, via the desktop app",
     color: "slate",
     guestHidden: true,
     children: [
