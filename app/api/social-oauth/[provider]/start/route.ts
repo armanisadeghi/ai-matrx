@@ -47,24 +47,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
       signal: AbortSignal.timeout(30_000),
     });
     const started: unknown = await response.json().catch(() => null);
-    console.info(
-      "[social-oauth-start] backend-response=" +
-        JSON.stringify({
-          provider,
-          status: response.status,
-          ok: response.ok,
-          keys:
-            started && typeof started === "object"
-              ? Object.keys(started).sort()
-              : [],
-          authorizationUrlType:
-            started &&
-            typeof started === "object" &&
-            "authorization_url" in started
-              ? typeof started.authorization_url
-              : "absent",
-        }),
-    );
     if (!response.ok || !started || typeof started !== "object" || !("authorization_url" in started) || typeof started.authorization_url !== "string") return finish("unavailable");
     const authorization = new URL(started.authorization_url);
     // PAR keeps state inside the pushed request rather than the redirect URL.
