@@ -259,7 +259,7 @@ export function KpisTab() {
   const goalRows = goals.data ?? [];
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="matrx-touch-targets flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedControl aria-label="View" value={view} onValueChange={setView} data={VIEW_OPTIONS} />
         <Button variant="primary" icon={<Plus />} className="ml-auto" onClick={() => setCreating(true)}>

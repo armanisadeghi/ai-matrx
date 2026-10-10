@@ -350,7 +350,7 @@ export function SwipeFileTab() {
   const empty = live.length === 0 || (items.length === 0 && !itemsQuery.isPending);
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className="matrx-touch-targets grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
       {/* Rail */}
       <aside className="flex min-w-0 flex-col gap-0.5" aria-label="Collections">
         <SegmentedControl

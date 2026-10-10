@@ -79,7 +79,7 @@ function openLibrary(ad: AdCardModel) {
 export function AdsTab() {
   const [section, setSection] = useState<Section>("search");
   return (
-    <div className="flex flex-col gap-3">
+    <div className="matrx-touch-targets flex flex-col gap-3">
       <div>
         <Tabs aria-label="Ads sections" variant="capsule" value={section} data={SECTIONS} onValueChange={(v) => setSection(v)} />
       </div>

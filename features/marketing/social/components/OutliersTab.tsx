@@ -532,7 +532,7 @@ export function OutliersTab() {
   const modified = active ? !sameOutlierFilter(filter, active.filter) : !sameOutlierFilter(filter, DEFAULT_OUTLIER_FILTER);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="matrx-touch-targets flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <Select
           aria-label="Watchlist"
