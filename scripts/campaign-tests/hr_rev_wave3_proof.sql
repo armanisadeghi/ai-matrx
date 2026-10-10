@@ -17,7 +17,7 @@ declare
   c_jemp   constant uuid := '4ce46af4-0b94-4b34-892f-329b8810a472';
   c_out    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
   v_fail text[] := '{}'; v_j jsonb; v_x jsonb; d text; v_team_goal uuid; v_goal uuid; v_tpl uuid; v_cycle uuid;
-  v_rev uuid; v_nom uuid; v_secs jsonb; v_scale jsonb; v_inst_before jsonb; v_inst_after jsonb; v_status text;
+  v_rev uuid; v_nom uuid; v_ans jsonb; v_secs jsonb; v_scale jsonb; v_inst_before jsonb; v_inst_after jsonb; v_status text;
 begin
   -- ---- RED
   foreach d in array array['hr.hr_goal_list(uuid)','hr.hr_goal_list_team(uuid)','hr.hr_goal_save(jsonb)',
@@ -87,7 +87,7 @@ begin
   select t.sections, t.rating_scale into v_secs, v_scale from hr.review_template t where t.id = (v_j ->> 'template_id')::uuid;
   v_secs := v_secs || jsonb_build_array(jsonb_build_object('__kind', 'performance_review_template_section', 'key', 'goals_review',
               'title', 'Goals', 'questions', jsonb_build_array(jsonb_build_object('__kind', 'performance_review_question',
-                'key', 'goal_progress', 'type', 'goal_review', 'label', 'Progress on goals', 'required', false))));
+                'key', 'goal_progress', 'type', 'goal_review', 'label', 'Progress on goals', 'required', true))));
   v_j := hr.hr_review_template_save(jsonb_build_object('organization_id', c_org, 'name', 'Studio review with goals',
            'sections', v_secs, 'rating_scale', v_scale));
   v_tpl := (v_j ->> 'template_id')::uuid;
@@ -107,6 +107,34 @@ begin
                    and g ->> 'answer_key' = 'goals.' || v_goal::text) then
     v_fail := array_append(v_fail, 'goal_review: the review does not carry the employee''s goal: ' || (v_j -> 'goals')::text);
   end if;
+  -- ================= hr_rev_09: goal_review answers are checked at submit
+  v_ans := jsonb_build_object('__kind', 'performance_review_answers',
+    'lists', jsonb_build_object('responsibilities', jsonb_build_array('Own new-business pitches for the studio'),
+      'accomplishments', jsonb_build_array('Signed Halvorsen Design', 'Rebuilt the pitch deck template'),
+      'strengths', jsonb_build_array('Calm in client rooms', 'Follows up the same day'),
+      'opportunities', jsonb_build_array('Qualify leads earlier', 'Hand off delivery sooner')),
+    'ratings', (select jsonb_object_agg((q ->> 'key') || '.' || (i ->> 'key'), 4)
+                  from jsonb_array_elements(v_j #> '{template,sections}') sct, jsonb_array_elements(sct -> 'questions') q,
+                       jsonb_array_elements(coalesce(q -> 'items', '[]'::jsonb)) i where q ->> 'type' = 'rating'));
+  perform hr.hr_review_save_response(v_rev, 'self', v_ans, null);
+  v_x := hr.hr_review_submit_response(v_rev, 'self');
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'problems') pr where pr ->> 'question' = 'goals.' || v_goal::text and pr ->> 'problem' = 'unrated') then
+    v_fail := array_append(v_fail, 'goal_review: an unrated goal was accepted: ' || v_x::text);
+  end if;
+  perform hr.hr_review_save_response(v_rev, 'self', jsonb_set(v_ans, array['ratings', 'goals.' || v_goal::text], '99'), null);
+  v_x := hr.hr_review_submit_response(v_rev, 'self');
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'problems') pr where pr ->> 'problem' = 'out_of_scale' and pr ->> 'question' = 'goals.' || v_goal::text) then
+    v_fail := array_append(v_fail, 'goal_review: an off-scale goal rating was accepted: ' || v_x::text);
+  end if;
+  perform hr.hr_review_save_response(v_rev, 'self', jsonb_set(jsonb_set(v_ans, array['ratings', 'goals.' || v_goal::text], '4'),
+            array['ratings', 'goals.' || gen_random_uuid()::text], '3'), null);
+  v_x := hr.hr_review_submit_response(v_rev, 'self');
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'problems') pr where pr ->> 'problem' = 'unknown_goal') then
+    v_fail := array_append(v_fail, 'goal_review: a rating for a goal the review does not show was accepted: ' || v_x::text);
+  end if;
+  perform hr.hr_review_save_response(v_rev, 'self', jsonb_set(v_ans, array['ratings', 'goals.' || v_goal::text], '4'), null);
+  v_x := hr.hr_review_submit_response(v_rev, 'self');
+  if not coalesce((v_x ->> 'ok')::boolean, false) then v_fail := array_append(v_fail, 'goal_review: a complete self review was refused: ' || v_x::text); end if;
   -- ================= peers: the employee nominates; parties are refused; nothing opens before approval
   v_j := hr.hr_review_peer_nominate(v_rev, array[c_jemp, c_aemp]);
   v_nom := (v_j #>> '{nominations,0,nomination_id}')::uuid;
