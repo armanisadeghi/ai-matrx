@@ -590,6 +590,8 @@ def main():
         print('REFUSED: an mx.* override is set; the proof runs only on the plain session.')
         return 2
     q("set local statement_timeout = 0")
+    q("set local transaction_timeout = 0")      # the whole proof is one transaction (~30 min for six configurations)
+    q("set local idle_in_transaction_session_timeout = 0")
     build_fixture()
     fix_emp_ll_uid()
     log(f"fixture: {len(P)} people, {len(REVIEWS)} reviews, {len(CYCLES)} cycles")
@@ -722,12 +724,17 @@ def classify_and_print(m2_rows):
     for k, n in Counter(opening_class(r) for r in in_list).most_common():
         print(f"  opening list  {n:6d}  {k}")
     # group the blockers so every distinct finding prints once, with where it shows
+    callers = dict(q("select key, uid::text from fx_caller"))
+    src = {}
+    for caller, review in {(r[1], r[2]) for r in blockers}:
+        src[(caller, review)] = sorted(f"{s}{'(' + o + ')' if o in ('fallback', 'added', 'grant') else ''}" for s, o in q(
+            "select seat, source from iam._seat_table('hr_review', %s) where user_id = %s", (review, callers[caller])))
     groups = defaultdict(list)
     for ci, caller, review, door, fact, part, legacy, predicted, seats in blockers:
+        seats = src.get((caller, review)) or seats
         st = REVIEWS[review]['stage'] if review in REVIEWS else '-'
         subj = REVIEWS[review]['subject'] if review in REVIEWS else '-'
-        groups[(KIND.get(caller, caller), door, re.sub(r' by \w+', lambda m: m.group(0), fact), legacy, predicted,
-                ','.join(sorted(seats or [])))].append((st, subj, ci))
+        groups[(KIND.get(caller, caller), door, fact, legacy, predicted, ','.join(seats or []))].append((st, subj, ci))
     print(f"\nNOT IN THE OPENING LIST (the swap's blocker list): {len(blockers)} differences in {len(groups)} findings")
     for (kind, door, fact, legacy, predicted, seats), where in sorted(groups.items()):
         stages = sorted({w[0] for w in where}, key=lambda s: STAGES.index(s) if s in STAGES else 99)
