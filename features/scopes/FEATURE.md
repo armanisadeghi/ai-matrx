@@ -399,6 +399,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-10-09 (SCOPES-SILENT-FAILURES): `ReferenceConfigFields` says a refused table-templates read in the template field's own error slot (the store's `RecordsError.message`) instead of showing an empty list; the rest of the form stays usable. Test: `components/reference/__tests__/reference-config-template-refusal.test.tsx`.
 - 2026-10-09 (SCOPES-CLEANUP): `@ai-matrx/records` 0.97.6 — `client.scopes.systemItems()` answers
   `SystemContextField[]` (a `ContextField` of `SYSTEM_CONTEXT_TYPE_ID` + `item_class`, decoded in the package's
   codec) and `client.scopes.tableTemplates(orgId)` answers `TableTemplate[]`; `ensureScopeTypeItems` stores

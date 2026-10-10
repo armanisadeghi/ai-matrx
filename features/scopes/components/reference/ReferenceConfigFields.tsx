@@ -125,6 +125,7 @@ export function ReferenceConfigFields({
   const templateId = `${uid}-table-template`;
   const previewId = `${uid}-preview`;
   const [templates, setTemplates] = useState<TableTemplate[]>([]);
+  const [templatesRefusal, setTemplatesRefusal] = useState<string | null>(null);
   const [typeSearch, setTypeSearch] = useState("");
   const [typeSelectKey, setTypeSelectKey] = useState(0);
 
@@ -206,9 +207,11 @@ export function ReferenceConfigFields({
       return;
     }
     let cancelled = false;
+    setTemplatesRefusal(null);
     void scopeDoors().tableTemplates(organizationId).then((result) => {
       if (cancelled) return;
       setTemplates(result.ok ? result.data : []);
+      setTemplatesRefusal(result.ok ? null : result.error.message);
     });
     return () => {
       cancelled = true;
@@ -421,6 +424,7 @@ export function ReferenceConfigFields({
           label="Per-scope table template"
           htmlFor={templateId}
           description="Optional. Creates one table for every scope and locks its columns to this template."
+          error={templatesRefusal}
         >
           <Select
             value={datasetTemplateId ?? "__none__"}

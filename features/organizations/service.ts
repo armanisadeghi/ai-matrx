@@ -53,6 +53,7 @@ import {
 import { emailErrorMessage } from "@/lib/email/error-message";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { makeCreatedOrganizationActive } from "./madeOrganizationIsActive";
+import { idChunks } from "@/features/scopes/service/inChunks";
 import { forgetMemberOrganizationRows, readMemberOrganizationRows } from "./service/memberOrganizationRows";
 
 // ============================================================================
@@ -413,14 +414,18 @@ export async function getUserOrganizations(
     archiveFilter === "active" ? !row.archived_at : archiveFilter === "archived" ? Boolean(row.archived_at) : true,
   );
 
-  // Batch member counts — one round-trip instead of N.
-  const countsResult = await membershipsService.counts("organization", orgIds);
-  if (isRecordsErr(countsResult)) {
-    throw new Error(countsResult.error.message);
-  }
+  // Batch member counts — one call per id chunk (a person in ~1000 organizations never sends them all at once).
   const countByOrgId = new Map<string, number>();
-  for (const c of countsResult.data.counts) {
-    countByOrgId.set(c.containerId, c.memberCount);
+  const countsResults = await Promise.all(
+    idChunks(orgIds).map((chunk) => membershipsService.counts("organization", chunk)),
+  );
+  for (const countsResult of countsResults) {
+    if (isRecordsErr(countsResult)) {
+      throw new Error(countsResult.error.message);
+    }
+    for (const c of countsResult.data.counts) {
+      countByOrgId.set(c.containerId, c.memberCount);
+    }
   }
   const orgs: OrganizationWithRole[] = (orgRows ?? []).map((row) => {
     const org = transformOrganizationFromDb(row);
