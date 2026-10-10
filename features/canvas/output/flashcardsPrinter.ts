@@ -9,7 +9,8 @@
  */
 
 import type { BlockPrinter } from "@ai-matrx/print/core";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+// The lazy pair: label/variants/settings are static, the renderer (deck layouts + KaTeX) loads on first print.
+import { flashcardsPrinterLazy } from "@ai-matrx/print/flashcards-lazy";
 import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
 
 const MAX_DEPTH = 3;
@@ -48,7 +49,7 @@ export function flashcardsPrintData(data: unknown, depth = 0): unknown {
 }
 
 export const flashcardsAdapterPrinter: BlockPrinter = {
-  ...flashcardsPrinter,
-  print: (data, variantId, settings) => flashcardsPrinter.print(flashcardsPrintData(data), variantId, settings),
-  toPrintHtml: (data, context) => flashcardsPrinter.toPrintHtml!(flashcardsPrintData(data), context),
+  ...flashcardsPrinterLazy,
+  print: (data, variantId, settings) => flashcardsPrinterLazy.print(flashcardsPrintData(data), variantId, settings),
+  toPrintHtml: (data, context) => flashcardsPrinterLazy.toPrintHtml!(flashcardsPrintData(data), context),
 };
