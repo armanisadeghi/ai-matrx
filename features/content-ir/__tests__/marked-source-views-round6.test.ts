@@ -20,8 +20,8 @@ const MARKED: Array<[string, RegExp, number]> = [
   ["features/artifacts/components/CmsArtifactDetail.tsx", /<pre data-kind-source="explicit"[^>]*>\s*\{JSON\.stringify\(artifact\.metadata/g, 1],
   ["app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx", /<pre data-kind-source="explicit"[^>]*>\s*\{JSON\.stringify\(openItem\.data/g, 1],
   // R6 — editors of a person's own stored text.
-  ["features/tasks/components/TaskDetails.tsx", /data-kind-source="explicit"[\s\S]{0,200}<ProTextarea/g, 1],
-  ["features/tasks/components/TaskDetailsPanel.tsx", /<ProTextarea\s+data-kind-source="explicit"/g, 1],
+  ["features/tasks/components/TaskDetails.tsx", /data-kind-source="explicit"[\s\S]{0,200}<TaskDescriptionEditor/g, 1],
+  ["features/tasks/components/TaskDetailsPanel.tsx", /<div data-kind-source="explicit">\s*<TaskDescriptionEditor/g, 1],
   ["features/notes/components/NoteEditorCore.tsx", /<(?:Pro)?Textarea\s+ref=\{textareaRef\}\s+data-kind-source="explicit"/g, 2],
   ["features/notes/components/mobile/MobileNoteEditor.tsx", /<textarea\s+ref=\{textareaRef\}\s+data-kind-source="explicit"/g, 1],
   ["features/notes/components/FindMatchOverlay.tsx", /data-kind-source="explicit"/g, 1],

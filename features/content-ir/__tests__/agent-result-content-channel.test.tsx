@@ -60,6 +60,15 @@ jest.mock("next/dynamic", () => ({
   },
 }));
 
+// MarkdownStream is a client renderer. Static markup does not mount its
+// client-only implementation, so expose the text prop at this boundary while
+// the test exercises the kind bridge and the reader's channel selection.
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
+  __esModule: true,
+  default: ({ content }: { content?: string }) =>
+    React.createElement("div", { "data-testid": "markdown-stream" }, content ?? null),
+}));
+
 // Since the rich-content switch the kind block's `ssr:false` boundary is no
 // longer next/dynamic: `SafeBlockRenderer` (in @ai-matrx/rich-content) owns it
 // through the package's own `clientLazy`, which a static render answers with

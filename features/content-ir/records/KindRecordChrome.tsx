@@ -371,7 +371,8 @@ export function KindRecordChrome({
         <>
           <span data-error-box className="text-muted-foreground">
             {savedElsewhere ? "Already saved from an earlier version of this answer" : (saveRefused ?? "Not saved")}
-          <ErrorAlchemyMenu /></span>
+          {saveRefused ? <ErrorAlchemyMenu error={saveRefused} /> : null}
+          </span>
           {countLink}
           {canSave && !savedElsewhere && (
             <span className="ml-auto flex items-center gap-1">

@@ -41,11 +41,13 @@
 // attribution row `components/matrx/MadeWithAiMatrx.tsx`.
 
 import React from "react";
+import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
 
 export default function LinkLayout({ children }: { children: React.ReactNode }) {
   return (
     <div data-link-layout className="flex min-h-dvh flex-col">
       {children}
+      <KindLeakSentinel />
     </div>
   );
 }

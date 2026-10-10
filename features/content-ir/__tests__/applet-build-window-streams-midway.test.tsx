@@ -200,6 +200,9 @@ it("draws the card and the files being written while the answer is still streami
   expect(i).toBe(chunks.length);
   expect(card).not.toBeNull();
   expect(writing).not.toBeNull();
-  expect(text).toContain("App.tsx");
+  // The reader sees the page in her words; source filenames stay behind
+  // “Show the code” once the build completes.
+  expect(text).toContain("main screen");
+  expect(text).not.toContain("App.tsx");
   expect(text).not.toContain("Initializing Matrx");
 });

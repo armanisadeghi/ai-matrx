@@ -52,6 +52,23 @@ describe("customer disconnect receipts", () => {
     }
   });
 
+  it("labels an all-disconnected account as Disconnected and keeps Reconnect available", async () => {
+    jest.mocked(loadCustomerSocialConnections).mockResolvedValue([{ id: "customer-grant", provider: "facebook", status: "disconnected", accountName: "Harbor Dental", providerSubject: "harbor-dental", issuer: null }]);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () => { root.render(<CustomerAccountsPanel organizationId="customer-org" providers={["facebook"]} />); await Promise.resolve(); });
+      expect(host.textContent).toContain("Disconnected");
+      expect(host.textContent).not.toContain("Needs attention");
+      const reconnect = Array.from(host.querySelectorAll("button")).find((element) => element.textContent === "Reconnect");
+      expect(reconnect?.hasAttribute("disabled")).toBe(false);
+    } finally {
+      await act(async () => { root.unmount(); });
+      host.remove();
+    }
+  });
+
   it("does not let a prior organization overwrite the current provider status", async () => {
     const previousConfigs = deferred<SocialProviderConfig[]>();
     const previousConnections = deferred<CustomerSocialConnection[]>();

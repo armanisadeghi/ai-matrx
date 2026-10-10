@@ -820,12 +820,14 @@ export default function TaskDetailsPanel({
             </div>
           ) : (
             isFullData ? (
-              <TaskDescriptionEditor
-                value={description}
-                onChange={handleDescriptionChange}
-                compact
-                bodyClassName="h-64"
-              />
+              <div data-kind-source="explicit">
+                <TaskDescriptionEditor
+                  value={description}
+                  onChange={handleDescriptionChange}
+                  compact
+                  bodyClassName="h-64"
+                />
+              </div>
             ) : (
               <RegionSkeleton className="h-64" />
             )

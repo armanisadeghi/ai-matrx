@@ -149,10 +149,11 @@ export function CustomerAccountsPanel({ organizationId, brandId, returnUrl = "/u
       const accounts = connections.filter((item) => item.provider === provider);
       const connected = accounts.filter((item) => item.status === "connected");
       const needsAttention = accounts.filter((item) => item.status !== "connected");
+      const allDisconnected = accounts.length > 0 && accounts.every((item) => item.status === "disconnected");
       const issuer = provider === "mastodon" ? mastodonIssuer || accounts.find((item) => item.issuer)?.issuer || "" : undefined;
       const unavailable = !config || config.status === "unavailable" || !CONNECTABLE.has(provider);
-      const status = connected.length ? "Connected" : needsAttention.length ? "Needs attention" : unavailable ? "Unavailable" : "Not connected";
-      return <Card key={provider}><CardContent className="space-y-3 p-4"><div className="flex items-start justify-between gap-3"><h3 className="font-medium">{LABELS[provider]}</h3><Badge variant="outline" className={connected.length ? "text-green-700" : needsAttention.length ? "text-amber-700" : "text-muted-foreground"}>{status}</Badge></div>
+      const status = connected.length ? "Connected" : allDisconnected ? "Disconnected" : needsAttention.length ? "Needs attention" : unavailable ? "Unavailable" : "Not connected";
+      return <Card key={provider}><CardContent className="space-y-3 p-4"><div className="flex items-start justify-between gap-3"><h3 className="font-medium">{LABELS[provider]}</h3><Badge variant="outline" className={connected.length ? "text-green-700" : needsAttention.length && !allDisconnected ? "text-amber-700" : "text-muted-foreground"}>{status}</Badge></div>
         {unavailable && <p className="text-sm text-muted-foreground">{config?.reason ?? "This provider is not available."}</p>}
         {provider === "pinterest" && <Badge variant="outline">Approved testers · Trial access</Badge>}
         {provider === "linkedin" && <Badge variant="outline">Profile insights unavailable</Badge>}
