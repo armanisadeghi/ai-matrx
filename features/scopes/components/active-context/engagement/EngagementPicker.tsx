@@ -24,7 +24,6 @@ import {
   useCreateTask,
 } from "@/features/agent-context/hooks/useHierarchy";
 import { createScope } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { invalidateAssignableData } from "@/features/scopes/components/context-assignment/data";
 import {
   ALL_ENGAGEMENT_RUNGS,
@@ -156,9 +155,9 @@ export function EngagementPicker({
     }
     if (payload.kind === "scope") {
       const res = await dispatch(
-        createScope({ org_id: payload.orgId, type_id: payload.typeId, name }),
+        createScope({ organization_id: payload.orgId, scope_type_id: payload.typeId, name }),
       );
-      if (isScopesRpcErr(res)) {
+      if (!res.ok) {
         toast.error(`Couldn't create the ${payload.typeName.toLowerCase()}`, {
           description: res.error.message,
         });

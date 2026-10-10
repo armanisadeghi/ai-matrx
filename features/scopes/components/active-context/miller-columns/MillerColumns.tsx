@@ -1,5 +1,6 @@
 "use client";
 
+import type { Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import React, { useEffect, useRef, useState } from "react";
 import { Briefcase, FolderOpen, Plus } from "lucide-react";
 import {
@@ -10,8 +11,6 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   OrgNode,
-  ScopeNode,
-  ScopeTypeNode,
 } from "@/features/scopes/types";
 import {
   columnFeed,
@@ -280,11 +279,11 @@ function CompactEngagementPicker({
 
 interface TypeEntry {
   org: OrgNode;
-  type: ScopeTypeNode;
+  type: ScopeTypeWithScopes;
 }
 
 interface ScopeEntry extends TypeEntry {
-  scope: ScopeNode;
+  scope: Scope;
 }
 
 const visible = <T,>(rows: T[], condensed: boolean): T[] =>

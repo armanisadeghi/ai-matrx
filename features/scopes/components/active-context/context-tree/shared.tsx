@@ -8,6 +8,7 @@
 //     loadProjects()/loadTasks().
 //   • per-type context items — lazy on scope expand, same cached layer
 
+import type { ContextField, Scope } from "@ai-matrx/records/scopes";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -35,7 +36,9 @@ import {
   type AssignableProject,
   type AssignableTask,
 } from "@/features/scopes/components/context-assignment/data";
-import type { ContextItemRow, OrgNode, ScopeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 
 /* ── data hook ────────────────────────────────────────────────────────── */
 
@@ -55,7 +58,7 @@ export interface ContextTreeData {
   tasksStatus: LazyStatus;
   loadTasks: () => void;
   /** Per-scope-type context items, filled lazily via loadItems(). */
-  itemsByType: Record<string, ContextItemRow[]>;
+  itemsByType: Record<string, ContextField[]>;
   itemsLoading: Set<string>;
   loadItems: (typeId: string) => void;
   /**
@@ -74,7 +77,7 @@ export interface ContextTreeData {
     loadAll: () => void;
     /** Ask the server for every scope whose name holds `q`; the answer arrives in `searchHits(q)`. */
     search: (q: string) => void;
-    searchHits: (q: string) => { status: "loading" | "ready" | "error"; scopes: ScopeNode[] } | null;
+    searchHits: (q: string) => { status: "loading" | "ready" | "error"; scopes: Scope[] } | null;
   };
 }
 
@@ -105,7 +108,7 @@ export function useContextTreeData(): ContextTreeData {
   const [tasks, setTasks] = useState<AssignableTask[]>([]);
   const [tasksStatus, setTasksStatus] = useState<LazyStatus>("idle");
   const [itemsByType, setItemsByType] = useState<
-    Record<string, ContextItemRow[]>
+    Record<string, ContextField[]>
   >({});
   const [itemsLoading, setItemsLoading] = useState<Set<string>>(new Set());
 

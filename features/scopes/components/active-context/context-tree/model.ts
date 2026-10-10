@@ -15,11 +15,9 @@
 // Cascade-up (required): selecting a child ALWAYS selects its ancestors.
 // You cannot have a scope selected without its scope type and org.
 
+import type { ContextField, Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import type {
   OrgNode,
-  ScopeTypeNode,
-  ScopeNode,
-  ContextItemRow,
 } from "@/features/scopes/types";
 import type {
   AssignableProject,
@@ -328,9 +326,9 @@ export interface FlatNode {
   path: string[];
   depth: number;
   org?: OrgNode;
-  type?: ScopeTypeNode;
-  scope?: ScopeNode;
-  item?: ContextItemRow;
+  type?: ScopeTypeWithScopes;
+  scope?: Scope;
+  item?: ContextField;
   project?: AssignableProject;
   task?: AssignableTask;
   /** Lowercased haystack for filtering. */
@@ -411,20 +409,20 @@ export function taskNode(t: AssignableTask): FlatNode {
 
 export interface ResolvedSelection {
   orgs: { id: string; label: string }[];
-  types: { id: string; label: string; orgName: string; type: ScopeTypeNode }[];
+  types: { id: string; label: string; orgName: string; type: ScopeTypeWithScopes }[];
   scopes: {
     id: string;
     label: string;
     typeLabel: string;
     orgName: string;
-    type: ScopeTypeNode;
+    type: ScopeTypeWithScopes;
   }[];
   items: {
     ref: string;
     label: string;
     scopeName: string;
     typeLabel: string;
-    type?: ScopeTypeNode;
+    type?: ScopeTypeWithScopes;
   }[];
   projects: { id: string; label: string }[];
   tasks: { id: string; label: string }[];
@@ -435,7 +433,7 @@ export function resolveSelection(
   orgs: OrgNode[],
   projects: AssignableProject[],
   tasks: AssignableTask[],
-  itemsByType: Record<string, ContextItemRow[]>,
+  itemsByType: Record<string, ContextField[]>,
 ): ResolvedSelection {
   const out: ResolvedSelection = {
     orgs: [],
@@ -476,7 +474,7 @@ export function resolveSelection(
           const item = (itemsByType[t.id] ?? []).find((i) => i.id === itemId);
           out.items.push({
             ref,
-            label: item?.display_name ?? "field",
+            label: item?.label ?? "field",
             scopeName: s.name,
             typeLabel: t.label_singular,
             type: t,

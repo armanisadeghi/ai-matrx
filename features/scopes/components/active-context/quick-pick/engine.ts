@@ -16,6 +16,7 @@
 // this engine. Quick-adds via `createDraft` stay preview-only (draft nodes +
 // toast) until a host wires durable create callbacks.
 
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import {
   useCallback,
   useEffect,
@@ -39,7 +40,9 @@ import {
   resolveColor,
   type ScopeColor,
 } from "@/features/scopes/constants/scope-colors";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 /* ── node model ──────────────────────────────────────────────────────────── */
@@ -221,7 +224,7 @@ export interface Universe {
   retryEngagement: () => void;
 }
 
-function fabricateType(d: DraftType): ScopeTypeNode {
+function fabricateType(d: DraftType): ScopeTypeWithScopes {
   return {
     id: d.id,
     organization_id: d.orgId,
@@ -231,8 +234,8 @@ function fabricateType(d: DraftType): ScopeTypeNode {
     color: "violet",
     max_assignments_per_entity: null,
     sort_order: 999,
-    parent_type_id: null,
     default_variable_keys: [],
+    created_by: null,
     slug: null,
     description: "",
     created_at: "",
@@ -359,7 +362,7 @@ export function orgNodeOf(
   };
 }
 
-export function typeNodeOf(o: OrgNode, t: ScopeTypeNode): PickNode {
+export function typeNodeOf(o: OrgNode, t: ScopeTypeWithScopes): PickNode {
   return {
     kind: "type",
     id: t.id,
@@ -374,7 +377,7 @@ export function typeNodeOf(o: OrgNode, t: ScopeTypeNode): PickNode {
 
 export function scopeNodeOf(
   o: OrgNode,
-  t: ScopeTypeNode,
+  t: ScopeTypeWithScopes,
   s: { id: string; name: string },
 ): PickNode {
   return {
@@ -578,7 +581,7 @@ export function useTypeItems(typeId: string | null): {
           items: rows.map((r) => ({
             id: r.id,
             key: r.key,
-            label: r.display_name || r.key,
+            label: r.label || r.key,
           })),
           error: null,
         });
@@ -683,7 +686,7 @@ export function useItemsForTypes(typeIds: string[]): {
               rows.map((r) => ({
                 id: r.id,
                 key: r.key,
-                label: r.display_name || r.key,
+                label: r.label || r.key,
               })),
             ] as const,
         ),

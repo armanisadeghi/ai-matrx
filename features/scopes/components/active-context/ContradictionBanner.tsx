@@ -13,7 +13,7 @@
 "use client";
 
 import { AlertTriangle, X } from "lucide-react";
-import type { ScopeContradiction } from "@/features/scopes/types";
+import type { ScopeContradiction } from "@ai-matrx/records/scopes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ContradictionBannerProps {

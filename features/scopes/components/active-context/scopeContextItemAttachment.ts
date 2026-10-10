@@ -1,5 +1,8 @@
+import type { ContextField } from "@ai-matrx/records/scopes";
 import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
-import type { ContextItemRow, OrgNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import { itemRef } from "./context-tree/model";
 
 export const SCOPE_CONTEXT_ITEM_KEY_PREFIX = "attached_scope_item_";
@@ -70,7 +73,7 @@ export function attachedScopeContextItemRefs(
 export function buildScopeContextItemAttachment(
   ref: string,
   organizations: OrgNode[],
-  itemsByType: Record<string, ContextItemRow[]>,
+  itemsByType: Record<string, ContextField[]>,
 ): ScopeContextItemAttachment | null {
   const [scopeId, itemId] = ref.split("::");
   if (!scopeId || !itemId) return null;
@@ -85,7 +88,7 @@ export function buildScopeContextItemAttachment(
         (candidate) => candidate.id === itemId,
       );
       if (!item) return null;
-      const label = `${scope.name} — ${item.display_name}`;
+      const label = `${scope.name} — ${item.label}`;
       return {
         key: scopeContextItemAttachmentKey(scope.id, item.id),
         label,
@@ -104,7 +107,7 @@ export function buildScopeContextItemAttachment(
             item_key: item.key,
             extra: {
               scope_name: scope.name,
-              item_label: item.display_name,
+              item_label: item.label,
             },
           },
         },

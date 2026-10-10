@@ -17,6 +17,7 @@
 // Cascade-up: selecting a child always selects its ancestors (scope → type →
 // org). Laziness: fields / projects / tasks fetch on first expand only.
 
+import type { Scope } from "@ai-matrx/records/scopes";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Briefcase, ChevronRight, FolderKanban, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,6 @@ import {
   type ContextTreeData,
 } from "./shared";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { ScopeNode } from "@/features/scopes/types";
 
 export type ContextTreeCreateLevel =
   "scope type" | "scope" | "context item" | "project" | "task";
@@ -157,7 +157,7 @@ export function ContextTree({
   }, [q, pagedWhole, searchFn]);
   const hits = q && paged && !paged.whole ? paged.searchHits(q) : null;
   /** A type's scopes for this render: the loaded ones, plus the server's search hits for the type. */
-  const scopesOf = (t: { id: string; scopes: ScopeNode[] }): ScopeNode[] => {
+  const scopesOf = (t: { id: string; scopes: Scope[] }): Scope[] => {
     if (!hits || hits.scopes.length === 0) return t.scopes;
     const extra = hits.scopes.filter((s) => s.scope_type_id === t.id);
     if (extra.length === 0) return t.scopes;
@@ -165,7 +165,7 @@ export function ContextTree({
     return [...t.scopes, ...extra.filter((s) => !ids.has(s.id))];
   };
   /** The number a type row shows: exact when known, an honest dash while the store counts. */
-  const countOf = (t: { id: string; scopes: ScopeNode[] }): string => {
+  const countOf = (t: { id: string; scopes: Scope[] }): string => {
     if (!paged || paged.whole) return String(t.scopes.length);
     const n = paged.counts[t.id];
     return n === undefined ? "—" : String(n);
@@ -237,13 +237,13 @@ export function ContextTree({
                 tag: `${t.label_singular} · ${o.name}`,
               });
             for (const it of data.itemsByType[t.id] ?? []) {
-              if (`${it.display_name} ${it.key}`.toLowerCase().includes(q))
+              if (`${it.label} ${it.key}`.toLowerCase().includes(q))
                 out.push({
                   key: `item:${s.id}:${it.id}`,
                   depth: 0,
                   kind: "item",
                   id: itemRef(s.id, it.id),
-                  label: `${s.name} › ${it.display_name}`,
+                  label: `${s.name} › ${it.label}`,
                   tag: t.label_singular,
                 });
             }
@@ -376,8 +376,8 @@ export function ContextTree({
               depth: 3,
               kind: "item",
               id: itemRef(s.id, it.id),
-              label: it.display_name,
-              meta: String(it.value_type),
+              label: it.label,
+              meta: String(it.kind),
             });
           }
           if (allowCreate && onCreate && items) {
