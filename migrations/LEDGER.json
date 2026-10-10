@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T06:12:08.871Z",
+  "generated_at": "2026-10-10T08:15:15.241Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4070,6 +4070,18 @@
       "checksum": "f993ce005ac83aa75905633638e6770a254b895f6193bd09b515f37dd96374a8",
       "applied_at": "2026-10-08 18:06:49.102581+00"
     },
+    "migrations/campaign/hr_open_01_actor_guards_on_employee_and_candidate_are_declared.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_open_01_actor_guards_on_employee_and_candidate_are_declared.sql",
+      "checksum": "2243f3a71a1c642137f343221ffb844abf2cfea2b44243786a3fb5a472d30edf",
+      "applied_at": "2026-10-10 08:14:24.151995+00"
+    },
+    "migrations/campaign/hr_open_02_the_hr_schema_is_reachable_by_a_client.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_open_02_the_hr_schema_is_reachable_by_a_client.sql",
+      "checksum": "d87d1191594879353bc3c05a92e9e3d05b6ea88c85cb5832d782639e7fd36da9",
+      "applied_at": "2026-10-10 08:15:14.223437+00"
+    },
     "migrations/campaign/hr_rev_01_standard_review_records_and_flow.sql": {
       "source": "matrx-frontend",
       "filename": "hr_rev_01_standard_review_records_and_flow.sql",
@@ -4093,6 +4105,12 @@
       "filename": "hr_rev_04_standard_review_knobs.sql",
       "checksum": "ae7cd7e798335a7e0d1bee77d0b0d2935fa1fb158837db709f6b2b6d7f3a18b7",
       "applied_at": "2026-10-10 06:12:07.080956+00"
+    },
+    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_rev_05_standard_review_wave2.sql",
+      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
+      "applied_at": "2026-10-10 06:18:44.291274+00"
     },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
@@ -4945,6 +4963,12 @@
       "filename": "listcopypermissive_the_copy_never_invents_a_choice.sql",
       "checksum": "7f60b085cb14ee4ec183da25f2613ebe8af4d0189e8027180753c1735a848950",
       "applied_at": "2026-09-26 21:17:08.337598+00"
+    },
+    "migrations/campaign/listrpc_arrays_list_rpc_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "listrpc_arrays_list_rpc_once.sql",
+      "checksum": "4844c39ab4e09f0b2e219c7b84328f058d1f72cc524ea075b191e5d036b0ca20",
+      "applied_at": "2026-10-10 07:14:45.744611+00"
     },
     "migrations/campaign/listsafter_a_pick_lists_read_and_are_born_where_the_switch_says.sql": {
       "source": "matrx-frontend",
@@ -10568,17 +10592,11 @@
       "checksum": "faa8f0c7ba79f6453a6127a85cdf4549ca35ceb45a87cf6e5bee8ce5368ff7c6",
       "applied_at": "2026-09-22 09:33:14.786775+00"
     },
-    "migrations/campaign/listrpc_arrays_list_rpc_once.sql": {
+    "migrations/campaign/hr_rev_08_template_get_and_peer_link.sql": {
       "source": "matrx-frontend",
-      "filename": "listrpc_arrays_list_rpc_once.sql",
-      "checksum": "4844c39ab4e09f0b2e219c7b84328f058d1f72cc524ea075b191e5d036b0ca20",
-      "applied_at": "2026-10-10 07:14:45.744611+00"
-    },
-    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
-      "source": "matrx-frontend",
-      "filename": "hr_rev_05_standard_review_wave2.sql",
-      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
-      "applied_at": "2026-10-10 06:18:44.291274+00"
+      "filename": "hr_rev_08_template_get_and_peer_link.sql",
+      "checksum": "5d9ab09def9c3f74bdb3bdc1ef8247b30be7403cb36452b7cd744559530c7625",
+      "applied_at": "2026-10-10 07:27:10.871962+00"
     }
   }
 }
