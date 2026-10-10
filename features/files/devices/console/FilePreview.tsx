@@ -19,6 +19,7 @@ import { imageMime, previewKind } from "./paths";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 import { downloadFile } from "@ai-matrx/kit/download";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const TEXT_LIMIT = 262_144;
 const BINARY_LIMIT = 4 * 1024 * 1024;
 
@@ -113,7 +114,7 @@ export function FilePreview({ client, entry, onOpenChange }: { client: DesktopCl
               No preview for this file
             </div>
           ) : null}
-          {loaded.kind === "error" ? <p className="p-3 text-sm text-destructive">{loaded.message}</p> : null}
+          {loaded.kind === "error" ? <p className="p-3 text-sm text-destructive">{loaded.message}<ErrorAlchemyMenu error={loaded.message} /></p> : null}
         </div>
         <div className="flex justify-end gap-2">
           <button

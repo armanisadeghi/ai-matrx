@@ -20,6 +20,7 @@ import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import { fetchRelayStatus } from "./relay";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Re-ask the relay this often while the list is open. */
 const STATUS_POLL_MS = 30_000;
 /** Computers not seen for this long sit behind "Show older" (still one tap away, never hidden). */
@@ -117,7 +118,7 @@ export function DeviceList({ devices, error }: { devices: DeviceRow[]; error: st
             Devices
           </h1>
           {error ? (
-            <div className="rounded-[10px] border border-border bg-card px-4 py-3 text-sm text-destructive">{error}</div>
+            <div className="rounded-[10px] border border-border bg-card px-4 py-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></div>
           ) : devices.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-[10px] border border-border bg-card px-4 py-10 text-center lg:mt-4">
               <Laptop className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />

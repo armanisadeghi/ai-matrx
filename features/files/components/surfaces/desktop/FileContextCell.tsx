@@ -12,6 +12,7 @@ import { FileText } from "lucide-react";
 import { useRowScopes, useSetRowScopes } from "@/features/scopes/hooks/useRowScopes";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function FileContextCell({
   fileId,
   fileName,
@@ -27,7 +28,7 @@ export function FileContextCell({
     return (
       <span className="text-xs text-destructive" title={entry.error ?? undefined}>
         Not loaded
-      </span>
+      <ErrorAlchemyMenu error={entry.error} /></span>
     );
   }
   if (entry.status !== "ready") {

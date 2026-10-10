@@ -44,6 +44,7 @@ import { TextInputDialog } from "@ai-matrx/design-system";
 import { FilePreview } from "./FilePreview";
 import { crumbs, extensionOf, joinPath, parentPath, previewKind } from "./paths";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** One swipe reveals three 72px actions. */
 const ACTION_W = 72;
 const ACTIONS_W = ACTION_W * 3;
@@ -377,7 +378,7 @@ export function FilesPanel({ client, live, blocked, path, onPathChange, visible 
           ) : null}
           {!offline && listing.error && entries.length === 0 ? (
             <div className="flex h-[52px] items-center justify-between gap-3 px-3 text-sm">
-              <span className="truncate text-destructive">{listing.error.code === "PERMISSION_DENIED_OS" ? "The computer blocked this folder" : listing.error.message}</span>
+              <span className="truncate text-destructive">{listing.error.code === "PERMISSION_DENIED_OS" ? "The computer blocked this folder" : listing.error.message}<ErrorAlchemyMenu error={listing.error.message} /></span>
               <button type="button" className="shrink-0 text-primary" onClick={() => void listing.refetch()}>
                 Try again
               </button>
