@@ -132,6 +132,6 @@ export function directoryDetailFromParams(
     return "native:google";
   if (provider === "microsoft") return "native:microsoft";
   if (provider === "github") return "native:github";
-  if (provider === "dropbox" || provider === "box") return `native:${provider}`;
+  if (provider === "dropbox" || provider === "box" || provider === "tiktok") return `native:${provider}`;
   return provider ? `provider:${provider}` : null;
 }

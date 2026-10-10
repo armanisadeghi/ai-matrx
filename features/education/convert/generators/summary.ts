@@ -169,6 +169,7 @@ async function run(
 
   const media = await studyMediaService.create({
     mediaKind: "summary",
+    runKey: covered.runKey,
     title: finalTitle,
     description: keyPoints[0] ?? null,
     source: { kind: "topic", title: source.title ?? finalTitle },

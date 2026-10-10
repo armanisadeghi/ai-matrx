@@ -12,7 +12,7 @@
 
 import type { ContainerLink } from "@ai-matrx/associations/react";
 import { isRegisteredPair, registeredEdgeLabel } from "@ai-matrx/associations";
-import { toSlug } from "@/features/scopes/utils/slugify";
+import { toSlug } from "@ai-matrx/records/scopes";
 import {
   ASSIGNMENT_EDGE_ROLE,
   CLASS_PART_EDGE_ROLE,

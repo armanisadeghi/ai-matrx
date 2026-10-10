@@ -17,6 +17,7 @@
 import { studioRunsService } from "@/features/podcasts/studio/runs/service";
 import { stashPendingStart } from "@/features/podcasts/studio/runs/pendingStart";
 import { studyMediaService } from "../service";
+import { singleArtifactRunKey } from "@/features/education/convert/runKey";
 import { buildAudioRequest } from "./audioBrief";
 import { buildSourceTrust } from "@/features/education/convert/sourceTrust";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
@@ -47,6 +48,28 @@ async function run(
     content: source.text,
   });
 
+  // A kit run that already made its audio (the tab died after the create,
+  // before the kit edge) adopts that audio — no second studio run, no second row.
+  const runKey = singleArtifactRunKey(ctx.sections, "audio");
+  const earlier = runKey ? await studyMediaService.findByRunKey("audio", runKey) : null;
+  if (earlier?.error) throw new Error(earlier.error);
+  if (earlier?.data) {
+    const adopted: ConvertResult = {
+      targetKind: "audio",
+      artifactId: earlier.data.id,
+      resourceType: "study_media",
+      href: `/education/audio-study/${earlier.data.id}`,
+      title: earlier.data.title,
+      trust,
+      detail: earlier.data.audio_file_id
+        ? "Audio overview"
+        : "Starting — audio is still being produced",
+      pending: !earlier.data.audio_file_id,
+    };
+    adopted.lineage = await recordSourceLineage(adopted, source, ctx.orgId);
+    return adopted;
+  }
+
   const runRow = await studioRunsService.createRun({
     status: "running",
     input_data_type: podcastRequest.input_data_type,
@@ -57,6 +80,7 @@ async function run(
 
   const media = await studyMediaService.create({
     mediaKind: "audio",
+    runKey,
     title,
     source: { kind: "note", title: source.title ?? "Study material" },
     config: {

@@ -27,7 +27,7 @@ export function resolveScopeRouteReference(args: {
   isOrgContextItems: boolean;
   scopeType?: { id: string; label_singular: string; label_plural: string };
   scope?: { id: string; name: string };
-  item?: { id: string; display_name: string };
+  item?: { id: string; label: string };
   hasScope: boolean;
   itemParam?: string;
   isEdit: boolean;
@@ -65,7 +65,7 @@ export function resolveScopeRouteReference(args: {
       kind: "context_value",
       scopeId: scope.id,
       contextItemId: item.id,
-      label: `${scope.name} · ${item.display_name}`,
+      label: `${scope.name} · ${item.label}`,
     };
   }
 
@@ -85,7 +85,7 @@ export function resolveScopeRouteReference(args: {
       kind: "record",
       referenceType: "context_item",
       id: item.id,
-      label: item.display_name,
+      label: item.label,
     };
   }
 

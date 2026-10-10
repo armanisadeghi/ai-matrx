@@ -1,7 +1,9 @@
 // Context Management — Type Definitions
-// Source of truth: Supabase schema for ctx_context_items, ctx_context_item_values, ctx_templates, ctx_context_access_log
+// Field, value and scope shapes come from @ai-matrx/records/scopes; this file keeps the item
+// lifecycle words and the template/access-log rows of the `context` schema.
 
 import type { Database } from "@/types/database.types";
+import type { ContextPolicy, ContextSensitivity } from "@ai-matrx/records/scopes";
 
 export type ContextItemStatus =
   | "idea"
@@ -20,35 +22,10 @@ export type ContextItemStatus =
   | "archived"
   | "deprecated";
 
-export type ContextValueType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "date"
-  | "datetime"
-  | "time"
-  | "email"
-  | "url"
-  | "phone"
-  | "percent"
-  | "color"
-  | "markdown"
-  | "currency"
-  | "object"
-  | "array"
-  | "document"
-  | "reference";
-// THE THREE WORDS THE RECORD STORE KEEPS (custom context_policy include / on_request / exclude).
-// Lane 9 SCOPES-ON-THE-STORE, chair ruling 3 (2026-10-02): the old "lazy" is "on_demand" and the old
-// "batch_related" is "always" — the store folded them on the copy (custom._ctx_word 'policy'), so a
-// screen that offered either showed a word that was never kept. Old rows are read through
-// `canonicalFetchHint` (constants.ts).
-export type ContextFetchHint = "always" | "on_demand" | "never";
-export type ContextSensitivity =
-  | "public"
-  | "internal"
-  | "restricted"
-  | "privileged";
+// A field's kind, context policy and sensitivity are the record store's words: `ContextFieldKind`,
+// `ContextPolicy` (include / on_request / exclude) and `ContextSensitivity` (public / internal /
+// confidential / restricted) from `@ai-matrx/records/scopes`. Nothing here re-declares them.
+
 export type ContextSourceType =
   | "manual"
   | "ai_generated"
@@ -69,26 +46,6 @@ export type ContextScope = {
   name: string;
 };
 
-// DB Row is canonical — ContextItem = full context_items row + optional join fields.
-// SCOPES-W3 (2026-10-07) moved context_items / context_item_values to the
-// `deprecated` schema (columns unchanged); the generated shape lives there now.
-export type ContextItem =
-  Database["deprecated"]["Tables"]["context_items"]["Row"] & {
-    // From current ctx_context_item_values row (when manifest merge runs)
-    current_text_value?: string | null;
-    value_last_updated?: string | null;
-    char_count?: number | null;
-    data_point_count?: number | null;
-    has_nested_objects?: boolean;
-    json_keys?: string[];
-  };
-
-// Manifest is the same shape; kept as alias for semantic clarity
-export type ContextItemManifest = ContextItem;
-
-export type ContextItemValue =
-  Database["deprecated"]["Tables"]["context_item_values"]["Row"];
-
 export type ContextTemplate = Database["context"]["Tables"]["templates"]["Row"];
 
 // Template context item (items defined within a template)
@@ -105,53 +62,19 @@ export type ContextAccessSummary = {
   useful_rate: number | null;
 };
 
-// Form types
-export type ContextItemFormData = {
-  display_name: string;
-  key: string;
-  description: string;
-  category: string | null;
-  tags: string[];
-  status: ContextItemStatus;
-  status_note: string | null;
-  value_type: ContextValueType;
-  fetch_hint: ContextFetchHint;
-  sensitivity: ContextSensitivity;
-  source_type: ContextSourceType;
-  scope_type_id: string;
-  review_interval_days: number | null;
-  last_verified_at: string | null;
-  depends_on: string[];
-};
-
-export type ContextValueFormData = {
-  value_text: string | null;
-  value_number: number | null;
-  value_boolean: boolean | null;
-  value_date: string | null;
-  value_timestamp: string | null;
-  value_time: string | null;
-  value_json: Record<string, unknown> | unknown[] | null;
-  value_document_url: string | null;
-  value_document_size_bytes: number | null;
-  value_reference_id: string | null;
-  value_reference_type: string | null;
-  change_summary: string | null;
-};
-
 // Filter/sort types for item list
 export type ContextItemFilters = {
   search: string;
   statuses: ContextItemStatus[];
   categories: string[];
-  fetchHints: ContextFetchHint[];
+  contextPolicies: ContextPolicy[];
   sensitivities: ContextSensitivity[];
   hasValue: "yes" | "no" | "either";
 };
 
 export type ContextItemSort = {
   field:
-    | "display_name"
+    | "label"
     | "status"
     | "updated_at"
     | "next_review_at"

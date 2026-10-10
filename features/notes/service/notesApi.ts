@@ -6,6 +6,7 @@
 
 import {
   createNote as createNoteService,
+  createNoteForRun as createNoteForRunService,
   updateNote as updateNoteService,
   deleteNote as deleteNoteService,
   copyNote as copyNoteService,
@@ -104,6 +105,17 @@ export async function getById(
 }
 
 /**
+ * Create a note for one generation run: a resumed run gets its earlier note
+ * back (found by `metadata.run_key`) instead of a second one.
+ */
+export async function createForRun(
+  input: CreateNoteInput,
+  runKey: string | null | undefined,
+): Promise<Note> {
+  return createNoteForRunService(input, runKey);
+}
+
+/**
  * Quick create - Create a note with just content
  * @example
  * ```typescript
@@ -150,6 +162,7 @@ export async function ensureFolderMaterialized(
 // Default export as namespace
 export const NotesAPI = {
   create,
+  createForRun,
   update,
   remove,
   copy,

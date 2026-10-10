@@ -12,25 +12,29 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
-import type { ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
+import {
+  cellDraft,
+  hasCellValue,
+  type ScopeFieldRow,
+} from "./scope-detail-values";
 import { PartialValueBadge } from "@/features/scopes/components/PartialValueBadge";
 import {
   ContextValueInput,
   placeholderForType,
 } from "@/features/scopes/components/reference/ContextValueInput";
-import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeValueSheet } from "./EditScopeValueSheet";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeFieldInputProps {
   scopeId: string;
-  row: ScopeContextRow;
+  row: ScopeFieldRow;
   /** When provided, shows a link to the item's dedicated page (the ↗). */
   itemHref?: string;
   /**
-   * Override the field's title (defaults to the item's display_name). Used on the
+   * Override the field's title (defaults to the field's label). Used on the
    * Context Item Hub, where each row is the SAME item across different scopes, so
    * the row title should be the scope name instead.
    */
@@ -56,40 +60,6 @@ function canonical(v: unknown): string {
   return String(v).trim();
 }
 
-function rowToString(row: ScopeContextRow): string {
-  if (row.value_text != null) return row.value_text;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
-  if (row.value_date != null) return row.value_date;
-  if (row.value_timestamp != null) return row.value_timestamp;
-  if (row.value_time != null) return row.value_time;
-  if (row.value_document_url != null) return row.value_document_url;
-  if (row.value_json != null) {
-    try {
-      return JSON.stringify(row.value_json, null, 2);
-    } catch {
-      return "";
-    }
-  }
-  return "";
-}
-
-/**
- * The value to seed a custom Smart-Input component with: structured values come
- * straight from value_json; everything else falls back to a string.
- */
-function rowToComponentValue(row: ScopeContextRow): unknown {
-  if (row.value_json != null) return row.value_json;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_text != null) return row.value_text;
-  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
-  if (row.value_date != null) return row.value_date;
-  if (row.value_timestamp != null) return row.value_timestamp;
-  if (row.value_time != null) return row.value_time;
-  if (row.value_document_url != null) return row.value_document_url;
-  return "";
-}
-
 export function ScopeFieldInput({
   scopeId,
   row,
@@ -101,28 +71,22 @@ export function ScopeFieldInput({
   const generatedId = useId();
   const fieldId = `scope-value-${generatedId}`;
   const labelId = `scope-value-label-${generatedId}`;
-  const descriptionId = row.description
+  const { field, value: cell } = row;
+  const descriptionId = field.description
     ? `scope-value-description-${generatedId}`
     : undefined;
   const keyboardHintId = `scope-value-keyboard-hint-${generatedId}`;
   const fieldGroupRef = useRef<HTMLDivElement>(null);
   const advancedEditorButtonRef = useRef<HTMLButtonElement>(null);
-  const hasCustom = !!row.custom_component;
-  const initialValue: unknown = hasCustom
-    ? rowToComponentValue(row)
-    : rowToString(row);
+  const hasCustom = !!field.custom_component;
+  const initialValue: unknown = cellDraft(cell, hasCustom);
   const initialKey = canonical(initialValue);
 
   const [value, setValue] = useState<unknown>(initialValue);
   const [editingItem, setEditingItem] = useState(false);
   const [editingValue, setEditingValue] = useState(false);
   const isDirtyRef = useRef(false);
-  const { commit, status } = useScopeAutoSave(
-    scopeId,
-    row.item_id,
-    row.value_type,
-    initialValue,
-  );
+  const { commit, status } = useScopeAutoSave(scopeId, field, initialValue);
 
   // Keep the latest commit closure reachable from the debounce timer / unmount flush.
   const commitRef = useRef(commit);
@@ -227,7 +191,7 @@ export function ScopeFieldInput({
                 href={nameHref}
                 className="text-sm font-medium text-foreground hover:text-primary"
               >
-                <span id={labelId}>{nameLabel ?? row.display_name}</span>
+                <span id={labelId}>{nameLabel ?? field.label}</span>
               </Link>
             ) : (
               <>
@@ -236,14 +200,14 @@ export function ScopeFieldInput({
                   htmlFor={fieldId}
                   className="text-sm font-medium text-foreground"
                 >
-                  {nameLabel ?? row.display_name}
+                  {nameLabel ?? field.label}
                 </Label>
                 <button
                   tabIndex={-1}
                   type="button"
                   onClick={() => setEditingItem(true)}
                   className="rounded-sm text-muted-foreground opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label={`Edit ${nameLabel ?? row.display_name} definition`}
+                  aria-label={`Edit ${nameLabel ?? field.label} definition`}
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
@@ -254,7 +218,7 @@ export function ScopeFieldInput({
                 tabIndex={-1}
                 href={itemHref}
                 title="Open page"
-                aria-label={`Open ${nameLabel ?? row.display_name} page`}
+                aria-label={`Open ${nameLabel ?? field.label} page`}
                 className="text-muted-foreground hover:text-primary"
               >
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -263,10 +227,10 @@ export function ScopeFieldInput({
           </div>
           <div className="flex items-center gap-1">
             {headerSlot}
-            <PartialValueBadge incomplete={row.value_incomplete} />
+            <PartialValueBadge incomplete={cell?.incomplete ?? null} />
             <FieldStatus
               status={status}
-              hasValue={row.has_value || canonical(value).length > 0}
+              hasValue={hasCellValue(cell) || canonical(value).length > 0}
             />
             <Button
               icon={<Maximize2 className="text-muted-foreground" />}
@@ -275,7 +239,7 @@ export function ScopeFieldInput({
               variant="quiet"
               onClick={() => setEditingValue(true)}
               title="Open advanced value editor"
-              aria-label={`Open advanced value editor for ${nameLabel ?? row.display_name}`}
+              aria-label={`Open advanced value editor for ${nameLabel ?? field.label}`}
               tabIndex={-1}
               aria-keyshortcuts="F6"
             />
@@ -287,13 +251,13 @@ export function ScopeFieldInput({
           aria-describedby={[descriptionId, keyboardHintId]
             .filter(Boolean)
             .join(" ")}
-          valueType={row.value_type}
-          customComponent={row.custom_component}
+          kind={field.kind}
+          customComponent={field.custom_component as VariableCustomComponent | null}
           value={value}
           onChange={(v) => {
             isDirtyRef.current = true;
             setValue(v);
-            if (hasCustom || row.value_type === "markdown") scheduleCommit(v);
+            if (hasCustom || field.kind === "markdown") scheduleCommit(v);
           }}
           onCommit={(v) => {
             if (timerRef.current) clearTimeout(timerRef.current);
@@ -302,22 +266,20 @@ export function ScopeFieldInput({
             isDirtyRef.current = false;
             void commit(v);
           }}
-          referenceConfig={
-            row.value_type === "reference" ? referenceConfigFromItem(row) : null
-          }
+          referenceConfig={field.kind === "reference" ? field : null}
           scopeId={scopeId}
-          displayName={row.display_name}
+          displayName={field.label}
           placeholder={placeholderForType(
-            row.value_type,
+            field.kind,
             "Type a value, leave to save",
           )}
           auxiliaryControlsTabIndex={-1}
           minHeight={80}
           maxHeight={600}
         />
-        {row.description && (
+        {field.description && (
           <p id={descriptionId} className="text-xs text-muted-foreground">
-            {row.description}
+            {field.description}
           </p>
         )}
         <span id={keyboardHintId} className="sr-only">
@@ -329,7 +291,7 @@ export function ScopeFieldInput({
       <EditContextItemSheet
         open={editingItem}
         onOpenChange={setEditingItem}
-        itemId={row.item_id}
+        itemId={field.id}
       />
       <EditScopeValueSheet
         open={editingValue}
@@ -342,7 +304,7 @@ export function ScopeFieldInput({
           }
         }}
         scopeId={scopeId}
-        itemId={row.item_id}
+        itemId={field.id}
       />
     </>
   );

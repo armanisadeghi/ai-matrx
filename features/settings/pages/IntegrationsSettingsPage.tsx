@@ -98,6 +98,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toolCheckFailure } from "./integration-tool-check";
 import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
 import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
+import { TikTokConnectionsPanel } from "@/features/tiktok-connections/TikTokConnectionsPanel";
+import { listTikTokConnections } from "@/features/tiktok-connections/service";
 import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
 import { listMicrosoftConnections } from "@/features/microsoft-integration/service";
 import type { MicrosoftConnection } from "@/features/microsoft-integration/types";
@@ -292,7 +294,8 @@ export function IntegrationsWorkspace({
     version: number;
     microsoft: MicrosoftConnection[];
     storage: StorageConnection[];
-    errors: { microsoft: string | null; storage: string | null };
+    tiktok: Awaited<ReturnType<typeof listTikTokConnections>>;
+    errors: { microsoft: string | null; storage: string | null; tiktok: string | null };
   } | null>(null);
   const nativeLoading =
     !nativeInventory ||
@@ -302,9 +305,11 @@ export function IntegrationsWorkspace({
     nativeInventory?.userId === userId ? nativeInventory : null;
   const microsoftConnections = currentInventory?.microsoft ?? [];
   const storageConnections = currentInventory?.storage ?? [];
+  const tiktokConnections = currentInventory?.tiktok ?? [];
   const nativeErrors = currentInventory?.errors ?? {
     microsoft: null,
     storage: null,
+    tiktok: null,
   };
   const openWindow = useOpenLiveIntegrationsWindow();
 
@@ -322,7 +327,8 @@ export function IntegrationsWorkspace({
     void Promise.allSettled([
       listMicrosoftConnections(controller.signal),
       listStorageConnections(controller.signal),
-    ]).then(([microsoft, storage]) => {
+      listTikTokConnections(controller.signal),
+    ]).then(([microsoft, storage, tiktok]) => {
       if (controller.signal.aborted) return;
       const message = (reason: unknown) =>
         reason instanceof Error
@@ -333,11 +339,13 @@ export function IntegrationsWorkspace({
         version: refreshVersion,
         microsoft: microsoft.status === "fulfilled" ? microsoft.value : [],
         storage: storage.status === "fulfilled" ? storage.value : [],
+        tiktok: tiktok.status === "fulfilled" ? tiktok.value : [],
         errors: {
           microsoft:
             microsoft.status === "rejected" ? message(microsoft.reason) : null,
           storage:
             storage.status === "rejected" ? message(storage.reason) : null,
+          tiktok: tiktok.status === "rejected" ? message(tiktok.reason) : null,
         },
       });
     });
@@ -483,6 +491,10 @@ export function IntegrationsWorkspace({
     sharedBy: id === "google" ? googleSharedBy : undefined,
   });
   const items: IntegrationDirectoryItem[] = [
+    nativeItem("tiktok", "TikTok", "Connect your account to track your profile and public videos.",
+      "TikTok", "social", "https://cdn.simpleicons.org/tiktok",
+      savedAccountSummary(tiktokConnections.map(account => ({ identity: account.account_name ?? "TikTok account", status: account.status })),
+        nativeLoading, Boolean(nativeErrors.tiktok)), "social videos profile approved testers"),
     nativeItem(
       "google",
       "Google Workspace",
@@ -699,6 +711,7 @@ export function IntegrationsWorkspace({
     nativeErrors.storage
       ? { label: "File connections", message: nativeErrors.storage }
       : null,
+    nativeErrors.tiktok ? { label: "TikTok", message: nativeErrors.tiktok } : null,
   ].filter((failure) => failure !== null);
 
   useSurfaceScopeContribution(
@@ -875,6 +888,7 @@ export function IntegrationsWorkspace({
     if (item.id === "native:google") return <ConnectorsSettingsPanel />;
     if (item.id === "native:github") return <GitHubConnectionCard />;
     if (item.id === "native:microsoft") return <MicrosoftConnectPanel />;
+    if (item.id === "native:tiktok") return <TikTokConnectionsPanel />;
     if (item.id === "native:box" || item.id === "native:dropbox")
       return (
         <StorageConnectionsPanel

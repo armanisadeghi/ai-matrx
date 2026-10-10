@@ -80,6 +80,8 @@ export interface QuestionsFromSourcesOutcome {
   failureReason: string | null;
   singlePass: boolean;
   conversationId: string | null;
+  /** The kit run's identity for this artifact (convert/runKey.ts); null outside a kit run. */
+  runKey: string | null;
 }
 
 /** The one outline section a run is aimed at, when it is aimed at exactly one with an id. */
@@ -194,5 +196,6 @@ export async function generateQuestionsFromSources({
     failureReason: covered.failureReason,
     singlePass: covered.plan.singlePass,
     conversationId: covered.conversationId,
+    runKey: covered.runKey,
   };
 }

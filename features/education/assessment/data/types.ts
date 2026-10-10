@@ -130,6 +130,12 @@ export interface NewAssessmentInput {
   /** Active-context org; omit to let the trigger fill the personal org. */
   orgId?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * The kit run that makes this assessment (convert/runKey.ts), stamped into
+   * `metadata.run_key`. `createWithItems` adopts the run's earlier assessment
+   * (completing its items) instead of creating a second one.
+   */
+  runKey?: string | null;
 }
 
 /** One question to insert. `position` is assigned by the service if omitted. */

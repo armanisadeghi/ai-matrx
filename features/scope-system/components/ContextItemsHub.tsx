@@ -1,5 +1,6 @@
 "use client";
 
+import type { ContextField } from "@ai-matrx/records/scopes";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -53,7 +54,6 @@ import {
   selectItemsByType,
   selectItemsErrorForType,
   selectItemsLoadedForType,
-  type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { StaleDataNotice } from "@ai-matrx/design-system";
@@ -74,7 +74,7 @@ import {
   orgScopesHref,
 } from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import type { ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
 import {
   selectScopeTypeBySlugOrId,
   selectScopeTypesByOrg,
@@ -219,7 +219,7 @@ export function AllContextItemsHub() {
         organization_id: typeOrgId.get(item.scope_type_id) ?? "",
         scope_type_id: item.scope_type_id,
         key: item.key,
-        display_name: item.display_name,
+        label: item.label,
         description: item.description ?? "",
         category: item.category,
         tags: item.tags ?? [],
@@ -229,14 +229,14 @@ export function AllContextItemsHub() {
         id: item.id,
         scope_type_id: item.scope_type_id,
         key: item.key,
-        display_name: item.display_name,
+        label: item.label,
         description: item.description,
-        value_type: item.value_type,
+        kind: item.kind,
         sort_order: item.sort_order ?? 0,
       });
       if (item.category) categories.add(item.category);
-      valueTypeCounts[item.value_type] =
-        (valueTypeCounts[item.value_type] ?? 0) + 1;
+      valueTypeCounts[item.kind] =
+        (valueTypeCounts[item.kind] ?? 0) + 1;
     }
     const loadedHere = loadedTypeIds.filter((id) => knownTypeIds.has(id));
 
@@ -419,7 +419,7 @@ function ContextItemsTypeView({
   async function saveItemOrder(orderedIds: string[]) {
     await Promise.all(
       orderedIds.map((id, i) =>
-        dispatch(updateContextItem({ id, sort_order: i + 1 })).unwrap(),
+        dispatch(updateContextItem({ id, sort: i })).unwrap(),
       ),
     );
     toast.success("Order saved");
@@ -564,7 +564,7 @@ function ContextItemsTypeView({
         description="Drag the handle or use the arrows, then save."
         items={items.map((i) => ({
           id: i.id,
-          label: i.display_name,
+          label: i.label,
           sublabel: i.category ?? undefined,
         }))}
         onSave={saveItemOrder}
@@ -753,7 +753,7 @@ function ContextItemListRow({
   onEdit,
   focused = false,
 }: {
-  item: ContextItem;
+  item: ContextField;
   href: string;
   canManage: boolean;
   onEdit: () => void;
@@ -826,11 +826,11 @@ function ContextItemListRow({
             href={href}
             className="group/name inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
           >
-            {item.display_name}
+            {item.label}
             <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity" />
           </Link>
           <Badge variant="secondary" className="text-[10px]">
-            {VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
+            {VALUE_TYPE_CONFIG[item.kind]?.label ?? item.kind}
           </Badge>
           {item.category && (
             <Badge variant="outline" className="text-[10px]">
@@ -860,7 +860,7 @@ function ContextItemListRow({
           variant="quiet"
           onClick={onEdit}
           className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-          aria-label={`Edit ${item.display_name}`}
+          aria-label={`Edit ${item.label}`}
         />
       )}
     </div>

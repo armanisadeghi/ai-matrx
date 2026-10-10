@@ -53,12 +53,12 @@ import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/R
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { ScopeTypeNode } from "@/features/scopes/types";
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 
 // The canonical scope tree (scopesTree, ensured app-wide at boot) — this page
 // read agent-context's scopeTypes / scopes slices until 2026-09-25.
-const NO_SCOPE_TYPES: ScopeTypeNode[] = [];
-const scopeTypesOfOrg = (state: RootState, orgId: string): ScopeTypeNode[] =>
+const NO_SCOPE_TYPES: ScopeTypeWithScopes[] = [];
+const scopeTypesOfOrg = (state: RootState, orgId: string): ScopeTypeWithScopes[] =>
   state.scopesTree.organizations[orgId]?.scope_types ?? NO_SCOPE_TYPES;
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";

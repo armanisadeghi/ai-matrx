@@ -21,6 +21,7 @@ import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { runKeyPath, withRunKey } from "@/features/education/convert/runKey";
 import type {
   MediaResult,
   StudyMediaRow,
@@ -73,7 +74,10 @@ function toInsert(input: NewStudyMediaInput, orgId: string): StudyMediaInsert {
     source_kind: input.source?.kind ?? null,
     source_id: input.source?.id ?? null,
     source_title: input.source?.title ?? null,
-    config: (input.config ?? {}) as StudyMediaInsert["config"],
+    config: withRunKey(
+      (input.config ?? {}) as Record<string, unknown>,
+      input.runKey,
+    ) as StudyMediaInsert["config"],
     trust: (input.trust ?? null) as StudyMediaInsert["trust"],
     run_id: input.runId ?? null,
     episode_id: input.episodeId ?? null,
@@ -90,10 +94,42 @@ function toInsert(input: NewStudyMediaInput, orgId: string): StudyMediaInsert {
 }
 
 export const studyMediaService = {
+  /** The artifact a kit run already created, found by its run key. */
+  async findByRunKey(
+    mediaKind: EduMediaKind,
+    runKey: string,
+  ): Promise<MediaResult<StudyMediaRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_media")
+        .select("*")
+        .eq("media_kind", mediaKind)
+        .eq(runKeyPath("config"), runKey)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) return fail("findByRunKey", error);
+      const row = (data ?? [])[0] as StudyMediaRow | undefined;
+      return { data: row ? withDisplayTitle(row, "title") : null, error: null };
+    } catch (e) {
+      return fail("findByRunKey", e);
+    }
+  },
+
+  /**
+   * Create an artifact. With `runKey`, a run that already made this artifact
+   * (the tab died after the create, before the kit edge) gets that one back —
+   * never a second row, never an orphan beside the kit.
+   */
   async create(
     input: NewStudyMediaInput,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
+      if (input.runKey) {
+        const earlier = await this.findByRunKey(input.mediaKind, input.runKey);
+        if (earlier.error) return { data: null, error: earlier.error };
+        if (earlier.data) return { data: earlier.data, error: null };
+      }
       // org-filter: write-target writes into the organization the person is working in; no list reads it
       const orgId = await ensureOrgId(undefined);
       const row = toInsert(input, orgId);

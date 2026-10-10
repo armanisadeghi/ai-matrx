@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeTypeFormSheet } from "./ScopeTypeFormSheet";
-import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import type { ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
 import {
   selectScopesByType,
 } from "@/features/scopes/redux/selectors/admin";

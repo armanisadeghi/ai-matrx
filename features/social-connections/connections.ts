@@ -21,7 +21,7 @@ export async function listSocialConnections(signal?: AbortSignal): Promise<Socia
     .is("deleted_at", null).order("updated_at", { ascending: false })
     .abortSignal(signal ?? new AbortController().signal);
   if (result.error) throw operationFailed("load your X accounts", result.error);
-  return result.data as SocialConnection[];
+  return result.data;
 }
 
 export async function listSocialResources(connectionIds: string[], signal?: AbortSignal): Promise<SocialResource[]> {
@@ -31,5 +31,5 @@ export async function listSocialResources(connectionIds: string[], signal?: Abor
     .in("connection_id", connectionIds).eq("resource_type", "x_account").is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal);
   if (result.error) throw operationFailed("load your X account selections", result.error);
-  return result.data as SocialResource[];
+  return result.data;
 }

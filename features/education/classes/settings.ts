@@ -12,7 +12,7 @@ import type {
   ClassSettings,
   StudyClass,
 } from "./types";
-import type { ScopeNode as Scope } from "@/features/scopes/types";
+import type { Scope } from "@ai-matrx/records/scopes";
 
 /** Coerce any value to a valid AccessMode, defaulting missing → 'closed'. */
 export function parseAccessMode(v: unknown): AccessMode {

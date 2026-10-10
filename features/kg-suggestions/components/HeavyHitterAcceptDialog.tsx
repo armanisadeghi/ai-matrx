@@ -53,7 +53,7 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useHeavyHitterAccept } from "@/features/kg-suggestions/hooks/useHeavyHitterAccept";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
-import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import type { ScopeTypeWithScopes as ScopeType } from "@ai-matrx/records/scopes";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoading,

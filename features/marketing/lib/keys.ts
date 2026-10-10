@@ -13,12 +13,16 @@
  *     `migrations/marketing_brand_site_url_slugs.sql`.
  *
  * Slug format/generation reuses the scope system's primitives — never a second
- * slugifier (`features/scopes/utils/slugify.ts`).
+ * slugifier (`@ai-matrx/records/scopes`).
  */
 
-import { isValidSlug, toSlug } from "@/features/scopes/utils/slugify";
+import { isValidSlug as isScopeSlug, toSlug } from "@ai-matrx/records/scopes";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
+/** A brand key is a URL segment: the package slug grammar, hyphens only (an underscore slug is a store Table name, not a brand address). */
+function isValidSlug(s: string): boolean {
+  return isScopeSlug(s) && !s.includes("_");
+}
 
 /**
  * Static `/marketing/*` segments (current + planned agency plane + legacy

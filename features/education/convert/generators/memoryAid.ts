@@ -138,6 +138,7 @@ async function run(
 
   const media = await studyMediaService.create({
     mediaKind: "memory_aid",
+    runKey: covered.runKey,
     title,
     source: { kind: "topic", title: source.title ?? title },
     config: { focus: options?.focus || undefined, ...memoryAidCounts(payload) },

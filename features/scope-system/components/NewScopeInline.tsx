@@ -16,17 +16,17 @@ import {
 import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import {
-  slugifyKey,
+  toFieldKey,
   toSlug,
   isValidSlug,
   isReservedSlug,
-} from "@/features/scopes/utils/slugify";
+} from "@ai-matrx/records/scopes";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import {
   createScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
 
 interface NewScopeInlineProps {
   orgId: string;
@@ -42,13 +42,13 @@ interface NewScopeInlineProps {
 
 type NewItemRow = {
   rowId: string;
-  display_name: string;
+  label: string;
   value: string;
 };
 
 const newRow = (): NewItemRow => ({
   rowId: Math.random().toString(36).slice(2),
-  display_name: "",
+  label: "",
   value: "",
 });
 
@@ -177,30 +177,30 @@ export function NewScopeInline({
           description: description.trim(),
           slug: trimmedSlug || undefined,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapWrite);
 
       for (const item of items) {
-        if (item.value_type === "reference") continue; // no scope id existed yet to point at
+        if (item.kind === "reference") continue; // no scope id existed yet to point at
         const draft = existingValues[item.id];
         if (isEmptyDraft(draft)) continue;
         await dispatch(
           setScopeContextValue({
             scope_id: scope.id,
             context_item_id: item.id,
-            ...buildScopeValuePayload(draft, item.value_type),
+            ...buildScopeValuePayload(draft, item.kind),
           }),
         ).unwrap();
       }
 
       let newItemsCreated = 0;
       for (const row of newItems) {
-        const displayName = row.display_name.trim();
+        const displayName = row.label.trim();
         if (!displayName) continue;
         const created = await dispatch(
           createContextItem({
             scope_type_id: typeId,
-            key: slugifyKey(displayName) || displayName.toLowerCase(),
-            display_name: displayName,
+            key: toFieldKey(displayName) || displayName.toLowerCase(),
+            label: displayName,
           }),
         ).unwrap();
         newItemsCreated++;
@@ -346,13 +346,13 @@ export function NewScopeInline({
                   <Label
                     id={`new-scope-label-${item.id}`}
                     htmlFor={
-                      item.value_type === "reference"
+                      item.kind === "reference"
                         ? undefined
                         : `new-scope-val-${item.id}`
                     }
                     className="text-sm font-medium text-foreground"
                   >
-                    {item.display_name}
+                    {item.label}
                   </Label>
                   <button
                     ref={(element) => {
@@ -363,13 +363,13 @@ export function NewScopeInline({
                     type="button"
                     onClick={() => setEditingItemId(item.id)}
                     className="rounded-sm text-muted-foreground opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    aria-label={`Edit ${item.display_name} definition`}
+                    aria-label={`Edit ${item.label} definition`}
                     disabled={busy}
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                 </div>
-                {item.value_type === "reference" ? (
+                {item.kind === "reference" ? (
                   <p className="text-xs text-muted-foreground">
                     Reference fields are set from the {labelSingular}
                     &apos;s own page once it's created.
@@ -378,11 +378,11 @@ export function NewScopeInline({
                   <ContextValueInput
                     id={`new-scope-val-${item.id}`}
                     aria-labelledby={`new-scope-label-${item.id}`}
-                    valueType={item.value_type}
+                    valueType={item.kind}
                     customComponent={item.custom_component}
                     value={existingValues[item.id] ?? ""}
                     onChange={(v) => setExistingValue(item.id, v)}
-                    displayName={item.display_name}
+                    displayName={item.label}
                     placeholder="Leave blank to fill later"
                     disabled={busy}
                     compact
@@ -422,10 +422,10 @@ export function NewScopeInline({
                     }}
                     aria-label="New context item name"
                     placeholder="New context item name"
-                    value={row.display_name}
+                    value={row.label}
                     onChange={(e) =>
                       updateNewItemRow(row.rowId, {
-                        display_name: e.target.value,
+                        label: e.target.value,
                       })
                     }
                     disabled={busy}
@@ -442,7 +442,7 @@ export function NewScopeInline({
                 </div>
                 <ContextValueInput
                   id={`new-context-item-value-${row.rowId}`}
-                  aria-label={`Value for ${row.display_name || "new context item"}`}
+                  aria-label={`Value for ${row.label || "new context item"}`}
                   valueType="string"
                   value={row.value}
                   onChange={(v) =>

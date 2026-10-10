@@ -20,7 +20,7 @@ import {
 import { scopeToClass, serializeClassSettings } from "../settings";
 import { setAccessMode } from "../service";
 import type { ClassSettings, StudyClass } from "../types";
-import type { ScopeNode as Scope } from "@/features/scopes/types";
+import type { Scope } from "@ai-matrx/records/scopes";
 import {
   selectAllScopeTypes,
   selectScopeTreeSettled,

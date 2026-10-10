@@ -40,7 +40,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { toFieldKey } from "@ai-matrx/records/scopes";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { useRouter } from "next/navigation";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
@@ -55,7 +55,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
 
 // A column shown in the ghost preview. `name` becomes a context item if the
 // dimension is added; sample values are illustrative only.
@@ -144,14 +144,14 @@ export function ScopeOnboarding({
           label_plural: dim.plural,
           icon: iconNameFor(dim.key),
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapWrite);
       // Columns become context items. Sample rows are NOT seeded.
       for (const col of dim.columns) {
         await dispatch(
           createContextItem({
             scope_type_id: type.id,
-            key: slugifyKey(col.name) || col.name.toLowerCase(),
-            display_name: col.name,
+            key: toFieldKey(col.name) || col.name.toLowerCase(),
+            label: col.name,
           }),
         ).unwrap();
       }

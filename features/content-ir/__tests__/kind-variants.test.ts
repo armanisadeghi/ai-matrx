@@ -21,7 +21,7 @@ import {
   type KindPresentationVariant,
 } from "@/features/content-ir/variants/kind-variants";
 import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
-import type { ContextValueType } from "@/features/agent-context/types";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 
 const textarea: KindPresentationVariant = {
   name: "textarea",

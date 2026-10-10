@@ -40,6 +40,7 @@ import type {
   ListAssessmentsFilter,
 } from "./types";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { runKeyPath, withRunKey } from "@/features/education/convert/runKey";
 import { BATCH_KEY } from "@/features/education/kits/outline/types";
 
 /** An item's metadata without the run batch it was added in (a copy is not that run). */
@@ -122,7 +123,7 @@ export const assessmentService = {
           time_limit_seconds: input.timeLimitSeconds ?? null,
           config: (input.config ?? {}) as never,
           trust: (input.trust ?? null) as never,
-          metadata: (input.metadata ?? {}) as never,
+          metadata: withRunKey(input.metadata, input.runKey) as never,
         } as never)
         .select("*")
         .single();
@@ -510,11 +511,55 @@ export const assessmentService = {
     }
   },
 
+  /** The assessment a kit run already created, found by its run key. */
+  async findByRunKey(runKey: string): Promise<AsResult<AssessmentRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("assessment")
+        .select("*")
+        .eq(runKeyPath("metadata"), runKey)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) return fail("findByRunKey", error);
+      const row = (data ?? [])[0] as AssessmentRow | undefined;
+      return { data: row ? withDisplayTitle(row, "title") : null, error: null };
+    } catch (e) {
+      return fail("findByRunKey", e);
+    }
+  },
+
   /** Create assessment + insert its items in one call (the generation persist path). */
   async createWithItems(
     input: NewAssessmentInput,
     items: NewAssessmentItemInput[],
   ): Promise<AsResult<AssessmentWithItems>> {
+    // A kit run's own earlier assessment (the tab died after the create, before
+    // the kit edge) is THIS run's assessment: adopt it and write only the
+    // questions it is missing — never a second assessment, never an orphan.
+    if (input.runKey) {
+      const earlier = await this.findByRunKey(input.runKey);
+      if (earlier.error) return fail("createWithItems", earlier.error);
+      if (earlier.data) {
+        const have = await this.getAssessmentWithItems(earlier.data.id);
+        if (have.error || !have.data) {
+          return fail("createWithItems", have.error ?? "adopt failed");
+        }
+        const missing = items.slice(have.data.items.length);
+        if (missing.length === 0) return have;
+        const added = await this.addItems(earlier.data.id, missing, {
+          startPosition: have.data.items.length,
+        });
+        if (added.error) return fail("createWithItems", added.error);
+        return {
+          data: {
+            assessment: have.data.assessment,
+            items: [...have.data.items, ...(added.data ?? [])],
+          },
+          error: null,
+        };
+      }
+    }
     const created = await this.createAssessment(input);
     if (created.error || !created.data)
       return fail("createWithItems", created.error ?? "no assessment");

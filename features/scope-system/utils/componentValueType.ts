@@ -1,6 +1,6 @@
 import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { readStructuredList } from "@ai-matrx/chat/agents/utils/variable-customcomponent";
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextFieldKind } from "@/features/scopes/redux/contextItemCatalog";
 
 /**
  * Storage `value_type` (which `value_*` column a context-item cell uses) derived
@@ -14,7 +14,7 @@ import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalo
  */
 export function componentToValueType(
   cc: VariableCustomComponent | undefined,
-): ContextValueType {
+): ContextFieldKind {
   if (!cc) return "string";
 
   // Picklist binding emits a ```matrx reference fence string (single or multi) → value_text.

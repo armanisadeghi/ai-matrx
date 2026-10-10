@@ -149,12 +149,15 @@ async function run(
     : source.title || agentTitle || "Study notes";
   const content = buildNoteContent(markdown, keyTerms);
 
-  const note = await NotesAPI.create({
-    label: finalTitle,
-    content,
-    folder_name: STUDY_NOTES_FOLDER,
-    organization_id: requireOrganizationContext(ctx.orgId),
-  });
+  const note = await NotesAPI.createForRun(
+    {
+      label: finalTitle,
+      content,
+      folder_name: STUDY_NOTES_FOLDER,
+      organization_id: requireOrganizationContext(ctx.orgId),
+    },
+    covered.runKey,
+  );
 
   const result: ConvertResult = {
     targetKind: "notes",

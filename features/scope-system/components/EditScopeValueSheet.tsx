@@ -9,15 +9,12 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  setScopeContextValue,
-  selectValuesByScope,
-  type ScopeContextRow,
-} from "@/features/scopes/redux/scopeContextView";
-import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
-import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { useScopeFieldRows } from "@/features/scope-system/hooks/useScopeFieldRows";
+import { cellDraft, cellWrite } from "./scope-detail-values";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { PartialValueBadge } from "@/features/scopes/components/PartialValueBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -29,37 +26,6 @@ interface EditScopeValueSheetProps {
   itemId: string;
 }
 
-function rowToString(row: ScopeContextRow): string {
-  if (row.value_text != null) return row.value_text;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
-  if (row.value_date != null) return row.value_date;
-  if (row.value_timestamp != null) return row.value_timestamp;
-  if (row.value_time != null) return row.value_time;
-  if (row.value_document_url != null) return row.value_document_url;
-  if (row.value_json != null) {
-    try {
-      return JSON.stringify(row.value_json, null, 2);
-    } catch {
-      return "";
-    }
-  }
-  return "";
-}
-
-/** Seed value for a custom Smart-Input component: structured value_json verbatim, else string. */
-function rowToComponentValue(row: ScopeContextRow): unknown {
-  if (row.value_json != null) return row.value_json;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_text != null) return row.value_text;
-  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
-  if (row.value_date != null) return row.value_date;
-  if (row.value_timestamp != null) return row.value_timestamp;
-  if (row.value_time != null) return row.value_time;
-  if (row.value_document_url != null) return row.value_document_url;
-  return "";
-}
-
 export function EditScopeValueSheet({
   open,
   onOpenChange,
@@ -68,8 +34,9 @@ export function EditScopeValueSheet({
 }: EditScopeValueSheetProps) {
   const generatedId = useId();
   const dispatch = useAppDispatch();
-  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
-  const row = rows?.find((r) => r.item_id === itemId);
+  const { rows } = useScopeFieldRows(scopeId);
+  const row = rows.find((r) => r.field.id === itemId);
+  const field = row?.field;
 
   const [busy, setBusy] = useState(false);
   const [value, setValue] = useState<unknown>("");
@@ -79,7 +46,7 @@ export function EditScopeValueSheet({
 
   const valueId = `scope-value-editor-${generatedId}`;
   const valueLabelId = `scope-value-editor-label-${generatedId}`;
-  const descriptionId = row?.description
+  const descriptionId = field?.description
     ? `scope-value-editor-description-${generatedId}`
     : undefined;
   const jsonErrorId = jsonError
@@ -87,32 +54,28 @@ export function EditScopeValueSheet({
     : undefined;
   const summaryId = `scope-value-summary-${generatedId}`;
 
-  const hasCustom = !!row?.custom_component;
+  const hasCustom = !!field?.custom_component;
 
   useEffect(() => {
     if (!open || !row) return;
     // Opening against a row intentionally seeds a fresh controlled draft.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValue(hasCustom ? rowToComponentValue(row) : rowToString(row));
+    setValue(cellDraft(row.value, hasCustom));
     setChangeSummary("");
     setJsonError(null);
   }, [open, row]);
 
-  if (!row) return null;
+  if (!row || !field) return null;
 
   async function handleSave(event?: React.FormEvent) {
     event?.preventDefault();
-    if (!row) return;
+    if (!row || !field) return;
     setJsonError(null);
-    const payload: Parameters<typeof setScopeContextValue>[0] = {
-      scope_id: scopeId,
-      context_item_id: itemId,
-      change_summary: changeSummary.trim() || undefined,
-    };
+    const summary = changeSummary.trim() || undefined;
 
-    // Custom component: route whatever the Smart-Input emits via the shared mapper.
+    // Custom component: whatever the Smart-Input emits is the cell.
     if (hasCustom) {
-      Object.assign(payload, buildScopeValuePayload(value, row.value_type));
+      const payload = cellWrite(scopeId, field, value, summary);
       setBusy(true);
       try {
         await dispatch(setScopeContextValue(payload)).unwrap();
@@ -126,9 +89,8 @@ export function EditScopeValueSheet({
       return;
     }
 
-    if (row.value_type === "reference") {
-      payload.value_text =
-        typeof value === "string" && value.trim() ? value : null;
+    if (field.kind === "reference" || field.kind === "document") {
+      const payload = cellWrite(scopeId, field, value, summary);
       setBusy(true);
       try {
         await dispatch(setScopeContextValue(payload)).unwrap();
@@ -144,10 +106,10 @@ export function EditScopeValueSheet({
 
     const trimmed = typeof value === "string" ? value.trim() : "";
 
-    // Validation UX this sheet owns (surfaced inline); the column routing itself
-    // is delegated to the ONE shared mapper so the two never drift on a new type.
+    // Validation UX this sheet owns (surfaced inline); reading the draft as the
+    // field's kind is the ONE shared `cellWrite`.
     if (
-      row.value_type === "number" &&
+      field.kind === "number" &&
       trimmed !== "" &&
       Number.isNaN(Number(trimmed))
     ) {
@@ -155,7 +117,7 @@ export function EditScopeValueSheet({
       return;
     }
     if (
-      (row.value_type === "object" || row.value_type === "array") &&
+      (field.kind === "object" || field.kind === "array") &&
       trimmed !== ""
     ) {
       try {
@@ -165,7 +127,7 @@ export function EditScopeValueSheet({
         return;
       }
     }
-    Object.assign(payload, buildScopeValuePayload(value, row.value_type));
+    const payload = cellWrite(scopeId, field, value, summary);
 
     setBusy(true);
     try {
@@ -184,7 +146,7 @@ export function EditScopeValueSheet({
       <MatrxDynamicPanelHost
         open={open}
         onOpenChange={onOpenChange}
-        title={row.display_name}
+        title={field.label}
         description="Advanced value editor. Changes create a new version; previous versions are kept in history."
         expandButtonLabel="Scope value"
         dismissDisabled={busy}
@@ -207,40 +169,40 @@ export function EditScopeValueSheet({
         <form className="space-y-5" onSubmit={handleSave}>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[10px] capitalize">
-              {row.value_type}
+              {field.kind}
             </Badge>
-            {row.version != null && (
+            {row.value?.version != null && (
               <Badge variant="outline" className="text-[10px]">
-                v{row.version}
+                v{row.value?.version}
               </Badge>
             )}
-            {row.fetch_hint && (
+            {field.context_policy && (
               <Badge variant="outline" className="text-[10px] capitalize">
-                fetch: {row.fetch_hint.replace(/_/g, " ")}
+                fetch: {field.context_policy.replace(/_/g, " ")}
               </Badge>
             )}
-            {row.sensitivity && (
+            {field.sensitivity && (
               <Badge variant="outline" className="text-[10px] capitalize">
-                {row.sensitivity}
+                {field.sensitivity}
               </Badge>
             )}
-            <PartialValueBadge incomplete={row.value_incomplete} />
+            <PartialValueBadge incomplete={row.value?.incomplete ?? null} />
           </div>
 
-          {row.description && (
+          {field.description && (
             <div
               id={descriptionId}
               className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground inline-flex items-start gap-2 w-full"
             >
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <span>{row.description}</span>
+              <span>{field.description}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
             <Label id={valueLabelId} htmlFor={valueId} className="text-xs">
               Value
-              {(row.value_type === "object" || row.value_type === "array") && (
+              {(field.kind === "object" || field.kind === "array") && (
                 <span className="ml-1.5 text-muted-foreground font-normal">
                   (parsed as JSON)
                 </span>
@@ -253,20 +215,16 @@ export function EditScopeValueSheet({
                 [descriptionId, jsonErrorId].filter(Boolean).join(" ") ||
                 undefined
               }
-              valueType={row.value_type}
-              customComponent={row.custom_component}
+              kind={field.kind}
+              customComponent={field.custom_component as VariableCustomComponent | null}
               value={value}
               onChange={setValue}
               onCommit={setValue}
-              referenceConfig={
-                row.value_type === "reference"
-                  ? referenceConfigFromItem(row)
-                  : null
-              }
+              referenceConfig={field.kind === "reference" ? field : null}
               scopeId={scopeId}
-              displayName={row.display_name}
+              displayName={field.label}
               placeholder={
-                row.value_type === "document"
+                field.kind === "document"
                   ? "https://..."
                   : "Enter the value"
               }

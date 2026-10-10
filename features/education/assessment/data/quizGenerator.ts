@@ -180,6 +180,7 @@ function makeRun(kind: "quiz" | "practice_test") {
     const created = await assessmentService.createWithItems(
       {
         assessmentKind: kind as AssessmentKind,
+        runKey: covered.runKey,
         title: finalTitle,
         description: agentDescription,
         status: "ready",

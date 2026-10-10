@@ -1,11 +1,11 @@
 // Context Management — Constants & Status Configuration
 
 import type {
-  ContextItemStatus,
-  ContextFetchHint,
+  ContextFieldKind,
+  ContextPolicy,
   ContextSensitivity,
-  ContextValueType,
-} from "./types";
+} from "@ai-matrx/records/scopes";
+import type { ContextItemStatus } from "./types";
 
 // Status lifecycle phases
 export const STATUS_PHASES = [
@@ -225,41 +225,22 @@ export const ATTENTION_STATUSES: ContextItemStatus[] = [
   "ai_enriched",
 ];
 
-/**
- * A fetch hint as the record store keeps it. The old scope tables also held "lazy" and
- * "batch_related"; the store keeps three words and folded them exactly so (custom._ctx_word
- * 'policy': lazy → on_request, batch_related → include). Every reader of an old row goes through
- * this, so the old path and the store path name the same word (lane 9 chair ruling 3, 2026-10-02).
- */
-export function canonicalFetchHint(word: string | null | undefined): ContextFetchHint {
-  switch (word) {
-    case "on_demand":
-    case "lazy":
-      return "on_demand";
-    case "never":
-      return "never";
-    default:
-      // "always", "batch_related", and an absent word: the store's default, include.
-      return "always";
-  }
-}
-
-// Fetch hint display config
-export const FETCH_HINT_CONFIG: Record<
-  ContextFetchHint,
+// Context policy display config (the store's words)
+export const CONTEXT_POLICY_CONFIG: Record<
+  ContextPolicy,
   { label: string; description: string; iconName: string }
 > = {
-  always: {
+  include: {
     label: "Always Pre-load",
     description: "Included in every agent context automatically",
     iconName: "Zap",
   },
-  on_demand: {
+  on_request: {
     label: "On Demand",
     description: "Agent fetches when it decides this item is relevant",
     iconName: "MousePointerClick",
   },
-  never: {
+  exclude: {
     label: "Never",
     description: "Not available for agent access — internal reference only",
     iconName: "EyeOff",
@@ -281,13 +262,13 @@ export const SENSITIVITY_CONFIG: Record<
     description: "Visible within the organization only",
     iconName: "Building2",
   },
-  restricted: {
-    label: "Restricted",
+  confidential: {
+    label: "Confidential",
     description: "Limited to specific roles or teams",
     iconName: "Lock",
   },
-  privileged: {
-    label: "Privileged",
+  restricted: {
+    label: "Restricted",
     description: "Highest sensitivity — owner and admins only",
     iconName: "ShieldCheck",
   },
@@ -295,7 +276,7 @@ export const SENSITIVITY_CONFIG: Record<
 
 // Value type display config
 export const VALUE_TYPE_CONFIG: Record<
-  ContextValueType,
+  ContextFieldKind,
   { label: string; iconName: string }
 > = {
   string: { label: "String", iconName: "Type" },

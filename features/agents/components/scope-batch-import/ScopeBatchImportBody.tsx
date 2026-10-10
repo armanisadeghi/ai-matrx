@@ -548,7 +548,7 @@ export function ScopeBatchImportBody({
                     <TableCell data-phone="lead">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="type-title truncate">
-                          {item.display_name}
+                          {item.label}
                         </span>
                       </div>
                     </TableCell>

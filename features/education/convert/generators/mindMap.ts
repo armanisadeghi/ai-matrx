@@ -216,6 +216,7 @@ async function run(
 
   const media = await studyMediaService.create({
     mediaKind: "mind_map",
+    runKey: covered.runKey,
     title,
     source: { kind: "topic", title: source.title ?? title },
     config: { diagramKind: "diagram_spec", hint: options?.focus || undefined },

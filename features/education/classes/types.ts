@@ -5,7 +5,7 @@
 // settings JSONB — never a parallel data model.
 
 import type { LucideIcon } from "lucide-react";
-import type { ScopeNode as Scope } from "@/features/scopes/types";
+import type { Scope } from "@ai-matrx/records/scopes";
 
 /** One exam/assessment date on a class. Stored in scope.settings.exam_dates. */
 export interface ClassExamDate {

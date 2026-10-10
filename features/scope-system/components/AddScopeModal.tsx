@@ -26,7 +26,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { toFieldKey } from "@ai-matrx/records/scopes";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import {
   selectScopeTypesByOrg,
@@ -35,10 +35,10 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   createScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapWrite } from "@/features/scope-system/utils/unwrapWrite";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
-type ContextItemDraft = { id: string; display_name: string };
+type ContextItemDraft = { id: string; label: string };
 
 interface AddScopeModalProps {
   open: boolean;
@@ -58,7 +58,7 @@ const NONE_VALUE = "__none__";
 
 const newItemRow = (): ContextItemDraft => ({
   id: Math.random().toString(36).slice(2),
-  display_name: "",
+  label: "",
 });
 
 export function AddScopeModal({
@@ -147,7 +147,7 @@ export function AddScopeModal({
   }
   function updateItemRow(id: string, value: string) {
     setItems((rows) =>
-      rows.map((r) => (r.id === id ? { ...r, display_name: value } : r)),
+      rows.map((r) => (r.id === id ? { ...r, label: value } : r)),
     );
   }
 
@@ -167,7 +167,7 @@ export function AddScopeModal({
   }
 
   function addVariableKey() {
-    const key = slugifyKey(variableKeyInput);
+    const key = toFieldKey(variableKeyInput);
     if (key && !variableKeys.includes(key)) {
       setVariableKeys([...variableKeys, key]);
     }
@@ -188,7 +188,7 @@ export function AddScopeModal({
     setBusy(true);
     try {
       const primaryItems = items
-        .map((f) => f.display_name.trim())
+        .map((f) => f.label.trim())
         .filter(Boolean);
 
       const primaryType = await dispatch(
@@ -200,20 +200,20 @@ export function AddScopeModal({
           color,
           description: description.trim(),
           sort_order: sortOrder,
-          max_assignments: maxAssignments
+          max_assignments_per_entity: maxAssignments
             ? parseInt(maxAssignments, 10)
             : undefined,
           parent_type_id:
             parentTypeId === NONE_VALUE ? undefined : parentTypeId,
           default_variable_keys: variableKeys,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapWrite);
 
       for (const display_name of primaryItems) {
         await dispatch(
           createContextItem({
             scope_type_id: primaryType.id,
-            key: slugifyKey(display_name) || display_name.toLowerCase(),
+            key: toFieldKey(display_name) || display_name.toLowerCase(),
             display_name,
           }),
         ).unwrap();
@@ -355,7 +355,7 @@ export function AddScopeModal({
                         ? "e.g. Tier"
                         : "Another context item"
                   }
-                  value={row.display_name}
+                  value={row.label}
                   onChange={(e) => updateItemRow(row.id, e.target.value)}
                   onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
                   disabled={busy}

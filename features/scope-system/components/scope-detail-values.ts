@@ -1,42 +1,131 @@
 /**
- * The pure half of the scope detail surface (`ScopeDetailSurface.tsx`): how a context value reads
- * as text for an agent, which items can be set from text, and how an agent names an item.
- * No React, no store — unit-tested in `__tests__/scope-detail-values.test.ts`.
+ * The pure half of the scope value screens: a scope's fields joined with its cells, how a cell
+ * reads as text, which fields can be set from text, how an agent names a field, and the one
+ * `ContextValueWrite` a person's edit becomes. Shapes are `@ai-matrx/records/scopes`; no React,
+ * no store — unit-tested in `__tests__/scope-detail-values.test.ts`.
  */
 
-import type { ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
+import {
+  referenceFence,
+  type ContextField,
+  type ContextFieldKind,
+  type ContextReference,
+  type ContextValue,
+  type ContextValueWrite,
+} from "@ai-matrx/records/scopes";
 
-/** Value types a person sets through a structured control, never from plain text. */
-const STRUCTURED_TYPES = new Set(["reference", "currency", "media", "document", "picklist", "json", "object", "array"]);
+/** One field of a scope's type with the scope's cell under it (null = empty). */
+export interface ScopeFieldRow {
+  field: ContextField;
+  value: ContextValue | null;
+}
 
-/** The cell as text (JSON for a structured value), or null when it holds nothing. */
-export function scopeValueText(row: ScopeContextRow): string | null {
-  if (!row.has_value) return null;
-  if (row.value_text != null) return row.value_text;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
-  if (row.value_date != null) return row.value_date;
-  if (row.value_timestamp != null) return row.value_timestamp;
-  if (row.value_time != null) return row.value_time;
-  if (row.value_document_url != null) return row.value_document_url;
-  if (row.value_json != null) {
-    try {
-      return JSON.stringify(row.value_json);
-    } catch {
-      return null;
-    }
+/** The type's fields in their order, each with this scope's cell (keyed by field id). */
+export function joinScopeFieldRows(
+  fields: readonly ContextField[],
+  values: Readonly<Record<string, ContextValue>>,
+): ScopeFieldRow[] {
+  return [...fields]
+    .sort((a, b) => a.sort - b.sort)
+    .map((field) => ({ field, value: values[field.id] ?? null }));
+}
+
+/** Kinds whose cell is a list of things it points at. */
+export function isReferenceKind(kind: ContextFieldKind): boolean {
+  return kind === "reference" || kind === "document";
+}
+
+/** Kinds a person sets through a structured control, never from plain text. */
+const STRUCTURED_KINDS = new Set<ContextFieldKind>(["reference", "document", "currency", "object", "array"]);
+
+/** Whether the cell holds anything. */
+export function hasCellValue(value: ContextValue | null | undefined): value is ContextValue {
+  if (!value) return false;
+  if (isReferenceKind(value.kind)) return value.references.length > 0;
+  if (value.value == null) return false;
+  if (typeof value.value === "string") return value.value.length > 0;
+  return true;
+}
+
+/** The cell as text (a reference cell as its fence, JSON for a structured value), or null when empty. */
+export function cellText(value: ContextValue | null | undefined, pretty = false): string | null {
+  if (!value || !hasCellValue(value)) return null;
+  if (isReferenceKind(value.kind)) return referenceFence(value.references);
+  const v = value.value;
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try {
+    return pretty ? JSON.stringify(v, null, 2) : JSON.stringify(v);
+  } catch {
+    return null;
   }
+}
+
+/** The value an editor seeds from: a reference cell's things, a structured cell as itself, else text. */
+export function cellDraft(value: ContextValue | null | undefined, structured: boolean): unknown {
+  if (!value || !hasCellValue(value)) return isReferenceKind(value?.kind ?? "string") ? [] : "";
+  if (isReferenceKind(value.kind)) return value.references;
+  if (structured && value.value != null && typeof value.value === "object") return value.value;
+  return cellText(value, true) ?? "";
+}
+
+/** A field an agent may set by text: no smart-input component, no structured kind. */
+export function settableByText(field: Pick<ContextField, "custom_component" | "kind">): boolean {
+  return !field.custom_component && !STRUCTURED_KINDS.has(field.kind);
+}
+
+/** The row an agent named by field id or key (id wins), or null. */
+export function valueFor(rows: readonly ScopeFieldRow[], fieldId: unknown, key: unknown): ScopeFieldRow | null {
+  if (typeof fieldId === "string" && fieldId) return rows.find((r) => r.field.id === fieldId) ?? null;
+  if (typeof key === "string" && key) return rows.find((r) => r.field.key === key) ?? null;
   return null;
 }
 
-/** An item an agent may set by text: no smart-input component, no structured value type. */
-export function settableByText(row: Pick<ScopeContextRow, "custom_component" | "value_type">): boolean {
-  return !row.custom_component && !STRUCTURED_TYPES.has(String(row.value_type));
+/**
+ * The cell a person's draft becomes. A reference / document draft is its things; a text draft for
+ * a number, percent or boolean field is read as that kind; an empty draft clears the cell.
+ */
+export function cellWrite(
+  scopeId: string,
+  field: Pick<ContextField, "id" | "kind">,
+  draft: unknown,
+  changeSummary?: string,
+): ContextValueWrite {
+  const base = {
+    scope_id: scopeId,
+    field_id: field.id,
+    kind: field.kind,
+    source_type: "manual",
+    ...(changeSummary ? { change_summary: changeSummary } : {}),
+  };
+  if (isReferenceKind(field.kind)) {
+    return { ...base, references: Array.isArray(draft) ? (draft as ContextReference[]) : [] };
+  }
+  return { ...base, value: draftAsCell(field.kind, draft) };
 }
 
-/** The item an agent named by `item_id` or `slug` (id wins), or null. */
-export function valueFor(rows: readonly ScopeContextRow[], itemId: unknown, slug: unknown): ScopeContextRow | null {
-  if (typeof itemId === "string" && itemId) return rows.find((r) => r.item_id === itemId) ?? null;
-  if (typeof slug === "string" && slug) return rows.find((r) => r.slug === slug || r.key === slug) ?? null;
-  return null;
+function draftAsCell(kind: ContextFieldKind, draft: unknown): unknown {
+  if (draft == null) return null;
+  if (typeof draft !== "string") return draft;
+  const text = draft.trim();
+  if (text === "") return null;
+  switch (kind) {
+    case "number":
+    case "percent": {
+      const n = Number(text);
+      return Number.isFinite(n) ? n : text;
+    }
+    case "boolean":
+      return text === "true";
+    case "object":
+    case "array":
+    case "currency":
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    default:
+      return draft;
+  }
 }

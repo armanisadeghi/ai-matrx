@@ -117,6 +117,12 @@ export interface NewStudyMediaInput {
   irEnvelope?: unknown;
   diagramKind?: string | null;
   shownTo?: Database["platform"]["Enums"]["shown_to"] | null;
+  /**
+   * The kit run that makes this artifact (convert/runKey.ts). Stamped into
+   * `config.run_key`; `studyMediaService.create` returns the run's earlier
+   * artifact instead of inserting a second one.
+   */
+  runKey?: string | null;
 }
 
 /** Patch shape for updating an artifact after generation completes. */
