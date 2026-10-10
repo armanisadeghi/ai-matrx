@@ -73,7 +73,10 @@ export type RunStatus =
   | "skipped"
   // The server running it was restarted mid-run; the run is closed and a
   // continuation picks the work back up (aidream matrx-scheduler continuation.py).
-  | "interrupted";
+  | "interrupted"
+  // Stopped by an automation limit (max turns, cost, time, spend cap, failure rate);
+  // `result_metadata.guardrail` names which one.
+  | "stopped";
 
 export type AuthMode = "ask" | "auto";
 

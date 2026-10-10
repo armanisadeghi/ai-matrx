@@ -51,6 +51,7 @@ import { CronForm } from "./triggers/CronForm";
 import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
 import { EventForm } from "./triggers/EventForm";
+import { AutomationLimitsSection } from "../limits/AutomationLimitsSection";
 import { VariablesEditor } from "./VariablesEditor";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -735,6 +736,8 @@ export function ScheduleForm({
             />
           </div>
         </Section>
+
+        {task && <AutomationLimitsSection kind="sch_task" id={task.id} usesAi={task.kind === "agent"} />}
 
         <Separator />
 

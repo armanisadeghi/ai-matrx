@@ -14,7 +14,7 @@
 import { useAutomationReadiness } from "@/features/scheduling/service/automationReadiness";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Pause, Play, RefreshCw, Archive } from "lucide-react";
+import { Loader2, OctagonPause, Pause, Play, RefreshCw, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TRIGGER_FLAG_SET, SpendFlagStrip, spendFlagColumn, type SpendFlagHit } from "@/components/cost/SpendFlagStrip";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { AdminPoints, AdminUsd, CostFigures, UsdOnly } from "@/components/cost/A
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import { automationAiState } from "@/features/scheduling/service/automationCosts";
 import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
+import { AutomationLimitsSection } from "@/features/scheduling/components/limits/AutomationLimitsSection";
+import { resumeAutomation } from "@/features/scheduling/service/automationGuardrails";
 import { TriggerRunsTable } from "./TriggerRunsTable";
 import {
   automationCostColumns,
@@ -89,11 +91,11 @@ function TriggerStats({ t }: { t: ManagedTrigger }) {
       <Stat label="Runs 7d">{c.runs_7d}</Stat>
       <Stat label="Runs 30d">{c.runs}</Stat>
       <Stat label="Avg turns">{c.avg_turns}</Stat>
-      <Stat label="Max turns">{c.max_turns}</Stat>
+      <Stat label="Most turns">{c.max_turns}</Stat>
       <UsdOnly><Stat label="Avg cost/run $"><AdminUsd usd={c.avg_run_cost} /></Stat></UsdOnly>
       <Stat label="Avg cost/run points"><AdminPoints usd={c.avg_run_cost} /></Stat>
-      <UsdOnly><Stat label="Max cost/run $"><AdminUsd usd={c.max_run_cost} /></Stat></UsdOnly>
-      <Stat label="Max cost/run points"><AdminPoints usd={c.max_run_cost} /></Stat>
+      <UsdOnly><Stat label="Costliest run $"><AdminUsd usd={c.max_run_cost} /></Stat></UsdOnly>
+      <Stat label="Costliest run points"><AdminPoints usd={c.max_run_cost} /></Stat>
       <Stat label="Runs as">{c.owner_email ?? "Unknown"}</Stat>
       <Stat label="For">{c.organization_name ?? "No organization"}</Stat>
       <div className="col-span-2 min-w-0 sm:col-span-4">
@@ -344,6 +346,12 @@ export function TriggersManager({
       "cost_avg_run_points",
       "cost_max_run",
       "cost_max_run_points",
+      "cost_limit_run",
+      "cost_limit_run_points",
+      "cost_limit_turns",
+      "cost_limit_month",
+      "cost_limit_month_points",
+      "cost_limit_used",
       "cost_avg_turns",
       "cost_max_turns",
       "cost_models",
@@ -414,9 +422,27 @@ export function TriggersManager({
           columns={columns}
           getRowId={(t) => t.overview.trigger_id}
           rowActions={(t) => [
-            t.overview.is_active
+            ...(t.cost.guardrail_pause
+              ? [
+                  {
+                    id: "resume-limit",
+                    icon: OctagonPause,
+                    label: "Resume",
+                    tooltip: "Resume (paused by a limit)",
+                    onClick: () => {
+                      resumeAutomation("workflow_trigger", t.overview.trigger_id)
+                        .then(() => {
+                          toast.success("Resumed");
+                          return load();
+                        })
+                        .catch((e: unknown) => toast.error(e instanceof Error ? e.message : String(e)));
+                    },
+                  },
+                ]
+              : []),
+            ...(t.cost.guardrail_pause ? [] : [t.overview.is_active
               ? { id: "pause", icon: Pause, label: "Pause", tooltip: "Pause", onClick: () => setPending({ t, action: "pause" }) }
-              : { id: "resume", icon: Play, label: "Resume", tooltip: "Resume", onClick: () => setPending({ t, action: "resume" }) },
+              : { id: "resume", icon: Play, label: "Resume", tooltip: "Resume", onClick: () => setPending({ t, action: "resume" }) }]),
             { id: "archive", icon: Archive, label: "Archive", tooltip: "Archive", onClick: () => setPending({ t, action: "archive" }) },
           ]}
           isLoading={loading}
@@ -470,6 +496,7 @@ export function TriggersManager({
                 </div>
                 <FlagStrip t={t} />
                 <TriggerStats t={t} />
+                <AutomationLimitsSection kind="workflow_trigger" id={t.overview.trigger_id} onChanged={() => void load()} />
                 <TriggerRunsTable triggerId={t.overview.trigger_id} seat={seat} orgSlug={orgSlug} />
               </div>
             ),

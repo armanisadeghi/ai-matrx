@@ -32,10 +32,10 @@ import {
 import {
   fetchAssignableProjects,
   fetchAssignableTasks,
-  fetchTypeItems,
   type AssignableProject,
   type AssignableTask,
 } from "@/features/scopes/components/context-assignment/data";
+import { readScopeTypeFields } from "@/features/scopes/redux/contextItemCatalog";
 import type {
   OrgNode,
 } from "@/features/scopes/types";
@@ -111,6 +111,7 @@ export function useContextTreeData(): ContextTreeData {
     Record<string, ContextField[]>
   >({});
   const [itemsLoading, setItemsLoading] = useState<Set<string>>(new Set());
+  const [itemsError, setItemsError] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void dispatch(ensureScopeSkeleton());
@@ -173,12 +174,20 @@ export function useContextTreeData(): ContextTreeData {
     (typeId: string) => {
       if (itemsByType[typeId] || itemsLoading.has(typeId)) return;
       setItemsLoading((p) => new Set(p).add(typeId));
-      fetchTypeItems(typeId)
-        .then((items) => setItemsByType((p) => ({ ...p, [typeId]: items })))
-        .catch(() => {
-          toast.error("Couldn't load context items for this type");
-          setItemsByType((p) => ({ ...p, [typeId]: [] }));
+      dispatch(readScopeTypeFields(typeId))
+        .then((items) => {
+          setItemsByType((p) => ({ ...p, [typeId]: items }));
+          setItemsError((p) => {
+            if (!(typeId in p)) return p;
+            const n = { ...p };
+            delete n[typeId];
+            return n;
+          });
         })
+        // The store's refusal is shown where the type's fields go (never an empty list).
+        .catch((e: unknown) =>
+          setItemsError((p) => ({ ...p, [typeId]: e instanceof Error ? e.message : String(e) })),
+        )
         .finally(() =>
           setItemsLoading((p) => {
             const n = new Set(p);
@@ -187,7 +196,7 @@ export function useContextTreeData(): ContextTreeData {
           }),
         );
     },
-    [itemsByType, itemsLoading],
+    [dispatch, itemsByType, itemsLoading],
   );
 
   const loadTypeScopes = useCallback(
@@ -222,6 +231,7 @@ export function useContextTreeData(): ContextTreeData {
     loadTasks,
     itemsByType,
     itemsLoading,
+    itemsError,
     loadItems,
     paged: { whole, counts, pages, loadTypeScopes, loadAll, search, searchHits },
   };

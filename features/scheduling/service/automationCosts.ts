@@ -21,6 +21,11 @@ import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 import { currentSeesDollars } from "@/components/cost/costUnit";
+import {
+  fetchGuardrailsFor,
+  type GuardrailPause,
+  type Guardrails,
+} from "@/features/scheduling/service/automationGuardrails";
 
 export type AutomationKind =
   | "scheduled_task"
@@ -75,6 +80,10 @@ export interface AutomationCostRow {
   premium_models: string[];
   agents: AutomationAgentRef[];
   mandates: string[];
+  /** The automation's limits (guardrails jsonb); undefined until read, null = none stored. */
+  guardrails?: Guardrails | null;
+  /** Set when a limit paused it; Resume clears it. */
+  guardrail_pause?: GuardrailPause | null;
 }
 
 export interface AutomationRunCost {
@@ -156,7 +165,7 @@ export async function fetchAutomationCosts(
     p_days: days,
   });
   if (error) throw pgErrorToError(error);
-  return (data ?? []).map((r) => ({
+  const mapped = (data ?? []).map((r) => ({
     automation_kind: r.automation_kind as AutomationKind,
     automation_id: r.automation_id,
     name: r.name,
@@ -194,6 +203,21 @@ export async function fetchAutomationCosts(
     agents: asAgents(r.agents),
     mandates: r.mandates ?? [],
   }));
+  return withGuardrails(mapped);
+}
+
+/** Attach each row's limits and pause state (one read per table, scoped by RLS). */
+export async function withGuardrails(rows: AutomationCostRow[]): Promise<AutomationCostRow[]> {
+  const triggers = rows.filter((r) => r.automation_kind === "workflow_trigger").map((r) => r.automation_id);
+  const tasks = rows.filter((r) => r.automation_kind !== "workflow_trigger").map((r) => r.automation_id);
+  const [t, k] = await Promise.all([
+    fetchGuardrailsFor("workflow_trigger", triggers),
+    fetchGuardrailsFor("sch_task", tasks),
+  ]);
+  return rows.map((r) => {
+    const g = (r.automation_kind === "workflow_trigger" ? t : k).get(r.automation_id);
+    return { ...r, guardrails: g?.guardrails ?? null, guardrail_pause: g?.paused ?? null };
+  });
 }
 
 /** The runs of one automation, newest first (max 500). */

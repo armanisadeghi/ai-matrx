@@ -12,6 +12,7 @@ import { buildRunRowPayload, runSummary } from "../../lib/copy";
 import { StatusPill } from "../shared/StatusPill";
 import { OutputRefLink } from "../shared/OutputRefLink";
 import type { AgendaTask, SchRunRow } from "../../types";
+import { guardrailBreachLabel } from "../../service/automationGuardrails";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
@@ -59,6 +60,11 @@ export function RunRow({ run, task = null }: Props) {
                 · {formatDuration(durationSec)}
               </span>
             )}
+            {run.status === "stopped" && (
+              <Badge variant="outline" className="border-destructive/40 text-[10px] text-destructive-ink">
+                {guardrailBreachLabel(stoppedBy(run)?.kind)}
+              </Badge>
+            )}
             {run.surface && (
               <Badge variant="outline" className="text-[10px]">
                 {run.surface}
@@ -89,6 +95,7 @@ export function RunRow({ run, task = null }: Props) {
       </div>
       {open && (
         <div className="px-3 pb-3 pt-1 text-xs space-y-2 border-t border-border/60">
+          {run.status === "stopped" && <StoppedBy run={run} />}
           {run.error_message && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-destructive-ink">
               <div className="font-semibold text-[11px] uppercase tracking-wide mb-1">
@@ -129,6 +136,37 @@ export function RunRow({ run, task = null }: Props) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+interface StoppedInfo {
+  kind?: string;
+  limit?: number;
+  observed?: number;
+  message?: string;
+}
+
+function stoppedBy(run: SchRunRow): StoppedInfo | null {
+  const g = run.result_metadata?.guardrail;
+  return g && typeof g === "object" ? (g as StoppedInfo) : null;
+}
+
+/** Which limit stopped this run, with the limit and what the run reached. */
+function StoppedBy({ run }: { run: SchRunRow }) {
+  const g = stoppedBy(run);
+  return (
+    <div
+      role="status"
+      className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive-ink"
+    >
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide">
+        {`Stopped: ${guardrailBreachLabel(g?.kind)}`}
+      </div>
+      {g?.limit != null && g.observed != null && (
+        <div className="text-[11px]">{`Limit ${g.limit} · reached ${g.observed}`}</div>
+      )}
+      {g?.message && <div className="text-[11px]">{g.message}</div>}
     </div>
   );
 }

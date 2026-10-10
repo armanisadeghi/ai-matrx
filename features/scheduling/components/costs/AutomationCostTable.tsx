@@ -44,6 +44,10 @@ import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 import { currentSeesDollars } from "@/components/cost/costUnit";
 import { formatCount } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { AutomationLimitsSection } from "@/features/scheduling/components/limits/AutomationLimitsSection";
+import { guardrailKindOf, resumeAutomation } from "@/features/scheduling/service/automationGuardrails";
+import { OctagonPause } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 export function automationIntervalText(r: AutomationCostRow): string {
   if (!r.trigger_type) return "—";
@@ -265,10 +269,12 @@ export function AutomationCostDetail({
   row,
   seat,
   orgSlug,
+  onChanged,
 }: {
   row: AutomationCostRow;
   seat: AutomationSeat;
   orgSlug?: string;
+  onChanged?: () => void;
 }) {
   const { format } = useCostDisplay();
   // The schedule / workflow record pages are the owner's and the platform
@@ -301,11 +307,17 @@ export function AutomationCostDetail({
         <Stat label="Last run points"><AdminPoints usd={row.last_run_cost} /></Stat>
         <UsdOnly><Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat></UsdOnly>
         <Stat label="Avg cost/run points"><AdminPoints usd={row.avg_run_cost} /></Stat>
-        <UsdOnly><Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat></UsdOnly>
-        <Stat label="Max cost/run points"><AdminPoints usd={row.max_run_cost} /></Stat>
+        <UsdOnly><Stat label="Costliest run $"><AdminUsd usd={row.max_run_cost} /></Stat></UsdOnly>
+        <Stat label="Costliest run points"><AdminPoints usd={row.max_run_cost} /></Stat>
         <Stat label="Avg turns">{row.avg_turns}</Stat>
-        <Stat label="Max turns">{row.max_turns}</Stat>
+        <Stat label="Most turns">{row.max_turns}</Stat>
       </div>
+      <AutomationLimitsSection
+        kind={guardrailKindOf(row.automation_kind)}
+        id={row.automation_id}
+        usesAi={row.automation_kind !== "scheduled_task" || automationAiState(row) === "ai"}
+        onChanged={onChanged}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Runs as</div>
@@ -444,6 +456,26 @@ export function AutomationCostTable({
           data={rows}
           columns={columns}
           getRowId={(r) => `${r.automation_kind}:${r.automation_id}`}
+          rowActions={(r) =>
+            r.guardrail_pause
+              ? [
+                  {
+                    id: "resume-limit",
+                    icon: OctagonPause,
+                    label: "Resume",
+                    tooltip: "Resume (paused by a limit)",
+                    onClick: () => {
+                      resumeAutomation(guardrailKindOf(r.automation_kind), r.automation_id)
+                        .then(() => {
+                          toast.success("Resumed");
+                          return reload();
+                        })
+                        .catch((e: unknown) => toast.error(e instanceof Error ? e.message : String(e)));
+                    },
+                  },
+                ]
+              : []
+          }
           isLoading={loading}
           defaultSort={{ id: "cost_total", direction: "desc" }}
           emptyState={{ title: "No automations" }}
@@ -481,7 +513,7 @@ export function AutomationCostTable({
           detail={{
             title: (r) => r.name,
             description: (r) => r.description ?? undefined,
-            render: (r) => <AutomationCostDetail row={r} seat={seat} orgSlug={orgSlug} />,
+            render: (r) => <AutomationCostDetail row={r} seat={seat} orgSlug={orgSlug} onChanged={() => void reload()} />,
             defaultWidth: 720,
           }}
         />
