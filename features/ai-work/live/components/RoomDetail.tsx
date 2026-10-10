@@ -21,6 +21,8 @@ import { addSessionToRoom, removeSessionFromRoom } from "../service";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { LagMarker, PresenceDot, sessionTag } from "./LiveBits";
 import { AddManagerDialog } from "./AddManagerDialog";
+import { AddCursorAgentDialog } from "./AddCursorAgentDialog";
+import { useRoomDelivery } from "../useRoomDelivery";
 
 /** A manager agent's own conversation, scheduled: every run appends to it, so it keeps its room. */
 export function scheduleHref(info: AgentMemberInfo | undefined, conversationId: string): string {
@@ -57,6 +59,7 @@ export function RoomDetail({
 }) {
   const [busy, setBusy] = useState(false);
   const [addingManager, setAddingManager] = useState(false);
+  const [addingCursor, setAddingCursor] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const kind = agentRoomKind(room.conversation.metadata) ?? "agent_room";
   const roomId = room.conversation.id;
@@ -68,6 +71,7 @@ export function RoomDetail({
   const memberAddresses = new Set(inRoom.map((m) => sessionOf(m)?.address).filter(Boolean));
   const addable = sessions.filter((s) => s.presence !== "ended" && !memberAddresses.has(s.address));
   const canEdit = kind === "agent_room";
+  const deliveryStatusFor = useRoomDelivery(roomId, members, sessions, agentInfo);
 
   const run = async (op: () => Promise<unknown>) => {
     setBusy(true);
@@ -130,6 +134,11 @@ export function RoomDetail({
           {canEdit && (
             <Button variant="outline" icon={<Plus />} disabled={busy} onClick={() => setAddingManager(true)}>
               Manager agent
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="outline" icon={<Plus />} disabled={busy} onClick={() => setAddingCursor(true)}>
+              Cursor agent
             </Button>
           )}
         </div>
@@ -207,6 +216,18 @@ export function RoomDetail({
         )}
         {error && <ErrorNotice message={error} size="inline" />}
       </header>
+      {addingCursor && (
+        <AddCursorAgentDialog
+          open={addingCursor}
+          onOpenChange={setAddingCursor}
+          roomId={roomId}
+          roomName={room.displayName}
+          onAdded={() => {
+            setAddingCursor(false);
+            onChanged();
+          }}
+        />
+      )}
       {addingManager && (
         <AddManagerDialog
           open={addingManager}
@@ -225,6 +246,7 @@ export function RoomDetail({
         showHeader={false}
         showAi={false}
         className="min-h-0 flex-1"
+        {...(deliveryStatusFor ? { deliveryStatusFor } : {})}
       />
     </div>
   );

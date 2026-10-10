@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ClaudeAccountsPanel } from "./ClaudeAccountsPanel";
+import { CursorAccountsPanel } from "./CursorAccountsPanel";
 import { SandboxCapacityList } from "./SandboxCapacityList";
 import { readHostedCapacity, type SandboxCapacityRefusal } from "@/features/ai-work/lib/ownPlan";
 import Link from "next/link";
@@ -257,6 +258,7 @@ export function AiWorkConnections() {
         <CodingProjectOrganizations />
 
         <ClaudeAccountsPanel />
+        <CursorAccountsPanel />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
