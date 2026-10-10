@@ -41,7 +41,7 @@ import {
   type WorkingCopyStoreLike,
 } from "@/lib/working-copy/workingCopyKind";
 import { announceWorkingCopyConflict, dismissWorkingCopyConflict } from "@/lib/working-copy/announce";
-import { getReduxSyncDelay, type NoteRecord, type NoteUndoableField } from "../redux/notes.types";
+import { getReduxSyncDelay, NOTE_SAVE_MAX_WAIT_MS, type NoteRecord, type NoteUndoableField } from "../redux/notes.types";
 import type { Note } from "../types";
 import { equalNoteSnapshotValue } from "../noteSnapshotEquality";
 import {
@@ -153,6 +153,8 @@ function writeError(action: WriteAction): Error {
 export const noteWorkingCopy: WorkingCopyKind<never> = defineWorkingCopyKind({
   entity: "note",
   delay: (entry) => getReduxSyncDelay(entry?.value?.length ?? 0),
+  // Someone typing without a one-second pause still saves every few seconds.
+  maxWait: NOTE_SAVE_MAX_WAIT_MS,
   save: async ({ id, entry, store }) => {
     if (!recordOf(store, id)) {
       throw Object.assign(new Error("This note is no longer open here."), { status: 404 });

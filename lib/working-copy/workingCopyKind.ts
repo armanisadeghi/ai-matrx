@@ -168,6 +168,8 @@ export interface WorkingCopyKindConfig<E> {
   entity: string;
   /** ms from the last edit to the save. */
   delay: (entry: WorkingCopyEntry | undefined) => number;
+  /** Longest an unbroken run of edits waits before saving anyway (ms). Default: no cap. */
+  maxWait?: number;
   /**
    * false: edits wait for an explicit save or for the last view leaving (a
    * save that creates a new stored version — a file — must not run every
@@ -407,6 +409,7 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       };
       session.commit = createCoalescedCommit<WorkingCopyEntry | undefined>({
         delay: (entry) => config.delay(entry),
+        maxWait: config.maxWait,
         read: () => readEntry(session),
         run: (entry, reason) => runSave(id, session, entry, reason),
         onError: (error) =>

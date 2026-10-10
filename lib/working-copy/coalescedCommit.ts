@@ -27,6 +27,12 @@ export type CommitReason = "debounced" | "flush" | "manual" | "retry";
 export interface CoalescedCommitOptions<V> {
   /** Milliseconds from the last `schedule()` to the commit. */
   delay: (value: V) => number;
+  /**
+   * Longest an unbroken run of edits waits before it commits anyway (ms from
+   * the FIRST edit since the last commit). Omitted: no cap — a person who
+   * never pauses for `delay` never commits until a flush.
+   */
+  maxWait?: number;
   /** The record's state as it is NOW — read synchronously when a commit starts. */
   read: () => V;
   /** Write it. The ONE save for this record. */
@@ -60,10 +66,13 @@ export function createCoalescedCommit<V>(
   let inFlight: Promise<void> | null = null;
   let again: CommitReason | null = null;
   let dirty = false;
+  /** When the current unbroken run of edits began (for `maxWait`). */
+  let burstStart: number | null = null;
 
   const report = options.onError ?? ((error: unknown) => console.error("[working-copy] commit failed", error));
 
   const start = (reason: CommitReason, force = false): Promise<void> => {
+    burstStart = null;
     if (timer) {
       clearTimeout(timer);
       timer = null;
@@ -134,6 +143,9 @@ export function createCoalescedCommit<V>(
       } catch {
         ms = 0;
       }
+      const now = Date.now();
+      if (burstStart === null) burstStart = now;
+      if (options.maxWait !== undefined) ms = Math.max(0, Math.min(ms, burstStart + options.maxWait - now));
       timer = setTimeout(() => {
         timer = null;
         void start("debounced");
@@ -154,6 +166,7 @@ export function createCoalescedCommit<V>(
       timer = null;
       again = null;
       dirty = false;
+      burstStart = null;
     },
   };
 }

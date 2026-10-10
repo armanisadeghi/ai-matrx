@@ -900,7 +900,11 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   );
 
   // ── Format time ────────────────────────────────────────────────────
-  const formatTime = (dateStr: string | null | undefined) => {
+  // Stable per minute so the memoised rows (NoteSidebarRow) skip the many
+  // re-renders a save causes; the minute bucket still refreshes "8m" labels.
+  const minuteBucket = Math.floor(Date.now() / 60_000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the bucket IS the dependency: it re-reads Date.now() once a minute
+  const formatTime = useCallback((dateStr: string | null | undefined) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     if (Date.now() - d.getTime() >= NOTE_AGE_CUTOFF_MS) {
@@ -909,7 +913,21 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
     // "8h", not "8h ago": the title gets the room (the full time is the
     // row's tooltip).
     return formatRelativeTime(d, { style: "short", fallback: "" }).replace(/\s*ago$/, "");
-  };
+  }, [minuteBucket]);
+
+  // Row handlers must be stable or the memoised rows re-render on every save.
+  const openKnowledgeRef = useRef(openKnowledge);
+  useEffect(() => {
+    openKnowledgeRef.current = openKnowledge;
+  });
+  const openKnowledgeStable = useCallback(
+    (opts: { noteId: string; title?: string }) => openKnowledgeRef.current(opts),
+    [],
+  );
+  const createFolderForNote = useCallback(
+    (noteId: string) => setCreateFolderIntent({ kind: "move-note", noteId }),
+    [],
+  );
 
   const sortLabel =
     SORT_FIELDS.find((s) => s.field === sortField)?.label ?? "Modified";
@@ -1307,15 +1325,13 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
                       isActive={isActive}
                       isOpenTab={isOpenTab}
                       allFolders={folderReferences}
-                      openKnowledge={openKnowledge}
+                      openKnowledge={openKnowledgeStable}
                       formatTime={formatTime}
                       onSelectNote={selectNote}
                       selectionMode={selectionMode}
                       isSelected={selectedIds.has(note.id)}
                       onToggleSelect={toggleSelect}
-                      onCreateFolder={(noteId) =>
-                        setCreateFolderIntent({ kind: "move-note", noteId })
-                      }
+                      onCreateFolder={createFolderForNote}
                     />
                   );
                 })}
@@ -1443,15 +1459,13 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
                   isActive={isActive}
                   isOpenTab={isOpenTab}
                   allFolders={folderReferences}
-                  openKnowledge={openKnowledge}
+                  openKnowledge={openKnowledgeStable}
                   formatTime={formatTime}
                   onSelectNote={selectNote}
                   selectionMode={selectionMode}
                   isSelected={selectedIds.has(note.id)}
                   onToggleSelect={toggleSelect}
-                  onCreateFolder={(noteId) =>
-                    setCreateFolderIntent({ kind: "move-note", noteId })
-                  }
+                  onCreateFolder={createFolderForNote}
                 />
               );
             })}
@@ -1630,24 +1644,17 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
                               isActive={isActive}
                               isOpenTab={isOpenTab}
                               allFolders={folderReferences}
-                              openKnowledge={openKnowledge}
+                              openKnowledge={openKnowledgeStable}
                               formatTime={formatTime}
                               draggable={isFolderMode}
                               isDragging={isDragging}
-                              onDragStart={(e) =>
-                                handleNoteDragStart(e, note.id)
-                              }
+                              onDragStart={handleNoteDragStart}
                               onDragEnd={handleNoteDragEnd}
                               onSelectNote={selectNote}
                               selectionMode={selectionMode}
                               isSelected={selectedIds.has(note.id)}
                               onToggleSelect={toggleSelect}
-                              onCreateFolder={(noteId) =>
-                                setCreateFolderIntent({
-                                  kind: "move-note",
-                                  noteId,
-                                })
-                              }
+                              onCreateFolder={createFolderForNote}
                             />
                           );
                         })

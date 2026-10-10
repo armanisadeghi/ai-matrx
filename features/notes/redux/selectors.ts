@@ -96,6 +96,20 @@ function structureSignature(note: NoteRecord): string {
   return signature;
 }
 
+function sameStrings(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function sameFolderReferences(a: readonly FolderReference[], b: readonly FolderReference[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id || a[i].organizationId !== b[i].organizationId || a[i].name !== b[i].name) return false;
+  }
+  return true;
+}
+
 export interface NotesListProjection {
   /** Owner-visible note ids in sidebar order. */
   readonly orderedIds: readonly string[];
@@ -154,8 +168,11 @@ export const selectNotesListProjection = createSelector(
       folderReferences.set(`${folder.organizationId}:${folder.id}`, folder);
     }
 
+    const previous = listProjectionCache?.value;
+    const orderedIds = visible.map((note) => note.id);
+    const nextFolderReferences = Array.from(folderReferences.values());
     const value: NotesListProjection = {
-      orderedIds: visible.map((note) => note.id),
+      orderedIds: previous && sameStrings(previous.orderedIds, orderedIds) ? previous.orderedIds : orderedIds,
       folders: Array.from(folderSet).sort((a, b) => {
         const aIdx = DEFAULT_FOLDER_ORDER.indexOf(a);
         const bIdx = DEFAULT_FOLDER_ORDER.indexOf(b);
@@ -164,8 +181,19 @@ export const selectNotesListProjection = createSelector(
         if (bIdx !== -1) return 1;
         return a.localeCompare(b);
       }),
-      folderReferences: Array.from(folderReferences.values()),
+      folderReferences:
+        previous && sameFolderReferences(previous.folderReferences, nextFolderReferences)
+          ? previous.folderReferences
+          : nextFolderReferences,
     };
+    // A save moves `updated_at` (a structural field), which rebuilds the
+    // projection — but the folder lists almost never change. Hand back the
+    // previous arrays when their contents match: every sidebar row receives
+    // `folderReferences`, and a fresh-but-equal array re-rendered every row on
+    // every save (the Write-mode typing freeze, 2026-10-10).
+    if (previous && sameStrings(previous.folders, value.folders)) {
+      (value as { folders: string[] }).folders = previous.folders;
+    }
     listProjectionCache = { signatures, value };
     return value;
   },

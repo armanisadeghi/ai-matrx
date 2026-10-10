@@ -8,6 +8,7 @@
 // recent, grouped folder list) — folder-mode drag/drop is preserved via the
 // draggable wrapper props.
 
+import { memo } from "react";
 import { FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -37,7 +38,8 @@ interface NoteSidebarRowProps {
   formatTime: (dateStr: string | null | undefined) => string;
   draggable?: boolean;
   isDragging?: boolean;
-  onDragStart?: (e: React.DragEvent) => void;
+  /** Called with the row's own note id, so the parent passes ONE stable handler. */
+  onDragStart?: (e: React.DragEvent, noteId: string) => void;
   onDragEnd?: () => void;
   onSelectNote: (noteId: string) => void;
   selectionMode: boolean;
@@ -47,7 +49,17 @@ interface NoteSidebarRowProps {
   onCreateFolder: (noteId: string) => void;
 }
 
-export function NoteSidebarRow({
+/**
+ * Memoised on purpose (NoteSidebar is a React Compiler skip, so nothing above
+ * it memoises): every save of the open note replaces the notes map, and an
+ * unmemoised row list re-rendered EVERY row — each a context menu, an item
+ * menu and a dozen Radix providers — several times per save. In Write mode a
+ * save lands every few keystrokes, so typing cost O(rows) per keystroke and a
+ * large sidebar froze the browser (2026-10-10). Every prop the parent passes
+ * is stable; only the row whose note changed re-renders.
+ * Guard: features/notes/__tests__/sidebar-rows-skip-unrelated-saves.test.tsx.
+ */
+export const NoteSidebarRow = memo(function NoteSidebarRow({
   note,
   instanceId,
   isActive,
@@ -83,7 +95,7 @@ export function NoteSidebarRow({
     <div
       data-note-id={note.id}
       draggable={draggable && !selectionMode}
-      onDragStart={draggable ? onDragStart : undefined}
+      onDragStart={draggable && onDragStart ? (e) => onDragStart(e, note.id) : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
       // A list row carries only a preview (audit N-24). The right-click menu's
       // copy / export / agent-context actions need the BODY, so the moment the
@@ -225,4 +237,4 @@ export function NoteSidebarRow({
       {row}
     </NonEditableContextMenu>
   );
-}
+});

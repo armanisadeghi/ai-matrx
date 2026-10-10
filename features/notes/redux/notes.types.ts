@@ -386,10 +386,21 @@ export function getAutoSaveDelay(contentLength: number): number {
  */
 export const NOTE_SAVE_FAILURE_BLOCK_THRESHOLD = 3;
 
+/**
+ * How long typing must pause before the note's working copy commits to the
+ * record — and that commit IS the database write (`noteWorkingCopy.save`).
+ * At 200ms a person typing at an ordinary pace paused long enough every two
+ * or three keystrokes, so Write mode saved to the database (and re-rendered
+ * every list that reads the notes map) every few characters — the 2026-10-10
+ * typing freeze. Every view reads the working copy, so the record lagging a
+ * second behind the keystrokes is invisible; drafts cover a closing tab.
+ */
+/** Longest unbroken typing goes before the note saves anyway. */
+export const NOTE_SAVE_MAX_WAIT_MS = 5000;
+
 export function getReduxSyncDelay(contentLength: number): number {
-  if (contentLength < 1000) return 200;
-  if (contentLength < 10000) return 500;
-  return 1000;
+  if (contentLength < 10000) return 1000;
+  return 1500;
 }
 
 /**
