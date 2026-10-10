@@ -22,7 +22,8 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc, type ScopeNode } from "@/features/scopes/types";
+import type { Scope } from "@ai-matrx/records/scopes";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 import {
   CLASS_PART_EDGE_ROLE,
   CLASS_PART_SCOPE_TYPE_SEED,
@@ -172,14 +173,14 @@ export function useClassParts(
     const typeId = await ensurePartType(org);
     const scope = (await dispatch(
       createScope({
-        org_id: org,
-        type_id: typeId,
+        organization_id: org,
+        scope_type_id: typeId,
         name: name.trim(),
         description: "",
         settings: {},
         slug: partScopeSlug(name, crypto.randomUUID().slice(0, 8)),
       }),
-    ).then(unwrapScopesRpc)) as ScopeNode;
+    ).then(unwrapRecords)) as Scope;
     const linked = await content.links.attach(
       "scope" as EntityTypeToken,
       scope.id,
@@ -189,7 +190,7 @@ export function useClassParts(
     );
     if (!linked.ok) {
       // Never leave an orphan part behind: archive it, then say what happened.
-      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapRecords);
       throw new Error(
         `"${scope.name}" could not be added to the class: ${linked.error ?? "the write was refused"}.`,
       );
@@ -199,7 +200,7 @@ export function useClassParts(
 
   async function renamePart(partId: string, name: string): Promise<void> {
     await dispatch(updateScope({ scope_id: partId, name: name.trim() })).then(
-      unwrapScopesRpc,
+      unwrapRecords,
     );
   }
 
@@ -213,7 +214,7 @@ export function useClassParts(
       throw new Error(
         unlinked.error ?? "The part could not be taken off the class.",
       );
-    await dispatch(deleteScope({ scope_id: partId })).then(unwrapScopesRpc);
+    await dispatch(deleteScope({ scope_id: partId })).then(unwrapRecords);
   }
 
   async function addToPart(

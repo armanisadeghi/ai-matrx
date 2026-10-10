@@ -12,7 +12,7 @@ import {
 } from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 export interface ClassScopeTypeSeed {
   labelSingular: string;
@@ -38,7 +38,7 @@ export async function ensureClassScopeType(
   if (existing) return existing.id;
   const created = await dispatch(
     createScopeType({
-      org_id: org,
+      organization_id: org,
       label_singular: seed.labelSingular,
       label_plural: seed.labelPlural,
       icon: seed.icon,
@@ -46,6 +46,6 @@ export async function ensureClassScopeType(
       description: seed.description,
       slug,
     }),
-  ).then(unwrapScopesRpc);
+  ).then(unwrapRecords);
   return created.id;
 }

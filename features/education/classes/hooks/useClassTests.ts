@@ -19,7 +19,8 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc, type ScopeNode } from "@/features/scopes/types";
+import type { Scope } from "@ai-matrx/records/scopes";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import {
@@ -147,14 +148,14 @@ export function useClassTests(
     );
     const scope = (await dispatch(
       createScope({
-        org_id: org,
-        type_id: typeId,
+        organization_id: org,
+        scope_type_id: typeId,
         name,
         description: "",
         settings: {},
         slug: partScopeSlug(name, crypto.randomUUID().slice(0, 8)),
       }),
-    ).then(unwrapScopesRpc)) as ScopeNode;
+    ).then(unwrapRecords)) as Scope;
     try {
       const linked = await fileUnderClass(scope.id, input.date);
       if (!linked.ok)
@@ -172,7 +173,7 @@ export function useClassTests(
       }
     } catch (err) {
       // Never leave a half-made test behind: archive it, then say what happened.
-      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapRecords);
       throw new Error(
         `"${name}" could not be added to the class: ${err instanceof Error ? err.message : String(err)}.`,
         { cause: err },
@@ -186,7 +187,7 @@ export function useClassTests(
     const current = tests.find((t) => t.id === testId);
     if (input.name.trim() !== current?.name)
       await dispatch(updateScope({ scope_id: testId, name: input.name.trim() })).then(
-        unwrapScopesRpc,
+        unwrapRecords,
       );
     if ((current?.date ?? null) !== input.date) {
       const unlinked = await content.links.detach(
@@ -217,7 +218,7 @@ export function useClassTests(
       throw new Error(unlinked.error ?? "The test could not be taken off the class.");
     for (const id of tests.find((t) => t.id === testId)?.unitIds ?? [])
       await dropEdge(testId, id);
-    await dispatch(deleteScope({ scope_id: testId })).then(unwrapScopesRpc);
+    await dispatch(deleteScope({ scope_id: testId })).then(unwrapRecords);
     await Promise.all([content.reload(), parts.reloadMembership()]);
   }
 

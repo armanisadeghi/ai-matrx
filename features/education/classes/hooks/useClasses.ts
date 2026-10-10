@@ -38,7 +38,7 @@ import {
   deleteScope,
   updateScope,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
-import { unwrapScopesRpc } from "@/features/scopes/types";
+import { unwrapRecords } from "@/features/scopes/service/scopeDoors";
 
 export interface CreateClassInput {
   name: string;
@@ -140,7 +140,7 @@ export function useClasses(): UseClassesReturn {
       if (existing) return existing.id;
       const created = await dispatch(
         createScopeType({
-          org_id: org,
+          organization_id: org,
           label_singular: CLASS_SCOPE_TYPE_SEED.labelSingular,
           label_plural: CLASS_SCOPE_TYPE_SEED.labelPlural,
           icon: CLASS_SCOPE_TYPE_SEED.icon,
@@ -148,7 +148,7 @@ export function useClasses(): UseClassesReturn {
           description: CLASS_SCOPE_TYPE_SEED.description,
           slug: CLASS_SCOPE_TYPE_SLUG,
         }),
-      ).then(unwrapScopesRpc);
+      ).then(unwrapRecords);
       return created.id;
     },
     [dispatch, store, orgId, classTypeId],
@@ -165,13 +165,13 @@ export function useClasses(): UseClassesReturn {
       const settings = { ...emptySettings(), ...input.settings };
       const scope = (await dispatch(
         createScope({
-          org_id: org,
-          type_id: typeId,
+          organization_id: org,
+          scope_type_id: typeId,
           name: input.name.trim(),
           description: input.description?.trim() ?? "",
           settings: serializeClassSettings(settings),
         }),
-      ).then(unwrapScopesRpc)) as Scope;
+      ).then(unwrapRecords)) as Scope;
       // Register the class access mode + ensure the creator's OWNER membership
       // row exists (the roster's authoritative owner). Idempotent; the scope
       // already carries access_mode in settings, this reaffirms it server-side.
@@ -202,7 +202,7 @@ export function useClasses(): UseClassesReturn {
             ? serializeClassSettings(patch.settings)
             : undefined,
         }),
-      ).then(unwrapScopesRpc)) as Scope;
+      ).then(unwrapRecords)) as Scope;
       return scopeToClass(scope);
     },
     [dispatch],
@@ -210,7 +210,7 @@ export function useClasses(): UseClassesReturn {
 
   const deleteClass = useCallback(
     async (id: string): Promise<void> => {
-      await dispatch(deleteScope({ scope_id: id })).then(unwrapScopesRpc);
+      await dispatch(deleteScope({ scope_id: id })).then(unwrapRecords);
     },
     [dispatch],
   );
