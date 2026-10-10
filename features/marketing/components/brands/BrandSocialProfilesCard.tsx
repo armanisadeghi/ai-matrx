@@ -313,7 +313,7 @@ function SocialRow({
             {row.trackable === false ? `${platformLabel(row.platform)} tracking is coming` : "Needs a handle"}
           </span>
         )}
-        {unreadable ? (
+        {unreadable && canEdit ? (
           <button
             type="button"
             title="Capture with my browser"
