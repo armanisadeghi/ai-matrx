@@ -593,6 +593,9 @@ importers:
       idb:
         specifier: ^8.0.3
         version: 8.0.3
+      immer:
+        specifier: 11.1.18
+        version: 11.1.18
       json5:
         specifier: ^2.2.3
         version: 2.2.3

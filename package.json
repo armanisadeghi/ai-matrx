@@ -1112,6 +1112,7 @@
     "hast-util-to-string": "^3.0.1",
     "html2canvas": "^1.4.1",
     "idb": "^8.0.3",
+    "immer": "11.1.18",
     "json5": "^2.2.3",
     "jsonlint-mod": "latest",
     "jspdf": "^4.2.1",
