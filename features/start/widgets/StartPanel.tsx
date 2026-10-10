@@ -15,6 +15,7 @@ import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
 import { Switch } from "@ai-matrx/design-system/controls";
 import { START_WIDGET_SIZE_LABEL, type StartWidget, type StartWidgetSize, type StartWidgetSpec } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function PanelShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <aside
@@ -152,7 +153,7 @@ export function HistoryPanel({
   const newest = entries?.[0]?.version ?? null;
   return (
     <PanelShell title="History" onClose={onClose}>
-      {error ? <p className="p-2 text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="p-2 text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       {!entries && !error ? (
         <ul aria-busy="true">
           {Array.from({ length: 6 }, (_, i) => (

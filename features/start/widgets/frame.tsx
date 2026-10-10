@@ -13,6 +13,7 @@ import { AlertTriangle } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import type { StartWidgetSize } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Row height of a widget list (px): desktop, and touch screens (the 44px tap minimum). */
 export const WIDGET_ROW_PX = 32;
 export const WIDGET_ROW_PX_TOUCH = 44;
@@ -166,7 +167,7 @@ export function WidgetList({
       </ul>
     );
   }
-  if (error) return <WidgetNotice tone="error">{error}</WidgetNotice>;
+  if (error) return <WidgetNotice tone="error">{error}<ErrorAlchemyMenu error={error} /></WidgetNotice>;
   if (rows.length === 0) return <WidgetNotice>{empty}</WidgetNotice>;
   return (
     <ul>

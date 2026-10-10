@@ -11,6 +11,7 @@ import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/rec
 import { createDataHomeCorpus } from "@/features/unified-data/home/dataHomeCorpus";
 import type { DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Pages only, the person's own first, then by name. */
 export function dataPageChoices(rows: readonly DataHomeRow[]): { value: string; label: string; meta?: string }[] {
   return rows
@@ -35,7 +36,7 @@ export function DataPagePicker({ value, onChange }: { value: string; onChange: (
       live = false;
     };
   }, [client, dataSource]);
-  if (state.error) return <p className="text-xs text-destructive">{state.error}</p>;
+  if (state.error) return <p className="text-xs text-destructive">{state.error}<ErrorAlchemyMenu error={state.error} /></p>;
   const choices = dataPageChoices(state.rows ?? []);
   if (state.rows && choices.length === 0) {
     return (

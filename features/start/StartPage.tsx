@@ -36,6 +36,7 @@ import { useStartAgentTools } from "./tools/useStartAgentTools";
 import { START_PAGE_SURFACE_NAME } from "@/features/surfaces/manifests/start-page.manifest";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The Start page maintainer (declared in aidream services/start_page/mandates.py). */
 const START_MAINTAINER_KEY = MANDATE_KEYS.start_page__maintainer;
 
@@ -166,7 +167,7 @@ function StartBody() {
         {layout.loading ? (
           <StartGrid doc={defaultStartDoc(null)} skeleton />
         ) : !shown ? (
-          <WidgetNotice tone="error">{layout.error ?? "Your start page could not be read."}</WidgetNotice>
+          <WidgetNotice tone="error">{layout.error ?? "Your start page could not be read."}<ErrorAlchemyMenu error={layout.error} /></WidgetNotice>
         ) : shown.widgets.length === 0 && !editing ? (
           <WidgetNotice>Press Edit to add widgets</WidgetNotice>
         ) : (
