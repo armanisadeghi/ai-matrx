@@ -243,15 +243,13 @@ export function BrandAssetsWorkspace({
         <div className="grid w-full gap-3">
           <header className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <h2
+                className="flex items-center gap-2 text-base font-semibold text-foreground"
+                title={`Everything ${current.name} owns or can draw on, usable by every website under this brand. What a single website serves lives in that site's Media section.`}
+              >
                 <Images className="h-4 w-4 text-muted-foreground" />
                 Brand assets
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Everything {current.name} owns or can draw on — usable by every
-                website under this brand. What a single website actually serves
-                lives in that site&apos;s Media section.
-              </p>
             </div>
             <div className="flex items-center gap-1.5">
               {standardsSite ? (

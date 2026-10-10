@@ -17,7 +17,8 @@ import {
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { LoadingSurface, QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   useBrandPersonas,
   useCreateBrandPersona,
@@ -81,6 +82,13 @@ export function BrandAudiencePage({
   };
 
   const onDelete = async (persona: BrandPersona) => {
+    const ok = await confirm({
+      title: `Remove "${persona.name}"?`,
+      description: `It leaves this ${audience.noun} list and every agent's brand context.`,
+      variant: "destructive",
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
     try {
       await remove.mutateAsync(persona.id);
       toast.success(`Removed ${persona.name}`);
@@ -106,6 +114,8 @@ export function BrandAudiencePage({
 
         {personas.isPending ? (
           <LoadingSurface label={`Loading ${audience.plural}…`} />
+        ) : personas.isError ? (
+          <QueryError error={personas.error} onRetry={() => void personas.refetch()} />
         ) : rows.length === 0 ? (
           <Card className="flex flex-col items-center gap-2 p-8 text-center">
             <Users className="h-5 w-5 text-muted-foreground" aria-hidden />
@@ -146,7 +156,7 @@ function ChipList({ label, items }: { label: string; items: string[] }) {
   if (!items.length) return null;
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <ul className="mt-0.5 list-disc pl-4 text-xs text-foreground">
         {items.map((item) => (
           <li key={item}>{item}</li>
@@ -175,7 +185,7 @@ function PersonaCard({
             {persona.is_primary ? <Star className="h-3.5 w-3.5 fill-current text-primary-ink" aria-label="Primary" /> : null}
           </h2>
           {demographics.length ? (
-            <p className="text-[11px] text-muted-foreground">{demographics.join(" · ")}</p>
+            <p className="text-xs text-muted-foreground">{demographics.join(" · ")}</p>
           ) : null}
         </div>
         <div className="flex shrink-0">
@@ -188,7 +198,7 @@ function PersonaCard({
       <ChipList label="Pain points" items={persona.pain_points} />
       <ChipList label="Objections" items={persona.objections} />
       {persona.channels.length ? (
-        <p className="text-[11px] text-muted-foreground">Channels: {persona.channels.join(", ")}</p>
+        <p className="text-xs text-muted-foreground">Channels: {persona.channels.join(", ")}</p>
       ) : null}
     </Card>
   );

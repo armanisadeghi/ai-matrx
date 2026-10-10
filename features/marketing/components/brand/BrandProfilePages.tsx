@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUnsavedChangesGuard } from "@/lib/navigation/useUnsavedChangesGuard";
+import { isPersonBrand } from "@/features/marketing/lib/brand-kind";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useBrand, useUpdateBrand } from "@/features/marketing/data/hooks";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
@@ -60,6 +63,8 @@ function PageFrame({
   saved: SaveReport;
   children: ReactNode;
 }) {
+  // A typed-but-unsaved edit is never lost to a link, Back or a refresh.
+  useUnsavedChangesGuard({ when: dirty && !busy, what: `your changes to ${title}` });
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto w-full max-w-4xl px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-4">
@@ -231,8 +236,8 @@ function MessagingEditor({ brand, saved, report }: { brand: MarketingBrand; save
         <Field label="Values (one per line)">
           <Text label="Values" value={values} onChange={setValues} rows={4} />
         </Field>
-        <Field label="Brand story">
-          <Text label="Brand story" value={story} onChange={setStory} rows={4} />
+        <Field label={isPersonBrand(brand) ? "Story" : "Brand story"}>
+          <Text label="Story" value={story} onChange={setStory} rows={4} />
         </Field>
       </Card>
 
@@ -321,20 +326,23 @@ function MessagingEditor({ brand, saved, report }: { brand: MarketingBrand; save
               placeholder="#ShredItRight"
               onChange={(event) => setTags(tags.map((t, i) => (i === index ? { ...t, tag: event.target.value } : t)))}
             />
-            <select
-              aria-label="Hashtag use"
+            <Select
               value={entry.use}
-              onChange={(event) =>
-                setTags(tags.map((t, i) => (i === index ? { ...t, use: HASHTAG_USES.find((u) => u === event.target.value) ?? "branded" } : t)))
+              onValueChange={(value) =>
+                setTags(tags.map((t, i) => (i === index ? { ...t, use: HASHTAG_USES.find((u) => u === value) ?? "branded" } : t)))
               }
-              className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
             >
-              {HASHTAG_USES.map((use) => (
-                <option key={use} value={use}>
-                  {use[0].toUpperCase() + use.slice(1)}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Hashtag use" className="h-9 text-base sm:text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HASHTAG_USES.map((use) => (
+                  <SelectItem key={use} value={use}>
+                    {use[0].toUpperCase() + use.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="quiet" aria-label="Remove hashtag" icon={<X />} onClick={() => setTags(tags.filter((_, i) => i !== index))} />
           </div>
         ))}
@@ -375,13 +383,13 @@ function ClaimsEditor({ brand, saved, report }: { brand: MarketingBrand; saved: 
     >
       <Card className="grid gap-3 p-4">
         <Field label="Approved claims (one per line)" hint="Statements the brand can make as written">
-          <Text label="Approved claims" value={approved} onChange={setApproved} rows={5} />
+          <Text label="Approved claims" value={approved} onChange={setApproved} rows={3} />
         </Field>
         <Field label="Forbidden claims (one per line)" hint="Never say these, in any channel">
-          <Text label="Forbidden claims" value={forbidden} onChange={setForbidden} rows={5} />
+          <Text label="Forbidden claims" value={forbidden} onChange={setForbidden} rows={3} />
         </Field>
         <Field label="Disclaimers (one per line)" hint="Required wording to attach where it applies">
-          <Text label="Disclaimers" value={disclaimers} onChange={setDisclaimers} rows={4} />
+          <Text label="Disclaimers" value={disclaimers} onChange={setDisclaimers} rows={3} />
         </Field>
       </Card>
     </PageFrame>

@@ -201,12 +201,7 @@ function AssetTile({
         </div>
       ) : preview ? (
         <div className="flex aspect-[4/3] items-center justify-center bg-muted/40 p-2">
-          <img
-            src={preview}
-            alt={asset.title ?? asset.kind}
-            className="max-h-full max-w-full object-contain"
-            loading="lazy"
-          />
+          <PreviewImage src={preview} alt={asset.title ?? asset.kind} />
         </div>
       ) : asset.kind === "portal" && asset.source_url ? (
         <a
@@ -530,5 +525,28 @@ export function BrandLibraryView({
         asset={editing}
       />
     </div>
+  );
+}
+
+/** An asset's own picture; when the source cannot be fetched it says so instead of showing broken-image alt text. */
+function PreviewImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+        <CircleOff className="h-5 w-5" aria-hidden />
+        Image unavailable
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className="max-h-full max-w-full object-contain"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }

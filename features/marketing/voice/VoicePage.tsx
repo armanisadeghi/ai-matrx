@@ -302,12 +302,12 @@ export function VoicePage({
         }
       >
         <header>
-          <h1 className="text-base font-semibold text-foreground">{ownerName} · Voice</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {scope === "brand" ? brandKindCopy(brandKind).voiceLine : "How you actually write"}, measured from real writing. Every pitch,
-            reply, subject line and statement written in {scope === "brand" ? brandKindCopy(brandKind).possessive : "your"} name is checked against it,
-            and the AI tells are rewritten before you see the draft.
-          </p>
+          <h1
+            className="text-base font-semibold text-foreground"
+            title={`${scope === "brand" ? brandKindCopy(brandKind).voiceLine : "How you actually write"}, measured from real writing. Every pitch, reply, subject line and statement written in ${scope === "brand" ? brandKindCopy(brandKind).possessive : "your"} name is checked against it, and the AI tells are rewritten before you see the draft.`}
+          >
+            {ownerName} · Voice
+          </h1>
         </header>
 
         {personBrand ? (
@@ -410,9 +410,8 @@ export function VoicePage({
             ) : null}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Pick {MIN_SAMPLES} to {MAX_SAMPLES} pieces {scope === "brand" ? "the brand really published" : "you really wrote"}.
-            Short, recent, unedited writing (emails, posts, Slack) measures best; a brand&apos;s website copy and a
-            spokesperson&apos;s pitch voice are separate voices.
+            Pick {MIN_SAMPLES} to {MAX_SAMPLES} short, recent, unedited pieces{" "}
+            {scope !== "brand" ? "you wrote" : personBrand ? "they wrote" : "the brand published"} (emails, posts, Slack).
           </p>
           <div className="relative mt-3">
             <Search className="pointer-events-none absolute left-2 top-2 h-4 w-4 text-muted-foreground" aria-hidden />

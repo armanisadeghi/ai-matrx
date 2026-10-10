@@ -141,7 +141,13 @@ export function SpokespeoplePanel({
           <ul className="mt-1 divide-y divide-border">
             {eligible.map((row) => (
               <li key={row.id} className="flex items-center gap-2 py-2 text-sm">
-                <span className="min-w-0 flex-1 truncate text-foreground">{nameOf(row)}</span>
+                <span className="min-w-0 flex-1 truncate text-foreground">
+                  {nameOf(row)}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {row.status === "confirmed" ? "Confirmed" : "Draft"} · {row.sample_count} samples · measured{" "}
+                    {new Date(row.last_extracted_at).toLocaleDateString()}
+                  </span>
+                </span>
                 <Button variant="quiet" icon={<Link2 />} disabled={busyId === row.id} onClick={() => void change(row, brandId)}>
                   Link as spokesperson
                 </Button>
