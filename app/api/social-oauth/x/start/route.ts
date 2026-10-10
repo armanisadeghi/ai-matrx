@@ -9,7 +9,7 @@ import {
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
 import {
-  X_CALLBACK_ORIGINS,
+  xCallbackOrigin,
   X_CALLBACK_PATH,
   X_OAUTH_COOKIE,
   X_SETTINGS_RETURN,
@@ -18,8 +18,8 @@ import {
 } from "../session";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const origin = request.nextUrl.origin;
-  if (!X_CALLBACK_ORIGINS.some((allowed) => allowed === origin)) {
+  const origin = xCallbackOrigin(request.headers, request.nextUrl.origin);
+  if (!origin) {
     return NextResponse.json(
       { error: "This address cannot start an X connection." },
       { status: 400 },

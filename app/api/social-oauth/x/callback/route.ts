@@ -5,14 +5,15 @@ import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
-  X_CALLBACK_ORIGINS,
+  xCallbackOrigin,
   X_OAUTH_COOKIE,
   X_SETTINGS_RETURN,
   parseXBrowserSession,
 } from "../session";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  if (!X_CALLBACK_ORIGINS.some((origin) => origin === request.nextUrl.origin)) {
+  const origin = xCallbackOrigin(request.headers, request.nextUrl.origin);
+  if (!origin) {
     return NextResponse.json(
       { error: "This callback address is not registered." },
       { status: 400 },
@@ -26,14 +27,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     maxAge: 0,
     httpOnly: true,
     sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
+    secure: origin.startsWith("https:"),
   });
   const flow = raw ? parseXBrowserSession(raw) : null;
   const finish = (status: string) => {
-    const target = new URL(
-      flow?.returnUrl ?? X_SETTINGS_RETURN,
-      request.nextUrl.origin,
-    );
+    const target = new URL(flow?.returnUrl ?? X_SETTINGS_RETURN, origin);
     target.searchParams.set("x_oauth_status", status);
     return NextResponse.redirect(target);
   };

@@ -1,4 +1,9 @@
-import { parseXBrowserSession, safeXReturn, xBackendOrigin } from "../session";
+import {
+  parseXBrowserSession,
+  safeXReturn,
+  xBackendOrigin,
+  xCallbackOrigin,
+} from "../session";
 
 describe("X browser round trip", () => {
   const session = () => ({
@@ -10,6 +15,25 @@ describe("X browser round trip", () => {
     createdAt: Date.now(),
   });
 
+  it("preserves the registered browser origin behind Next's normalized request URL", () => {
+    const headers = new Headers({
+      host: "x-customer.localhost:3001",
+      "x-forwarded-host": "x-customer.localhost:3001",
+      "x-forwarded-proto": "http",
+    });
+    expect(xCallbackOrigin(headers, "http://localhost:3001")).toBe(
+      "http://x-customer.localhost:3001",
+    );
+    expect(
+      xCallbackOrigin(
+        new Headers({
+          "x-forwarded-host": "other.localhost:3001",
+          "x-forwarded-proto": "http",
+        }),
+        "http://localhost:3001",
+      ),
+    ).toBeNull();
+  });
   it("rejects expired and future cookies before any token exchange", () => {
     expect(
       parseXBrowserSession(

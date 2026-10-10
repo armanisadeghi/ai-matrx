@@ -1,3 +1,4 @@
+import { requestOrigin } from "@/utils/auth/request-origin";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 
 export const X_OAUTH_COOKIE = "matrx_x_oauth";
@@ -7,6 +8,16 @@ export const X_CALLBACK_ORIGINS = [
   "https://www.aimatrx.com",
   "http://x-customer.localhost:3001",
 ] as const;
+
+export function xCallbackOrigin(
+  headers: Pick<Headers, "get">,
+  fallback: string,
+): string | null {
+  const candidate = requestOrigin(headers) ?? fallback;
+  return X_CALLBACK_ORIGINS.some((origin) => origin === candidate)
+    ? candidate
+    : null;
+}
 
 export interface XBrowserSession {
   state: string;
