@@ -51,6 +51,7 @@ import {
   unmandatedRunLabel,
 } from "./format";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export type RunsScope = { mandateKey: string } | { agentId: string };
 
 export interface RunsTableProps {
@@ -308,7 +309,7 @@ export function RunsTable({
       cell: (run) => (
         <span title={run.error ?? run.outputMissingKeys.join(", ") ?? undefined}>
           <StatusToken status={STATUS_TONE[run.status]} label={STATUS_WORDS[run.status]} />
-        </span>
+        <ErrorAlchemyMenu error={run.error} /></span>
       ),
     },
     {

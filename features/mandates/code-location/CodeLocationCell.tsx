@@ -18,6 +18,7 @@ import {
   subscribeCodeLocations,
 } from "./codeLocation";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function useCodeLocations() {
   const state = useSyncExternalStore(
     subscribeCodeLocations,
@@ -34,7 +35,7 @@ export function CodeLocationCell({ mandateKey }: { mandateKey: string }) {
     return (
       <span className="type-secondary text-amber-700 dark:text-amber-300" title={state.error}>
         Unavailable
-      </span>
+      <ErrorAlchemyMenu error={state.error} /></span>
     );
   }
   if (state.status !== "ready") {

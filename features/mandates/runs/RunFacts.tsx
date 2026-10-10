@@ -19,6 +19,7 @@ import { selectIsSuperAdminPerson, selectUserId } from "@/lib/redux/selectors/us
 import type { StoredRun } from "./service";
 import type { StreamedRunState } from "./useStreamedRun";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 items-baseline gap-1.5">
@@ -87,7 +88,7 @@ export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" 
           <ArrowUpRight className="h-3 w-3" />
         </Link>
       </Fact>
-      {run.error ? <div className="col-span-2 text-[12px] text-destructive">{run.error}</div> : null}
+      {run.error ? <div className="col-span-2 text-[12px] text-destructive">{run.error}<ErrorAlchemyMenu error={run.error} /></div> : null}
     </div>
   );
 }
@@ -118,7 +119,7 @@ export function StreamedRunBlock({
           bodyClassName="max-h-[60dvh] overflow-y-auto px-3 py-2 text-sm"
         />
       ) : state.result?.error ? (
-        <p className="text-[12px] text-destructive">{state.result.error}</p>
+        <p className="text-[12px] text-destructive">{state.result.error}<ErrorAlchemyMenu error={state.result.error} /></p>
       ) : null}
       {state.result ? (
         <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-0.5 text-[12px]">

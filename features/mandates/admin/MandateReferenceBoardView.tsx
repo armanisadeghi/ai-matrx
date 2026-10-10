@@ -283,7 +283,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
         run.failed_legs.length > 0 ? (
           <span className="text-destructive">
             {run.status} — {run.failed_legs.join(", ")}
-          </span>
+          <ErrorAlchemyMenu /></span>
         ) : (
           run.status
         ),

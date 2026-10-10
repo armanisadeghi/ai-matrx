@@ -298,9 +298,9 @@ function SetCandidateBody({
         </Select>
 
         <span className="hidden sm:block" />
-        <span className="min-h-4 type-meta text-muted-foreground" data-candidate-rung-collects>
+        <span data-error-box className="min-h-4 type-meta text-muted-foreground" data-candidate-rung-collects>
           {liveRungPending ? null : rung ? RUNG_COLLECTS[rung.rung] : "Couldn't read the live level"}
-        </span>
+        <ErrorAlchemyMenu /></span>
 
         <label htmlFor="candidate-runs" className="text-[12px] font-medium">
           Runs to collect
