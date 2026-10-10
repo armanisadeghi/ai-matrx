@@ -15,10 +15,10 @@ import { createRoot, type Root } from "react-dom/client";
 // A type's fields come from the holder's catalog (`readScopeTypeFields`, a thunk).
 jest.mock("@/features/scopes/redux/contextItemCatalog", () => ({
   ...jest.requireActual("@/features/scopes/redux/contextItemCatalog"),
-  readScopeTypeFields: (typeId: string) => () => (async () => [
+  readScopeTypeFields: () => () => (async () => [
     { id: "item-phone", key: "contact_phone", label: "Contact Phone" },
     { id: "item-industry", key: "industry", label: "Industry" },
-  ])(typeId),
+  ])(),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   ...jest.requireActual("@/lib/redux/hooks"),
