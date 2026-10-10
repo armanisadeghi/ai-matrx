@@ -31,6 +31,7 @@ import {
 import { useGroupChat } from "./useGroupChat";
 import { fetchLatestTurn, hitOutputLimit, type LatestTurn } from "./latestTurn";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type TurnState = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; turn: LatestTurn | null };
 
 /** Every participant's latest turn, re-read when the room records a new turn or on Refresh. */
@@ -176,7 +177,7 @@ function ParticipantRow({
     return (
       <div className="border-b border-border/60 px-2 py-1 type-secondary text-destructive" data-participant={row.id}>
         {row.error ?? "Unreadable participant"}
-      </div>
+      <ErrorAlchemyMenu error={row.error} /></div>
     );
   }
   const full = draft ?? readPolicy(participant.policy);
@@ -204,7 +205,7 @@ function ParticipantRow({
       <div className="flex min-w-0 items-baseline gap-2">
         <div className="min-w-0 flex-1">
           <div className="truncate type-secondary font-medium text-foreground">{participantName(participant)}</div>
-          {problem ? <div className="truncate type-meta text-destructive">{problem}</div> : null}
+          {problem ? <div className="truncate type-meta text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></div> : null}
         </div>
         <span className="shrink-0 type-meta tabular-nums text-muted-foreground" title="Round of its latest turn">
           {round == null ? "R —" : `R${round}`}
@@ -334,7 +335,7 @@ function TurnDetail({
   nameOf: (key: string) => string;
 }) {
   if (!turn || turn.status === "loading") return <Skeleton shape="block" height="md" className="mx-2 my-2" />;
-  if (turn.status === "error") return <p className="px-2 py-1 type-secondary text-destructive">{turn.message}</p>;
+  if (turn.status === "error") return <p className="px-2 py-1 type-secondary text-destructive">{turn.message}<ErrorAlchemyMenu error={turn.message} /></p>;
   if (!turn.turn) return <p className="px-2 py-1 type-secondary text-muted-foreground">No turn yet</p>;
   const { turn: t } = turn;
   return (
@@ -388,7 +389,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
 
   if (state.status === "loading") return <Skeleton shape="block" height="lg" className="m-2" />;
   if (state.status === "missing") return <p className="px-3 py-2 type-secondary text-muted-foreground">No group chat in this room yet</p>;
-  if (state.status === "error") return <p className="px-3 py-2 type-secondary text-destructive">{state.message}</p>;
+  if (state.status === "error") return <p className="px-3 py-2 type-secondary text-destructive">{state.message}<ErrorAlchemyMenu error={state.message} /></p>;
 
   const groupKeys = rows.flatMap((r) => (r.participant ? [r.participant.key] : []));
   const nameOf = (key: string) => {
