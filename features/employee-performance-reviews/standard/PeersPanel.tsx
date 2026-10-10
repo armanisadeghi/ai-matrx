@@ -37,9 +37,8 @@ export function PeersPanel({ detail, onChanged }: { detail: ReviewDetail; onChan
     };
   }, [review.organizationId, userId]);
 
-  const seat = review.mySeat;
-  const canAsk = canNominatePeers({ seat, peersEnabled: enabled === true, review });
-  const isManager = seat === "manager";
+  const canAsk = canNominatePeers({ seats: review.seats, peersEnabled: enabled === true, review });
+  const isManager = review.seats.includes("manager");
   const pending = pendingNominations(peerNominations);
   // Nothing to show when peer feedback is off and nobody was ever asked.
   if (enabled !== true && peerNominations.length === 0) return null;

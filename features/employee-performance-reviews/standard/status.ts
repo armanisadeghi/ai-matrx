@@ -50,13 +50,12 @@ export function ratingLabel(points: RatingPoint[], key: string | null): string {
 export function nextStep(r: ReviewSummary): string {
   if (r.status === "cancelled") return "Cancelled";
   if (r.cycleStatus !== "open") return "Cycle closed";
-  const seat = r.mySeat;
   if (r.can.acknowledge) return "Read and acknowledge";
   if (r.can.share) return "Share with the employee";
   if (r.can.submit_self || r.can.save_self) return "Write your self review";
   if (r.can.submit_manager || r.can.save_manager) return "Write your review";
   if (r.status === "acknowledged") return "Done";
-  if (seat === "employee") return r.status === "shared" ? "Read and acknowledge" : "Waiting for your manager";
+  if (r.seats.includes("employee")) return r.status === "shared" ? "Read and acknowledge" : "Waiting for your manager";
   return "Waiting";
 }
 

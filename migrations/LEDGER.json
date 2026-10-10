@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T17:16:32.245Z",
+  "generated_at": "2026-10-10T17:57:45.399Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -67,6 +67,12 @@
       "filename": "accesssetup_e_seat_changes_write_the_access_log.sql",
       "checksum": "b8d5f6c1a43704ac8fdd7058cb78b0c32d7e37ba9066562525f5511d351542ab",
       "applied_at": "2026-10-10 17:16:31.201349+00"
+    },
+    "migrations/campaign/accesssetup_f_fallbacks_and_history_keep_todays_answers.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_f_fallbacks_and_history_keep_todays_answers.sql",
+      "checksum": "c18dce9f4c0caad37d1fc7d742bf2fda6220b1c48ee7a5c9f30f569b58ce793c",
+      "applied_at": "2026-10-10 17:57:41.770382+00"
     },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",

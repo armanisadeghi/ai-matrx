@@ -25,6 +25,13 @@ const SEAT_LABEL: Record<string, string> = {
   manager: "You write",
   hr: "HR",
   skip_level: "Skip-level",
+  upper_management: "Upper management",
+};
+
+/** A person may hold several seats on one review; the column names the first in this order. */
+const roleLabel = (seats: readonly string[]): string => {
+  const seat = Object.keys(SEAT_LABEL).find((s) => seats.includes(s)) ?? seats[0] ?? "";
+  return SEAT_LABEL[seat] ?? seat;
 };
 
 function useReviewsData(organizationId: string | null) {
@@ -92,7 +99,7 @@ export function StandardHome() {
     {
       id: "role",
       header: "Your role",
-      accessorFn: (r) => SEAT_LABEL[r.mySeat] ?? r.mySeat,
+      accessorFn: (r) => roleLabel(r.seats),
       filter: "select",
       filterOptions: Object.values(SEAT_LABEL).map((v) => ({ value: v, label: v })),
       width: 130,

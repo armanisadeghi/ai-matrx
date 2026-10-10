@@ -13,9 +13,9 @@ export function peerLabel(r: Pick<ResponseView, "respondentName">, index: number
 }
 
 /** Peer requests are offered to the employee and the manager, while the review is still being written. */
-export function canNominatePeers(args: { seat: string; peersEnabled: boolean; review: Pick<ReviewSummary, "cycleStatus" | "status"> }): boolean {
+export function canNominatePeers(args: { seats: readonly string[]; peersEnabled: boolean; review: Pick<ReviewSummary, "cycleStatus" | "status"> }): boolean {
   if (!args.peersEnabled) return false;
-  if (args.seat !== "employee" && args.seat !== "manager") return false;
+  if (!args.seats.includes("employee") && !args.seats.includes("manager")) return false;
   if (args.review.cycleStatus !== "open") return false;
   return !["shared", "acknowledged", "cancelled"].includes(args.review.status);
 }
