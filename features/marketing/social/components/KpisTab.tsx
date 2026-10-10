@@ -768,8 +768,8 @@ function OwnChannel({ accounts, loading }: { accounts: readonly AccountRow[]; lo
   const { brandId, brandSeg, organizationId } = useSocials();
   return (
     <div className="flex flex-col gap-3">
-      <BrandChannelPanel brandId={brandId} />
       <OwnInsightsTable accounts={accounts} organizationId={organizationId} brandSeg={brandSeg} loading={loading} />
+      <BrandChannelPanel brandId={brandId} />
     </div>
   );
 }
