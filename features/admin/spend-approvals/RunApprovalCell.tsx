@@ -2,7 +2,7 @@
 
 /**
  * The approval-status cell every spend board shares (agent spend board, automation costs,
- * system jobs, triggers): Waiting / Approved / Rejected linking to the approval, or
+ * system jobs, triggers): Waiting / Approved / Temporary / Rejected linking to the approval, or
  * "Under $N" (N = the threshold of the subject's organization) when no run crossed it. One fetch per seat.
  */
 import { useEffect, useState } from "react";
@@ -25,6 +25,7 @@ import {
 const DOT: Record<ApprovalStatus, string> = {
   waiting: "bg-warning",
   approved: "bg-success",
+  temporary: "bg-info",
   rejected: "bg-destructive",
 };
 
@@ -71,11 +72,12 @@ export function RunApprovalCell({
         name={hit.subject_name ?? subjects.find(([, id]) => id)?.[1] ?? "this subject"}
         costPerRun={hit.avg_cost_since ?? hit.first_run_cost}
         estMonthly={hit.est_monthly_cost}
-        onDecide={async (decision, next, note) => {
+        expiresAt={hit.expires_at}
+        onDecide={async (decision, next, note, expiresAt) => {
           const before = optimistic;
           setOptimistic(next);
           try {
-            await decideSpendApproval(hit.id, decision, { note });
+            await decideSpendApproval(hit.id, decision, { note, expiresAt });
             toast.success(`${APPROVAL_STATUS_LABEL[next]}: ${hit.subject_name ?? "approval"}`);
             void refreshApprovalStatus(orgId).catch(() => undefined);
           } catch (e: unknown) {

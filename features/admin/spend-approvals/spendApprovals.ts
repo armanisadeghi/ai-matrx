@@ -10,8 +10,12 @@
  *   - run_approval_list(p_org_id)          — the page rows (null = every org, super admin);
  *   - run_approval_status(p_org_id)        — status per subject, for the spend boards' column;
  *   - run_approval_waiting_count(p_org_id) — the nav badge;
- *   - run_approval_decide(p_id, decision…) — approve / reject / reopen / details;
+ *   - run_approval_decide(p_id, decision…) — approve / approve_temporary (+ p_expires_at) / reject / reopen / details;
+ *   - run_approval_reset(p_ids, p_note)    — restart the "since" stats from now (history kept);
+ *   - run_approval_expiring(p_days)        — temporary approvals expiring soon (read-only);
  *   - run_approval_history(p_id)           — every event.
+ * A TEMPORARY approval carries expires_at and reads as rejected from that moment (the gate checks it
+ * live; run_approval_list records the flip as an `expired` history event when it next reads).
  * The server gate (aidream services/billing/run_approvals.py) holds the next non-interactive run of
  * a waiting or rejected subject once the platform knob billing.run_approval/enforced is on.
  */
@@ -20,6 +24,7 @@ import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { formatAdminUsd } from "@/components/cost/formatAdminCost";
 import { currentSeesDollars } from "@/components/cost/costUnit";
+import { knobNumber } from "@/lib/knobs/featureKnobs";
 import {
   agentHref,
   automationCostDetailHref,
@@ -31,10 +36,10 @@ import {
   type AutomationKind,
 } from "@/features/scheduling/service/automationCosts";
 
-export type ApprovalStatus = "waiting" | "approved" | "rejected";
+export type ApprovalStatus = "waiting" | "approved" | "temporary" | "rejected";
 export type ApprovalSubjectKind = "agent" | "mandate" | AutomationKind;
 export type ApprovalSeat = "admin" | "org";
-export type ApprovalDecision = "approve" | "reject" | "reopen" | "details";
+export type ApprovalDecision = "approve" | "approve_temporary" | "reject" | "reopen" | "details";
 
 export const SPEND_APPROVALS_ADMIN_PATH = "/administration/billing/approvals";
 export const orgSpendApprovalsPath = (orgSlug: string) => `/organizations/${orgSlug}/admin/spend-approvals`;
@@ -42,8 +47,25 @@ export const orgSpendApprovalsPath = (orgSlug: string) => `/organizations/${orgS
 export const APPROVAL_STATUS_LABEL: Record<ApprovalStatus, string> = {
   waiting: "Waiting",
   approved: "Approved",
+  temporary: "Temporary",
   rejected: "Rejected",
 };
+
+/** Whole days until a temporary approval's expiry (0 on its last day; negative once past). */
+export function daysUntil(iso: string | null, now: number = Date.now()): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? Math.floor((t - now) / 86_400_000) : null;
+}
+
+/** "Expires in 3 days" / "Expires today" / "Expired". */
+export function expiryLabel(iso: string | null, now: number = Date.now()): string {
+  const d = daysUntil(iso, now);
+  if (d == null) return "";
+  if (iso && Date.parse(iso) <= now) return "Expired";
+  if (d === 0) return "Expires today";
+  return `Expires in ${d} ${d === 1 ? "day" : "days"}`;
+}
 
 export const SUBJECT_KIND_LABEL: Record<ApprovalSubjectKind, string> = {
   agent: "Agent",
@@ -106,7 +128,8 @@ export interface SpendApprovalRow {
   avg_cost_since: number | null;
   max_cost_since: number | null;
   runs_30d: number;
-  est_monthly_cost: number;
+  /** Null after a reset until the subject has run again (nothing to estimate from yet). */
+  est_monthly_cost: number | null;
   expected_result: string | null;
   expected_runs_per_month: number | null;
   blocked_runs: number;
@@ -119,6 +142,13 @@ export interface SpendApprovalRow {
   organization_name: string | null;
   organization_is_system: boolean;
   can_decide: boolean;
+  /** A temporary approval's expiry. */
+  expires_at: string | null;
+  /** Tracking reset: "since" stats count from since_at = max(first run, reset). */
+  reset_at: string | null;
+  reset_by_email: string | null;
+  reset_note: string | null;
+  since_at: string | null;
 }
 
 export interface SpendApprovalEvent {
@@ -142,6 +172,7 @@ export interface ApprovalStatusRow {
   avg_cost_since: number | null;
   est_monthly_cost: number | null;
   subject_name: string | null;
+  expires_at: string | null;
 }
 
 const num = (v: unknown): number => {
@@ -149,7 +180,7 @@ const num = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : num(v));
-const asStatus = (v: string): ApprovalStatus => (v === "approved" || v === "rejected" ? v : "waiting");
+const asStatus = (v: string): ApprovalStatus => (v === "approved" || v === "rejected" || v === "temporary" ? v : "waiting");
 const asKind = (v: string): ApprovalSubjectKind => (v in SUBJECT_KIND_LABEL ? (v as ApprovalSubjectKind) : "agent");
 
 export async function fetchSpendApprovals(orgId: string | null): Promise<SpendApprovalRow[]> {
@@ -192,7 +223,7 @@ export async function fetchSpendApprovals(orgId: string | null): Promise<SpendAp
     avg_cost_since: numOrNull(r.avg_cost_since),
     max_cost_since: numOrNull(r.max_cost_since),
     runs_30d: num(r.runs_30d),
-    est_monthly_cost: num(r.est_monthly_cost),
+    est_monthly_cost: numOrNull(r.est_monthly_cost),
     expected_result: r.expected_result,
     expected_runs_per_month: numOrNull(r.expected_runs_per_month),
     blocked_runs: num(r.blocked_runs),
@@ -205,6 +236,11 @@ export async function fetchSpendApprovals(orgId: string | null): Promise<SpendAp
     organization_name: r.organization_name,
     organization_is_system: r.organization_is_system === true,
     can_decide: r.can_decide === true,
+    expires_at: r.expires_at,
+    reset_at: r.reset_at,
+    reset_by_email: r.reset_by_email,
+    reset_note: r.reset_note,
+    since_at: r.since_at,
     };
   });
 }
@@ -212,7 +248,7 @@ export async function fetchSpendApprovals(orgId: string | null): Promise<SpendAp
 export async function decideSpendApproval(
   id: string,
   decision: ApprovalDecision,
-  fields: { note?: string; expectedResult?: string; expectedRunsPerMonth?: number | null } = {},
+  fields: { note?: string; expectedResult?: string; expectedRunsPerMonth?: number | null; expiresAt?: string | null } = {},
 ): Promise<void> {
   const { error } = await supabase.schema("billing").rpc("run_approval_decide", {
     p_id: id,
@@ -220,9 +256,102 @@ export async function decideSpendApproval(
     p_note: fields.note || undefined,
     p_expected_result: fields.expectedResult || undefined,
     p_expected_runs_per_month: fields.expectedRunsPerMonth ?? undefined,
+    p_expires_at: fields.expiresAt ?? undefined,
   });
   if (error) throw pgErrorToError(error);
   invalidateApprovalStatus();
+}
+
+/** Restart the "since" stats of these approvals from now. History is kept (a `reset` event each). */
+export async function resetSpendApprovalTracking(ids: string[], note?: string): Promise<number> {
+  const { data, error } = await supabase.schema("billing").rpc("run_approval_reset", {
+    p_ids: ids,
+    p_note: note || undefined,
+  });
+  if (error) throw pgErrorToError(error);
+  invalidateApprovalStatus();
+  return num(data);
+}
+
+export interface ExpiringApproval {
+  id: string;
+  subject_kind: string;
+  subject_name: string | null;
+  subject_id: string;
+  expires_at: string;
+  days_left: number;
+  expired: boolean;
+}
+
+/** Temporary approvals expiring within `days` (expired-not-yet-recorded included). */
+export async function fetchExpiringApprovals(days = 7): Promise<ExpiringApproval[]> {
+  const { data, error } = await supabase.schema("billing").rpc("run_approval_expiring", { p_days: days });
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    subject_kind: r.subject_kind,
+    subject_name: r.subject_name,
+    subject_id: r.subject_id,
+    expires_at: r.expires_at,
+    days_left: num(r.days_left),
+    expired: r.expired === true,
+  }));
+}
+
+// ── Board colours: opinions, so knobs (platform.feature_knob billing.run_approval/*) ──
+
+export interface ApprovalColorKnobs {
+  avgRedUsd: number;
+  avgAmberUsd: number;
+  monthlyRedUsd: number;
+  monthlyAmberUsd: number;
+  expiryWarnDays: number;
+  temporaryDefaultDays: number;
+}
+
+const APPROVAL_KNOB_FEATURE = "billing.run_approval";
+
+export function useApprovalColorKnobs(): ApprovalColorKnobs | null {
+  const [k, setK] = useState<ApprovalColorKnobs | null>(null);
+  useEffect(() => {
+    let live = true;
+    Promise.all([
+      knobNumber(APPROVAL_KNOB_FEATURE, "color_avg_red_usd"),
+      knobNumber(APPROVAL_KNOB_FEATURE, "color_avg_amber_usd"),
+      knobNumber(APPROVAL_KNOB_FEATURE, "color_monthly_red_usd"),
+      knobNumber(APPROVAL_KNOB_FEATURE, "color_monthly_amber_usd"),
+      knobNumber(APPROVAL_KNOB_FEATURE, "expiry_warn_days"),
+      knobNumber(APPROVAL_KNOB_FEATURE, "temporary_default_days"),
+    ])
+      .then(([avgRedUsd, avgAmberUsd, monthlyRedUsd, monthlyAmberUsd, expiryWarnDays, temporaryDefaultDays]) => {
+        if (live) setK({ avgRedUsd, avgAmberUsd, monthlyRedUsd, monthlyAmberUsd, expiryWarnDays, temporaryDefaultDays });
+      })
+      .catch((e: unknown) => {
+        // A missing knob is loud, never a silent constant (lib/knobs/featureKnobs.ts contract).
+        console.error("[spend-approvals] colour knobs unavailable", e);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return k;
+}
+
+/** The tone a dollar figure earns against a red / amber pair; null = plain. */
+export function costTone(value: number | null | undefined, red: number, amber: number): "danger" | "warning" | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  if (value >= red) return "danger";
+  if (value >= amber) return "warning";
+  return null;
+}
+
+/** The tone an expiry earns: past or within the warning window = danger / warning. */
+export function expiryTone(iso: string | null, warnDays: number, now: number = Date.now()): "danger" | "warning" | null {
+  const d = daysUntil(iso, now);
+  if (d == null) return null;
+  if (iso && Date.parse(iso) <= now) return "danger";
+  if (d <= warnDays) return "warning";
+  return null;
 }
 
 export interface BatchDecisionResult {
@@ -335,6 +464,7 @@ function loadStatus(orgId: string | null): Promise<StatusIndex> {
           can_decide: d?.can_decide === true,
           avg_cost_since: d?.avg_cost_since ?? null,
           est_monthly_cost: d ? d.est_monthly_cost : null,
+          expires_at: d?.expires_at ?? null,
           subject_name: d?.subject_name ?? null,
         });
       }

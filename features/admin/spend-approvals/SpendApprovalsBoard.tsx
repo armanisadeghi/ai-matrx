@@ -2,20 +2,24 @@
 
 /**
  * Spend approvals — every agent, mandate and automation whose single run cost more than the
- * approval threshold, waiting ones first, with the first run's cost and link, what it cost
- * since, the monthly estimate, who decided and Approve / Reject with a confirm.
+ * approval threshold, waiting ones first, on the canonical MatrxDataTable (views, KPIs, columns).
  * seat="admin": every organization (decides system-owned + all). seat="org": one organization's
  * own subjects (its admins decide them). Data + rules: ./spendApprovals.ts.
+ *
+ * Arman 2026-10-10: default columns in his order; every $ to the cent; points hidden by default;
+ * colours from knobs (billing.run_approval/color_*); "Temporary" approvals with an expiry; "Reset
+ * tracking" restarts the "since" stats; ?id=<approval> filters to and highlights that row.
  */
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, History, Loader2, RefreshCw, RotateCcw, X } from "lucide-react";
+import { CalendarClock, Check, History, Loader2, RefreshCw, RotateCcw, TimerReset, X } from "lucide-react";
 import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { formatUsd } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { ApprovalStatusText } from "./RunApprovalCell";
-import { ApprovalStatusSelect } from "./ApprovalStatusSelect";
+import { ApprovalStatusSelect, dateInputValue, endOfLocalDayIso } from "./ApprovalStatusSelect";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -23,17 +27,24 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { toast } from "@/lib/toast";
 import {
   APPROVAL_STATUS_LABEL,
   SUBJECT_KIND_LABEL,
+  costTone,
   decideSpendApproval,
   decideSpendApprovalsBatch,
+  expiryLabel,
+  expiryTone,
+  resetSpendApprovalTracking,
   startedByLabel,
   fetchSpendApprovalHistory,
   fetchSpendApprovals,
   firstRunHref,
   subjectHref,
+  useApprovalColorKnobs,
+  type ApprovalColorKnobs,
   type ApprovalDecision,
   type ApprovalSeat,
   type ApprovalStatus,
@@ -42,10 +53,29 @@ import {
 } from "./spendApprovals";
 
 type StatusFilter = ApprovalStatus | "all";
+type Tone = "danger" | "warning" | null;
 
-
+const TONE_CLASS: Record<"danger" | "warning", string> = {
+  danger: "font-semibold text-destructive",
+  warning: "font-medium text-warning",
+};
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
+const whenDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
+/** Every dollar figure on this board: to the cent. */
+const cents = (usd: number | null | undefined) => (usd == null ? "—" : formatUsd(usd, { digits: 2 }));
+
+const EVENT_LABEL: Record<string, string> = {
+  created: "Opened",
+  approved: "Approved",
+  approved_temporarily: "Approved temporarily",
+  rejected: "Rejected",
+  reopened: "Reopened",
+  details: "Details",
+  withdrawn: "Withdrawn",
+  expired: "Expired",
+  reset: "Tracking reset",
+};
 
 function useApprovals(orgId: string | null) {
   const [rows, setRows] = useState<SpendApprovalRow[]>([]);
@@ -67,6 +97,11 @@ function useApprovals(orgId: string | null) {
   return { rows, setRows, loading, error, reload: () => setTick((t) => t + 1) };
 }
 
+function eventUntil(e: SpendApprovalEvent): string | null {
+  const d = e.data as { expires_at?: string } | null;
+  return d && typeof d.expires_at === "string" ? d.expires_at : null;
+}
+
 function HistoryList({ id }: { id: string }) {
   const [events, setEvents] = useState<SpendApprovalEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,72 +118,111 @@ function HistoryList({ id }: { id: string }) {
   if (!events) return <div className="h-12 animate-pulse rounded bg-muted/50" />;
   return (
     <ol className="flex max-h-48 flex-col gap-1 overflow-y-auto text-xs">
-      {events.map((e) => (
-        <li key={e.id} className="flex min-w-0 gap-2">
-          <span className="shrink-0 tabular-nums text-muted-foreground">{when(e.created_at)}</span>
-          <span className="shrink-0 whitespace-nowrap font-medium">{e.action}</span>
-          <span className="min-w-0 truncate text-muted-foreground" title={e.note ?? undefined}>
-            {[e.actor_email ?? "System", e.note].filter(Boolean).join(" · ")}
-          </span>
-        </li>
-      ))}
+      {events.map((e) => {
+        const until = e.action === "approved_temporarily" ? eventUntil(e) : null;
+        return (
+          <li key={e.id} className="flex min-w-0 gap-2">
+            <span className="shrink-0 tabular-nums text-muted-foreground">{when(e.created_at)}</span>
+            <span className="shrink-0 whitespace-nowrap font-medium">
+              {until ? `Approved until ${whenDay(until)}` : (EVENT_LABEL[e.action] ?? e.action)}
+            </span>
+            <span className="min-w-0 truncate text-muted-foreground" title={e.note ?? undefined}>
+              {[e.actor_email ?? "System", e.note].filter(Boolean).join(" · ")}
+            </span>
+          </li>
+        );
+      })}
     </ol>
   );
 }
 
 interface Pending {
   row: SpendApprovalRow;
-  decision: ApprovalDecision | "history";
+  decision: ApprovalDecision | "history" | "reset";
 }
 
 function DecisionDialog({
   pending,
+  knobs,
   onClose,
   onDone,
 }: {
   pending: Pending | null;
+  knobs: ApprovalColorKnobs | null;
   onClose: () => void;
   onDone: () => void;
 }) {
-  const { format } = useCostDisplay();
   const [note, setNote] = useState("");
   const [expected, setExpected] = useState("");
   const [perMonth, setPerMonth] = useState("");
+  const [until, setUntil] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setNote("");
     setExpected(pending?.row.expected_result ?? "");
     setPerMonth(pending?.row.expected_runs_per_month != null ? String(pending.row.expected_runs_per_month) : "");
-  }, [pending]);
+    setUntil(
+      pending?.row.status === "temporary" && pending.row.expires_at
+        ? dateInputValue(0, new Date(pending.row.expires_at))
+        : dateInputValue(knobs?.temporaryDefaultDays ?? 7),
+    );
+  }, [pending, knobs]);
   if (!pending) return null;
   const { row, decision } = pending;
   const name = row.subject_name ?? row.subject_id;
   const runsPerMonth = perMonth.trim() === "" ? null : Number(perMonth);
-  const monthly = (runsPerMonth ?? row.runs_30d) * (row.avg_cost_since ?? row.first_run_cost);
+  const perRun = row.avg_cost_since ?? row.first_run_cost;
+  const monthly = (runsPerMonth ?? row.runs_30d) * perRun;
+  const untilIso = decision === "approve_temporary" ? endOfLocalDayIso(until) : null;
+  const untilValid = decision !== "approve_temporary" || (untilIso != null && Date.parse(untilIso) > Date.now());
   const titles: Record<Pending["decision"], string> = {
     approve: `Approve ${name}?`,
+    approve_temporary: `Approve ${name} temporarily?`,
     reject: `Reject ${name}?`,
     reopen: `Reopen ${name}?`,
     details: name,
     history: `History — ${name}`,
+    reset: `Reset tracking for ${name}?`,
   };
   const consequence: Record<Pending["decision"], string> = {
-    approve: `About ${format(row.avg_cost_since ?? row.first_run_cost)} a run, ${format(monthly)} a month.`,
-    reject: `About ${format(row.avg_cost_since ?? row.first_run_cost)} a run, ${format(monthly)} a month. Automated runs stay held.`,
+    approve: `About ${cents(perRun)} a run, ${cents(monthly)} a month.`,
+    approve_temporary: untilIso
+      ? `About ${cents(perRun)} a run. ${expiryLabel(untilIso)}, then Rejected.`
+      : `About ${cents(perRun)} a run.`,
+    reject: `About ${cents(perRun)} a run, ${cents(monthly)} a month. Automated runs stay held.`,
     reopen: "Back to waiting.",
     details: "",
     history: "",
+    reset: "Runs since, avg, max and est./month restart from now. History is kept.",
+  };
+  const confirmLabel: Record<Pending["decision"], string> = {
+    approve: "Approve",
+    approve_temporary: "Approve until",
+    reject: "Reject",
+    reopen: "Reopen",
+    details: "Save",
+    history: "Close",
+    reset: "Reset tracking",
   };
   const submit = async () => {
     if (decision === "history") return onClose();
+    if (!untilValid) return;
     setBusy(true);
     try {
-      await decideSpendApproval(row.id, decision, {
-        note,
-        expectedResult: expected,
-        expectedRunsPerMonth: runsPerMonth != null && Number.isFinite(runsPerMonth) ? runsPerMonth : null,
-      });
-      toast.success(`${APPROVAL_STATUS_LABEL[decision === "approve" ? "approved" : decision === "reject" ? "rejected" : "waiting"]}: ${name}`);
+      if (decision === "reset") {
+        await resetSpendApprovalTracking([row.id], note);
+        toast.success(`Tracking reset: ${name}`);
+      } else {
+        await decideSpendApproval(row.id, decision, {
+          note,
+          expectedResult: expected,
+          expectedRunsPerMonth: runsPerMonth != null && Number.isFinite(runsPerMonth) ? runsPerMonth : null,
+          expiresAt: untilIso,
+        });
+        const next: ApprovalStatus =
+          decision === "approve" ? "approved" : decision === "approve_temporary" ? "temporary" : decision === "reject" ? "rejected" : "waiting";
+        toast.success(`${APPROVAL_STATUS_LABEL[next]}: ${name}`);
+      }
       onDone();
       onClose();
     } catch (e: unknown) {
@@ -157,6 +231,7 @@ function DecisionDialog({
       setBusy(false);
     }
   };
+  const approving = decision === "approve" || decision === "approve_temporary";
   return (
     <ConfirmDialog
       open
@@ -164,13 +239,26 @@ function DecisionDialog({
       title={titles[decision]}
       description={consequence[decision] || undefined}
       variant={decision === "reject" ? "destructive" : "default"}
-      confirmLabel={decision === "history" ? "Close" : decision === "approve" ? "Approve" : decision === "reject" ? "Reject" : "Reopen"}
+      confirmLabel={confirmLabel[decision]}
       cancelLabel={decision === "history" ? null : "Cancel"}
       busy={busy}
       onConfirm={submit}
       content={
         <div className="flex flex-col gap-3 text-sm">
-          {decision === "approve" && (
+          {decision === "approve_temporary" && (
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Expires on</span>
+              {/* ui-exception: a date value, not prose */}
+              <input
+                type="date"
+                value={until}
+                min={dateInputValue(0)}
+                onChange={(e) => setUntil(e.target.value)}
+                className="h-7 rounded-md border border-border bg-background px-2 text-sm"
+              />
+            </label>
+          )}
+          {approving && (
             <>
               <label className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">Expected result</span>
@@ -210,6 +298,30 @@ function DecisionDialog({
   );
 }
 
+/** A dollar column to the cent, plus its points twin hidden by default (admins can show it). */
+function usdColumns(
+  id: string,
+  header: string,
+  value: (r: SpendApprovalRow) => number | null | undefined,
+  width: number,
+): MatrxColumnDef<SpendApprovalRow>[] {
+  const [, points] = adminCostColumns<SpendApprovalRow>({ id, label: header, value });
+  return [
+    {
+      id,
+      header,
+      accessorFn: value,
+      filter: "number",
+      defaultSortDirection: "desc",
+      align: "right",
+      width,
+      copyValue: (r) => cents(value(r)),
+      cell: (r) => <span className="tabular-nums">{cents(value(r))}</span>,
+    },
+    { ...points, hidden: true, width },
+  ];
+}
+
 export function SpendApprovalsBoard({
   orgId,
   seat,
@@ -221,28 +333,56 @@ export function SpendApprovalsBoard({
 }) {
   const { rows, setRows, loading, error, reload } = useApprovals(orgId);
   const { format } = useCostDisplay();
+  const knobs = useApprovalColorKnobs();
+  const { prefs: viewPrefs, setPrefs: setViewPrefs } = useListViewPrefs(`spend-approvals-${seat}`);
   const params = useSearchParams();
   const focusId = params.get("id");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [pending, setPending] = useState<Pending | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulk, setBulk] = useState<{ decision: "approve" | "reject"; rows: SpendApprovalRow[] } | null>(null);
+  const [bulk, setBulk] = useState<{ decision: "approve" | "reject" | "reset"; rows: SpendApprovalRow[] } | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
 
   const visible = rows.filter((r) => (focusId ? r.id === focusId : status === "all" || r.status === status));
-  const waiting = rows.filter((r) => r.status === "waiting");
-  const waitingMonthly = waiting.reduce((s, r) => s + r.est_monthly_cost, 0);
 
-  const setRowStatus = (id: string, st: ApprovalStatus) =>
-    setRows((rs) => rs.map((x) => (x.id === id ? { ...x, status: st } : x)));
-  const decideInline = async (r: SpendApprovalRow, decision: ApprovalDecision, next: ApprovalStatus, note: string) => {
-    const before = r.status;
-    setRowStatus(r.id, next);
+  const perRunTone = (v: number | null | undefined): Tone => (knobs ? costTone(v, knobs.avgRedUsd, knobs.avgAmberUsd) : null);
+  const monthlyTone = (v: number | null | undefined): Tone =>
+    knobs ? costTone(v, knobs.monthlyRedUsd, knobs.monthlyAmberUsd) : null;
+  const toneOf = (r: SpendApprovalRow, columnId: string): Tone => {
+    switch (columnId) {
+      case "avg_cost_since":
+        return perRunTone(r.avg_cost_since);
+      case "max_cost_since":
+        return perRunTone(r.max_cost_since);
+      case "automated_cost_per_run":
+        return perRunTone(r.automated_cost_per_run);
+      case "first_run_cost":
+        return perRunTone(r.first_run_cost);
+      case "est_monthly_cost":
+        return monthlyTone(r.est_monthly_cost);
+      case "automated_cost_30d":
+        return monthlyTone(r.automated_cost_30d);
+      default:
+        return null;
+    }
+  };
+
+  const setRowStatus = (id: string, st: ApprovalStatus, expiresAt?: string | null) =>
+    setRows((rs) => rs.map((x) => (x.id === id ? { ...x, status: st, expires_at: expiresAt ?? (st === "temporary" ? x.expires_at : null) } : x)));
+  const decideInline = async (
+    r: SpendApprovalRow,
+    decision: ApprovalDecision,
+    next: ApprovalStatus,
+    note: string,
+    expiresAt: string | null,
+  ) => {
+    const before = { status: r.status, expires_at: r.expires_at };
+    setRowStatus(r.id, next, expiresAt);
     try {
-      await decideSpendApproval(r.id, decision, { note });
+      await decideSpendApproval(r.id, decision, { note, expiresAt });
       toast.success(`${APPROVAL_STATUS_LABEL[next]}: ${r.subject_name ?? r.subject_id}`);
     } catch (e: unknown) {
-      setRowStatus(r.id, before);
+      setRowStatus(r.id, before.status, before.expires_at);
       toast.error(e instanceof Error ? e.message : String(e));
     }
   };
@@ -250,10 +390,23 @@ export function SpendApprovalsBoard({
   const decideBulk = async () => {
     if (!bulk) return;
     const { decision, rows: targets } = bulk;
+    setBulkBusy(true);
+    if (decision === "reset") {
+      try {
+        const n = await resetSpendApprovalTracking(targets.map((t) => t.id), "Batch reset");
+        toast.success(`Tracking reset: ${n}`);
+        setSelectedIds([]);
+        reload();
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : String(e));
+      }
+      setBulkBusy(false);
+      setBulk(null);
+      return;
+    }
     const next: ApprovalStatus = decision === "approve" ? "approved" : "rejected";
     const before = new Map(targets.map((t) => [t.id, t.status]));
-    setBulkBusy(true);
-    setRows((rs) => rs.map((x) => (before.has(x.id) ? { ...x, status: next } : x)));
+    setRows((rs) => rs.map((x) => (before.has(x.id) ? { ...x, status: next, expires_at: null } : x)));
     const res = await decideSpendApprovalsBatch(targets.map((t) => t.id), decision);
     if (res.failed.length) {
       const failed = new Set(res.failed.map((f) => f.id));
@@ -265,17 +418,21 @@ export function SpendApprovalsBoard({
     setBulkBusy(false);
     setBulk(null);
   };
-  const bulkTargets = (selected: SpendApprovalRow[], decision: "approve" | "reject") =>
-    selected.filter((r) => r.can_decide && r.status !== (decision === "approve" ? "approved" : "rejected"));
-  const bulkMonthly = bulk ? bulk.rows.reduce((s, r) => s + r.est_monthly_cost, 0) : 0;
+  const bulkTargets = (selected: SpendApprovalRow[], decision: "approve" | "reject" | "reset") =>
+    selected.filter(
+      (r) => r.can_decide && (decision === "reset" || r.status !== (decision === "approve" ? "approved" : "rejected")),
+    );
+  const bulkMonthly = bulk ? bulk.rows.reduce((s, r) => s + (r.est_monthly_cost ?? 0), 0) : 0;
 
   const columns: MatrxColumnDef<SpendApprovalRow>[] = [
+    // ── the default columns, in Arman's order (2026-10-10) ──
     {
       id: "subject",
       header: "Subject",
       accessorFn: (r) => r.subject_name ?? r.subject_id,
       filter: "text",
       width: 240,
+      frozen: true,
       cell: (r) => {
         const href = subjectHref(r, seat, orgSlug);
         const name = r.subject_name ?? r.subject_id;
@@ -293,7 +450,7 @@ export function SpendApprovalsBoard({
       header: "Type",
       accessorFn: (r) => SUBJECT_KIND_LABEL[r.subject_kind],
       filter: "select",
-      width: 130,
+      width: 140,
       cell: (r) => <span className="whitespace-nowrap text-xs">{SUBJECT_KIND_LABEL[r.subject_kind]}</span>,
     },
     {
@@ -319,38 +476,52 @@ export function SpendApprovalsBoard({
       filterOptions: [
         { value: "waiting", label: "Waiting" },
         { value: "approved", label: "Approved" },
+        { value: "temporary", label: "Temporary" },
         { value: "rejected", label: "Rejected" },
       ],
-      width: 120,
-      cell: (r) =>
-        r.can_decide ? (
-          <ApprovalStatusSelect
-            status={r.status}
-            name={r.subject_name ?? r.subject_id}
-            costPerRun={r.avg_cost_since ?? r.first_run_cost}
-            estMonthly={r.est_monthly_cost}
-            onDecide={(decision, next, note) => decideInline(r, decision, next, note)}
-          />
-        ) : (
-          <ApprovalStatusText status={r.status} />
-        ),
+      width: 250,
+      cell: (r) => {
+        const tone = r.status === "temporary" && knobs ? expiryTone(r.expires_at, knobs.expiryWarnDays) : null;
+        return (
+          <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+            {r.can_decide ? (
+              <ApprovalStatusSelect
+                status={r.status}
+                name={r.subject_name ?? r.subject_id}
+                costPerRun={r.avg_cost_since ?? r.first_run_cost}
+                estMonthly={r.est_monthly_cost}
+                expiresAt={r.expires_at}
+                onDecide={(decision, next, note, expiresAt) => decideInline(r, decision, next, note, expiresAt)}
+              />
+            ) : (
+              <ApprovalStatusText status={r.status} />
+            )}
+            {r.status === "temporary" && r.expires_at && (
+              <span className={`truncate text-xs ${tone ? TONE_CLASS[tone] : "text-muted-foreground"}`} title={when(r.expires_at)}>
+                {expiryLabel(r.expires_at)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
-      id: "seeded",
-      header: "Before rule",
-      accessorFn: (r) => (r.seeded ? "Yes" : "No"),
-      filter: "select",
-      width: 90,
-      hidden: true,
-      cell: (r) => <span className="text-xs">{r.seeded ? "Yes" : "No"}</span>,
+      id: "automated_runs_30d",
+      accessorKey: "automated_runs_30d",
+      header: "Automated runs (30d)",
+      filter: "number",
+      align: "right",
+      width: 190,
+      cell: (r) => <span className="tabular-nums">{r.automated_runs_30d}</span>,
     },
-    ...adminCostColumns<SpendApprovalRow>({ id: "first_run_cost", label: "First run cost", value: (r) => r.first_run_cost }),
+    ...usdColumns("automated_cost_per_run", "Cost per automated run", (r) => r.automated_cost_per_run, 200),
+    ...usdColumns("automated_cost_30d", "Automated cost (30d)", (r) => r.automated_cost_30d, 190),
     {
       id: "first_run_at",
       header: "First run at",
       accessorFn: (r) => r.first_run_at ?? "",
       filter: "date",
-      width: 170,
+      width: 180,
       cell: (r) => {
         const href = firstRunHref(r, seat);
         return href ? (
@@ -360,15 +531,69 @@ export function SpendApprovalsBoard({
         );
       },
     },
+    ...usdColumns("est_monthly_cost", "Est./month", (r) => r.est_monthly_cost, 130),
+    ...usdColumns("max_cost_since", "Max cost since", (r) => r.max_cost_since, 150),
+    {
+      id: "runs_since",
+      accessorKey: "runs_since",
+      header: "Runs since",
+      filter: "number",
+      align: "right",
+      width: 120,
+      cell: (r) => <span className="tabular-nums">{r.runs_since}</span>,
+    },
+    ...usdColumns("avg_cost_since", "Avg cost since", (r) => r.avg_cost_since, 150),
+    // ── available in Columns, hidden by default ──
+    ...usdColumns("first_run_cost", "First run cost", (r) => r.first_run_cost, 150).map((c) => ({ ...c, hidden: true })),
+    {
+      id: "expires_at",
+      header: "Expires at",
+      accessorFn: (r) => r.expires_at ?? "",
+      filter: "date",
+      width: 170,
+      hidden: true,
+      cell: (r) => <span className="block truncate text-xs">{r.status === "temporary" ? when(r.expires_at) : "—"}</span>,
+    },
+    {
+      id: "since_at",
+      header: "Since",
+      accessorFn: (r) => r.since_at ?? "",
+      filter: "date",
+      width: 170,
+      hidden: true,
+      cell: (r) => <span className="block truncate text-xs">{when(r.since_at)}</span>,
+    },
+    {
+      id: "reset_at",
+      header: "Reset at",
+      accessorFn: (r) => r.reset_at ?? "",
+      filter: "date",
+      width: 170,
+      hidden: true,
+      cell: (r) => (
+        <span className="block truncate text-xs" title={[r.reset_by_email, r.reset_note].filter(Boolean).join(" · ") || undefined}>
+          {when(r.reset_at)}
+        </span>
+      ),
+    },
+    {
+      id: "seeded",
+      header: "Before rule",
+      accessorFn: (r) => (r.seeded ? "Yes" : "No"),
+      filter: "select",
+      width: 120,
+      hidden: true,
+      cell: (r) => <span className="text-xs">{r.seeded ? "Yes" : "No"}</span>,
+    },
     {
       id: "first_run_turns",
       header: "First run turns",
       accessorFn: (r) => r.first_run_turns,
       filter: "number",
       align: "right",
-      width: 110,
+      width: 150,
       hidden: true,
-      cell: (r) => <span className="tabular-nums text-xs">{r.first_run_turns}</span>,
+      cell: (r) => <span className="tabular-nums">{r.first_run_turns}</span>,
     },
     {
       id: "first_run_model",
@@ -382,37 +607,15 @@ export function SpendApprovalsBoard({
       ),
     },
     {
-      id: "runs_since",
-      accessorKey: "runs_since",
-      header: "Runs since",
-      filter: "number",
-      align: "right",
-      width: 90,
-      cell: (r) => <span className="tabular-nums text-xs">{r.runs_since}</span>,
-    },
-    ...adminCostColumns<SpendApprovalRow>({ id: "avg_cost_since", label: "Avg cost since", value: (r) => r.avg_cost_since }),
-    ...adminCostColumns<SpendApprovalRow>({ id: "max_cost_since", label: "Max cost since", value: (r) => r.max_cost_since }),
-    {
-      id: "automated_runs_30d",
-      accessorKey: "automated_runs_30d",
-      header: "Automated runs (30d)",
-      filter: "number",
-      align: "right",
-      width: 110,
-      cell: (r) => <span className="tabular-nums text-xs">{r.automated_runs_30d}</span>,
-    },
-    ...adminCostColumns<SpendApprovalRow>({ id: "automated_cost_30d", label: "Automated cost (30d)", value: (r) => r.automated_cost_30d }),
-    ...adminCostColumns<SpendApprovalRow>({ id: "automated_cost_per_run", label: "Cost / automated run", value: (r) => r.automated_cost_per_run }),
-    ...adminCostColumns<SpendApprovalRow>({ id: "est_monthly_cost", label: "Est./month", value: (r) => r.est_monthly_cost }),
-    {
       id: "blocked_runs",
       accessorKey: "blocked_runs",
       header: "Held runs",
       filter: "number",
       align: "right",
-      width: 90,
+      width: 120,
+      hidden: true,
       cell: (r) => (
-        <span className={`tabular-nums text-xs ${r.blocked_runs > 0 ? "font-semibold text-warning" : "text-muted-foreground"}`} title={r.last_blocked_at ? `Last held ${when(r.last_blocked_at)}` : undefined}>
+        <span className={`tabular-nums ${r.blocked_runs > 0 ? "font-semibold text-warning" : "text-muted-foreground"}`} title={r.last_blocked_at ? `Last held ${when(r.last_blocked_at)}` : undefined}>
           {r.blocked_runs}
         </span>
       ),
@@ -423,6 +626,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => startedByLabel(r.started_by),
       filter: "text",
       width: 200,
+      hidden: true,
       cell: (r) => <span className="block truncate text-xs" title={startedByLabel(r.started_by)}>{startedByLabel(r.started_by)}</span>,
     },
     {
@@ -431,6 +635,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => r.first_run_person_email ?? "",
       filter: "text",
       width: 200,
+      hidden: true,
       cell: (r) => <span className="block truncate text-xs" title={r.first_run_person_email ?? undefined}>{r.first_run_person_email ?? "Unknown person"}</span>,
     },
     {
@@ -439,6 +644,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => r.organization_name ?? "",
       filter: "text",
       width: 180,
+      hidden: true,
       cell: (r) =>
         seat === "admin" ? (
           <div className="min-w-0 truncate text-xs">
@@ -454,6 +660,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => r.decided_by_email ?? "",
       filter: "text",
       width: 180,
+      hidden: true,
       cell: (r) => <span className={`block truncate text-xs ${r.decided_by_email ? "" : "text-muted-foreground"}`}>{r.decided_by_email ?? "—"}</span>,
     },
     {
@@ -462,6 +669,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => r.decided_at ?? "",
       filter: "date",
       width: 170,
+      hidden: true,
       cell: (r) => <span className={`block truncate text-xs ${r.decided_at ? "" : "text-muted-foreground"}`}>{when(r.decided_at)}</span>,
     },
     {
@@ -477,7 +685,8 @@ export function SpendApprovalsBoard({
       id: "actions",
       header: "",
       accessorFn: () => "",
-      width: 200,
+      filter: false,
+      width: 230,
       cell: (r) => (
         <div className="flex items-center gap-1">
           {r.can_decide && r.status !== "approved" && (
@@ -485,17 +694,27 @@ export function SpendApprovalsBoard({
               <Check className="h-4 w-4" /> Approve
             </Button>
           )}
+          {r.can_decide && (
+            <Button variant="quiet" onClick={() => setPending({ row: r, decision: "approve_temporary" })} aria-label="Approve temporarily" title="Approve temporarily">
+              <CalendarClock className="h-4 w-4" />
+            </Button>
+          )}
           {r.can_decide && r.status !== "rejected" && (
-            <Button variant="outline" onClick={() => setPending({ row: r, decision: "reject" })} aria-label="Reject">
+            <Button variant="outline" onClick={() => setPending({ row: r, decision: "reject" })} aria-label="Reject" title="Reject">
               <X className="h-4 w-4" />
             </Button>
           )}
           {r.can_decide && r.status !== "waiting" && (
-            <Button variant="quiet" onClick={() => setPending({ row: r, decision: "reopen" })} aria-label="Reopen">
+            <Button variant="quiet" onClick={() => setPending({ row: r, decision: "reopen" })} aria-label="Reopen" title="Reopen">
               <RotateCcw className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="quiet" onClick={() => setPending({ row: r, decision: "history" })} aria-label="History">
+          {r.can_decide && (
+            <Button variant="quiet" onClick={() => setPending({ row: r, decision: "reset" })} aria-label="Reset tracking" title="Reset tracking">
+              <TimerReset className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="quiet" onClick={() => setPending({ row: r, decision: "history" })} aria-label="History" title="History">
             <History className="h-4 w-4" />
           </Button>
           {!r.can_decide && <span className="text-[10px] text-muted-foreground">Platform decides</span>}
@@ -503,6 +722,9 @@ export function SpendApprovalsBoard({
       ),
     },
   ];
+
+  const sumMonthly = (rs: readonly SpendApprovalRow[]) => rs.reduce((s, r) => s + (r.est_monthly_cost ?? 0), 0);
+  const tonedValue = (text: string, tone: Tone) => <span className={tone ? TONE_CLASS[tone] : undefined}>{text}</span>;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -518,6 +740,65 @@ export function SpendApprovalsBoard({
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
+          tableId={`spend-approvals-${seat}`}
+          viewTabsStore={{
+            views: viewPrefs.savedViews ?? [],
+            onChange: (savedViews) => setViewPrefs({ savedViews }),
+          }}
+          selectedId={focusId}
+          cellClassName={(r, columnId) => {
+            const tone = toneOf(r, columnId);
+            return tone ? TONE_CLASS[tone] : undefined;
+          }}
+          summary={{
+            metrics: [
+              {
+                id: "waiting",
+                label: "Waiting",
+                value: ({ rows: shown }) => {
+                  const n = shown.filter((r) => r.status === "waiting").length;
+                  return tonedValue(String(n), n > 0 ? "warning" : null);
+                },
+              },
+              {
+                id: "waiting_monthly",
+                label: "Waiting est./month",
+                value: ({ rows: shown }) => {
+                  const v = sumMonthly(shown.filter((r) => r.status === "waiting"));
+                  return tonedValue(cents(v), monthlyTone(v));
+                },
+              },
+              {
+                id: "expiring",
+                label: "Temporary expiring",
+                value: ({ rows: shown }) => {
+                  const n = knobs
+                    ? shown.filter((r) => r.status === "temporary" && expiryTone(r.expires_at, knobs.expiryWarnDays) != null).length
+                    : 0;
+                  return tonedValue(String(n), n > 0 ? "danger" : null);
+                },
+              },
+              {
+                id: "approved_monthly",
+                label: "Approved est./month",
+                value: ({ rows: shown }) =>
+                  cents(sumMonthly(shown.filter((r) => r.status === "approved" || r.status === "temporary"))),
+              },
+              {
+                id: "over_red",
+                label: "Avg over red line",
+                value: ({ rows: shown }) => {
+                  const n = shown.filter((r) => perRunTone(r.avg_cost_since) === "danger").length;
+                  return tonedValue(String(n), n > 0 ? "danger" : null);
+                },
+              },
+              {
+                id: "rejected",
+                label: "Rejected",
+                value: ({ rows: shown }) => String(shown.filter((r) => r.status === "rejected").length),
+              },
+            ],
+          }}
           emptyState={{ title: focusId ? "That approval is not in this view" : "No spend approvals" }}
           selection={{
             selectedIds,
@@ -533,6 +814,9 @@ export function SpendApprovalsBoard({
                 <Button variant="outline" disabled={bulkBusy || !bulkTargets(selected, "reject").length} onClick={() => setBulk({ decision: "reject", rows: bulkTargets(selected, "reject") })}>
                   <X className="h-4 w-4" /> Reject selected
                 </Button>
+                <Button variant="outline" disabled={bulkBusy || !bulkTargets(selected, "reset").length} onClick={() => setBulk({ decision: "reset", rows: bulkTargets(selected, "reset") })}>
+                  <TimerReset className="h-4 w-4" /> Reset tracking
+                </Button>
               </>
             ),
           }}
@@ -542,9 +826,6 @@ export function SpendApprovalsBoard({
             searchPlaceholder: "Search agents, mandates, automations…",
             actions: (
               <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {`${waiting.length} waiting · ${format(waitingMonthly)}/mo`}
-                </span>
                 {focusId ? (
                   <Button variant="outline" asChild>
                     <Link href="?">Show all</Link>
@@ -558,6 +839,7 @@ export function SpendApprovalsBoard({
                       { value: "all", label: "All" },
                       { value: "waiting", label: "Waiting" },
                       { value: "approved", label: "Approved" },
+                      { value: "temporary", label: "Temporary" },
                       { value: "rejected", label: "Rejected" },
                     ]}
                   />
@@ -577,12 +859,15 @@ export function SpendApprovalsBoard({
             humanRow: (r) =>
               [
                 `${SUBJECT_KIND_LABEL[r.subject_kind]}: ${r.subject_name ?? r.subject_id}`,
-                `Status: ${APPROVAL_STATUS_LABEL[r.status]}`,
+                `Status: ${APPROVAL_STATUS_LABEL[r.status]}${r.status === "temporary" && r.expires_at ? ` (${expiryLabel(r.expires_at)})` : ""}`,
                 `First run: ${format(r.first_run_cost)} on ${when(r.first_run_at)}`,
-                `Since: ${r.runs_since} runs, avg ${r.avg_cost_since == null ? "—" : format(r.avg_cost_since)}, max ${r.max_cost_since == null ? "—" : format(r.max_cost_since)}`,
-                `Est. monthly: ${format(r.est_monthly_cost)}`,
+                `Since ${when(r.since_at)}: ${r.runs_since} runs, avg ${cents(r.avg_cost_since)}, max ${cents(r.max_cost_since)}`,
+                `Est. monthly: ${cents(r.est_monthly_cost)}`,
+                r.reset_at ? `Tracking reset ${when(r.reset_at)}${r.reset_by_email ? ` by ${r.reset_by_email}` : ""}` : "",
                 `Organization: ${r.organization_name ?? r.organization_id}`,
-              ].join("\n"),
+              ]
+                .filter(Boolean)
+                .join("\n"),
           }}
         />
       </div>
@@ -590,16 +875,24 @@ export function SpendApprovalsBoard({
         <ConfirmDialog
           open
           onOpenChange={(o) => !o && !bulkBusy && setBulk(null)}
-          title={`${bulk.decision === "approve" ? "Approve" : "Reject"} ${bulk.rows.length} ${bulk.rows.length === 1 ? "approval" : "approvals"}?`}
-          description={`${format(bulkMonthly)} a month combined.`}
+          title={
+            bulk.decision === "reset"
+              ? `Reset tracking for ${bulk.rows.length} ${bulk.rows.length === 1 ? "approval" : "approvals"}?`
+              : `${bulk.decision === "approve" ? "Approve" : "Reject"} ${bulk.rows.length} ${bulk.rows.length === 1 ? "approval" : "approvals"}?`
+          }
+          description={
+            bulk.decision === "reset"
+              ? "Runs since, avg, max and est./month restart from now. History is kept."
+              : `${cents(bulkMonthly)} a month combined.`
+          }
           variant={bulk.decision === "reject" ? "destructive" : "default"}
-          confirmLabel={bulk.decision === "approve" ? "Approve" : "Reject"}
+          confirmLabel={bulk.decision === "approve" ? "Approve" : bulk.decision === "reject" ? "Reject" : "Reset tracking"}
           cancelLabel="Cancel"
           busy={bulkBusy}
           onConfirm={decideBulk}
         />
       )}
-      <DecisionDialog pending={pending} onClose={() => setPending(null)} onDone={reload} />
+      <DecisionDialog pending={pending} knobs={knobs} onClose={() => setPending(null)} onDone={reload} />
     </div>
   );
 }

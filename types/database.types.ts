@@ -2625,6 +2625,13 @@ export type Database = {
             referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "model_alias_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
         ]
       }
       model_definition: {
@@ -2775,6 +2782,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
             isOneToOne: false
@@ -2801,6 +2815,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
           {
             foreignKeyName: "ai_model_model_provider_fkey"
@@ -2838,6 +2859,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "model_definition_successor_id_fkey"
             columns: ["successor_id"]
             isOneToOne: false
@@ -2864,6 +2892,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
         ]
       }
@@ -3013,6 +3048,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
           {
             foreignKeyName: "offering_setting_profile_fkey"
@@ -3538,6 +3580,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
             isOneToOne: false
@@ -3564,6 +3613,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
           {
             foreignKeyName: "ai_model_model_provider_fkey"
@@ -3601,6 +3657,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "model_definition_successor_id_fkey"
             columns: ["successor_id"]
             isOneToOne: false
@@ -3627,6 +3690,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
           {
             foreignKeyName: "offering_api_id_fkey"
@@ -3699,6 +3769,13 @@ export type Database = {
             referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
         ]
       }
       model_offering: {
@@ -3747,6 +3824,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
         ]
       }
@@ -3822,6 +3906,13 @@ export type Database = {
             referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
         ]
       }
       model_public: {
@@ -3881,6 +3972,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
             isOneToOne: false
@@ -3909,6 +4007,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
+          },
+          {
             foreignKeyName: "model_definition_successor_id_fkey"
             columns: ["successor_id"]
             isOneToOne: false
@@ -3935,6 +4040,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "test_model_candidates"
+            referencedColumns: ["model_id"]
           },
         ]
       }
@@ -3988,6 +4100,20 @@ export type Database = {
           provider_name: string | null
           released_at: string | null
           status: string | null
+        }
+        Relationships: []
+      }
+      test_model_candidates: {
+        Row: {
+          common_name: string | null
+          cost_rating: number | null
+          has_tools: boolean | null
+          model_id: string | null
+          model_name: string | null
+          price_in: number | null
+          price_out: number | null
+          provider: string | null
+          served_via: string | null
         }
         Relationships: []
       }
@@ -4130,6 +4256,10 @@ export type Database = {
       set_offering_admin_columns: {
         Args: { p_id: string; p_values: Json }
         Returns: undefined
+      }
+      test_model_choice: {
+        Args: { provider?: string; purpose: string }
+        Returns: Json
       }
       translation_evidence_proven: {
         Args: { p_evidence: Json }
@@ -7130,6 +7260,7 @@ export type Database = {
           deleted_at: string | null
           expected_result: string | null
           expected_runs_per_month: number | null
+          expires_at: string | null
           first_run_at: string | null
           first_run_conversation_id: string | null
           first_run_cost: number | null
@@ -7147,6 +7278,9 @@ export type Database = {
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
+          reset_at: string | null
+          reset_by: string | null
+          reset_note: string | null
           seeded: boolean
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
@@ -7170,6 +7304,7 @@ export type Database = {
           deleted_at?: string | null
           expected_result?: string | null
           expected_runs_per_month?: number | null
+          expires_at?: string | null
           first_run_at?: string | null
           first_run_conversation_id?: string | null
           first_run_cost?: number | null
@@ -7187,6 +7322,9 @@ export type Database = {
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
+          reset_at?: string | null
+          reset_by?: string | null
+          reset_note?: string | null
           seeded?: boolean
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
@@ -7210,6 +7348,7 @@ export type Database = {
           deleted_at?: string | null
           expected_result?: string | null
           expected_runs_per_month?: number | null
+          expires_at?: string | null
           first_run_at?: string | null
           first_run_conversation_id?: string | null
           first_run_cost?: number | null
@@ -7227,6 +7366,9 @@ export type Database = {
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
+          reset_at?: string | null
+          reset_by?: string | null
+          reset_note?: string | null
           seeded?: boolean
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           status?: string
@@ -7770,6 +7912,7 @@ export type Database = {
           n30: number | null
           refreshed_at: string | null
           scheduled: number | null
+          since_at: string | null
           sub_agent: number | null
           system: number | null
           test_account: number | null
@@ -8189,6 +8332,7 @@ export type Database = {
           p_decision: string
           p_expected_result?: string
           p_expected_runs_per_month?: number
+          p_expires_at?: string
           p_id: string
           p_note?: string
         }
@@ -8203,6 +8347,7 @@ export type Database = {
           deleted_at: string | null
           expected_result: string | null
           expected_runs_per_month: number | null
+          expires_at: string | null
           first_run_at: string | null
           first_run_conversation_id: string | null
           first_run_cost: number | null
@@ -8220,6 +8365,9 @@ export type Database = {
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
+          reset_at: string | null
+          reset_by: string | null
+          reset_note: string | null
           seeded: boolean
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           status: string
@@ -8254,6 +8402,33 @@ export type Database = {
           workflow: number
         }[]
       }
+      run_approval_expire: {
+        Args: never
+        Returns: {
+          expires_at: string
+          id: string
+          organization_id: string
+          subject_id: string
+          subject_kind: string
+          subject_name: string
+        }[]
+      }
+      run_approval_expiring: {
+        Args: { p_days?: number }
+        Returns: {
+          approval_url: string
+          days_left: number
+          decided_by_email: string
+          expired: boolean
+          expires_at: string
+          id: string
+          organization_id: string
+          organization_name: string
+          subject_id: string
+          subject_kind: string
+          subject_name: string
+        }[]
+      }
       run_approval_history: {
         Args: { p_id: string }
         Returns: {
@@ -8272,6 +8447,7 @@ export type Database = {
         Args: never
         Returns: {
           enforced: boolean
+          expires_at: string
           id: string
           organization_id: string
           status: string
@@ -8295,6 +8471,7 @@ export type Database = {
           est_monthly_cost: number
           expected_result: string
           expected_runs_per_month: number
+          expires_at: string
           first_run_at: string
           first_run_conversation_id: string
           first_run_cost: number
@@ -8312,9 +8489,13 @@ export type Database = {
           organization_id: string
           organization_is_system: boolean
           organization_name: string
+          reset_at: string
+          reset_by_email: string
+          reset_note: string
           runs_30d: number
           runs_since: number
           seeded: boolean
+          since_at: string
           status: string
           subject_id: string
           subject_kind: string
@@ -8332,6 +8513,10 @@ export type Database = {
       }
       run_approval_reconcile: { Args: never; Returns: number }
       run_approval_refresh_stats: { Args: never; Returns: number }
+      run_approval_reset: {
+        Args: { p_ids: string[]; p_note?: string }
+        Returns: number
+      }
       run_approval_status: {
         Args: { p_org_id?: string }
         Returns: {
