@@ -14,27 +14,34 @@ import { MERGE_FIELD_CHIP_CLASS } from "@/components/merge-field-input/MergeFiel
 import { mergeFieldRegex } from "@/components/merge-field-input/merge-field-dom";
 import { mergeFieldInfo, type MergeFieldInfo } from "@/features/message-templates/lib/merge-fields";
 
-const MARK = /matrxfield(\d+)end/g;
+const MARK = /matrx(field|example)(\d+)end/g;
+// `\{{x}}` is an example: kept out of the engine (which would draw `{{x}}` as a variable) and put back as plain text.
+const ESCAPED_EXAMPLE = /\\(\{\{[^{}\n]*\}\})/g;
 
 export function TemplateRichText({ text, show = "names", className }: { text: string; show?: "names" | "example"; className?: string }) {
   const host = useRef<HTMLDivElement>(null);
-  const { source, fields } = useMemo(() => {
+  const { source, fields, examples } = useMemo(() => {
     const found: MergeFieldInfo[] = [];
-    const swapped = text.replace(mergeFieldRegex(), (_all, path: string) => {
+    const literal: string[] = [];
+    const held = text.replace(ESCAPED_EXAMPLE, (_all, braces: string) => {
+      literal.push(braces);
+      return `matrxexample${literal.length - 1}end`;
+    });
+    const swapped = held.replace(mergeFieldRegex(), (_all, path: string) => {
       found.push(mergeFieldInfo(path));
       return `matrxfield${found.length - 1}end`;
     });
-    return { source: swapped, fields: found };
+    return { source: swapped, fields: found, examples: literal };
   }, [text]);
 
   // The engine renders (and re-renders) on its own schedule, so the chips are put back whenever its DOM moves.
   useLayoutEffect(() => {
     const root = host.current;
-    if (!root || fields.length === 0) return;
+    if (!root || (fields.length === 0 && examples.length === 0)) return;
     const apply = () => {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/matrxfield\d+end/.test(n.nodeValue ?? "")) nodes.push(n as Text);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/matrx(?:field|example)\d+end/.test(n.nodeValue ?? "")) nodes.push(n as Text);
     for (const node of nodes) {
       const value = node.nodeValue ?? "";
       const fragment = document.createDocumentFragment();
@@ -42,7 +49,12 @@ export function TemplateRichText({ text, show = "names", className }: { text: st
       for (const m of value.matchAll(MARK)) {
         const at = m.index ?? 0;
         if (at > last) fragment.append(value.slice(last, at));
-        const field = fields[Number(m[1])];
+        if (m[1] === "example") {
+          fragment.append(examples[Number(m[2])] ?? m[0]);
+          last = at + m[0].length;
+          continue;
+        }
+        const field = fields[Number(m[2])];
         const chip = document.createElement("span");
         chip.className = show === "names" ? MERGE_FIELD_CHIP_CLASS : "rounded bg-muted px-1 text-foreground";
         chip.title = field ? `${field.label} — filled in when the template is used` : "";
@@ -59,7 +71,7 @@ export function TemplateRichText({ text, show = "names", className }: { text: st
     const observer = new MutationObserver(apply);
     observer.observe(root, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
-  }, [fields, show, source]);
+  }, [fields, examples, show, source]);
 
   return (
     <div ref={host} className={className}>
