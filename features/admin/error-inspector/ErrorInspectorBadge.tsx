@@ -22,6 +22,7 @@ import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useToggleErrorInspector } from "./useOpenErrorInspector";
 import { suppressErrorInspectorBadge } from "./error-inspector-badge-state";
 import { useFixedCornerClearance } from "./useFixedCornerClearance";
+import { useShellMainLeft } from "./useShellMainLeft";
 
 export default function ErrorInspectorBadge() {
   const pathname = usePathname();
@@ -33,6 +34,10 @@ export default function ErrorInspectorBadge() {
   // that much — measured, because its height and its offset both change with
   // the viewport and with its own contents (see useFixedCornerClearance).
   const cornerRef = useFixedCornerClearance<HTMLButtonElement>();
+  // ...and it starts where the PAGE starts (after the sidebar and the chat dock), so it never covers the
+  // chat Reply box or the sidebar's buttons.
+  const mainLeft = useShellMainLeft();
+  const leftStyle = mainLeft === null ? undefined : ({ "--error-badge-left": `${mainLeft}px` } as React.CSSProperties);
 
   if (!isAdmin || suppressErrorInspectorBadge(pathname)) return null;
 
@@ -41,12 +46,13 @@ export default function ErrorInspectorBadge() {
     return (
       <button
         ref={cornerRef}
+        style={leftStyle}
         onClick={toggle}
         title={`${red} error${red === 1 ? "" : "s"} captured — open Error Inspector`}
         className={cn(
           // Mobile sits ABOVE the bottom band where composers/action bars live
           // — at bottom-4 it covered a composer's controls (2026-08-16).
-          "fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-4",
+          "fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-[var(--error-badge-left,1rem)]",
           "bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-colors",
           unseenRed > 0
             ? "border-destructive/50 text-destructive animate-pulse"
@@ -72,10 +78,11 @@ export default function ErrorInspectorBadge() {
     return (
       <button
         ref={cornerRef}
+        style={leftStyle}
         onClick={toggle}
         title={`${orange} minor issue${orange === 1 ? "" : "s"} — open Error Inspector`}
         aria-label="Open Error Inspector"
-        className="fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110 sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-4"
+        className="fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110 sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-[var(--error-badge-left,1rem)]"
       >
         <span
           className={cn(
