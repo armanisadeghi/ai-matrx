@@ -154,6 +154,7 @@ function FilePreviewWindowContent({
             pageNumber={activePage}
             onPageChange={setActivePage}
             onClose={onClose}
+            closeButton={false}
             className="h-full w-full"
           />
         </FileRightClickMenu>

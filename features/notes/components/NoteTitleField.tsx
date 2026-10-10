@@ -6,9 +6,13 @@
 // same behaviour inside its tab (both use useNoteTitleEditing).
 //
 // The field sizes to its text, so the rest of a host header stays a drag
-// handle. (Inside a scaled Board tile field-sizing measures a few px short and
-// the name ended in an ellipsis with room to spare, so the tile passes
-// `w-full [field-sizing:fixed]` and fills its header slot instead.)
+// handle. A hidden mirror of the name (same font, same padding) gives the
+// wrapper its width and the input fills that wrapper: CSS `field-sizing`
+// measured a few px short inside a scaled Board tile (ellipsis with room to
+// spare), and filling the header slot instead made the whole header a text
+// control that no longer dragged the tile. The mirror measures with the
+// browser's own text layout, so neither happens. `className` sizes the
+// wrapper (max-w, shrink).
 
 import { cn } from "@/lib/utils";
 import { useNoteTitleEditing } from "../hooks/useNoteTitleEditing";
@@ -21,32 +25,41 @@ export interface NoteTitleFieldProps {
 export function NoteTitleField({ noteId, className }: NoteTitleFieldProps) {
   const title = useNoteTitleEditing(noteId);
   return (
-    <input
-      className={cn(
-        "field-sizing-content min-w-0 max-w-full truncate rounded-sm border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none",
-        title.titleEditing ? "cursor-text ring-1 ring-ring" : "hover:bg-accent/50",
-        className,
-      )}
-      readOnly={!title.titleEditing}
-      value={title.localLabel}
-      onChange={title.onChange}
-      onClick={() => title.setTitleEditing(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          if (title.titleEditing) e.currentTarget.blur();
-          else title.setTitleEditing(true);
-        }
-        // Escape = changed my mind: back to the saved name.
-        if (e.key === "Escape" && title.titleEditing) {
-          title.revert();
-          e.currentTarget.blur();
-        }
-      }}
-      onFocus={title.onFocus}
-      onBlur={title.onBlur}
-      aria-label="Note title"
-      title="Rename note"
-      spellCheck={false}
-    />
+    <span className={cn("inline-grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)]", className)}>
+      <span
+        aria-hidden
+        data-note-title-mirror
+        className="invisible col-start-1 row-start-1 overflow-hidden whitespace-pre px-1 pr-2 text-sm font-medium"
+      >
+        {title.localLabel || " "}
+      </span>
+      <input
+        data-note-title-input
+        className={cn(
+          "col-start-1 row-start-1 w-full min-w-0 truncate rounded-sm border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none",
+          title.titleEditing ? "cursor-text ring-1 ring-ring" : "hover:bg-accent/50",
+        )}
+        readOnly={!title.titleEditing}
+        value={title.localLabel}
+        onChange={title.onChange}
+        onClick={() => title.setTitleEditing(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            if (title.titleEditing) e.currentTarget.blur();
+            else title.setTitleEditing(true);
+          }
+          // Escape = changed my mind: back to the saved name.
+          if (e.key === "Escape" && title.titleEditing) {
+            title.revert();
+            e.currentTarget.blur();
+          }
+        }}
+        onFocus={title.onFocus}
+        onBlur={title.onBlur}
+        aria-label="Note title"
+        title="Rename note"
+        spellCheck={false}
+      />
+    </span>
   );
 }

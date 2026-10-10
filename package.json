@@ -826,6 +826,7 @@
     "check:record-toasts:update": "tsx scripts/check-record-toasts.ts --update",
     "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",
     "test:kind-sandbox:browser": "playwright test -c config/playwright/playwright.kind-sandbox.config.ts",
+    "test:cls-routes": "node scripts/cls-routes-walk.mjs 2",
     "test:shell-layout": "playwright test -c config/playwright/playwright.shell-layout.config.ts",
     "check:shell-layout": "node scripts/check-shell-layout-gate.mjs",
     "check:compiler-skips": "node scripts/check-compiler-skips.mjs",

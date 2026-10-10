@@ -60,6 +60,11 @@ export interface PreviewPaneProps {
    */
   onClose?: () => void;
   /**
+   * `false` hides the pane's own Close / Back button — a host that owns its
+   * close (a floating window's title bar) shows exactly one. Esc still closes.
+   */
+  closeButton?: boolean;
+  /**
    * When set, renders a maximize / restore toggle in the action bar. Driven
    * by the parent (PageShell) so the parent owns the layout state and the
    * underlying `setLayout` call against `react-resizable-panels`. Floating-
@@ -76,6 +81,7 @@ export function PreviewPane({
   pageNumber,
   onPageChange,
   onClose,
+  closeButton = true,
   isMaximized,
   onToggleMaximize,
   className,
@@ -183,6 +189,7 @@ export function PreviewPane({
          * call the same `handleClose`, which already routes back to /files
          * when it detects the dedicated route. We only swap the icon + label
          * so the affordance is honest. */}
+        {closeButton ? (
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -202,6 +209,7 @@ export function PreviewPane({
             {isOnFileRoute ? "Back to files" : "Close preview (Esc)"}
           </TooltipContent>
         </Tooltip>
+        ) : null}
 
         {/* Right-click anywhere on the filename / icon area opens the
          * full file context menu — same items as the 3-dot dropdown to

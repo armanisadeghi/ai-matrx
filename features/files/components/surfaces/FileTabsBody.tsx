@@ -28,7 +28,14 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Atom,
@@ -143,11 +150,12 @@ export interface FileTabsBodyProps {
   /** Visual size of the tab strip. */
   density?: "compact" | "comfortable";
   /**
-   * `strip` (default): every tab in a row. `menu`: one button naming the
-   * current tab, the rest in its menu — for a small host (a Board tile)
-   * where seven tabs would fill the row.
+   * `auto` (default): a strip of tabs while the seven fit the tab row's own
+   * width, one menu the moment they do not (measured on the row, never a
+   * viewport breakpoint — so a narrow side panel, a window and a phone all
+   * inherit it). `strip` / `menu` force one form.
    */
-  tabs?: "strip" | "menu";
+  tabs?: "auto" | "strip" | "menu";
   /** The host's own controls, at the end of the tab row (a tile's file actions). */
   trailing?: React.ReactNode;
   className?: string;
@@ -161,7 +169,7 @@ export function FileTabsBody({
   onTabChange,
   initialTab,
   density = "compact",
-  tabs = "strip",
+  tabs = "auto",
   trailing,
   className,
 }: FileTabsBodyProps) {
@@ -171,6 +179,8 @@ export function FileTabsBody({
   const kindActions = kindPreviewActions(usePreviewActions(fileId), {
     withEdit: false,
   });
+
+  const { rowRef, stripRef, endRef, menu } = useTabsFit(tabs);
 
   // Citation deep-links: a search hit or chat reference can route to
   // `/files/f/<id>?tab=document&page=12&chunk=<chunk_id>`. We read the
@@ -259,11 +269,15 @@ export function FileTabsBody({
       {/* Tab row — the tabs (a strip, or one menu in a small host), then the
        * kind's own actions (open in studio, extract text, …) and the host's
        * trailing controls, in ONE row: no action bar under the tabs. */}
-      <div className="flex shrink-0 items-center border-b border-border bg-card">
-        {tabs === "menu" ? (
+      <div
+        ref={rowRef}
+        className="flex shrink-0 items-center border-b border-border bg-card"
+      >
+        {menu ? (
           <FileTabMenu activeTab={activeTab} onSelect={setActiveTab} />
         ) : (
           <div
+            ref={stripRef}
             className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto"
             role="tablist"
             aria-label="File tabs"
@@ -281,7 +295,7 @@ export function FileTabsBody({
             ))}
           </div>
         )}
-        <div className="ml-auto flex shrink-0 items-center">
+        <div ref={endRef} className="ml-auto flex shrink-0 items-center">
           {kindActions.length > 0 ? (
             // Icons only (named by their tooltips): labels would push the
             // tabs out of a narrow row.
@@ -521,6 +535,55 @@ function ComingSoon({
       </div>
     </div>
   );
+}
+
+/**
+ * Strip or menu by the tab row's own width. In strip form the tabs' summed
+ * width is remembered; the row folds to the menu when that no
+ * longer fits beside the row's end controls, and unfolds when it does again.
+ * A layout effect + ResizeObserver, so the first paint is already right.
+ */
+export function useTabsFit(mode: "auto" | "strip" | "menu") {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const natural = useRef(0);
+  const [folded, setFolded] = useState(false);
+
+  const measure = useCallback(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const strip = stripRef.current;
+    if (strip) {
+      // Content width, not scrollWidth: the strip is flex-1 and reports its own
+      // box when the tabs are narrower.
+      natural.current = Array.from(strip.children).reduce(
+        (sum, c) => sum + (c as HTMLElement).offsetWidth,
+        0,
+      );
+    }
+    if (natural.current === 0) return;
+    const available = row.clientWidth - (endRef.current?.offsetWidth ?? 0);
+    setFolded(natural.current > available + 1);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (mode !== "auto") return;
+    measure();
+    const row = rowRef.current;
+    if (!row || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(row);
+    if (endRef.current) ro.observe(endRef.current);
+    return () => ro.disconnect();
+  }, [mode, measure]);
+
+  return {
+    rowRef,
+    stripRef,
+    endRef,
+    menu: mode === "menu" || (mode === "auto" && folded),
+  };
 }
 
 /** The tabs as one menu: the current tab names the button. */
