@@ -118,7 +118,15 @@ const WORKSPACE_DATA = {
   versionsById: {},
 };
 
-import { MandateWorkspace } from "../MandateWorkspace";
+import { MandateWorkspace as BareMandateWorkspace } from "../MandateWorkspace";
+import { WithModelCatalog } from "@/tests/helpers/WithModelCatalog";
+
+/** The workspace draws model badges, which need the model catalog above them. */
+const MandateWorkspace = (props: React.ComponentProps<typeof BareMandateWorkspace>) => (
+  <WithModelCatalog>
+    <BareMandateWorkspace {...props} />
+  </WithModelCatalog>
+);
 
 describe("mandate workspace tabs", () => {
   let container: HTMLElement;

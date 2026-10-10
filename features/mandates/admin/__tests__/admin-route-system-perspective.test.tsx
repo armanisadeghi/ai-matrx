@@ -180,7 +180,15 @@ jest.mock("@ai-matrx/chat/mandates/output-contract", () => {
   };
 });
 
-import { MandateWorkspace } from "../../workspace/MandateWorkspace";
+import { MandateWorkspace as BareMandateWorkspace } from "../../workspace/MandateWorkspace";
+import { WithModelCatalog } from "@/tests/helpers/WithModelCatalog";
+
+/** The workspace draws model badges, which need the model catalog above them. */
+const MandateWorkspace = (props: React.ComponentProps<typeof BareMandateWorkspace>) => (
+  <WithModelCatalog>
+    <BareMandateWorkspace {...props} />
+  </WithModelCatalog>
+);
 
 /** `research_client.output_slides` as production actually holds it. */
 const OUTPUT_SLIDES = {

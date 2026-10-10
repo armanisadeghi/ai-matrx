@@ -87,13 +87,14 @@ jest.mock("@/features/access-gate/service/accessDeniedContext", () => ({
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import PartyPeek from "./PartyPeek";
+import { WithStoreReads } from "@/tests/helpers/WithStoreReads";
 
 async function mount(id: string) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root: Root = createRoot(container);
   await act(async () => {
-    root.render(<PartyPeek id={id} open onClose={() => {}} />);
+    root.render(<WithStoreReads><PartyPeek id={id} open onClose={() => {}} /></WithStoreReads>);
   });
   // The fetch, the catch, and the resolver RPC are each an awaited hop.
   for (let i = 0; i < 8; i += 1) {

@@ -30,6 +30,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 import PartyPeek from "../kinds/PartyPeek";
+import { WithStoreReads } from "@/tests/helpers/WithStoreReads";
 
 async function settle(): Promise<void> {
   for (let i = 0; i < 6; i += 1) {
@@ -45,7 +46,7 @@ describe("the Person peek is titled by the record's own kind", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     await act(async () => {
-      root.render(<PartyPeek id={REAL_COMPANY.id} open onClose={() => {}} />);
+      root.render(<WithStoreReads><PartyPeek id={REAL_COMPANY.id} open onClose={() => {}} /></WithStoreReads>);
     });
     // While the read is in flight nothing knows the kind: the honest generic,
     // never "Person" (RED: "Person", for every record of every kind).

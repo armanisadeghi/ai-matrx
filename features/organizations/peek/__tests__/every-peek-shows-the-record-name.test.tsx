@@ -66,6 +66,7 @@ jest.mock("next/navigation", () => ({
 
 import { PEEK_REGISTRY } from "../registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { WithStoreReads } from "@/tests/helpers/WithStoreReads";
 
 /** Peeks that render a canonical component or read through a service — not a hand-picked column. */
 const DELEGATED: Readonly<Record<string, string>> = {
@@ -99,7 +100,7 @@ describe("every peek is titled by the record's name", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     await act(async () => {
-      root.render(<Peek id="00000000-0000-4000-8000-000000000001" open onClose={() => {}} />);
+      root.render(<WithStoreReads><Peek id="00000000-0000-4000-8000-000000000001" open onClose={() => {}} /></WithStoreReads>);
     });
     await settle();
     const titles = [...document.body.querySelectorAll('[role="dialog"] h2')].map((h) => h.textContent);
