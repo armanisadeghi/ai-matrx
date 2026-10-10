@@ -20,7 +20,9 @@ begin
       'hr.hr_review_calibrate(uuid,text,text)'] loop
     if to_regprocedure(d) is null then v_fail := array_append(v_fail, 'door missing: ' || d); end if;
   end loop;
-  if (select count(*) from platform.feature_knob where feature = 'hr.performance' and key like 'standard\_review\_%') <> 6 then
+  if (select count(*) from platform.feature_knob where feature = 'hr.performance' and key in ('standard_review_self_days',
+      'standard_review_manager_days','standard_review_reminder_cadence_hours','standard_review_manager_sees_self',
+      'standard_review_calibration_required','standard_review_ack_comment')) <> 6 then
     v_fail := array_append(v_fail, 'the six standard_review_* knobs are not declared');
   end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'hr' and table_name = 'review' and column_name = 'calibrated_by') then

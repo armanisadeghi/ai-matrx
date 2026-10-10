@@ -60360,6 +60360,113 @@ export type Database = {
         }
         Relationships: []
       }
+      goal: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_value: number | null
+          cycle_id: string | null
+          deleted_at: string | null
+          description: string | null
+          due_on: string | null
+          employment_id: string
+          id: string
+          measure: string | null
+          metadata: Json
+          organization_id: string
+          parent_goal_id: string | null
+          progress: number
+          progress_history: Json
+          start_on: string | null
+          status: string
+          target_value: number | null
+          title: string
+          unit: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          cycle_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_on?: string | null
+          employment_id: string
+          id?: string
+          measure?: string | null
+          metadata?: Json
+          organization_id: string
+          parent_goal_id?: string | null
+          progress?: number
+          progress_history?: Json
+          start_on?: string | null
+          status?: string
+          target_value?: number | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          cycle_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_on?: string | null
+          employment_id?: string
+          id?: string
+          measure?: string | null
+          metadata?: Json
+          organization_id?: string
+          parent_goal_id?: string | null
+          progress?: number
+          progress_history?: Json
+          start_on?: string | null
+          status?: string
+          target_value?: number | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "review_cycle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "goal_parent_goal_id_fkey"
+            columns: ["parent_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday: {
         Row: {
           actual_on: string | null
@@ -67019,6 +67126,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           overall_rating: string | null
+          peer_feedback_shared_at: string | null
           reopen_history: Json
           self_submitted_at: string | null
           shared_at: string | null
@@ -67052,6 +67160,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           overall_rating?: string | null
+          peer_feedback_shared_at?: string | null
           reopen_history?: Json
           self_submitted_at?: string | null
           shared_at?: string | null
@@ -67085,6 +67194,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           overall_rating?: string | null
+          peer_feedback_shared_at?: string | null
           reopen_history?: Json
           self_submitted_at?: string | null
           shared_at?: string | null
@@ -67226,6 +67336,85 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "review_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_peer_nomination: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          nominated_by: string | null
+          organization_id: string
+          peer_employment_id: string
+          peer_user_id: string | null
+          review_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          nominated_by?: string | null
+          organization_id: string
+          peer_employment_id: string
+          peer_user_id?: string | null
+          review_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          nominated_by?: string | null
+          organization_id?: string
+          peer_employment_id?: string
+          peer_user_id?: string | null
+          review_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_peer_nomination_peer_employment_id_fkey"
+            columns: ["peer_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_peer_nomination_peer_employment_id_fkey"
+            columns: ["peer_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "review_peer_nomination_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "review"
             referencedColumns: ["id"]
           },
         ]
@@ -72729,6 +72918,18 @@ export type Database = {
         Returns: boolean
       }
       _field_phrase: { Args: { p_field: string }; Returns: string }
+      _goal_can_edit: {
+        Args: { p_employment_id: string; p_uid: string }
+        Returns: boolean
+      }
+      _goal_can_read: {
+        Args: { p_org: string; p_uid: string }
+        Returns: boolean
+      }
+      _goal_json: {
+        Args: { g: Database["hr"]["Tables"]["goal"]["Row"] }
+        Returns: Json
+      }
       _governance_refusal: {
         Args: {
           p_org: string
@@ -73329,6 +73530,7 @@ export type Database = {
         Returns: string
       }
       _rev_mean_rating: { Args: { p_answers: Json }; Returns: number }
+      _rev_notify_peer: { Args: { p_nomination_id: string }; Returns: Json }
       _rev_person_name: { Args: { p_employment_id: string }; Returns: string }
       _rev_response_visible: {
         Args: {
@@ -74092,6 +74294,23 @@ export type Database = {
         }[]
       }
       heal_grant_drift: { Args: never; Returns: Json }
+      hr_goal_archive: { Args: { p_goal_id: string }; Returns: Json }
+      hr_goal_list: { Args: { p_employment_id: string }; Returns: Json }
+      hr_goal_list_team: {
+        Args: { p_manager_employment_id: string }
+        Returns: Json
+      }
+      hr_goal_save: { Args: { p_payload: Json }; Returns: Json }
+      hr_goal_update_progress: {
+        Args: {
+          p_current_value?: number
+          p_goal_id: string
+          p_note?: string
+          p_progress?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
       hr_links_without_employer: {
         Args: never
         Returns: {
@@ -74132,6 +74351,23 @@ export type Database = {
       hr_review_history: { Args: { p_employment_id: string }; Returns: Json }
       hr_review_list_mine: {
         Args: { p_organization_id?: string }
+        Returns: Json
+      }
+      hr_review_peer_approve: {
+        Args: {
+          p_approve: boolean
+          p_nomination_ids: string[]
+          p_review_id: string
+        }
+        Returns: Json
+      }
+      hr_review_peer_nominate: {
+        Args: { p_employment_ids: string[]; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_peer_requests_mine: { Args: never; Returns: Json }
+      hr_review_peer_share: {
+        Args: { p_review_id: string; p_share: boolean }
         Returns: Json
       }
       hr_review_reopen: {
@@ -115569,6 +115805,13 @@ export type Database = {
             foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
             columns: ["root_execution_id"]
             isOneToOne: true
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
             referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
@@ -115662,6 +115905,13 @@ export type Database = {
             foreignKeyName: "global_execution_parent_execution_id_fkey"
             columns: ["parent_execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "global_execution_parent_execution_id_fkey"
+            columns: ["parent_execution_id"]
+            isOneToOne: false
             referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
@@ -115678,6 +115928,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "global_request"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
           },
           {
             foreignKeyName: "global_execution_root_execution_id_fkey"
@@ -115724,6 +115981,13 @@ export type Database = {
           state?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
             columns: ["execution_id"]
@@ -115775,6 +116039,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "global_execution_control_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_execution_control_root_execution_id_fkey"
             columns: ["root_execution_id"]
@@ -115833,6 +116104,13 @@ export type Database = {
             foreignKeyName: "global_execution_event_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "global_execution_event_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
             referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
@@ -115842,6 +116120,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "global_execution"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_event_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
           },
           {
             foreignKeyName: "global_execution_event_root_execution_id_fkey"
@@ -115897,6 +116182,13 @@ export type Database = {
           quantities?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "global_meter_entry_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
           {
             foreignKeyName: "global_meter_entry_execution_id_fkey"
             columns: ["execution_id"]
@@ -116256,6 +116548,13 @@ export type Database = {
             foreignKeyName: "work_item_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["execution_id"]
+          },
+          {
+            foreignKeyName: "work_item_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
             referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
@@ -116303,12 +116602,55 @@ export type Database = {
             foreignKeyName: "cx_request_user_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
+            referencedRelation: "_ai_usage_calls_base"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
             referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["request_id"]
           },
         ]
       }
       _ai_usage_calls: {
+        Row: {
+          agent_id: string | null
+          app: string | null
+          bucket: string | null
+          bucket_10m: string | null
+          call_model: string | null
+          calls: number | null
+          conversation_id: string | null
+          cost: number | null
+          created_at: string | null
+          execution_id: string | null
+          feature: string | null
+          finish_reason: string | null
+          got_nothing_back: boolean | null
+          has_request: boolean | null
+          iterations: number | null
+          model: string | null
+          organization_id: string | null
+          origin: string | null
+          paid_calls: number | null
+          person_id: string | null
+          provider: string | null
+          request_id: string | null
+          requests: number | null
+          session_id: string | null
+          source: string | null
+          tokens_cached: number | null
+          tokens_in: number | null
+          tokens_out: number | null
+          tool_calls: number | null
+          trigger: string | null
+          unpriced_calls: number | null
+        }
+        Relationships: []
+      }
+      _ai_usage_calls_base: {
         Row: {
           agent_id: string | null
           app: string | null
