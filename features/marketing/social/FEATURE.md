@@ -187,7 +187,7 @@ platform, handle:
 | `handle`, `url`, `display_name`, `property_status` | text | From the property (`handle` filled by the shared rule) |
 | `owner_kind` | `company` \| `person` | Whose account: the brand's, or a named person's (founder/spokesperson). Group by it; KPIs and Research default to `company` |
 | `owner_party_id`, `owner_name` | uuid, text \| null | The person (`crm.party`) when named |
-| `trackable` | boolean | Server can track this platform (false: pinterest, reddit, snapchat, other — say why, no button) |
+| `trackable` | boolean | Server can track this platform (computed in SQL `social.brand_social_accounts`, mirrored by `TRACKABLE_PLATFORMS` in `types.ts` — change both; false: snapchat, other — say why, no button). Pinterest tracks an account's pins (outlier multiple in saves); Reddit tracks a subreddit (multiple in upvotes); Threads multiple in likes (`outlierMetric(platform)`) |
 | `tracked_account_id`, `tracked_role`, `tracked_status`, `tracked_label` | | Null = not tracked. Role is `own`/`client`; status `active`/`paused` |
 | `profile_id`, `profile_handle`, `profile_display_name`, `profile_url`, `avatar_url`, `is_verified` | | The shared `social.social_profile` when tracked. Avatar via the existing avatar door (provider URL is a hint) |
 | `followers`, `followers_observed_at` | bigint, timestamptz | Latest snapshot (falls back to the profile count) |

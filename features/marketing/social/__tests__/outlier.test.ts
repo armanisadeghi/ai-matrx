@@ -158,7 +158,7 @@ describe("polish helpers", () => {
   });
 });
 
-import { outlierBadgeModel, outlierMetric, outlierMetricWord } from "../outlier";
+import { outlierMetric, outlierMetricWord } from "../outlier";
 import { TRACKABLE_PLATFORMS } from "../types";
 
 describe("outlier metric per platform", () => {
