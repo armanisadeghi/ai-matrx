@@ -78,13 +78,15 @@ export function SocialConnectionsPanel({
         setFailure(
           status === "cancelled"
             ? "Connection cancelled."
-            : status === "quota_exhausted"
-              ? "X API credits are exhausted. Contact your organization administrator."
-              : status === "rate_limited"
-                ? "X has rate limited this account. Try again after the reset."
-                : status === "needs_attention"
-                  ? "X access was refused. Reconnect your account."
-                  : "X could not connect. Try again.",
+            : status === "usage_limit_reached"
+              ? "Your AI Matrx usage limit has been reached. Review Plan & usage."
+              : status === "quota_exhausted"
+                ? "X API credits are exhausted. Contact your organization administrator."
+                : status === "rate_limited"
+                  ? "X has rate limited this account. Try again after the reset."
+                  : status === "needs_attention"
+                    ? "X access was refused. Reconnect your account."
+                    : "X could not connect. Try again.",
         );
       const url = new URL(window.location.href);
       url.searchParams.delete("x_oauth_status");

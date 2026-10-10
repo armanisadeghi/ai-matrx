@@ -82,9 +82,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ) {
         if (detail.code === "authorization_denied") return finish("cancelled");
         if (
-          ["quota_exhausted", "rate_limited", "needs_attention"].includes(
-            detail.code,
-          )
+          [
+            "quota_exhausted",
+            "rate_limited",
+            "needs_attention",
+            "usage_limit_reached",
+          ].includes(detail.code)
         )
           return finish(detail.code);
       }
