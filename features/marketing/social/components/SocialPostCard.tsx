@@ -145,7 +145,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
         {compact ? null : (
           <p className="truncate text-xs font-medium text-foreground" title={post.hookLine}>
             {onOpen ? (
-              <button type="button" className="max-w-full truncate text-left hover:underline" onClick={() => onOpen(post)}>
+              <button type="button" className="matrx-tap-area max-w-full truncate text-left hover:underline" onClick={() => onOpen(post)}>
                 {post.hookLine || "No caption"}
               </button>
             ) : (
@@ -171,7 +171,7 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
               <button
                 type="button"
                 aria-label="Post actions"
-                className="-mr-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                className="matrx-tap-area -mr-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>

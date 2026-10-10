@@ -159,7 +159,7 @@ export function StudioTab() {
 
   return (
     <div className="relative h-full min-h-0 w-full">
-      <PresetBoard key={`${current.id}:${rev}`} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} hideNewBoard />
+      <PresetBoard key={`${current.id}:${rev}`} preset="marketing-social" boardId={current.id} initialLayout={LAYOUT} titleMenuExtra={menu} hideNewBoard displayTitle={(t) => shortBoardTitle(t, brandName)} />
       {offerAccounts ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center">
           <Button variant="primary" className="pointer-events-auto shadow-lg" icon={<Users />} disabled={addingAccounts} onClick={() => void addAccounts()}>

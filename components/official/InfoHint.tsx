@@ -16,7 +16,7 @@
 // the portaled content both stop propagation and prevent the default, so
 // opening a definition never navigates.
 //
-// The icon's hit area is ≥ 24px via an absolutely positioned pseudo-element,
+// The icon's hit area is ≥ 24px (44px on a coarse pointer) via an absolutely positioned pseudo-element,
 // so the glyph sits inline without changing the surrounding line height.
 // Text budget: one sentence, ≤ 140 characters.
 
@@ -62,7 +62,7 @@ export interface InfoHintProps {
 }
 
 const TRIGGER_CLASS =
-  "relative inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-sm align-[-0.125em] text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring before:absolute before:-inset-[5px] before:content-['']";
+  "relative inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-sm align-[-0.125em] text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring before:absolute before:-inset-[5px] before:content-[''] [@media(pointer:coarse)]:before:-inset-[15px]";
 
 const CONTENT_CLASS =
   "max-w-[16rem] text-xs font-normal normal-case leading-snug tracking-normal";

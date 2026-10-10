@@ -102,7 +102,6 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
   const found = useFoundSocials(brand.id, row.key);
   const { find, track } = useCompetitorSocialActions(brand);
   const { pointsText } = useSocialSpend(brand.organizationId);
-  const trackPoints = pointsText("track");
   if (row.progress) return null;
   const busy = found?.status === "finding" || found?.status === "tracking";
   return (
@@ -111,7 +110,7 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
         <Button
           variant="outline"
           disabled={busy}
-          title={trackPoints ? `Tracking an account uses ${trackPoints}` : undefined}
+          title="Free: reads their website"
           icon={found?.status === "finding" ? <Loader2 className="animate-spin" /> : <Search />}
           onClick={async () => {
             // A failure is told in a toast and in the competitor's detail panel, never inside this cell (it would push the row).
@@ -122,7 +121,7 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
             }
           }}
         >
-          {found?.status === "finding" ? "Reading…" : "Find socials"}
+          {found?.status === "finding" ? "Reading…" : "Find socials · Free"}
         </Button>
       ) : null}
       {found?.links.length ? (
@@ -135,7 +134,9 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
             if (out.tracked) toast.success(`Tracking ${out.tracked} ${out.tracked === 1 ? "account" : "accounts"}`);
           }}
         >
-          {found.status === "tracking" ? "Tracking…" : `Track ${found.links.length}`}
+          {found.status === "tracking"
+            ? "Tracking…"
+            : `Track ${found.links.length}${pointsText("track", found.links.length) ? ` · ${pointsText("track", found.links.length)}` : ""}`}
         </Button>
       ) : null}
     </span>
@@ -294,8 +295,12 @@ export function BrandCompetitorDirectory() {
         id: "name",
         header: rivals.one,
         accessorFn: (row) => row.name,
-        cell: (row) => <span className="truncate font-medium">{row.name}</span>,
-        width: 200,
+        cell: (row) => (
+          <span className="block max-w-full truncate font-medium" title={row.name}>
+            {row.name}
+          </span>
+        ),
+        width: 260,
       },
       {
         id: "domain",
@@ -347,14 +352,17 @@ export function BrandCompetitorDirectory() {
         width: 150,
       });
     }
-    cols.push(
-      {
+    // One platform column already is the total; a second "Followers" column would only repeat it.
+    if (platforms.length > 1) {
+      cols.push({
         id: "followers_total",
         header: "Followers",
         accessorFn: (row) => totalFollowers(row),
         cell: (row) => (row.accounts.length ? compact(totalFollowers(row)) : "—"),
         width: 100,
-      },
+      });
+    }
+    cols.push(
       {
         id: "posts",
         header: "Posts tracked",
@@ -413,7 +421,7 @@ export function BrandCompetitorDirectory() {
           ) : (
             <span className="text-muted-foreground">{row.websiteTracking ?? "Social only"}</span>
           ),
-        width: 220,
+        width: 170,
       },
       {
         id: "socials-actions",
@@ -424,6 +432,10 @@ export function BrandCompetitorDirectory() {
         width: 240,
       },
     );
+    // Status sits right after the name: a wide table scrolls sideways and must never hide it.
+    const statusAt = cols.findIndex((c) => c.id === "status");
+    const [status] = cols.splice(statusAt, 1);
+    cols.splice(1, 0, status);
     return cols;
   }, [platforms, brand.seg, brand.id, brand.organizationId, rivals.one]);
 
@@ -638,11 +650,6 @@ export function BrandCompetitorDirectory() {
               icon: <Swords className="h-8 w-8 text-muted-foreground" />,
               title: rivals.emptyTitle,
               description: rivals.emptyLine(brand.name),
-              action: (
-                <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-                  {rivals.add}
-                </Button>
-              ),
             }}
           />
         )}
@@ -716,6 +723,8 @@ function AddCompetitorDialog({
 
   const cleanDomain = normalizeDomain(domain);
   const entered = Object.entries(handles).filter(([, v]) => v.trim());
+  const { pointsText: dialogPointsText } = useSocialSpend(organizationId);
+  const addPoints = entered.length > 0 ? dialogPointsText("track", entered.length) : null;
   const firstSiteId = hasSite ? "yes" : null;
 
   async function findSocials() {
@@ -777,7 +786,7 @@ function AddCompetitorDialog({
                 disabled={!cleanDomain || finding}
                 onClick={() => void findSocials()}
               >
-                Find their socials
+                Find their socials · Free
               </Button>
             </div>
             {!firstSiteId && cleanDomain ? (
@@ -808,7 +817,7 @@ function AddCompetitorDialog({
             Close
           </Button>
           <Button variant="primary" disabled={!name.trim() || (!cleanDomain && entered.length === 0)} onClick={save}>
-            Add
+            {addPoints ? `Add · ${addPoints}` : "Add"}
           </Button>
         </DialogFooter>
       </DialogContent>

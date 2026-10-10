@@ -19,6 +19,7 @@ export function PresetBoard({
   initialLayout,
   titleMenuExtra,
   hideNewBoard,
+  displayTitle,
 }: {
   preset: BoardPresetKey;
   boardId: string;
@@ -29,6 +30,8 @@ export function PresetBoard({
   titleMenuExtra?: ReactNode;
   /** The host offers its own "New board" in `titleMenuExtra`. */
   hideNewBoard?: boolean;
+  /** How the title reads in the header. */
+  displayTitle?: (title: string) => string;
 }) {
   return (
     <BoardPage
@@ -37,6 +40,7 @@ export function PresetBoard({
       initialLayout={initialLayout}
       titleMenuExtra={titleMenuExtra}
       hideNewBoard={hideNewBoard}
+      displayTitle={displayTitle}
       preset={presetByKey(preset) ?? BOARD_PRESETS[preset]}
     />
   );

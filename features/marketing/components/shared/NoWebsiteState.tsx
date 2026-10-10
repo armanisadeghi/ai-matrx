@@ -4,7 +4,7 @@
  * The one honest state for a brand page that is about a WEBSITE when the brand has none
  * (social-first brands: a person, a creator, a shop that lives on Instagram).
  *
- * It names what the page needs a website for, offers the one next step (Add website), and
+ * One line (the `needs` phrase rides the tooltip: text is layout), offers the one next step (Add website), and
  * always carries the doors to what the brand CAN do without one. Never a bare refusal.
  */
 
@@ -53,12 +53,8 @@ export function NoWebsiteState({
           aria-hidden
         />
         <div className="min-w-0">
-          <p className="mt-2 text-sm font-medium text-foreground first:mt-0">
-            {brandName} is social-first: no website yet
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            This page uses a website for {needs}. Add one and it fills in; until then everything the brand does on its
-            social accounts works without it.
+          <p className="mt-2 text-sm font-medium text-foreground first:mt-0" title={`${brandName}: ${needs} needs a website`}>
+            Needs a website
           </p>
           {children}
           <div className={compact ? "mt-3 flex flex-wrap gap-2" : "mt-3 flex flex-wrap justify-center gap-2"}>

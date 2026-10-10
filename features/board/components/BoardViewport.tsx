@@ -34,14 +34,13 @@ import {
   type Camera,
   cameraFromHash,
   cameraShowsContent,
-  MIN_ZOOM,
   cameraToHash,
   panBy,
   screenToWorld,
   wheelZoomFactor,
   zoomAt,
 } from "../engine/camera";
-import { type Insets, BoardCameraStore, PHONE_VIEW_WIDTH } from "../engine/camera-store";
+import { type Insets, BoardCameraStore, cameraIsUnreadable } from "../engine/camera-store";
 import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
 import { boardOwnsKey, isTyping } from "../engine/key-target";
@@ -60,14 +59,6 @@ import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
 
 /** A view smaller than this in either direction is still laying out: the first fit waits. */
 const MIN_FIT_VIEW = 160;
-
-/**
- * A restored view nobody chose: pinned at the minimum zoom (a fit measured mid-layout and saved), or under 20% on a
- * phone, where nothing is legible. The first view is opened again instead (`fitOpening`).
- */
-function cameraIsUnreadable(camera: Camera, size: { w: number }): boolean {
-  return camera.z <= MIN_ZOOM * 1.01 || (size.w < PHONE_VIEW_WIDTH && camera.z < 0.2);
-}
 
 const HASH_THROTTLE_MS = 400;
 /** Screen px kept between a revealed element and the board's edge. */

@@ -19,6 +19,7 @@ import {
   easeInOutCubic,
   fitRect,
   inflateRect,
+  MIN_ZOOM,
   lerpCamera,
   rectsIntersect,
   unionRects,
@@ -96,6 +97,16 @@ export const PHONE_VIEW_WIDTH = 640;
 export const PHONE_MIN_READABLE_Z = 0.5;
 /** The zoom the first tile opens at on a phone: just above the card threshold, so its real body shows. */
 export const PHONE_OPEN_Z = 0.7;
+/** On a phone a restored view under this zoom (a 27% fit-all saved at desktop width) is reopened on the first tile. */
+export const PHONE_UNREADABLE_Z = 0.4;
+
+/**
+ * A restored view nobody chose: pinned at the minimum zoom (a fit measured mid-layout and saved), or under
+ * `PHONE_UNREADABLE_Z` on a phone, where nothing is legible. The first view is opened again instead (`fitOpening`).
+ */
+export function cameraIsUnreadable(camera: { z: number }, size: { w: number }): boolean {
+  return camera.z <= MIN_ZOOM * 1.01 || (size.w < PHONE_VIEW_WIDTH && camera.z < PHONE_UNREADABLE_Z);
+}
 export const FREEZE_AFTER_MS = 8000;
 /** Frozen tiles kept warm; beyond this the least recently live are discarded. */
 export const WARM_TILE_BUDGET = 12;

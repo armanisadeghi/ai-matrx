@@ -31,6 +31,9 @@ export const CONNECTIONS_HUB_ROUTES = [
 
 export function ConnectionsHubHeader() {
   return (
-    <RouteHeader center={<RouteModeNav items={CONNECTIONS_HUB_ROUTES} />} />
+    <RouteHeader
+      left={<h1 className="ml-2 truncate text-sm font-medium text-foreground">Connections</h1>}
+      center={<RouteModeNav items={CONNECTIONS_HUB_ROUTES} />}
+    />
   );
 }

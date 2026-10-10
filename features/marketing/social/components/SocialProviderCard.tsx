@@ -2,9 +2,9 @@
 
 /**
  * Operations > Connections: the social data provider. Status and platform
- * coverage come from `GET /social/capabilities`. Spend this month comes from
- * `GET /social/credits` (cost ledger: the organization's, plus the platform total
- * for admins) and reads in points through the one cost formatter.
+ * coverage come from `GET /social/capabilities`. Spend this month is the Cost page's own
+ * reader (`useSeoSpendSummary`, All organizations) so both screens show one number; the platform
+ * total for admins comes from `GET /social/credits` and reads in points through the one cost formatter.
  *
  * Vendor names and the vendor's own credit balance are our business, not the
  * member's (Arman, 2026-10-09): only a system admin seat sees them.
@@ -20,6 +20,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 import { useCostDisplay, useSeesDollars } from "@/components/cost/useCostDisplay";
 
+import { useSeoSpendSummary } from "@/features/marketing/data/spend";
 import { getCapabilities, getCredits } from "../server";
 import { SOCIAL_PLATFORMS, type SocialSpend, type SocialSpendFigure } from "../types";
 import { providerName } from "./ProviderFallbackNotice";
@@ -66,6 +67,8 @@ export function SocialProviderCard() {
   const enabled = Boolean(organizationId);
   const seesVendor = useSeesDollars();
   const { format } = useCostDisplay();
+  // The Cost page's own reader and window (this month, All organizations): one number for one period.
+  const spendRollup = useSeoSpendSummary(null);
   const caps = useQuery({
     queryKey: ["marketing", "social", "capabilities", organizationId],
     queryFn: ({ signal }) => getCapabilities({ organizationId, signal }),
@@ -135,13 +138,22 @@ export function SocialProviderCard() {
         ) : null}
         <Row
           icon={Receipt}
-          label="Spend this month"
+          label="This month · all organizations"
           detail={
-            credits.isPending
+            spendRollup.isPending
               ? "Loading…"
-              : credits.isError
+              : spendRollup.isError
                 ? "Spend unavailable"
-                : formatSpend(credits.data?.spend ? { ...credits.data.spend, platform: null } : credits.data?.spend, credits.data?.spend_error, (usd) => format(usd))
+                : formatSpend(
+                    {
+                      provider: "social",
+                      month_start: "",
+                      organization: { usd: spendRollup.data.social_this_month_usd ?? 0, calls: spendRollup.data.social_this_month_calls ?? 0 },
+                      platform: null,
+                    },
+                    null,
+                    (usd) => format(usd),
+                  )
           }
         />
         {credits.data?.spend?.platform ? (

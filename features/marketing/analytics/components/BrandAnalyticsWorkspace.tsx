@@ -180,9 +180,7 @@ export function BrandAnalyticsWorkspace({ brandId }: { brandId: string }) {
         brandName="This client"
         needs="Google Analytics traffic and conversions"
         alternatives={[]}
-      >
-        <p className="mt-1 text-xs text-muted-foreground">Social numbers for the brand&apos;s own accounts are below.</p>
-      </NoWebsiteState>
+      />
     );
   }
   if (rows.length === 1) {

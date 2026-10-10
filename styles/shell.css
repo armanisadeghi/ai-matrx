@@ -445,6 +445,13 @@
   transition: grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
+/* A chat dock that opens or closes because the ROUTE changed (ShellChatWidthInstant) lands in one frame:
+   sliding the page there is a layout shift with no input behind it (/chat/new to /notes, 0.2). */
+.shell-root[data-shell-instant],
+.shell-root[data-shell-instant] .shell-chat-dock {
+  transition: none !important;
+}
+
 /* The shell chat opens at this width on a wide screen with no remembered choice (see ShellChatDock's
    wideDefault, SHELL_CHAT_WIDE_QUERY). It opens after hydration, so the first paint reserves its room here;
    the dock's own published --shell-chat-w (inline) takes over without a change in value. */

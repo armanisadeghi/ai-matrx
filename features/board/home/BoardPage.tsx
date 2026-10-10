@@ -59,6 +59,7 @@ export function BoardPage({
   preset,
   titleMenuExtra,
   hideNewBoard = false,
+  displayTitle,
 }: {
   target: SavedBoardTarget;
   /** The workspace's remembered layout (the chat's is the shell chat's: `shellChatHome`). */
@@ -70,6 +71,8 @@ export function BoardPage({
   titleMenuExtra?: ReactNode;
   /** The host already offers its own "New board" in `titleMenuExtra` (a brand's Studio makes boards linked to the brand): one door, not two. */
   hideNewBoard?: boolean;
+  /** How the title reads in the header (a brand's Studio drops the brand it already sits under). The record keeps the full title. */
+  displayTitle?: (title: string) => string;
 }) {
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
@@ -119,7 +122,7 @@ export function BoardPage({
     <>
       <ChatCanvasWorkspace
         id={workspaceId}
-        title={title}
+        title={displayTitle ? displayTitle(title) : title}
         byline={byline}
         initialLayout={initialLayout}
         // Comments on the whole board ("bigger things"); each rides the next message of this chat.

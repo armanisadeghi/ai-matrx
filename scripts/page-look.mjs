@@ -290,6 +290,12 @@ function measure(isPhone) {
         w = Math.max(w, parseFloat(after.width) || 0);
         h = Math.max(h, parseFloat(after.height) || 0);
       }
+      // A control that opts into `.matrx-tap-area` / a before-ring is hit through its own ::before.
+      const before = getComputedStyle(el, "::before");
+      if (before.content && before.content !== "none" && before.position === "absolute") {
+        w = Math.max(w, parseFloat(before.width) || 0);
+        h = Math.max(h, parseFloat(before.height) || 0);
+      }
       if ((h < 44 || w < 44) && smallTargets.length < 15) smallTargets.push(`${describe(el)} ${Math.round(w)}x${Math.round(h)}`);
     }
   }

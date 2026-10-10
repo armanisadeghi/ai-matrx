@@ -23,8 +23,12 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { BrandCompetitorDirectory } from "./BrandCompetitorDirectory";
 import CompetitorAutopsyWorkspace from "./CompetitorAutopsyWorkspace";
+
+const DIRECTORY_VIEWS: ReadonlySet<string> = new Set(["all", "competitors"]);
 
 export function BrandScopedCompetitors({
   view,
@@ -46,7 +50,23 @@ export function BrandScopedCompetitors({
   // A brand with no website still has competitors: the social ones. The directory works without
   // a site; the website analysis screens need one. A person brand's peers are always the
   // directory: the autopsy screens are a company-website practice.
-  if (isPersonBrand(brand) || (sites.data ?? []).length === 0) return <BrandCompetitorDirectory />;
+  const socialOnly = isPersonBrand(brand) || (sites.data ?? []).length === 0;
+  if (socialOnly) {
+    // The directory answers the list screens; the other modes are the website competitor
+    // analysis, so they say so instead of repeating the directory six times.
+    if (!view || DIRECTORY_VIEWS.has(view)) return <BrandCompetitorDirectory />;
+    return (
+      <div className="p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+        <NoWebsiteState
+          compact
+          brandId={brand.id}
+          brandName={brand.name}
+          needs="the competitor website analysis"
+          alternatives={[{ label: "Open competitor list", href: marketingRoutes.brandCompetitors(brand.id) }]}
+        />
+      </div>
+    );
+  }
 
   return <CompetitorAutopsyWorkspace brandId={brand.id} view={view} />;
 }

@@ -1,4 +1,4 @@
-import { BoardCameraStore } from "../engine/camera-store";
+import { BoardCameraStore, cameraIsUnreadable } from "../engine/camera-store";
 
 // A phone cannot read a whole board at 5-15%: the first view opens on the first tile (top-left, one screen wide).
 function open(size: { w: number; h: number }, rects: Array<{ x: number; y: number; w: number; h: number }>) {
@@ -31,5 +31,15 @@ describe("fitOpening", () => {
   it("on a phone a board that already fits readably keeps fit-all", () => {
     const cam = open({ w: 375, h: 700 }, [{ x: 0, y: 0, w: 300, h: 300 }])!;
     expect(cam.z).toBeGreaterThan(0.5);
+  });
+});
+
+describe("cameraIsUnreadable", () => {
+  it("reopens a saved 27% view on a phone, never on a desktop", () => {
+    expect(cameraIsUnreadable({ z: 0.27 }, { w: 375 })).toBe(true);
+    expect(cameraIsUnreadable({ z: 0.27 }, { w: 1280 })).toBe(false);
+  });
+  it("keeps a readable phone view", () => {
+    expect(cameraIsUnreadable({ z: 0.7 }, { w: 375 })).toBe(false);
   });
 });
