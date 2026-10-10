@@ -11,8 +11,9 @@ describe("Review walk responsive contract", () => {
       join(__dirname, "NegativeVerdictFollowUp.tsx"),
       "utf8",
     );
-    const globals = readFileSync(
-      join(__dirname, "../../../app/globals.css"),
+    // The floor lives in the design-system package (below lg, inside `.matrx-touch-targets`).
+    const controlsCss = readFileSync(
+      join(__dirname, "../../../node_modules/@ai-matrx/design-system/dist/controls.css"),
       "utf8",
     );
 
@@ -22,7 +23,8 @@ describe("Review walk responsive contract", () => {
     expect(followUpSource).toContain(
       '"matrx-touch-targets flex flex-wrap items-center gap-1.5"',
     );
-    expect(globals).toContain("@media (pointer: coarse), (max-width: 1023px)");
-    expect(globals).toContain("min-height: 2.75rem; /* 44px */");
+    const ring = controlsCss.indexOf(".matrx-touch-targets .matrx-control:not([data-touch-exempt])::after");
+    expect(ring).toBeGreaterThan(-1);
+    expect(controlsCss.slice(controlsCss.lastIndexOf("@media", ring), ring)).toContain("(max-width: 1023px)");
   });
 });

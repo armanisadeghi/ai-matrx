@@ -66,14 +66,12 @@ describe("the Masterwork touch floor", () => {
   });
 
   it("keeps the floor out of desktop density", () => {
-    const css = readFileSync(join(REPO, "app/globals.css"), "utf8");
-    const at = css.indexOf(`.${FLOOR}\n`);
+    // The floor now lives in the design-system package: every control inside `.matrx-touch-targets`
+    // gets an invisible 44px ring, and only below `lg` (a 1440px width never matches the media query).
+    const css = readFileSync(join(REPO, "node_modules/@ai-matrx/design-system/dist/controls.css"), "utf8");
+    const at = css.indexOf(`.${FLOOR} .matrx-control:not([data-touch-exempt])::after`);
     expect(at).toBeGreaterThan(-1);
-    // The rule the class lives under is coarse-pointer / below-lg ONLY; a
-    // width of 1440 never matches it.
     const guardOpen = css.lastIndexOf("@media", at);
-    expect(css.slice(guardOpen, at)).toContain(
-      "(pointer: coarse), (max-width: 1023px)",
-    );
+    expect(css.slice(guardOpen, at)).toContain("(max-width: 1023px)");
   });
 });
