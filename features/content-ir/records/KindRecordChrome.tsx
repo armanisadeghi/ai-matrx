@@ -311,7 +311,7 @@ export function KindRecordChrome({
       {state.status === "ready" && landing && landing.state === "unreadable" && (
         <span className="text-muted-foreground">
           {landing.refusal ?? `This ${label} could not be read.`}
-        </span>
+        <ErrorAlchemyMenu error={landing.refusal} /></span>
       )}
 
       {state.status === "ready" && landing && landing.state !== "unreadable" && (
@@ -369,9 +369,9 @@ export function KindRecordChrome({
 
       {state.status === "ready" && outcome.state === "none" && (
         <>
-          <span className="text-muted-foreground">
+          <span data-error-box className="text-muted-foreground">
             {savedElsewhere ? "Already saved from an earlier version of this answer" : (saveRefused ?? "Not saved")}
-          </span>
+          <ErrorAlchemyMenu /></span>
           {countLink}
           {canSave && !savedElsewhere && (
             <span className="ml-auto flex items-center gap-1">

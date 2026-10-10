@@ -496,14 +496,14 @@ export default function ShapeInstancesTab({
             )}
           </div>
           {list.status === "ready" && list.unreadable.length > 0 && (
-            <p
+            <p data-error-box
               role="status"
               className="mb-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-800 dark:text-amber-200"
               title={list.unreadable.map((o) => `${o.name ?? o.id}: ${o.message}`).join("\n")}
             >
               Not shown: could not read {list.unreadable.map((o) => o.name ?? "another organization").join(", ")}.
               Refresh to try again.
-            </p>
+            <ErrorAlchemyMenu /></p>
           )}
           <ul className="space-y-1">
             {entries.map((entry) => {
