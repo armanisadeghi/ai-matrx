@@ -13806,6 +13806,14 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: string
       }
+      cx_fork_conversation: {
+        Args: {
+          p_at_position: number
+          p_conversation_id: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       cx_overview_kpis: {
         Args: { p_end?: string; p_start?: string; p_user_id?: string }
         Returns: Json
@@ -36220,7 +36228,6 @@ export type Database = {
       }
       context_value_write: { Args: { p_payload: Json }; Returns: Json }
       context_values: { Args: { p_scope_ids: string[] }; Returns: Json }
-      context_writer: { Args: { p_organization_id: string }; Returns: string }
       conversation_scope: {
         Args: { p_conversation_id: string; p_organization_id: string }
         Returns: Json
@@ -100562,19 +100569,7 @@ export type Database = {
           scope_type_id: string
         }[]
       }
-      _edu_access_mode:
-        | {
-            Args: { p_scope: unknown[] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
+      _edu_access_mode: { Args: { p_scope: unknown[] }; Returns: string }
       _edu_can_read_via_assignment:
         | { Args: { p_id: string; p_type: string }; Returns: boolean }
         | {
@@ -100601,38 +100596,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      _edu_ensure_owner_membership:
-        | {
-            Args: { p_scope: unknown[] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
+      _edu_ensure_owner_membership: {
+        Args: { p_scope: unknown[] }
+        Returns: undefined
+      }
       _edu_generate_join_code: { Args: never; Returns: string }
       _edu_is_active_member: {
         Args: { p_scope: string; p_user: string }
         Returns: boolean
       }
       _edu_is_assignable_token: { Args: { p_token: string }; Returns: boolean }
-      _edu_is_owner:
-        | {
-            Args: { p_scope: unknown[] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
+      _edu_is_owner: { Args: { p_scope: unknown[] }; Returns: boolean }
       _edu_is_scope_member: { Args: { p_scope: string }; Returns: boolean }
       _edu_live_class_by_code: {
         Args: { p_code: string }
