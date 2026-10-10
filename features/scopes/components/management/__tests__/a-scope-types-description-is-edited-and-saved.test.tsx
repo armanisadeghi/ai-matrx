@@ -37,9 +37,13 @@ jest.mock("@/features/scopes/redux/thunks/contextItemMutations", () => ({
 }));
 jest.mock("@/features/scopes/redux/thunks/ensureScopeTypeItems", () => ({ ensureScopeTypeItems: () => ({ type: "noop" }) }));
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({ makeSelectScopeType: () => () => SCOPE_TYPE }));
-jest.mock("@/features/scopes/redux/selectors/context-items", () => ({ makeSelectItemsForType: () => () => [] }));
+// A stable empty list (a fresh [] per render would re-run the sheet's reset effect forever).
+const mockNoItems: unknown[] = [];
+jest.mock("@/features/scopes/redux/selectors/context-items", () => ({ makeSelectItemsForType: () => () => mockNoItems }));
+// One dispatch for every render (the sheet's reset effect depends on it).
+const mockDispatch = async (a: unknown) => ({ ok: true, data: a });
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => async (a: unknown) => ({ ok: true, data: a }),
+  useAppDispatch: () => mockDispatch,
   useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
 }));
 jest.mock("@/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
@@ -84,7 +88,9 @@ it("shows the type's description and saves the edited one", async () => {
   const box = host.querySelector<HTMLTextAreaElement>("textarea[id$='-description']");
   expect(box?.value).toBe("Workers' compensation matters");
   await act(async () => typeInto(box!, "Open workers' compensation matters"));
+  expect(host.querySelector<HTMLTextAreaElement>("textarea[id$='-description']")?.value).toBe("Open workers' compensation matters");
   const save = [...host.querySelectorAll("button")].find((b) => b.textContent?.includes("Save changes"))!;
+  expect(save.disabled).toBe(false);
   await act(async () => save.click());
   expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ type_id: SCOPE_TYPE.id, description: "Open workers' compensation matters" }));
 });
