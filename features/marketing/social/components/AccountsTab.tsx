@@ -332,6 +332,18 @@ export function AccountsTab() {
           ),
       },
       {
+        id: "connection",
+        label: "Connection",
+        header: "Connection",
+        accessorFn: (r) => connectionOf(r)?.label ?? "",
+        filter: "select",
+        filterOptions: Object.values(CONNECTION_STATE_LABELS).map((label) => ({ value: label, label })),
+        cell: (r) => {
+          const c = connectionOf(r);
+          return c ? <Badge tone={c.tone}>{c.label}</Badge> : null;
+        },
+      },
+      {
         id: "followers",
         label: "Followers",
         header: "Followers",
@@ -426,18 +438,6 @@ export function AccountsTab() {
         filter: "date",
         hidden: true,
         cell: (r) => relativeAge(r.lastRefreshedAt),
-      },
-      {
-        id: "connection",
-        label: "Connection",
-        header: "Connection",
-        accessorFn: (r) => connectionOf(r)?.label ?? "",
-        filter: "select",
-        filterOptions: Object.values(CONNECTION_STATE_LABELS).map((label) => ({ value: label, label })),
-        cell: (r) => {
-          const c = connectionOf(r);
-          return c ? <Badge tone={c.tone}>{c.label}</Badge> : null;
-        },
       },
       {
         id: "status",
