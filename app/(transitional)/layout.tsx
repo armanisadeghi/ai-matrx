@@ -23,6 +23,7 @@ import {
   loginHref,
 } from "@/utils/auth/auth-destination";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export default async function TransitionalLayout({
   children,
 }: {
@@ -54,10 +55,10 @@ export default async function TransitionalLayout({
           pathname={pathname}
           sidebarExpanded={sidebarExpanded}
         >
-          <div className="p-4 text-sm text-muted-foreground">
+          <div data-error-box className="p-4 text-sm text-muted-foreground">
             We could not verify who you are on this request, so this page is not
             loading its data. You have not been signed out — reload in a moment.
-          </div>
+          <ErrorAlchemyMenu /></div>
         </AppShell>
       );
     }
