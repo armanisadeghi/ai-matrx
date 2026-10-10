@@ -242,9 +242,8 @@ function PropertyEditorDialogBody({
               type="button"
               className="w-fit text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setMoreOpen(true)}
-              aria-label="More options"
             >
-              …
+              More options
             </button>
           )}
         </div>

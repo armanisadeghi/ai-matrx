@@ -31,7 +31,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, Select } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
@@ -273,7 +273,7 @@ export function BrandsPortfolio({
               {row.name}
             </p>
             {row.industry && (
-              <p className="truncate text-[11px] text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground">
                 {row.industry}
               </p>
             )}
@@ -300,7 +300,7 @@ export function BrandsPortfolio({
                 href={marketingRoutes.site(row.id, site.id)}
                 title={`Open ${site.domain}`}
                 onClick={(event) => event.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground hover:border-primary/50 hover:bg-muted"
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-xs font-medium text-foreground hover:border-primary/50 hover:bg-muted"
               >
                 <Globe2 className="h-3 w-3 text-muted-foreground" />
                 {site.domain}
@@ -367,10 +367,17 @@ export function BrandsPortfolio({
       headerClassName: "max-lg:hidden",
       cell: (row) =>
         row.pending_discovered ? (
-          <Badge variant="warning" className="gap-1 text-[10px]">
-            <Inbox className="h-3 w-3" />
-            {row.pending_discovered.toLocaleString()}
-          </Badge>
+          <Link
+            href={marketingRoutes.brandDiscovery(row.id)}
+            aria-label={`${row.pending_discovered.toLocaleString()} to review for ${row.name}`}
+            title={`${row.pending_discovered.toLocaleString()} to review`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Badge variant="warning" className="gap-1 text-xs">
+              <Inbox className="h-3 w-3" />
+              {row.pending_discovered.toLocaleString()}
+            </Badge>
+          </Link>
         ) : (
           <span className="text-xs text-muted-foreground/50">—</span>
         ),
@@ -564,8 +571,6 @@ export function BrandsPortfolio({
                       <Landmark className="h-8 w-8 text-muted-foreground" />
                     ),
                     title: "No brands yet",
-                    description:
-                      "A brand is the company you manage — websites, social accounts, assets, and facts all attach to it.",
                     action: (
                       <Button variant="primary" onClick={openCreate}>
                         Add your first brand
@@ -622,7 +627,7 @@ function BrandCardQueryControls({
   const statusFilter = state.columnFilters.status;
   const status =
     statusFilter?.kind === "select"
-      ? (statusFilter.values?.[0] ?? statusFilter.value)
+      ? (statusFilter.values?.[0] ?? statusFilter.value ?? "all")
       : "all";
   const pageCount =
     total === undefined
@@ -646,66 +651,47 @@ function BrandCardQueryControls({
         placeholder="Search brand name or website…"
         className="min-w-52 flex-1"
       />
-      <label className="sr-only" htmlFor="brand-card-status">
-        Filter brands by status
-      </label>
-      <select
-        id="brand-card-status"
+      <Select
+        aria-label="Filter brands by status"
         value={status}
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-        onChange={(event) => {
+        options={[
+          { value: "all", label: "All statuses" },
+          { value: "active", label: "Active" },
+          { value: "paused", label: "Paused" },
+          { value: "archived", label: "Archived" },
+        ]}
+        onValueChange={(value) => {
           const columnFilters = { ...state.columnFilters };
-          if (event.target.value === "all") delete columnFilters.status;
+          if (value === "all") delete columnFilters.status;
           else {
-            columnFilters.status = {
-              kind: "select",
-              value: event.target.value,
-            };
+            columnFilters.status = { kind: "select", value };
           }
           update({ columnFilters, page: 1 });
         }}
-      >
-        <option value="all">All statuses</option>
-        <option value="active">Active</option>
-        <option value="paused">Paused</option>
-        <option value="archived">Archived</option>
-      </select>
-      <label className="sr-only" htmlFor="brand-card-sort">
-        Sort brands
-      </label>
-      <select
-        id="brand-card-sort"
+      />
+      <Select
+        aria-label="Sort brands"
         value={`${state.sort?.id ?? "name"}:${state.sort?.direction ?? "asc"}`}
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-        onChange={(event) => {
-          const [id, direction] = event.target.value.split(":");
+        options={[
+          { value: "name:asc", label: "Name, A–Z" },
+          { value: "name:desc", label: "Name, Z–A" },
+          { value: "updated_at:desc", label: "Recently updated" },
+          { value: "updated_at:asc", label: "Least recently updated" },
+        ]}
+        onValueChange={(value) => {
+          const [id, direction] = value.split(":");
           update({
             sort: { id, direction: direction === "desc" ? "desc" : "asc" },
             page: 1,
           });
         }}
-      >
-        <option value="name:asc">Name, A–Z</option>
-        <option value="name:desc">Name, Z–A</option>
-        <option value="updated_at:desc">Recently updated</option>
-        <option value="updated_at:asc">Least recently updated</option>
-      </select>
-      <label className="sr-only" htmlFor="brand-card-page-size">
-        Brands per page
-      </label>
-      <select
-        id="brand-card-page-size"
+      />
+      <Select
+        aria-label="Brands per page"
         value={String(state.pageSize)}
-        className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-        onChange={(event) =>
-          update({ pageSize: Number(event.target.value), page: 1 })
-        }
-      >
-        <option value="10">10 per page</option>
-        <option value="25">25 per page</option>
-        <option value="50">50 per page</option>
-        <option value="100">100 per page</option>
-      </select>
+        options={[10, 25, 50, 100].map((n) => ({ value: String(n), label: `${n} per page` }))}
+        onValueChange={(value) => update({ pageSize: Number(value), page: 1 })}
+      />
       <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
         {total === undefined ? (
           <span
@@ -770,10 +756,6 @@ function BrandCards({
         <p className="mt-3 text-sm font-medium text-foreground">
           No brands yet
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Add a client brand to organize its sites, assets, facts, and marketing
-          work.
-        </p>
       </div>
     );
   }
@@ -812,7 +794,7 @@ function BrandCards({
                   <Link
                     key={site.id}
                     href={marketingRoutes.site(row.id, site.id)}
-                    className="inline-flex max-w-full items-center gap-1 rounded-md border border-border/70 bg-muted/30 px-2 py-1 text-[11px] font-medium text-foreground hover:border-primary/50 hover:bg-muted"
+                    className="inline-flex max-w-full items-center gap-1 rounded-md border border-border/70 bg-muted/30 px-2 py-1 text-xs font-medium text-foreground hover:border-primary/50 hover:bg-muted"
                   >
                     <Globe2 className="h-3 w-3 shrink-0 text-muted-foreground" />
                     <span className="truncate">{site.domain}</span>
@@ -845,15 +827,21 @@ function BrandCards({
             </div>
 
             <div className="flex items-center justify-between gap-2 border-t border-border/70 pt-3">
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Updated {formatCompactDate(row.updated_at)}
               </span>
               <div className="flex items-center gap-1">
                 {row.pending_discovered ? (
-                  <Badge variant="warning" className="gap-1 text-[10px]">
-                    <Inbox className="h-3 w-3" />
-                    {row.pending_discovered.toLocaleString()}
-                  </Badge>
+                  <Link
+                    href={marketingRoutes.brandDiscovery(row.id)}
+                    aria-label={`${row.pending_discovered.toLocaleString()} to review for ${row.name}`}
+                    title={`${row.pending_discovered.toLocaleString()} to review`}
+                  >
+                    <Badge variant="warning" className="gap-1 text-xs">
+                      <Inbox className="h-3 w-3" />
+                      {row.pending_discovered.toLocaleString()}
+                    </Badge>
+                  </Link>
                 ) : null}
                 <Button
                   icon={<Pencil />}
@@ -888,7 +876,7 @@ function CardDimension({
   label: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center justify-center gap-1 px-1 text-[11px] text-muted-foreground">
+    <div className="flex min-w-0 items-center justify-center gap-1 px-1 text-xs text-muted-foreground">
       <Icon className="h-3 w-3 shrink-0" />
       <span className="font-semibold tabular-nums text-foreground">
         {value.toLocaleString()}
