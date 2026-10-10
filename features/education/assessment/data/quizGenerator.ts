@@ -42,7 +42,8 @@ import {
 } from "@ai-matrx/agents/sources";
 import type { ConvertSource } from "@/features/education/convert/types";
 import { readExistingKitItems } from "@/features/education/convert/existingItems";
-import { steeredSectionIds } from "@/features/education/convert/steering";
+import { outlineRunCount, steeredSectionIds } from "@/features/education/convert/steering";
+import { KIND_CONFIG } from "@/features/education/assessment/components/kindConfig";
 import {
   readOutlineGroups,
   type OutlineGroups,

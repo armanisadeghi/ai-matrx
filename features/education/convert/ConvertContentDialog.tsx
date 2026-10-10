@@ -144,6 +144,11 @@ const TARGETS: TargetMeta[] = [
   },
 ];
 
+/** The metered capability each target spends (the kit chat's generate door meters the same). */
+export const TARGET_CAPABILITY: Record<string, Capability> = Object.fromEntries(
+  TARGETS.map((t) => [t.kind, t.capability]),
+);
+
 type RowState =
   | { status: "idle" }
   | { status: "running" }

@@ -144,41 +144,46 @@ export async function readProfileSnapshots(
   return out;
 }
 
-interface StatWithPost {
-  post_id: string;
-  views: number | null;
-  outlier_score: number | null;
-  post: { profile_id: string | null; posted_at: string | null } | null;
+interface PostWithStatRollup {
+  id: string;
+  profile_id: string | null;
+  posted_at: string | null;
+  stat: { views: number | null; outlier_score: number | null }[] | { views: number | null; outlier_score: number | null } | null;
 }
 
-/** Per-post views + multiple for a set of profiles (account table roll-ups). */
+/**
+ * Per-post views + multiple for a set of profiles (account table roll-ups). Read from the LIVE POSTS
+ * (`deleted_at is null`), stat optional: the roll-up's post count is therefore the same number
+ * `social.brand_social_accounts`, the competitors directory and the account page count (a post with
+ * no stat row yet, or a removed post, used to make one account show 11 here and 12 there).
+ */
 export async function readAccountPostStats(
   profileIds: readonly string[],
 ): Promise<AccountPostStat[]> {
   if (profileIds.length === 0) return [];
   const out: AccountPostStat[] = [];
   for (const part of chunk(profileIds, 50)) {
-    const rows = await readAllRows<StatWithPost>(
+    const rows = await readAllRows<PostWithStatRollup>(
       ({ from, to }) =>
         supabase
           .schema("social")
-          .from("post_stat")
-          .select("post_id, views, outlier_score, post:post!inner(profile_id, posted_at)", {
-            count: "exact",
-          })
-          .in("post.profile_id", part)
-          .order("post_id", { ascending: true })
+          .from("post")
+          .select("id, profile_id, posted_at, stat:post_stat(views, outlier_score)", { count: "exact" })
+          .in("profile_id", part)
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
           .range(from, to)
-          .returns<StatWithPost[]>(),
-      { label: "social.post_stat account roll-up" },
+          .returns<PostWithStatRollup[]>(),
+      { label: "social.post account roll-up" },
     );
     for (const r of rows) {
+      const st = Array.isArray(r.stat) ? (r.stat[0] ?? null) : r.stat;
       out.push({
-        post_id: r.post_id,
-        views: r.views,
-        outlier_score: r.outlier_score,
-        profile_id: r.post?.profile_id ?? null,
-        posted_at: r.post?.posted_at ?? null,
+        post_id: r.id,
+        views: st?.views ?? null,
+        outlier_score: st?.outlier_score ?? null,
+        profile_id: r.profile_id,
+        posted_at: r.posted_at,
       });
     }
   }

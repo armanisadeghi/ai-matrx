@@ -104,6 +104,12 @@ export interface SegmentedGenerateResult<T> {
    * (which has many and belongs to none of them).
    */
   conversationId: string | null;
+  /**
+   * The run's identity across a reload: the section-journal plan key, stable for
+   * the same kind + source + plan. Null without a journal. A generator stamps it
+   * on the artifact it creates so a resumed run ADOPTS that artifact.
+   */
+  runKey: string | null;
   /** The raw extracted value of the FIRST successful section, for a title. */
   firstValue: unknown;
   /** One honest sentence when sections were missed, else null. */
@@ -370,6 +376,7 @@ export async function segmentedGenerate<T>({
     items,
     plan,
     conversationId,
+    runKey: journal?.runScope && planKey ? `${journal.runScope}|${planKey}` : null,
     firstValue,
     gapNote: describeGaps(missed),
     missedCount: missed.length,

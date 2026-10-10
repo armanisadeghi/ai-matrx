@@ -1,8 +1,8 @@
 "use client";
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 
 export interface VaultItemState {
   isFavorite: boolean;
@@ -72,7 +72,7 @@ export function useVaultItemState({ actorId, scopeKey, itemIds }: {
     let cancelled = false;
     void favoritesService.getBulk("credential_item", ids).then((result) => {
       if (cancelled || !isCurrent(key)) return;
-      if (isScopesRpcErr(result)) {
+      if (isAssociationsRpcErr(result)) {
         setSnapshot({ key, status: "error", items: EMPTY_ITEMS, error: "Couldn't load your favorites and recent views. Retry." });
         return;
       }
@@ -102,7 +102,7 @@ export function useVaultItemState({ actorId, scopeKey, itemIds }: {
   const reconcile = async (itemId: string, requestKey: string, intent: Intent) => {
     const result = await favoritesService.getBulk("credential_item", [itemId]);
     if (!isCurrent(requestKey, itemId) || pending.current.get(itemId) !== intent) return false;
-    if (isScopesRpcErr(result)) {
+    if (isAssociationsRpcErr(result)) {
       fail(requestKey, "Couldn't refresh your favorites and recent views");
       return false;
     }
@@ -130,7 +130,7 @@ export function useVaultItemState({ actorId, scopeKey, itemIds }: {
         ? await favoritesService.setFavorite("credential_item", itemId, !snapshotRef.current.items.get(itemId)?.isFavorite)
         : await favoritesService.touch("credential_item", itemId);
       if (!isCurrent(requestKey, itemId) || pending.current.get(itemId) !== intent) return false;
-      if (isScopesRpcErr(result)) {
+      if (isAssociationsRpcErr(result)) {
         if (operation === "touch" && contextKey) queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch", touchIntent });
         fail(requestKey, operation === "favorite" ? "Couldn't update this favorite" : "Couldn't update this recent view");
         return false;

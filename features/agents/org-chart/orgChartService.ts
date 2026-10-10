@@ -6,12 +6,12 @@
 // member edges and are read and written by orchestrasService, never here.
 //
 // Every id in and out of this module is a BOX id (`type:entityId`, constants.ts).
-// Every method returns a ScopesRpcResult and never throws.
+// Every method returns a AssociationsRpcResult and never throws.
 
 "use client";
 
+import { isAssociationsRpcErr, type AssociationsRpcResult } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr, type ScopesRpcResult } from "@/features/scopes/types";
 import { err, ok } from "@/features/scopes/service/rpcResult";
 import { MEMBER_ROLE } from "@/features/agents/orchestras/constants";
 import {
@@ -39,7 +39,7 @@ interface RawEdge {
   metadata: unknown;
 }
 
-type Read = ScopesRpcResult<RawEdge[]>;
+type Read = AssociationsRpcResult<RawEdge[]>;
 
 /** Group box ids by type: { agent: [...], user: [...] }. */
 function byType(boxIds: readonly string[]): Map<OrgBoxType, string[]> {
@@ -62,7 +62,7 @@ const overCap = () => err("quota_exceeded", `One box has ${ROW_CAP} or more link
 async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in"): Promise<Read> {
   if (direction === "out") {
     const res = await associationsService.listForSources(type, ids);
-    if (isScopesRpcErr(res)) return res;
+    if (isAssociationsRpcErr(res)) return res;
     if (res.data.edges.length < ROW_CAP) {
       return ok(
         res.data.edges
@@ -78,7 +78,7 @@ async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in
     }
   } else {
     const res = await associationsService.listForTargets(type, ids);
-    if (isScopesRpcErr(res)) return res;
+    if (isAssociationsRpcErr(res)) return res;
     if (res.data.edges.length < ROW_CAP) {
       return ok(
         res.data.edges
@@ -99,8 +99,8 @@ async function readWhole(type: OrgBoxType, ids: string[], direction: "out" | "in
     readWhole(type, ids.slice(0, mid), direction),
     readWhole(type, ids.slice(mid), direction),
   ]);
-  if (isScopesRpcErr(a)) return a;
-  if (isScopesRpcErr(b)) return b;
+  if (isAssociationsRpcErr(a)) return a;
+  if (isAssociationsRpcErr(b)) return b;
   return ok([...a.data, ...b.data]);
 }
 
@@ -109,7 +109,7 @@ async function readAll(boxIds: readonly string[], direction: "out" | "in"): Prom
   for (const [type, ids] of byType(boxIds)) {
     for (let i = 0; i < ids.length; i += ORG_CHART_READ_CHUNK) {
       const res = await readWhole(type, ids.slice(i, i + ORG_CHART_READ_CHUNK), direction);
-      if (isScopesRpcErr(res)) return res;
+      if (isAssociationsRpcErr(res)) return res;
       out.push(...res.data);
     }
   }
@@ -135,13 +135,13 @@ export const orgChartService = {
   async listManualEdges(
     boxIds: readonly string[],
     direction: "out" | "both" = "out",
-  ): Promise<ScopesRpcResult<ManualOrgEdge[]>> {
+  ): Promise<AssociationsRpcResult<ManualOrgEdge[]>> {
     const out = await readAll(boxIds, "out");
-    if (isScopesRpcErr(out)) return out;
+    if (isAssociationsRpcErr(out)) return out;
     const edges = out.data.filter(isRecorded);
     if (direction === "both") {
       const into = await readAll(boxIds, "in");
-      if (isScopesRpcErr(into)) return into;
+      if (isAssociationsRpcErr(into)) return into;
       edges.push(...into.data.filter(isRecorded));
     }
     const seen = new Set<string>();
@@ -152,9 +152,9 @@ export const orgChartService = {
    * Everyone directly under these boxes by a TREE link (Orchestra or reports to),
    * read fresh from the server, so a loop check never trusts a half-loaded chart.
    */
-  async listChildren(boxIds: readonly string[]): Promise<ScopesRpcResult<Array<{ parentId: string; childId: string }>>> {
+  async listChildren(boxIds: readonly string[]): Promise<AssociationsRpcResult<Array<{ parentId: string; childId: string }>>> {
     const res = await readAll(boxIds, "out");
-    if (isScopesRpcErr(res)) return res;
+    if (isAssociationsRpcErr(res)) return res;
     return ok(
       res.data
         .filter((e) => e.from !== e.to && (e.role === MEMBER_ROLE || (e.role === ORG_CHART_ROLE && isTree(e))))
@@ -163,14 +163,14 @@ export const orgChartService = {
   },
 
   /** The recorded TREE links that currently place this box under someone. */
-  async listManagersOf(reportBoxId: string): Promise<ScopesRpcResult<ManualOrgEdge[]>> {
+  async listManagersOf(reportBoxId: string): Promise<AssociationsRpcResult<ManualOrgEdge[]>> {
     const res = await readAll([reportBoxId], "in");
-    if (isScopesRpcErr(res)) return res;
+    if (isAssociationsRpcErr(res)) return res;
     return ok(res.data.filter((e) => isRecorded(e) && isTree(e)).map(toManual));
   },
 
   /** Record (or re-type) the one link between this pair — the edge is unique per pair. */
-  async add(fromBox: string, toBox: string, kind: RecordedLinkKind = "reports_to"): Promise<ScopesRpcResult<{ id: string }>> {
+  async add(fromBox: string, toBox: string, kind: RecordedLinkKind = "reports_to"): Promise<AssociationsRpcResult<{ id: string }>> {
     const from = parseBoxId(fromBox);
     const to = parseBoxId(toBox);
     return associationsService.add({
@@ -183,7 +183,7 @@ export const orgChartService = {
     });
   },
 
-  async remove(fromBox: string, toBox: string): Promise<ScopesRpcResult<null>> {
+  async remove(fromBox: string, toBox: string): Promise<AssociationsRpcResult<null>> {
     const from = parseBoxId(fromBox);
     const to = parseBoxId(toBox);
     return associationsService.remove({

@@ -13,14 +13,14 @@
  * what the person sees.
  */
 
+import { type AssociationsRpcResult } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type { ScopesRpcResult } from "@/features/scopes/types";
 
 import type { MapTopicAssociationDirection } from "../types";
 
 export const SEO_MAP_TOPIC_TOKEN = "seo_map_topic";
 
-function unwrap<T>(result: ScopesRpcResult<T>): T {
+function unwrap<T>(result: AssociationsRpcResult<T>): T {
   if (!result.ok) {
     throw new Error(`${result.error.message} (${result.error.code})`);
   }

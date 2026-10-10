@@ -1,4 +1,5 @@
 // Task service for database operations
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -21,7 +22,6 @@ import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { commentsService } from "@/features/scopes/service/commentsService";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { TaskStatus, TaskOrigin } from "../constants/status";
 import { nextOccurrence, ensureMonthDayAnchor } from "../utils/recurrence";
 
@@ -378,7 +378,7 @@ export async function uploadTaskAttachment(
       targetType: "task",
       targetId: taskId,
     });
-    if (isScopesRpcErr(linked)) {
+    if (isAssociationsRpcErr(linked)) {
       console.error("Error linking attachment to task:", linked.error.message);
       // Best-effort cleanup of the orphaned cloud-files upload.
       try {
@@ -438,7 +438,7 @@ export async function deleteTaskAttachment(
       targetType: "task",
       targetId: taskId,
     });
-    if (isScopesRpcErr(unlinked)) {
+    if (isAssociationsRpcErr(unlinked)) {
       console.error(
         "Error removing attachment association:",
         unlinked.error.message,
@@ -1041,7 +1041,7 @@ export async function getTaskPermissions(taskId: string) {
  */
 export async function getTaskComments(taskId: string): Promise<Comment[]> {
   const res = await commentsService.listForEntity("task", taskId);
-  if (isScopesRpcErr(res)) {
+  if (isAssociationsRpcErr(res)) {
     console.error("Error fetching task comments:", res.error.message);
     return [];
   }

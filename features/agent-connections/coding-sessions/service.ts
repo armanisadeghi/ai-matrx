@@ -1,8 +1,8 @@
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import type { QueryData } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export const CODING_SESSION_PAGE_SIZE = 100;
@@ -154,7 +154,7 @@ export async function fetchCodingSessions(opts?: {
     "conversation",
     rows.map((session) => session.conversation_id),
   );
-  if (isScopesRpcErr(favoriteResult)) {
+  if (isAssociationsRpcErr(favoriteResult)) {
     console.error(
       "[codingSessions] favorite-state read failed — rendering pins unset",
       favoriteResult.error,

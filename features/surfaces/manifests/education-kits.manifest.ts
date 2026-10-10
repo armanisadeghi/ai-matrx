@@ -209,6 +209,28 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "open_kit",
   },
   {
+    name: "outline",
+    label: "Kit outline",
+    description:
+      'The kit\'s Outline sections in order as { title, cards, questions } — how many flashcards and quiz questions the kit already holds for each. Send titles from here as section_titles for generate_in_kit; the fewest-covered sections are the gaps. Absent when there is no outline or kit_status is not "ready".',
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 355,
+    group: "open_kit",
+  },
+  {
+    name: "outline_status",
+    label: "Outline status",
+    description:
+      '"none" (not built; section_titles cannot be used, and a new aid covers the whole material), "building" (a build is running), "ready" or "stale" (older than the kit\'s Sources). Absent unless kit_status is "ready".',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 356,
+    group: "open_kit",
+  },
+  {
     name: "kit_totals",
     label: "Kit totals",
     description:
@@ -293,6 +315,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   { name: "create_kits", label: "Create study kits", description: "Available only in the new view (the create page's Saved aids mode) once the picked material (kit_sources) is ready and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id?: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id; source_file_id is optional and, when sent, must equal kit_source_file_id. The kit anchors on the picked material. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
   { name: "add_kit_members", label: "Add saved study aids", description: "Available on an open Kit. Value is an ARRAY of exactly one { title: string, source_id: string, source_type: string, expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. source_id and source_type must equal kit_source_id and kit_source_type; each artifact_ref must match a kit_member_candidate by kind and id and not already be in the kit. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
   { name: "remove_kit_members", label: "Remove saved study aids", description: "Available on an open Kit. Value is { expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. The complete qualified set is checked against one fresh membership snapshot before any removal. A write failure reports exactly how many removals completed. It removes or hides only the Kit membership; saved aids and generated provenance remain available elsewhere.", valueType: "object", updatesValue: "study_aids", mode: "entity", applyPolicy: "ask", group: "open_kit", sortOrder: 115 },
+  { name: "generate_in_kit", label: "Make study aids in this kit", description: "Available on an open Kit (kit_status ready). Value is ONE object { kind: \"deck\"|\"quiz\"|\"practice_test\"|\"notes\"|\"summary\"|\"mind_map\"|\"memory_aid\", into?: string, count?: number, card_kinds?: [\"basic\"|\"cloze\"|\"matching\"|\"formula\"], question_types?: [\"multiple_choice\"|\"true_false\"|\"fill_blank\"|\"short_answer\"|\"written_response\"], instruction?: string, section_titles?: string[] }. into is the artifact_id of a deck (kind deck) or quiz / practice test (same kind) in study_aids: the new cards or questions are added to it and nothing already there is repeated; without into a NEW aid is made in this kit. card_kinds only with deck, question_types only with quiz / practice_test, count only for deck / quiz / practice_test (1 to 100; the person's per-run limit may lower it). section_titles come from outline (use the fewest-covered ones for \"my weakest sections\"). instruction is the person's own words about focus. Applying STARTS the run and returns at once with \"started\": it uses the person's generation allowance and the same age checks as Make more, progress shows on the kit page, and the result is announced there when it finishes. Do not call it again for the same request.", valueType: "object", updatesValue: "study_aids", mode: "entity", applyPolicy: "ask", group: "open_kit", sortOrder: 120 },
   {
     name: "update_kits", label: "Rename study kits",
     description: "Renames existing kits. Value is an ARRAY of { source_type: string, source_id: string, expected_membership_fingerprint: string, title: string }. Identity and fingerprint must be current. Stale membership is refused before any edge changes. The person approves before saving.",
@@ -324,7 +347,7 @@ You are on Study Kits at /education/kits. A study kit is one piece of the learne
 
 Read \`view\` first. In "list" the learner is choosing a kit: kits is every kit they have. In "detail" one kit is open: study_aids lists its aids along the page's study path (understand, make it stick, prove it), each with its real practice evidence, kit_totals the headline numbers, and next_challenge what the page suggests doing next.
 
-Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create one at /education/kits/new (Build with AI, or Saved aids, which create_kits fills); add to an open kit with add_kit_members. Both use source and member associations. On an open kit, update_kits renames the grouping, add_kit_members and remove_kit_members change its saved-aid membership, and delete_kits removes the grouping only; none delete source material or study aids. Make more runs the generator on the same material.
+Progress numbers are measured from the learner's actual practice; explain them, never invent them. A kit has no independent record: create one at /education/kits/new (Build with AI, or Saved aids, which create_kits fills); add to an open kit with add_kit_members. Both use source and member associations. On an open kit, update_kits renames the grouping, add_kit_members and remove_kit_members change its saved-aid membership, and delete_kits removes the grouping only; none delete source material or study aids. Make more runs the generator on the same material; generate_in_kit does the same from this chat (a new aid, or more cards or questions into a deck or quiz of this kit), after the person approves.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -383,6 +406,8 @@ export function createEducationKitsScope(values: {
   kit_member_candidates?: { id: string; title: string; kind: string; subtype: string | null }[];
   kit_created_at?: string;
   study_aids?: KitStudyAidEntry[];
+  outline?: { title: string; cards: number; questions: number }[];
+  outline_status?: "none" | "building" | "ready" | "stale";
   kit_totals?: {
     study_aids: number;
     practice_items?: number;

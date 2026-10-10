@@ -735,8 +735,21 @@ export const fcService = {
     conversationId: string | null,
     input: NewSetInput,
     cards: NewCardInput[],
-    opts: { continues?: readonly string[] } = {},
+    opts: { continues?: readonly string[]; runKey?: string | null } = {},
   ): Promise<FcResult<SetWithCards>> {
+    // A SEGMENTED KIT RUN HAS NO ONE CONVERSATION, so its identity is the plan's
+    // run key. A deck this run already made (the tab died after the create, before
+    // the kit edge) is THIS run's deck: adopt it — complete as is, or its cards
+    // replaced when the create stopped halfway — never a second deck, never an
+    // orphan beside the kit.
+    if (opts.runKey) {
+      const earlier = await this.findGeneratedSetByRunKey(opts.runKey);
+      if (earlier.data) {
+        const have = await this.getSetWithCards(earlier.data.id);
+        if (have.data && have.data.cards.length >= cards.length) return have;
+        return this.continueGeneratedSet(earlier.data, conversationId, [], input, cards);
+      }
+    }
     // ONE RUN, ONE DECK. A retry of a run that stopped with its page passes
     // that run's conversations: a deck already made for them (the chat
     // renderer can materialize one mid-generation) is THIS run's deck, so it
@@ -777,10 +790,29 @@ export const fcService = {
               }
             : {}),
           generation: "surface_save",
+          ...(opts.runKey ? { run_key: opts.runKey } : {}),
         },
       },
       cards,
     );
+  },
+
+  /** The deck a segmented kit run already created, found by its plan's run key. */
+  async findGeneratedSetByRunKey(runKey: string): Promise<FcResult<FcSetRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("*")
+        .eq("metadata->>run_key", runKey)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) return fail("findGeneratedSetByRunKey", error);
+      const row = (data ?? [])[0] as FcSetRow | undefined;
+      return { data: row ? withDisplayTitle(row, "name") : null, error: null };
+    } catch (e) {
+      return fail("findGeneratedSetByRunKey", e);
+    }
   },
 
   /**

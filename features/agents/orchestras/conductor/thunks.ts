@@ -17,6 +17,7 @@
 // instance is deliberately KEPT after completion so the finished description
 // stays readable in the window; the next sync releases it.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
@@ -30,7 +31,6 @@ import {
   saveMemberMeta,
   loadOrchestra,
 } from "@/features/agents/redux/orchestras/thunks";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrchestraMember } from "../types";
 import { buildMemberRosterOffer } from "./roleDescriberOffer";
 import {
@@ -84,7 +84,7 @@ export function enableConductorSync(args: {
     const res = await conductorService.ensureAvailableAgentsSection(
       args.conductorId,
     );
-    if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
+    if (isAssociationsRpcErr(res)) return { ok: false, error: res.error.message };
     try {
       await dispatch(fetchFullAgent(args.conductorId)).unwrap();
     } catch {
@@ -119,7 +119,7 @@ export function syncConductorPrompt(args: {
     const marker = await conductorService.hasAvailableAgentsSection(
       args.conductorId,
     );
-    if (isScopesRpcErr(marker))
+    if (isAssociationsRpcErr(marker))
       return { ok: false, error: marker.error.message };
     if (!marker.data) {
       return {
@@ -139,7 +139,7 @@ export function syncConductorPrompt(args: {
 
     // Each member agent's config (system prompt, inputs, output shape).
     const configsRes = await conductorService.fetchMemberConfigs(memberIds);
-    if (isScopesRpcErr(configsRes)) {
+    if (isAssociationsRpcErr(configsRes)) {
       return { ok: false, error: configsRes.error.message };
     }
     const configById = new Map<string, MemberConfigRow>(
@@ -351,7 +351,7 @@ export function syncConductorPrompt(args: {
       args.conductorId,
       block,
     );
-    if (isScopesRpcErr(inj)) {
+    if (isAssociationsRpcErr(inj)) {
       return { ok: false, error: inj.error.message, membersUpdated };
     }
 

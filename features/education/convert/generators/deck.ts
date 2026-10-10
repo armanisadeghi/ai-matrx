@@ -38,7 +38,7 @@ import type {
   ConvertResult,
 } from "../types";
 import { sectionRunTitle } from "../coverage";
-import { foldSteer, steeredSectionIds } from "../steering";
+import { DEFAULT_DECK_CARD_COUNT, foldSteer, outlineRunCount, steeredSectionIds } from "../steering";
 import { dropRepeats, readExistingKitItems, type ExistingItem } from "../existingItems";
 import { readOutlineGroups } from "@/features/education/kits/outline/outlineService";
 import { OUTLINE_SECTION_KEY } from "@/features/education/kits/outline/types";
@@ -75,7 +75,7 @@ async function run(
     source: runSource,
     groups: outline?.groups,
     targetKind: "deck",
-    options,
+    options: { ...options, count: outlineRunCount(options?.count, Boolean(outline), DEFAULT_DECK_CARD_COUNT) },
     mandateKey: CONVERT_MANDATES.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
@@ -151,6 +151,7 @@ async function run(
       orgId: ctx.orgId,
     },
     cards,
+    { runKey: covered.runKey },
   );
   if (created.error || !created.data) {
     throw new Error(

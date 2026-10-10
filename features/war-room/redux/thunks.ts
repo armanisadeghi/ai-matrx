@@ -3,6 +3,7 @@
 // Async thunks bridging the warRoom slice and Supabase via service.ts.
 // Optimistic where it helps; loud (toast) on failure.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { toast } from "@/lib/toast";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -43,7 +44,6 @@ import {
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import {
@@ -130,7 +130,7 @@ async function loadThreadUserStateBulk(
 ): Promise<void> {
   if (threadIds.length === 0) return;
   const res = await favoritesService.getBulk("thread", threadIds);
-  if (isScopesRpcErr(res)) {
+  if (isAssociationsRpcErr(res)) {
     reportWarRoomError("loadThreadUserStateBulk", res.error, { toast: false });
     return;
   }
@@ -1795,7 +1795,7 @@ export const toggleThreadPin =
     };
     dispatch(setThreadUserState({ id, state: { ...prior, isPinned: pinned } }));
     const res = await favoritesService.setPinned("thread", id, pinned);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       dispatch(setThreadUserState({ id, state: prior }));
       reportWarRoomError("toggleThreadPin", res.error, {
         toast: "Couldn't update pin",
@@ -1812,7 +1812,7 @@ export const toggleThreadHide =
     };
     dispatch(setThreadUserState({ id, state: { ...prior, isHidden: hidden } }));
     const res = await favoritesService.setHidden("thread", id, hidden);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       dispatch(setThreadUserState({ id, state: prior }));
       reportWarRoomError("toggleThreadHide", res.error, {
         toast: "Couldn't update thread",
@@ -2111,7 +2111,7 @@ export const removeThreadFromRoom =
         targetType: "war_room",
         targetId: fromRoomId,
       });
-      if (isScopesRpcErr(removed)) throw removed.error;
+      if (isAssociationsRpcErr(removed)) throw removed.error;
       dispatch(threadOrphaned({ threadId, fromRoomId }));
       toast.success("Thread removed from room");
       return true;

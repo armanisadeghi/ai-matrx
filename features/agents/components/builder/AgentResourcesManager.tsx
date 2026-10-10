@@ -1,5 +1,6 @@
 "use client";
 
+import { isAssociationsRpcErr, type AssociationTargetEdge } from "@ai-matrx/associations";
 import { isSyntheticAgentId } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
 import { UnsavedAgentAttachmentRow } from "./UnsavedAgentAttachmentRow";
 import { useEffect, useState } from "react";
@@ -23,8 +24,6 @@ import {
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { AssociationTargetEdge } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const AGENT_RESOURCE_ROLE = "agent_resource";
@@ -182,7 +181,7 @@ function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
     const result = await associationsService.listForTargetsVisible("agent", [
       agentId,
     ]);
-    if (isScopesRpcErr(result)) {
+    if (isAssociationsRpcErr(result)) {
       toast.error(`Couldn't load resources: ${result.error.message}`);
       return;
     }
@@ -198,7 +197,7 @@ function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
       .then((result) => {
         if (!active) return;
         setLoading(false);
-        if (isScopesRpcErr(result)) {
+        if (isAssociationsRpcErr(result)) {
           toast.error(`Couldn't load resources: ${result.error.message}`);
           return;
         }
@@ -221,7 +220,7 @@ function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
       agentId,
       ...selection,
     });
-    if (isScopesRpcErr(result)) {
+    if (isAssociationsRpcErr(result)) {
       toast.error(`Couldn't attach resource: ${result.error.message}`);
       return false;
     }
@@ -235,7 +234,7 @@ function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
       sourceType: edge.sourceType,
       sourceId: edge.sourceId,
     });
-    if (isScopesRpcErr(result)) {
+    if (isAssociationsRpcErr(result)) {
       toast.error(`Couldn't remove resource: ${result.error.message}`);
       return;
     }

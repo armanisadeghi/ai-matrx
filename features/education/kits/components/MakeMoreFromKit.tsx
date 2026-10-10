@@ -23,15 +23,9 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
-import { reopenAnchor } from "@/features/education/convert/reopenAnchor";
-import type {
-  SourceRef,
-  TargetKind,
-} from "@/features/education/convert/types";
-import type { ConvertOrigin } from "@/features/education/convert/ConvertContentDialog";
+import { recoverKitMaterial, type RecoveredKitMaterial } from "../recoverKitMaterial";
+import type { TargetKind } from "@/features/education/convert/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { createSourceRef, createSourceSet } from "@ai-matrx/agents/sources";
-import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
 import { useIngest } from "@/features/education/onboard/useIngest";
 import { KIT_TOKEN, type KitSource } from "../kitScope";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -43,13 +37,6 @@ export interface AimedMakeMore {
   kind: TargetKind;
   /** Changes on every press, so the same section can be asked for twice. */
   nonce: number;
-}
-
-/** The recovered material, held so a second target costs no second re-read. */
-interface Recovered {
-  text: string;
-  ref: SourceRef;
-  origin: ConvertOrigin;
 }
 
 export function MakeMoreFromKit({
@@ -90,7 +77,7 @@ export function MakeMoreFromKit({
 }) {
   const pdf = usePdfClient();
   const { normalizeSources } = useIngest();
-  const [recovered, setRecovered] = useState<Recovered | null>(null);
+  const [recovered, setRecovered] = useState<RecoveredKitMaterial | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,40 +93,7 @@ export function MakeMoreFromKit({
     }
     setBusy(true);
     try {
-      if (sourceType === KIT_TOKEN) {
-        // EVERY Source of the kit, read through THE one server step — the same
-        // grounded text (and citation chunks) the kit was first built from.
-        if (!sources?.length) throw new Error("Add a source to this kit first.");
-        if (!organizationId) throw new Error("This kit is still loading. Try again.");
-        const set = createSourceSet(sources.map((s) => createSourceRef(s.type, s.id)));
-        const read = await normalizeSources(
-          () => sourcesClient.resolve(set, { organizationId }),
-          undefined,
-          undefined,
-          { copyAnchor: false },
-        );
-        setRecovered({
-          text: read.text,
-          ref: { ...read.ref, kitId: sourceId },
-          origin: { kind: read.ref.kind, entityType: KIT_TOKEN, entityId: sourceId, title: kitTitle || read.title },
-        });
-        setOpen(true);
-        return;
-      }
-      const source = await reopenAnchor(sourceType, sourceId, { pdf });
-      const next: Recovered = {
-        text: source.text,
-        ref: source.ref ?? { kind: "file", fileId: sourceId },
-        origin: {
-          kind: source.ref?.kind ?? "file",
-          entityType: source.ref?.entityType ?? sourceType,
-          entityId: source.ref?.entityId ?? sourceId,
-          // The KIT's name, not the artifact's: every generator reads
-          // `source.title`, and this is what keeps a new sibling named like the
-          // rest of the family (`recordSourceLineage` carries it on the edge).
-          title: kitTitle || source.title || "Your material",
-        },
-      };
+      const next = await recoverKitMaterial({ sourceType, sourceId, kitTitle, sources, organizationId, normalizeSources, pdf });
       setRecovered(next);
       setOpen(true);
     } catch (e) {

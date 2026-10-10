@@ -25,8 +25,8 @@
  * will enforce with a sentence naming the canonical way round.
  */
 
+import { type AssociationsRpcResult } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type { ScopesRpcResult } from "@/features/scopes/types";
 
 import { YOUTUBE_VIDEO_TYPE } from "./record";
 
@@ -35,7 +35,7 @@ export const SEO_MAP_TOPIC_TOKEN = "seo_map_topic";
 /** The registered role on the pair. */
 export const COVERS_ROLE = "covers";
 
-function unwrap<T>(result: ScopesRpcResult<T>): T {
+function unwrap<T>(result: AssociationsRpcResult<T>): T {
   if (!result.ok) {
     throw new Error(`${result.error.message} (${result.error.code})`);
   }

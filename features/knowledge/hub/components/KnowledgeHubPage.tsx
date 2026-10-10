@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
-import { isAssociationTargetType } from "@ai-matrx/associations";
+import { isAssociationTargetType, isAssociationsRpcErr } from "@ai-matrx/associations";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
@@ -70,7 +70,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId, selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
@@ -809,7 +808,7 @@ export function KnowledgeHubPage({
     const on = !favoriteKeys.has(`${target.entity}:${target.id}`);
     const res = await favoritesService.setFavorite(target.entity, target.id, on);
     const ref = { type: target.entity, id: target.id, title: target.title };
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       const why = (res.error as { message?: string })?.message ?? "the server refused.";
       recordToast.error(ref, `"${target.title}" was not ${on ? "added to" : "removed from"} Favorites: ${why}`);
       return;

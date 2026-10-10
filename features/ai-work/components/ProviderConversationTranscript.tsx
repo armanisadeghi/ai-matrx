@@ -1,5 +1,6 @@
 "use client";
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -23,7 +24,6 @@ import { ItemMenu } from "@ai-matrx/design-system/item";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
@@ -719,7 +719,7 @@ function TranscriptConversationMenu({
       favoritesService.getBulk("conversation", [conversation.id]),
       fetchProviderConversationState(conversation.id),
     ]);
-    if (isScopesRpcErr(favoriteResult)) {
+    if (isAssociationsRpcErr(favoriteResult)) {
       console.error(
         "[TranscriptConversationMenu] favorite-state read failed",
         favoriteResult.error,

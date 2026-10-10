@@ -130,3 +130,23 @@ export function newBatchId(): string {
 export function steeredSectionIds(steer: GenerationSteer | undefined): string[] {
   return (steer?.sections ?? []).map((s) => s.id).filter((id): id is string => typeof id === "string" && id.length > 0);
 }
+
+/** A deck run's default size, matching the interactive deck creator's default. */
+export const DEFAULT_DECK_CARD_COUNT = 10;
+
+/**
+ * THE OUTLINE-RUN SIZE LAW (2026-10-09: a "Focus on gaps" quiz over a six-section
+ * outline made 84 questions). Over outline sections the planner would otherwise
+ * scale the total by the number of sections; sections decide WHERE items go,
+ * never HOW MANY. With no count typed, an outline run takes the kind's default
+ * size. Without an outline (a plain source) the count stays source-scaled, so a
+ * 77-slide deck still gets covered (convert/coverage.ts).
+ */
+export function outlineRunCount(
+  typed: number | undefined,
+  outlineRun: boolean,
+  defaultCount: number,
+): number | undefined {
+  if (typed !== undefined && typed > 0) return typed;
+  return outlineRun ? defaultCount : undefined;
+}

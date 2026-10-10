@@ -15,8 +15,8 @@
  * plan_node→plan_node ('relies_on_hub'|'related'), plan_entity→plan_entity
  * ('created_by'), plan_entity→category ('member').
  */
+import { type AssociationEdge, type AssociationsRpcResult } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type { AssociationEdge, ScopesRpcResult } from "@/features/scopes/types";
 
 import {
   PARTY_SITE_ROLE,
@@ -31,9 +31,9 @@ import {
   type PlanReviewPayload,
 } from "../types";
 
-/** Unwrap the ScopesRpcResult envelope — this feature treats every failed
+/** Unwrap the AssociationsRpcResult envelope — this feature treats every failed
  * association write/read as a thrown error (structured handling upstream). */
-function unwrap<T>(result: ScopesRpcResult<T>): T {
+function unwrap<T>(result: AssociationsRpcResult<T>): T {
   if (!result.ok) {
     throw new Error(`${result.error.message} (${result.error.code})`);
   }

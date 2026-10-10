@@ -10,9 +10,9 @@
  * find-or-create by normalized phrase) and favorites the resulting keyword.
  */
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 
 export const WATCH_PAGE_TOKEN = "web_page";
 export const WATCH_QUERY_TOKEN = "seo_keyword";
@@ -28,7 +28,7 @@ export async function watchPage(pageId: string): Promise<void> {
     pageId,
     true,
   );
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isAssociationsRpcErr(result)) throw new Error(result.error.message);
 }
 
 export async function unwatchPage(pageId: string): Promise<void> {
@@ -37,7 +37,7 @@ export async function unwatchPage(pageId: string): Promise<void> {
     pageId,
     false,
   );
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isAssociationsRpcErr(result)) throw new Error(result.error.message);
 }
 
 export async function watchKeyword(keywordId: string): Promise<void> {
@@ -46,7 +46,7 @@ export async function watchKeyword(keywordId: string): Promise<void> {
     keywordId,
     true,
   );
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isAssociationsRpcErr(result)) throw new Error(result.error.message);
 }
 
 export async function unwatchKeyword(keywordId: string): Promise<void> {
@@ -55,7 +55,7 @@ export async function unwatchKeyword(keywordId: string): Promise<void> {
     keywordId,
     false,
   );
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isAssociationsRpcErr(result)) throw new Error(result.error.message);
 }
 
 /**
@@ -78,7 +78,7 @@ export async function watchQueryRow(row: {
 /** Every watched page/keyword id for the caller (both tokens, one read). */
 export async function listWatchedIds(): Promise<WatchedIds> {
   const result = await favoritesService.list("favorite");
-  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  if (isAssociationsRpcErr(result)) throw new Error(result.error.message);
   const pageIds: string[] = [];
   const keywordIds: string[] = [];
   for (const item of result.data.items) {

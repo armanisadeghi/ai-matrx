@@ -7,12 +7,12 @@
  * server caches vendor glossary / dictionary ids there) — never written here.
  */
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   TERM_LIST_ROLE,
   TERM_LIST_TOKEN,
@@ -209,7 +209,7 @@ export async function listAttachedTermLists(
   agentId: string,
 ): Promise<AttachedTermList[]> {
   const result = await associationsService.listForTargetsVisible("agent", [agentId]);
-  if (isScopesRpcErr(result)) {
+  if (isAssociationsRpcErr(result)) {
     throw new Error(`Couldn't load term lists: ${result.error.message}`);
   }
   return result.data.edges
@@ -229,7 +229,7 @@ export async function attachTermList(
     role: TERM_LIST_ROLE,
     label: list.name,
   });
-  if (isScopesRpcErr(result)) {
+  if (isAssociationsRpcErr(result)) {
     throw new Error(`Couldn't attach "${list.name}": ${result.error.message}`);
   }
 }
@@ -242,7 +242,7 @@ export async function detachTermList(agentId: string, termListId: string): Promi
     targetId: agentId,
     role: TERM_LIST_ROLE,
   });
-  if (isScopesRpcErr(result)) {
+  if (isAssociationsRpcErr(result)) {
     throw new Error(`Couldn't remove the term list: ${result.error.message}`);
   }
 }

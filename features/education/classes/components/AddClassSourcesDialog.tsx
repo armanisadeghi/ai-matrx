@@ -79,6 +79,8 @@ function AddClassSourcesBody({
   const surfaceKey = classSourcesSurfaceKey(target.id);
   const set = useSourceSet(surfaceKey);
   const [busy, setBusy] = useState(false);
+  // Why the last "Add" filed nothing, kept IN the dialog (a toast alone vanishes).
+  const [issues, setIssues] = useState<string[]>([]);
 
   const ready = set.sources.filter((s) => s.status === "ready" && s.draft.ref);
   const landing = set.sources.filter(
@@ -92,6 +94,7 @@ function AddClassSourcesBody({
 
   async function fileAll() {
     setBusy(true);
+    setIssues([]);
     const refused: string[] = [];
     let filed = 0;
     try {
@@ -125,6 +128,7 @@ function AddClassSourcesBody({
       );
     }
     if (refused.length > 0) {
+      setIssues(refused);
       toast.error(`Not added: ${refused.join(" · ")}`);
       return;
     }
@@ -149,6 +153,13 @@ function AddClassSourcesBody({
             purpose={target.name}
             kinds={CLASS_SOURCE_KINDS}
           />
+          {issues.length > 0 ? (
+            <ul role="alert" className="space-y-1 text-sm text-destructive">
+              {issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          ) : null}
           <div className="flex flex-wrap items-center justify-end gap-2">
             {blocked ? (
               <span className="mr-auto text-xs text-muted-foreground">

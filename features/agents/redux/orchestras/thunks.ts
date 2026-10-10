@@ -5,10 +5,10 @@
 // read-model coherent. Member/config mutations apply optimistically and
 // reconcile from the server on error.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { orchestrasService } from "@/features/agents/orchestras/service/orchestrasService";
 import type {
   OrchestraConfig,
@@ -81,7 +81,7 @@ export function fetchOrchestras(opts?: {
     dispatch(orchestrasActions.listPending());
     const promise = (async () => {
       const res = await orchestrasService.list();
-      if (isScopesRpcErr(res)) {
+      if (isAssociationsRpcErr(res)) {
         dispatch(orchestrasActions.listRejected(res.error.message));
       } else {
         dispatch(orchestrasActions.listFulfilled(res.data));
@@ -106,7 +106,7 @@ export function loadOrchestra(
 
     dispatch(orchestrasActions.detailPending(conductorId));
     const res = await orchestrasService.load(conductorId);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       dispatch(
         orchestrasActions.detailRejected({
           conductorId,
@@ -133,7 +133,7 @@ export function createOrchestra(args: {
       label: args.label,
       config: args.config,
     });
-    if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
+    if (isAssociationsRpcErr(res)) return { ok: false, error: res.error.message };
     // optimistic local config + accurate summary/detail from the server
     dispatch(
       orchestrasActions.configSet({
@@ -168,7 +168,7 @@ export function saveOrchestraConfig(args: {
       config: args.config,
       label: args.label ?? undefined,
     });
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
@@ -213,7 +213,7 @@ export function addAgentToOrchestra(args: {
         meta: args.meta,
       },
     );
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       dispatch(
         orchestrasActions.memberRemoved({
           conductorId: args.conductorId,
@@ -237,7 +237,7 @@ export function removeAgentFromOrchestra(args: {
       args.conductorId,
       args.agentId,
     );
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
@@ -271,8 +271,8 @@ export function reorderOrchestraMembers(args: {
         }),
       ),
     );
-    const bad = results.find((r) => isScopesRpcErr(r));
-    if (bad && isScopesRpcErr(bad)) {
+    const bad = results.find((r) => isAssociationsRpcErr(r));
+    if (bad && isAssociationsRpcErr(bad)) {
       await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: bad.error.message };
     }
@@ -332,7 +332,7 @@ export function saveMemberMeta(args: {
         },
       },
     );
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       await dispatch(loadOrchestra(args.conductorId, { force: true }));
       return { ok: false, error: res.error.message };
     }
@@ -349,7 +349,7 @@ export function saveMemberMeta(args: {
         statement,
         groundingTag: args.groundingTag ?? "V",
       });
-      if (isScopesRpcErr(purposeRes)) {
+      if (isAssociationsRpcErr(purposeRes)) {
         console.warn(
           `[orchestras] member ${args.agentId} role/gap saved, but its purpose row did not: ` +
             `${purposeRes.error.message}. The unit will show as purposeless on the ` +
@@ -368,7 +368,7 @@ export function deleteOrchestra(args: {
   return async (dispatch) => {
     dispatch(orchestrasActions.removeSummary(args.conductorId));
     const res = await orchestrasService.deleteOrchestra(args.conductorId);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       await dispatch(fetchOrchestras({ force: true }));
       return { ok: false, error: res.error.message };
     }

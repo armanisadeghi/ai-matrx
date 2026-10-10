@@ -424,6 +424,7 @@ export function useKitGeneration(): UseKitGeneration {
     );
 
     const sectionsFor = (kind: TargetKind): SectionJournal => ({
+      runScope: anchorId ? `${anchorId}:${request.startedAt}` : undefined,
       recorded: (planKey) =>
         planKey.startsWith(`${kind}:`) ? (journal.sections?.[planKey] ?? {}) : {},
       started: (planKey, segmentId, conversationId) => {

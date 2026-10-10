@@ -145,6 +145,33 @@ same anchor and whatever is made lands in THIS kit.
   a bare `{entityType, entityId}` ref from the origin lands the same edge but strips the durable
   `fileId`/`processedDocumentId` a citation needs to open its passage.
 
+## Chat builds the kit (`generate_in_kit`, living-kit W4)
+
+The kit's chat can make study aids: "make me 20 cloze cards on isotopes and add them to my main deck",
+"make another quiz on what I'm weakest at". One write target on the detail surface
+(`matrx-user/education-kits`, `applyPolicy: "ask"`), value `{ kind, into?, count?, card_kinds?,
+question_types?, instruction?, section_titles? }`.
+
+- **Validation** (`parseGenerateInKit`, `kitWrites.ts`) lists every problem in one message the agent
+  sees: unknown kind, `into` not a live deck/quiz member of THIS kit (or the wrong kind), `card_kinds`
+  on a quiz, `question_types` on a deck, `section_titles` that are not outline titles, count outside
+  1-100. `audio` is not offered (a person's own click: it runs for minutes).
+- **Apply STARTS the run and returns "started"** (`KitHub.tsx` handler) - the tool call is never held
+  open. `components/KitGenerateRunner.tsx` then runs it exactly as the dialogs do: the age gate
+  (`useAiComplianceGate`), the entitlement guard for the target's capability (`TARGET_CAPABILITY`,
+  check before, commit only on success), and a tab-bound run marker (`kit:generate:<type>:<id>`) so a
+  refresh is reported ("stopped when the page closed" + Try again). Progress is one toast; the finish
+  line names what was added and where, with Undo.
+- **One code path** (`generate/runKitGenerate.ts`): a new aid = the converter contract Make more drives
+  (`recoverKitMaterial.ts` is the one material recovery both use); cards into a deck = the Add more
+  cards run (`generateCardsFromSources`, kit Outline sections, kit-wide dedupe, `fcService.addCards`);
+  questions into a quiz = the Add more questions run (`generateQuestionsFromSources`,
+  `assessmentService.addItems`). No `section_titles` = the least-covered sections.
+- **Scope**: `outline` (section titles in order with `{ cards, questions }` per section, from
+  `outline/coverage.ts`) and `outline_status` (`none | building | ready | stale`) tell the agent what
+  is missing; `outline` is absent when there is none.
+- Tests: `__tests__/generateInKit.test.ts`.
+
 ## Gotchas
 
 - **Older kits show older names.** The kit name is read from edge metadata, so kits generated

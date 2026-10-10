@@ -22,9 +22,9 @@
 
 "use client";
 
+import { type AssociationsRpcResult } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { err, mapPgError, mapPgErrorPair, ok } from "@/features/scopes/service/rpcResult";
-import type { ScopesRpcResult } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
 /** Engram §4.5 grounding: human-authored · AI-drafted-human-verified · AI-only. */
@@ -118,7 +118,7 @@ export const purposeService = {
     outputs?: Json;
     safeConditions?: Json;
     position?: number;
-  }): Promise<ScopesRpcResult<Purpose>> {
+  }): Promise<AssociationsRpcResult<Purpose>> {
     try {
       const { data, error } = await supabase.schema("platform").rpc("upsert_unit_purpose", {
         p_unit_type: args.unitType,
@@ -147,7 +147,7 @@ export const purposeService = {
     unitType: PurposeUnitType,
     unitId: string,
     position = 0,
-  ): Promise<ScopesRpcResult<Purpose | null>> {
+  ): Promise<AssociationsRpcResult<Purpose | null>> {
     try {
       const { data, error } = await supabase.schema("platform").rpc("purpose_for_unit", {
         p_unit_type: unitType,
@@ -168,7 +168,7 @@ export const purposeService = {
    * (unit kind, org). Grounding debt is tracked like tech debt — visible and
    * prioritized (Engram §4.5).
    */
-  async coverage(): Promise<ScopesRpcResult<PurposeCoverage[]>> {
+  async coverage(): Promise<AssociationsRpcResult<PurposeCoverage[]>> {
     try {
       const { data, error } = await supabase
         .schema("platform")
@@ -197,7 +197,7 @@ export const purposeService = {
     unitType?: PurposeUnitType,
     limit = 200,
   ): Promise<
-    ScopesRpcResult<
+    AssociationsRpcResult<
       { unitType: string; unitId: string; name: string | null; organizationId: string | null }[]
     >
   > {
@@ -229,7 +229,7 @@ export const purposeService = {
    * These are FINDINGS — "nothing serves this job anymore" — never litter. The
    * job outlives the unit, so nothing here is ever garbage-collected (D-2).
    */
-  async orphaned(limit = 200): Promise<ScopesRpcResult<OrphanedPurpose[]>> {
+  async orphaned(limit = 200): Promise<AssociationsRpcResult<OrphanedPurpose[]>> {
     try {
       const { data, error } = await supabase
         .schema("platform")

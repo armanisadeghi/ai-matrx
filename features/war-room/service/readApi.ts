@@ -16,11 +16,11 @@
 // `is_active` / `position` / `canvas` / `pinned` and attach-time titles
 // survive hydration instead of being re-synthesized.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { mapThreadContentsToAssignments } from "../utils/threadContentsToAssignments";
 import {
   containerKey,
@@ -40,7 +40,7 @@ function formatReadError(
 /** Thread ids currently linked to a room via `thread → war_room` edges. */
 export async function listThreadIdsForRoom(roomId: string): Promise<string[]> {
   const res = await associationsService.listForTargets("war_room", [roomId]);
-  if (isScopesRpcErr(res)) {
+  if (isAssociationsRpcErr(res)) {
     throw formatReadError("listThreadIdsForRoom", res.error);
   }
   return res.data.edges
@@ -65,7 +65,7 @@ export async function fetchThreadContents(
   if (threadRow.error) {
     throw formatReadError("fetchThreadContents.thread", threadRow.error);
   }
-  if (isScopesRpcErr(threadEdgesRes)) {
+  if (isAssociationsRpcErr(threadEdgesRes)) {
     throw formatReadError("fetchThreadContents.edges", threadEdgesRes.error);
   }
 
@@ -90,7 +90,7 @@ export async function fetchThreadContents(
     const anchorRes = await associationsService.listForTargets(anchorType, [
       anchorId,
     ]);
-    if (isScopesRpcErr(anchorRes)) {
+    if (isAssociationsRpcErr(anchorRes)) {
       throw formatReadError("fetchThreadContents.anchor", anchorRes.error);
     }
     for (const edge of anchorRes.data.edges) {

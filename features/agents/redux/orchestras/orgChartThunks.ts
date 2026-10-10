@@ -5,9 +5,9 @@
 // writes apply optimistically and are rolled back, loudly, on failure.
 // Automatic links are Orchestra member edges — see ./thunks.ts.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
 import { orchestrasActions } from "./slice";
 import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
@@ -45,7 +45,7 @@ export function loadManualOrgEdges(
     dispatch(orchestrasActions.manualOrgPending());
     try {
       const res = await orgChartService.listManualEdges(ids, opts?.direction ?? "out");
-      if (isScopesRpcErr(res)) dispatch(orchestrasActions.manualOrgRejected(res.error.message));
+      if (isAssociationsRpcErr(res)) dispatch(orchestrasActions.manualOrgRejected(res.error.message));
       else dispatch(orchestrasActions.manualOrgFulfilled({ managerIds: ids, edges: res.data, startedAtSeq }));
     } finally {
       ids.forEach((id) => inFlight.delete(id));
@@ -64,7 +64,7 @@ async function sitsUnder(managerId: string, reportId: string): Promise<boolean |
   let frontier = [reportId];
   while (frontier.length) {
     const res = await orgChartService.listChildren(frontier);
-    if (isScopesRpcErr(res)) return res.error.message;
+    if (isAssociationsRpcErr(res)) return res.error.message;
     const next: string[] = [];
     for (const { childId } of res.data) {
       if (childId === managerId) return true;
@@ -105,7 +105,7 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
         };
       }
       const current = await orgChartService.listManagersOf(reportId);
-      if (isScopesRpcErr(current)) return { ok: false, error: current.error.message };
+      if (isAssociationsRpcErr(current)) return { ok: false, error: current.error.message };
       if (current.data.some((e) => e.managerId === managerId)) return { ok: true, unchanged: true };
 
       // The pair may already hold a hand-off or dotted line: the placement
@@ -121,7 +121,7 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
       dispatch(orchestrasActions.manualOrgEdgeAdded(temp));
       const res = await orgChartService.add(managerId, reportId, "reports_to");
       dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
-      if (isScopesRpcErr(res)) {
+      if (isAssociationsRpcErr(res)) {
         if (pairEdge) dispatch(orchestrasActions.manualOrgEdgeAdded(pairEdge));
         return { ok: false, error: res.error.message };
       }
@@ -132,7 +132,7 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
       for (const e of current.data) {
         dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: e.managerId, reportId }));
         const rm = await orgChartService.remove(e.managerId, reportId);
-        if (isScopesRpcErr(rm)) {
+        if (isAssociationsRpcErr(rm)) {
           dispatch(orchestrasActions.manualOrgEdgeAdded(e));
           return {
             ok: false,
@@ -168,7 +168,7 @@ export function addCrossLink(
     );
     const res = await orgChartService.add(fromId, toId, kind);
     dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: fromId, reportId: toId }));
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       if (prev) dispatch(orchestrasActions.manualOrgEdgeAdded(prev));
       return { ok: false, error: res.error.message };
     }
@@ -185,7 +185,7 @@ export function removeManualManager(managerId: string, reportId: string): AppThu
     );
     dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
     const res = await orgChartService.remove(managerId, reportId);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       if (prev) dispatch(orchestrasActions.manualOrgEdgeAdded(prev));
       return { ok: false, error: res.error.message };
     }

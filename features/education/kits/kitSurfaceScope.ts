@@ -11,6 +11,7 @@ import type { EducationLibraryRow, LibraryRowStats } from "@/features/education/
 import { createEducationKitsScope } from "@/features/surfaces/manifests/education-kits.manifest";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { KIT_MEMBER_CANDIDATE_LIMIT } from "./kitWrites";
+import type { KitCoverage } from "./outline/coverage";
 import { kitArtifactKey, kitMembershipFingerprint, type KitArtifactStats, type StudyKit } from "./kitService";
 
 export interface StudyStage {
@@ -89,6 +90,30 @@ export function pickChallenge(
   return ordered[0] ? { artifact: ordered[0], reason: "first" } : null;
 }
 
+export type KitOutlineStatus = "none" | "building" | "ready" | "stale";
+
+/** What the agent is told about the outline: not built, being built, current, or older than the Sources. */
+export function kitOutlineStatus(input: {
+  sectionCount: number | null;
+  building: boolean;
+  stale: boolean;
+}): KitOutlineStatus {
+  if (input.building) return "building";
+  if (!input.sectionCount) return "none";
+  return input.stale ? "stale" : "ready";
+}
+
+/** Section titles in order with what each already holds — what `section_titles` may name. */
+export function kitOutlineEntries(
+  sections: readonly { id: string; title: string }[] | null,
+  coverage: KitCoverage | null,
+): { title: string; cards: number; questions: number }[] {
+  return (sections ?? []).map((section) => {
+    const row = coverage?.rows.find((r) => r.sectionId === section.id);
+    return { title: section.title, cards: row?.cards ?? 0, questions: row?.questions ?? 0 };
+  });
+}
+
 /** Surface `matrx-user/education-kits` (detail view) from render state. */
 export function buildKitDetailScope(input: {
   sourceId: string;
@@ -101,6 +126,13 @@ export function buildKitDetailScope(input: {
   statsFailed: boolean;
   /** Saved aids the person could add (bounded); absent until read. Aids already in the kit are left out here. */
   memberCandidates?: readonly EducationLibraryRow[];
+  /** The kit's Outline (sections null until read) and whether a build is running. */
+  outline?: {
+    sections: readonly { id: string; title: string }[] | null;
+    coverage: KitCoverage | null;
+    building: boolean;
+    stale: boolean;
+  };
 }): SurfaceScopePayload {
   const { kit, stats, statsLoading, statsFailed } = input;
   const status = input.loading
@@ -136,6 +168,18 @@ export function buildKitDetailScope(input: {
             .filter((row) => !kit.artifacts.some((artifact) => artifact.artifactType === row.kind && artifact.artifactId === row.id))
             .slice(0, KIT_MEMBER_CANDIDATE_LIMIT)
             .map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })),
+        }
+      : {}),
+    ...(input.outline
+      ? {
+          outline_status: kitOutlineStatus({
+            sectionCount: input.outline.sections?.length ?? null,
+            building: input.outline.building,
+            stale: input.outline.stale,
+          }),
+          ...(input.outline.sections?.length
+            ? { outline: kitOutlineEntries(input.outline.sections, input.outline.coverage) }
+            : {}),
         }
       : {}),
     study_aids: ordered.map((artifact) => {

@@ -7,8 +7,8 @@
 //
 // Every function throws a sentence a person can read; callers show it.
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
 import { fcService } from "./fcService";
 import { EDGE_ROLE, type FcSetRow } from "./types";
@@ -47,7 +47,7 @@ export async function setDeckFolders(input: {
     orgId: input.organizationId,
     role: EDGE_ROLE.theme,
   });
-  if (isScopesRpcErr(res))
+  if (isAssociationsRpcErr(res))
     throw new Error(res.error.message || "The deck's folders were not saved.");
 }
 

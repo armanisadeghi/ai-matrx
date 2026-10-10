@@ -391,7 +391,13 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
         <span title={platformLabel(platform)}>
           <PlatformMark platform={p.platform} size={20} />
         </span>
-        {role ? <Badge>{`Tracked · ${TRACKED_ROLE_LABELS[role]}`}</Badge> : <Badge tone="warning">Not tracked</Badge>}
+        {role ? (
+          <span title={role === "own" ? "One of this brand's own accounts." : undefined}>
+            <Badge>{`Tracked · ${TRACKED_ROLE_LABELS[role]}`}</Badge>
+          </span>
+        ) : (
+          <Badge tone="warning">Not tracked</Badge>
+        )}
         <span className="ml-auto flex min-w-0 items-center gap-1">
           {refreshLine ? (
             <span

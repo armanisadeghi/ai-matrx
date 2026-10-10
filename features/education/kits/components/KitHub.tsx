@@ -87,7 +87,8 @@ import {
 } from "../kitSurfaceScope";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import { KIT_MEMBER_CANDIDATE_LIMIT, parseKitDeletes, parseKitMemberAdds, parseKitUpdates } from "../kitWrites";
+import { KIT_MEMBER_CANDIDATE_LIMIT, describeKitGenerate, parseGenerateInKit, parseKitDeletes, parseKitMemberAdds, parseKitUpdates, type KitGenerateRequest } from "../kitWrites";
+import { KitGenerateRun, KitGenerateStopped } from "./KitGenerateRunner";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
@@ -329,6 +330,9 @@ export function KitHub({
   // The kit's Outline + coverage (living-kit W1/W3); refresh-safe run reattach.
   const outline = useKitOutline(kit);
   const [aimed, setAimed] = useState<AimedMakeMore | null>(null);
+  // A chat-started run (generate_in_kit): the request, and whether it is still working.
+  const [chatRun, setChatRun] = useState<{ request: KitGenerateRequest; nonce: number } | null>(null);
+  const [chatRunBusy, setChatRunBusy] = useState(false);
   const outlineForDialog =
     outline.sections && outline.sections.length > 0 && outline.coverage
       ? {
@@ -363,6 +367,12 @@ export function KitHub({
       statsLoading,
       statsFailed,
       memberCandidates: candidatesRead.data,
+      outline: {
+        sections: outline.sections,
+        coverage: outline.coverage,
+        building: Boolean(outline.activeRunId) || outline.starting,
+        stale: outline.stale,
+      },
     });
   const getWriteHandlers = () => {
     if (!kit) return {};
@@ -421,7 +431,27 @@ export function KitHub({
       }
       return parseKitMemberAdds(value, kit, candidatesRead.data ?? []);
     };
-    return { ...collection, add_kit_members: {
+    const parseGenerate = (value: unknown) => {
+      if (writing || (managing && draftTitle !== kit.title)) {
+        throw new Error("Save or cancel your kit title edits before applying agent changes.");
+      }
+      if (chatRunBusy) throw new Error("A generation is already running in this kit. Wait for it to finish, then ask again.");
+      return parseGenerateInKit(value, kit, outline.sections ?? []);
+    };
+    return { ...collection, generate_in_kit: {
+      validate: (value: unknown) => { parseGenerate(value); },
+      apply: async (value: unknown) => {
+        const request = parseGenerate(value);
+        // STARTS the run and returns: it can take minutes, and progress, the age gate and the
+        // allowance check belong to the page (KitGenerateRun), exactly as for the dialogs.
+        setChatRunBusy(true);
+        setChatRun({ request, nonce: Date.now() });
+        return {
+          summary: `Started making ${describeKitGenerate(request)}. Progress shows on the kit page; it says what was added when it finishes.`,
+          data: { status: "started", kind: request.kind, into: request.into?.id ?? null },
+        };
+      },
+    }, add_kit_members: {
       validate: (value: unknown) => { parseMemberAdd(value); },
       apply: async (value: unknown) => {
         const plan = parseMemberAdd(value);
@@ -756,6 +786,17 @@ export function KitHub({
       <KitBody className="space-y-7">
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
+        <KitGenerateStopped kit={kit} onRetry={(request) => { setChatRunBusy(true); setChatRun({ request, nonce: Date.now() }); }} />
+        {chatRun ? (
+          <KitGenerateRun
+            key={chatRun.nonce}
+            kit={kit}
+            request={chatRun.request}
+            coverage={outlineForDialog ? { cards: outlineForDialog.cards, questions: outlineForDialog.questions } : undefined}
+            onBusyChange={setChatRunBusy}
+            onFinished={() => reload()}
+          />
+        ) : null}
         <KitSourcesPanel kit={kit} onChanged={reload} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
         <KitOutlineCard outline={outline} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
         {outline.coverage && outline.sections && outline.sections.length > 0 ? (

@@ -21,6 +21,7 @@
  * number opens the units behind it.
  */
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, RefreshCw, Unplug } from "lucide-react";
 
@@ -28,7 +29,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@ai-matrx/design-system";
@@ -148,7 +148,7 @@ export function GroundingConsole() {
       purposeService.coverage(),
       purposeService.orphaned(),
     ]);
-    if (isScopesRpcErr(cov)) toast.error(`Coverage: ${cov.error.message}`);
+    if (isAssociationsRpcErr(cov)) toast.error(`Coverage: ${cov.error.message}`);
     else {
       // The view's grain is (unit kind, org); the platform total is what a
       // grounding-debt number means, so the orgs roll up here.
@@ -168,7 +168,7 @@ export function GroundingConsole() {
       }
       setRollups([...byKind.values()].sort((a, b) => a.unitType.localeCompare(b.unitType)));
     }
-    if (isScopesRpcErr(orph)) setOrphansError(orph.error);
+    if (isAssociationsRpcErr(orph)) setOrphansError(orph.error);
     else {
       setOrphansError(null);
       setOrphans(orph.data);
@@ -187,7 +187,7 @@ export function GroundingConsole() {
     }
     setOpenKind(kind);
     const res = await purposeService.unitsWithoutPurpose(kind);
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       setMissing([]);
       setMissingError(res.error);
     } else {

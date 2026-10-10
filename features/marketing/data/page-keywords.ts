@@ -16,8 +16,8 @@
  * upsert `seo.fn_upsert_keyword` (SECURITY DEFINER, dedupes by normalized
  * phrase) — never a second insert path.
  */
+import { type AssociationEdge, type AssociationsRpcResult } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type { AssociationEdge, ScopesRpcResult } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { SEO_KEYWORD_TOKEN } from "@/features/marketing/content-plan/types";
@@ -39,7 +39,7 @@ export const PAGE_KEYWORD_PRIMARY_ROLE = "primary";
 export const pageKeywordsQueryKey = (pageId: string) =>
   ["marketing", "page-keywords", pageId] as const;
 
-function unwrap<T>(result: ScopesRpcResult<T>): T {
+function unwrap<T>(result: AssociationsRpcResult<T>): T {
   if (!result.ok) {
     throw new Error(`${result.error.message} (${result.error.code})`);
   }

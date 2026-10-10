@@ -147,12 +147,17 @@ export function feedSourceLink(
     case "dataset": {
       const id = cfgStr(cfg, "data_store_id");
       return id
-        ? { href: `/knowledge/data-stores?store_id=${encodeURIComponent(id)}`, label: "Open dataset" }
+        ? {
+            href: `/knowledge/data-stores?store_id=${encodeURIComponent(id)}`,
+            label: "Open dataset",
+          }
         : null;
     }
     case "agent": {
       const id = cfgStr(cfg, "agent_id");
-      return id ? { href: `/agents/go/${encodeURIComponent(id)}`, label: "Open agent" } : null;
+      return id
+        ? { href: `/agents/go/${encodeURIComponent(id)}`, label: "Open agent" }
+        : null;
     }
     default:
       return null;
@@ -191,7 +196,11 @@ export function OpenSourceLink({
       onClick={(e) => e.stopPropagation()}
       className={`inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline ${className}`}
     >
-      {create ? <Plus className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
+      {create ? (
+        <Plus className="h-3 w-3" />
+      ) : (
+        <ExternalLink className="h-3 w-3" />
+      )}
       {link.label}
     </a>
   );
@@ -214,7 +223,9 @@ function DatasetFeedConfig({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-foreground">Knowledge resource</span>
+        <span className="text-xs font-medium text-foreground">
+          Knowledge resource
+        </span>
         <div className="flex items-center gap-3">
           {sourceLink && <OpenSourceLink link={sourceLink} />}
           {createLink && <OpenSourceLink link={createLink} create />}
@@ -222,14 +233,20 @@ function DatasetFeedConfig({
       </div>
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading library catalog…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading library
+          catalog…
         </div>
       ) : error ? (
-        <p className="text-xs text-destructive">Could not load datasets: {error} <ErrorAlchemyMenu error={error} /></p>
+        <p className="text-xs text-destructive">
+          Could not load datasets: {error} <ErrorAlchemyMenu error={error} />
+        </p>
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No published libraries — publish one in{" "}
-          <AppLink href={DATA_STORES_PATH} className="underline underline-offset-2 hover:text-foreground">
+          <AppLink
+            href={DATA_STORES_PATH}
+            className="underline underline-offset-2 hover:text-foreground"
+          >
             Data stores
           </AppLink>
         </p>
@@ -252,7 +269,8 @@ function DatasetFeedConfig({
             {items.map((i) => (
               <SelectItem key={i.id} value={i.id}>
                 {i.name}
-                {i.shortCode ? ` (${i.shortCode})` : ""} · {i.memberCount} source
+                {i.shortCode ? ` (${i.shortCode})` : ""} · {i.memberCount}{" "}
+                source
                 {i.memberCount === 1 ? "" : "s"}
               </SelectItem>
             ))}
@@ -266,7 +284,10 @@ function DatasetFeedConfig({
 
 function PendingBadge() {
   return (
-    <Badge variant="outline" className="gap-1 border-amber-400/50 text-amber-700 dark:text-amber-300">
+    <Badge
+      variant="outline"
+      className="gap-1 border-amber-400/50 text-amber-700 dark:text-amber-300"
+    >
       Definition only · executor coming
     </Badge>
   );
@@ -285,7 +306,9 @@ function FieldRow({
     <label className="block space-y-1">
       <span className="text-xs font-medium text-foreground">{label}</span>
       {children}
-      {hint ? <span className="block text-[11px] text-muted-foreground">{hint}</span> : null}
+      {hint ? (
+        <span className="block text-[11px] text-muted-foreground">{hint}</span>
+      ) : null}
     </label>
   );
 }
@@ -301,7 +324,8 @@ function DefinitionFeedConfig({
   config: FeedConfig;
   onChange: (next: FeedConfig) => void;
 }) {
-  const set = (key: string, value: unknown) => onChange({ ...config, [key]: value });
+  const set = (key: string, value: unknown) =>
+    onChange({ ...config, [key]: value });
 
   return (
     <div className="space-y-3">
@@ -309,7 +333,10 @@ function DefinitionFeedConfig({
 
       {feedType === "agent" && (
         <>
-          <FieldRow label="Agent prompt" hint="What the agent should produce as this value.">
+          <FieldRow
+            label="Agent prompt"
+            hint="What the agent should produce as this value."
+          >
             <ProTextarea
               rows={3}
               value={cfgStr(config, "prompt")}
@@ -323,7 +350,9 @@ function DefinitionFeedConfig({
                 value={cfgStr(config, "merge") || "replace"}
                 onValueChange={(v) => set("merge", v)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="replace">Replace</SelectItem>
                   <SelectItem value="additive">Additive (append)</SelectItem>
@@ -332,7 +361,8 @@ function DefinitionFeedConfig({
               </Select>
             </FieldRow>
             <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-              <Input mono
+              <Input
+                mono
                 value={cfgStr(config, "cron")}
                 onChange={(e) => set("cron", e.target.value)}
                 placeholder="0 * * * *"
@@ -346,32 +376,45 @@ function DefinitionFeedConfig({
         <>
           <div className="grid grid-cols-[100px_1fr] gap-3">
             <FieldRow label="Method">
-              <Select value={cfgStr(config, "method") || "GET"} onValueChange={(v) => set("method", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={cfgStr(config, "method") || "GET"}
+                onValueChange={(v) => set("method", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </FieldRow>
             <FieldRow label="Endpoint URL">
-              <Input mono
+              <Input
+                mono
                 value={cfgStr(config, "endpoint")}
                 onChange={(e) => set("endpoint", e.target.value)}
                 placeholder="https://api.example.com/v1/resource"
               />
             </FieldRow>
           </div>
-          <FieldRow label="Extraction" hint="JSONPath / expression to pull the value from the response.">
-            <Input mono
+          <FieldRow
+            label="Extraction"
+            hint="JSONPath / expression to pull the value from the response."
+          >
+            <Input
+              mono
               value={cfgStr(config, "extraction")}
               onChange={(e) => set("extraction", e.target.value)}
               placeholder="$.data.items"
             />
           </FieldRow>
           <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-            <Input mono
+            <Input
+              mono
               value={cfgStr(config, "cron")}
               onChange={(e) => set("cron", e.target.value)}
               placeholder="0 6 * * *"
@@ -383,7 +426,8 @@ function DefinitionFeedConfig({
       {feedType === "web" && (
         <>
           <FieldRow label="Page URL">
-            <Input mono
+            <Input
+              mono
               value={cfgStr(config, "url")}
               onChange={(e) => set("url", e.target.value)}
               placeholder="https://example.com/page-with-data"
@@ -400,7 +444,8 @@ function DefinitionFeedConfig({
             />
           </FieldRow>
           <FieldRow label="Refresh (cron)" hint="Blank = on demand.">
-            <Input mono
+            <Input
+              mono
               value={cfgStr(config, "cron")}
               onChange={(e) => set("cron", e.target.value)}
               placeholder="*/30 * * * *"
@@ -412,7 +457,8 @@ function DefinitionFeedConfig({
       {feedType === "computed" && (
         // User-defined computed code not built yet; built-in ambient keys (current_date…) are reserved.
         <FieldRow label="Expression / code">
-          <Textarea mono
+          <Textarea
+            mono
             rows={3}
             value={cfgStr(config, "expression")}
             onChange={(e) => set("expression", e.target.value)}
@@ -441,9 +487,6 @@ export function FeedConfigEditor({
   /** When editing an existing item, the feed type is shown but not switchable. */
   lockFeedType?: boolean;
 }) {
-  const meta = feedTypeMeta(feedType);
-  const Icon = meta.icon;
-
   return (
     <div className="space-y-3">
       <label className="block space-y-1">
@@ -465,9 +508,13 @@ export function FeedConfigEditor({
             {FEED_TYPE_OPTIONS.map((o) => {
               const OIcon = o.icon;
               return (
-                <SelectItem key={o.value} value={o.value}>
+                <SelectItem
+                  key={o.value}
+                  value={o.value}
+                  description={o.description}
+                >
                   <span className="flex items-center gap-2">
-                    <OIcon className="h-3.5 w-3.5" />
+                    <OIcon className="h-3.5 w-3.5 shrink-0" />
                     {o.label}
                   </span>
                 </SelectItem>
@@ -475,10 +522,6 @@ export function FeedConfigEditor({
             })}
           </SelectContent>
         </Select>
-        <span className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-          <Icon className="mt-0.5 h-3 w-3 shrink-0" />
-          {meta.description}
-        </span>
       </label>
 
       {feedType === "dataset" && (

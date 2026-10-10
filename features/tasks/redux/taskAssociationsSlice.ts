@@ -1,5 +1,6 @@
 "use client";
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
@@ -12,7 +13,6 @@ import {
 import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsSlice";
 import { createTask } from "@/features/tasks/services/taskService";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 
 /** One row of the canonical `platform.associations` edge (source → target=`task`). */
 export interface AssociationRef {
@@ -196,7 +196,7 @@ export const associateWithTask = createAsyncThunk<
       label: label ?? undefined,
       metadata: metadata ?? {},
     });
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       console.error("[associateWithTask] association failed:", {
         message: res.error.message,
         code: res.error.code,
@@ -238,7 +238,7 @@ export const dissociateFromTask = createAsyncThunk<
       targetType: "task",
       targetId: taskId,
     });
-    if (isScopesRpcErr(res)) {
+    if (isAssociationsRpcErr(res)) {
       console.error("[dissociateFromTask] dissociation failed:", {
         message: res.error.message,
         code: res.error.code,
@@ -315,7 +315,7 @@ export const createTaskWithAssociation = createAsyncThunk<
       label: input.label ?? undefined,
       metadata: input.metadata ?? {},
     });
-    if (isScopesRpcErr(linked)) {
+    if (isAssociationsRpcErr(linked)) {
       sourceLinkError = linked.error.code
         ? `${linked.error.message} (${linked.error.code})`
         : linked.error.message;
@@ -336,7 +336,7 @@ export const createTaskWithAssociation = createAsyncThunk<
       targetIds: input.scope_ids,
       orgId: input.organization_id ?? undefined,
     });
-    if (isScopesRpcErr(tagged)) {
+    if (isAssociationsRpcErr(tagged)) {
       console.error("[createTaskWithAssociation] scope tags failed:", {
         message: tagged.error.message,
         code: tagged.error.code,

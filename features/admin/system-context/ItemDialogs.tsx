@@ -58,6 +58,73 @@ function valueToRaw(value: unknown): string {
   return JSON.stringify(value);
 }
 
+const SHORT_VALUE_TYPES = new Set<ValueType>([
+  "number",
+  "percent",
+  "currency",
+  "boolean",
+  "date",
+  "datetime",
+  "time",
+  "email",
+  "url",
+  "phone",
+  "color",
+]);
+
+// Text and Markdown are written in a real box. A one-line input clips a
+// platform truth the moment it is longer than the field.
+function ManualValueEditor({
+  valueType,
+  value,
+  onChange,
+  placeholder,
+}: {
+  valueType: ValueType;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+}) {
+  if (valueType === "object" || valueType === "array") {
+    return (
+      <Textarea
+        mono
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={8}
+        autoGrow
+        minHeight={160}
+        maxHeight={360}
+        placeholder={placeholder ?? (valueType === "object" ? "{ }" : "[ ]")}
+      />
+    );
+  }
+  if (SHORT_VALUE_TYPES.has(valueType)) {
+    return (
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    );
+  }
+  return (
+    <ProTextarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      autoGrow
+      minHeight={160}
+      maxHeight={360}
+      placeholder={
+        placeholder ??
+        (valueType === "markdown"
+          ? "# Heading\n\nWrite the Markdown value…"
+          : "Write the value…")
+      }
+    />
+  );
+}
+
 // Edit the DEFINITION + FEED of an item. For manual feeds it also edits the
 // value (a plain UPDATE — the platform version trigger keeps history).
 export function EditItemDialog({
@@ -133,7 +200,7 @@ export function EditItemDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Edit
@@ -193,37 +260,12 @@ export function EditItemDialog({
           </div>
 
           {feedType === "manual" && !item.is_computed && (
-            <Field
-              label="Value"
-              hint="Each save keeps a version in history"
-            >
-              {item.value_type === "markdown" ? (
-                <ProTextarea
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  autoGrow
-                  minHeight={128}
-                  maxHeight={320}
-                  enableVoice={false}
-                  enableCleanup={false}
-                  enableTextStats
-                  className="font-mono text-sm"
-                  placeholder="# Heading\n\nWrite the Markdown value…"
-                />
-              ) : item.value_type === "object" ||
-                item.value_type === "array" ? (
-                <Textarea mono
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  rows={4}
-                  placeholder={item.value_type === "object" ? "{ }" : "[ ]"}
-                />
-              ) : (
-                <Input
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                />
-              )}
+            <Field label="Value" hint="Each save keeps a version in history">
+              <ManualValueEditor
+                valueType={item.value_type}
+                value={value}
+                onChange={setValue}
+              />
             </Field>
           )}
         </div>
@@ -237,7 +279,13 @@ export function EditItemDialog({
           >
             Cancel
           </Button>
-          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={save} disabled={saving}>
+          <Button
+            icon={saving && <Loader2 className="animate-spin" />}
+            variant="primary"
+            type="button"
+            onClick={save}
+            disabled={saving}
+          >
             Save
           </Button>
         </DialogFooter>
@@ -334,7 +382,7 @@ export function AddItemDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Add System Context Item</DialogTitle>
           <DialogDescription>
@@ -351,7 +399,8 @@ export function AddItemDialog({
                 !keyValid ? "lowercase letters, numbers, _ only" : undefined
               }
             >
-              <Input mono
+              <Input
+                mono
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 data-identifier
@@ -436,33 +485,12 @@ export function AddItemDialog({
                 label="Initial value"
                 hint="Optional — you can set it later."
               >
-                {valueType === "markdown" ? (
-                  <ProTextarea
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    autoGrow
-                    minHeight={128}
-                    maxHeight={320}
-                    enableVoice={false}
-                    enableCleanup={false}
-                    enableTextStats
-                    className="font-mono text-sm"
-                    placeholder="# Heading\n\nWrite the Markdown value…"
-                  />
-                ) : valueType === "object" || valueType === "array" ? (
-                  <Textarea mono
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    rows={4}
-                    placeholder={valueType === "object" ? "{ }" : "[ ]"}
-                  />
-                ) : (
-                  <Input
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    placeholder="AI Matrx"
-                  />
-                )}
+                <ManualValueEditor
+                  valueType={valueType}
+                  value={value}
+                  onChange={setValue}
+                  placeholder={valueType === "string" ? "AI Matrx" : undefined}
+                />
               </Field>
             </>
           )}
@@ -477,7 +505,13 @@ export function AddItemDialog({
           >
             Cancel
           </Button>
-          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={save} disabled={saving}>
+          <Button
+            icon={saving && <Loader2 className="animate-spin" />}
+            variant="primary"
+            type="button"
+            onClick={save}
+            disabled={saving}
+          >
             Create item
           </Button>
         </DialogFooter>

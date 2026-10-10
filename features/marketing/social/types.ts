@@ -75,7 +75,7 @@ export const TRACKED_ROLES = ["own", "competitor", "inspiration", "client"] as c
 export type TrackedRole = (typeof TRACKED_ROLES)[number];
 
 export const TRACKED_ROLE_LABELS: Record<TrackedRole, string> = {
-  own: "Own",
+  own: "Own account",
   competitor: "Competitor",
   inspiration: "Inspiration",
   client: "Client",

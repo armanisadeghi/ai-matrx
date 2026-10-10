@@ -8,6 +8,7 @@
  * as a thrown Error carrying a sentence a person can read.
  */
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import {
   archiveSurfaceView,
   createSurfaceView,
@@ -15,7 +16,6 @@ import {
   type SavedViewVisibility,
 } from "@/components/official/table-saved-views-service";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   encodeSavedViewDefinition,
   HUB_VIEW_DEFINITION_VERSION,
@@ -31,7 +31,7 @@ const surfaceKey = HUB_SAVED_VIEW_SURFACE;
 
 export async function setViewPinned(id: string, pinned: boolean): Promise<void> {
   const res = await favoritesService.setPinned(SAVED_VIEW_TOKEN, id, pinned);
-  if (isScopesRpcErr(res))
+  if (isAssociationsRpcErr(res))
     throw new Error(
       `The view was ${pinned ? "not pinned" : "not unpinned"}: ${
         (res.error as { message?: string })?.message ?? "the server refused."

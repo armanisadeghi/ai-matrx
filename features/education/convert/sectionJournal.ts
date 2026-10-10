@@ -28,6 +28,12 @@ export interface SectionJournal {
   recorded(planKey: string): Readonly<Record<string, string>>;
   /** A section's run now exists on the server. */
   started(planKey: string, segmentId: string, conversationId: string): void;
+  /**
+   * Names THIS kit run across a reload (kit + the first attempt's start). An
+   * artifact created by the run is stamped with it so a resumed run adopts the
+   * artifact instead of making a second one or leaving it outside the kit.
+   */
+  runScope?: string;
 }
 
 /** FNV-1a over the text — the plan is only reusable for the exact same material. */

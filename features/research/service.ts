@@ -1,3 +1,4 @@
+import { type AssociationsRpcResult } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { mergeJsonColumn, readAllRows } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -48,7 +49,6 @@ import {
 import { associationsHelpers, associationsService } from "@/features/scopes/service/associationsService";
 import type { CostLedgerInput, CostLedgerRow, SynthesisCostRow } from "./costs";
 
-import type { ScopesRpcResult } from "@/features/scopes/types";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /** The landing door's wire types (generated contract, never a mirror). */
@@ -72,7 +72,7 @@ const RESEARCH_TOPIC = "research_topic";
 const PROJECT = "project";
 
 /** Unwrap a never-throwing associations result into the research service's throwing contract. */
-function assocData<T>(r: ScopesRpcResult<T>): T {
+function assocData<T>(r: AssociationsRpcResult<T>): T {
   if (!r.ok) throw new Error(r.error.message);
   return r.data;
 }

@@ -91,10 +91,64 @@ export function socialErrorCode(error: unknown): SocialErrorCode | null {
   return KNOWN_CODES.find((c) => text.includes(c)) ?? null;
 }
 
+/** Why the server refused, in a word a screen can branch on (`detail.user_code`). */
+export const SOCIAL_USER_CODES = [
+  "unsupported_platform",
+  "not_found",
+  "private",
+  "restricted",
+  "blocked",
+  "temporarily_unavailable",
+] as const;
+export type SocialUserCode = (typeof SOCIAL_USER_CODES)[number];
+
+/** The server's `detail.user_code`, wherever the shared error parser left it. */
+export function socialErrorUserCode(error: unknown): SocialUserCode | null {
+  const haystack: string[] = [];
+  if (error instanceof SocialStreamError) {
+    const d = error.details?.user_code;
+    if (typeof d === "string") haystack.push(`"user_code":"${d}"`);
+  }
+  if (error instanceof Error) {
+    haystack.push(error.message);
+    if (error instanceof BackendApiError) {
+      try {
+        haystack.push(JSON.stringify(error.details ?? ""), error.detail ?? "");
+      } catch {
+        /* unserializable details carry no code */
+      }
+    }
+  }
+  const text = haystack.join(" ");
+  for (const c of SOCIAL_USER_CODES) {
+    if (new RegExp(`user_code\\W+${c}\\b`).test(text)) return c;
+  }
+  return null;
+}
+
+/** The plain sentence for each reason; the same wording the server speaks. */
+export const SOCIAL_USER_SENTENCES: Record<SocialUserCode, string> = {
+  unsupported_platform: "We can't read that on this platform yet.",
+  not_found: "We couldn't find that account or post. Check the link or handle and try again.",
+  private: "This account appears to be private, so its posts can't be read. If it is public, wait a minute and try again.",
+  restricted: "The platform is restricting this account (for example by age or region), so it can't be read.",
+  blocked: "We couldn't read this account just now. Nothing is wrong with the account; please try again in a minute.",
+  temporarily_unavailable: "That didn't load just now. Trying again in a minute usually works.",
+};
+
+/** Vendor / router / developer text that must never be drawn on a screen (a stale server may still send it). */
+const INTERNAL_TEXT = /scrapecreators|grok|xai\b|serpapi|dataforseo|no provider|\bprovider\b|adapter|unsupported \(|\/v\d\/|\bHTTP \d{3}\b|\bget_(profile|post|comments)\b|list_posts|traceback|\bundefined\b|\[object/i;
+
+export function looksInternal(text: string | null | undefined): boolean {
+  return Boolean(text && INTERNAL_TEXT.test(text));
+}
+
 /** A person-readable line for a refused call. */
 export function socialErrorMessage(error: unknown, fallback: string): string {
   const code = socialErrorCode(error);
   if (code === "social_agent_not_built") return "Breakdown agent not built yet";
+  const userCode = socialErrorUserCode(error);
+  if (userCode) return SOCIAL_USER_SENTENCES[userCode];
   // The server's sentence names the account and the real cause (private, empty,
   // a different handle); a generic line per code only fills in when it is absent.
   const specific =
@@ -103,16 +157,13 @@ export function socialErrorMessage(error: unknown, fallback: string): string {
       : error instanceof BackendApiError
         ? error.userMessage
         : undefined;
-  if (code === "social_not_found") {
-    return "This page is private or restricted, so it can't be read the usual way.";
-  }
-  if (code === "social_provider_failed") {
-    return "That didn't load just now. Trying again usually works.";
-  }
-  if (specific) return specific;
-  if (code === "social_unsupported") return "That platform or link is not supported yet.";
-  if (code === "social_not_configured") return "That provider is not set up.";
-  return error instanceof Error && error.message ? error.message : fallback;
+  if (code === "social_not_found") return SOCIAL_USER_SENTENCES.not_found;
+  if (code === "social_provider_failed") return SOCIAL_USER_SENTENCES.temporarily_unavailable;
+  if (specific && !looksInternal(specific)) return specific;
+  if (code === "social_unsupported") return SOCIAL_USER_SENTENCES.unsupported_platform;
+  if (code === "social_not_configured") return SOCIAL_USER_SENTENCES.unsupported_platform;
+  if (error instanceof Error && error.message && !looksInternal(error.message)) return error.message;
+  return fallback;
 }
 
 /** Whether retrying the same call can help (only a transient provider failure). */

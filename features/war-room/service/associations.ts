@@ -24,18 +24,14 @@
 // React → Supabase directly (no Next.js middle tier); RLS enforces access. Every
 // mutation is loud on failure (throws) — callers wrap with reportWarRoomError.
 
+import { isAssociationsRpcErr, type AssociationTargetEdge, type AssociationsRpcError } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { associationsHelpers, associationsService } from "@/features/scopes/service/associationsService";
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type {
-  AssociationTargetEdge,
-  AssociationTargetType,
-  ScopesRpcError,
-} from "@/features/scopes/types";
+import type { AssociationTargetType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 import {
   SINGLE_ACTIVE_ENTITY_TYPES,
@@ -79,7 +75,7 @@ export function sourceToEntity(t: string): string {
 /** A thrown error that preserves the canonical RPC's error code for callers. */
 class WarRoomAssocError extends Error {
   readonly code?: string;
-  constructor(e: ScopesRpcError) {
+  constructor(e: AssociationsRpcError) {
     super(e.message || "association RPC failed");
     this.name = "WarRoomAssocError";
     this.code = e.code;
@@ -187,13 +183,13 @@ export async function listAssignmentsForContainers(
 
   const out: WarRoomAssignment[] = [];
   if (threadRes) {
-    if (isScopesRpcErr(threadRes)) throw new WarRoomAssocError(threadRes.error);
+    if (isAssociationsRpcErr(threadRes)) throw new WarRoomAssocError(threadRes.error);
     for (const e of threadRes.data.edges) {
       if (isContentEdge(e)) out.push(edgeToAssignment(e, "thread"));
     }
   }
   if (roomRes) {
-    if (isScopesRpcErr(roomRes)) throw new WarRoomAssocError(roomRes.error);
+    if (isAssociationsRpcErr(roomRes)) throw new WarRoomAssocError(roomRes.error);
     for (const e of roomRes.data.edges) {
       if (isContentEdge(e)) out.push(edgeToAssignment(e, "room"));
     }
@@ -209,7 +205,7 @@ export async function listAssignmentsForContainer(
     containerTargetType(ref.type),
     [ref.id],
   );
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
   return res.data.edges
     .filter(isContentEdge)
     .map((e) => edgeToAssignment(e, ref.type))
@@ -298,7 +294,7 @@ export async function createAssignment(
         metadata: mergeMeta(a.metadata, { is_active: false }),
       })),
     );
-    if (isScopesRpcErr(demoted)) throw new WarRoomAssocError(demoted.error);
+    if (isAssociationsRpcErr(demoted)) throw new WarRoomAssocError(demoted.error);
   }
 
   const metadataPatch = isPlainObject(input.metadata) ? input.metadata : {};
@@ -318,7 +314,7 @@ export async function createAssignment(
     label: input.label ?? already?.label ?? undefined,
     metadata,
   });
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
 
   return {
     id: res.data.id,
@@ -364,7 +360,7 @@ export async function setActiveAssignment(
       }),
     })),
   );
-  if (isScopesRpcErr(results)) throw new WarRoomAssocError(results.error);
+  if (isAssociationsRpcErr(results)) throw new WarRoomAssocError(results.error);
 }
 
 /** Remove a resource from a container by its (type, entity) tuple. */
@@ -379,7 +375,7 @@ export async function removeAssignmentByEntity(
     targetType: containerTargetType(ref.type),
     targetId: ref.id,
   });
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
 }
 
 /**
@@ -404,7 +400,7 @@ export async function copyContainerAssignments(
       metadata: a.metadata ?? {},
     })),
   );
-  if (isScopesRpcErr(linked)) throw new WarRoomAssocError(linked.error);
+  if (isAssociationsRpcErr(linked)) throw new WarRoomAssocError(linked.error);
   const copied: WarRoomAssignment[] = source.map((a, i) => ({
     ...a,
     id: linked.data.ids[i],
@@ -425,7 +421,7 @@ export async function listRoomIdsForThread(
   threadId: string,
 ): Promise<string[]> {
   const res = await associationsService.listForEntity("thread", threadId);
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
   return res.data.edges
     .filter(
       (e) =>
@@ -451,7 +447,7 @@ export async function listThreadRoomMemberships(
     threadIds,
     "war_room",
   );
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
   for (const e of res.data.edges) {
     if (!isPlainObject(e.metadata) || e.metadata.membership !== true) continue;
     const list = out.get(e.sourceId) ?? [];
@@ -475,7 +471,7 @@ export async function attachThreadToRoom(
     orgId,
     metadata: MEMBERSHIP_META,
   });
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
 }
 
 /**
@@ -496,7 +492,7 @@ export async function moveThreadMembership(
       targetType: "war_room",
       targetId: fromRoomId,
     });
-    if (isScopesRpcErr(removed)) throw new WarRoomAssocError(removed.error);
+    if (isAssociationsRpcErr(removed)) throw new WarRoomAssocError(removed.error);
   }
   const added = await associationsService.add({
     sourceType: "thread",
@@ -506,7 +502,7 @@ export async function moveThreadMembership(
     orgId,
     metadata: MEMBERSHIP_META,
   });
-  if (isScopesRpcErr(added)) throw new WarRoomAssocError(added.error);
+  if (isAssociationsRpcErr(added)) throw new WarRoomAssocError(added.error);
 }
 
 /**
@@ -523,5 +519,5 @@ export async function purgeContainerEdges(ref: ContainerRef): Promise<void> {
     containerTargetType(ref.type),
     ref.id,
   );
-  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  if (isAssociationsRpcErr(res)) throw new WarRoomAssocError(res.error);
 }

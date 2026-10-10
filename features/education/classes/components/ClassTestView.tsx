@@ -8,8 +8,8 @@
 // sees the page read-only plus Study. Class access is the class's own
 // (`edu_class_state`) — the page asks the same authority the hub does.
 
-import Link from "next/link";
-import { CalendarClock, ClipboardCheck } from "lucide-react";
+import Link, { useLinkStatus } from "next/link";
+import { CalendarClock, ClipboardCheck, Loader2 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -20,6 +20,12 @@ import { useClassAccess } from "../hooks/useClassAccess";
 import { useClassTestMaterial } from "../hooks/useClassTestMaterial";
 import { ContentGroups } from "./ClassHubView";
 import { MakePracticeTestButton } from "./MakePracticeTestButton";
+
+/** Shows the click was heard while the Study route loads (a cold dev compile can take a while). */
+function StudyPending() {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 className="ml-1.5 h-4 w-4 animate-spin" aria-label="Opening" /> : null;
+}
 
 export function ClassTestView({ classId, testId }: { classId: string; testId: string }) {
   const access = useClassAccess(classId);
@@ -90,7 +96,10 @@ export function ClassTestView({ classId, testId }: { classId: string; testId: st
 
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" asChild>
-                <Link href={`${classHref}/tests/${testId}/study`}>Study</Link>
+                <Link href={`${classHref}/tests/${testId}/study`}>
+                  Study
+                  <StudyPending />
+                </Link>
               </Button>
               {state.isOwner && (
                 <MakePracticeTestButton

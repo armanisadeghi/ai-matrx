@@ -6,7 +6,7 @@
  * capture ways (the person's own browser) for a page the data provider cannot read at all.
  */
 
-import { socialErrorCode, socialErrorMessage } from "./server";
+import { socialErrorCode, socialErrorMessage, socialErrorUserCode } from "./server";
 
 export type SocialFailureKind = "restricted" | "busy" | "other";
 
@@ -23,6 +23,31 @@ export interface SocialFailure {
 
 export function describeSocialFailure(error: unknown, fallback = "That could not be read."): SocialFailure {
   const code = socialErrorCode(error);
+  const why = socialErrorUserCode(error);
+  if (why === "unsupported_platform") {
+    return { kind: "other", title: "Not available yet", reason: socialErrorMessage(error, fallback), canRetry: false, canCapture: false };
+  }
+  if (why === "not_found") {
+    return { kind: "other", title: "Couldn't find it", reason: socialErrorMessage(error, fallback), canRetry: false, canCapture: false };
+  }
+  if (why === "private" || why === "restricted") {
+    return {
+      kind: "restricted",
+      title: why === "private" ? "Looks private" : "Can't read this page",
+      reason: socialErrorMessage(error, fallback),
+      canRetry: why === "private",
+      canCapture: true,
+    };
+  }
+  if (why === "blocked" || why === "temporarily_unavailable") {
+    return {
+      kind: "busy",
+      title: "Didn't load just now",
+      reason: socialErrorMessage(error, fallback),
+      canRetry: true,
+      canCapture: true,
+    };
+  }
   if (code === "social_not_found") {
     return {
       kind: "restricted",

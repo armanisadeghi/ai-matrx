@@ -11,16 +11,16 @@
 //   member : (agent:X) --role 'member'-----> (agent:Y)   [ordered by position]
 
 //
-// Like associationsService, every method returns a `ScopesRpcResult` and NEVER
+// Like associationsService, every method returns a `AssociationsRpcResult` and NEVER
 // throws. See features/agents/docs/ORCHESTRAS.md.
 
 "use client";
 
+import { isAssociationsRpcErr, type AssociationsRpcResult } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ok, err, mapPgError, mapPgErrorPair } from "@/features/scopes/service/rpcResult";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr, type ScopesRpcResult } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 import {
   AGENT_TOKEN,
@@ -120,7 +120,7 @@ function rowToSummary(r: OrchestraListRow): OrchestraSummary {
 
 export const orchestrasService = {
   /** Enumerate every Orchestra the caller can see (conductors + member counts). */
-  async list(): Promise<ScopesRpcResult<OrchestraSummary[]>> {
+  async list(): Promise<AssociationsRpcResult<OrchestraSummary[]>> {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("orchestra_list");
@@ -133,13 +133,13 @@ export const orchestrasService = {
   },
 
   /** Load one Orchestra's marker config + ordered members in a single round-trip. */
-  async load(conductorId: string): Promise<ScopesRpcResult<OrchestraDetail>> {
+  async load(conductorId: string): Promise<AssociationsRpcResult<OrchestraDetail>> {
     const res = await associationsService.listForSources(
       AGENT_TOKEN,
       [conductorId],
       AGENT_TOKEN,
     );
-    if (isScopesRpcErr(res)) return res;
+    if (isAssociationsRpcErr(res)) return res;
 
     const edges = res.data.edges;
     const marker = edges.find(
@@ -175,7 +175,7 @@ export const orchestrasService = {
   async create(
     conductorId: string,
     opts?: { label?: string; config?: OrchestraConfig },
-  ): Promise<ScopesRpcResult<{ id: string }>> {
+  ): Promise<AssociationsRpcResult<{ id: string }>> {
     return associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
@@ -191,7 +191,7 @@ export const orchestrasService = {
   async saveConfig(
     conductorId: string,
     args: { label?: string; config: OrchestraConfig },
-  ): Promise<ScopesRpcResult<{ id: string }>> {
+  ): Promise<AssociationsRpcResult<{ id: string }>> {
     return associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
@@ -208,7 +208,7 @@ export const orchestrasService = {
     conductorId: string,
     memberId: string,
     args?: { position?: number; meta?: OrchestraMemberMeta },
-  ): Promise<ScopesRpcResult<{ id: string }>> {
+  ): Promise<AssociationsRpcResult<{ id: string }>> {
     const meta = args?.meta ?? {};
     return associationsService.add({
       sourceType: AGENT_TOKEN,
@@ -240,7 +240,7 @@ export const orchestrasService = {
   async removeMember(
     conductorId: string,
     memberId: string,
-  ): Promise<ScopesRpcResult<null>> {
+  ): Promise<AssociationsRpcResult<null>> {
     return associationsService.remove({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
@@ -251,7 +251,7 @@ export const orchestrasService = {
   },
 
   /** Delete an Orchestra: clear all members (role-scoped) then drop the marker. */
-  async deleteOrchestra(conductorId: string): Promise<ScopesRpcResult<null>> {
+  async deleteOrchestra(conductorId: string): Promise<AssociationsRpcResult<null>> {
     const cleared = await associationsService.setTargets({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,
@@ -259,7 +259,7 @@ export const orchestrasService = {
       targetIds: [],
       role: MEMBER_ROLE,
     });
-    if (isScopesRpcErr(cleared)) return cleared;
+    if (isAssociationsRpcErr(cleared)) return cleared;
     return associationsService.remove({
       sourceType: AGENT_TOKEN,
       sourceId: conductorId,

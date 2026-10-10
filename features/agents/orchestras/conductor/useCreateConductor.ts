@@ -9,9 +9,9 @@
 
 "use client";
 
+import { isAssociationsRpcErr } from "@ai-matrx/associations";
 import { useCallback, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
@@ -36,7 +36,7 @@ export function useCreateConductor() {
         // 1) Copy the template. The new agent ships the empty <available_agents>
         //    placeholder; org is backfilled by the DB `_stamp_org_default` trigger.
         const created = await conductorService.createFromTemplate();
-        if (isScopesRpcErr(created)) {
+        if (isAssociationsRpcErr(created)) {
           setError(created.error.message);
           return null;
         }
