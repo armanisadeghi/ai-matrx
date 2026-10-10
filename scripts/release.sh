@@ -725,6 +725,13 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         fail "Cannot push to GitHub ($REMOTE/$BRANCH) — nothing was released."
     fi
     ship_mark "pushed ${RELEASE_SHA:0:9} as ${RELEASE_COMMIT_MSG}"
+    # Surface mirror: a manifest in this release must have its ui.ui_surface rows (agents refuse
+    # to send without one). Idempotent soft-only sync of exactly the drifted manifests, from the
+    # committed candidate, seconds after the push and minutes before the build is live.
+    # A failure is an ERROR finding, never a stop.
+    if ! ( cd "$REPO_ROOT" && SURFACE_SYNC_SHA="$RELEASE_SHA" pnpm -s exec tsx scripts/check-release-surface-registration.ts --apply ) >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1; then
+        ship_finding "ERROR" "Surface mirror" "UNSYNCED — ${NEW_TAG} ships a surface manifest whose ui.ui_surface rows are missing or stale; agent sends on it will fail" "pnpm exec tsx scripts/check-release-surface-registration.ts --apply"
+    fi
     # --while-paused: the push landed, so nothing can refuse this release now.
     [[ -n "$WHILE_PAUSED_SHA" ]] && ship_start_migrations
 

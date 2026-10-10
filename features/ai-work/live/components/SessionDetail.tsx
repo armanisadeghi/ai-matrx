@@ -123,10 +123,9 @@ export function SessionDetail({
           )}
         >
           <DirectLine
-            address={session.address}
+            session={session}
             roomId={directRoomId}
-            presence={session.presence}
-            member={directMembers[0] ?? null}
+            members={directMembers}
             onCreated={onDirectRoomCreated}
           />
         </section>

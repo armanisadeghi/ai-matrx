@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNotice } from "@ai-matrx/design-system";
-import { asConversationId, formatMessageTime } from "@ai-matrx/messaging";
+import { asConversationId, type Message, type RecipientDelivery } from "@ai-matrx/messaging";
 import { useConversation } from "@ai-matrx/messaging/react";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import type { LivePresence } from "../presence";
+import type { LiveSession } from "../useLiveHub";
+import { useRoomDelivery } from "../useRoomDelivery";
 import type { SessionMemberRow } from "../service";
 import { openDirectLine } from "../service";
+
+const NO_AGENTS = {} as const;
 
 const READS_IT: Record<LivePresence, string> = {
   busy: "reads it at its next tool call",
@@ -16,31 +20,28 @@ const READS_IT: Record<LivePresence, string> = {
 };
 
 /**
- * Where the person's newest message stands with the session: delivered (the
- * session's hook confirmed it) or sent and waiting, with when it will be read.
+ * When the session will read what is waiting: shown only while the person's
+ * newest message has not reached it (each bubble's tick says delivered; this
+ * line adds the one thing a tick cannot — when it will be read).
  */
-function DeliveryLine({
+function WaitingLine({
   roomId,
-  member,
   presence,
+  deliveryStatusFor,
 }: {
   roomId: string;
-  member: SessionMemberRow | null;
   presence: LivePresence;
+  deliveryStatusFor: ((message: Message) => readonly RecipientDelivery[] | null) | undefined;
 }) {
   const { messages } = useConversation(asConversationId(roomId));
   const mine = [...messages]
     .reverse()
     .find((m) => m.metadata.actor_kind !== "agent" && m.deliveryState !== "failed");
-  const deliveredAt = member?.delivered_at ? Date.parse(member.delivered_at) : NaN;
-  let text: string;
-  if (!mine) {
-    text = `${presence === "busy" ? "Busy" : presence === "idle" ? "Idle" : "Ended"}: ${READS_IT[presence]}`;
-  } else if (!Number.isNaN(deliveredAt) && Date.parse(mine.createdAt) <= deliveredAt) {
-    text = `Delivered to the session ${formatMessageTime(member?.delivered_at ?? mine.createdAt)}`;
-  } else {
-    text = `Sent, not yet read: it ${READS_IT[presence]}`;
-  }
+  const state = mine ? deliveryStatusFor?.(mine)?.[0]?.state : undefined;
+  if (mine && (state === "delivered" || state === "expired" || state === undefined)) return null;
+  const text = mine
+    ? `Waiting: it ${READS_IT[presence]}`
+    : `${presence === "busy" ? "Busy" : presence === "idle" ? "Idle" : "Ended"}: ${READS_IT[presence]}`;
   return (
     <div className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground" aria-live="polite">
       {text}
@@ -55,18 +56,20 @@ function DeliveryLine({
  * member and delivery runs; posting is the messaging package's own send.
  */
 export function DirectLine({
-  address,
+  session,
   roomId,
-  presence,
-  member,
+  members,
   onCreated,
 }: {
-  address: string;
+  session: LiveSession;
   roomId: string | null;
-  presence: LivePresence;
-  member: SessionMemberRow | null;
+  members: readonly SessionMemberRow[];
   onCreated: (roomId: string) => void;
 }) {
+  const address = session.address;
+  const presence = session.presence;
+  const sessionList = useMemo(() => [session], [session]);
+  const deliveryStatusFor = useRoomDelivery(roomId, members, sessionList, NO_AGENTS);
   const [failed, setFailed] = useState<{ address: string; message: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const error = failed?.address === address ? failed.message : null;
@@ -118,13 +121,14 @@ export function DirectLine({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <DeliveryLine roomId={roomId} member={member} presence={presence} />
+      <WaitingLine roomId={roomId} presence={presence} deliveryStatusFor={deliveryStatusFor} />
       <ConversationPane
         key={roomId}
         conversationId={roomId}
         showHeader={false}
         showAi={false}
         className="min-h-0 flex-1"
+        {...(deliveryStatusFor ? { deliveryStatusFor } : {})}
       />
     </div>
   );

@@ -27,6 +27,18 @@ jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
 
 jest.mock("@ai-matrx/chat/surfaces/runtime/registry", () => ({
   getManifest: mockGetManifest,
+  peekSurfaceBody: (n: string) => (mockGetManifest)(n),
+  peekSurfaceValue: (n: string, v: string) => (mockGetManifest)(n)?.values?.find((x: { name: string }) => x.name === v),
+  loadSurfaceBody: async (n: string) => (mockGetManifest)(n),
+  awaitSurfaceBodies: async () => ({ missing: [], waitedMs: 0 }),
+  awaitSendSurfaceBodies: async () => [],
+  takeSurfaceWithheldWarning: () => null,
+  prefetchSurfaceBodies: () => {},
+  isIndexedSurfaceClientToolName: () => false,
+  useSurfaceBody: (n: string) => ({ status: "ready", body: (mockGetManifest)(n) }),
+  getDeclaringSurface: () => null,
+  getSurfaceAncestry: () => [],
+  getSurfaceChildren: () => [],
 }));
 
 import {

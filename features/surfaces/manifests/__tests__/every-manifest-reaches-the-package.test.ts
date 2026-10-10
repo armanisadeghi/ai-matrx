@@ -74,7 +74,7 @@ describe("W-51: every manifest reaches the chat package", () => {
     expect(missing).toEqual([]);
   });
 
-  it("the package sees exactly the app registry — no surface dropped or added on the way", () => {
+  it("the package sees exactly the app registry — no surface dropped or added on the way", async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const seam = require("@ai-matrx/chat/surfaces/runtime/registry") as typeof import("@ai-matrx/chat/surfaces/runtime/registry");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -83,10 +83,11 @@ describe("W-51: every manifest reaches the chat package", () => {
     const fromPackage = seam.getAllManifests().map((m) => m.surfaceName);
     expect(fromPackage).toEqual(app.getRegisteredSurfaceNames());
     for (const name of fromPackage) {
-      expect(seam.getManifest(name)).toBe(app.getManifest(name));
+      const resolved = app.getManifest(name);
+      expect(seam.getManifest(name)).toEqual(seam.toSurfaceIndexEntry(resolved!, app.getRawManifest(name)));
+      expect(await seam.loadSurfaceBody(name)).toBe(resolved);
       expect(seam.getSurfaceAncestry(name)).toEqual(app.getSurfaceAncestry(name));
       expect(seam.getSurfaceChildren(name)).toEqual(app.getSurfaceChildren(name));
-      expect(seam.getRawManifest(name)).toBe(app.getRawManifest(name));
     }
   });
 

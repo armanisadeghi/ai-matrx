@@ -21,7 +21,17 @@ const mockGetManifest = jest.fn();
 
 jest.mock("@ai-matrx/chat/surfaces/runtime/registry", () => ({
   getDeclaringSurface: () => null,
-  getManifest: (name: string) => mockGetManifest(name),
+  getManifest: mockGetManifest,
+  peekSurfaceBody: (n: string) => (mockGetManifest)(n),
+  peekSurfaceValue: (n: string, v: string) => (mockGetManifest)(n)?.values?.find((x: { name: string }) => x.name === v),
+  loadSurfaceBody: async (n: string) => (mockGetManifest)(n),
+  awaitSurfaceBodies: async () => ({ missing: [], waitedMs: 0 }),
+  awaitSendSurfaceBodies: async () => [],
+  takeSurfaceWithheldWarning: () => null,
+  prefetchSurfaceBodies: () => {},
+  isIndexedSurfaceClientToolName: () => false,
+  useSurfaceBody: (n: string) => ({ status: "ready", body: (mockGetManifest)(n) }),
+  getSurfaceChildren: () => [],
   getSurfaceAncestry: (name: string) =>
     name === "matrx-user/page-child" ? ["matrx-user/page-a"] : [],
 }));
