@@ -117,3 +117,64 @@ export async function signOutOwnPlan(
   );
   return data;
 }
+
+/** One of the person's sandboxes holding a slot of the host's per-person cap. */
+export type SandboxOccupant = {
+  row_id: string;
+  sandbox_id: string;
+  name?: string | null;
+  template?: string | null;
+  tier?: string | null;
+  status?: string | null;
+  organization_id?: string | null;
+  last_heartbeat_at?: string | null;
+};
+
+/** The server's `sandbox_capacity_full` refusal: every box holding a slot. */
+export type SandboxCapacityRefusal = {
+  message: string;
+  ceiling: number | null;
+  occupants: SandboxOccupant[];
+};
+
+function isOccupant(value: unknown): value is SandboxOccupant {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { row_id?: unknown }).row_id === "string" &&
+    typeof (value as { sandbox_id?: unknown }).sandbox_id === "string"
+  );
+}
+
+/**
+ * Find the `sandbox_capacity_full` refusal inside whatever the API client threw.
+ * The detail can sit on `details`, `body`, `detail` or a `cause`, so look
+ * through those (bounded) rather than depending on one client's wrapping.
+ */
+export function capacityRefusalOf(cause: unknown): SandboxCapacityRefusal | null {
+  const seen = new Set<unknown>();
+  const visit = (value: unknown, depth: number): SandboxCapacityRefusal | null => {
+    if (depth > 5 || typeof value !== "object" || value === null || seen.has(value)) return null;
+    seen.add(value);
+    const record = value as Record<string, unknown>;
+    if (record.code === "sandbox_capacity_full" && Array.isArray(record.occupants)) {
+      const message =
+        typeof record.user_message === "string"
+          ? record.user_message
+          : typeof record.message === "string"
+            ? record.message
+            : "All of your sandbox slots are in use. Stop one to continue.";
+      return {
+        message,
+        ceiling: typeof record.ceiling === "number" ? record.ceiling : null,
+        occupants: record.occupants.filter(isOccupant),
+      };
+    }
+    for (const key of ["details", "detail", "body", "data", "error", "cause"]) {
+      const found = visit(record[key], depth + 1);
+      if (found) return found;
+    }
+    return null;
+  };
+  return visit(cause, 0);
+}

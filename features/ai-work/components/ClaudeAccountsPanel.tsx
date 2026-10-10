@@ -31,13 +31,17 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { isJsonObject } from "@/types/json";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
 import {
   cancelOwnPlanSignIn,
+  capacityRefusalOf,
   newClaudeAccountSlot,
   signOutOwnPlan,
   startOwnPlanSignIn,
   submitOwnPlanCode,
   type OwnPlanStatus,
+  type SandboxCapacityRefusal,
+  type SandboxOccupant,
 } from "@/features/ai-work/lib/ownPlan";
 
 const PROVIDER = "claude_code" as const;
@@ -80,7 +84,12 @@ async function readClaudeAccounts(): Promise<ClaudeAccountRow[]> {
   });
 }
 
-type Busy = "starting" | "code" | "cancel" | `out:${string}` | null;
+type Busy = "starting" | "code" | "cancel" | `out:${string}` | `stop:${string}` | null;
+
+function occupantLabel(o: SandboxOccupant): string {
+  const kind = o.template === "aidream" ? "Coding sandbox" : (o.name ?? `${o.template ?? "Sandbox"} sandbox`);
+  return `${kind} · ${o.sandbox_id}`;
+}
 
 export function ClaudeAccountsPanel() {
   const [rows, setRows] = useState<ClaudeAccountRow[] | null>(null);
@@ -89,6 +98,8 @@ export function ClaudeAccountsPanel() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<Busy>(null);
   const [copied, setCopied] = useState(false);
+  const [capacity, setCapacity] = useState<SandboxCapacityRefusal | null>(null);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const connectorUrl = `${resolveBaseUrl().replace(/\/$/, "")}/api/matrx-mcp`;
 
   const load = () =>
@@ -113,6 +124,7 @@ export function ClaudeAccountsPanel() {
     const taken = new Set((rows ?? []).filter((r) => r.status === "connected").map((r) => r.slot));
     const slot = taken.has(PRIMARY) ? newClaudeAccountSlot() : PRIMARY;
     setBusy("starting");
+    setCapacity(null);
     try {
       const status = await startOwnPlanSignIn(PROVIDER, slot);
       if (status.signed_in) {
@@ -122,7 +134,9 @@ export function ClaudeAccountsPanel() {
         setPending({ slot, status });
       }
     } catch (cause) {
-      toast.error(getUserMessage(cause));
+      const full = capacityRefusalOf(cause);
+      if (full) setCapacity(full);
+      else toast.error(getUserMessage(cause));
     } finally {
       setBusy(null);
     }
@@ -176,6 +190,29 @@ export function ClaudeAccountsPanel() {
     }
   };
 
+  const stopOccupant = async (o: SandboxOccupant) => {
+    setBusy(`stop:${o.row_id}`);
+    try {
+      const result = await submitLifecycle({ rowId: o.row_id, sandboxId: o.sandbox_id, kind: "stop" });
+      if (!result.admitted) {
+        toast.error(
+          result.reason === "already_pending"
+            ? "That sandbox already has an operation in progress."
+            : "Sandbox controls are still connecting. Try again in a moment.",
+        );
+        return;
+      }
+      setCapacity((current) =>
+        current ? { ...current, occupants: current.occupants.filter((x) => x.row_id !== o.row_id) } : current,
+      );
+      toast.success(`Stopping ${o.sandbox_id}. Connect again when it has stopped.`);
+    } catch (cause) {
+      toast.error(getUserMessage(cause));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const copyUrl = async () => {
     await navigator.clipboard.writeText(connectorUrl);
     setCopied(true);
@@ -200,6 +237,36 @@ export function ClaudeAccountsPanel() {
         <p className="mt-1 text-xs text-muted-foreground">
           Delivers messages to your Claude cloud sessions.
         </p>
+
+        {capacity && (
+          <div className="mt-3 space-y-2 rounded-lg border border-border p-3" role="alert">
+            <p className="text-xs text-foreground">{capacity.message}</p>
+            <ul className="divide-y divide-border">
+              {capacity.occupants.map((o) => (
+                <li key={o.row_id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0 truncate text-xs text-muted-foreground">
+                    {occupantLabel(o)}
+                    {o.status ? ` · ${o.status}` : ""}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void stopOccupant(o)}
+                    disabled={busy !== null}
+                  >
+                    {busy === `stop:${o.row_id}` ? <Spinner size="sm" /> : null}
+                    Stop
+                  </Button>
+                </li>
+              ))}
+              {capacity.occupants.length === 0 && (
+                <li className="py-1.5 text-xs text-muted-foreground">
+                  A slot is free now. Connect again.
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
 
         {pending && (
           <div className="mt-3 space-y-2 rounded-lg border border-border p-3">
