@@ -34,6 +34,15 @@ jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchProjectTasks: jest.fn(async () => []),
 }));
 
+// A type's fields come from the holder's catalog (a real store); the door answers none here.
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  ...jest.requireActual("@/features/scopes/service/scopeDoors"),
+  scopeDoors: () => ({ fields: async () => ({ ok: true, data: [] }), systemItems: async () => ({ ok: true, data: [] }) }),
+}));
+
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { BindingTargetPicker } from "../BindingTargetPicker";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -54,9 +63,15 @@ afterEach(() => {
 
 const onScopeChange = jest.fn();
 async function render(props: Partial<React.ComponentProps<typeof BindingTargetPicker<Rung>>> = {}) {
+  const store = configureStore({
+    reducer: createSlimRootReducer(),
+    middleware: (g) => g({ serializableCheck: false, immutableCheck: false }),
+  });
   await act(async () =>
     root.render(
-      <BindingTargetPicker<Rung> scope="user" onScopeChange={onScopeChange} {...props} />,
+      <Provider store={store}>
+        <BindingTargetPicker<Rung> scope="user" onScopeChange={onScopeChange} {...props} />
+      </Provider>,
     ),
   );
 }
