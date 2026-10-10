@@ -1562,9 +1562,14 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
         topic_id: topicId,
         use_user_agent_overrides: false,
       };
-      if (additionalInstructions.trim()) {
-        suggestBody.user_input = additionalInstructions.trim();
-      }
+      // The suggester never hears the person's keyword cap, so an over-cap list opened the review
+      // as a red error before the person did anything: tell it the cap up front.
+      const keywordCap =
+        typeof topic.max_keywords === "number" && topic.max_keywords > 0
+          ? `Suggest at most ${topic.max_keywords} search keywords.`
+          : "";
+      const userInput = [additionalInstructions.trim(), keywordCap].filter(Boolean).join("\n\n");
+      if (userInput) suggestBody.user_input = userInput;
 
       const suggestRes = await api.suggest(suggestBody);
       if (!suggestRes.ok) {
