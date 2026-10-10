@@ -283,7 +283,7 @@ const LOCK_TIMEOUT = "2s";
 const STATEMENT_TIMEOUT = "600s";
 /** A contaminated pooler session is repaired in-transaction; see identity check. */
 const POOLER_ATTEMPTS = 5;
-const BRIEF_LOCK_MAX_MS_LABEL = "30 s of measure pass, which samples pg_locks after every statement and overstates the real lock by several times";
+const BRIEF_LOCK_MAX_MS_LABEL = "10 s of statement wall time";
 
 const C = {
   reset: "\x1b[0m",
@@ -3297,9 +3297,9 @@ create or replace trigger "probe_i" before insert on custom.record for each row 
     return 1;
   }
   // RED-8  rehearsed but long (12 s): refused.
-  const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(45_000));
+  const bl8 = briefLockVerdict(blBody, blFile, blSites, blMeasure(15_000));
   if (bl8.exempt || !bl8.refusal || !/stops at/.test(bl8.refusal)) {
-    console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 45 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
+    console.error(`${TAG.fail}--window-class-self-test RED-8 FAILED: a 15 s rehearsal was not refused: ${JSON.stringify(bl8)}`);
     return 1;
   }
   // RED-9  rehearsed against production, not the clone: refused.
@@ -3328,7 +3328,7 @@ create or replace trigger "probe_i" before insert on custom.record for each row 
     return 1;
   }
   console.log(
-    `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 45 s rehearsal, a non-clone ` +
+    `${C.bold}brief-lock RED-7..11 / GREEN-7${C.reset} ${C.dim}— no rehearsal, a 15 s rehearsal, a non-clone ` +
       `measurement, a drop trigger and an unclaimed file all stay window-class; a 2.1 s rehearsed trigger DDL runs mid-day${C.reset}`,
   );
 

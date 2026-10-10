@@ -1749,7 +1749,7 @@ export function policyDdlOneTableVerdict(
 //       under BRIEF_LOCK_MAX_MS for the whole transaction.
 // It then runs under the runner's lock_timeout with its bounded rolled-back-whole retry, never waiting
 // indefinitely and never holding a lock while it waits. Anything missing stays window-class.
-export const BRIEF_LOCK_MAX_MS = 30_000;
+export const BRIEF_LOCK_MAX_MS = 10_000;
 const HEADER_BRIEF_LOCK_RE = /^\s*--\s*brief-lock:\s*\S/i;
 export function briefLockDeclared(rawSql: string): boolean {
   return rawSql.split("\n", 40).some((line) => HEADER_BRIEF_LOCK_RE.test(line));
@@ -1816,7 +1816,7 @@ export function briefLockVerdict(
     return {
       exempt: false,
       refusal:
-        `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of measure pass (the measure pass samples pg_locks after every statement, so the real lock is several times shorter). ` +
+        `its measured transaction is ${m.totalMs} ms and the brief-lock class stops at ${BRIEF_LOCK_MAX_MS} ms of statement wall time. ` +
         `Writers would wait that long; it waits for the window.`,
     };
   }
